@@ -48,14 +48,14 @@ public class BlockedIOTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBlockingReadThenNormalComplete(Transport transport) throws Exception
+    public void testBlockingReadThenNormalComplete(TransportType transportType) throws Exception
     {
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Throwable> readException = new AtomicReference<>();
         AtomicReference<Throwable> reReadException = new AtomicReference<>();
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -114,7 +114,7 @@ public class BlockedIOTest extends AbstractTest
 
         AsyncRequestContent requestContent = new AsyncRequestContent();
         CountDownLatch ok = new CountDownLatch(2);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method("POST")
             .body(requestContent)
             .onResponseContent((response, content) ->

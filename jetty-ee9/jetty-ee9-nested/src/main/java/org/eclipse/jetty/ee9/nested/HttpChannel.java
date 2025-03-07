@@ -56,7 +56,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
@@ -156,8 +155,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public boolean needContent()
     {
+        ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
+        // When coreContextRequest is null, produceContent() always immediately returns an error content.
+        if (coreContextRequest == null)
+            return true;
         // TODO: optimize by attempting a read?
-        getCoreRequest().demand(_needContentTask);
+        coreContextRequest.demand(_needContentTask);
         return false;
     }
 
@@ -172,7 +175,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public HttpInput.Content produceContent()
     {
-        Content.Chunk chunk = getCoreRequest().read();
+        ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
+        if (coreContextRequest == null)
+            return new HttpInput.ErrorContent(new IOException("Channel has been recycled"));
+        Content.Chunk chunk = coreContextRequest.read();
         if (chunk == null)
             return null;
 
@@ -561,16 +567,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            try
-                            {
-                                _response.resetContent();
-                                sendResponseAndComplete();
-                            }
-                            catch (Throwable t)
-                            {
-                                ExceptionUtil.addSuppressedIfNotAssociated(x, t);
-                                throw x;
-                            }
+                            abort(x);
                         }
                         finally
                         {
@@ -1035,12 +1032,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void send(MetaData.Request ignored, MetaData.Response response, ByteBuffer content, boolean complete, Callback callback)
     {
+        org.eclipse.jetty.server.Response coreResponse = _coreResponse;
+        if (coreResponse == null)
+        {
+            callback.failed(new IOException());
+            return;
+        }
+
         if (response != null)
         {
-            _coreResponse.setStatus(response.getStatus());
-            _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
+            coreResponse.setStatus(response.getStatus());
+            coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        _coreResponse.write(complete, content, callback);
+        coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
@@ -1433,6 +1437,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     public void succeeded()
                     {
                         _response.getHttpOutput().completed(null);
+                        super.failed(x);
+                    }
+
+                    @Override
+                    public void failed(Throwable th)
+                    {
+                        abort(x);
                         super.failed(x);
                     }
                 });

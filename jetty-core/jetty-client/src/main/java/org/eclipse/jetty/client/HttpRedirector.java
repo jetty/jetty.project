@@ -107,7 +107,7 @@ public class HttpRedirector
     {
         AtomicReference<Result> resultRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        Request redirect = redirect(request, response, new BufferingResponseListener()
+        Request redirect = redirect(request, response, new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)

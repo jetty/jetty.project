@@ -69,7 +69,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public Throwable getRequestFailure()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return requestFailure;
         }
@@ -87,7 +87,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public Throwable getResponseFailure()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return responseFailure;
         }
@@ -110,7 +110,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     {
         boolean result = false;
         boolean abort = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             // Only associate if the exchange state is initial,
             // as the exchange could be already failed.
@@ -134,7 +134,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     void disassociate(HttpChannel channel)
     {
         boolean abort = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (_channel != channel || requestState != State.TERMINATED || responseState != State.TERMINATED)
                 abort = true;
@@ -147,7 +147,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     private HttpChannel getHttpChannel()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return _channel;
         }
@@ -155,14 +155,15 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public boolean requestComplete(Throwable failure)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            return completeRequest(failure);
+            return lockedCompleteRequest(failure);
         }
     }
 
-    private boolean completeRequest(Throwable failure)
+    private boolean lockedCompleteRequest(Throwable failure)
     {
+        assert lock.isHeldByCurrentThread();
         if (requestState == State.PENDING)
         {
             requestState = State.COMPLETED;
@@ -174,7 +175,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public boolean isResponseComplete()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return responseState == State.COMPLETED;
         }
@@ -182,14 +183,15 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public boolean responseComplete(Throwable failure)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            return completeResponse(failure);
+            return lockedCompleteResponse(failure);
         }
     }
 
-    private boolean completeResponse(Throwable failure)
+    private boolean lockedCompleteResponse(Throwable failure)
     {
+        assert lock.isHeldByCurrentThread();
         if (responseState == State.PENDING)
         {
             responseState = State.COMPLETED;
@@ -202,7 +204,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     public Result terminateRequest()
     {
         Result result = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (requestState == State.COMPLETED)
                 requestState = State.TERMINATED;
@@ -219,7 +221,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     public Result terminateResponse()
     {
         Result result = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (responseState == State.COMPLETED)
                 responseState = State.TERMINATED;
@@ -235,7 +237,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     boolean isResponseCompleteOrTerminated()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return responseState == State.COMPLETED || responseState == State.TERMINATED;
         }
@@ -245,12 +247,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     {
         // Atomically change the state of this exchange to be completed.
         // This will avoid that this exchange can be associated to a channel.
+        HttpChannel channel;
         boolean abortRequest;
         boolean abortResponse;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
-            abortRequest = completeRequest(failure);
-            abortResponse = completeResponse(failure);
+            channel = _channel;
+            abortRequest = lockedCompleteRequest(failure);
+            abortResponse = lockedCompleteResponse(failure);
         }
 
         if (!abortRequest && !abortResponse)
@@ -268,7 +272,12 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         // request content, notify them of the failure.
         Request.Content body = request.getBody();
         if (abortRequest && body != null)
+        {
+            // This may eventually complete the request,
+            // and if the response is already completed
+            // also invoke the Response.CompleteListeners.
             body.fail(failure);
+        }
 
         // Case #1: exchange was in the destination queue.
         if (destination.remove(this))
@@ -280,8 +289,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             return;
         }
 
-        HttpChannel channel = getHttpChannel();
-        if (channel == null)
+        if (channel == null && abortRequest)
         {
             // Case #2: exchange was not yet associated.
             // Because this exchange is failed, when associate() is called
@@ -309,7 +317,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public void resetResponse()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             responseState = State.PENDING;
             responseFailure = null;
@@ -327,7 +335,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     @Override
     public String toString()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return String.format("%s@%x{req=%s[%s/%s] res=%s[%s/%s]}",
                 HttpExchange.class.getSimpleName(),

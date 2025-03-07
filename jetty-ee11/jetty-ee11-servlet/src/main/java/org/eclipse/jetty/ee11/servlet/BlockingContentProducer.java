@@ -153,8 +153,9 @@ class BlockingContentProducer implements ContentProducer
         // Calling _asyncContentProducer.onContentProducible() changes the channel state from WAITING to WOKEN which
         // would prevent the async error thread from noticing that a redispatching is needed.
         boolean unready = _asyncContentProducer.isUnready();
+        boolean error = _asyncContentProducer.isError();
         if (LOG.isDebugEnabled())
-            LOG.debug("onContentProducible releasing semaphore {} unready={}", _semaphore, unready);
+            LOG.debug("onContentProducible releasing semaphore {} unready={} error={}", _semaphore, unready, error);
         // Do not release the semaphore if we are not unready, as certain protocols may call this method
         // just after having received the request, not only when they have read all the available content.
         if (unready)
@@ -163,6 +164,8 @@ class BlockingContentProducer implements ContentProducer
             _asyncContentProducer.getServletChannel().getServletRequestState().onReadIdle();
             _semaphore.release();
         }
+        if (error)
+            _semaphore.fail();
         return false;
     }
 }

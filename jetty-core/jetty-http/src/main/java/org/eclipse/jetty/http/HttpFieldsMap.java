@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.AbstractList;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +26,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>A {@link java.util.Map} which is backed by an instance of {@link HttpFields.Mutable}.</p>
+ *
  * @see HttpFieldsMap.Mutable
  * @see HttpFieldsMap.Immutable
  */
@@ -46,7 +49,32 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
         public List<String> get(Object key)
         {
             if (key instanceof String s)
-                return httpFields.getValuesList(s);
+            {
+                return new AbstractList<>()
+                {
+                    private final List<String> values = httpFields.getValuesList(s);
+
+                    @Override
+                    public String get(int index)
+                    {
+                        return values.get(index);
+                    }
+
+                    @Override
+                    public int size()
+                    {
+                        return values.size();
+                    }
+
+                    @Override
+                    public boolean add(String value)
+                    {
+                        values.add(value);
+                        httpFields.add(s, value);
+                        return true;
+                    }
+                };
+            }
             return null;
         }
 
@@ -65,7 +93,7 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
             {
                 List<String> oldValue = get(s);
                 httpFields.remove(s);
-                return oldValue;
+                return Collections.unmodifiableList(oldValue);
             }
             return null;
         }
@@ -118,7 +146,7 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
     }
 
     /**
-     * <p>A {@link java.util.Map} which is backed by an instance of {@link HttpFields.Mutable}.</p>
+     * <p>A {@link java.util.Map} which is backed by an instance of {@link HttpFields}.</p>
      * <p>Any attempt to modify the map will throw {@link UnsupportedOperationException}.</p>
      */
     public static class Immutable extends HttpFieldsMap
@@ -134,7 +162,7 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
         public List<String> get(Object key)
         {
             if (key instanceof String s)
-                return httpFields.getValuesList(s);
+                return Collections.unmodifiableList(httpFields.getValuesList(s));
             return null;
         }
 

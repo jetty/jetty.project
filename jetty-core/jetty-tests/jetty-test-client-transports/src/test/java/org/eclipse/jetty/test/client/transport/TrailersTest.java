@@ -43,11 +43,11 @@ public class TrailersTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testTrailers(Transport transport) throws Exception
+    public void testTrailers(TransportType transportType) throws Exception
     {
         String trailerName = "Some-Trailer";
         String trailerValue = "0xC0FFEE";
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -89,7 +89,7 @@ public class TrailersTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener();
         try (OutputStream output = body.getOutputStream())
         {
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .trailersSupplier(() -> requestTrailers)
                 .body(body)
                 .timeout(15, TimeUnit.SECONDS)
@@ -120,9 +120,9 @@ public class TrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testTrailersWithDelayedRead(Transport transport) throws Exception
+    public void testTrailersWithDelayedRead(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -142,7 +142,7 @@ public class TrailersTest extends AbstractTest
         String content = "Some-Content";
         String trailerName = "X-Trailer";
         String trailerValue = "0xC0FFEE";
-        var request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .headers(headers -> headers.put(HttpHeader.TRAILER, trailerName))
             .body(new StringRequestContent(content))

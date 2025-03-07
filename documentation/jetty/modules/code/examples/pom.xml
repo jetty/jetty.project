@@ -13,8 +13,8 @@
 
   <properties>
     <jacoco.skip>true</jacoco.skip>
-    <javadoc.skip>true</javadoc.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <dependencies>
@@ -69,6 +69,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.compression</groupId>
+      <artifactId>jetty-compression-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>

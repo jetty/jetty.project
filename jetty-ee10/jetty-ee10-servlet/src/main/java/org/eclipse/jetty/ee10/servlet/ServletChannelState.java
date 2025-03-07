@@ -40,6 +40,7 @@ import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
 import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
 import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
 import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
  * holder of the state of request-response cycle.
@@ -225,6 +226,11 @@ public class ServletChannelState
     AutoLock lock()
     {
         return _lock.lock();
+    }
+
+    AutoLock tryLock()
+    {
+        return _lock.tryLock();
     }
 
     boolean isLockHeldByCurrentThread()
@@ -423,6 +429,16 @@ public class ServletChannelState
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
                     _state = State.HANDLING;
+                    if (_servletChannel.getResponse().getStatus() != 0)
+                    {
+                        if (_servletChannel.getRequest().getAttribute(ERROR_STATUS) instanceof Integer errorCode)
+                        {
+                            _servletChannel.getServletRequestState().sendError(errorCode, null);
+                            _requestState = RequestState.BLOCKING;
+                            _sendError = false;
+                            return Action.SEND_ERROR;
+                        }
+                    }
                     return Action.DISPATCH;
 
                 case WOKEN:
@@ -1022,7 +1038,6 @@ public class ServletChannelState
 
     public void sendError(int code, String message)
     {
-        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
         //  + The response is reset and temporarily closed.
         //  + The details of the error are saved as request attributes
         //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
@@ -1058,21 +1073,18 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(org.eclipse.jetty.ee10.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
-            request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
-            request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
-            request.setAttribute(ERROR_STATUS_CODE, code);
-            request.setAttribute(ERROR_MESSAGE, message);
-
             // Set Jetty Specific Attributes.
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
+            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
 
             _sendError = true;
             if (_event != null)
             {
                 Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+                if (cause == null)
+                    cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
                 if (cause != null)
                     _event.addThrowable(cause);
             }

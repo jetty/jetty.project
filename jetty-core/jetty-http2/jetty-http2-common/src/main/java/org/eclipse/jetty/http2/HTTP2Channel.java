@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
@@ -34,6 +35,8 @@ public interface HTTP2Channel
      */
     public interface Client
     {
+        public Runnable onHeaders(Stream stream, HeadersFrame frame, Callback callback);
+
         public Runnable onDataAvailable();
 
         public Runnable onReset(ResetFrame frame, Callback callback);

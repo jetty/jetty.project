@@ -29,9 +29,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -381,20 +384,20 @@ public class AsyncJSONTest
         Map<String, Object> result = parser.complete();
 
         Object value1 = result.get("f1");
-        assertTrue(value1 instanceof CustomConvertible);
+        assertInstanceOf(CustomConvertible.class, value1);
         assertEquals("value", ((CustomConvertible)value1).field);
         Object value2 = result.get("f2");
-        assertTrue(value2 instanceof CustomConvertor.Custom);
+        assertInstanceOf(CustomConvertor.Custom.class, value2);
 
         assertSame(convertor, factory.removeConvertor(CustomConvertor.class.getName()));
         assertTrue(parser.parse(UTF_8.encode(json)));
         result = parser.complete();
 
         value1 = result.get("f1");
-        assertTrue(value1 instanceof CustomConvertible);
+        assertInstanceOf(CustomConvertible.class, value1);
         assertEquals("value", ((CustomConvertible)value1).field);
         value2 = result.get("f2");
-        assertTrue(value2 instanceof Map);
+        assertInstanceOf(Map.class, value2);
         @SuppressWarnings("unchecked")
         Map<String, Object> map2 = (Map<String, Object>)value2;
         assertEquals(CustomConvertor.class.getName(), map2.get("class"));
@@ -566,5 +569,44 @@ public class AsyncJSONTest
         sync.setArrayConverter(list -> list);
         result = extractor.apply(sync.parse(new JSON.StringSource(json)));
         assertThat(result, Matchers.instanceOf(List.class));
+    }
+
+    @Test
+    public void testParseRecord()
+    {
+        // No configuration necessary for records.
+        AsyncJSON parser = newAsyncJSON();
+        String name = "Jetty";
+        int age = 30;
+        ByteBuffer byteBuffer = UTF_8.encode("""
+            {
+              "class": "%s",
+              "name": "%s",
+              "age": %d
+            }
+            """.formatted(Person.class.getName(), name, age));
+
+        assertTrue(parser.parse(byteBuffer));
+        Object object = parser.complete();
+        assertInstanceOf(Person.class, object);
+        Person person = (Person)object;
+        assertThat(person.name(), is(name));
+        assertThat(person.age(), is(age));
+
+        // Test null values.
+        byteBuffer = UTF_8.encode("""
+            {
+              "class": "%s",
+              "name": null,
+              "age": %d
+            }
+            """.formatted(Person.class.getName(), age));
+
+        assertTrue(parser.parse(byteBuffer));
+        object = parser.complete();
+        assertInstanceOf(Person.class, object);
+        person = (Person)object;
+        assertNull(person.name());
+        assertThat(person.age(), is(age));
     }
 }

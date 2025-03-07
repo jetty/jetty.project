@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.luben.zstd.EndDirective;
 import com.github.luben.zstd.ZstdCompressCtx;
-import com.github.luben.zstd.ZstdFrameProgression;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardEncoderConfig;
@@ -61,20 +60,6 @@ public class ZstandardEncoderSink extends EncoderSink
             this.compressCtx.setStrategy(config.getStrategy());
         this.compressCtx.setMagicless(config.isMagicless());
         this.compressCtx.setChecksum(config.isChecksum());
-    }
-
-    @Override
-    protected boolean canEncode(boolean last, ByteBuffer content)
-    {
-        if (!content.hasRemaining())
-        {
-            // skip if progress not yet started.
-            // this allows for empty body contents to not cause errors.
-            ZstdFrameProgression frameProgression = compressCtx.getFrameProgression();
-            return frameProgression.getConsumed() > 0;
-        }
-
-        return true;
     }
 
     @Override

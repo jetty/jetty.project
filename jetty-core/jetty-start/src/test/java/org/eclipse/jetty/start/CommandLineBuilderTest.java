@@ -49,8 +49,8 @@ public class CommandLineBuilderTest
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
         cmd.addArg("java");
-        cmd.addArg("-Djetty.home", "/opt/jetty 10/home");
-        assertThat(cmd.toCommandLine(), is("java -Djetty.home='/opt/jetty 10/home'"));
+        cmd.addArg("-Djetty.home", "/opt/jetty 12/home");
+        assertThat(cmd.toCommandLine(), is("java -Djetty.home='/opt/jetty 12/home'"));
     }
 
     @Test

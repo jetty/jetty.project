@@ -60,7 +60,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
@@ -72,6 +71,7 @@ import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -83,6 +83,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -456,16 +457,16 @@ public class ProxyServletTest
 
         Request request = client.newRequest("localhost", serverConnector.getLocalPort()).path("/proxy/test");
         final CountDownLatch latch = new CountDownLatch(1);
-        request.send(new BufferingResponseListener(2 * length * 1024)
+        request.send(new RetainingResponseListener(2 * length * 1024)
         {
             @Override
-            public void onContent(Response response, ByteBuffer content)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
             {
                 try
                 {
                     // Slow down the reader
                     TimeUnit.MILLISECONDS.sleep(5);
-                    super.onContent(response, content);
+                    super.onContent(response, chunk, demander);
                 }
                 catch (InterruptedException x)
                 {
@@ -1486,7 +1487,7 @@ public class ProxyServletTest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1542,7 +1543,7 @@ public class ProxyServletTest
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(requestContent)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1743,23 +1744,23 @@ public class ProxyServletTest
                 if (chunked)
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Transfer-Encoding: chunked
-
-                        0
-
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Transfer-Encoding: chunked\r
+                        \r
+                        0\r
+                        \r
                         """;
                 }
                 else
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Content-Length: 0
-                        
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Content-Length: 0\r
+                        \r
                         """;
                 }
                 request = request.replace("$A", authority);

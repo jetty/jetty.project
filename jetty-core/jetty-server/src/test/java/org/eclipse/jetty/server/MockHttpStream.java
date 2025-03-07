@@ -205,6 +205,12 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long getIdleTimeout()
     {
         return 0;

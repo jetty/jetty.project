@@ -44,13 +44,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -99,9 +99,9 @@ public class AsyncIOServletTest extends AbstractTest
     private static final ThreadLocal<RuntimeException> scope = new ThreadLocal<>();
 
     @Override
-    protected void prepareServer(Transport transport, HttpServlet servlet) throws Exception
+    protected void prepareServer(TransportType transportType, HttpServlet servlet) throws Exception
     {
-        super.prepareServer(transport, servlet);
+        super.prepareServer(transportType, servlet);
         // Add this listener before the context is started, so it's durable.
         servletContextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
@@ -154,22 +154,22 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadThrowsException(Transport transport) throws Exception
+    public void testAsyncReadThrowsException(TransportType transportType) throws Exception
     {
-        testAsyncReadThrows(transport, new NullPointerException("explicitly_thrown_by_test"));
+        testAsyncReadThrows(transportType, new NullPointerException("explicitly_thrown_by_test"));
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadThrowsError(Transport transport) throws Exception
+    public void testAsyncReadThrowsError(TransportType transportType) throws Exception
     {
-        testAsyncReadThrows(transport, new Error("explicitly_thrown_by_test"));
+        testAsyncReadThrows(transportType, new Error("explicitly_thrown_by_test"));
     }
 
-    private void testAsyncReadThrows(Transport transport, Throwable throwable) throws Exception
+    private void testAsyncReadThrows(TransportType transportType, Throwable throwable) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -209,7 +209,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(new StringRequestContent("0123456789"))
             .timeout(5, TimeUnit.SECONDS)
@@ -221,10 +221,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadIdleTimeout(Transport transport) throws Exception
+    public void testAsyncReadIdleTimeout(TransportType transportType) throws Exception
     {
         int status = 567;
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -284,10 +284,10 @@ public class AsyncIOServletTest extends AbstractTest
         content.write(ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch clientLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
-            .onResponseSuccess(r -> responseLatch.countDown())
+            .onResponseHeaders(r -> responseLatch.countDown())
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
@@ -296,7 +296,7 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         // HTTP/2 does not close a Connection when the request idle times out.
-        if (transport != Transport.H2C && transport != Transport.H2)
+        if (transportType != TransportType.H2C && transportType != TransportType.H2)
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
@@ -305,10 +305,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOnErrorThrows(Transport transport) throws Exception
+    public void testOnErrorThrows(TransportType transportType) throws Exception
     {
         AtomicInteger errors = new AtomicInteger();
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -354,7 +354,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
-            ContentResponse response = client.newRequest(newURI(transport))
+            ContentResponse response = client.newRequest(newURI(transportType))
                 .body(new StringRequestContent("0123456789"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -366,22 +366,22 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncWriteThrowsException(Transport transport) throws Exception
+    public void testAsyncWriteThrowsException(TransportType transportType) throws Exception
     {
-        testAsyncWriteThrows(transport, new NullPointerException("explicitly_thrown_by_test"));
+        testAsyncWriteThrows(transportType, new NullPointerException("explicitly_thrown_by_test"));
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncWriteThrowsError(Transport transport) throws Exception
+    public void testAsyncWriteThrowsError(TransportType transportType) throws Exception
     {
-        testAsyncWriteThrows(transport, new Error("explicitly_thrown_by_test"));
+        testAsyncWriteThrows(transportType, new Error("explicitly_thrown_by_test"));
     }
 
-    private void testAsyncWriteThrows(Transport transport, Throwable throwable) throws Exception
+    private void testAsyncWriteThrows(TransportType transportType, Throwable throwable) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -414,7 +414,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -424,12 +424,12 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncWriteClosed(Transport transport) throws Exception
+    public void testAsyncWriteClosed(TransportType transportType) throws Exception
     {
         byte[] data = new byte[1024];
 
         CountDownLatch errorLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -482,7 +482,7 @@ public class AsyncIOServletTest extends AbstractTest
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseHeaders(response ->
             {
                 if (response.getStatus() == HttpStatus.OK_200)
@@ -500,10 +500,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncWriteLessThanContentLengthFlushed(Transport transport) throws Exception
+    public void testAsyncWriteLessThanContentLengthFlushed(TransportType transportType) throws Exception
     {
         CountDownLatch complete = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -571,7 +571,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         AtomicBoolean failed = new AtomicBoolean(false);
         CountDownLatch clientLatch = new CountDownLatch(3);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseHeaders(response ->
             {
                 if (response.getStatus() == HttpStatus.OK_200)
@@ -595,12 +595,12 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testIsReadyAtEOF(Transport transport) throws Exception
+    public void testIsReadyAtEOF(TransportType transportType) throws Exception
     {
         String text = "TEST\n";
         byte[] data = text.getBytes(StandardCharsets.UTF_8);
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -654,7 +654,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new StringRequestContent(text))
@@ -667,10 +667,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOnAllDataRead(Transport transport) throws Exception
+    public void testOnAllDataRead(TransportType transportType) throws Exception
     {
         String success = "SUCCESS";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -736,11 +736,11 @@ public class AsyncIOServletTest extends AbstractTest
                 return data.length;
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
             .timeout(5, TimeUnit.SECONDS)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -764,10 +764,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOtherThreadOnAllDataRead(Transport transport) throws Exception
+    public void testOtherThreadOnAllDataRead(TransportType transportType) throws Exception
     {
         String success = "SUCCESS";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -840,11 +840,11 @@ public class AsyncIOServletTest extends AbstractTest
         byte[] data = "X".getBytes(StandardCharsets.UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
             .timeout(5, TimeUnit.SECONDS)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -868,11 +868,11 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testCompleteBeforeOnAllDataRead(Transport transport) throws Exception
+    public void testCompleteBeforeOnAllDataRead(TransportType transportType) throws Exception
     {
         String success = "SUCCESS";
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -920,7 +920,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new StringRequestContent("XYZ"))
@@ -933,12 +933,12 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testEmptyAsyncRead(Transport transport) throws Exception
+    public void testEmptyAsyncRead(TransportType transportType) throws Exception
     {
         AtomicBoolean oda = new AtomicBoolean();
         CountDownLatch latch = new CountDownLatch(1);
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -975,7 +975,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -988,11 +988,11 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testWriteFromOnDataAvailable(Transport transport) throws Exception
+    public void testWriteFromOnDataAvailable(TransportType transportType) throws Exception
     {
         Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1054,10 +1054,10 @@ public class AsyncIOServletTest extends AbstractTest
         AsyncRequestContent requestContent = new AsyncRequestContent();
         requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(requestContent)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1083,19 +1083,19 @@ public class AsyncIOServletTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     @Disabled // TODO Cannot write response from onError as failure has occurred
-    public void testAsyncReadEarlyEOF(Transport transport) throws Exception
+    public void testAsyncReadEarlyEOF(TransportType transportType) throws Exception
     {
         // SSLEngine receives the close alert from the client, and when
         // the server passes the response to encrypt and write, SSLEngine
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
-        Assumptions.assumeFalse(transport.isSecure());
+        Assumptions.assumeFalse(transportType.isSecure());
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;
         CountDownLatch readLatch = new CountDownLatch(content.length());
         CountDownLatch errorLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1133,17 +1133,17 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch responseLatch = new CountDownLatch(1);
         AsyncRequestContent requestContent = new AsyncRequestContent();
         requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
-        var request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == Transport.HTTP)
+                if (transportType == TransportType.HTTP)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
             {
-                if (transport == Transport.H2C)
+                if (transportType == TransportType.H2C)
                     responseLatch.countDown();
             });
 
@@ -1154,7 +1154,7 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(1);
         connection.send(request, result ->
         {
-            switch (transport)
+            switch (transportType)
             {
                 case HTTP:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
@@ -1164,14 +1164,14 @@ public class AsyncIOServletTest extends AbstractTest
                     assertTrue(result.isFailed());
                     break;
                 default:
-                    fail("Unhandled transport: " + transport);
+                    fail("Unhandled transport: " + transportType);
             }
             clientLatch.countDown();
         });
 
         assertTrue(readLatch.await(5, TimeUnit.SECONDS));
 
-        switch (transport)
+        switch (transportType)
         {
             case HTTP:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
@@ -1185,7 +1185,7 @@ public class AsyncIOServletTest extends AbstractTest
                 ((HTTP2Session)session).getEndPoint().shutdownOutput();
                 break;
             default:
-                fail("Unhandled transport: " + transport);
+                fail("Unhandled transport: " + transportType);
         }
 
         // Wait for the response to arrive before finishing the request.
@@ -1199,9 +1199,9 @@ public class AsyncIOServletTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     @Disabled // TODO
-    public void testAsyncIntercepted(Transport transport) throws Exception
+    public void testAsyncIntercepted(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1329,10 +1329,10 @@ public class AsyncIOServletTest extends AbstractTest
             "S5" +
             "S6";
 
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1367,12 +1367,12 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncEcho(Transport transport) throws Exception
+    public void testAsyncEcho(TransportType transportType) throws Exception
     {
         // TODO: investigate why H3 does not work.
-        Assumptions.assumeTrue(transport != Transport.H3);
+        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1417,10 +1417,10 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(contentProvider)
-            .send(new BufferingResponseListener(16 * 1024 * 1024)
+            .send(new RetainingResponseListener(16 * 1024 * 1024)
             {
                 @Override
                 public void onComplete(Result result)
@@ -1521,7 +1521,7 @@ public class AsyncIOServletTest extends AbstractTest
             .method(HttpMethod.POST)
             .path(scenario.servletPath)
             .body(contentProvider)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1550,9 +1550,9 @@ public class AsyncIOServletTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     @Disabled // TODO
-    public void testAsyncInterceptedTwiceWithNulls(Transport transport) throws Exception
+    public void testAsyncInterceptedTwiceWithNulls(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1636,10 +1636,10 @@ public class AsyncIOServletTest extends AbstractTest
             "4S" +
             "6S";
 
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(contentProvider)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1674,9 +1674,9 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testWriteListenerFromOtherThread(Transport transport) throws Exception
+    public void testWriteListenerFromOtherThread(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1699,7 +1699,7 @@ public class AsyncIOServletTest extends AbstractTest
                 {
                     try
                     {
-                        ContentResponse response = client.newRequest(newURI(transport))
+                        ContentResponse response = client.newRequest(newURI(transportType))
                             .method(HttpMethod.POST)
                             .body(new InputStreamRequestContent(new ByteArrayInputStream(new byte[16 * 1024])
                             {
@@ -1731,11 +1731,11 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testClientDefersContentServerIdleTimeout(Transport transport) throws Exception
+    public void testClientDefersContentServerIdleTimeout(TransportType transportType) throws Exception
     {
         CountDownLatch dataLatch = new CountDownLatch(1);
         CountDownLatch errorLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -1779,10 +1779,10 @@ public class AsyncIOServletTest extends AbstractTest
                 return bytes.length;
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
-            .onResponseSuccess(response ->
+            .onResponseHeaders(response ->
             {
                 Assertions.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
                 latch.countDown();
@@ -1795,6 +1795,7 @@ public class AsyncIOServletTest extends AbstractTest
         assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
 
         // Do not send the content to the server.
+        // The exchange is not completed because the request is not completed.
 
         assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1802,11 +1803,11 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOnAllDataReadCalledOnceThenIdleTimeout(Transport transport) throws Exception
+    public void testOnAllDataReadCalledOnceThenIdleTimeout(TransportType transportType) throws Exception
     {
         AtomicInteger allDataReadCount = new AtomicInteger();
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
@@ -1852,7 +1853,7 @@ public class AsyncIOServletTest extends AbstractTest
         connector.setIdleTimeout(2 * idleTimeout);
         setStreamIdleTimeout(idleTimeout);
 
-        assertThrows(TimeoutException.class, () -> client.newRequest(newURI(transport))
+        assertThrows(TimeoutException.class, () -> client.newRequest(newURI(transportType))
             .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
             .send()
         );

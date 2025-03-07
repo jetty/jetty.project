@@ -54,31 +54,22 @@ public class ZstandardCompression extends Compression
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
     private static final List<String> EXTENSIONS = List.of("zst");
-    private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
+
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
 
     public ZstandardCompression()
     {
         super(ENCODING_NAME);
+        setMinCompressSize(DEFAULT_MIN_ZSTD_SIZE);
     }
 
     @Override
-    public RetainableByteBuffer acquireByteBuffer()
+    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
     {
-        return acquireByteBuffer(getBufferSize());
-    }
-
-    @Override
-    public RetainableByteBuffer acquireByteBuffer(int length)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (length == 0)
-            return RetainableByteBuffer.EMPTY;
-
         // Per zstd-jni, these MUST be direct ByteBuffer implementations.
         RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
-        if (!buffer.getByteBuffer().isDirect())
+        if (!buffer.isDirect())
         {
             buffer.release();
             throw new IllegalStateException("ByteBufferPool does not return zstd-jni required direct ByteBuffer");
@@ -128,15 +119,9 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public int getMinCompressSize()
-    {
-        return minCompressSize;
-    }
-
-    @Override
     public void setMinCompressSize(int minCompressSize)
     {
-        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
+        super.setMinCompressSize(Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE));
     }
 
     @Override
@@ -164,7 +149,7 @@ public class ZstandardCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
         ZstandardDecoderConfig zstandardDecoderConfig = (ZstandardDecoderConfig)config;
-        return new ZstandardDecoderSource(this, source, zstandardDecoderConfig);
+        return new ZstandardDecoderSource(source, this, zstandardDecoderConfig);
     }
 
     @Override

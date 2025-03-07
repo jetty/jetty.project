@@ -48,7 +48,7 @@
           <Get name="properties">
             <Put name="jetty.deploy.containerScanJarPattern">
               <Property name="jetty.deploy.containerScanJarPattern">
-                <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*wasp-.*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
               </Property>
             </Put>
             <Put name="jetty.deploy.webInfScanJarPattern">

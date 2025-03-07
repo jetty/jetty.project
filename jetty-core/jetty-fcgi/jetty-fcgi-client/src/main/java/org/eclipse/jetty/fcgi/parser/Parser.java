@@ -130,6 +130,8 @@ public abstract class Parser
                         {
                             buffer.position(buffer.position() + padding);
                             reset();
+                            if (!buffer.hasRemaining())
+                                return true;
                         }
                         else
                         {
@@ -195,8 +197,9 @@ public abstract class Parser
             return false;
         }
 
-        public default void onEnd(int request)
+        public default boolean onEnd(int request)
         {
+            return false;
         }
 
         public default void onFailure(int request, Throwable failure)

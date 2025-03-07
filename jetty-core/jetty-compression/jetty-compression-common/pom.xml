@@ -13,9 +13,11 @@
   <packaging>jar</packaging>
   <name>Core :: Compression :: Common</name>
   <description>Jetty Core Compression Common</description>
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -35,4 +37,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>

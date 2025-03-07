@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -482,7 +483,7 @@ public class AsyncJSON
     }
 
     /**
-     * <p>When a JSON <code>[</code> is encountered during parsing,
+     * <p>When a JSON {@code [} is encountered during parsing,
      * this method is called to create a new {@code List} instance.</p>
      * <p>Subclasses may override to return a custom {@code List} instance.</p>
      *
@@ -981,41 +982,31 @@ public class AsyncJSON
         while (buffer.hasRemaining())
         {
             byte peek = buffer.get(buffer.position());
-            switch (peek)
+            if (peek == '"')
             {
-                case '"':
+                if (stack.peek().state == State.OBJECT)
                 {
-                    if (stack.peek().state == State.OBJECT)
+                    stack.push(State.OBJECT_FIELD, UNSET);
+                    if (parseObjectFieldName(buffer))
                     {
-                        stack.push(State.OBJECT_FIELD, UNSET);
-                        if (parseObjectFieldName(buffer))
-                        {
-                            // We are not done yet, parse the value.
-                            break;
-                        }
-                        return false;
+                        // We are not done yet, parse the value.
+                        continue;
                     }
-                    else
-                    {
-                        return parseObjectFieldValue(buffer);
-                    }
+                    return false;
                 }
-                default:
+                else
                 {
-                    if (isWhitespace(peek))
-                    {
-                        buffer.get();
-                        break;
-                    }
-                    else if (stack.peek().state == State.OBJECT_FIELD_VALUE)
-                    {
-                        return parseObjectFieldValue(buffer);
-                    }
-                    else
-                    {
-                        throw newInvalidJSON(buffer, "invalid object field");
-                    }
+                    return parseObjectFieldValue(buffer);
                 }
+            }
+            else
+            {
+                if (isWhitespace(peek))
+                    buffer.get();
+                else if (stack.peek().state == State.OBJECT_FIELD_VALUE)
+                    return parseObjectFieldValue(buffer);
+                else
+                    throw newInvalidJSON(buffer, "invalid object field");
             }
         }
         return false;
@@ -1128,7 +1119,28 @@ public class AsyncJSON
         if (convertor != null)
             return convertor.fromJSON(object);
 
-        return null;
+        Object record = toRecord(className, object);
+        if (record != null)
+            return record;
+
+        return object;
+    }
+
+    private static Number convertNumber(Class<?> type, Number number)
+    {
+        if (type == byte.class || type == Byte.class)
+            return number.byteValue();
+        if (type == short.class || type == Short.class)
+            return number.shortValue();
+        if (type == int.class || type == Integer.class)
+            return number.intValue();
+        if (type == long.class || type == Long.class)
+            return number.longValue();
+        if (type == float.class || type == Float.class)
+            return number.floatValue();
+        if (type == double.class || type == Double.class)
+            return number.doubleValue();
+        throw new NumberFormatException("unsupported number type: " + type);
     }
 
     private Convertible toConvertible(String className)
@@ -1142,7 +1154,48 @@ public class AsyncJSON
         }
         catch (Throwable x)
         {
-            throw new IllegalArgumentException(x);
+            return null;
+        }
+    }
+
+    protected Object toRecord(String className, Map<String, Object> object)
+    {
+        try
+        {
+            Class<?> klass = Loader.loadClass(className);
+            if (!klass.isRecord())
+                return null;
+            return toRecord(klass, object);
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
+    protected static Object toRecord(Class<?> klass, Map<String, Object> object)
+    {
+        try
+        {
+            RecordComponent[] components = klass.getRecordComponents();
+            Class<?>[] types = new Class<?>[components.length];
+            Object[] values = new Object[components.length];
+            for (int i = 0; i < components.length; ++i)
+            {
+                RecordComponent component = components[i];
+                if (!object.containsKey(component.getName()))
+                    return null;
+                types[i] = component.getType();
+                Object value = object.get(component.getName());
+                if (value instanceof Number number)
+                    value = convertNumber(types[i], number);
+                values[i] = value;
+            }
+            return klass.getConstructor(types).newInstance(values);
+        }
+        catch (Throwable x)
+        {
+            return null;
         }
     }
 
@@ -1177,16 +1230,11 @@ public class AsyncJSON
 
     private static boolean isWhitespace(byte ws)
     {
-        switch (ws)
+        return switch (ws)
         {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '\t':
-                return true;
-            default:
-                return false;
-        }
+            case ' ', '\n', '\r', '\t' -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -1251,7 +1299,7 @@ public class AsyncJSON
         {
             if (integer == 0)
             {
-                if (builder.length() == 0)
+                if (builder.isEmpty())
                 {
                     builder.append((char)b);
                     return true;

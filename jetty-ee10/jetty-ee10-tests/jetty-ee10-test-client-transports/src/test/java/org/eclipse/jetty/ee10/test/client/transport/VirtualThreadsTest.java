@@ -47,13 +47,13 @@ public class VirtualThreadsTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testServletInvokedOnVirtualThread(Transport transport) throws Exception
+    public void testServletInvokedOnVirtualThread(TransportType transportType) throws Exception
     {
         // No virtual thread support in FCGI server-side.
-        Assumptions.assumeTrue(transport != Transport.FCGI);
+        Assumptions.assumeTrue(transportType != TransportType.FCGI);
 
         String virtualThreadsName = "green-";
-        prepareServer(transport, new HttpServlet()
+        prepareServer(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -71,24 +71,24 @@ public class VirtualThreadsTest extends AbstractTest
             ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(virtualThreadsExecutor);
         }
         server.start();
-        startClient(transport);
+        startClient(transportType);
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus(), " for transport " + transport);
+        assertEquals(HttpStatus.OK_200, response.getStatus(), " for transport " + transportType);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testServletCallbacksInvokedOnVirtualThread(Transport transport) throws Exception
+    public void testServletCallbacksInvokedOnVirtualThread(TransportType transportType) throws Exception
     {
         // No virtual thread support in FCGI server-side.
-        Assumptions.assumeTrue(transport != Transport.FCGI);
+        Assumptions.assumeTrue(transportType != TransportType.FCGI);
 
         byte[] data = new byte[2 * 1024 * 1024];
-        prepareServer(transport, new HttpServlet()
+        prepareServer(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -151,11 +151,11 @@ public class VirtualThreadsTest extends AbstractTest
         if (threadPool instanceof VirtualThreads.Configurable)
             ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor());
         server.start();
-        startClient(transport);
+        startClient(transportType);
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger length = new AtomicInteger();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(new StringRequestContent("hello"))
             .onResponseContent((response, content) -> length.addAndGet(content.remaining()))

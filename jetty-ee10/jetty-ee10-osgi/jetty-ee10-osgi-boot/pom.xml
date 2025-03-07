@@ -53,11 +53,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -96,27 +91,6 @@
             <_nouses>true</_nouses>
           </instructions>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
-                <copy todir="target/classes/jettyhome">
-                  <fileset dir="jettyhome">
-                    <exclude name="**/*.log"></exclude>
-                  </fileset>
-                </copy>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

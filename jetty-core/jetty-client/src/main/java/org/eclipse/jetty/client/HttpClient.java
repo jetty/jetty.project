@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
@@ -57,6 +60,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -125,18 +129,18 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
     private int requestBufferSize = 4096;
+    private int maxRequestHeadersSize = 8192;
     private int responseBufferSize = 16384;
+    private int maxResponseHeadersSize = -1;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    private String name = "%s@%x".formatted(getClass().getSimpleName(), hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxRequestHeadersSize = 8192;
-    private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
     /**
@@ -226,7 +230,12 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
 
-        decoderFactories.put(new GZIPContentDecoder.Factory(byteBufferPool));
+        if (decoderFactories.isEmpty())
+        {
+            TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
+                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
+                .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
+        }
 
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
@@ -582,7 +591,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
                                 connect(socketAddresses, nextIndex, context);
                         }
                     });
-                    HttpClient.this.transport.connect((SocketAddress)socketAddresses.get(index), context);
+                    HttpClient.this.transport.connect(socketAddresses.get(index), context);
                 }
             });
         }
@@ -1180,5 +1189,23 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public interface Aware
     {
         void setHttpClient(HttpClient httpClient);
+    }
+
+    private static class CompressionContentDecoderFactory extends ContentDecoder.Factory
+    {
+        private final Compression compression;
+
+        private CompressionContentDecoderFactory(Compression compression)
+        {
+            super(compression.getEncodingName());
+            this.compression = Objects.requireNonNull(compression);
+            installBean(compression);
+        }
+
+        @Override
+        public Content.Source newDecoderContentSource(Content.Source contentSource)
+        {
+            return compression.newDecoderSource(contentSource);
+        }
     }
 }

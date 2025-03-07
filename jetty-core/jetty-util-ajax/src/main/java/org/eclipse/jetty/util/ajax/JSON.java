@@ -17,6 +17,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Array;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,12 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>JSON parser and generator.</p>
@@ -81,8 +79,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JSON
 {
-    static final Logger LOG = LoggerFactory.getLogger(JSON.class);
-
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
     private Function<List<?>, Object> _arrayConverter = this::defaultArrayConverter;
@@ -229,21 +225,21 @@ public class JSON
                 buffer.append("null");
             }
             // Most likely first
-            else if (object instanceof Map)
+            else if (object instanceof Map<?, ?> map)
             {
-                appendMap(buffer, (Map<?, ?>)object);
+                appendMap(buffer, map);
             }
-            else if (object instanceof String)
+            else if (object instanceof String string)
             {
-                appendString(buffer, (String)object);
+                appendString(buffer, string);
             }
-            else if (object instanceof Number)
+            else if (object instanceof Number number)
             {
-                appendNumber(buffer, (Number)object);
+                appendNumber(buffer, number);
             }
-            else if (object instanceof Boolean)
+            else if (object instanceof Boolean bool)
             {
-                appendBoolean(buffer, (Boolean)object);
+                appendBoolean(buffer, bool);
             }
             else if (object.getClass().isArray())
             {
@@ -253,13 +249,13 @@ public class JSON
             {
                 appendString(buffer, object.toString());
             }
-            else if (object instanceof Convertible)
+            else if (object instanceof Convertible convertible)
             {
-                appendJSON(buffer, (Convertible)object);
+                appendJSON(buffer, convertible);
             }
-            else if (object instanceof Generator)
+            else if (object instanceof Generator generator)
             {
-                appendJSON(buffer, (Generator)object);
+                appendJSON(buffer, generator);
             }
             else
             {
@@ -269,9 +265,13 @@ public class JSON
                 {
                     appendJSON(buffer, convertor, object);
                 }
-                else if (object instanceof Collection)
+                else if (object instanceof Collection<?> collection)
                 {
-                    appendArray(buffer, (Collection<?>)object);
+                    appendArray(buffer, collection);
+                }
+                else if (object.getClass().isRecord())
+                {
+                    appendRecord(buffer, object);
                 }
                 else
                 {
@@ -330,12 +330,6 @@ public class JSON
     {
         try
         {
-            if (map == null)
-            {
-                appendNull(buffer);
-                return;
-            }
-
             buffer.append('{');
             Iterator<? extends Map.Entry<?, ?>> iter = map.entrySet().iterator();
             while (iter.hasNext())
@@ -451,6 +445,32 @@ public class JSON
         quotedEscape(buffer, string);
     }
 
+    public void appendRecord(Appendable buffer, Object object)
+    {
+        try
+        {
+            Class<?> klass = object.getClass();
+            buffer.append('{');
+            buffer.append("\"class\":\"").append(klass.getName()).append("\"");
+            for (RecordComponent component : klass.getRecordComponents())
+            {
+                buffer.append(',');
+                buffer.append("\"").append(component.getName()).append("\":");
+                Object value = klass.getMethod(component.getName()).invoke(object);
+                append(buffer, value);
+            }
+            buffer.append('}');
+        }
+        catch (RuntimeException | Error x)
+        {
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
     /**
      * <p>Factory method that creates a Map when a JSON representation of {@code {...}} is parsed.</p>
      *
@@ -459,19 +479,6 @@ public class JSON
     protected Map<String, Object> newMap()
     {
         return new HashMap<>();
-    }
-
-    /**
-     * <p>Factory method that creates an array when a JSON representation of {@code [...]} is parsed.</p>
-     *
-     * @param size the size of the array
-     * @return a new array representing the JSON array
-     * @deprecated use {@link #setArrayConverter(Function)} instead.
-     */
-    @Deprecated
-    protected Object[] newArray(int size)
-    {
-        return new Object[size];
     }
 
     /**
@@ -501,25 +508,34 @@ public class JSON
 
     protected Object convertTo(Class<?> type, Map<String, Object> map)
     {
-        if (Convertible.class.isAssignableFrom(type))
+        Convertible convertible = toConvertible(type);
+        if (convertible != null)
         {
-            try
-            {
-                Convertible convertible = (Convertible)type.getConstructor().newInstance();
-                convertible.fromJSON(map);
-                return convertible;
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
+            convertible.fromJSON(map);
+            return convertible;
         }
-        else
+
+        Convertor convertor = getConvertor(type);
+        if (convertor != null)
+            return convertor.fromJSON(map);
+
+        if (type.isRecord())
+            return AsyncJSON.toRecord(type, map);
+
+        return map;
+    }
+
+    private Convertible toConvertible(Class<?> klass)
+    {
+        try
         {
-            Convertor convertor = getConvertor(type);
-            if (convertor != null)
-                return convertor.fromJSON(map);
-            return map;
+            if (Convertible.class.isAssignableFrom(klass))
+                return (Convertible)klass.getConstructor().newInstance();
+            return null;
+        }
+        catch (Throwable x)
+        {
+            return null;
         }
     }
 
@@ -912,26 +928,18 @@ public class JSON
                 next = seekTo("\"}", source);
         }
 
-        String xclassname = (String)map.get("x-class");
-        if (xclassname != null)
-        {
-            Convertor c = getConvertorFor(xclassname);
-            if (c != null)
-                return c.fromJSON(map);
-            LOG.warn("No Convertor for x-class '{}'", xclassname);
-        }
-
-        String classname = (String)map.get("class");
-        if (classname != null)
+        String className = (String)map.get("x-class");
+        if (className == null)
+            className = (String)map.get("class");
+        if (className != null)
         {
             try
             {
-                Class<?> c = Loader.loadClass(classname);
-                return convertTo(c, map);
+                Class<?> klass = Loader.loadClass(className);
+                return convertTo(klass, map);
             }
-            catch (ClassNotFoundException e)
+            catch (ClassNotFoundException ignored)
             {
-                LOG.warn("No class for '{}'", classname);
             }
         }
 
@@ -940,10 +948,7 @@ public class JSON
 
     private Object defaultArrayConverter(List<?> list)
     {
-        // Call newArray() to keep backward compatibility.
-        Object[] objects = newArray(list.size());
-        IntStream.range(0, list.size()).forEach(i -> objects[i] = list.get(i));
-        return objects;
+        return list.toArray();
     }
 
     protected Object parseArray(Source source)
@@ -1161,7 +1166,7 @@ public class JSON
         return builder.toString();
     }
 
-    public Number parseNumber(Source source)
+    protected Number parseNumber(Source source)
     {
         boolean minus = false;
         long number = 0;

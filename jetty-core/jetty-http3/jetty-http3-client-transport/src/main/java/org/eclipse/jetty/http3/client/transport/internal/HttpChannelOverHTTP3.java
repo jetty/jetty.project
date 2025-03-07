@@ -22,9 +22,14 @@ import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
+    private final Stream.Client.Listener listener = new Listener();
     private final HttpConnectionOverHTTP3 connection;
     private final HTTP3SessionClient session;
     private final HttpSenderOverHTTP3 sender;
@@ -52,7 +57,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     public Stream.Client.Listener getStreamListener()
     {
-        return receiver;
+        return listener;
     }
 
     @Override
@@ -115,5 +120,56 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             super.toString(),
             sender,
             receiver);
+    }
+
+    private class Listener implements Stream.Client.Listener
+    {
+        private final SerializedInvoker invoker;
+
+        private Listener()
+        {
+            invoker = new SerializedInvoker(getClass().getName(), getHttpDestination().getHttpClient().getExecutor());
+        }
+
+        @Override
+        public void onNewStream(Stream.Client stream)
+        {
+            setStream(stream);
+        }
+
+        @Override
+        public void onResponse(Stream.Client stream, HeadersFrame frame)
+        {
+            Runnable task = receiver.onResponse(stream, frame);
+            getHttpConnection().offerTask(invoker.offer(task));
+        }
+
+        @Override
+        public void onDataAvailable(Stream.Client stream)
+        {
+            Runnable task = receiver.onDataAvailable();
+            getHttpConnection().offerTask(invoker.offer(task));
+        }
+
+        @Override
+        public void onTrailer(Stream.Client stream, HeadersFrame frame)
+        {
+            Runnable task = receiver.onTrailer(frame);
+            getHttpConnection().offerTask(invoker.offer(task));
+        }
+
+        @Override
+        public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+        {
+            Runnable task = receiver.onIdleTimeout(failure, promise);
+            ThreadPool.executeImmediately(session.getProtocolSession().getQuicSession().getExecutor(), invoker.offer(task));
+        }
+
+        @Override
+        public void onFailure(Stream.Client stream, long error, Throwable failure)
+        {
+            Runnable task = receiver.onFailure(failure);
+            ThreadPool.executeImmediately(session.getProtocolSession().getQuicSession().getExecutor(), invoker.offer(task));
+        }
     }
 }

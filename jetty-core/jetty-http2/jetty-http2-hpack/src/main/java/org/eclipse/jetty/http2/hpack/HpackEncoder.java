@@ -156,7 +156,7 @@ public class HpackEncoder
 
     public void setMaxHeaderListSize(int maxHeaderListSize)
     {
-        _maxHeaderListSize = maxHeaderListSize;
+        _maxHeaderListSize = maxHeaderListSize > 0 ? maxHeaderListSize : HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
     }
 
     public HpackContext getHpackContext()

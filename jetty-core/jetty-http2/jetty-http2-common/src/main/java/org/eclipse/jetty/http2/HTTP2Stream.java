@@ -166,7 +166,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
-            if (isReset())
+            if (localReset)
             {
                 resetFailure = failure;
             }
@@ -180,6 +180,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         session.dataConsumed(this, flowControlLength);
         if (resetFailure != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failing callback immediately as stream {} already is locally reset", this, resetFailure);
             close();
             session.removeStream(this);
             callback.failed(resetFailure);
@@ -317,7 +319,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
 
         // Notify the application.
-        notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
+        notifyIdleTimeout(timeout, Promise.from(timedOut ->
         {
             if (timedOut)
                 reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
@@ -376,13 +378,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onNewStream(Callback callback)
     {
-        notifyNewStream(this);
+        notifyNewStream();
         callback.succeeded();
     }
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
-        boolean offered = false;
         MetaData metaData = frame.getMetaData();
         boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
         if (isTrailer)
@@ -390,11 +391,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // In case of trailers, notify first and then offer EOF to
             // avoid race conditions due to concurrent calls to readData().
             boolean closed = updateClose(true, CloseState.Event.RECEIVED);
-            notifyHeaders(this, frame);
-            if (closed)
-                getSession().removeStream(this);
-            // Offer EOF in case the application calls readData() or demand().
-            offered = offer(Data.eof(getId()));
+            notifyHeaders(frame, Callback.from(() ->
+            {
+                // Offer EOF in case the application calls readData() or demand().
+                if (offer(Data.eof(getId())))
+                    processData();
+                if (closed)
+                    getSession().removeStream(this);
+            }, callback));
         }
         else
         {
@@ -404,27 +408,27 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length;
 
-            if (frame.isEndStream())
-            {
-                // Offer EOF for either the request or the response in
-                // case the application calls readData() or demand().
-                offered = offer(Data.eof(getId()));
-            }
+            // Offer EOF for either the request or the response in
+            // case the application calls readData() or demand().
+            boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
 
             // Requests are notified to a Session.Listener, here only notify responses.
-            if (metaData.isResponse())
+            if (metaData.isRequest())
+            {
+                callback.succeeded();
+            }
+            else
             {
                 boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-                notifyHeaders(this, frame);
-                if (closed)
-                    getSession().removeStream(this);
+                notifyHeaders(frame, Callback.from(() ->
+                {
+                    if (eof)
+                        processData();
+                    if (closed)
+                        getSession().removeStream(this);
+                }, callback));
             }
         }
-
-        if (offered)
-            processData();
-
-        callback.succeeded();
     }
 
     private void onData(Data data)
@@ -438,15 +442,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 LOG.debug("Data {} for already closed {}", data, this);
             session.dataConsumed(this, data.frame().flowControlLength());
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
-            return;
-        }
-
-        if (isReset())
-        {
-            // Just drop the frame.
-            if (LOG.isDebugEnabled())
-                LOG.debug("Data {} for already reset {}", data, this);
-            session.dataConsumed(this, data.frame().flowControlLength());
             return;
         }
 
@@ -469,14 +464,29 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
-        // Retain the data because it is stored for later use.
-        data.retain();
-        boolean process;
+        boolean reset;
+        boolean process = false;
         try (AutoLock ignored = lock.lock())
         {
-            process = dataQueue.isEmpty() && dataDemand;
-            dataQueue.offer(data);
+            reset = isReset();
+            if (!reset)
+            {
+                process = dataQueue.isEmpty() && dataDemand;
+                // Retain the data because it is stored for later use.
+                data.retain();
+                dataQueue.offer(data);
+            }
         }
+
+        if (reset)
+        {
+            // Drop the frame.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Data {} for already reset {}", data, this);
+            session.dataConsumed(this, data.frame().flowControlLength());
+            return false;
+        }
+
         if (LOG.isDebugEnabled())
             LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
         return process;
@@ -488,25 +498,29 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Data data;
         try (AutoLock ignored = lock.lock())
         {
-            if (dataQueue.isEmpty())
-                return null;
             data = dataQueue.poll();
+            if (data == null)
+                return null;
             if (data.frame().isEndStream())
                 dataQueue.offer(Data.eof(getId()));
         }
 
-        if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
+        // Update the stream close state, so that the flow control
+        // update may be skipped if the stream is remotely closed.
+        boolean closed = updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Reading {} for {}", data, this);
-
-        notIdle();
 
         // Enlarge the flow control window now, since the application
         // may want to retain the Data objects, accumulating them in
         // memory beyond the flow control window, without copying them.
         session.dataConsumed(this, data.frame().flowControlLength());
+
+        if (closed)
+            session.removeStream(this);
+        else
+            notIdle();
 
         return data;
     }
@@ -546,7 +560,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataDemand = false;
                 dataStalled = false;
             }
-            notifyDataAvailable(this);
+            notifyDataAvailable();
         }
     }
 
@@ -589,7 +603,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         boolean removed = session.removeStream(this);
         session.dataConsumed(this, flowControlLength);
         if (removed)
-            notifyReset(this, frame, callback);
+            notifyReset(frame, callback);
         else
             callback.succeeded();
     }
@@ -618,7 +632,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         session.dataConsumed(this, flowControlLength);
         close();
 
-        notifyFailure(this, frame, new Nested(callback)
+        notifyFailure(frame, new Nested(callback)
         {
             @Override
             public void completed()
@@ -789,7 +803,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     public void onClose()
     {
-        notifyClosed(this);
+        notifyClosed();
     }
 
     private void updateStreamCount(int deltaStream, int deltaClosing)
@@ -832,30 +846,13 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyNewStream(Stream stream)
+    private void notifyNewStream()
     {
-        Listener listener = this.listener;
-        if (listener != null)
-        {
-            try
-            {
-                listener.onNewStream(stream);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-            }
-        }
-    }
-
-    protected void notifyHeaders(Stream stream, HeadersFrame frame)
-    {
-        Stream.Listener listener = stream.getListener();
-        if (listener == null)
-            return;
+        Listener listener = getListener();
         try
         {
-            listener.onHeaders(stream, frame);
+            if (listener != null)
+                listener.onNewStream(this);
         }
         catch (Throwable x)
         {
@@ -863,12 +860,29 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyDataAvailable(Stream stream)
+    private void notifyHeaders(HeadersFrame frame, Callback callback)
     {
-        Listener listener = Objects.requireNonNullElse(this.listener, Listener.AUTO_DISCARD);
+        Stream.Listener listener = getListener();
         try
         {
-            listener.onDataAvailable(stream);
+            if (listener != null)
+                listener.onHeaders(this, frame, callback);
+            else
+                callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener {}", listener, x);
+            callback.failed(x);
+        }
+    }
+
+    private void notifyDataAvailable()
+    {
+        Listener listener = Objects.requireNonNullElse(getListener(), Listener.AUTO_DISCARD);
+        try
+        {
+            listener.onDataAvailable(this);
         }
         catch (Throwable x)
         {
@@ -876,77 +890,64 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyReset(Stream stream, ResetFrame frame, Callback callback)
+    private void notifyReset(ResetFrame frame, Callback callback)
     {
-        Listener listener = this.listener;
-        if (listener != null)
-        {
-            try
-            {
-                listener.onReset(stream, frame, callback);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-                callback.failed(x);
-            }
-        }
-        else
-        {
-            callback.succeeded();
-        }
-    }
-
-    private void notifyIdleTimeout(Stream stream, TimeoutException failure, Promise<Boolean> promise)
-    {
-        Listener listener = this.listener;
-        if (listener != null)
-        {
-            try
-            {
-                listener.onIdleTimeout(stream, failure, promise);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-                promise.failed(x);
-            }
-        }
-        else
-        {
-            promise.succeeded(true);
-        }
-    }
-
-    private void notifyFailure(Stream stream, FailureFrame frame, Callback callback)
-    {
-        Listener listener = this.listener;
-        if (listener != null)
-        {
-            try
-            {
-                listener.onFailure(stream, frame.getError(), frame.getReason(), frame.getFailure(), callback);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-                callback.failed(x);
-            }
-        }
-        else
-        {
-            callback.succeeded();
-        }
-    }
-
-    private void notifyClosed(Stream stream)
-    {
-        Listener listener = this.listener;
-        if (listener == null)
-            return;
+        Listener listener = getListener();
         try
         {
-            listener.onClosed(stream);
+            if (listener != null)
+                listener.onReset(this, frame, callback);
+            else
+                callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener {}", listener, x);
+            callback.failed(x);
+        }
+    }
+
+    private void notifyIdleTimeout(TimeoutException failure, Promise<Boolean> promise)
+    {
+        Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onIdleTimeout(this, failure, promise);
+            else
+                promise.succeeded(true);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener {}", listener, x);
+            promise.failed(x);
+        }
+    }
+
+    private void notifyFailure(FailureFrame frame, Callback callback)
+    {
+        Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onFailure(this, frame.getError(), frame.getReason(), frame.getFailure(), callback);
+            else
+                callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener {}", listener, x);
+            callback.failed(x);
+        }
+    }
+
+    private void notifyClosed()
+    {
+        Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onClosed(this);
         }
         catch (Throwable x)
         {

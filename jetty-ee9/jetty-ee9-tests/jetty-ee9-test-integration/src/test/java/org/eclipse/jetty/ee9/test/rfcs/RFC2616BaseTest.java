@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.ee9.test.support.StringUtil;
 import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.ee9.test.support.rawhttp.HttpTesting;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -95,11 +98,11 @@ public abstract class RFC2616BaseTest
 
     public static XmlBasedJettyServer setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz, Path tmpPath) throws Exception
     {
-        XmlBasedJettyServer server = testableserver;
-        server.load();
-        server.getServer().setTempDirectory(tmpPath.toFile());
-        server.start();
-        return server;
+        testableserver.load();
+        testableserver.getServer().setTempDirectory(tmpPath.toFile());
+        Arrays.stream(testableserver.getServer().getConnectors()).forEach(c -> c.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616));
+        testableserver.start();
+        return testableserver;
     }
 
     @BeforeEach
@@ -591,15 +594,15 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
+    @Disabled //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
     public void test52VirtualHostAbsoluteURIWithHostHeader() throws Exception
     {
         // Virtual Host as Absolute URI (with Host header)
-        //TODO this test is testing RFC9112 behaviour, an rfc2616 compatibility mode is not offered due to security concerns. Split this out to new RFC9112Test class.
         StringBuffer req7 = new StringBuffer();
-        req7.append("GET http://VirtualHost/tests/ HTTP/1.1\n");
-        req7.append("Host: localhost\n"); // is ignored (would normally trigger default context)
-        req7.append("Connection: close\n");
-        req7.append("\n");
+        req7.append("GET http://VirtualHost/tests/ HTTP/1.1\r\n");
+        req7.append("Host: localhost\r\n"); // is ignored (would normally trigger default context)
+        req7.append("Connection: close\r\n");
+        req7.append("\r\n");
 
         HttpTester.Response response = http.request(req7);
 

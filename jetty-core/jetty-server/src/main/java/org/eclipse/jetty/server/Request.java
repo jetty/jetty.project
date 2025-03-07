@@ -20,6 +20,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.security.Principal;
@@ -35,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
@@ -555,22 +558,42 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request)
     {
-        String query = request.getHttpURI().getQuery();
-        if (StringUtil.isBlank(query))
-            return Fields.EMPTY;
-        Fields fields = new Fields(true);
-        if (StringUtil.isNotBlank(query))
-            UrlEncoded.decodeUtf8To(query, fields);
-        return fields;
+        return extractQueryParameters(request, null);
     }
 
     static Fields extractQueryParameters(Request request, Charset charset)
     {
-        Fields fields = new Fields(true);
-        String query = request.getHttpURI().getQuery();
-        if (StringUtil.isNotBlank(query))
-            UrlEncoded.decodeTo(query, fields::add, charset);
-        return fields;
+        UriCompliance uriCompliance = null;
+        try
+        {
+            String query = request.getHttpURI().getQuery();
+            if (StringUtil.isBlank(query))
+                return Fields.EMPTY;
+            Fields fields = new Fields(true);
+
+            if (charset == null || StandardCharsets.UTF_8.equals(charset))
+            {
+                uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
+                boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
+                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+                {
+                    HttpChannel httpChannel = HttpChannel.from(request);
+                    if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
+                        httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                }
+            }
+            else
+            {
+                UrlEncoded.decodeTo(query, fields::add, charset);
+            }
+            return fields;
+        }
+        catch (Throwable t)
+        {
+            throw new BadMessageException("Bad query", t);
+        }
     }
 
     static Fields getParameters(Request request) throws Exception

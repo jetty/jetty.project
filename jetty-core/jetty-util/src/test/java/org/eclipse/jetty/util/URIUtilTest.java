@@ -135,6 +135,7 @@ public class URIUtilTest
 
             // Test for null character (real world ugly test case)
             Arguments.of("/%00/", "/%00/", "/\u0000/"),
+            Arguments.of(null, null, null),
 
             // Deprecated Microsoft Percent-U encoding
             Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"),
@@ -179,10 +180,10 @@ public class URIUtilTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("decodePathSource")
-    public void testDecodePath(String encodedPath, String canonicalPath, String decodedPath)
+    public void testDecodePath(String encodedPath, String expectedCanonicalPath, String expectedDecodedPath)
     {
         String path = URIUtil.decodePath(encodedPath);
-        assertEquals(decodedPath, path);
+        assertEquals(expectedDecodedPath, path);
     }
 
     public static Stream<Arguments> decodeBadPathSource()

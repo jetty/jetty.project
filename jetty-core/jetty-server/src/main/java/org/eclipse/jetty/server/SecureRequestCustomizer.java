@@ -238,7 +238,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         // Quick retrieval of the SNI from a SSLSession attribute put by SniX509ExtendedKeyManager.
         String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
         if (sniHost != null)
-            return null;
+            return sniHost;
 
         // Some security providers (for example, Conscrypt) do not support
         // SSLSession attributes, so perform a more expensive SNI retrieval.

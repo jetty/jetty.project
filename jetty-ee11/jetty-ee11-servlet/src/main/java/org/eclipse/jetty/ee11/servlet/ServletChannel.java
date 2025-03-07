@@ -79,6 +79,7 @@ public class ServletChannel
     private Request _request;
     private Response _response;
     private Callback _callback;
+    private boolean _completeAttempted;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -397,6 +398,7 @@ public class ServletChannel
         _request = null;
         _response = null;
         _callback = null;
+        _completeAttempted = false;
     }
 
     /**
@@ -565,13 +567,18 @@ public class ServletChannel
                         {
                             // Compare the bytes written by the application, even if
                             // they might be compressed (or changed) by child Handlers.
-                            long written = response.getContentBytesWritten();
-                            if (response.isContentIncomplete(written))
+                            if (getHttpOutput().isContentIncomplete())
                             {
-                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, response.getContentLength()));
+                                String message = "Insufficient content written %d < %d".formatted(getHttpOutput().getWritten(), getHttpOutput().getApplicationContentLength());
+                                if (isCommitted() || _completeAttempted)
+                                    abort(new IOException(message));
+                                else
+                                    getServletContextResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
                                 break;
                             }
                         }
+
+                        _completeAttempted = true;
 
                         // Set a close callback on the HttpOutput to make it an async callback
                         response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
@@ -601,31 +608,6 @@ public class ServletChannel
     {
         _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
         getHttpOutput().reopen();
-    }
-
-    /**
-     * @param message the error message.
-     * @return true if we have sent an error, false if we have aborted.
-     */
-    private boolean sendErrorOrAbort(String message)
-    {
-        try
-        {
-            if (isCommitted())
-            {
-                abort(new IOException(message));
-                return false;
-            }
-
-            getServletContextResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
-            return true;
-        }
-        catch (Throwable x)
-        {
-            LOG.trace("IGNORED", x);
-            abort(x);
-        }
-        return false;
     }
 
     /**
@@ -665,7 +647,7 @@ public class ServletChannel
         try
         {
             boolean abort = _state.onError(failure);
-            if (abort)
+            if (abort || _completeAttempted)
                 abort(failure);
         }
         catch (Throwable x)

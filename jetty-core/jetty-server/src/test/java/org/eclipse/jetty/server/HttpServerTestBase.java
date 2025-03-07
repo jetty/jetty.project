@@ -169,15 +169,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             String request = """
-                POST / HTTP/1.1
-                Host: localhost
-                Transfer-Encoding: chunked
-                Connection: close
-                
-                0a
-                0123456789
-                0;
-                
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                Connection: close\r
+                \r
+                0a\r
+                0123456789\r
+                0;\r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -436,15 +436,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             String request = """
-                POST / HTTP/1.1
-                Host: localhost
-                Transfer-Encoding: chunked
-                
-                0a;
-                1234567890
-                xx;
-                
-                
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                0a;\r
+                1234567890\r
+                xx;\r
+                \r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -968,23 +968,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             ).getBytes());
             os.flush();
             Thread.sleep(10);
-            os.write((
-                "a\r\n" +
-                    "123456890\r\n"
+            os.write(("""
+                a\r
+                1234567890\r
+                """
             ).getBytes());
             os.flush();
 
             Thread.sleep(10);
-            os.write((
-                "4\r\n" +
-                    "abcd\r\n"
+            os.write(("""
+                4\r
+                abcd\r
+                """
             ).getBytes());
             os.flush();
 
             Thread.sleep(10);
-            os.write((
-                "X\r\n" +
-                    "abcd\r\n"
+            os.write(("""
+                X\r
+                abcd\r
+                """
             ).getBytes());
             os.flush();
 

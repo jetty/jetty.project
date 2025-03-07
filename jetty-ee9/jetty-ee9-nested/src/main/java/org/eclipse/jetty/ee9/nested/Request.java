@@ -77,6 +77,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.SetCookieParser;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
@@ -421,7 +422,24 @@ public class Request implements HttpServletRequest
             try
             {
                 _queryParameters = new Fields(true);
-                UrlEncoded.decodeTo(query, _queryParameters::add, _queryEncoding);
+
+                if (StandardCharsets.UTF_8.equals(_queryEncoding) || _queryEncoding == null && UrlEncoded.ENCODING.equals(StandardCharsets.UTF_8))
+                {
+                    UriCompliance uriCompliance = getHttpChannel().getHttpConfiguration().getUriCompliance();
+                    boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
+                    boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
+                    boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+                    {
+                        ComplianceViolation.Listener complianceViolationListener = getComplianceViolationListener();
+                        if (complianceViolationListener != null)
+                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                    }
+                }
+                else
+                {
+                    UrlEncoded.decodeTo(query, _queryParameters::add, _queryEncoding);
+                }
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
@@ -896,9 +914,12 @@ public class Request implements HttpServletRequest
     {
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
+
+        // Try to write a 100 continue if it is necessary.
+        if (_inputState == INPUT_NONE && _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+
         _inputState = INPUT_STREAM;
-        // Try to write a 100 continue, ignoring failure result if it was not necessary.
-        _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return _input;
     }
 
@@ -2036,7 +2057,12 @@ public class Request implements HttpServletRequest
             else
             {
                 maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                if (maxFormContentSize < 0)
+                    maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+                if (maxFormKeys < 0)
+                    maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
             }
 
             MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();

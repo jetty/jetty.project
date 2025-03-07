@@ -267,8 +267,8 @@ public interface Invocable
      */
     static InvocationType getInvocationType(Object o)
     {
-        if (o instanceof Invocable)
-            return ((Invocable)o).getInvocationType();
+        if (o instanceof Invocable i)
+            return i.getInvocationType();
         return InvocationType.BLOCKING;
     }
 

@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -92,6 +93,7 @@ import org.slf4j.LoggerFactory;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -2207,21 +2209,88 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.selectors=1", "jetty.http.port=" + port))
             {
-                try
-                {
-                    assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
-                    startHttpClient();
-                    URI serverUri = URI.create("http://localhost:" + port + "/test/");
-                    ContentResponse response = client.newRequest(serverUri)
-                        .timeout(15, TimeUnit.SECONDS)
-                        .send();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                }
-                finally
-                {
-                    run2.getLogs().forEach(System.err::println);
-                }
+                startHttpClient();
+                URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                ContentResponse response = client.newRequest(serverUri)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"brotli", "gzip", "zstandard", "all"})
+    public void testCompressionHandler(String compressionName) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        String encoding = switch (compressionName)
+        {
+            case "brotli" -> "br";
+            case "gzip" -> "gzip";
+            case "zstandard" -> "zstd";
+            case "all" -> "br;q=0.5, gzip;q=1, zstd;q=0.1";
+            default -> throw new IllegalArgumentException();
+        };
+
+        String expected = switch (compressionName)
+        {
+            case "brotli" -> "br";
+            case "gzip" -> "gzip";
+            case "zstandard" -> "zstd";
+            case "all" -> "gzip";
+            default -> throw new IllegalArgumentException();
+        };
+
+        String[] modules = {
+            "resources",
+            "http",
+            "compression-" + compressionName,
+            "ee11-webapp",
+            "ee11-deploy"
+        };
+        try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            String coordinates = "org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion;
+            distribution.installWar(distribution.resolveArtifact(coordinates), "test");
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("--approve-all-licenses", "jetty.http.selectors=1", "jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                AtomicReference<String> contentEncoding = new AtomicReference<>();
+                ContentResponse response = client.newRequest(serverUri)
+                    .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, encoding))
+                    .onResponseHeader((r, f) ->
+                    {
+                        if (f.getHeader() == HttpHeader.CONTENT_ENCODING)
+                            contentEncoding.set(f.getValue());
+                        return true;
+                    })
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(contentEncoding.get(), is(expected));
+                assertThat(response.getContentAsString(), containsStringIgnoringCase("Hello World"));
             }
         }
     }

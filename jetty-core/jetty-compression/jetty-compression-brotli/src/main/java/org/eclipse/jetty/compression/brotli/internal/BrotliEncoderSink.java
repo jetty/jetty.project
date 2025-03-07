@@ -34,7 +34,7 @@ public class BrotliEncoderSink extends EncoderSink
          */
         PROCESSING,
         /**
-         * Done taking input, flushing whats left in encoder.
+         * Done taking input, flushing what's left in encoder.
          */
         FLUSHING,
         /**
@@ -47,7 +47,6 @@ public class BrotliEncoderSink extends EncoderSink
         FINISHED
     }
 
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private final EncoderJNI.Wrapper encoder;
     private final ByteBuffer inputBuffer;
     private final AtomicReference<State> state = new AtomicReference<>(State.PROCESSING);
@@ -118,7 +117,7 @@ public class BrotliEncoderSink extends EncoderSink
                     inputBuffer.limit(inputBuffer.position());
                     ByteBuffer output = encode(EncoderJNI.Operation.FINISH);
                     state.compareAndSet(State.FINISHING, State.FINISHED);
-                    return new WriteRecord(true, output != null ? output : EMPTY_BUFFER, Callback.NOOP);
+                    return new WriteRecord(true, output != null ? output : BufferUtil.EMPTY_BUFFER, Callback.NOOP);
                 }
                 case FINISHED ->
                 {

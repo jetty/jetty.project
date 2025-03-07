@@ -34,9 +34,9 @@ public class RequestReaderTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRecyclingWhenUsingReader(Transport transport) throws Exception
+    public void testRecyclingWhenUsingReader(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -54,7 +54,7 @@ public class RequestReaderTest extends AbstractTest
             }
         });
 
-        ContentResponse response1 = client.newRequest(newURI(transport))
+        ContentResponse response1 = client.newRequest(newURI(transportType))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
@@ -62,7 +62,7 @@ public class RequestReaderTest extends AbstractTest
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
 
         // Send a 2nd request to make sure recycling works.
-        ContentResponse response2 = client.newRequest(newURI(transport))
+        ContentResponse response2 = client.newRequest(newURI(transportType))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))

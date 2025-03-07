@@ -18,7 +18,9 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -53,19 +55,31 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
         client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE")
         {
             @Override
-            public ContentDecoder newContentDecoder()
+            public Content.Source newDecoderContentSource(Content.Source source)
             {
-                return byteBuffer ->
+                return new ContentSourceTransformer(source)
                 {
-                    byte b = byteBuffer.get();
-                    if (b == '*')
-                        return bufferPool.acquire(0, true);
+                    @Override
+                    protected Content.Chunk transform(Content.Chunk chunk)
+                    {
+                        if (chunk.isEmpty())
+                            return chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
 
-                    RetainableByteBuffer buffer = bufferPool.acquire(1, true);
-                    int pos = BufferUtil.flipToFill(buffer.getByteBuffer());
-                    buffer.getByteBuffer().put(StringUtil.asciiToLowerCase(b));
-                    BufferUtil.flipToFlush(buffer.getByteBuffer(), pos);
-                    return buffer;
+                        ByteBuffer byteBufferIn = chunk.getByteBuffer();
+                        byte b = byteBufferIn.get();
+                        if (b == '*')
+                        {
+                            RetainableByteBuffer.Mutable empty = bufferPool.acquire(0, true);
+                            return Content.Chunk.asChunk(empty.getByteBuffer(), false, empty);
+                        }
+
+                        RetainableByteBuffer bufferOut = bufferPool.acquire(1, true);
+                        ByteBuffer byteBufferOut = bufferOut.getByteBuffer();
+                        int pos = BufferUtil.flipToFill(byteBufferOut);
+                        byteBufferOut.put(StringUtil.asciiToLowerCase(b));
+                        BufferUtil.flipToFlush(byteBufferOut, pos);
+                        return Content.Chunk.asChunk(byteBufferOut, false, bufferOut);
+                    }
                 };
             }
         });
@@ -97,13 +111,22 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
         client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE")
         {
             @Override
-            public ContentDecoder newContentDecoder()
+            public Content.Source newDecoderContentSource(Content.Source source)
             {
-                return byteBuffer ->
+                return new ContentSourceTransformer(source)
                 {
-                    String uppercase = US_ASCII.decode(byteBuffer).toString();
-                    String lowercase = StringUtil.asciiToLowerCase(uppercase);
-                    return RetainableByteBuffer.wrap(ByteBuffer.wrap(lowercase.getBytes(US_ASCII)));
+                    @Override
+                    protected Content.Chunk transform(Content.Chunk chunk)
+                    {
+                        if (chunk.isEmpty())
+                            return chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+
+                        ByteBuffer byteBuffer = chunk.getByteBuffer();
+                        String upperCase = US_ASCII.decode(byteBuffer).toString();
+                        String lowerCase = StringUtil.asciiToLowerCase(upperCase);
+
+                        return Content.Chunk.from(US_ASCII.encode(lowerCase), false);
+                    }
                 };
             }
         });

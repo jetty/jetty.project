@@ -17,4 +17,7 @@ module org.eclipse.jetty.compression.gzip
     requires org.slf4j;
 
     exports org.eclipse.jetty.compression.gzip;
+
+    provides org.eclipse.jetty.compression.Compression with
+        org.eclipse.jetty.compression.gzip.GzipCompression;
 }

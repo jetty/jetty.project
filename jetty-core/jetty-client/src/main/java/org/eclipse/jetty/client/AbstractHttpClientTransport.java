@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -28,6 +29,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
 
     private HttpClient client;
     private ConnectionPool.Factory factory;
+    private InvocationType invocationType = InvocationType.BLOCKING;
 
     protected HttpClient getHttpClient()
     {
@@ -59,5 +61,17 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         promise.failed(failure);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return invocationType;
+    }
+
+    @Override
+    public void setInvocationType(InvocationType invocationType)
+    {
+        this.invocationType = Objects.requireNonNull(invocationType);
     }
 }

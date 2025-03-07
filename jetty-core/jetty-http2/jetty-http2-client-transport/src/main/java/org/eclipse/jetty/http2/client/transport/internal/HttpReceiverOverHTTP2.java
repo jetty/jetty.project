@@ -116,61 +116,77 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         return (HttpChannelOverHTTP2)super.getHttpChannel();
     }
 
-    void onHeaders(Stream stream, HeadersFrame frame)
+    private HttpConnectionOverHTTP2 getHttpConnection()
+    {
+        return getHttpChannel().getHttpConnection();
+    }
+
+    @Override
+    public Runnable onHeaders(Stream stream, HeadersFrame frame, Callback callback)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isResponse())
-            onResponse(stream, frame);
+            return onResponse(stream, frame, callback);
         else
-            onTrailer(frame);
+            return onTrailer(frame, callback);
     }
 
-    private void onResponse(Stream stream, HeadersFrame frame)
+    private Runnable onResponse(Stream stream, HeadersFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
-
-        MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        HttpResponse httpResponse = exchange.getResponse();
-        httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
-
-        responseBegin(exchange);
-
-        HttpFields headers = response.getHttpFields();
-        for (HttpField header : headers)
         {
-            responseHeader(exchange, header);
+            callback.succeeded();
+            return null;
         }
 
-        HttpRequest httpRequest = exchange.getRequest();
-        if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
+        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), () ->
         {
-            ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
-            long idleTimeout = httpRequest.getIdleTimeout();
-            if (idleTimeout > 0)
-                endPoint.setIdleTimeout(idleTimeout);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Successful HTTP2 tunnel on {} via {} in {}", stream, endPoint, this);
-            ((HTTP2Stream)stream).setAttachment(endPoint);
-            HttpConversation conversation = httpRequest.getConversation();
-            conversation.setAttribute(EndPoint.class.getName(), endPoint);
-            HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
-            if (upgrader != null)
-                upgrade(upgrader, httpResponse, endPoint);
-        }
+            MetaData.Response response = (MetaData.Response)frame.getMetaData();
+            HttpResponse httpResponse = exchange.getResponse();
+            httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        responseHeaders(exchange);
+            responseBegin(exchange);
+
+            HttpFields headers = response.getHttpFields();
+            for (HttpField header : headers)
+            {
+                responseHeader(exchange, header);
+            }
+
+            HttpRequest httpRequest = exchange.getRequest();
+            if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
+            {
+                ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
+                long idleTimeout = httpRequest.getIdleTimeout();
+                if (idleTimeout > 0)
+                    endPoint.setIdleTimeout(idleTimeout);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Successful HTTP2 tunnel on {} via {} in {}", stream, endPoint, this);
+                ((HTTP2Stream)stream).setAttachment(endPoint);
+                HttpConversation conversation = httpRequest.getConversation();
+                conversation.setAttribute(EndPoint.class.getName(), endPoint);
+                HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+                if (upgrader != null)
+                    upgrade(upgrader, httpResponse, endPoint);
+            }
+
+            responseHeaders(exchange);
+
+            callback.succeeded();
+        });
     }
 
-    private void onTrailer(HeadersFrame frame)
+    private Runnable onTrailer(HeadersFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return;
-
-        HttpFields trailers = frame.getMetaData().getHttpFields();
-        trailers.forEach(exchange.getResponse()::trailer);
+        if (exchange != null)
+        {
+            HttpFields trailers = frame.getMetaData().getHttpFields();
+            trailers.forEach(exchange.getResponse()::trailer);
+        }
+        callback.succeeded();
+        return null;
     }
 
     private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
@@ -202,7 +218,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             Response.CompleteListener listener = pushHandler.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
+                HttpChannelOverHTTP2 pushChannel = getHttpConnection().acquireHttpChannel();
                 pushRequest.getResponseListeners().addCompleteListener(listener, true);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest);
                 pushChannel.associate(pushExchange);
@@ -224,7 +240,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return null;
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseContentAvailable(exchange));
+        // Retrieve the InvocationType from the Content.Source, rather than from the Connection.
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseContentAvailable(exchange));
     }
 
     @Override
@@ -236,12 +253,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             callback.succeeded();
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-        {
-            int error = frame.getError();
-            IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
-            callback.completeWith(exchange.getRequest().abort(failure));
-        });
+
+        int error = frame.getError();
+        IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
+        Runnable task = () -> callback.completeWith(exchange.getRequest().abort(failure));
+        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 
     @Override
@@ -253,15 +269,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             promise.succeeded(false);
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-            promise.completeWith(exchange.getRequest().abort(failure))
-        );
+        Runnable task = () -> promise.completeWith(exchange.getRequest().abort(failure));
+        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        Promise<Boolean> promise = Promise.from(failed -> callback.succeeded(), callback::failed);
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseFailure(failure, promise));
+        Runnable task = () -> responseFailure(failure, Promise.from(failed -> callback.succeeded(), callback::failed));
+        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 }

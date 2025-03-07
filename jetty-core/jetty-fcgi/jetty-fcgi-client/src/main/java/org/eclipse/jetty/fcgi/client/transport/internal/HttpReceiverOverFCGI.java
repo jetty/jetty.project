@@ -18,10 +18,12 @@ import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 public class HttpReceiverOverFCGI extends HttpReceiver
 {
+    private final Callback demandContentCallback = new DemandContentCallback();
     private Content.Chunk chunk;
 
     public HttpReceiverOverFCGI(HttpChannel channel)
@@ -31,18 +33,18 @@ public class HttpReceiverOverFCGI extends HttpReceiver
 
     void receive()
     {
-        if (!hasContent())
-        {
-            HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
-            boolean setFillInterest = httpConnection.parseAndFill(true);
-            if (!hasContent() && setFillInterest)
-                httpConnection.fillInterested();
-        }
-        else
+        if (hasContent())
         {
             HttpExchange exchange = getHttpExchange();
             if (exchange != null)
                 responseContentAvailable(exchange);
+        }
+        else
+        {
+            HttpConnectionOverFCGI httpConnection = getHttpConnection();
+            boolean setFillInterest = httpConnection.parseAndFill(true);
+            if (!hasContent() && setFillInterest)
+                httpConnection.fillInterested();
         }
     }
 
@@ -80,14 +82,19 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         Content.Chunk chunk = consumeChunk();
         if (chunk != null)
             return chunk;
-        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean needFillInterest = httpConnection.parseAndFill(false);
         chunk = consumeChunk();
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
-            httpConnection.fillInterested();
+            fillInterested();
         return null;
+    }
+
+    private void fillInterested()
+    {
+        getHttpConnection().fillInterested(demandContentCallback);
     }
 
     private Content.Chunk consumeChunk()
@@ -103,8 +110,8 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         responseFailure(failure, Promise.from(failed ->
         {
             if (failed)
-                getHttpChannel().getHttpConnection().close(failure);
-        }, x -> getHttpChannel().getHttpConnection().close(failure)));
+                getHttpConnection().close(failure);
+        }, x -> getHttpConnection().close(failure)));
     }
 
     void content(Content.Chunk chunk)
@@ -135,7 +142,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (chunk != null)
             throw new IllegalStateException();
 
-        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean setFillInterest = httpConnection.parseAndFill(true);
         if (!hasContent() && setFillInterest)
             httpConnection.fillInterested();
@@ -145,6 +152,11 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     protected HttpChannelOverFCGI getHttpChannel()
     {
         return (HttpChannelOverFCGI)super.getHttpChannel();
+    }
+
+    private HttpConnectionOverFCGI getHttpConnection()
+    {
+        return getHttpChannel().getHttpConnection();
     }
 
     @Override
@@ -175,5 +187,26 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
         super.responseFailure(failure, promise);
+    }
+
+    private class DemandContentCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            getHttpConnection().onFillable();
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            getHttpConnection().onFillInterestedFailed(failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return HttpReceiverOverFCGI.this.getInvocationType();
+        }
     }
 }

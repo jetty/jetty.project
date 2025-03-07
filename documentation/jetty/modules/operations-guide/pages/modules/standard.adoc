@@ -54,6 +54,57 @@ This property allows you to cap the max heap memory retained by the pool.
 `jetty.byteBufferPool.maxDirectMemory`::
 This property allows you to cap the max direct memory retained by the pool.
 
+[[compression]]
+== Compression Modules
+
+The compression modules allow you to configure server-wide request decompression and response compression by installing the `org.eclipse.jetty.compression.server.CompressionHandler` at the root of the `Handler` tree (see also xref:programming-guide:server/http.adoc#handler-use-compression[this section] for further details).
+
+The supported algorithms are the following:
+
+* brotli, via the <<compression-brotli,compression-brotli>> module
+* gzip, via the <<compression-gzip,compression-gzip>> module
+* zstandard, via the <<compression-zstandard,compression-zstandard>> module
+
+You can explicitly enable one or more of the compression modules, or all of them with the <<compression-all,compression-all>> module.
+
+[[compression-all]]
+=== Module `compression-all`
+
+This module enables request decompression and response compression for all the currently supported algorithms listed in <<compression,this section>>.
+
+[[compression-brotli]]
+=== Module `compression-brotli`
+
+This module enables request decompression and response compression with the link:https://github.com/google/brotli[brotli] algorithm.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/compression-brotli.mod[tags=documentation]
+----
+
+[[compression-gzip]]
+=== Module `compression-gzip`
+
+This module enables request decompression and response compression with the link:https://en.wikipedia.org/wiki/Gzip[gzip] algorithm.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/compression-gzip.mod[tags=documentation]
+----
+
+[[compression-zstandard]]
+=== Module `compression-zstandard`
+
+This module enables request decompression and response compression with the link:https://github.com/facebook/zstd[zstdandard] algorithm.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/compression-zstandard.mod[tags=documentation]
+----
+
 [[connectionlimit]]
 == Module `connectionlimit`
 
@@ -68,7 +119,9 @@ For more information, refer to xref:programming-guide:server/http.adoc#connector
 
 The module file is `$JETTY_HOME/modules/connectionlimit.mod`:
 
+----
 include::{jetty-home}/modules/connectionlimit.mod[tags=documentation]
+----
 
 [[console-capture]]
 == Module `console-capture`
@@ -312,6 +365,85 @@ The module properties are:
 include::{jetty-home}/modules/http3.mod[tags=documentation]
 ----
 
+[[http-config]]
+== Module `http-config`
+
+The `http-config` module provides HTTP configuration parameters that describe the HTTP semantic, and therefore do not depend on a specific HTTP protocol version.
+
+This module creates an instance of `HttpConfiguration` for clear-text HTTP.
+For secure HTTP, the <<ssl,`ssl`>> module creates a copy of the `HttpConfiguration` created by this module.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/http-config.mod[tags=documentation]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.httpConfig.requestHeaderSize`::
+The maximum size of the request headers, beyond which the request is rejected with the HTTP status code `431 Request Header Fields Too Large`.
+
+`jetty.httpConfig.headerCacheSize`::
+The header cache is used when parsing HTTP/1 to more efficiently handle fields that are repeated in every request on a connection.  If the server does not receive persistent connection or infrequent repeated fields, then there may be a performance gain in reducing the cache size. If large fields are frequently repeated, then a large cache may be beneficial.
+
+`jetty.httpConfig.outputAggregationSize`::
+The size of the buffer that aggregates response writes that are not explicitly flushed.
+This is used only at the Servlet layer, to buffer writes performed with `ServletOutputStream`.
+
+`jetty.httpConfig.sendServerVersion`::
+Whether you want to send the `Server` header in every HTTP response:
++
+[source,subs=attributes+]
+----
+HTTP/1.1 200 OK
+Content-Length: 0
+Server: Jetty({jetty-version})
+----
+
+=== Server Compliance Properties
+
+The Jetty server strives to keep up with the latest https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated.
+
+When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
+
+The module properties to configure the Jetty server compliance are:
+
+----
+include::{jetty-home}/modules/http-config.mod[tags=documentation-compliance]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.httpConfig.compliance`::
+Configures the compliance to HTTP specifications, see also xref:programming-guide:server/compliance.adoc#http[this section].
++
+The value could be: one of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC9110`, `RFC7230` or `RFC2616`; or a comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
++
+For example, `jetty.httpConfig.compliance=RFC9110,MULTIPLE_CONTENT_LENGTHS` means that the HTTP compliance is that defined by `RFC9110`, but also allows the `HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS`, so that requests that have multiple `Content-Length` headers are accepted (they would be rejected when using just `HttpCompliance.RFC9110`).
+
+`jetty.httpConfig.uriCompliance`::
+Configures the compliance to URI specifications, see also xref:programming-guide:server/compliance.adoc#uri[this section].
++
+The value could be: one of the predefined link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] constants, such as `DEFAULT` or `RFC3986`; or a comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method.
++
+For example, `jetty.httpConfig.uriCompliance=RFC3986,-AMBIGUOUS_PATH_SEPARATOR` means that the URI compliance is that defined by `RFC3986`, but also does not allow the `UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR`, so that requests that have URIs such as `/foo/bar%2Fbaz` (where `%2F` is the URL-encoded `/` character) are rejected (they would be accepted when using just `UriCompliance.RFC3986`).
+
+`jetty.httpConfig.requestCookieCompliance`::
+`jetty.httpConfig.responseCookieCompliance`::
+Configure the compliance to HTTP cookie specifications, respectively for requests and responses, see also xref:programming-guide:server/compliance.adoc#cookie[this section].
++
+The value could be: one of the predefined link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] constants, such as `RFC6265`; or a comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method.
++
+For example, `jetty.httpConfig.requestCookieCompliance=RFC6265,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED` means that the cookie compliance is that defined by `RFC6265`, but also does not allow the `CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED`, so that requests that have cookie headers such as `Cookie: $foo=bar` are rejected (they would be accepted when using just `CookieCompliance.RFC6265`).
+
+`jetty.httpConfig.multiPartCompliance`::
+Configures the compliance to MultiPart specifications, see also xref:programming-guide:server/compliance.adoc#multiPart[this section].
++
+The value could be: one of the predefined link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.html[`MultiPartCompliance`] constants, such as `RFC7578_STRICT` or `RFC7578`; or a comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.html#from(java.lang.String)[`MultiPartCompliance.from(String)`] method.
++
+For example, `jetty.httpConfig.multiPartCompliance=RFC7578,-CONTENT_TRANSFER_ENCODING` means that the MultiPart compliance is that defined by `RFC7578`, but also does not allow the `MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING`, so that parts that specify the `Content-Transfer-Encoding` header are rejected (they would be accepted when using just `MultiPartCompliance.RFC7578`).
+
 [[http-forwarded]]
 == Module `http-forwarded`
 
@@ -477,46 +609,32 @@ In the example below, the rule will only be evaluated if the virtual host matche
 </Configure>
 ----
 
+[[scheduler]]
+== Module `scheduler`
+
+The `scheduler` module allows you to configure the server-wide scheduler.
+
+The scheduler is used to schedule tasks that must run at a later time, for example the tasks that perform actions when timeouts expire, in particular idle timeouts.
+
+The module properties to configure the scheduler are:
+
+----
+include::{jetty-home}/modules/scheduler.mod[tags=documentation]
+----
+
 [[server]]
 == Module `server`
 
 The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
 
-The `server` module depends on the <<threadpool,`threadpool` module>>, the <<bytebufferpool,`bytebufferpool` module>> and the xref:server/index.adoc#logging[`logging` module].
-
 [NOTE]
 ====
-The `server` module configures the shared parameters for generic HTTP handling, but does not enable any specific network protocol.  You have to explicitly enable the protocols you want to support by enabling, for example, the <<http,`http` module>> for clear-text HTTP/1.1 support, or the <<http2,`http2` module>> for secure HTTP/2 support, etc.
+The `server` module configures the shared parameters for generic HTTP handling, but does not enable any specific network protocol.
+
+You have to explicitly enable the protocols you want to support by enabling, for example, the <<http,`http` module>> for clear-text HTTP/1.1 support, or the <<http2,`http2` module>> for secure HTTP/2 support, etc.
 
 See also the xref:protocols/index.adoc[protocols section] for more information about the supported protocols.
 ====
-
-[[server-http-config]]
-=== HTTP Configuration Properties
-
-The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to HTTP/1, HTTP/2 and HTTP/3, but some parameters are version specific:
-
-----
-include::{jetty-home}/modules/server.mod[tags=documentation-http-config]
-----
-
-Among the configurable properties, the most relevant are:
-
-`jetty.httpConfig.headerCacheSize`::
-The header cache is used when parsing HTTP/1 to more efficiently handle fields that are repeated in every request on a connection.  If the server does not receive persistent connection or infrequent repeated fields, then there may be a performance gain in reducing the cache size. If large fields are frequently repeated, then a large cache may be beneficial.
-
-`jetty.httpConfig.delayDispatchUntilContent`::
-It is not uncommon for the network packets containing a request header to arrive before packets that contain the data of any request body. In such cases it may be beneficial for overall performance to delay dispatching the request to be handled until the first data packet arrives, as this may avoid blocking the handling thread.  However, if minimum latency for receiving the request without content is important, then this parameter can be set to false.
-
-`jetty.httpConfig.sendServerVersion`::
-Whether you want to send the `Server` header in every HTTP response:
-+
-[source,subs=attributes+]
-----
-HTTP/1.1 200 OK
-Content-Length: 0
-Server: Jetty({jetty-version})
-----
 
 [[server-config]]
 === Server Configuration Properties
@@ -524,7 +642,7 @@ Server: Jetty({jetty-version})
 The module properties to configure the Jetty server are:
 
 ----
-include::{jetty-home}/modules/server.mod[tags=documentation-server-config]
+include::{jetty-home}/modules/server.mod[tags=documentation]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -541,61 +659,6 @@ See also the xref:troubleshooting/index.adoc#dump[Jetty Server Dump] section for
 
 `jetty.server.stopAtShutdown`::
 Whether to call `Server.stop()` through a JVM shutdown hook when the JVM exits.
-
-[[server-compliance]]
-=== Server Compliance Properties
-
-The Jetty server strives to keep up with the latest https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated. When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
-The module properties to configure the Jetty server compliance are:
-
-----
-include::{jetty-home}/modules/server.mod[tags=documentation-server-compliance]
-----
-
-Among the configurable properties, the most relevant are:
-
-`jetty.httpConfig.compliance`::
-Configures the compliance to HTTP specifications.
-The value could be:
-
-* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC9110`, RFC7230` or `RFC2616`.
-For example: `jetty.httpConfig.compliance=RFC2616`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
-For example, `jetty.httpConfig.compliance=RFC7230,MULTIPLE_CONTENT_LENGTHS` means that the HTTP compliance is that defined by `RFC7230`, but also allows the `HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS`, so that requests that have multiple `Content-Length` headers are accepted (they would be rejected when using just `HttpCompliance.RFC7230`).
-+
-For more information about `HttpCompliance` see also xref:programming-guide:server/compliance.adoc#http[this section].
-
-`jetty.httpConfig.uriCompliance`::
-Configures the compliance to URI specifications.
-The value could be:
-
-* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] constants, such as `DEFAULT` or `RFC3986`.
-For example: `jetty.httpConfig.compliance=RFC3986`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method.
-For example, `jetty.httpConfig.uriCompliance=RFC3986,-AMBIGUOUS_PATH_SEPARATOR` means that the URI compliance is that defined by `RFC3986`, but also does not allow the `UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR`, so that requests that have URIs such as `/foo/bar%2Fbaz` (where `%2F` is the URL-encoded `/` character) are rejected (they would be accepted when using just `UriCompliance.RFC3986`).
-+
-For more information about `UriCompliance` see also xref:programming-guide:server/compliance.adoc#uri[this section].
-
-`jetty.httpConfig.requestCookieCompliance`::
-`jetty.httpConfig.responseCookieCompliance`::
-Configures the compliance to HTTP cookie specifications.
-The value could be:
-
-* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] constants, such as `RFC6265`.
-For example: `jetty.httpConfig.compliance=RFC6265`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method.
-For example, `jetty.httpConfig.requestCookieCompliance=RFC6265,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED` means that the cookie compliance is that defined by `RFC6265`, but also does not allow the `CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED`, so that requests that have cookie headers such as `Cookie: $foo=bar` are rejected (they would be accepted when using just `CookieCompliance.RFC6265`).
-+
-For more information about `CookieCompliance` see also xref:programming-guide:server/compliance.adoc#cookie[this section].
-
-[[scheduler-config]]
-=== Server Scheduler Configuration Properties
-
-The module properties to configure the Jetty server scheduler are:
-
-----
-include::{jetty-home}/modules/server.mod[tags=documentation-scheduler-config]
-----
 
 [[size-limit]]
 == Module `size-limit`

@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -249,43 +248,37 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         Response response = result.getResponse();
         int status = response.getStatus();
         String responseLine = status + " " + response.getReason();
+        boolean receivedResponse = status > 0;
 
-        if (result.isFailed())
+        if (receivedResponse)
+        {
+            if (upgraded)
+                return;
+
+            // We have failed to upgrade but have received a response, notify the listeners.
+            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+            if (listenerError != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failure while notifying handshake response listeners", listenerError);
+            }
+            handleException(new UpgradeException(requestURI, status,
+                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+        }
+        else
         {
             if (LOG.isDebugEnabled())
             {
-                if (result.getFailure() != null)
-                    LOG.debug("General Failure", result.getFailure());
                 if (result.getRequestFailure() != null)
-                    LOG.debug("Request Failure", result.getRequestFailure());
+                    LOG.debug("Failed to upgrade to websocket: request failure", result.getRequestFailure());
                 if (result.getResponseFailure() != null)
-                    LOG.debug("Response Failure", result.getResponseFailure());
+                    LOG.debug("Failed to upgrade to websocket: response failure", result.getResponseFailure());
             }
-
             Throwable failure = result.getFailure();
             boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, status, responseLine, failure);
             handleException(failure);
-            return;
-        }
-
-        if (!upgraded)
-        {
-            // We have failed to upgrade but have received a response, so notify the listener.
-            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
-            if (listenerError != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error from listener", listenerError);
-            }
-        }
-
-        if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
-        {
-            // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI, status,
-                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 

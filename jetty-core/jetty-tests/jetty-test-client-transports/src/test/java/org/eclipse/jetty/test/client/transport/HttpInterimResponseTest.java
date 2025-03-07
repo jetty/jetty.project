@@ -38,9 +38,9 @@ public class HttpInterimResponseTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testImplicit100Continue(Transport transport) throws Exception
+    public void testImplicit100Continue(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -52,7 +52,7 @@ public class HttpInterimResponseTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new StringRequestContent("request-content"))
             .timeout(5, TimeUnit.SECONDS)
@@ -63,9 +63,9 @@ public class HttpInterimResponseTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testMultipleDifferentInterimResponses(Transport transport) throws Exception
+    public void testMultipleDifferentInterimResponses(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -114,7 +114,7 @@ public class HttpInterimResponseTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new StringRequestContent("request-content"))
             .timeout(5, TimeUnit.SECONDS)

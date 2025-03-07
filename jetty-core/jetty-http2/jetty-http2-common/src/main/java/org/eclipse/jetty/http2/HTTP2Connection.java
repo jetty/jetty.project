@@ -397,7 +397,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
                     int filled = fill(getEndPoint(), networkBuffer.getByteBuffer(), compact);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Filled {} bytes compacted {} in {}", filled, compact, networkBuffer);
+                        LOG.debug("Filled {} bytes compacted {} {} in {}", filled, compact, networkBuffer, HTTP2Connection.this);
 
                     if (filled > 0)
                     {
@@ -439,10 +439,11 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         private RetainableByteBuffer.Mutable acquireBuffer()
         {
             RetainableByteBuffer.Mutable buffer = heldBuffer.getAndSet(null);
+            RetainableByteBuffer.Mutable held = buffer;
             if (buffer == null)
                 buffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
             if (LOG.isDebugEnabled())
-                LOG.debug("Acquired {}", buffer);
+                LOG.debug("Acquired {} {} in {}", held == null ? "new" : "held", buffer, HTTP2Connection.this);
             return buffer;
         }
 
@@ -451,7 +452,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             if (heldBuffer.compareAndSet(null, buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Held {}", buffer);
+                    LOG.debug("Held {} in {}", buffer, HTTP2Connection.this);
             }
             else
             {

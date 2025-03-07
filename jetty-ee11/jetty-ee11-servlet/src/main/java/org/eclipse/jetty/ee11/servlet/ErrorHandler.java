@@ -14,14 +14,9 @@
 package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -29,9 +24,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -75,35 +67,40 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(httpServletRequest) : null;
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
-        Dispatcher errorDispatcher = (errorPage != null && context != null)
-            ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
-
-        if (errorDispatcher != null)
+        Integer errorStatus = (Integer)request.getAttribute(ERROR_STATUS);
+        Throwable errorCause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+        if (this instanceof ErrorPageMapper mapper)
         {
-            try
+            ErrorPageMapper.ErrorPage errorPage = mapper.getErrorPage(errorStatus, errorCause);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} {} {} -> {}", context, errorStatus, errorCause, errorPage);
+            if (errorPage != null && context.getServletContext().getRequestDispatcher(errorPage.errorPage) instanceof Dispatcher errorDispatcher)
             {
                 try
                 {
-                    contextHandler.requestInitialized(servletContextRequest, httpServletRequest);
-                    errorDispatcher.error(httpServletRequest, httpServletResponse);
-                }
-                finally
-                {
-                    contextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
-                }
-                callback.succeeded();
-                return true;
-            }
-            catch (ServletException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to call error dispatcher", e);
-                if (response.isCommitted())
-                {
-                    callback.failed(e);
+                    try
+                    {
+                        mapper.prepare(errorPage, httpServletRequest, httpServletResponse);
+                        contextHandler.requestInitialized(servletContextRequest, httpServletRequest);
+                        errorDispatcher.error(httpServletRequest, httpServletResponse);
+                    }
+                    finally
+                    {
+                        contextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
+                    }
+                    callback.succeeded();
                     return true;
+                }
+                catch (ServletException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to call error dispatcher", e);
+                    if (response.isCommitted())
+                    {
+                        callback.failed(e);
+                        return true;
+                    }
                 }
             }
         }
@@ -165,7 +162,19 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
 
     public interface ErrorPageMapper
     {
-        String getErrorPage(HttpServletRequest request);
+        enum PageLookupTechnique
+        {
+            THROWABLE, STATUS_CODE, GLOBAL
+        }
+
+        record ErrorPage(String errorPage, PageLookupTechnique match, Throwable error, Throwable cause, Class<?> matchedClass)
+        {
+        }
+
+        ErrorPage getErrorPage(Integer errorStatusCode, Throwable error);
+
+        default void prepare(ErrorPage errorPage, HttpServletRequest request, HttpServletResponse response)
+        {}
     }
 
     public static Request.Handler getErrorHandler(Server server, ContextHandler context)

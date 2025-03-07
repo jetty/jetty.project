@@ -115,7 +115,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return headerInfos;
     }
 
-    private class AuthenticationListener extends BufferingResponseListener
+    private class AuthenticationListener extends RetainingResponseListener
     {
         private AuthenticationListener()
         {
@@ -125,6 +125,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         @Override
         public void onSuccess(Response response)
         {
+            super.onSuccess(response);
             // The request may still be sending content, stop it.
             Request request = response.getRequest();
             if (request.getBody() != null)
@@ -136,13 +137,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpRequest request = (HttpRequest)result.getRequest();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
-            if (result.getResponseFailure() != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Authentication challenge failed", result.getFailure());
-                forwardFailureComplete(request, result.getRequestFailure(), response, result.getResponseFailure());
-                return;
-            }
 
             String authenticationAttribute = getAuthenticationAttribute();
             HttpConversation conversation = request.getConversation();

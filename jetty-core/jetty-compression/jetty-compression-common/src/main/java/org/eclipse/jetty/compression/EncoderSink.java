@@ -35,36 +35,10 @@ public abstract class EncoderSink implements Content.Sink
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        try
-        {
-            if (!canEncode(last, content))
-            {
-                callback.succeeded();
-                return;
-            }
-        }
-        catch (Throwable t)
-        {
-            callback.failed(t);
-            return;
-        }
-
         if (content != null || last)
             new EncodeBufferCallback(last, content, callback).iterate();
         else
             callback.succeeded();
-    }
-
-    /**
-     * Figure out if the encoding can be done with the provided content.
-     *
-     * @param last the last write.
-     * @param content the content of the write event.
-     * @return true if the {@link #encode(boolean, ByteBuffer)} should proceed.
-     */
-    protected boolean canEncode(boolean last, ByteBuffer content)
-    {
-        return true;
     }
 
     protected abstract WriteRecord encode(boolean last, ByteBuffer content);
@@ -102,31 +76,6 @@ public abstract class EncoderSink implements Content.Sink
         }
 
         @Override
-        public String toString()
-        {
-            return String.format("%s[content=%s last=%b]",
-                super.toString(),
-                BufferUtil.toDetailString(content),
-                last
-            );
-        }
-
-        protected void finished()
-        {
-            state.set(State.FINISHED);
-            release();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("On Complete Failure", x);
-            release();
-            super.onCompleteFailure(x);
-        }
-
-        @Override
         protected Action process()
         {
             if (state.get() == State.FINISHED)
@@ -160,6 +109,28 @@ public abstract class EncoderSink implements Content.Sink
             if (writeRecord.callback != null)
                 callback = Callback.combine(callback, writeRecord.callback);
             sink.write(writeRecord.last, writeRecord.output, callback);
+        }
+
+        protected void finished()
+        {
+            state.set(State.FINISHED);
+            release();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[content=%s,last=%b]",
+                super.toString(),
+                BufferUtil.toDetailString(content),
+                last
+            );
         }
     }
 }

@@ -35,7 +35,7 @@ own custom https://docs.oracle.com/javase/7/docs/api/javax/security/auth/spi/Log
 [[module]]
 === The `jaas` module
 
-Enable the `{ee-all}-jaas` module appropriate for your EE platform:
+Enable the `jaas` module.
 
 [source]
 ----

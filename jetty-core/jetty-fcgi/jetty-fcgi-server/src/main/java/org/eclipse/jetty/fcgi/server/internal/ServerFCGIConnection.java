@@ -380,7 +380,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         }
 
         @Override
-        public void onEnd(int request)
+        public boolean onEnd(int request)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} end on {}", request, stream);
@@ -390,7 +390,9 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 // Nulling out the stream signals that the
                 // request is complete, see also parseAndFill().
                 stream = null;
+                return true;
             }
+            return false;
         }
 
         @Override
@@ -399,9 +401,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}", request, stream, failure);
             if (stream != null)
-            {
                 ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
-            }
             stream = null;
         }
     }

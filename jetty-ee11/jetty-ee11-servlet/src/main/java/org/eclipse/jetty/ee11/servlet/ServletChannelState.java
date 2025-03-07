@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
-import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_ORIGIN;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
  * holder of the state of request-response cycle.
@@ -221,6 +221,11 @@ public class ServletChannelState
     AutoLock lock()
     {
         return _lock.lock();
+    }
+
+    AutoLock tryLock()
+    {
+        return _lock.tryLock();
     }
 
     boolean isLockHeldByCurrentThread()
@@ -419,6 +424,16 @@ public class ServletChannelState
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
                     _state = State.HANDLING;
+                    if (_servletChannel.getResponse().getStatus() != 0)
+                    {
+                        if (_servletChannel.getRequest().getAttribute(ERROR_STATUS) instanceof Integer errorCode)
+                        {
+                            _servletChannel.getServletRequestState().sendError(errorCode, null);
+                            _requestState = RequestState.BLOCKING;
+                            _sendError = false;
+                            return Action.SEND_ERROR;
+                        }
+                    }
                     return Action.DISPATCH;
 
                 case WOKEN:
@@ -1015,7 +1030,6 @@ public class ServletChannelState
 
     public void sendError(int code, String message)
     {
-        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
         //  + The response is reset and temporarily closed.
         //  + The details of the error are saved as request attributes
         //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
@@ -1051,7 +1065,7 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ERROR_ORIGIN, servletContextRequest.getServletName());
+            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
@@ -1059,7 +1073,7 @@ public class ServletChannelState
             _sendError = true;
             if (_event != null)
             {
-                Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+                Throwable cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
                 if (cause != null)
                     _event.addThrowable(cause);
             }

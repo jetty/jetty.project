@@ -27,6 +27,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,13 +39,57 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteFlusherTest
 {
+    @Test
+    public void testCancelWriteBeforeWrite()
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false);
+        WriteFlusher flusher = endPoint.getWriteFlusher();
+
+        assertThat(flusher.isFailed(), is(false));
+        Callback callback = flusher.cancelWrite(new ArithmeticException());
+        assertNull(callback);
+        assertThat(flusher.isFailed(), is(true));
+
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        endPoint.write(Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set), ByteBuffer.allocate(32));
+        assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+    }
+
+    @Test
+    public void testCancelWriteDuringPendingWrite()
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false);
+        WriteFlusher flusher = endPoint.getWriteFlusher();
+
+        ByteBuffer buffer = ByteBuffer.allocate(32);
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        Callback writeCallback = Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set);
+        endPoint.write(writeCallback, buffer);
+        assertThat(failureRef.get(), nullValue());
+        assertThat(buffer.remaining(), is(16));
+        assertThat(flusher.isPending(), is(true));
+
+        Callback cancelCallback = flusher.cancelWrite(new ArithmeticException());
+        assertThat(failureRef.get(), nullValue());
+        assertThat(flusher.isFailed(), is(true));
+        cancelCallback.failed(new IllegalCallerException());
+        assertThat(failureRef.get(), instanceOf(IllegalCallerException.class));
+
+        failureRef.set(null);
+        endPoint.write(writeCallback, buffer);
+        assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+    }
+
     @Test
     public void testCompleteNoBlocking() throws Exception
     {

@@ -57,7 +57,7 @@ public class EventsHandlerTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEventsBufferAndChunkAreReadOnly(Transport transport) throws Exception
+    public void testEventsBufferAndChunkAreReadOnly(TransportType transportType) throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(EventsHandler.class))
         {
@@ -99,10 +99,10 @@ public class EventsHandlerTest extends AbstractTest
                     }
                 }
             };
-            startServer(transport, eventsHandler);
-            startClient(transport);
+            startServer(transportType, eventsHandler);
+            startClient(transportType);
 
-            ContentResponse response = client.POST(newURI(transport))
+            ContentResponse response = client.POST(newURI(transportType))
                 .body(new StringRequestContent("ABCDEF"))
                 .send();
 
@@ -115,7 +115,7 @@ public class EventsHandlerTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMultipleEventsHandlerChaining(Transport transport) throws Exception
+    public void testMultipleEventsHandlerChaining(TransportType transportType) throws Exception
     {
         String longString = "A".repeat(65536);
 
@@ -149,10 +149,10 @@ public class EventsHandlerTest extends AbstractTest
                     outerBytesCounter.addAndGet(content.remaining());
             }
         };
-        startServer(transport, outerEventsHandler);
-        startClient(transport);
+        startServer(transportType, outerEventsHandler);
+        startClient(transportType);
 
-        ContentResponse response = client.GET(newURI(transport));
+        ContentResponse response = client.GET(newURI(transportType));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is(longString));
         assertThat(innerStringBuffer.toString(), is(longString));
@@ -161,7 +161,7 @@ public class EventsHandlerTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testWriteNullBuffer(Transport transport) throws Exception
+    public void testWriteNullBuffer(TransportType transportType) throws Exception
     {
         StringBuffer stringBuffer = new StringBuffer();
         List<Throwable> failures = new CopyOnWriteArrayList<>();
@@ -191,10 +191,10 @@ public class EventsHandlerTest extends AbstractTest
                     failures.add(failure);
             }
         };
-        startServer(transport, eventsHandler);
-        startClient(transport);
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
 
-        ContentResponse response = client.GET(newURI(transport));
+        ContentResponse response = client.GET(newURI(transportType));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is("ABCDEF"));
         assertThat(stringBuffer.toString(), is("ABCDEF"));
@@ -203,18 +203,18 @@ public class EventsHandlerTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUsingEventsResponseAsContentSourceFails(Transport transport) throws Exception
+    public void testUsingEventsResponseAsContentSourceFails(TransportType transportType) throws Exception
     {
         TestForbiddenMethodsEventsHandler eventsHandler = new TestForbiddenMethodsEventsHandler(new EchoHandler());
-        startServer(transport, eventsHandler);
-        startClient(transport);
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
 
-        ContentResponse response = client.POST(newURI(transport))
+        ContentResponse response = client.POST(newURI(transportType))
             .body(new StringRequestContent("ABCDEF"))
             .send();
 
         assertThat(response.getStatus(), is(200));
-        switch (transport)
+        switch (transportType)
         {
             // Two reads, maybe one null read, two writes, two writes complete.
             case HTTP:
@@ -225,26 +225,26 @@ public class EventsHandlerTest extends AbstractTest
             // One read, maybe one null read, one write, one write complete.
             case H2:
             case H2C:
-            case H3:
+            case H3_QUICHE:
                 await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(7), lessThanOrEqualTo(8)));
                 break;
             default:
-                fail("Missing assertion for transport " + transport);
+                fail("Missing assertion for transport " + transportType);
         }
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUsingEventsResponseAsContentSourceFailsWithTrailers(Transport transport) throws Exception
+    public void testUsingEventsResponseAsContentSourceFailsWithTrailers(TransportType transportType) throws Exception
     {
         TestForbiddenMethodsEventsHandler eventsHandler = new TestForbiddenMethodsEventsHandler(new EchoHandler());
-        startServer(transport, eventsHandler);
-        startClient(transport);
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
 
         AtomicInteger status = new AtomicInteger();
         AsyncRequestContent asyncRequestContent = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(asyncRequestContent)
             .trailersSupplier(() -> HttpFields.build().put("Extra-Stuff", "xyz"))
             .send(result ->
@@ -262,7 +262,7 @@ public class EventsHandlerTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDelayedEvents(Transport transport) throws Exception
+    public void testDelayedEvents(TransportType transportType) throws Exception
     {
         TestEventsRecordingHandler eventsHandler = new TestEventsRecordingHandler(new Handler.Abstract()
         {
@@ -295,11 +295,11 @@ public class EventsHandlerTest extends AbstractTest
                 }
             }
         });
-        startServer(transport, eventsHandler);
-        startClient(transport);
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
 
         long delayMs = 500;
-        URI uri = URI.create(newURI(transport).toASCIIString() + "?handling=%d&succeeding=%d".formatted(delayMs, delayMs));
+        URI uri = URI.create(newURI(transportType).toASCIIString() + "?handling=%d&succeeding=%d".formatted(delayMs, delayMs));
 
         ContentResponse response = client.GET(uri);
         assertThat(response.getStatus(), is(200));

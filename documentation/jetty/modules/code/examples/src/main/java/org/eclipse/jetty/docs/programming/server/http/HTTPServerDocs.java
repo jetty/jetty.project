@@ -33,6 +33,8 @@ import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.compression.server.CompressionConfig;
+import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.ee11.servlet.DefaultServlet;
 import org.eclipse.jetty.ee11.servlet.ResourceServlet;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
@@ -1398,6 +1400,85 @@ public class HTTPServerDocs
 
         server.start();
         // end::contextGzipHandler[]
+    }
+
+    public void serverCompressionHandler() throws Exception
+    {
+        // tag::serverCompressionHandler[]
+        Server server = new Server();
+        Connector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure CompressionHandler.
+        CompressionHandler compressionHandler = new CompressionHandler();
+        server.setHandler(compressionHandler);
+
+        CompressionConfig compressionConfig = CompressionConfig.builder()
+            // Do not compress these URI paths.
+            .compressExcludePath("/uncompressed")
+            // Also compress POST responses.
+            .compressIncludeMethod("POST")
+            // Do not compress these mime types.
+            .compressExcludeMimeType("font/ttf")
+            .build();
+        // Map the request URI path spec '/*' with the compression configuration.
+        // You can map different path specs with different compression configurations.
+        compressionHandler.putConfiguration("/*", compressionConfig);
+
+        // Create a ContextHandlerCollection to manage contexts.
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        compressionHandler.setHandler(contexts);
+
+        server.start();
+        // end::serverCompressionHandler[]
+    }
+
+    public void contextCompressionHandler() throws Exception
+    {
+        class ShopHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the shop, remembering to complete the callback.
+                return true;
+            }
+        }
+
+        class RESTHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the REST APIs, remembering to complete the callback.
+                return true;
+            }
+        }
+
+        // tag::contextCompressionHandler[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the Server.
+        server.setHandler(contextCollection);
+
+        // Create the context for the shop web application wrapped with CompressionHandler so only the shop will do compression.
+        CompressionHandler shopCompressionHandler = new CompressionHandler(new ContextHandler(new ShopHandler(), "/shop"));
+
+        // Add it to ContextHandlerCollection.
+        contextCollection.addHandler(shopCompressionHandler);
+
+        // Create the context for the API web application.
+        ContextHandler apiContext = new ContextHandler(new RESTHandler(), "/api");
+
+        // Add it to ContextHandlerCollection.
+        contextCollection.addHandler(apiContext);
+
+        server.start();
+        // end::contextCompressionHandler[]
     }
 
     public void rewriteHandler() throws Exception

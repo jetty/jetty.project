@@ -73,6 +73,7 @@ import org.eclipse.jetty.ee11.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.IOResources;
@@ -113,6 +114,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static jakarta.servlet.ServletContext.TEMPDIR;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
  * Servlet Context.
@@ -662,6 +664,9 @@ public class ServletContextHandler extends ContextHandler
         return _welcomeFiles;
     }
 
+    /**
+     * @return the maximum size of the form content (in bytes).
+     */
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
@@ -671,13 +676,19 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
      *
-     * @param maxSize the maximum size of the form content (in bytes)
+     * @param maxSize the maximum size of the form content (in bytes) or -1 for a default value.
      */
     public void setMaxFormContentSize(int maxSize)
     {
+        if (maxSize < 0)
+            maxSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
         _maxFormContentSize = maxSize;
     }
 
+    /**
+     * @return the maximum number of form Keys.
+     */
+    @ManagedAttribute("The maximum number of form keys")
     public int getMaxFormKeys()
     {
         return _maxFormKeys;
@@ -686,10 +697,12 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
      *
-     * @param max the maximum number of form keys
+     * @param max the maximum number of form keys or -1 for a default value.
      */
     public void setMaxFormKeys(int max)
     {
+        if (max < 0)
+            max = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
         _maxFormKeys = max;
     }
 
@@ -1145,7 +1158,6 @@ public class ServletContextHandler extends ContextHandler
         decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
         matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -1195,7 +1207,23 @@ public class ServletContextHandler extends ContextHandler
         if (!initialDispatch)
             return false;
 
-        return super.handleByContextHandler(pathInContext, request, response, callback);
+        if (isProtectedTarget(pathInContext))
+        {
+            if (getErrorHandler() instanceof ErrorHandler.ErrorPageMapper mapper)
+            {
+                ErrorHandler.ErrorPageMapper.ErrorPage errorPage = mapper.getErrorPage(404, null);
+                if (errorPage != null)
+                {
+                    // Do nothing here other than set the error status so that the ServletHandler will handle as if a sendError
+                    request.setAttribute(ERROR_STATUS, 404);
+                    response.setStatus(HttpStatus.NOT_FOUND_404);
+                    return false;
+                }
+            }
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
+            return true;
+        }
+        return false;
     }
 
     @Override

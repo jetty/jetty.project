@@ -20,6 +20,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.ee11.test.support.StringUtil;
 import org.eclipse.jetty.ee11.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee11.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.ee11.test.support.rawhttp.HttpTesting;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -101,11 +104,11 @@ public abstract class RFC2616BaseTest
 
     public static XmlBasedJettyServer setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz, Path tmpPath) throws Exception
     {
-        XmlBasedJettyServer server = testableserver;
-        server.load();
-        server.getServer().setTempDirectory(tmpPath.toFile());
-        server.start();
-        return server;
+        testableserver.load();
+        testableserver.getServer().setTempDirectory(tmpPath.toFile());
+        Arrays.stream(testableserver.getServer().getConnectors()).forEach(c -> c.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616));
+        testableserver.start();
+        return testableserver;
     }
 
     @BeforeEach

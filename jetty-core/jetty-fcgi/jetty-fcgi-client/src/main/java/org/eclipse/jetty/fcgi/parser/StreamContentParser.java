@@ -87,14 +87,14 @@ public class StreamContentParser extends ContentParser
     {
         try
         {
-            listener.onEnd(getRequest());
+            return listener.onEnd(getRequest());
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
+            return false;
         }
-        return false;
     }
 
     protected boolean onContent(ByteBuffer buffer)

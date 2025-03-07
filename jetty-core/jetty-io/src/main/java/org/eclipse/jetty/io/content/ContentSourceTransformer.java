@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.io.content;
 
-import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This abstract {@link Content.Source} wraps another {@link Content.Source} and implementers need only
@@ -26,27 +24,23 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  * read from the wrapped source.</p>
  * <p>The {@link #demand(Runnable)} conversation is passed directly to the wrapped {@link Content.Source},
  * which means that transformations that may fully consume bytes read can result in a null return from
- * {@link Content.Source#read()} even after a callback to the demand {@link Runnable} (as per spurious
+ * {@link Content.Source#read()} even after a callback to the demand {@link Runnable}, as per spurious
  * invocation in {@link Content.Source#demand(Runnable)}.</p>
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {
-    private final SerializedInvoker invoker;
+    private static final Logger LOG = LoggerFactory.getLogger(ContentSourceTransformer.class);
+
     private final Content.Source rawSource;
     private Content.Chunk rawChunk;
     private Content.Chunk transformedChunk;
     private volatile boolean needsRawRead;
-    private volatile Runnable demandCallback;
+    private boolean finished;
 
     protected ContentSourceTransformer(Content.Source rawSource)
     {
-        this(rawSource, new SerializedInvoker(ContentSourceTransformer.class));
-    }
-
-    protected ContentSourceTransformer(Content.Source rawSource, SerializedInvoker invoker)
-    {
         this.rawSource = rawSource;
-        this.invoker = invoker;
+        this.needsRawRead = true;
     }
 
     protected Content.Source getContentSource()
@@ -57,11 +51,16 @@ public abstract class ContentSourceTransformer implements Content.Source
     @Override
     public Content.Chunk read()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Reading {}", this);
+
         while (true)
         {
             if (needsRawRead)
             {
                 rawChunk = rawSource.read();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Raw chunk {} {}", rawChunk, this);
                 needsRawRead = rawChunk == null;
                 if (rawChunk == null)
                     return null;
@@ -72,52 +71,94 @@ public abstract class ContentSourceTransformer implements Content.Source
                 Content.Chunk failure = rawChunk;
                 rawChunk = Content.Chunk.next(rawChunk);
                 needsRawRead = rawChunk == null;
+                if (rawChunk != null)
+                {
+                    finished = true;
+                    release();
+                }
                 return failure;
             }
 
             if (Content.Chunk.isFailure(transformedChunk))
                 return transformedChunk;
 
-            transformedChunk = process(rawChunk);
+            if (finished)
+                return Content.Chunk.EOF;
 
-            if (rawChunk != null && rawChunk != transformedChunk)
+            boolean rawLast = rawChunk != null && rawChunk.isLast();
+
+            transformedChunk = process(rawChunk != null ? rawChunk : Content.Chunk.EMPTY);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Transformed chunk {} {}", transformedChunk, this);
+
+            if (rawChunk == null && (transformedChunk == null || transformedChunk == Content.Chunk.EMPTY))
+            {
+                needsRawRead = true;
+                continue;
+            }
+
+            // Prevent double release.
+            if (transformedChunk == rawChunk)
+                rawChunk = null;
+
+            if (rawChunk != null && rawChunk.isEmpty())
+            {
                 rawChunk.release();
-            rawChunk = null;
+                rawChunk = Content.Chunk.next(rawChunk);
+            }
 
             if (transformedChunk != null)
             {
+                boolean transformedLast = transformedChunk.isLast();
+                boolean transformedFailure = Content.Chunk.isFailure(transformedChunk);
+
+                // Transformation may be complete, but rawSource is not read until EOF,
+                // change to non-last transformed chunk to force more read() and transform().
+                if (transformedLast && !transformedFailure && !rawLast)
+                {
+                    if (transformedChunk.isEmpty())
+                        transformedChunk = Content.Chunk.EMPTY;
+                    else
+                        transformedChunk = Content.Chunk.asChunk(transformedChunk.getByteBuffer(), false, transformedChunk);
+                }
+
+                boolean terminated = rawLast && transformedLast;
+                boolean terminalFailure = transformedFailure && transformedLast;
+
                 Content.Chunk result = transformedChunk;
                 transformedChunk = Content.Chunk.next(result);
+
+                if (terminated || terminalFailure)
+                {
+                    finished = true;
+                    release();
+                }
+
                 return result;
             }
 
-            needsRawRead = true;
+            needsRawRead = rawChunk == null;
         }
     }
 
     @Override
     public void demand(Runnable demandCallback)
     {
-        this.demandCallback = Objects.requireNonNull(demandCallback);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Demanding {} {}", demandCallback, this);
+
         if (needsRawRead)
-            // Inner class used instead of lambda for clarity in stack traces.
-            rawSource.demand(new DemandTask(Invocable.getInvocationType(demandCallback), this::invokeDemandCallback));
+            rawSource.demand(demandCallback);
         else
-            invoker.run(this::invokeDemandCallback);
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     @Override
     public void fail(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failing {}", this, failure);
         rawSource.fail(failure);
-    }
-
-    private void invokeDemandCallback()
-    {
-        Runnable demandCallback = this.demandCallback;
-        this.demandCallback = null;
-        if (demandCallback != null)
-            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     private Content.Chunk process(Content.Chunk rawChunk)
@@ -136,44 +177,50 @@ public abstract class ContentSourceTransformer implements Content.Source
     /**
      * <p>Transforms the input chunk parameter into an output chunk.</p>
      * <p>When this method produces a non-{@code null}, non-last chunk,
-     * it is subsequently invoked with a {@code null} input chunk to try to
+     * it is subsequently invoked with either the input chunk (if it has
+     * remaining bytes), or with {@link Content.Chunk#EMPTY} to try to
      * produce more output chunks from the previous input chunk.
      * For example, a single compressed input chunk may be transformed into
      * multiple uncompressed output chunks.</p>
-     * <p>The input chunk is released as soon as this method returns, so
-     * implementations that must hold onto the input chunk must arrange to call
-     * {@link Content.Chunk#retain()} and its correspondent {@link Content.Chunk#release()}.</p>
-     * <p>Implementations should return an {@link Content.Chunk} with non-null
-     * {@link Content.Chunk#getFailure()} in case
-     * of transformation errors.</p>
-     * <p>Exceptions thrown by this method are equivalent to returning an error chunk.</p>
+     * <p>The input chunk is released as soon as this method returns if it
+     * is fully consumed, so implementations that must hold onto the input
+     * chunk must arrange to call {@link Content.Chunk#retain()} and its
+     * correspondent {@link Content.Chunk#release()}.</p>
+     * <p>Implementations should return a {@link Content.Chunk} with non-null
+     * {@link Content.Chunk#getFailure()} in case of transformation errors.</p>
+     * <p>Exceptions thrown by this method are equivalent to returning an
+     * error chunk.</p>
      * <p>Implementations of this method may return:</p>
      * <ul>
-     * <li>{@code null}, if more input chunks are necessary to produce an output chunk</li>
-     * <li>the {@code inputChunk} itself, typically in case of non-null {@link Content.Chunk#getFailure()},
-     * or when no transformation is required</li>
+     * <li>{@code null} or {@link Content.Chunk#EMPTY}, if more input chunks
+     * are necessary to produce an output chunk</li>
+     * <li>the {@code inputChunk} itself, typically in case of non-null
+     * {@link Content.Chunk#getFailure()}, or when no transformation is required</li>
      * <li>a new {@link Content.Chunk} derived from {@code inputChunk}.</li>
      * </ul>
+     * <p>The input chunk should be consumed (its position updated) as the
+     * transformation proceeds.</p>
      *
      * @param inputChunk a chunk read from the wrapped {@link Content.Source}
      * @return a transformed chunk or {@code null}
      */
     protected abstract Content.Chunk transform(Content.Chunk inputChunk);
 
-    private class DemandTask extends Invocable.Task.Abstract
+    /**
+     * <p>Invoked when the transformation is complete to release any resource.</p>
+     */
+    protected void release()
     {
-        private final Runnable invokeDemandCallback;
+    }
 
-        private DemandTask(InvocationType invocationType, Runnable invokeDemandCallback)
-        {
-            super(invocationType);
-            this.invokeDemandCallback = invokeDemandCallback;
-        }
-
-        @Override
-        public void run()
-        {
-            invoker.run(invokeDemandCallback);
-        }
+    @Override
+    public String toString()
+    {
+        return "%s@%x[finished=%b,source=%s]".formatted(
+            getClass().getSimpleName(),
+            hashCode(),
+            finished,
+            rawSource
+        );
     }
 }

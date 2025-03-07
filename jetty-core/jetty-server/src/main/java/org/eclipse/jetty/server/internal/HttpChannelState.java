@@ -601,19 +601,22 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock lock = _lock.tryLock())
         {
-            boolean held = lock.isHeldByCurrentThread();
-            return String.format("%s@%x{handling=%s, handled=%s, send=%s, completed=%s, request=%s}",
+            String held = lock.isHeldByCurrentThread() ? "" : "?";
+            return String.format("%s@%x[%s:handling=%s,handled=%s,send=%s,completed=%s,request=%s]",
                 this.getClass().getSimpleName(),
                 hashCode(),
-                held ? _handling : "?",
-                held ? _handled : "?",
-                held ? _streamSendState : "?",
-                held ? _callbackCompleted : "?",
-                held ? _request : "?"
+                held,
+                _handling,
+                _handled,
+                _streamSendState,
+                _callbackCompleted,
+                _request
             );
         }
     }
 
+    // HandlerInvoker is used as the Response's _writeCallback when ChannelCallback is succeeded and the last send still
+    // needs to be done, i.e.: _streamSendState set to LAST_SENDING by lockedLastStreamSend().
     private class HandlerInvoker implements Invocable.Task, Callback
     {
         @Override
@@ -714,19 +717,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void succeeded()
         {
-            HttpStream stream;
-            boolean completeStream;
-            try (AutoLock ignored = _lock.lock())
-            {
-                assert _callbackCompleted;
-                assert _callbackFailure == null;
-                _streamSendState = StreamSendState.LAST_COMPLETE;
-                completeStream = _handling == null;
-                stream = _stream;
-            }
-
-            if (completeStream)
-                completeStream(stream, null);
+            complete(null);
         }
 
         /**
@@ -734,6 +725,11 @@ public class HttpChannelState implements HttpChannel, Components
          */
         @Override
         public void failed(Throwable failure)
+        {
+            complete(failure);
+        }
+
+        private void complete(Throwable failure)
         {
             HttpStream stream;
             boolean completeStream;
@@ -928,24 +924,38 @@ public class HttpChannelState implements HttpChannel, Components
             try
             {
                 HttpStream stream;
+                boolean expecting100;
+                HttpChannelState httpChannel;
                 try (AutoLock ignored = _lock.lock())
                 {
-                    HttpChannelState httpChannel = lockedGetHttpChannelState();
-
+                    httpChannel = lockedGetHttpChannelState();
                     Content.Chunk error = httpChannel._readFailure;
                     httpChannel._readFailure = Content.Chunk.next(error);
                     if (error != null)
                         return error;
 
                     stream = httpChannel._stream;
+                    expecting100 = httpChannel._expects100Continue;
                 }
                 Content.Chunk chunk = stream.read();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("read {}", chunk);
 
-                if (chunk != null && chunk.hasRemaining())
-                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+                if (chunk == null)
+                    return null;
+
+                if (expecting100)
+                {
+                    // No need to send 100 continues as content has already arrived
+                    try (AutoLock ignored = _lock.lock())
+                    {
+                        httpChannel._expects100Continue = false;
+                    }
+                }
+
+                if (chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.remaining());
 
                 if (chunk instanceof Trailers trailers)
                     _trailers = trailers.getTrailers();
@@ -1174,11 +1184,14 @@ public class HttpChannelState implements HttpChannel, Components
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
-            _writeCallback = null;
             if (writeCallback == null)
                 return null;
+            _writeCallback = null;
+
+            Runnable cancellation = _request.getHttpStream().cancelSend(x, writeCallback);
+
             _writeFailure = ExceptionUtil.combine(_writeFailure, x);
-            return () -> HttpChannelState.failed(writeCallback, x);
+            return cancellation;
         }
 
         public long getContentBytesWritten()
@@ -1201,6 +1214,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void setStatus(int code)
         {
+            if (code < 100 || code > 999)
+                throw new IllegalArgumentException();
             if (!isCommitted())
                 _status = code;
         }
@@ -1332,6 +1347,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(true);
             }
+
             if (callback != null)
                 httpChannel._writeInvoker.run(callback::succeeded);
         }
@@ -1361,6 +1377,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(false);
             }
+
             if (callback != null)
                 httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
         }

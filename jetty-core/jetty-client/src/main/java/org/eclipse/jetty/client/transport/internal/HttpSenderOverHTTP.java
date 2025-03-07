@@ -50,7 +50,6 @@ public class HttpSenderOverHTTP extends HttpSender
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        generator.setMaxHeaderBytes(channel.getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
     }
 
     @Override
@@ -176,6 +175,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
+                        generator.setMaxHeaderBytes(getHttpChannel().getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
                         headerBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
@@ -202,7 +202,7 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunkBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        chunkBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:

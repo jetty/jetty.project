@@ -51,23 +51,23 @@ public class HttpTrailersTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testRequestTrailersNoContent(Transport transport) throws Exception
+    public void testRequestTrailersNoContent(TransportType transportType) throws Exception
     {
-        testRequestTrailers(transport, null);
+        testRequestTrailers(transportType, null);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testRequestTrailersWithContent(Transport transport) throws Exception
+    public void testRequestTrailersWithContent(TransportType transportType) throws Exception
     {
-        testRequestTrailers(transport, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
+        testRequestTrailers(transportType, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void testRequestTrailers(Transport transport, byte[] content) throws Exception
+    private void testRequestTrailers(TransportType transportType, byte[] content) throws Exception
     {
         String trailerName = "Trailer";
         String trailerValue = "value";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -92,7 +92,7 @@ public class HttpTrailersTest extends AbstractTest
 
         HttpFields trailers = HttpFields.build().put(trailerName, trailerValue).asImmutable();
 
-        Request request = client.newRequest(newURI(transport))
+        Request request = client.newRequest(newURI(transportType))
             .trailersSupplier(() -> trailers);
         if (content != null)
             request.method(HttpMethod.POST).body(new BytesRequestContent(content));
@@ -102,9 +102,9 @@ public class HttpTrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testEmptyRequestTrailers(Transport transport) throws Exception
+    public void testEmptyRequestTrailers(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -128,7 +128,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         HttpFields trailers = HttpFields.EMPTY;
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .trailersSupplier(() -> trailers)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -137,24 +137,24 @@ public class HttpTrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResponseTrailersNoContent(Transport transport) throws Exception
+    public void testResponseTrailersNoContent(TransportType transportType) throws Exception
     {
-        testResponseTrailers(transport, null);
+        testResponseTrailers(transportType, null);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResponseTrailersWithContent(Transport transport) throws Exception
+    public void testResponseTrailersWithContent(TransportType transportType) throws Exception
     {
-        testResponseTrailers(transport, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
+        testResponseTrailers(transportType, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void testResponseTrailers(Transport transport, byte[] content) throws Exception
+    private void testResponseTrailers(TransportType transportType, byte[] content) throws Exception
     {
         AtomicBoolean firstRequest = new AtomicBoolean();
         String trailerName = "Trailer";
         String trailerValue = "value";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -172,7 +172,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .onResponseSuccess(r ->
             {
                 try
@@ -193,7 +193,7 @@ public class HttpTrailersTest extends AbstractTest
         assertNull(failure.get());
 
         // Subsequent requests should not have trailers.
-        response = client.newRequest(newURI(transport))
+        response = client.newRequest(newURI(transportType))
             .onResponseSuccess(r ->
             {
                 try
@@ -214,9 +214,9 @@ public class HttpTrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testEmptyResponseTrailers(Transport transport) throws Exception
+    public void testEmptyResponseTrailers(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -226,7 +226,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .onResponseSuccess(r ->
             {
                 try
@@ -248,13 +248,13 @@ public class HttpTrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResponseTrailersWithLargeContent(Transport transport) throws Exception
+    public void testResponseTrailersWithLargeContent(TransportType transportType) throws Exception
     {
         byte[] content = new byte[1024 * 1024];
         new Random().nextBytes(content);
         String trailerName = "Digest";
         String trailerValue = "0xCAFEBABE";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -269,7 +269,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .timeout(15, TimeUnit.SECONDS)
             .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -299,9 +299,9 @@ public class HttpTrailersTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResponseResetAlsoResetsTrailers(Transport transport) throws Exception
+    public void testResponseResetAlsoResetsTrailers(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -322,7 +322,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {

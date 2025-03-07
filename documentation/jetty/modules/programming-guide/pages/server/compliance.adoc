@@ -22,6 +22,7 @@ There are compliance modes provided for:
 * <<http,HTTP Compliance>>
 * <<uri,URI Compliance>>
 * <<cookie,Cookie Compliance>>
+* <<multiPart,MultiPart Compliance>>
 
 Compliance modes can be configured to allow violations from the RFC requirements, or in some cases to allow additional behaviors that Jetty has implemented in excess of the RFC (for example, to allow <<uri,ambiguous URIs>>).
 
@@ -130,4 +131,20 @@ If you want to customize the violations that you want to allow, you can create y
 [,java,indent=0]
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=cookieComplianceCustom]
+----
+
+[[multiPart]]
+== MultiPart Compliance Modes
+
+The standards for multipart uploads (also known as `multipart/form-data`) varied over time, but were eventually standardized by link:https://tools.ietf.org/html/rfc7578[RFC 7578].
+
+The link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.Violation.html[MultiPartCompliance.Violation] enumeration defines the RFC requirements that may be optionally enforced by Jetty when parsing `multipart/form-data` content in requests.
+
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.html[`MultiPartCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.html#RFC7578[`MultiPartCompliance.RFC7578`].
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/MultiPartCompliance.html#from(java.lang.String)[`MultiPartCompliance.from(String)`] method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=multiPartCompliance]
 ----

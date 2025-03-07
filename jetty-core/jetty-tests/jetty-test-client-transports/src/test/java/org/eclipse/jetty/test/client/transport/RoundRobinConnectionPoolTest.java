@@ -48,11 +48,11 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRoundRobin(Transport transport) throws Exception
+    public void testRoundRobin(TransportType transportType) throws Exception
     {
         AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -77,7 +77,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         setup.get(5, TimeUnit.SECONDS);
@@ -86,7 +86,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         int requests = 2 * maxConnections - 1;
         for (int i = 0; i < requests; ++i)
         {
-            ContentResponse response = client.newRequest(newURI(transport))
+            ContentResponse response = client.newRequest(newURI(transportType))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -106,10 +106,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMultiplex(Transport transport) throws Exception
+    public void testMultiplex(TransportType transportType) throws Exception
     {
         int multiplex = 1;
-        if (transport.isMultiplexed())
+        if (transportType.isMultiplexed())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -121,7 +121,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -157,7 +157,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         setup.get(5, TimeUnit.SECONDS);
@@ -169,7 +169,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         {
             CountDownLatch latch = new CountDownLatch(1);
             requestLatch.set(latch);
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .path("/" + i)
                 .onRequestQueued(request -> requests.incrementAndGet())
                 .onRequestBegin(request -> requests.decrementAndGet())
@@ -202,10 +202,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMultiplexWithMaxUsage(Transport transport) throws Exception
+    public void testMultiplexWithMaxUsage(TransportType transportType) throws Exception
     {
         int multiplex = 1;
-        if (transport.isMultiplexed())
+        if (transportType.isMultiplexed())
             multiplex = 2;
         int maxMultiplex = multiplex;
 
@@ -214,7 +214,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         int count = 2 * maxConnections * maxMultiplex * maxUsage;
 
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -224,7 +224,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
                 return true;
             }
         });
-        if (transport == Transport.H3)
+        if (transportType == TransportType.H3_QUICHE)
             ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
         client.getHttpClientTransport().setConnectionPoolFactory(destination ->
         {
@@ -236,7 +236,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .path("/" + i)
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result ->
@@ -249,7 +249,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         assertEquals(count, remotePorts.size());
 
         // UDP does not have TIME_WAIT so ports may be reused by different connections.
-        if (transport == Transport.H3)
+        if (transportType == TransportType.H3_QUICHE)
             return;
 
         // Maps {remote_port -> number_of_times_port_was_used}.

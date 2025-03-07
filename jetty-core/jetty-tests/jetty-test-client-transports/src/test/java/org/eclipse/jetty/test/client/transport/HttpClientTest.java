@@ -82,10 +82,10 @@ public class HttpClientTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithoutResponseContent(Transport transport) throws Exception
+    public void testRequestWithoutResponseContent(TransportType transportType) throws Exception
     {
         final int status = HttpStatus.NO_CONTENT_204;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -96,7 +96,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -106,23 +106,23 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithSmallResponseContent(Transport transport) throws Exception
+    public void testRequestWithSmallResponseContent(TransportType transportType) throws Exception
     {
-        testRequestWithResponseContent(transport, 1024);
+        testRequestWithResponseContent(transportType, 1024);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithLargeResponseContent(Transport transport) throws Exception
+    public void testRequestWithLargeResponseContent(TransportType transportType) throws Exception
     {
-        testRequestWithResponseContent(transport, 1024 * 1024);
+        testRequestWithResponseContent(transportType, 1024 * 1024);
     }
 
-    private void testRequestWithResponseContent(Transport transport, int length) throws Exception
+    private void testRequestWithResponseContent(TransportType transportType, int length) throws Exception
     {
         final byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -133,7 +133,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transportType))
             .timeout(10, TimeUnit.SECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
         ContentResponse response = completable.get();
@@ -144,19 +144,19 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithSmallResponseContentChunked(Transport transport) throws Exception
+    public void testRequestWithSmallResponseContentChunked(TransportType transportType) throws Exception
     {
-        testRequestWithResponseContentChunked(transport, 512);
+        testRequestWithResponseContentChunked(transportType, 512);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithLargeResponseContentChunked(Transport transport) throws Exception
+    public void testRequestWithLargeResponseContentChunked(TransportType transportType) throws Exception
     {
-        testRequestWithResponseContentChunked(transport, 512 * 512);
+        testRequestWithResponseContentChunked(transportType, 512 * 512);
     }
 
-    private void testRequestWithResponseContentChunked(Transport transport, int length) throws Exception
+    private void testRequestWithResponseContentChunked(TransportType transportType, int length) throws Exception
     {
         final byte[] chunk1 = new byte[length];
         final byte[] chunk2 = new byte[length];
@@ -166,7 +166,7 @@ public class HttpClientTest extends AbstractTest
         byte[] bytes = new byte[chunk1.length + chunk2.length];
         System.arraycopy(chunk1, 0, bytes, 0, chunk1.length);
         System.arraycopy(chunk2, 0, bytes, chunk1.length, chunk2.length);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -177,7 +177,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transportType))
             .timeout(10, TimeUnit.SECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 2 * length).send();
         ContentResponse response = completable.get();
@@ -188,30 +188,30 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUploadZeroLengthWithoutResponseContent(Transport transport) throws Exception
+    public void testUploadZeroLengthWithoutResponseContent(TransportType transportType) throws Exception
     {
-        testUploadWithoutResponseContent(transport, 0);
+        testUploadWithoutResponseContent(transportType, 0);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUploadSmallWithoutResponseContent(Transport transport) throws Exception
+    public void testUploadSmallWithoutResponseContent(TransportType transportType) throws Exception
     {
-        testUploadWithoutResponseContent(transport, 1024);
+        testUploadWithoutResponseContent(transportType, 1024);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUploadLargeWithoutResponseContent(Transport transport) throws Exception
+    public void testUploadLargeWithoutResponseContent(TransportType transportType) throws Exception
     {
-        testUploadWithoutResponseContent(transport, 1024 * 1024);
+        testUploadWithoutResponseContent(transportType, 1024 * 1024);
     }
 
-    private void testUploadWithoutResponseContent(Transport transport, int length) throws Exception
+    private void testUploadWithoutResponseContent(TransportType transportType, int length) throws Exception
     {
         final byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -227,7 +227,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(new BytesRequestContent(bytes))
             .timeout(15, TimeUnit.SECONDS)
@@ -239,9 +239,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testClientManyWritesSlowServer(Transport transport) throws Exception
+    public void testClientManyWritesSlowServer(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -282,7 +282,7 @@ public class HttpClientTest extends AbstractTest
         int chunkSize = 16;
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesRequestContent content = new BytesRequestContent("application/octet-stream", bytes);
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(content)
             .timeout(15, TimeUnit.SECONDS)
@@ -296,12 +296,12 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
-    public void testRequestAfterFailedRequest(Transport transport) throws Exception
+    public void testRequestAfterFailedRequest(TransportType transportType) throws Exception
     {
         // TODO find and fix the leaks
 
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -312,7 +312,7 @@ public class HttpClientTest extends AbstractTest
         });
 
         // Make a request with a large enough response buffer.
-        var request = client.newRequest(newURI(transport));
+        var request = client.newRequest(newURI(transportType));
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
         ContentResponse response = completable.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
@@ -320,7 +320,7 @@ public class HttpClientTest extends AbstractTest
         // Make a request with a small response buffer, should fail.
         try
         {
-            request = client.newRequest(newURI(transport));
+            request = client.newRequest(newURI(transportType));
             completable = new CompletableResponseListener(request, length / 10).send();
             completable.get(15, TimeUnit.SECONDS);
             fail("Expected ExecutionException");
@@ -331,7 +331,7 @@ public class HttpClientTest extends AbstractTest
         }
 
         // Verify that we can make another request.
-        request = client.newRequest(newURI(transport));
+        request = client.newRequest(newURI(transportType));
         completable = new CompletableResponseListener(request, length).send();
         response = completable.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
@@ -339,12 +339,12 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testClientCannotValidateServerCertificate(Transport transport) throws Exception
+    public void testClientCannotValidateServerCertificate(TransportType transportType) throws Exception
     {
         // Only run this test for transports over TLS.
-        assumeTrue(transport.isSecure());
+        assumeTrue(transportType.isSecure());
 
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         // Disable validations on the server to be sure
         // that the test failure happens during the
         // validation of the certificate on the client.
@@ -359,11 +359,11 @@ public class HttpClientTest extends AbstractTest
         client.start();
 
         // H3 times out b/c it is QUIC's way of figuring out a connection cannot be established.
-        Class<? extends Exception> expectedType = transport == Transport.H3 ? TimeoutException.class : ExecutionException.class;
+        Class<? extends Exception> expectedType = transportType == TransportType.H3_QUICHE ? TimeoutException.class : ExecutionException.class;
         assertThrows(expectedType, () ->
         {
             // Use an IP address not present in the certificate.
-            int serverPort = newURI(transport).getPort();
+            int serverPort = newURI(transportType).getPort();
             client.newRequest("https://127.0.0.2:" + serverPort)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -372,9 +372,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testOPTIONS(Transport transport) throws Exception
+    public void testOPTIONS(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -386,7 +386,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.OPTIONS)
             .path("*")
             .timeout(5, TimeUnit.SECONDS)
@@ -397,9 +397,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testOPTIONSWithRelativeRedirect(Transport transport) throws Exception
+    public void testOPTIONSWithRelativeRedirect(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -416,7 +416,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.OPTIONS)
             .path("*")
             .timeout(5, TimeUnit.SECONDS)
@@ -427,10 +427,10 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDownloadWithInputStreamResponseListener(Transport transport) throws Exception
+    public void testDownloadWithInputStreamResponseListener(TransportType transportType) throws Exception
     {
         String content = "hello world";
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -442,7 +442,7 @@ public class HttpClientTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseSuccess(response -> latch.countDown())
             .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -459,9 +459,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConnectionListener(Transport transport) throws Exception
+    public void testConnectionListener(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
@@ -482,7 +482,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -495,9 +495,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAsyncResponseContentBackPressure(Transport transport) throws Exception
+    public void testAsyncResponseContentBackPressure(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -512,7 +512,7 @@ public class HttpClientTest extends AbstractTest
         AtomicInteger counter = new AtomicInteger();
         AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 if (counter.incrementAndGet() == 1)
@@ -538,9 +538,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testResponseWithContentCompleteListenerInvokedOnce(Transport transport) throws Exception
+    public void testResponseWithContentCompleteListenerInvokedOnce(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -551,7 +551,7 @@ public class HttpClientTest extends AbstractTest
         });
 
         AtomicInteger completes = new AtomicInteger();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .send(result -> completes.incrementAndGet());
 
         sleep(1000);
@@ -561,23 +561,23 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testHEADResponds200(Transport transport) throws Exception
+    public void testHEADResponds200(TransportType transportType) throws Exception
     {
-        testHEAD(transport, "/", HttpStatus.OK_200);
+        testHEAD(transportType, "/", HttpStatus.OK_200);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testHEADResponds404(Transport transport) throws Exception
+    public void testHEADResponds404(TransportType transportType) throws Exception
     {
-        testHEAD(transport, "/notMapped", HttpStatus.NOT_FOUND_404);
+        testHEAD(transportType, "/notMapped", HttpStatus.NOT_FOUND_404);
     }
 
-    private void testHEAD(Transport transport, String path, int status) throws Exception
+    private void testHEAD(TransportType transportType, String path, int status) throws Exception
     {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -591,7 +591,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.HEAD)
             .path(path)
             .send();
@@ -602,10 +602,10 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testHEADWithAcceptHeaderAndSendError(Transport transport) throws Exception
+    public void testHEADWithAcceptHeaderAndSendError(TransportType transportType) throws Exception
     {
         int status = HttpStatus.BAD_REQUEST_400;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -615,7 +615,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.HEAD)
             .headers(headers -> headers.put(HttpHeader.ACCEPT, "*/*"))
             .send();
@@ -626,10 +626,10 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testHEADWithContentLengthGreaterThanMaxBufferingCapacity(Transport transport) throws Exception
+    public void testHEADWithContentLengthGreaterThanMaxBufferingCapacity(TransportType transportType) throws Exception
     {
         int length = 1024;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -640,7 +640,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transportType))
             .method(HttpMethod.HEAD);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length / 2).send();
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
@@ -651,16 +651,16 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testOneDestinationPerUser(Transport transport) throws Exception
+    public void testOneDestinationPerUser(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         int runs = 4;
         int users = 16;
         for (int i = 0; i < runs; ++i)
         {
             for (int j = 0; j < users; ++j)
             {
-                ContentResponse response = client.newRequest(newURI(transport))
+                ContentResponse response = client.newRequest(newURI(transportType))
                     .tag(j)
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -673,12 +673,12 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIPv6Host(Transport transport) throws Exception
+    public void testIPv6Host(TransportType transportType) throws Exception
     {
         assumeTrue(Net.isIpv6InterfaceAvailable());
-        assumeTrue(transport != Transport.H3);
+        assumeTrue(transportType != TransportType.H3_QUICHE);
 
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -692,7 +692,7 @@ public class HttpClientTest extends AbstractTest
         // Test with a full URI.
         String hostAddress = "::1";
         String host = "[" + hostAddress + "]";
-        URI serverURI = newURI(transport);
+        URI serverURI = newURI(transportType);
         String uri = serverURI.toString().replace("localhost", host) + "/path";
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.PUT)
@@ -728,14 +728,14 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestWithDifferentDestination(Transport transport) throws Exception
+    public void testRequestWithDifferentDestination(TransportType transportType) throws Exception
     {
         // TODO fix for H3
-        Assumptions.assumeFalse(transport == Transport.H3);
-        String requestScheme = newURI(transport).getScheme();
+        Assumptions.assumeFalse(transportType == TransportType.H3_QUICHE);
+        String requestScheme = newURI(transportType).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -743,13 +743,13 @@ public class HttpClientTest extends AbstractTest
                 HttpURI uri = request.getHttpURI();
                 assertEquals(requestHost, uri.getHost());
                 assertEquals(requestPort, uri.getPort());
-                if (transport == Transport.H2C || transport == Transport.H2)
+                if (transportType == TransportType.H2C || transportType == TransportType.H2)
                     assertEquals(requestScheme, uri.getScheme());
                 callback.succeeded();
                 return true;
             }
         });
-        if (transport.isSecure())
+        if (transportType.isSecure())
             httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
         Origin origin = new Origin(requestScheme, "localhost", ((NetworkConnector)connector).getLocalPort());
@@ -774,11 +774,11 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestIdleTimeout(Transport transport) throws Exception
+    public void testRequestIdleTimeout(TransportType transportType) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         long idleTimeout = 500;
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -796,7 +796,7 @@ public class HttpClientTest extends AbstractTest
         });
 
         assertThrows(TimeoutException.class, () ->
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .path("/1")
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
@@ -804,7 +804,7 @@ public class HttpClientTest extends AbstractTest
         latch.countDown();
 
         // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .path("/2")
             .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
             .send();
@@ -815,10 +815,10 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContentSourceListeners(Transport transport) throws Exception
+    public void testContentSourceListeners(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         CompleteContentSourceListener listener = new CompleteContentSourceListener()
@@ -829,7 +829,7 @@ public class HttpClientTest extends AbstractTest
                 accumulateChunks(contentSource, chunks);
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/")
             .send(listener);
         listener.await(5, TimeUnit.SECONDS);
@@ -843,12 +843,12 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
-    public void testContentSourceListenersFailure(Transport transport) throws Exception
+    public void testContentSourceListenersFailure(TransportType transportType) throws Exception
     {
         // TODO find and fix the leaks!
 
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         CompleteContentSourceListener listener = new CompleteContentSourceListener()
         {
@@ -858,7 +858,7 @@ public class HttpClientTest extends AbstractTest
                 contentSource.fail(new Exception("Synthetic Failure"));
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/")
             .send(listener);
         listener.await(5, TimeUnit.SECONDS);
@@ -869,10 +869,10 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContentSourceListenerDemandInSpawnedThread(Transport transport) throws Exception
+    public void testContentSourceListenerDemandInSpawnedThread(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         CompleteContentSourceListener listener = new CompleteContentSourceListener()
@@ -884,7 +884,7 @@ public class HttpClientTest extends AbstractTest
                     .start();
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/")
             .send(listener);
         listener.await(5, TimeUnit.SECONDS);
@@ -896,16 +896,16 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testParallelContentSourceListeners(Transport transport) throws Exception
+    public void testParallelContentSourceListeners(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks1 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks2 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks3 = new CopyOnWriteArrayList<>();
 
-        ContentResponse resp = client.newRequest(newURI(transport))
+        ContentResponse resp = client.newRequest(newURI(transportType))
             .path("/")
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
@@ -925,15 +925,15 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testParallelContentSourceListenersPartialFailure(Transport transport) throws Exception
+    public void testParallelContentSourceListenersPartialFailure(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks1 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks2 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks3 = new CopyOnWriteArrayList<>();
-        ContentResponse contentResponse = client.newRequest(newURI(transport))
+        ContentResponse contentResponse = client.newRequest(newURI(transportType))
             .path("/")
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
@@ -959,16 +959,16 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testParallelContentSourceListenersPartialFailureInSpawnedThread(Transport transport) throws Exception
+    public void testParallelContentSourceListenersPartialFailureInSpawnedThread(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks1 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks2 = new CopyOnWriteArrayList<>();
         List<Content.Chunk> chunks3 = new CopyOnWriteArrayList<>();
         CountDownLatch chunks3Latch = new CountDownLatch(1);
-        ContentResponse contentResponse = client.newRequest(newURI(transport))
+        ContentResponse contentResponse = client.newRequest(newURI(transportType))
             .path("/")
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
@@ -1003,11 +1003,11 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
-    public void testParallelContentSourceListenersTotalFailure(Transport transport) throws Exception
+    public void testParallelContentSourceListenersTotalFailure(TransportType transportType) throws Exception
     {
         // TODO find and fix the leaks!
 
-        start(transport, new TestHandler(1024));
+        start(transportType, new TestHandler(1024));
 
         CompleteContentSourceListener listener = new CompleteContentSourceListener()
         {
@@ -1017,7 +1017,7 @@ public class HttpClientTest extends AbstractTest
                 contentSource.fail(new Exception("Synthetic Failure"));
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/")
             .onResponseContentSource((response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
             .onResponseContentSource((response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
@@ -1030,11 +1030,11 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestConnection(Transport transport) throws Exception
+    public void testRequestConnection(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .onRequestBegin(r ->
             {
                 Connection connection = r.getConnection();
@@ -1043,7 +1043,7 @@ public class HttpClientTest extends AbstractTest
             })
             .onRequestHeaders(r ->
             {
-                if (transport.isSecure())
+                if (transportType.isSecure())
                 {
                     EndPoint.SslSessionData sslSessionData = r.getConnection().getSslSessionData();
                     if (sslSessionData == null)

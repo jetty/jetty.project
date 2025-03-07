@@ -13,121 +13,13 @@
 
 package org.eclipse.jetty.compression;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.io.content.ContentSourceTransformer;
 
-public abstract class DecoderSource implements Content.Source
+public abstract class DecoderSource extends ContentSourceTransformer
 {
-    private final Content.Source source;
-    private Content.Chunk activeChunk;
-    private Throwable failed;
-    private boolean terminated = false;
-
-    protected DecoderSource(Content.Source source)
+    public DecoderSource(Content.Source rawSource)
     {
-        this.source = source;
-    }
-
-    @Override
-    public void demand(Runnable demandCallback)
-    {
-        if (activeChunk != null && activeChunk.hasRemaining())
-            demandCallback.run();
-        else
-            source.demand(demandCallback);
-    }
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        failed = ExceptionUtil.combine(failed, failure);
-        source.fail(failure);
-    }
-
-    @Override
-    public Content.Chunk read()
-    {
-        if (failed != null)
-            return Content.Chunk.from(failed, true);
-
-        if (terminated)
-            return Content.Chunk.EOF;
-
-        Content.Chunk readChunk = readChunk();
-        if (readChunk == null)
-            return null;
-
-        if (Content.Chunk.isFailure(readChunk))
-        {
-            failed = ExceptionUtil.combine(failed, readChunk.getFailure());
-            return readChunk;
-        }
-
-        try
-        {
-            Content.Chunk chunk = nextChunk(readChunk);
-            if (chunk != null && chunk.isLast())
-            {
-                terminate();
-            }
-            return chunk;
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-            return Content.Chunk.from(failed, true);
-        }
-    }
-
-    /**
-     * Process the readChunk and produce a response Chunk.
-     *
-     * @param readChunk the active Read Chunk (never null, never a failure)
-     * @throws IOException if decoder failure occurs.
-     */
-    protected abstract Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException;
-
-    /**
-     * Place to cleanup and release any resources
-     * being held by this DecoderSource.
-     */
-    protected void release()
-    {
-    }
-
-    private void freeActiveChunk()
-    {
-        if (activeChunk != null)
-            activeChunk.release();
-        activeChunk = null;
-    }
-
-    private Content.Chunk readChunk()
-    {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = source.read();
-        return activeChunk;
-    }
-
-    private void terminate()
-    {
-        if (!terminated)
-        {
-            terminated = true;
-            freeActiveChunk();
-            release();
-        }
+        super(rawSource);
     }
 }

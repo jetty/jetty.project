@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+  version="6.1">
+
+  <display-name>EE11 Demo Spec WebApp</display-name>
+
+  <servlet>
+    <servlet-name>DurableDispatch</servlet-name>
+    <servlet-class>org.example.test.DurableDispatchServlet</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>DurableDispatch</servlet-name>
+    <url-pattern>/durable/*</url-pattern>
+    <url-pattern>/include/*</url-pattern>
+    <url-pattern>/forward/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>echo</servlet-name>
+    <servlet-class>org.example.test.EchoServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>echo</servlet-name>
+    <url-pattern>/echo/*</url-pattern>
+  </servlet-mapping>
+</web-app>

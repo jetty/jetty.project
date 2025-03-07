@@ -110,7 +110,7 @@ public class SerializedInvoker
         if (task == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Offering task null, skipping it in {}", this);
+                LOG.debug("Offering task null, skipping it on {}", this);
             return null;
         }
         // The NamedRunnable logger is checked to make it possible to enable the nice task names in a debugger
@@ -125,12 +125,17 @@ public class SerializedInvoker
                 task = new NamedRunnable(task);
             }
         }
+
         Link link = new Link(task);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Offering link {} of {}", link, this);
         Link penultimate = _tail.getAndSet(link);
+        boolean queued = penultimate != null;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} on {}", queued ? "Queued" : "Offered", link, this);
+
         if (penultimate == null)
             return link;
+
         penultimate._next.lazySet(link);
         return null;
     }
@@ -247,7 +252,7 @@ public class SerializedInvoker
             while (link != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
+                    LOG.debug("Running {} of {}", link, SerializedInvoker.this);
 
                 Runnable task = link.getTask();
                 InvocationType currentInvocationType = link.getInvocationType();
@@ -270,7 +275,7 @@ public class SerializedInvoker
                 catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
+                        LOG.debug("Failed while running {} of {}", link, SerializedInvoker.this, t);
                     onError(task, t);
                 }
                 finally

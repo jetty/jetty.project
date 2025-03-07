@@ -74,6 +74,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1387,14 +1388,14 @@ public class ErrorPageTest
 
             String responseBody = response.getContent();
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(responseBody, Matchers.containsString("getQueryString()=[baa=%88%A4]"));
-            assertThat(responseBody, Matchers.containsString("getParameterMap().size=0"));
+            assertThat(responseBody, Matchers.containsString("getParameterMap().size=org.eclipse.jetty.http.BadMessageException"));
         }
     }
 
@@ -2006,10 +2007,72 @@ public class ErrorPageTest
         assertThat(response.getStatus(), is(598));
     }
 
+    @Test
+    public void testProtectedTargetNoPage() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/ctx");
+        contextHandler.setProtectedTargets(new String[] {"/WEB-INF", "/META-INF"});
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+        contextHandler.addServlet(new OkServlet(), "/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        String rawRequest = """
+            GET /ctx/WEB-INF/anything HTTP/1.1\r
+            Host: test\r
+            Connection: close\r
+            Accept: */*\r
+            Accept-Charset: *\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        assertThat(rawResponse, startsWith("HTTP/1.1 404 Not Found"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+        assertThat(response.getContent(), containsString("<h2>HTTP ERROR 404 Not Found</h2>"));
+    }
+
+    @Test
+    public void testProtectedTarget() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/ctx");
+        contextHandler.setProtectedTargets(new String[] {"/WEB-INF", "/META-INF"});
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+        contextHandler.addServlet(new OkServlet(), "/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+        errorPageErrorHandler.addErrorPage(404, "/error/404");
+
+        startServer(contextHandler);
+
+        String rawRequest = """
+            GET /ctx/WEB-INF/anything HTTP/1.1\r
+            Host: test\r
+            Connection: close\r
+            Accept: */*\r
+            Accept-Charset: *\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        assertThat(rawResponse, startsWith("HTTP/1.1 404 Not Found"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+        assertThat(response.getContent(), containsString("ERROR_PAGE: /404"));
+        assertThat(response.getContent(), containsString("ERROR_MESSAGE: Not Found"));
+    }
+
     public static class ErrorDumpServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
@@ -2029,16 +2092,23 @@ public class ErrorPageTest
             writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
             writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
             writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
-            Map<String, String[]> params = request.getParameterMap();
-            writer.printf("getParameterMap().size=%d%n", params.size());
-            for (Map.Entry<String, String[]> entry : params.entrySet())
+            try
             {
-                String value = null;
-                if (entry.getValue() != null)
+                Map<String, String[]> params = request.getParameterMap();
+                writer.printf("getParameterMap().size=%d%n", params.size());
+                for (Map.Entry<String, String[]> entry : params.entrySet())
                 {
-                    value = String.join(", ", entry.getValue());
+                    String value = null;
+                    if (entry.getValue() != null)
+                    {
+                        value = String.join(", ", entry.getValue());
+                    }
+                    writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
                 }
-                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
+            catch (Throwable t)
+            {
+                writer.printf("getParameterMap().size=%s%n", t);
             }
         }
 
@@ -2123,6 +2193,15 @@ public class ErrorPageTest
         public TestServletException(Throwable rootCause)
         {
             super(rootCause);
+        }
+    }
+
+    public static class OkServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        {
+            resp.setStatus(200);
         }
     }
 }

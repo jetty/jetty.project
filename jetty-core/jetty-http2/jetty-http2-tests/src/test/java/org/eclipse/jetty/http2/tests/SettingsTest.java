@@ -448,6 +448,42 @@ public class SettingsTest extends AbstractTest
     }
 
     @Test
+    public void testMaxHeaderListSizeCappedByClient() throws Exception
+    {
+        int maxHeadersSize = 2 * 1024;
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                return Map.of(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
+            }
+
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                goAwayLatch.countDown();
+            }
+        });
+        http2Client.setMaxRequestHeadersSize(maxHeadersSize / 2);
+
+        Session clientSession = newClientSession(new Session.Listener() {});
+        HttpFields requestHeaders = HttpFields.build()
+            .put("X-Large", "x".repeat(maxHeadersSize - 256)); // 256 bytes to account for the other headers
+        MetaData.Request request = newRequest("GET", requestHeaders);
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+
+        Throwable failure = assertThrows(ExecutionException.class,
+            () -> clientSession.newStream(frame, new Stream.Listener() {}).get(5, TimeUnit.SECONDS))
+            .getCause();
+        // The HPACK context is compromised trying to encode the large header.
+        assertThat(failure, Matchers.instanceOf(HpackException.SessionException.class));
+
+        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testMaxHeaderListSizeExceededByServer() throws Exception
     {
         int maxHeadersSize = 512;

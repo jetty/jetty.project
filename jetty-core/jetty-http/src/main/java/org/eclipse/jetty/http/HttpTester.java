@@ -262,9 +262,18 @@ public class HttpTester
         return parseResponse(input, false);
     }
 
+    public static Response parseResponse(Input input, Response response) throws IOException
+    {
+        return parseResponse(input, response, false);
+    }
+
     public static Response parseResponse(Input input, boolean head) throws IOException
     {
-        Response response;
+        return parseResponse(input, new Response(), head);
+    }
+
+    public static Response parseResponse(Input input, Response response, boolean head) throws IOException
+    {
         HttpParser parser = input.takeHttpParser();
         if (parser != null)
         {
@@ -272,7 +281,6 @@ public class HttpTester
         }
         else
         {
-            response = new Response();
             parser = new HttpParser(response);
         }
         parser.setHeadResponse(head);

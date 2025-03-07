@@ -38,6 +38,166 @@ import org.slf4j.LoggerFactory;
  */
 public class OpenIdConfiguration extends ContainerLifeCycle
 {
+/**
+ * <p>Builder for {@link OpenIdConfiguration}.</p>
+ * <p>The only required parameters are {@link #issuer}, {@link #clientId} and {@link #clientSecret}.</p>
+ * <p>The {@link #authorizationEndpoint}, {@link #tokenEndpoint} and {@link #endSessionEndpoint}  will be retrieved
+ * from the OpenID metadata at .well-known/openid-configuration if they are not explicitly specified.</p>
+ */
+    public static class Builder
+    {
+        private String issuer;
+        private String clientId;
+        private String clientSecret;
+
+        private String authorizationEndpoint;
+        private String tokenEndpoint;
+        private String endSessionEndpoint;
+        private String authenticationMethod;
+        private HttpClient httpClient;
+
+        private boolean authenticateNewUsers = false;
+        private boolean logoutWhenIdTokenIsExpired = false;
+        private final List<String> scopes = new ArrayList<>();
+
+        /**
+         * Create a Builder for an OpenID Configuration.
+         */
+        public Builder()
+        {
+        }
+
+        /**
+         * Create a Builder for an OpenID Configuration.
+         * @param issuer The URL of the OpenID provider.
+         * @param clientId OAuth 2.0 Client Identifier valid at the OpenID provider.
+         * @param clientSecret The client secret known only by the Client and the OpenID provider.
+         */
+        public Builder(@Name("issuer") String issuer, @Name("clientId") String clientId, @Name("clientSecret") String clientSecret)
+        {
+            this();
+            issuer(issuer);
+            clientId(clientId);
+            clientSecret(clientSecret);
+        }
+
+        /**
+         * @param issuer The URL of the OpenID provider.
+         */
+        public Builder issuer(String issuer)
+        {
+            this.issuer = issuer;
+            return this;
+        }
+
+        /**
+         * @param clientId OAuth 2.0 Client Identifier valid at the OpenID provider.
+         */
+        public Builder clientId(String clientId)
+        {
+            this.clientId = clientId;
+            return this;
+        }
+
+        /**
+         * @param clientSecret The client secret known only by the Client and the OpenID provider.
+         */
+        public Builder clientSecret(String clientSecret)
+        {
+            this.clientSecret = clientSecret;
+            return this;
+        }
+
+        /**
+         * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+         */
+        public Builder authorizationEndpoint(String authorizationEndpoint)
+        {
+            this.authorizationEndpoint = authorizationEndpoint;
+            return this;
+        }
+
+        /**
+         * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+         */
+        public Builder tokenEndpoint(String tokenEndpoint)
+        {
+            this.tokenEndpoint = tokenEndpoint;
+            return this;
+        }
+
+        /**
+         * @param endSessionEndpoint the URL of the OpenID provider's end session endpoint if configured.
+         */
+        public Builder endSessionEndpoint(String endSessionEndpoint)
+        {
+            this.endSessionEndpoint = endSessionEndpoint;
+            return this;
+        }
+
+        /**
+         * @param authenticationMethod Authentication method to use with the Token Endpoint.
+         */
+        public Builder authenticationMethod(String authenticationMethod)
+        {
+            this.authenticationMethod = authenticationMethod;
+            return this;
+        }
+
+        /**
+         * @param httpClient The {@link HttpClient} instance to use.
+         */
+        public Builder httpClient(HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+            return this;
+        }
+
+        /**
+         * @param authenticateNewUsers Whether to authenticate new users.
+         */
+        public Builder authenticateNewUsers(boolean authenticateNewUsers)
+        {
+            this.authenticateNewUsers = authenticateNewUsers;
+            return this;
+        }
+
+        /**
+         * @param scopes The scopes to request.
+         */
+        public Builder scopes(String... scopes)
+        {
+            if (scopes != null)
+                Collections.addAll(this.scopes, scopes);
+            return this;
+        }
+
+        /**
+         * @param logoutWhenIdTokenIsExpired Whether to logout when the ID token is expired.
+         */
+        public Builder logoutWhenIdTokenIsExpired(boolean logoutWhenIdTokenIsExpired)
+        {
+            this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
+            return this;
+        }
+
+        /**
+         * @return a new {@link OpenIdConfiguration} instance.
+         */
+        public OpenIdConfiguration build()
+        {
+            if (issuer == null)
+                throw new IllegalArgumentException("Issuer was not configured");
+            if (clientId == null)
+                throw new IllegalArgumentException("clientId was not configured");
+            if (clientSecret == null)
+                throw new IllegalArgumentException("clientSecret was not configured");
+
+            return new OpenIdConfiguration(issuer, clientId, clientSecret, authorizationEndpoint, tokenEndpoint,
+                endSessionEndpoint, authenticationMethod, httpClient, authenticateNewUsers, logoutWhenIdTokenIsExpired, scopes);
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(OpenIdConfiguration.class);
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
@@ -51,18 +211,20 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String clientSecret;
     private final List<String> scopes = new ArrayList<>();
     private final String authenticationMethod;
-    private String authEndpoint;
+    private String authorizationEndpoint;
     private String tokenEndpoint;
     private String endSessionEndpoint;
-    private boolean authenticateNewUsers = false;
-    private boolean logoutWhenIdTokenIsExpired = false;
+    private boolean authenticateNewUsers;
+    private boolean logoutWhenIdTokenIsExpired;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
      * @param provider The URL of the OpenID provider.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @deprecated Use {@link Builder} instead.
      */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
         this(provider, null, null, clientId, clientSecret, null);
@@ -76,7 +238,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
      * @param httpClient The {@link HttpClient} instance to use.
+     * @deprecated Use {@link Builder} instead.
      */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
                                String clientId, String clientSecret, HttpClient httpClient)
     {
@@ -92,7 +256,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
      * @param authenticationMethod Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
+     * @deprecated Use {@link Builder} instead.
      */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public OpenIdConfiguration(@Name("issuer") String issuer,
                                @Name("authorizationEndpoint") String authorizationEndpoint,
                                @Name("tokenEndpoint") String tokenEndpoint,
@@ -114,7 +280,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
      * @param authenticationMethod Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
+     * @deprecated Use {@link Builder} instead.
      */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public OpenIdConfiguration(@Name("issuer") String issuer,
                                @Name("authorizationEndpoint") String authorizationEndpoint,
                                @Name("tokenEndpoint") String tokenEndpoint,
@@ -124,14 +292,46 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authenticationMethod") String authenticationMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
+        this(issuer, clientId, clientSecret, authorizationEndpoint, tokenEndpoint, endSessionEndpoint, authenticationMethod, httpClient, false, false, Collections.emptyList());
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
+     * @param authenticationMethod Authentication method to use with the Token Endpoint.
+     * @param httpClient The {@link HttpClient} instance to use.
+     * @param authenticateNewUsers Whether to authenticate new users.
+     * @param logoutWhenIdTokenIsExpired Whether to logout when the ID token is expired.
+     * @param scopes The scopes to request.
+     */
+    private OpenIdConfiguration(String issuer,
+                                String clientId,
+                                String clientSecret,
+                                String authorizationEndpoint,
+                                String tokenEndpoint,
+                                String endSessionEndpoint,
+                                String authenticationMethod,
+                                HttpClient httpClient,
+                                boolean authenticateNewUsers,
+                                boolean logoutWhenIdTokenIsExpired,
+                                List<String> scopes)
+    {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.authEndpoint = authorizationEndpoint;
+        this.authorizationEndpoint = authorizationEndpoint;
         this.endSessionEndpoint = endSessionEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
         this.authenticationMethod = authenticationMethod == null ? "client_secret_post" : authenticationMethod;
+        this.authenticateNewUsers = authenticateNewUsers;
+        this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
+        this.scopes.addAll(scopes);
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -144,7 +344,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     {
         super.doStart();
 
-        if (authEndpoint == null || tokenEndpoint == null)
+        if (authorizationEndpoint == null || tokenEndpoint == null)
         {
             Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata();
             processMetadata(discoveryDocument);
@@ -159,8 +359,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      */
     protected void processMetadata(Map<String, Object> discoveryDocument)
     {
-        authEndpoint = (String)discoveryDocument.get(AUTHORIZATION_ENDPOINT);
-        if (authEndpoint == null)
+        authorizationEndpoint = (String)discoveryDocument.get(AUTHORIZATION_ENDPOINT);
+        if (authorizationEndpoint == null)
             throw new IllegalStateException(AUTHORIZATION_ENDPOINT);
 
         tokenEndpoint = (String)discoveryDocument.get(TOKEN_ENDPOINT);
@@ -220,9 +420,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         return httpClient;
     }
 
-    public String getAuthEndpoint()
+    public String getAuthorizationEndpoint()
     {
-        return authEndpoint;
+        return authorizationEndpoint;
     }
 
     public String getClientId()
@@ -255,15 +455,9 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         return authenticationMethod;
     }
 
-    public void addScopes(String... scopes)
-    {
-        if (scopes != null)
-            Collections.addAll(this.scopes, scopes);
-    }
-
     public List<String> getScopes()
     {
-        return scopes;
+        return Collections.unmodifiableList(scopes);
     }
 
     public boolean isAuthenticateNewUsers()
@@ -271,16 +465,43 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         return authenticateNewUsers;
     }
 
-    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
-    {
-        this.authenticateNewUsers = authenticateNewUsers;
-    }
-
     public boolean isLogoutWhenIdTokenIsExpired()
     {
         return logoutWhenIdTokenIsExpired;
     }
 
+    /**
+     * @deprecated use {@link #getAuthorizationEndpoint()} instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public String getAuthEndpoint()
+    {
+        return authorizationEndpoint;
+    }
+
+    /**
+     * @deprecated use {@link Builder} to configure the OpenID Configuration.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
+    {
+        this.authenticateNewUsers = authenticateNewUsers;
+    }
+
+    /**
+     * @deprecated use {@link Builder} to configure the OpenID Configuration.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void addScopes(String... scopes)
+    {
+        if (scopes != null)
+            Collections.addAll(this.scopes, scopes);
+    }
+
+    /**
+     * @deprecated use {@link Builder} to configure the OpenID Configuration.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public void setLogoutWhenIdTokenIsExpired(boolean logoutWhenIdTokenIsExpired)
     {
         this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
@@ -297,6 +518,6 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public String toString()
     {
         return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
-            getClass().getSimpleName(), hashCode(), issuer, clientId, authEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
+            getClass().getSimpleName(), hashCode(), issuer, clientId, authorizationEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
     }
 }

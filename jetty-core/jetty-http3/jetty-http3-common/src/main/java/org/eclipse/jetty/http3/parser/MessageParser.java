@@ -77,8 +77,8 @@ public class MessageParser
     {
         if (!beginNanoTimeStored)
         {
-            beginNanoTime = NanoTime.now();
             beginNanoTimeStored = true;
+            beginNanoTime = NanoTime.now();
         }
     }
 
@@ -120,7 +120,8 @@ public class MessageParser
                 {
                     case HEADER ->
                     {
-                        storeBeginNanoTime();
+                        if (buffer.hasRemaining())
+                            storeBeginNanoTime();
                         if (headerParser.parse(buffer))
                         {
                             state = State.BODY;

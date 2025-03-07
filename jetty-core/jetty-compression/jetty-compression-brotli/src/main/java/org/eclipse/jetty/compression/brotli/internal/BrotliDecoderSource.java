@@ -18,17 +18,21 @@ import java.nio.ByteBuffer;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class BrotliDecoderSource extends DecoderSource
 {
     private final DecoderJNI.Wrapper decoder;
+    private final BrotliCompression compression;
 
-    public BrotliDecoderSource(Content.Source source, BrotliDecoderConfig config)
+    public BrotliDecoderSource(Content.Source source, BrotliCompression compression, BrotliDecoderConfig config)
     {
         super(source);
+        this.compression = compression;
         try
         {
             this.decoder = new DecoderJNI.Wrapper(config.getBufferSize());
@@ -40,13 +44,13 @@ public class BrotliDecoderSource extends DecoderSource
     }
 
     @Override
-    protected Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException
+    protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer compressed = readChunk.getByteBuffer();
-        if (readChunk.isLast() && !readChunk.hasRemaining())
+        ByteBuffer compressed = inputChunk.getByteBuffer();
+        if (inputChunk.isLast() && !inputChunk.hasRemaining())
             return Content.Chunk.EOF;
 
-        boolean last = readChunk.isLast();
+        boolean last = inputChunk.isLast();
 
         while (true)
         {
@@ -73,10 +77,18 @@ public class BrotliDecoderSource extends DecoderSource
                 case NEEDS_MORE_OUTPUT ->
                 {
                     ByteBuffer output = decoder.pull();
-                    // rely on status.OK to go to EOF
-                    return Content.Chunk.from(output, false);
+                    // Rely on status.OK to go to EOF.
+                    int remaining = output.remaining();
+                    if (remaining == 0)
+                        return Content.Chunk.EMPTY;
+                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(remaining);
+                    copy.append(output);
+                    return Content.Chunk.asChunk(copy.getByteBuffer(), false, copy);
                 }
-                default -> throw new IOException("Decoder failure: Corrupted input buffer");
+                default ->
+                {
+                    return Content.Chunk.from(new IOException("Decoder failure: Corrupted input buffer"));
+                }
             }
         }
     }

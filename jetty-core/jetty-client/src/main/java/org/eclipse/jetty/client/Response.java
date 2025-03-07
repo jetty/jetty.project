@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * <p>{@link Response} objects do not contain getters for the response content, because it may be too large
  * to fit into memory.
  * The response content should be retrieved via {@link Response.Listener#onContent(Response, ByteBuffer) content
- * events}, or via utility classes such as {@link BufferingResponseListener}.</p>
+ * events}, or via utility classes such as {@link RetainingResponseListener}.</p>
  */
 public interface Response
 {
@@ -188,7 +188,10 @@ public interface Response
         @Override
         default void onContentSource(Response response, Content.Source contentSource)
         {
-            Runnable demandCallback = Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> onContentSource(response, contentSource));
+            // Ask the InvocationType to the Content.Source, where applications
+            // have set it there using Content.Source.demand(Runnable).
+            Invocable.InvocationType invocationType = Invocable.getInvocationType(contentSource);
+            Runnable demandCallback = Invocable.from(invocationType, () -> onContentSource(response, contentSource));
             Content.Chunk chunk = contentSource.read();
             if (chunk == null)
             {

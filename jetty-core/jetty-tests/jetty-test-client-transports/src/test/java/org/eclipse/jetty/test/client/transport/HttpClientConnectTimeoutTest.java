@@ -35,7 +35,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsTCP")
     @Tag("external")
-    public void testConnectTimeout(Transport transport) throws Exception
+    public void testConnectTimeout(TransportType transportType) throws Exception
     {
         // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
         String host = "example.com";
@@ -43,7 +43,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -61,7 +61,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsTCP")
     @Tag("external")
-    public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
+    public void testConnectTimeoutIsCancelledByShorterRequestTimeout(TransportType transportType) throws Exception
     {
         // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
         String host = "example.com";
@@ -69,7 +69,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 2000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
 
         AtomicInteger completes = new AtomicInteger();
@@ -90,7 +90,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsTCP")
     @Tag("external")
-    public void retryAfterConnectTimeout(Transport transport) throws Exception
+    public void retryAfterConnectTimeout(TransportType transportType) throws Exception
     {
         // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
         String host = "example.com";
@@ -98,7 +98,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);

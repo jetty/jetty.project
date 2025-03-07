@@ -34,11 +34,9 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -64,9 +62,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
-    private long _contentLength = -1;
     private Supplier<Map<String, String>> _trailers;
-    private long _written;
 
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
@@ -216,91 +212,16 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         getHttpOutput().complete(callback);
     }
 
-    public boolean isAllContentWritten(long written)
-    {
-        return (_contentLength >= 0 && written >= _contentLength);
-    }
-
-    public boolean isContentIncomplete(long written)
-    {
-        return (_contentLength >= 0 && written < _contentLength);
-    }
-
-    public void setContentLength(int len)
-    {
-        setContentLength((long)len);
-    }
-
     @Override
     public HttpFields.Mutable getHeaders()
     {
         return _headers;
     }
 
-    public void setContentLength(long len)
-    {
-        // Protect from setting after committed as default handling
-        // of a servlet HEAD request ALWAYS sets _content length, even
-        // if the getHandling committed the response!
-        if (isCommitted())
-            return;
-
-        if (len > 0)
-        {
-            long written = getHttpOutput().getWritten();
-            if (written > len)
-                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
-
-            _contentLength = len;
-            getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
-            if (isAllContentWritten(written))
-            {
-                try
-                {
-                    closeOutput();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
-            }
-        }
-        else if (len == 0)
-        {
-            long written = getHttpOutput().getWritten();
-            if (written > 0)
-                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
-            _contentLength = len;
-            getHeaders().put(HttpFields.CONTENT_LENGTH_0);
-        }
-        else
-        {
-            _contentLength = len;
-            getHeaders().remove(HttpHeader.CONTENT_LENGTH);
-        }
-    }
-
-    public long getContentLength()
-    {
-        return _contentLength;
-    }
-
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        _written += BufferUtil.length(content);
         super.write(last, content, callback);
-    }
-
-    /**
-     * <p>Returns the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.</p>
-     * <p>The number of bytes written to the network may be different.</p>
-     *
-     * @return the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.
-     */
-    long getContentBytesWritten()
-    {
-        return _written;
     }
 
     public void closeOutput() throws IOException
@@ -318,7 +239,6 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
         _servletApiResponse.resetBuffer();
         _outputType = OutputType.NONE;
-        _contentLength = -1;
         _contentType = null;
         _mimeType = null;
         _characterEncoding = null;
@@ -379,7 +299,6 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             throw new IllegalStateException("Committed");
         getHttpOutput().resetBuffer();
         _outputType = OutputType.NONE;
-        _contentLength = -1;
         _contentType = null;
         _mimeType = null;
         _characterEncoding = null;
@@ -573,7 +492,6 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
             return switch (field.getHeader())
             {
-                case CONTENT_LENGTH -> setContentLength(field);
                 case CONTENT_TYPE -> setContentType(field);
                 default -> super.onAddField(field);
             };
@@ -584,23 +502,17 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         {
             if (isCommitted())
                 return false;
-            if (field.getHeader() == null)
-                return true;
-            switch (field.getHeader())
+            if (field.getHeader() == HttpHeader.CONTENT_TYPE)
             {
-                case CONTENT_LENGTH -> _contentLength = -1;
-                case CONTENT_TYPE ->
+                _contentType = null;
+                _mimeType = null;
+                if (!isWriting())
                 {
-                    _contentType = null;
-                    _mimeType = null;
-                    if (!isWriting())
+                    _characterEncoding = switch (_encodingFrom)
                     {
-                        _characterEncoding = switch (_encodingFrom)
-                        {
-                            case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                            default -> null;
-                        };
-                    }
+                        case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
+                        default -> null;
+                    };
                 }
             }
 
@@ -618,39 +530,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             if (newField.getHeader() == null)
                 return newField;
 
-            return switch (newField.getHeader())
-            {
-                case CONTENT_LENGTH -> setContentLength(newField);
-                case CONTENT_TYPE -> setContentType(newField);
-                default -> newField;
-            };
-        }
-
-        private HttpField setContentLength(HttpField field)
-        {
-            long len = field.getLongValue();
-            long written = _servletChannel.getHttpOutput().getWritten();
-
-            if (len > 0 && written > len)
-                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
-            if (len == 0 && written > 0)
-                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
-
-            _contentLength = len;
-
-            if (len > 0 && isAllContentWritten(written))
-            {
-                try
-                {
-                    closeOutput();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
-            }
-
-            return field;
+            return newField.getHeader() == HttpHeader.CONTENT_TYPE ?  setContentType(newField) : newField;
         }
 
         private HttpField setContentType(HttpField field)

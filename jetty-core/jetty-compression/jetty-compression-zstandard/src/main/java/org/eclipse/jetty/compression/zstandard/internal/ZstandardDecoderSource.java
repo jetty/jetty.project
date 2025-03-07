@@ -27,30 +27,28 @@ public class ZstandardDecoderSource extends DecoderSource
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
 
-    public ZstandardDecoderSource(ZstandardCompression compression, Content.Source src, ZstandardDecoderConfig config)
+    public ZstandardDecoderSource(Content.Source source, ZstandardCompression compression, ZstandardDecoderConfig config)
     {
-        super(src);
+        super(source);
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
         this.decompressCtx.setMagicless(config.isMagicless());
     }
 
     @Override
-    protected Content.Chunk nextChunk(Content.Chunk readChunk)
+    protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer input = readChunk.getByteBuffer();
-        if (!readChunk.hasRemaining())
-            return readChunk;
+        ByteBuffer input = inputChunk.getByteBuffer();
+        if (!inputChunk.hasRemaining())
+            return inputChunk;
         if (!input.isDirect())
             throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer();
-        boolean last = readChunk.isLast();
+        RetainableByteBuffer dst = compression.acquireByteBuffer(compression.getBufferSize());
+        boolean last = inputChunk.isLast();
         dst.getByteBuffer().clear();
         boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);
         if (!fullyFlushed)
-        {
             last = false;
-        }
         dst.getByteBuffer().flip();
         return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
     }

@@ -1,12 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<!-- =============================================================== -->
-<!-- Mixin the Compression Handler                                   -->
-<!-- This enabled compression support for the entire server.         -->
-<!-- Compression algorithm support are found in different modules.    -->
-<!-- =============================================================== -->
-
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
@@ -15,5 +9,3 @@
     </Arg>
   </Call>
 </Configure>
-
-

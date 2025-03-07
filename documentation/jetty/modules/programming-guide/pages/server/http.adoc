@@ -852,10 +852,111 @@ For example, you can specify to match only the specific HTTP request method `DEL
 
 Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
 
+[[handler-use-compression]]
+==== CompressionHandler
+
+`CompressionHandler` provides support for automatic decompression of compressed request content and automatic compression of response content.
+
+The Maven artifact coordinates are:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.compression</groupId>
+  <artifactId>jetty-compression-server</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+The compression algorithms supported are:
+
+* link:https://github.com/google/brotli[brotli]; identified by `br` in `Accept-Encoding` and `Content-Encoding` HTTP headers.
+* link:https://en.wikipedia.org/wiki/Gzip[gzip]; identified by `gzip` in `Accept-Encoding` and `Content-Encoding` HTTP headers.
+* link:https://github.com/facebook/zstd[zstdandard]; identified by `zstd` in `Accept-Encoding` and `Content-Encoding` HTTP headers.
+
+`CompressionHandler` discovers compression algorithm implementations via Java's `ServiceLoader` mechanism, so it is enough to put the Jetty artifacts with the compression implementation in the module-path or class-path, respectively:
+
+* `jetty-compression-brotli`
+* `jetty-compression-gzip`
+* `jetty-compression-zstandard`
+
+The Maven artifact coordinates are the following:
+
+[,xml,subs=attributes+]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-brotli</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-gzip</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-zstandard</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
+</dependencies>
+----
+
+`CompressionHandler` is a `Handler.Wrapper` that inspects the request and, if the conditions are met, it wraps the request and the response to eventually perform decompression of the request content or compression of the response content.
+The decompression/compression is not performed until the web application reads request content or writes response content.
+
+`CompressionHandler` comes with a default configuration, but can be explicitly configured through a `CompressionConfig` object that can be constructed via the builder pattern.
+
+Furthermore, `CompressionHandler` can be configured either at the server level, or at the context level.
+
+`CompressionHandler` can be configured at the server level in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverCompressionHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── CompressionHandler
+    └── ContextHandlerCollection
+        ├── ContextHandler 1
+        :── ...
+        └── ContextHandler N
+----
+
+However, in less common cases, you can configure `CompressionHandler` on a per-context basis, for example because you want to configure `CompressionHandler` with different parameters for each context, or because you want only some contexts to have compression support:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextCompressionHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── ContextHandlerCollection
+    └── ContextHandlerCollection
+        ├── CompressionHandler
+        │   └── ContextHandler /shop
+        │       └── ShopHandler
+        └── ContextHandler /api
+            └── RESTHandler
+----
+
 [[handler-use-gzip]]
 ==== GzipHandler
 
-`GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
+`GzipHandler` provides supports for automatic decompression of gzip compressed request content and automatic gzip compression of response content.
+
+`GzipHandler` is now obsoleted by <<handler-use-compression,`CompressionHandler`>>, but still maintained for backwards compatibility.
+`CompressionHandler` currently supports `gzip` but also other compression algorithms such as `brotli` and `zstandard`.
 
 `GzipHandler` is a `Handler.Wrapper` that inspects the request and, if the request matches the `GzipHandler` configuration, just installs the required components to eventually perform decompression of the request content or compression of the response content.
 The decompression/compression is not performed until the web application reads request content or writes response content.
@@ -899,8 +1000,6 @@ Server
         └── ContextHandler /api
             └── RESTHandler
 ----
-
-// TODO: does ServletContextHandler really need a special configuration?
 
 [[handler-use-rewrite]]
 ==== RewriteHandler

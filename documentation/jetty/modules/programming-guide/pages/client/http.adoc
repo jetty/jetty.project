@@ -45,6 +45,7 @@ Out of the box features that you get with the Jetty HTTP client include:
 * Cookies support -- cookies sent by servers are stored and sent back to servers in matching requests.
 * Authentication support -- HTTP "Basic", "Digest" and "SPNEGO" authentications are supported, others are pluggable.
 * Forward proxy support -- HTTP proxying, SOCKS4 and SOCKS5 proxying.
+* Response content decoding -- response content compressed by the server is transparently decompressed.
 
 [[start]]
 == Starting HttpClient
@@ -114,7 +115,8 @@ A `HttpClient` instance can be thought as a browser instance, and it manages the
 * A `CookieStore` (see <<cookie,this section>>).
 * A `AuthenticationStore` (see <<authentication,this section>>).
 * A `ProxyConfiguration` (see <<proxy,this section>>).
-* A set of ``Destination``s
+* A set of ``ContentDecoder.Factory``s (see <<content-response,this section>>).
+* A set of ``Destination``s, where each `Destination` manages a <<connection-pool,pool of connections>>.
 
 A `Destination` is the client-side component that represents an _origin_ server, and manages a queue of requests for that origin, and a <<connection-pool,pool of connections>> to that origin.
 
@@ -441,6 +443,47 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 [[content-response]]
 === Response Content Handling
 
+Response content may be _encoded_ by the server, and this is signaled by the presence of the `Content-Encoding` response header.
+
+Typically, encoding the response content means that it is compressed by the server, to save bytes transmitted over the network.
+The most common encodings are:
+
+* `gzip`, using the link:https://en.wikipedia.org/wiki/Gzip[gzip] algorithm.
+* `br`, using the link:https://github.com/google/brotli[brotli] algorithm.
+* `zstd`, using the link:https://github.com/facebook/zstd[zstdandard] algorithm.
+
+Jetty's `HttpClient` supports by default the `gzip` encoding, but the support is pluggable and discovered via Java's `ServiceLoader` mechanism.
+
+In order to add support for brotli and zstandard, it is enough to add to your classpath the correspondent Jetty artifacts with the implementation, respectively:
+
+* `jetty-compression-brotli`
+* `jetty-compression-zstandard`
+
+The Maven artifact coordinates are the following:
+
+[,xml,subs=attributes+]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-brotli</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-zstandard</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
+</dependencies>
+----
+
+If you want to remove support for automatic response content decoding (for example in proxies), use the following code:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=removeDecoders]
+----
+
 Jetty's `HttpClient` allows applications to handle response content in different ways.
 
 You can buffer the response content in memory; this is done when using the <<blocking,blocking APIs>> and the content is buffered within a `ContentResponse` up to 2 MiB.
@@ -454,14 +497,14 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(\...)`.
 
-You can buffer the response content in memory also using the <<non-blocking,non-blocking APIs>>, via the `BufferingResponseListener` utility class:
+You can accumulate the response content in memory also using the <<non-blocking,non-blocking APIs>>, via the `RetainingResponseListener` utility class:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bufferingResponseListener]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=retainingResponseListener]
 ----
 
-If you want to avoid buffering, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
+If you want to avoid accumulation, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
 
 [,java,indent=0]
 ----

@@ -22,9 +22,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,7 +39,7 @@ public class PushedResourcesTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsWithPushSupport")
-    public void testPushedResources(Transport transport) throws Exception
+    public void testPushedResources(TransportType transportType) throws Exception
     {
         Random random = new Random();
         byte[] bytes = new byte[512];
@@ -51,7 +51,7 @@ public class PushedResourcesTest extends AbstractTest
 
         String path1 = "/secondary1";
         String path2 = "/secondary2";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -92,9 +92,9 @@ public class PushedResourcesTest extends AbstractTest
 
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(h -> h.add("Cookie", "C0=toBeRemoved"))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -123,7 +123,7 @@ public class PushedResourcesTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsWithPushSupport")
-    public void testPushedResourceRedirect(Transport transport) throws Exception
+    public void testPushedResourceRedirect(TransportType transportType) throws Exception
     {
         Random random = new Random();
         byte[] pushBytes = new byte[512];
@@ -131,7 +131,7 @@ public class PushedResourcesTest extends AbstractTest
 
         String oldPath = "/old";
         String newPath = "/new";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -148,8 +148,8 @@ public class PushedResourcesTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         ;
-        ContentResponse response = client.newRequest(newURI(transport))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+        ContentResponse response = client.newRequest(newURI(transportType))
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)

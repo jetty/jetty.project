@@ -80,6 +80,7 @@ public class SiweTests extends AbstractJettyHomeTest
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
                 "jetty.server.dumpAfterStart=true",
+                "jetty.httpConfig.relativeRedirectAllowed=false"
             };
 
 //            System.setProperty("distribution.debug.port", "5005");

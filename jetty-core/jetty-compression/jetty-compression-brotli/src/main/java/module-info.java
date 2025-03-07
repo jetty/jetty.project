@@ -18,4 +18,7 @@ module org.eclipse.jetty.compression.brotli
     requires com.aayushatharva.brotli4j;
 
     exports org.eclipse.jetty.compression.brotli;
+
+    provides org.eclipse.jetty.compression.Compression with
+        org.eclipse.jetty.compression.brotli.BrotliCompression;
 }

@@ -246,6 +246,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _written;
     }
 
+    /**
+     * Used by ServletCoreResponse when it bypasses HttpOutput to update bytes written.
+     * @param written The bytes written
+     */
+    void addBytesWritten(int written)
+    {
+        _written += written;
+    }
+
     public void reopen()
     {
         try (AutoLock l = _channelState.lock())

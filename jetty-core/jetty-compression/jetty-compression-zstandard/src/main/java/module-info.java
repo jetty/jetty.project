@@ -18,4 +18,7 @@ module org.eclipse.jetty.compression.zstandard
     requires com.github.luben.zstd_jni;
 
     exports org.eclipse.jetty.compression.zstandard;
+
+    provides org.eclipse.jetty.compression.Compression with
+        org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 }

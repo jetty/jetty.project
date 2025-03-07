@@ -19,4 +19,6 @@ module org.eclipse.jetty.compression.server
 
     exports org.eclipse.jetty.compression.server;
     exports org.eclipse.jetty.compression.server.internal;
+
+    uses org.eclipse.jetty.compression.Compression;
 }

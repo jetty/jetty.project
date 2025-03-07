@@ -284,6 +284,7 @@ public interface Stream
 
         /**
          * <p>Callback method invoked when a HEADERS frame representing the HTTP response has been received.</p>
+         * <p>This overload version should be used for simple synchronous implementations.</p>
          *
          * @param stream the stream
          * @param frame the HEADERS frame received
@@ -292,6 +293,20 @@ public interface Stream
         {
             if (!frame.isEndStream())
                 stream.demand();
+        }
+
+        /**
+         * <p>Callback method invoked when a HEADERS frame representing the HTTP response has been received.</p>
+         * <p>This overload version allows for asynchronous implementations.</p>
+         *
+         * @param stream the stream
+         * @param frame the HEADERS frame received
+         * @param callback the callback to notify when the processing is complete
+         */
+        public default void onHeaders(Stream stream, HeadersFrame frame, Callback callback)
+        {
+            onHeaders(stream, frame);
+            callback.succeeded();
         }
 
         /**

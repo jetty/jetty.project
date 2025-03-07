@@ -70,6 +70,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private final ConcurrentHashMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private final ByteBufferPool.Sized _bufferPool;
+    private final AtomicBoolean _shrinking = new AtomicBoolean();
     private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
     private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
     private long _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
@@ -138,35 +139,45 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     private void shrinkCache()
     {
-        // While we need to shrink
-        int numCacheEntries = _cache.size();
-        while (numCacheEntries > 0 && (numCacheEntries > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+        // Only 1 thread shrinking at once
+        if (_shrinking.compareAndSet(false, true))
         {
-            // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
+            try
             {
-                long delta = NanoTime.elapsed(c2.getLastAccessedNanos(), c1.getLastAccessedNanos());
-                if (delta != 0)
-                    return delta < 0 ? -1 : 1;
+                // While we need to shrink
+                int numCacheEntries = _cache.size();
+                while (numCacheEntries > 0 && (numCacheEntries > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+                {
+                    // Scan the entire cache and generate an ordered list by last accessed time.
+                    SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
+                    {
+                        long delta = NanoTime.elapsed(c2.getLastAccessedNanos(), c1.getLastAccessedNanos());
+                        if (delta != 0)
+                            return delta < 0 ? -1 : 1;
 
-                delta = c1.getContentLengthValue() - c2.getContentLengthValue();
-                if (delta != 0)
-                    return delta < 0 ? -1 : 1;
+                        delta = c1.getContentLengthValue() - c2.getContentLengthValue();
+                        if (delta != 0)
+                            return delta < 0 ? -1 : 1;
 
-                return c1.getKey().compareTo(c2.getKey());
-            });
-            sorted.addAll(_cache.values());
+                        return c1.getKey().compareTo(c2.getKey());
+                    });
+                    sorted.addAll(_cache.values());
 
-            // TODO: Can we remove the buffers from the content before evicting.
-            // Invalidate least recently used first
-            for (CachingHttpContent content : sorted)
-            {
-                if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
-                    break;
-                removeFromCache(content);
+                    // Invalidate least recently used first
+                    for (CachingHttpContent content : sorted)
+                    {
+                        if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
+                            break;
+                        removeFromCache(content);
+                    }
+
+                    numCacheEntries = _cache.size();
+                }
             }
-
-            numCacheEntries = _cache.size();
+            finally
+            {
+                _shrinking.set(false);
+            }
         }
     }
 
@@ -230,7 +241,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (!isCacheable(httpContent))
             return httpContent;
 
-        // The re-mapping function may be run multiple times by compute.
         AtomicBoolean added = new AtomicBoolean();
         cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
@@ -354,17 +364,37 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
+            boolean retained = false;
             try
             {
-                _buffer.retain();
-                sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), Callback.from(_buffer::release, callback));
+                retained = tryRetain();
+                if (retained)
+                    sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
+                else
+                    getWrapped().writeTo(sink, offset, length, callback);
             }
             catch (Throwable x)
             {
-                // BufferUtil.slice() may fail if offset and/or length are out of bounds.
-                _buffer.release();
+                // BufferUtil.slice() may fail if offset and/or length are out of bounds,
+                // Math.toIntExact may fail too if offset or length are > Integer.MAX_VALUE.
+                if (retained)
+                    release();
                 callback.failed(x);
             }
+        }
+
+        /**
+         * Atomically checks that this content still is in cache (so it hasn't been released yet and is still usable) and retain
+         * its internal buffer if it is.
+         * @return true if this content can be used and has been retained, false otherwise.
+         */
+        private boolean tryRetain()
+        {
+            return _cache.computeIfPresent(_cacheKey, (s, cachingHttpContent) ->
+            {
+                _buffer.retain();
+                return cachingHttpContent;
+            }) != null;
         }
 
         @Override

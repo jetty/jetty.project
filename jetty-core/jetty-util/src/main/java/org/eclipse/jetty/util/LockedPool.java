@@ -201,11 +201,6 @@ public class LockedPool<P> extends Pool.Wrapper<P>
         @SuppressWarnings("unchecked")
         public static <S> Tracker<S> noTracker()
         {
-            class NoTracker implements Tracker<S>
-            {
-                private static final Tracker<?> INSTANCE = new NoTracker();
-            }
-
             return (Tracker<S>)NoTracker.INSTANCE;
         }
 
@@ -252,5 +247,10 @@ public class LockedPool<P> extends Pool.Wrapper<P>
         public default void terminated(Pool<T> pool, Collection<Entry<T>> entries)
         {
         }
+    }
+
+    private static class NoTracker<S> implements Tracker<S>
+    {
+        private static final Tracker<?> INSTANCE = new NoTracker<>();
     }
 }

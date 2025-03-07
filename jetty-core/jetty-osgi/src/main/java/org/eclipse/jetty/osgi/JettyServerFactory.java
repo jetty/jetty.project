@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -34,7 +35,9 @@ import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +76,7 @@ public class JettyServerFactory
             ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl/*JettyServerFactory.class.getClassLoader()*/);
 
             ClassLoader serverClassLoader = libExtClassLoader;
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
 
@@ -106,44 +109,60 @@ public class JettyServerFactory
                 }
             }
 
-            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+            if (jettyConfigurations != null)
             {
-                //create the server via config files
-                for (URL jettyConfiguration : jettyConfigurations)
+                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                 {
-                    try
+                    //create the server via config files
+                    for (URL jettyConfiguration : jettyConfigurations)
                     {
-                        // Execute a Jetty configuration file
-                        XmlConfiguration config = new XmlConfiguration(resourceFactory.newResource(jettyConfiguration));
-
-                        config.getIdMap().putAll(idMap);
-                        config.getProperties().putAll(properties);
-
-                        // #334062 compute the URL of the folder that contains the
-                        // conf file and set it as a property so we can compute relative paths
-                        // from it.
-                        String urlPath = jettyConfiguration.toString();
-                        int lastSlash = urlPath.lastIndexOf('/');
-                        if (lastSlash > 4)
+                        try
                         {
-                            urlPath = urlPath.substring(0, lastSlash);
-                            config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                            Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
+                            if (!Resources.isReadableFile(xmlresource))
+                                throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
+                            // Execute a Jetty configuration file
+                            XmlConfiguration config = new XmlConfiguration(xmlresource);
+
+                            config.getIdMap().putAll(idMap);
+                            config.getProperties().putAll(properties);
+
+                            // #334062 compute the URL of the folder that contains the
+                            // conf file and set it as a property so we can compute relative paths
+                            // from it.
+                            String urlPath = jettyConfiguration.toString();
+                            int lastSlash = urlPath.lastIndexOf('/');
+                            if (lastSlash > 4)
+                            {
+                                urlPath = urlPath.substring(0, lastSlash);
+                                config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                            }
+
+                            Object o = config.configure();
+                            // Remember the Server if it was configured.
+                            if (o instanceof Server configuredServer && server == null)
+                                server = configuredServer;
+                            idMap = config.getIdMap();
                         }
-
-                        Object o = config.configure();
-                        server = (Server)o;
-
-                        idMap = config.getIdMap();
+                        catch (Exception e)
+                        {
+                            LOG.warn("Configuration error in {}", jettyConfiguration, e);
+                            throw e;
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Configuration error in {}", jettyConfiguration);
-                        throw e;
-                    }
+                }
+
+                if (server == null)
+                {
+                    LOG.warn("No Server was configured by the XML files {}",
+                        jettyConfigurations.stream()
+                            .map(URL::toString)
+                            .collect(Collectors.joining(", ", "[", "]"))
+                    );
                 }
             }
 
-            //if no config files, create the server
+            //if no config files, or nothing created/configured the server, then create an unconfigured server
             if (server == null)
                 server = new Server();
 

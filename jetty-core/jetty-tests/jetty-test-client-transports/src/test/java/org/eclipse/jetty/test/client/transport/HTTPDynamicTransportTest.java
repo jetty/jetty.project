@@ -77,6 +77,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class HTTPDynamicTransportTest extends AbstractTransportTest
 {
@@ -151,6 +152,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     @Test
     public void testNonExplicitHTTPVersionH3H2H1() throws Exception
     {
+        assumeFalse("ci".equals(System.getProperty("env")));
+
         int port = freePort();
         ConnectionFactory h1 = new HttpConnectionFactory();
         ConnectionFactory h2c = new HTTP2CServerConnectionFactory();

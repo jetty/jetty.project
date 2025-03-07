@@ -25,7 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -40,7 +42,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest
@@ -57,10 +59,10 @@ public class HttpClientLoadTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIterative(Transport transport) throws Exception
+    public void testIterative(TransportType transportType) throws Exception
     {
         server = newServer();
-        start(transport, new LoadHandler());
+        start(transportType, new LoadHandler());
         setStreamIdleTimeout(120000);
         client.stop();
         ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
@@ -68,51 +70,55 @@ public class HttpClientLoadTest extends AbstractTest
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
-        client.start();
-
-        // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
-        int runs = 1;
-        int iterations = 100;
-        for (int i = 0; i < runs; ++i)
+        try (HttpClient httpClient = client)
         {
-            run(transport, iterations);
-        }
+            httpClient.start();
 
-        // Re-run after warmup
-        iterations = 250;
-        for (int i = 0; i < runs; ++i)
-        {
-            run(transport, iterations);
-        }
+            // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
+            int runs = 1;
+            int iterations = 100;
+            for (int i = 0; i < runs; ++i)
+            {
+                run(transportType, iterations);
+            }
 
-        assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+            // Re-run after warmup
+            iterations = 250;
+            for (int i = 0; i < runs; ++i)
+            {
+                run(transportType, iterations);
+            }
+        }
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), is(0)));
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrent(Transport transport) throws Exception
+    public void testConcurrent(TransportType transportType) throws Exception
     {
         // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        Assumptions.assumeTrue(transport != Transport.H3);
+        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
 
-        start(transport, new LoadHandler());
+        start(transportType, new LoadHandler());
         client.stop();
         ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
         client.setByteBufferPool(byteBufferPool);
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
-        client.start();
+        try (HttpClient httpClient = client)
+        {
+            httpClient.start();
 
-        int runs = 1;
-        int iterations = 128;
-        IntStream.range(0, 16).parallel().forEach(i ->
+            int runs = 1;
+            int iterations = 128;
+            IntStream.range(0, 16).parallel().forEach(i ->
                 IntStream.range(0, runs).forEach(j ->
-                        run(transport, iterations)));
-
-        assertThat("Connection Leaks: " + byteBufferPool.getLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+                    run(transportType, iterations)));
+        }
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), is(0)));
     }
 
-    private void run(Transport transport, int iterations)
+    private void run(TransportType transportType, int iterations)
     {
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
@@ -133,13 +139,13 @@ public class HttpClientLoadTest extends AbstractTest
         long begin = NanoTime.now();
         for (int i = 0; i < iterations; ++i)
         {
-            test(transport, latch, failures);
+            test(transportType, latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
         long end = NanoTime.now();
         task.cancel();
         long elapsed = NanoTime.millisElapsed(begin, end);
-        logger.info("{} {} requests in {} ms, {} req/s", iterations, transport, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
+        logger.info("{} {} requests in {} ms, {} req/s", iterations, transportType, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
 
         for (String failure : failures)
         {
@@ -149,19 +155,19 @@ public class HttpClientLoadTest extends AbstractTest
         assertTrue(failures.isEmpty(), failures.toString());
     }
 
-    private void test(Transport transport, CountDownLatch latch, List<String> failures)
+    private void test(TransportType transportType, CountDownLatch latch, List<String> failures)
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random destination
         String host;
-        if (transport == Transport.H3)
+        if (transportType == TransportType.H3_QUICHE)
             host = "localhost";
         else
             host = random.nextBoolean() ? "localhost" : "127.0.0.1";
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
 
-        boolean ssl = transport.isSecure();
+        boolean ssl = transportType.isSecure();
 
         // Choose randomly whether to close the connection on the client or on the server
         boolean clientClose = !ssl && random.nextInt(100) < 5;

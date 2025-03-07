@@ -184,6 +184,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 trailer = _trailer;
                 if (trailer != null)
                 {
+                    data.release();
                     _chunk = Content.Chunk.next(trailer);
                     return trailer;
                 }
@@ -434,6 +435,24 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             callback.succeeded();
         }
+    }
+
+    @Override
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
+    {
+        // Append a ResetFrame into the H2 flusher and complete the appCallback once all the frames
+        // up to and including the reset one have been flushed; it is needed to wait to make sure
+        // the completion listeners aren't called while a write is still pending.
+        return () ->
+        {
+            _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            _stream.getSession().flush(Callback.from(() ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("cancelSend reset and flushed");
+                appCallback.failed(cause);
+            }));
+        };
     }
 
     private HttpFields retrieveTrailers()

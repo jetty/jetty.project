@@ -84,12 +84,6 @@ public class GzipEncoderSink extends EncoderSink
     private final int bufferSize;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
-    /**
-     * Number of input bytes provided to the deflater.
-     * This is different then {@link Deflater#getTotalIn()} as that only shows
-     * the number of input bytes that have been read.
-     */
-    private long inputBytesProvided = 0;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink, GzipEncoderConfig config)
     {
@@ -114,7 +108,6 @@ public class GzipEncoderSink extends EncoderSink
         int space = Math.min(input.remaining(), content.remaining());
         ByteBuffer slice = content.slice();
         slice.limit(space);
-        inputBytesProvided += slice.remaining();
         // Update CRC based on what can be consumed right now.
         // Any leftover content will be consumed on a later call.
         crc.update(slice.slice());
@@ -151,25 +144,22 @@ public class GzipEncoderSink extends EncoderSink
                                 output = compression.acquireByteBuffer(bufferSize);
                             if (encode(content, output.getByteBuffer()))
                             {
-                                if (output.hasRemaining())
-                                {
-                                    WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
-                                    output = null;
-                                    return writeRecord;
-                                }
+                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                                output = null;
+                                return writeRecord;
                             }
                         }
-                        else if (inputBytesProvided > 0)
+                        else
                         {
-                            // no remaining content (and input has been provided)
-                            return null;
-                        }
-                        if (!content.hasRemaining() && last)
-                        {
-                            state.compareAndSet(State.BODY, State.FLUSHING);
-                            // Reset input, so that Gzip stops looking at ByteBuffer (that might be reused)
-                            // deflater.setInput(EMPTY_BUFFER);
-                            deflater.finish();
+                            if (last)
+                            {
+                                state.compareAndSet(State.BODY, State.FLUSHING);
+                                deflater.finish();
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
                     case FLUSHING ->

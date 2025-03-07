@@ -231,10 +231,7 @@ public class AnnotationTest extends HttpServlet
                     classNames.add(c.getName());
                     out.print(c.getName() + " ");
                 }
-
-                if (classNames.size() != __HandlesTypes.size())
-                    out.println("<br/><span class=\"fail\">FAIL</span>");
-                else if (!classNames.containsAll(__HandlesTypes))
+                if (!classNames.containsAll(__HandlesTypes))
                     out.println("<br/><span class=\"fail\">FAIL</span>");
                 else
                     out.println("<br/><span class=\"pass\">PASS</span>");

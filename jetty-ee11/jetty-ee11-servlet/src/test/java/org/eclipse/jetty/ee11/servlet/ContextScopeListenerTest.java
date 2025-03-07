@@ -19,13 +19,13 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
@@ -63,17 +64,19 @@ public class ContextScopeListenerTest
 
         _client = new HttpClient();
         _client.start();
+        assertThat(ContextHandler.getCurrentContext(), nullValue());
     }
 
     @AfterEach
     public void after() throws Exception
     {
+        assertThat(ContextHandler.getCurrentContext(), nullValue());
         _client.stop();
         _server.stop();
     }
 
     @Test
-    public void testAsyncServlet() throws Exception
+    public void testAsyncServletAsyncBeforeDoGetExit() throws Exception
     {
         _contextHandler.addServlet(new ServletHolder(new HttpServlet()
         {
@@ -87,26 +90,33 @@ public class ContextScopeListenerTest
                 }
 
                 _history.add("doGet");
+                CountDownLatch latch = new CountDownLatch(1);
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {
                     _history.add("asyncRunnable");
                     asyncContext.dispatch("/dispatch");
+                    latch.countDown();
+                    // wait until doGet call has exited
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.get(_history.size() - 1).equals("exitScope /initialPath"));
                 });
+
+                try
+                {
+                    assertTrue(latch.await(5, TimeUnit.SECONDS));
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         }), "/");
 
-        CountDownLatch complete = new CountDownLatch(3);
-
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
-            // Use a lock to prevent the async thread running the listener concurrently.
-            private final ReentrantLock _lock = new ReentrantLock();
-
             @Override
             public void enterScope(Context context, Request request)
             {
-                _lock.lock();
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("enterScope " + pathInContext);
             }
@@ -116,8 +126,77 @@ public class ContextScopeListenerTest
             {
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("exitScope " + pathInContext);
-                _lock.unlock();
-                complete.countDown();
+            }
+        });
+
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
+        ContentResponse response = _client.GET(uri);
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS).until(() -> _history.size() == 7);
+        assertHistory(
+            "enterScope /initialPath",
+            "doGet",
+            "enterScope /initialPath",
+            "asyncRunnable",
+            "asyncDispatch",
+            "exitScope /initialPath",
+            "exitScope /initialPath"
+        );
+    }
+
+    @Test
+    public void testAsyncServletAsyncAfterDoGetExit() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                if  (req.getDispatcherType() == DispatcherType.ASYNC)
+                {
+                    _history.add("asyncDispatch");
+                    return;
+                }
+
+                _history.add("doGet");
+                CountDownLatch latch = new CountDownLatch(1);
+                AsyncContext asyncContext = req.startAsync();
+                asyncContext.start(() ->
+                {
+                    latch.countDown();
+                    // wait until doGet call has exited
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.get(_history.size() - 1).equals("exitScope /initialPath"));
+
+                    _history.add("asyncRunnable");
+                    asyncContext.dispatch("/dispatch");
+                });
+
+                try
+                {
+                    assertTrue(latch.await(5, TimeUnit.SECONDS));
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        }), "/");
+
+        _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
+        {
+            @Override
+            public void enterScope(Context context, Request request)
+            {
+                String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
+                _history.add("enterScope " + pathInContext);
+            }
+
+            @Override
+            public void exitScope(Context context, Request request)
+            {
+                String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
+                _history.add("exitScope " + pathInContext);
             }
         });
 
@@ -125,12 +204,12 @@ public class ContextScopeListenerTest
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
 
-        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS).until(() -> _history.size() >= 9);
         assertHistory(
             "enterScope /initialPath",
             "doGet",
-            "exitScope /initialPath",
             "enterScope /initialPath",
+            "exitScope /initialPath",
             "asyncRunnable",
             "exitScope /initialPath",
             "enterScope /initialPath",

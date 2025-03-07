@@ -62,13 +62,13 @@ public class HttpClientDemandTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDemandInTwoChunks(Transport transport) throws Exception
+    public void testDemandInTwoChunks(TransportType transportType) throws Exception
     {
         // Tests a special case where the first chunk is automatically
         // delivered, and the second chunk is explicitly demanded and
         // completes the response content.
         CountDownLatch contentLatch = new CountDownLatch(1);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -89,7 +89,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
 
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .send(new BufferingResponseListener()
             {
                 private final AtomicInteger chunks = new AtomicInteger();
@@ -120,14 +120,14 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDemand(Transport transport) throws Exception
+    public void testDemand(TransportType transportType) throws Exception
     {
         // A small buffer size so the response content is
         // read in multiple buffers, but big enough for HTTP/3.
         int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
-        startServer(transport, new Handler.Abstract()
+        startServer(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -137,7 +137,7 @@ public class HttpClientDemandTest extends AbstractTest
                 return true;
             }
         });
-        startClient(transport);
+        startClient(transportType);
         client.stop();
         client.setByteBufferPool(new ArrayByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
@@ -146,7 +146,7 @@ public class HttpClientDemandTest extends AbstractTest
         Queue<Runnable> demanderQueue = new ConcurrentLinkedQueue<>();
         Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .send(new BufferingResponseListener()
             {
                 @Override
@@ -211,10 +211,10 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContentWhileStalling(Transport transport) throws Exception
+    public void testContentWhileStalling(TransportType transportType) throws Exception
     {
         CountDownLatch serverContentLatch = new CountDownLatch(1);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -239,7 +239,7 @@ public class HttpClientDemandTest extends AbstractTest
         AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
         CountDownLatch clientContentLatch = new CountDownLatch(2);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 chunk.retain();
@@ -300,12 +300,12 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testTwoListenersWithDifferentDemand(Transport transport) throws Exception
+    public void testTwoListenersWithDifferentDemand(TransportType transportType) throws Exception
     {
         int bufferSize = 1536;
         byte[] bytes = new byte[10 * bufferSize];
         new Random().nextBytes(bytes);
-        startServer(transport, new Handler.Abstract()
+        startServer(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -315,7 +315,7 @@ public class HttpClientDemandTest extends AbstractTest
                 return true;
             }
         });
-        startClient(transport);
+        startClient(transportType);
         client.stop();
         client.setByteBufferPool(new ArrayByteBufferPool(0, bufferSize, -1));
         client.setResponseBufferSize(bufferSize);
@@ -341,7 +341,7 @@ public class HttpClientDemandTest extends AbstractTest
         };
 
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync(listener1)
             .onResponseContentAsync(listener2)
             .send(result ->
@@ -377,13 +377,13 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testGZippedResponseContentWithAsyncDemand(Transport transport) throws Exception
+    public void testGZippedResponseContentWithAsyncDemand(TransportType transportType) throws Exception
     {
         int chunks = 64;
         byte[] content = new byte[chunks * 1024];
         new Random().nextBytes(content);
 
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -405,7 +405,7 @@ public class HttpClientDemandTest extends AbstractTest
         byte[] bytes = new byte[content.length];
         ByteBuffer received = ByteBuffer.wrap(bytes);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 boolean demand = chunk.hasRemaining();
@@ -425,11 +425,11 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDelayedBeforeContentDemand(Transport transport) throws Exception
+    public void testDelayedBeforeContentDemand(TransportType transportType) throws Exception
     {
         byte[] content = new byte[1024];
         new Random().nextBytes(content);
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -446,7 +446,7 @@ public class HttpClientDemandTest extends AbstractTest
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
@@ -499,15 +499,15 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDelayedBeforeContentDemandWithNoResponseContent(Transport transport) throws Exception
+    public void testDelayedBeforeContentDemandWithNoResponseContent(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
 
         AtomicReference<Runnable> beforeContentDemanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
@@ -561,14 +561,14 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testReadDemandInSpawnedThread(Transport transport) throws Exception
+    public void testReadDemandInSpawnedThread(TransportType transportType) throws Exception
     {
         int totalBytes = 1024;
-        start(transport, new TestHandler(totalBytes));
+        start(transportType, new TestHandler(totalBytes));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentSource((response, contentSource) -> contentSource.demand(() -> new Thread(new Accumulator(contentSource, chunks)).start()))
             .send(result ->
             {

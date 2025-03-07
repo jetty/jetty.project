@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Get id="ThreadPool" name="threadPool"/>
   <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
@@ -20,35 +20,34 @@
     </Arg>
     <Set name="executor"><Ref refid="ThreadPool"/></Set>
   </New>
+  <New class="org.eclipse.jetty.security.openid.OpenIdConfiguration$Builder">
+    <Arg name="issuer"><Property name="jetty.openid.provider"/></Arg>
+    <Arg name="clientId"><Property name="jetty.openid.clientId"/></Arg>
+    <Arg name="clientSecret"><Property name="jetty.openid.clientSecret"/></Arg>
+    <Set name="authorizationEndpoint" property="jetty.openid.provider.authorizationEndpoint"/>
+    <Set name="tokenEndpoint" property="jetty.openid.provider.tokenEndpoint"/>
+    <Set name="authenticationMethod" property="jetty.openid.authenticationMethod"/>
+    <Set name="httpClient"><Ref refid="HttpClient"/></Set>
+    <Set name="authenticateNewUsers" type="boolean" property="jetty.openid.authenticateNewUsers"/>
+    <Set name="logoutWhenIdTokenIsExpired" type="boolean" property="jetty.openid.logoutWhenIdTokenIsExpired"/>
+    <Call name="scopes">
+      <Arg>
+        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+          <Arg><Property name="jetty.openid.scopes"/></Arg>
+        </Call>
+      </Arg>
+    </Call>
+
+    <Call id="OpenIdConfiguration" name="build"/>
+  </New>
   <Call name="addBean">
     <Arg>
-      <Ref refid="BaseLoginService"/>
+      <Ref refid="OpenIdConfiguration"/>
     </Arg>
   </Call>
   <Call name="addBean">
     <Arg>
-      <New id="OpenIdConfiguration" class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
-        <Arg name="issuer"><Property name="jetty.openid.provider" deprecated="jetty.openid.openIdProvider"/></Arg>
-        <Arg name="authorizationEndpoint"><Property name="jetty.openid.provider.authorizationEndpoint"/></Arg>
-        <Arg name="tokenEndpoint"><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
-        <Arg name="clientId"><Property name="jetty.openid.clientId"/></Arg>
-        <Arg name="clientSecret"><Property name="jetty.openid.clientSecret"/></Arg>
-        <Arg name="authenticationMethod"><Property name="jetty.openid.authenticationMethod" deprecated="jetty.openid.authMethod" default="client_secret_post"/></Arg>
-        <Arg name="httpClient"><Ref refid="HttpClient"/></Arg>
-        <Set name="authenticateNewUsers">
-          <Property name="jetty.openid.authenticateNewUsers" default="false"/>
-        </Set>
-        <Set name="logoutWhenIdTokenIsExpired">
-          <Property name="jetty.openid.logoutWhenIdTokenIsExpired" default="false"/>
-        </Set>
-        <Call name="addScopes">
-          <Arg>
-            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg><Property name="jetty.openid.scopes"/></Arg>
-            </Call>
-          </Arg>
-        </Call>
-      </New>
+      <Ref refid="BaseLoginService"/>
     </Arg>
   </Call>
 </Configure>

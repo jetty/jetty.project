@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * will schedule a callback to {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
  * as appropriate.</p>
  */
-public abstract class AbstractConnection implements Connection, Invocable
+public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnection.class);
 
@@ -280,7 +280,7 @@ public abstract class AbstractConnection implements Connection, Invocable
 
     public abstract static class NonBlocking extends AbstractConnection
     {
-        private final Callback _nonBlockingReadCallback = new NonBlockingFillableCallback();
+        private final Callback _nonBlockingFillableCallback = new NonBlockingFillableCallback();
 
         public NonBlocking(EndPoint endPoint, Executor executor)
         {
@@ -297,7 +297,7 @@ public abstract class AbstractConnection implements Connection, Invocable
         @Override
         public void fillInterested()
         {
-            fillInterested(_nonBlockingReadCallback);
+            fillInterested(_nonBlockingFillableCallback);
         }
 
         private class NonBlockingFillableCallback extends FillableCallback

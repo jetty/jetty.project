@@ -35,12 +35,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.ContentDecoder;
-import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -50,6 +49,7 @@ import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -777,7 +777,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private final List<ByteBuffer> buffers = new ArrayList<>(2);
         private final ContentTransformer transformer;
-        private final ContentDecoder decoder;
+        private final GZIPContentDecoder decoder;
         private final ByteArrayOutputStream out;
         private final GZIPOutputStream gzipOut;
 
@@ -792,7 +792,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             {
                 this.transformer = transformer;
                 ByteBufferPool bufferPool = httpClient == null ? null : httpClient.getByteBufferPool();
-                this.decoder = new GZIPContentDecoder(bufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
+                this.decoder = new GZIPDecoder(bufferPool);
                 this.out = new ByteArrayOutputStream();
                 this.gzipOut = new GZIPOutputStream(out);
             }
@@ -853,6 +853,21 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             byte[] gzipBytes = out.toByteArray();
             out.reset();
             return ByteBuffer.wrap(gzipBytes);
+        }
+
+        private static class GZIPDecoder extends GZIPContentDecoder
+        {
+            public GZIPDecoder(ByteBufferPool bufferPool)
+            {
+                super(bufferPool, IO.DEFAULT_BUFFER_SIZE);
+            }
+
+            @Override
+            protected boolean decodedChunk(RetainableByteBuffer chunk)
+            {
+                super.decodedChunk(chunk);
+                return true;
+            }
         }
     }
 

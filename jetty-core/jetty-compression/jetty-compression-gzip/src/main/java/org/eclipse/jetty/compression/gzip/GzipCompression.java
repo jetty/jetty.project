@@ -43,7 +43,7 @@ public class GzipCompression extends Compression
     private static final String ENCODING_NAME = "gzip";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
-    private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;
+
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
     private GzipEncoderConfig defaultEncoderConfig = new GzipEncoderConfig();
@@ -52,22 +52,13 @@ public class GzipCompression extends Compression
     public GzipCompression()
     {
         super(ENCODING_NAME);
+        setMinCompressSize(DEFAULT_MIN_GZIP_SIZE);
     }
 
     @Override
-    public RetainableByteBuffer acquireByteBuffer()
+    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
     {
-        return acquireByteBuffer(getBufferSize());
-    }
-
-    @Override
-    public RetainableByteBuffer acquireByteBuffer(int length)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (length == 0)
-            return RetainableByteBuffer.EMPTY;
-
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, false);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
@@ -129,15 +120,9 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public int getMinCompressSize()
-    {
-        return minCompressSize;
-    }
-
-    @Override
     public void setMinCompressSize(int minCompressSize)
     {
-        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE);
+        super.setMinCompressSize(Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE));
     }
 
     @Override
@@ -163,7 +148,7 @@ public class GzipCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
         GzipDecoderConfig gzipDecoderConfig = (GzipDecoderConfig)config;
-        return new GzipDecoderSource(this, source, gzipDecoderConfig);
+        return new GzipDecoderSource(source, this, gzipDecoderConfig);
     }
 
     @Override

@@ -15,6 +15,7 @@ package org.eclipse.jetty.client.transport;
 
 import java.net.URI;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,12 +31,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,14 +63,15 @@ import org.slf4j.LoggerFactory;
  *
  * @see HttpSender
  */
-public abstract class HttpReceiver
+public abstract class HttpReceiver implements Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
     private final HttpChannel channel;
     private final SerializedInvoker invoker;
     private ResponseState responseState = ResponseState.IDLE;
-    private NotifiableContentSource contentSource;
+    private ContentSource rawContentSource;
+    private Content.Source contentSource;
     private Throwable failure;
 
     protected HttpReceiver(HttpChannel channel)
@@ -157,7 +157,7 @@ public abstract class HttpReceiver
             responseState = ResponseState.BEGIN;
             HttpResponse response = exchange.getResponse();
             HttpConversation conversation = exchange.getConversation();
-            // Probe the protocol handlers
+            // Probe the protocol handlers.
             HttpClient client = getHttpDestination().getHttpClient();
             ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
             Response.Listener handlerListener = null;
@@ -170,7 +170,7 @@ public abstract class HttpReceiver
             conversation.updateResponseListeners(handlerListener);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Response begin {}", response);
+                LOG.debug("Notifying response begin for {} on {}", exchange, this);
             conversation.getResponseListeners().notifyBegin(response);
         });
     }
@@ -189,12 +189,12 @@ public abstract class HttpReceiver
     protected void responseHeader(HttpExchange exchange, HttpField field)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseHeader for {} on {}", field, this);
+            LOG.debug("Invoking responseHeader {} for {} on {}", field, exchange, this);
 
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseHeader on {}", this);
+                LOG.debug("Executing responseHeader for {} on {}", exchange, this);
 
             if (exchange.isResponseCompleteOrTerminated())
                 return;
@@ -202,10 +202,10 @@ public abstract class HttpReceiver
             responseState = ResponseState.HEADER;
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
-                LOG.debug("Notifying header {}", field);
+                LOG.debug("Notifying response header {} for {} on {}", field, exchange, this);
             boolean process = exchange.getConversation().getResponseListeners().notifyHeader(response, field);
             if (LOG.isDebugEnabled())
-                LOG.debug("Header {} notified, {}processing needed", field, (process ? "" : "no "));
+                LOG.debug("Notified response header {}, processing {}", field, (process ? "needed" : "skipped"));
             if (process)
             {
                 response.addHeader(field);
@@ -241,12 +241,12 @@ public abstract class HttpReceiver
     protected void responseHeaders(HttpExchange exchange)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseHeaders on {}", this);
+            LOG.debug("Invoking responseHeaders for {} on {}", exchange, this);
 
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseHeaders on {}", this);
+                LOG.debug("Executing responseHeaders for {} on {}", exchange, this);
 
             if (exchange.isResponseCompleteOrTerminated())
                 return;
@@ -259,7 +259,9 @@ public abstract class HttpReceiver
 
             // HEAD responses may have Content-Encoding
             // and Content-Length, but have no content.
-            ContentDecoder decoder = null;
+            // This step may modify the response headers,
+            // so must be done before notifying the headers.
+            ContentDecoder.Factory decoderFactory = null;
             if (!HttpMethod.HEAD.is(exchange.getRequest().getMethod()))
             {
                 // Content-Encoding may have multiple values in the order they
@@ -279,13 +281,15 @@ public abstract class HttpReceiver
                 {
                     if (factory.getEncoding().equalsIgnoreCase(contentEncoding))
                     {
-                        decoder = factory.newContentDecoder();
-                        decoder.beforeDecoding(response);
+                        decoderFactory = factory;
+                        beforeDecoding(response, contentEncoding);
                         break;
                     }
                 }
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("Notifying response headers for {} on {}", exchange, this);
             ResponseListeners responseListeners = exchange.getConversation().getResponseListeners();
             responseListeners.notifyHeaders(response);
 
@@ -296,20 +300,26 @@ public abstract class HttpReceiver
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Interim response status {}, succeeding", response.getStatus());
+                // The response success event will be serialized and run after this event completes.
                 responseSuccess(exchange, this::onInterim);
                 return;
             }
 
             responseState = ResponseState.CONTENT;
-            if (contentSource != null)
+            if (rawContentSource != null)
                 throw new IllegalStateException();
-            contentSource = new ContentSource();
+            rawContentSource = new ContentSource();
+            contentSource = rawContentSource;
 
-            if (decoder != null)
-                contentSource = new DecodingContentSource(contentSource, invoker, decoder, response);
+            if (decoderFactory != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decoding {} response content for {} on {}", decoderFactory.getEncoding(), exchange, this);
+                contentSource = new DecodedContentSource(decoderFactory.newDecoderContentSource(rawContentSource), response);
+            }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Response content {} {}", response, contentSource);
+                LOG.debug("Notifying response content {} for {} on {}", contentSource, exchange, this);
             responseListeners.notifyContentSource(response, contentSource);
         });
     }
@@ -320,22 +330,23 @@ public abstract class HttpReceiver
      * This method takes care of ensuring the {@link Content.Source} passed to
      * {@link Response.ContentSourceListener#onContentSource(Response, Content.Source)}
      * calls the demand callback.
-     * The call to the demand callback is serialized with other events.
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseContentAvailable on {}", this);
+            LOG.debug("Invoking responseContentAvailable for {} on {}", exchange, this);
 
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseContentAvailable on {}", this);
+                LOG.debug("Executing responseContentAvailable for {} on {}", exchange, this);
 
             if (exchange.isResponseCompleteOrTerminated())
                 return;
 
-            contentSource.onDataAvailable();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Notifying data available for {} on {}", exchange, this);
+            rawContentSource.onDataAvailable();
         });
     }
 
@@ -351,7 +362,7 @@ public abstract class HttpReceiver
     protected void responseSuccess(HttpExchange exchange, Runnable afterSuccessTask)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseSuccess on {}", this);
+            LOG.debug("Invoking responseSuccess for {} on {}", exchange, this);
 
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
@@ -361,7 +372,7 @@ public abstract class HttpReceiver
         Runnable successTask = () ->
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseSuccess on {}", this);
+                LOG.debug("Executing responseSuccess for {} on {}", exchange, this);
 
             responseState = ResponseState.IDLE;
 
@@ -369,7 +380,7 @@ public abstract class HttpReceiver
 
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
-                LOG.debug("Response success {}", response);
+                LOG.debug("Notifying response success for {} on {}", exchange, this);
             exchange.getConversation().getResponseListeners().notifySuccess(response);
 
             // Interim responses do not terminate the exchange.
@@ -396,10 +407,10 @@ public abstract class HttpReceiver
      */
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Failing with {} on {}", failure, this);
-
         HttpExchange exchange = getHttpExchange();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response failure {} for {} on {}", failure, exchange, this);
 
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
@@ -442,6 +453,12 @@ public abstract class HttpReceiver
         }
     }
 
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return Invocable.getInvocationType(contentSource);
+    }
+
     /**
      * Resets the state of this HttpReceiver.
      * <p>
@@ -472,15 +489,14 @@ public abstract class HttpReceiver
 
     private void cleanup()
     {
-        if (contentSource != null)
-            contentSource.destroy();
+        rawContentSource = null;
         contentSource = null;
     }
 
     public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking abort with {} on {}", failure, this);
+            LOG.debug("Invoking abort for {} on {}", exchange, this, failure);
 
         if (!exchange.isResponseCompleteOrTerminated())
             throw new IllegalStateException();
@@ -498,19 +514,63 @@ public abstract class HttpReceiver
 
             responseState = ResponseState.FAILURE;
             this.failure = failure;
+
             if (contentSource != null)
-                contentSource.error(failure);
+                contentSource.fail(failure);
+
             dispose();
 
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
-                LOG.debug("Response abort {} {} on {}", response, exchange, getHttpChannel(), failure);
+                LOG.debug("Notifying response failure {} for {} on {}", failure, exchange, this);
             exchange.getConversation().getResponseListeners().notifyFailure(response, failure);
 
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
             terminateResponse(exchange);
             promise.succeeded(true);
+        });
+    }
+
+    private void beforeDecoding(Response response, String contentEncoding)
+    {
+        HttpResponse httpResponse = (HttpResponse)response;
+        httpResponse.headers(headers ->
+        {
+            boolean seenContentEncoding = false;
+            for (ListIterator<HttpField> iterator = headers.listIterator(headers.size()); iterator.hasPrevious();)
+            {
+                HttpField field = iterator.previous();
+                HttpHeader header = field.getHeader();
+                if (header == HttpHeader.CONTENT_LENGTH)
+                {
+                    // Content-Length is not valid anymore while we are decoding.
+                    iterator.remove();
+                }
+                else if (header == HttpHeader.CONTENT_ENCODING && !seenContentEncoding)
+                {
+                    // Last Content-Encoding should be removed/modified as the content will be decoded.
+                    seenContentEncoding = true;
+                    // TODO: introduce HttpFields.removeLast() or similar.
+                    //  Use the contentEncoding parameter.
+                    String value = field.getValue();
+                    int comma = value.lastIndexOf(",");
+                    if (comma < 0)
+                        iterator.remove();
+                    else
+                        iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
+                }
+            }
+        });
+    }
+
+    private void afterDecoding(Response response, long decodedLength)
+    {
+        HttpResponse httpResponse = (HttpResponse)response;
+        httpResponse.headers(headers ->
+        {
+            headers.remove(HttpHeader.TRANSFER_ENCODING);
+            headers.put(HttpHeader.CONTENT_LENGTH, decodedLength);
         });
     }
 
@@ -556,137 +616,97 @@ public abstract class HttpReceiver
         FAILURE
     }
 
-    private interface NotifiableContentSource extends Content.Source, Destroyable
+    private class DecodedContentSource implements Content.Source, Invocable
     {
-        boolean error(Throwable failure);
+        private static final Logger LOG = LoggerFactory.getLogger(DecodedContentSource.class);
 
-        void onDataAvailable();
+        private final Content.Source source;
+        private final Response response;
+        private long decodedLength;
+        private boolean last;
 
-        @Override
-        default void destroy()
+        private DecodedContentSource(Content.Source source, Response response)
         {
-        }
-    }
-
-    private static class DecodingContentSource extends ContentSourceTransformer implements NotifiableContentSource
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(DecodingContentSource.class);
-
-        private final ContentDecoder _decoder;
-        private final Response _response;
-        private volatile Content.Chunk _chunk;
-
-        private DecodingContentSource(NotifiableContentSource rawSource, SerializedInvoker invoker, ContentDecoder decoder, Response response)
-        {
-            super(rawSource, invoker);
-            _decoder = decoder;
-            _response = response;
+            this.source = source;
+            this.response = response;
         }
 
         @Override
-        protected NotifiableContentSource getContentSource()
+        public long getLength()
         {
-            return (NotifiableContentSource)super.getContentSource();
+            return source.getLength();
         }
 
         @Override
-        public void onDataAvailable()
+        public InvocationType getInvocationType()
         {
-            getContentSource().onDataAvailable();
+            return Invocable.getInvocationType(source);
         }
 
         @Override
-        protected Content.Chunk transform(Content.Chunk inputChunk)
+        public Content.Chunk read()
         {
             while (true)
             {
-                boolean retain = _chunk == null;
+                Content.Chunk chunk = source.read();
+
                 if (LOG.isDebugEnabled())
-                    LOG.debug("input: {}, chunk: {}, retain? {}", inputChunk, _chunk, retain);
-                if (_chunk == null)
-                    _chunk = inputChunk;
-                if (_chunk == null)
+                    LOG.debug("Decoded chunk {}", chunk);
+
+                if (chunk == null)
                     return null;
-                if (Content.Chunk.isFailure(_chunk))
+
+                if (chunk.isEmpty() && !chunk.isLast())
                 {
-                    Content.Chunk failure = _chunk;
-                    _chunk = Content.Chunk.next(failure);
-                    return failure;
+                    chunk.release();
+                    continue;
                 }
 
-                // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
-                if (retain)
-                    _chunk.retain();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("decoding: {}", _chunk);
-                RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk.getByteBuffer());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("decoded: {}", decodedBuffer);
+                decodedLength += chunk.remaining();
 
-                if (decodedBuffer != null && decodedBuffer.hasRemaining())
+                if (chunk.isLast() && !last)
                 {
-                    // The decoded ByteBuffer is a transformed "copy" of the
-                    // compressed one, so it has its own reference counter.
-                    if (decodedBuffer.canRetain())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("returning decoded content");
-                        return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("returning non-retainable decoded content");
-                        return Content.Chunk.from(decodedBuffer.getByteBuffer(), false);
-                    }
+                    last = true;
+                    afterDecoding(response, decodedLength);
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("decoding produced no content");
-                    if (decodedBuffer != null)
-                        decodedBuffer.release();
 
-                    if (!_chunk.hasRemaining())
-                    {
-                        Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Could not decode more from this chunk, releasing it, r={}", result);
-                        _chunk.release();
-                        _chunk = null;
-                        return result;
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("retrying transformation");
-                    }
-                }
+                return chunk;
             }
         }
 
         @Override
-        public boolean error(Throwable failure)
+        public void demand(Runnable demandCallback)
         {
-            if (_chunk != null)
-                _chunk.release();
-            _chunk = null;
-            return getContentSource().error(failure);
+            Runnable demand = new Invocable.ReadyTask(Invocable.getInvocationType(demandCallback), () -> invoker.run(demandCallback));
+            source.demand(demand);
         }
 
         @Override
-        public void destroy()
+        public void fail(Throwable failure)
         {
-            _decoder.afterDecoding(_response);
-            getContentSource().destroy();
+            source.fail(failure);
+        }
+
+        @Override
+        public void fail(Throwable failure, boolean last)
+        {
+            source.fail(failure, last);
+        }
+
+        @Override
+        public boolean rewind()
+        {
+            boolean rewound = source.rewind();
+            if (rewound)
+            {
+                decodedLength = 0;
+                last = false;
+            }
+            return rewound;
         }
     }
 
-    /**
-     * This Content.Source implementation guarantees that all {@link #read(boolean)} calls
-     * happening from a {@link #demand(Runnable)} callback must be serialized.
-     */
-    private class ContentSource implements NotifiableContentSource
+    private class ContentSource implements Content.Source, Invocable
     {
         private static final Logger LOG = LoggerFactory.getLogger(ContentSource.class);
 
@@ -729,8 +749,7 @@ public abstract class HttpReceiver
             }
         }
 
-        @Override
-        public void onDataAvailable()
+        private void onDataAvailable()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onDataAvailable on {}", this);
@@ -738,6 +757,15 @@ public abstract class HttpReceiver
             // The onDataAvailable() method is only ever called
             // by the invoker so avoid using the invoker again.
             invokeDemandCallback(false);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Runnable demandCallback = demandCallbackRef.get();
+            if (demandCallback != null)
+                return Invocable.getInvocationType(demandCallback);
+            return Invocable.getInvocationType(getHttpChannel().getConnection());
         }
 
         @Override
@@ -749,8 +777,6 @@ public abstract class HttpReceiver
                 throw new IllegalArgumentException();
             if (!demandCallbackRef.compareAndSet(null, demandCallback))
                 throw new IllegalStateException();
-            // The processDemand method may call HttpReceiver.read(boolean)
-            // so it must be called by the invoker.
             invoker.run(processDemand);
         }
 
@@ -826,8 +852,7 @@ public abstract class HttpReceiver
             invokeDemandCallback(true);
         }
 
-        @Override
-        public boolean error(Throwable failure)
+        private boolean error(Throwable failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Erroring {}", this);

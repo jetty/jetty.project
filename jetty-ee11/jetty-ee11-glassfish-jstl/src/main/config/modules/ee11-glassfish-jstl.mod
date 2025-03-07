@@ -15,4 +15,4 @@ ee11.jakarta.servlet.jsp.jstl.impl.version?=@jakarta.servlet.jsp.jstl.impl.versi
 
 [lib]
 lib/ee11-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee11.jakarta.servlet.jsp.jstl.api.version}.jar
-lib/ee11-glassfish-jstl/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee11.jakarta.servlet.jsp.jstl.impl.version}.jar
+lib/ee11-glassfish-jstl/org.glassfish.wasp.wasp-${ee11.jakarta.servlet.jsp.jstl.impl.version}.jar

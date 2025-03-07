@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="CompressionHandler">
+    <Call name="putCompression">
+      <Arg>
+        <New id="zstandardCompression" class="org.eclipse.jetty.compression.zstandard.ZstandardCompression">
+          <Set name="minCompressSize" property="jetty.compression.zstandard.minCompressSize"/>
+          <Set name="defaultDecoderConfig">
+            <New id="zstandardDefaultDecoderConfig" class="org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig">
+              <Set name="bufferSize" property="jetty.compression.zstandard.decoder.bufferSize"/>
+              <Set name="magicless" property="jetty.compression.zstandard.decoded.magicless"/>
+            </New>
+          </Set>
+          <Set name="defaultEncoderConfig">
+            <New id="zstandardDefaultEncoderConfig" class="org.eclipse.jetty.compression.zstandard.ZstandardEncoderConfig">
+              <Set name="bufferSize" property="jetty.compression.zstandard.encoder.bufferSize"/>
+              <Set name="compressionLevel" property="jetty.compression.zstandard.encoder.compressionLevel"/>
+              <Set name="strategy" property="jetty.compression.zstandard.encoder.strategy"/>
+              <Set name="magicless" property="jetty.compression.zstandard.encoder.magicless"/>
+              <Set name="checksum" property="jetty.compression.zstandard.encoder.checksum"/>
+            </New>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>

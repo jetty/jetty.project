@@ -219,6 +219,13 @@ public class ServletApiResponse implements HttpServletResponse
         {
             Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false, content);
             callback.block();
+
+            // Close the HttpOutput.
+            ServletResponseInfo info = getServletResponseInfo();
+            if (info.getOutputType() == ServletContextResponse.OutputType.WRITER)
+                info.getWriter().close();
+            else
+                _servletChannel.getHttpOutput().close();
         }
     }
 
@@ -350,8 +357,8 @@ public class ServletApiResponse implements HttpServletResponse
                 // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
                 // in the writer implementation for flush and completion operations.
                 WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
-                getServletResponseInfo().setWriter(writer = new ResponseWriter(
-                    outputStreamWriter, locale, encoding));
+                writer = new ResponseWriter(outputStreamWriter, locale, encoding);
+                getServletResponseInfo().setWriter(writer);
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
@@ -387,12 +394,18 @@ public class ServletApiResponse implements HttpServletResponse
         if (isCommitted())
             return;
 
-        if (len > 0)
-            getResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
-        else if (len == 0)
-            getResponse().getHeaders().put(HttpFields.CONTENT_LENGTH_0);
+        if (len >= 0)
+        {
+            getServletChannel().getHttpOutput().setApplicationContentLength(len);
+            if (len > 0)
+                getResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
+            else
+                getResponse().getHeaders().put(HttpFields.CONTENT_LENGTH_0);
+        }
         else
+        {
             getResponse().getHeaders().remove(HttpHeader.CONTENT_LENGTH);
+        }
     }
 
     @Override

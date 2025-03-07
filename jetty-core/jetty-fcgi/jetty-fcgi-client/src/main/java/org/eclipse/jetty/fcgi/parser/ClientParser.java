@@ -76,13 +76,14 @@ public class ClientParser extends Parser
         }
 
         @Override
-        public void onEnd(int request)
+        public boolean onEnd(int request)
         {
-            listener.onEnd(request);
+            boolean result = listener.onEnd(request);
             for (StreamContentParser streamParser : streamParsers)
             {
                 streamParser.end(request);
             }
+            return result;
         }
 
         @Override

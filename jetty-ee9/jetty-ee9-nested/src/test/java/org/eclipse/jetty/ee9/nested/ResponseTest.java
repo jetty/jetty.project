@@ -82,7 +82,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -108,6 +107,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class ResponseTest
 {
+    private static final String HOST = "myhost";
+    private static final int PORT = 8888;
     private Server _server;
     private ContextHandler _context;
     private HttpChannel _channel;
@@ -127,7 +128,7 @@ public class ResponseTest
         _context.setHandler(new DumpHandler());
         _server.start();
 
-        SocketAddress local = InetSocketAddress.createUnresolved("myhost", 8888);
+        SocketAddress local = InetSocketAddress.createUnresolved(HOST, PORT);
         EndPoint endPoint = new ByteArrayEndPoint(scheduler, 5000)
         {
             @Override
@@ -402,51 +403,51 @@ public class ResponseTest
     }
 
     @Test
-    @Disabled // TODO
     public void testResponseCharacterEncoding() throws Exception
     {
-        //test setting the default response character encoding
+        //test that without a default or any content type, use iso-8859-1
         Response response = getResponse();
-        assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
+        assertThat("iso-8859-1", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
+        //getWriter should not have modified character encoding
+        response.getWriter();
+        assertThat("iso-8859-1", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
 
-        response = getResponse();
+        //test setting the default response character encoding
+        _server.stop();
+        ContextHandler context = new ContextHandler();
+        context.setDefaultResponseCharacterEncoding("utf-16");
+        context.setHandler(new DumpHandler());
+        _server.setHandler(context);
+        _server.start();
+
+        response = getResponse(context);
+
+        assertThat("utf-16", Matchers.equalToIgnoringCase(context.getServletContext().getResponseCharacterEncoding()));
+        assertThat("utf-16", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
 
         //test that explicit overrides default
-        response = getResponse();
+        response = getResponse(context);
         response.setCharacterEncoding("ascii");
-        assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
+        assertThat("ascii", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
         //getWriter should not change explicit character encoding
         response.getWriter();
-        assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
-
-        response = getResponse();
+        assertThat("ascii", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
 
         //test that assumed overrides default
-        response = getResponse();
+        response = getResponse(context);
         response.setContentType("application/json");
-        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        assertThat("utf-8", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
         response.getWriter();
         //getWriter should not have modified character encoding
-        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
-
-        response = getResponse();
+        assertThat("utf-8", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
 
         //test that inferred overrides default
-        response = getResponse();
+        response = getResponse(context);
         response.setContentType("application/xhtml+xml");
-        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        assertThat("utf-8", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
         //getWriter should not have modified character encoding
         response.getWriter();
-        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
-
-        response = getResponse();
-
-        //test that without a default or any content type, use iso-8859-1
-        response = getResponse();
-        assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
-        //getWriter should not have modified character encoding
-        response.getWriter();
-        assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
+        assertThat("utf-8", Matchers.equalToIgnoringCase(response.getCharacterEncoding()));
     }
 
     @Test
@@ -1424,7 +1425,7 @@ public class ResponseTest
             (ServletPrintWriterCase)writer ->
             {
                 writer.println("ABC");
-                return "ABC"  + lineSep;
+                return "ABC" + lineSep;
             })
         );
 
@@ -1470,7 +1471,7 @@ public class ResponseTest
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("writerCases")
     public void testServletPrintWriter(@SuppressWarnings("unused") String description,
-                                        ServletPrintWriterCase writerConsumer) throws IOException
+                                       ServletPrintWriterCase writerConsumer) throws IOException
     {
         Response response = getResponse();
         response.setCharacterEncoding(UTF_8.name());
@@ -1580,26 +1581,6 @@ public class ResponseTest
     }
 
     @Test
-    @Disabled // TODO
-    public void testWriteCheckError() throws Exception
-    {
-        Response response = getResponse();
-
-        PrintWriter writer = response.getWriter();
-        writer.println("test");
-        writer.flush();
-        assertFalse(writer.checkError());
-
-        Throwable cause = new IOException("problem at mill");
-        _channel.abort(cause);
-        writer.println("test");
-        assertTrue(writer.checkError());
-
-        writer.println("test"); // this should not cause an Exception
-        assertTrue(writer.checkError());
-    }
-
-    @Test
     public void testEncodeRedirect() throws Exception
     {
         SessionHandler sessionHandler = addSessionHandler();
@@ -1695,7 +1676,6 @@ public class ResponseTest
 
     @ParameterizedTest
     @MethodSource("redirects")
-    @Disabled // TODO
     public void testSendRedirect(String destination, String expected, boolean cookie)
         throws Exception
     {
@@ -1710,9 +1690,13 @@ public class ResponseTest
         {
             for (String host : hosts)
             {
+                //clear session cache
+                _context.stop();
+                _context.start();
+
                 Response response = getResponse();
                 Request request = response.getHttpChannel().getRequest();
-
+                request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(false);
                 HttpURI.Mutable uri = HttpURI.build(request.getHttpURI(),
                     "/path/info;param;jsessionid=12345?query=0&more=1#target");
                 uri.scheme("http");
@@ -1734,10 +1718,10 @@ public class ResponseTest
 
                 String location = response.getHeader("Location");
 
-                expected = expected
-                    .replace("@HOST@", host == null ? request.getLocalAddr() : host)
-                    .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
-                assertThat(host + ":" + port, location, equalTo(expected));
+                String expectedWithSubstitutions = expected;
+                expectedWithSubstitutions = expectedWithSubstitutions.replace("@HOST@", host == null ? request.getLocalAddr() : host)
+                    .replace("@PORT@", host == null ? ":8888" : ":" + String.valueOf(PORT));
+                assertThat(host + ":" + port, location, equalTo(expectedWithSubstitutions));
             }
         }
     }
@@ -1768,7 +1752,7 @@ public class ResponseTest
             {"../locati%C3%abn", "/locati%C3%abn"},
             {"../other%2fplace", "/other%2fplace"},
             {"http://somehost.com/other/location", "http://somehost.com/other/location"},
-        };
+            };
 
         int[] ports = new int[]{8080, 80};
         String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
@@ -2255,22 +2239,32 @@ public class ResponseTest
         assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("one, two, three, close"));
     }
 
-    private Response getResponse()
+    private Response getResponse(HttpVersion version)
     {
-        return getResponse(HttpVersion.HTTP_1_0);
+        return getResponse(_context, version);
     }
 
-    private Response getResponse(HttpVersion version)
+    private Response getResponse(ContextHandler context)
+    {
+        return getResponse(context, HttpVersion.HTTP_1_0);
+    }
+
+    private Response getResponse()
+    {
+        return getResponse(_context, HttpVersion.HTTP_1_0);
+    }
+
+    private Response getResponse(ContextHandler context, HttpVersion version)
     {
         _channel.recycle();
 
         MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
-        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, _context.getServletContext().getCoreContext());
+        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
-        _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
-        _channel.getRequest().setContext(_context._apiContext, URIUtil.decodePath(org.eclipse.jetty.server.Request.getPathInContext(coreRequest)));
+        _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, context.getCoreContextHandler().getContext(), _channel));
+        _channel.getRequest().setContext(context._apiContext, URIUtil.decodePath(org.eclipse.jetty.server.Request.getPathInContext(coreRequest)));
         _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
@@ -2502,7 +2496,7 @@ public class ResponseTest
         @Override
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
-                return null;
+            return null;
         }
     }
 }

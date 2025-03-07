@@ -13,15 +13,17 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.osgi.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
@@ -69,35 +71,48 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        File etc = new File(FS.separators("src/test/config/etc"));
-
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
+        // List of XML URI Reference strings
+        List<String> xmlReferences = new ArrayList<>();
+
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
+        xmlReferences.add(resolveFile(etc, "jetty.xml"));
         if (ssl)
         {
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
+            xmlReferences.add(resolveFile(etc, "jetty-ssl.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-ssl-context.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-alpn.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-https.xml"));
         }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deploy.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        xmlReferences.add(resolveFile(etc, jettySelectorFileName));
+        xmlReferences.add(resolveFile(etc, "jetty-deploy.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Convert list of XML URI Reference to String separated by ";" (separator is not OS specific, but OSGI specific)
+        String xmlConfigLine = String.join(";", xmlReferences);
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParent().toString()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
-    
+
+    /**
+     * Resolve a file path, ensuring that it exists, returning the URI String to said path.
+     *
+     * @param base the base path to look in
+     * @param relative the relative path to resolve
+     * @return the URI String of the resolved file.
+     */
+    private static String resolveFile(Path base, String relative)
+    {
+        Path file = base.resolve(Objects.requireNonNull(relative));
+        assertTrue("Unable to find file: " + file, Files.isRegularFile(file));
+        return file.toUri().toASCIIString();
+    }
+
     public static List<Option> configurePaxExamLogging()
     {
         //sort out logging from the pax-exam environment
@@ -142,7 +157,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); //.versionAsInProject().noStart());
 
         /*
-         * Jetty 9 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
+         * Jetty 12 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
          * To do that, we need to use slf4j-simple as the logging implementation. We make a simplelogger.properties
          * file available so that jetty logging can be configured
          */
@@ -233,6 +248,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-osgi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-gzip").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-ee").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-security").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-servlet").versionAsInProject().start());

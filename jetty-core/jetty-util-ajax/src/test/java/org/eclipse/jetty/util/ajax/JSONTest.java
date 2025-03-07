@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,23 +41,27 @@ public class JSONTest
 {
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 
+    private static final String JSON_STRING = """
+        
+        \t\t    \
+        // ignore this ,a [ "\s
+        /* and this\s
+        /* and * // this\s
+        */\
+        {
+        "onehundred" : 100  ,
+        "small":-0.2,
+        "name" : "fred"  ,
+        "empty" : {}  ,
+        "map" : {"a":-1.0e2}  ,
+        "array" : ["a",-1.0e2,[],null,true,false]  ,
+        "w0":{"class":"org.eclipse.jetty.util.ajax.JSONTest$Woggle","name":"woggle0","nested":{"class":"org.eclipse.jetty.util.ajax.JSONTest$Woggle","name":"woggle1","nested":null,"number":-101},"number":100},
+        "NaN": NaN,
+        "undefined": undefined,
+        }
+        """;
+
     private JSON json;
-    private String test = "\n\n\n\t\t    " +
-        "// ignore this ,a [ \" \n" +
-        "/* and this \n" +
-        "/* and * // this \n" +
-        "*/" +
-        "{ " +
-        "\"onehundred\" : 100  ," +
-        "\"small\":-0.2," +
-        "\"name\" : \"fred\"  ," +
-        "\"empty\" : {}  ," +
-        "\"map\" : {\"a\":-1.0e2}  ," +
-        "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-        "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
-        "\"NaN\": NaN," +
-        "\"undefined\": undefined," +
-        "}";
 
     @BeforeEach
     public void resetJSON()
@@ -124,14 +129,14 @@ public class JSONTest
     public void testParse()
     {
         @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>)json.fromJSON(test);
+        Map<String, Object> map = (Map<String, Object>)json.fromJSON(JSON_STRING);
         assertEquals((long)100, map.get("onehundred"));
         assertEquals("fred", map.get("name"));
         assertEquals(-0.2, map.get("small"));
         assertTrue(map.get("array").getClass().isArray());
-        assertTrue(map.get("w0") instanceof Woggle);
-        assertTrue(((Woggle)map.get("w0")).nested instanceof Woggle);
-        assertEquals(-101, ((Woggle)((Woggle)map.get("w0")).nested).number);
+        assertInstanceOf(Woggle.class, map.get("w0"));
+        assertInstanceOf(Woggle.class, ((Woggle)map.get("w0")).nested);
+        assertEquals(-101, ((Woggle)map.get("w0")).nested.number);
         assertTrue(map.containsKey("NaN"));
         assertNull(map.get("NaN"));
         assertTrue(map.containsKey("undefined"));
@@ -223,33 +228,36 @@ public class JSONTest
     public void testParseReader()
     {
         @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>)json.fromJSON(test);
+        Map<String, Object> map = (Map<String, Object>)json.fromJSON(JSON_STRING);
 
         assertEquals((long)100, map.get("onehundred"));
         assertEquals("fred", map.get("name"));
         assertTrue(map.get("array").getClass().isArray());
-        assertTrue(map.get("w0") instanceof Woggle);
-        assertTrue(((Woggle)map.get("w0")).nested instanceof Woggle);
+        assertInstanceOf(Woggle.class, map.get("w0"));
+        assertInstanceOf(Woggle.class, ((Woggle)map.get("w0")).nested);
     }
 
     @Test
     public void testStripComment()
     {
-        String test = "\n\n\n\t\t    " +
-            "// ignore this ,a [ \" \n" +
-            "/* " +
-            "{ " +
-            "\"onehundred\" : 100  ," +
-            "\"name\" : \"fred\"  ," +
-            "\"empty\" : {}  ," +
-            "\"map\" : {\"a\":-1.0e2}  ," +
-            "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-            "} */";
+        String test = """
+            
+            \t\t    \
+            // ignore this ,a [ "\s
+            /* \
+            { \
+            "onehundred" : 100  ,\
+            "name" : "fred"  ,\
+            "empty" : {}  ,\
+            "map" : {"a":-1.0e2}  ,\
+            "array" : ["a",-1.0e2,[],null,true,false]  ,\
+            } */
+            """;
 
         Object o = json.fromJSON(test);
         assertNull(o);
         o = json.parse(new JSON.StringSource(test), true);
-        assertTrue(o instanceof Map);
+        assertInstanceOf(Map.class, o);
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>)o;
         assertEquals("fred", map.get("name"));
@@ -267,11 +275,11 @@ public class JSONTest
     public void testBigDecimal()
     {
         Object obj = json.fromJSON("1.0E7");
-        assertTrue(obj instanceof Double);
+        assertInstanceOf(Double.class, obj);
         BigDecimal bd = BigDecimal.valueOf(10000000d);
         String string = json.toJSON(new Object[]{bd});
         obj = Array.get(json.fromJSON(string), 0);
-        assertTrue(obj instanceof Double);
+        assertInstanceOf(Double.class, obj);
     }
 
     @Test
@@ -398,8 +406,8 @@ public class JSONTest
         @SuppressWarnings("unchecked")
         Map<String, Object> map1 = (Map<String, Object>)json.fromJSON(js);
 
-        assertTrue(map1.get("date") instanceof Date);
-        assertTrue(map1.get("w0") instanceof Woggle);
+        assertInstanceOf(Date.class, map1.get("date"));
+        assertInstanceOf(Woggle.class, map1.get("w0"));
     }
 
     @Test
@@ -453,8 +461,8 @@ public class JSONTest
         @SuppressWarnings("unchecked")
         Map<String, Object> map2 = (Map<String, Object>)json.fromJSON(js);
 
-        assertTrue(map2.get("date") instanceof Date);
-        assertTrue(map2.get("w0") instanceof Woggle);
+        assertInstanceOf(Date.class, map2.get("date"));
+        assertInstanceOf(Woggle.class, map2.get("w0"));
         assertNull(((Woggle)map2.get("w0")).other);
         @SuppressWarnings("unchecked")
         Map<String, Object> map3 = (Map<String, Object>)map2.get("g0");
@@ -468,13 +476,36 @@ public class JSONTest
         @SuppressWarnings("unchecked")
         Map<String, Object> map4 = (Map<String, Object>)json.fromJSON(js);
 
-        assertTrue(map4.get("date") instanceof Date);
-        assertTrue(map4.get("w0") instanceof Woggle);
+        assertInstanceOf(Date.class, map4.get("date"));
+        assertInstanceOf(Woggle.class, map4.get("w0"));
         assertNull(((Woggle)map4.get("w0")).other);
         @SuppressWarnings("unchecked")
         Map<String, Object> map5 = (Map<String, Object>)map4.get("g0");
         Object o = map5.get("other");
         assertEquals(Color.Green, o);
+    }
+
+    @Test
+    public void testGenerateParseRecord()
+    {
+        // No configuration necessary for records.
+        JSON json = new JSON();
+        Person original = new Person("Jetty", 30);
+        String jsonString = json.toJSON(original);
+
+        Object object = json.parse(new JSON.StringSource(jsonString));
+        assertInstanceOf(Person.class, object);
+        Person person = (Person)object;
+        assertThat(person, is(original));
+
+        // Test null values.
+        original = new Person(null, 30);
+        jsonString = json.toJSON(original);
+
+        object = json.parse(new JSON.StringSource(jsonString));
+        assertInstanceOf(Person.class, object);
+        person = (Person)object;
+        assertThat(person, is(original));
     }
 
     public static class Gizmo

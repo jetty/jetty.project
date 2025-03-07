@@ -719,7 +719,7 @@ public class ResourceService
                 // write the content asynchronously if supported
                 if (request.isAsyncSupported())
                 {
-                    final AsyncContext context = request.startAsync();
+                    AsyncContext context = request.isAsyncStarted() ? request.getAsyncContext() : request.startAsync();
                     context.setTimeout(0);
 
                     ((HttpOutput)out).sendContent(content, new Callback()

@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -326,7 +327,15 @@ public class ServerDocs
         httpConfiguration.setRequestCookieCompliance(customUriCompliance);
 
         httpConfiguration.setResponseCookieCompliance(CookieCompliance.RFC6265);
-
         // end::cookieComplianceCustom[]
+    }
+
+    public void multiPartCompliance()
+    {
+        // tag::multiPartCompliance[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        MultiPartCompliance custom = MultiPartCompliance.from("RFC7578,-CONTENT_TRANSFER_ENCODING");
+        httpConfiguration.setMultiPartCompliance(custom);
+        // end::multiPartCompliance[]
     }
 }

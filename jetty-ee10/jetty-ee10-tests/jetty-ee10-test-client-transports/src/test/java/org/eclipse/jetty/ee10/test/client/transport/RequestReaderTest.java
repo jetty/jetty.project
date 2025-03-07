@@ -55,10 +55,10 @@ public class RequestReaderTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testChannelStateSucceeded(Transport transport) throws Exception
+    public void testChannelStateSucceeded(TransportType transportType) throws Exception
     {
         CountDownLatch servletDoneLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -141,7 +141,7 @@ public class RequestReaderTest extends AbstractTest
         AtomicReference<Result> resultRef = new AtomicReference<>();
         try (AsyncRequestContent content = new AsyncRequestContent())
         {
-            Request request = client.newRequest(newURI(transport))
+            Request request = client.newRequest(newURI(transportType))
                 .method("POST")
                 .timeout(5, TimeUnit.SECONDS)
                 .body(content);
@@ -158,14 +158,14 @@ public class RequestReaderTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testResetArrivingOnServer(Transport transport) throws Exception
+    public void testResetArrivingOnServer(TransportType transportType) throws Exception
     {
-        assumeTrue(transport.isMultiplexed());
+        assumeTrue(transportType.isMultiplexed());
 
         CountDownLatch servletOnDataAvailableLatch = new CountDownLatch(1);
         AtomicReference<Throwable> serverError = new AtomicReference<>();
         CountDownLatch errorDoneLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -223,7 +223,7 @@ public class RequestReaderTest extends AbstractTest
         AtomicReference<Result> resultRef = new AtomicReference<>();
         try (AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(16)))
         {
-            Request request = client.newRequest(newURI(transport))
+            Request request = client.newRequest(newURI(transportType))
                 .method("POST")
                 .timeout(5, TimeUnit.SECONDS)
                 .body(content);
@@ -244,9 +244,9 @@ public class RequestReaderTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRecyclingWhenUsingReader(Transport transport) throws Exception
+    public void testRecyclingWhenUsingReader(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -264,7 +264,7 @@ public class RequestReaderTest extends AbstractTest
             }
         });
 
-        ContentResponse response1 = client.newRequest(newURI(transport))
+        ContentResponse response1 = client.newRequest(newURI(transportType))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
@@ -272,7 +272,7 @@ public class RequestReaderTest extends AbstractTest
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
 
         // Send a 2nd request to make sure recycling works.
-        ContentResponse response2 = client.newRequest(newURI(transport))
+        ContentResponse response2 = client.newRequest(newURI(transportType))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))

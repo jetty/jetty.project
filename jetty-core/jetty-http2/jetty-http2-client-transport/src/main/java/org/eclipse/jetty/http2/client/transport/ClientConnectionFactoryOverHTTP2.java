@@ -75,7 +75,12 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
 
         public HTTP2(HTTP2Client http2Client)
         {
-            super(new ClientConnectionFactoryOverHTTP2(http2Client));
+            this(new ClientConnectionFactoryOverHTTP2(http2Client));
+        }
+
+        public HTTP2(ClientConnectionFactoryOverHTTP2 connectionFactory)
+        {
+            super(connectionFactory);
         }
 
         @Override

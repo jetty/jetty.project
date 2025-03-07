@@ -21,6 +21,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -174,16 +175,37 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     @Override
     protected void needsFillInterest()
     {
-        changeInterests(SelectionKey.OP_READ);
+        addInterests(SelectionKey.OP_READ);
     }
 
     @Override
     protected void onIncompleteFlush()
     {
-        changeInterests(SelectionKey.OP_WRITE);
+        addInterests(SelectionKey.OP_WRITE);
     }
 
-    private void changeInterests(int operation)
+    @Override
+    public Callback cancelWrite(Throwable cause)
+    {
+        Callback callback = super.cancelWrite(cause);
+        // This is somewhat racy, but any onWritable notification that happens after cancellation but
+        // before removal of interest will be ignored.  This just ensure that interest will not be left hanging.
+        if (callback != null)
+            removeInterests(SelectionKey.OP_WRITE);
+        return callback;
+    }
+
+    private void addInterests(int operation)
+    {
+        updateInterests(operation, true);
+    }
+
+    private void removeInterests(int operation)
+    {
+        updateInterests(operation, false);
+    }
+
+    private void updateInterests(int operation, boolean add)
     {
         // This method runs from any thread, possibly
         // concurrently with updateKey() and onSelected().
@@ -195,13 +217,13 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;
-            newInterestOps = oldInterestOps | operation;
+            newInterestOps = add ? oldInterestOps | operation : oldInterestOps & ~operation;
             if (newInterestOps != oldInterestOps)
                 _desiredInterestOps = newInterestOps;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("changeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
+            LOG.debug("updateInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
 
         if (!pending && _selector != null)
             _selector.submit(_updateKeyAction);
@@ -286,6 +308,11 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             LOG.warn("Ignoring key update for {}", this, x);
             close();
         }
+    }
+
+    public boolean isWriteInterested()
+    {
+        return (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE;
     }
 
     @Override

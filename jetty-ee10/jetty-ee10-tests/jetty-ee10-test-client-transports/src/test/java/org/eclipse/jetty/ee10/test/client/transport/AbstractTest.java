@@ -80,34 +80,34 @@ public class AbstractTest
     protected ServletContextHandler servletContextHandler;
     protected HttpClient client;
 
-    public static Collection<Transport> transports()
+    public static Collection<TransportType> transports()
     {
-        EnumSet<Transport> transports = EnumSet.allOf(Transport.class);
+        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
         if ("ci".equals(System.getProperty("env")))
-            transports.remove(Transport.H3);
-        return transports;
+            transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsNoFCGI()
+    public static Collection<TransportType> transportsNoFCGI()
     {
-        Collection<Transport> transports = transports();
-        transports.remove(Transport.FCGI);
-        return transports;
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.remove(TransportType.FCGI);
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsWithPushSupport()
+    public static Collection<TransportType> transportsWithPushSupport()
     {
-        Collection<Transport> transports = transports();
-        transports.retainAll(List.of(Transport.H2C, Transport.H2));
-        return transports;
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.retainAll(List.of(TransportType.H2C, TransportType.H2));
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsSecure()
+    public static Collection<TransportType> transportsSecure()
     {
-        EnumSet<Transport> transports = EnumSet.of(Transport.HTTPS, Transport.H2, Transport.H3);
+        EnumSet<TransportType> transportTypes = EnumSet.of(TransportType.HTTPS, TransportType.H2, TransportType.H3_QUICHE);
         if ("ci".equals(System.getProperty("env")))
-            transports.remove(Transport.H3);
-        return transports;
+            transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
     @BeforeEach
@@ -123,26 +123,26 @@ public class AbstractTest
         LifeCycle.stop(server);
     }
 
-    protected void start(Transport transport, HttpServlet servlet) throws Exception
+    protected void start(TransportType transportType, HttpServlet servlet) throws Exception
     {
-        startServer(transport, servlet);
-        startClient(transport);
+        startServer(transportType, servlet);
+        startClient(transportType);
     }
 
-    protected void startServer(Transport transport, HttpServlet servlet) throws Exception
+    protected void startServer(TransportType transportType, HttpServlet servlet) throws Exception
     {
-        prepareServer(transport, servlet);
+        prepareServer(transportType, servlet);
         server.start();
     }
 
-    protected void prepareServer(Transport transport, HttpServlet servlet) throws Exception
+    protected void prepareServer(TransportType transportType, HttpServlet servlet) throws Exception
     {
         sslContextFactoryServer = newSslContextFactoryServer();
         Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
         serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, serverPemDirectory);
         if (server == null)
             server = newServer();
-        connector = newConnector(transport, server);
+        connector = newConnector(transportType, server);
         server.addConnector(connector);
         servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/");
@@ -180,16 +180,16 @@ public class AbstractTest
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
-    protected void startClient(Transport transport) throws Exception
+    protected void startClient(TransportType transportType) throws Exception
     {
-        startClient(transport, null);
+        startClient(transportType, null);
     }
 
-    protected void startClient(Transport transport, Consumer<HttpClient> consumer) throws Exception
+    protected void startClient(TransportType transportType, Consumer<HttpClient> consumer) throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(newHttpClientTransport(transport));
+        client = new HttpClient(newHttpClientTransport(transportType));
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         if (consumer != null)
@@ -197,20 +197,20 @@ public class AbstractTest
         client.start();
     }
 
-    public AbstractConnector newConnector(Transport transport, Server server)
+    public AbstractConnector newConnector(TransportType transportType, Server server)
     {
-        return switch (transport)
+        return switch (transportType)
         {
             case HTTP, HTTPS, H2C, H2, FCGI ->
-                new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-            case H3 ->
-                new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transport));
+                new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
+            case H3_QUICHE ->
+                new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }
 
-    protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
+    protected ConnectionFactory[] newServerConnectionFactory(TransportType transportType)
     {
-        List<ConnectionFactory> list = switch (transport)
+        List<ConnectionFactory> list = switch (transportType)
         {
             case HTTP ->
                 List.of(new HttpConnectionFactory(httpConfig));
@@ -235,7 +235,7 @@ public class AbstractTest
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
                 yield List.of(ssl, alpn, h2);
             }
-            case H3 ->
+            case H3_QUICHE ->
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
@@ -254,9 +254,9 @@ public class AbstractTest
         return ssl;
     }
 
-    protected HttpClientTransport newHttpClientTransport(Transport transport) throws Exception
+    protected HttpClientTransport newHttpClientTransport(TransportType transportType) throws Exception
     {
-        return switch (transport)
+        return switch (transportType)
         {
             case HTTP, HTTPS ->
             {
@@ -273,7 +273,7 @@ public class AbstractTest
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
-            case H3 ->
+            case H3_QUICHE ->
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
@@ -287,9 +287,9 @@ public class AbstractTest
         };
     }
 
-    protected URI newURI(Transport transport)
+    protected URI newURI(TransportType transportType)
     {
-        String scheme = transport.isSecure() ? "https" : "http";
+        String scheme = transportType.isSecure() ? "https" : "http";
         String uri = scheme + "://localhost";
         if (connector instanceof NetworkConnector networkConnector)
             uri += ":" + networkConnector.getLocalPort();
@@ -313,16 +313,16 @@ public class AbstractTest
         }
     }
 
-    public enum Transport
+    public enum TransportType
     {
-        HTTP, HTTPS, H2C, H2, H3, FCGI;
+        HTTP, HTTPS, H2C, H2, H3_QUICHE, FCGI;
 
         public boolean isSecure()
         {
             return switch (this)
             {
                 case HTTP, H2C, FCGI -> false;
-                case HTTPS, H2, H3 -> true;
+                case HTTPS, H2, H3_QUICHE -> true;
             };
         }
 
@@ -331,7 +331,7 @@ public class AbstractTest
             return switch (this)
             {
                 case HTTP, HTTPS, FCGI -> false;
-                case H2C, H2, H3 -> true;
+                case H2C, H2, H3_QUICHE -> true;
             };
         }
     }

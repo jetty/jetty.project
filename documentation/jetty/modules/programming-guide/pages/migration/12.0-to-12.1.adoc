@@ -16,6 +16,14 @@
 [[api-changes]]
 == APIs Changes
 
+=== `HttpClient`
+
+In Jetty 12.0.x, applications could configure response content decoding through `HttpClient.getContentDecoderFactories()`, and implement their own by implementing `org.eclipse.jetty.client.ContentDecoder`.
+
+In Jetty 12.1.x, applications can configure response content decoding through `HttpClient.getContentDecoderFactories()`.
+The decoding is based on the `org.eclipse.jetty.compression.Compression` classes.
+Applications can implement their own response content decoding by implementing a `Compression` subclass and the corresponding `DecoderSource`, based on the xref:arch/io.adoc#content-source[`Content.Source`] and xref:arch/io.adoc#content-source-chunk[`Content.Chunk`] APIs.
+
 === `IteratingCallback`
 
 Class `IteratingCallback` underwent refinements that changed the behavior of the `onCompleteFailure(Throwable)` method.

@@ -65,7 +65,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         PageLookupTechnique pageSource = null;
 
         Class<?> matchedThrowable = null;
-        Throwable error = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable error = (Throwable)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         Throwable cause = error;
 
         // Walk the cause hierarchy
@@ -98,6 +98,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, unwrapped.getClass());
+                request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION, unwrapped);
             }
         }
 
@@ -108,7 +109,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             pageSource = PageLookupTechnique.STATUS_CODE;
 
             // look for an exact code match
-            errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            errorStatusCode = (Integer)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS);
             if (errorStatusCode != null)
             {
                 errorPage = _errorPages.get(Integer.toString(errorStatusCode));
@@ -149,7 +150,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     dbg.append(" (using matched Throwable ");
                     dbg.append(matchedThrowable.getName());
                     dbg.append(" / actually thrown as ");
-                    Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+                    Throwable originalThrowable = (Throwable)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
                     LOG.debug(dbg.toString(), cause);

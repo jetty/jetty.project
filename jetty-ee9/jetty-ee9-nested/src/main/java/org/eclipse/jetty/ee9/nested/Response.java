@@ -754,7 +754,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setStatus(int sc)
     {
-        if (sc <= 0)
+        if (sc < 100 || sc > 999)
             throw new IllegalArgumentException();
         if (isMutable())
         {
@@ -775,7 +775,7 @@ public class Response implements HttpServletResponse
 
     public void setStatusWithReason(int sc, String message)
     {
-        if (sc <= 0)
+        if (sc < 100 || sc > 999)
             throw new IllegalArgumentException();
         if (isMutable())
         {

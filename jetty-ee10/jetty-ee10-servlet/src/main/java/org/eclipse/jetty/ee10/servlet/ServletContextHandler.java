@@ -73,6 +73,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.IOResources;
@@ -322,6 +323,8 @@ public class ServletContextHandler extends ContextHandler
             new ClassLoaderDump(getClassLoader()),
             Dumpable.named("context " + this, getContext()),
             Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
@@ -663,6 +666,9 @@ public class ServletContextHandler extends ContextHandler
         return _welcomeFiles;
     }
 
+    /**
+     * @return the maximum size of the form content (in bytes).
+     */
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
@@ -672,13 +678,19 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
      *
-     * @param maxSize the maximum size of the form content (in bytes)
+     * @param maxSize the maximum size of the form content (in bytes) or -1 for a default value.
      */
     public void setMaxFormContentSize(int maxSize)
     {
+        if (maxSize < 0)
+            maxSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
         _maxFormContentSize = maxSize;
     }
 
+    /**
+     * @return the maximum number of form Keys.
+     */
+    @ManagedAttribute("The maximum number of form keys")
     public int getMaxFormKeys()
     {
         return _maxFormKeys;
@@ -687,10 +699,12 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
      *
-     * @param max the maximum number of form keys
+     * @param max the maximum number of form keys or -1 for a default value.
      */
     public void setMaxFormKeys(int max)
     {
+        if (max < 0)
+            max = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
         _maxFormKeys = max;
     }
 
@@ -1147,7 +1161,6 @@ public class ServletContextHandler extends ContextHandler
         decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
         matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -1196,7 +1209,17 @@ public class ServletContextHandler extends ContextHandler
         boolean initialDispatch = request instanceof ServletContextRequest;
         if (!initialDispatch)
             return false;
-        return super.handleByContextHandler(pathInContext, request, response, callback);
+
+        if (isProtectedTarget(pathInContext))
+        {
+            // At this point we have not entered the state machine of the ServletChannelState, so we do nothing here
+            // other than to set the error status attribute (and also status). When execution proceeds normally into the
+            // state machine the request will be treated as an error. Note that we set both the error status and request
+            // status because the request status is cheaper to check than the error status attribute.
+            request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS, 404);
+            response.setStatus(HttpStatus.NOT_FOUND_404);
+        }
+        return false;
     }
 
     @Override
@@ -2047,6 +2070,53 @@ public class ServletContextHandler extends ContextHandler
         public void setExtendedListenerTypes(boolean b)
         {
             _servletContext.setExtendedListenerTypes(b);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
+                case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormKeys();
+                    if (attribute == null)
+                        setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
+                    else
+                        setMaxFormKeys(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                case FormFields.MAX_LENGTH_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormContentSize();
+                    if (attribute == null)
+                        setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
+                    else
+                        setMaxFormContentSize(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                default -> super.setAttribute(name, attribute);
+            };
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
+            names.add(FormFields.MAX_LENGTH_ATTRIBUTE);
+            return Collections.unmodifiableSet(names);
         }
     }
 

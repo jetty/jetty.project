@@ -39,11 +39,11 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testClientIdleTimeout(Transport transport) throws Exception
+    public void testClientIdleTimeout(TransportType transportType) throws Exception
     {
         long serverIdleTimeout = idleTimeout * 2;
         AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -60,7 +60,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/timeout")
             .body(new StringRequestContent("some data"))
             .send(result ->
@@ -72,7 +72,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .body(new StringRequestContent("more data"))
             .send();
@@ -85,11 +85,11 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestIdleTimeout(Transport transport) throws Exception
+    public void testRequestIdleTimeout(TransportType transportType) throws Exception
     {
         long serverIdleTimeout = idleTimeout * 2;
         AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -105,7 +105,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         connector.setIdleTimeout(serverIdleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .path("/timeout")
             .body(new StringRequestContent("some data"))
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
@@ -118,7 +118,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .body(new StringRequestContent("more data"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -131,38 +131,38 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIdleClientIdleTimeout(Transport transport) throws Exception
+    public void testIdleClientIdleTimeout(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.setIdleTimeout(idleTimeout);
 
         // Make a first request to open a connection.
-        ContentResponse response = client.newRequest(newURI(transport)).send();
+        ContentResponse response = client.newRequest(newURI(transportType)).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Let the connection idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Verify that after the timeout we can make another request.
-        response = client.newRequest(newURI(transport)).send();
+        response = client.newRequest(newURI(transportType)).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIdleServerIdleTimeout(Transport transport) throws Exception
+    public void testIdleServerIdleTimeout(TransportType transportType) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         connector.setIdleTimeout(idleTimeout);
 
-        ContentResponse response1 = client.newRequest(newURI(transport)).send();
+        ContentResponse response1 = client.newRequest(newURI(transportType)).send();
         assertEquals(HttpStatus.OK_200, response1.getStatus());
 
         // Let the server idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Make sure we can make another request successfully.
-        ContentResponse response2 = client.newRequest(newURI(transport))
+        ContentResponse response2 = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());

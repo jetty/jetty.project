@@ -37,22 +37,22 @@ public class ConnectListenerTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsTCP")
-    public void testBeginSuccessBlocking(Transport transport) throws Exception
+    public void testBeginSuccessBlocking(TransportType transportType) throws Exception
     {
-        testBeginSuccess(transport, true);
+        testBeginSuccess(transportType, true);
     }
 
     @ParameterizedTest
     @MethodSource("transportsTCP")
-    public void testBeginSuccessNonBlocking(Transport transport) throws Exception
+    public void testBeginSuccessNonBlocking(TransportType transportType) throws Exception
     {
-        testBeginSuccess(transport, false);
+        testBeginSuccess(transportType, false);
     }
 
-    private void testBeginSuccess(Transport transport, boolean blocking) throws Exception
+    private void testBeginSuccess(TransportType transportType, boolean blocking) throws Exception
     {
-        startServer(transport, new EmptyServerHandler());
-        prepareClient(transport);
+        startServer(transportType, new EmptyServerHandler());
+        prepareClient(transportType);
         client.setConnectBlocking(blocking);
         CountDownLatch beginLatch = new CountDownLatch(1);
         CountDownLatch successLatch = new CountDownLatch(1);
@@ -79,7 +79,7 @@ public class ConnectListenerTest extends AbstractTest
         });
         client.start();
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -91,22 +91,22 @@ public class ConnectListenerTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsTCP")
-    public void testBeginFailureBlocking(Transport transport) throws Exception
+    public void testBeginFailureBlocking(TransportType transportType) throws Exception
     {
-        testBeginFailure(transport, true);
+        testBeginFailure(transportType, true);
     }
 
     @ParameterizedTest
     @MethodSource("transportsTCP")
-    public void testBeginFailureNonBlocking(Transport transport) throws Exception
+    public void testBeginFailureNonBlocking(TransportType transportType) throws Exception
     {
-        testBeginFailure(transport, false);
+        testBeginFailure(transportType, false);
     }
 
-    public void testBeginFailure(Transport transport, boolean blocking) throws Exception
+    public void testBeginFailure(TransportType transportType, boolean blocking) throws Exception
     {
-        startServer(transport, new EmptyServerHandler());
-        prepareClient(transport);
+        startServer(transportType, new EmptyServerHandler());
+        prepareClient(transportType);
         client.setConnectBlocking(blocking);
         CountDownLatch beginLatch = new CountDownLatch(1);
         CountDownLatch successLatch = new CountDownLatch(1);
@@ -133,7 +133,7 @@ public class ConnectListenerTest extends AbstractTest
         });
         client.start();
 
-        URI uri = newURI(transport);
+        URI uri = newURI(transportType);
         // Use a different port to fail the TCP connect.
         URI badURI = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), freePort(), uri.getPath(), uri.getQuery(), uri.getFragment());
         ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest(badURI)

@@ -96,9 +96,6 @@
           <additionalClasspathElements>
             <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>
           </additionalClasspathElements>
-          <excludes>
-            <exclude>org.eclipse.jetty.ee10.webapp.WebAppClassLoaderUrlStreamTest</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
