@@ -47,7 +47,7 @@ etc/jetty.xml
 ## Response headers size (in bytes)
 # jetty.httpConfig.responseHeaderSize=8192
 
-## Max response headers size (in bytes)
+## Max response headers size (in bytes), or -1 to use jetty.httpConfig.responseHeaderSize as the max.
 # jetty.httpConfig.maxResponseHeaderSize=16384
 
 ## Whether to send the Server: header

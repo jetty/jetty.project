@@ -1188,8 +1188,6 @@ public class HttpConnectionTest
     @Test
     public void testOversizedResponse() throws Exception
     {
-        httpConfig.setMaxResponseHeaderSize(httpConfig.getResponseHeaderSize());
-
         String str = "thisisastringthatshouldreachover1kbytes-";
         for (int i = 0; i < 500; i++)
         {
