@@ -53,14 +53,7 @@ public interface Environment extends Attributes
      */
     static Environment ensure(String name) throws IllegalStateException
     {
-        return NamedEnvironment.ENVIRONMENTS.compute(name, (n, environment) ->
-        {
-            if (environment == null)
-                return new NamedEnvironment(n, null);
-            if (environment.getClassLoader() != NamedEnvironment.DEFAULT_CLASSLOADER)
-                throw new IllegalStateException("Environment with non-default classloader already exists: " + n);
-            return environment;
-        });
+        return NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, null));
     }
 
     /**
