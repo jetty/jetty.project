@@ -69,7 +69,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
-        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding");
+        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding"),
+        /**
+         * Allow user info in the authority portion of the URI and HTTP specs.
+         */
+        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info");
 
         private final String _url;
         private final String _description;

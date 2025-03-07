@@ -148,11 +148,8 @@ public class HttpURITest
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
 
-        // We do allow nulls if not encoded.  This can be used for testing 2nd line of defence.
-        builder.uri("http://fo\000/bar");
-        uri = builder.asImmutable();
-        assertThat(uri.getHost(), is("fo\000"));
-        assertThat(uri.getPath(), is("/bar"));
+        // We do not allow nulls if not encoded.
+        assertThrows(IllegalArgumentException.class, () -> builder.uri("http://fo\000/bar").asImmutable());
     }
 
     @Test
@@ -891,5 +888,37 @@ public class HttpURITest
             .authority("host")
             .path("");
         assertEquals("//host", uri.asString());
+    }
+
+    public static Stream<String> badAuthorities()
+    {
+        return Stream.of(
+            "http://#host/path",
+            "https:// host/path",
+            "https://h st/path",
+            "https://h\000st/path",
+            "https://h%GGst/path",
+            "https://host%/path",
+            "https://host%0/path",
+            "https://host%u001f/path",
+            "https://host%:8080/path",
+            "https://host%0:8080/path",
+            "https://user%@host/path",
+            "https://user%0@host/path",
+            "https://host:notport/path",
+            "https://user@host:notport/path",
+            "https://user:password@host:notport/path",
+            "https://user @host.com/",
+            "https://user#@host.com/",
+            "https://[notIpv6]/",
+            "https://bad[0::1::2::3::4]/"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badAuthorities")
+    public void testBadAuthority(String uri)
+    {
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.from(uri));
     }
 }

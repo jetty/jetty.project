@@ -145,6 +145,7 @@ public interface HttpURI
     /**
      * Get a URI path parameter. Multiple and in segment parameters are ignored and only
      * the last trailing parameter is returned.
+     *
      * @return The last path parameter or null
      */
     String getParam();
@@ -525,6 +526,79 @@ public interface HttpURI
             .with("%u002e%2e", Boolean.TRUE)
             .with("%u002e%u002e", Boolean.TRUE)
             .build();
+
+        private static final boolean[] __unreservedPctEncodedSubDelims;
+
+        private static boolean isHexDigit(char c)
+        {
+            return (((c >= 'a') && (c <= 'f')) || // ALPHA (lower)
+                ((c >= 'A') && (c <= 'F')) ||  // ALPHA (upper)
+                ((c >= '0') && (c <= '9')));
+        }
+
+        private static boolean isUnreserved(char c)
+        {
+            return (((c >= 'a') && (c <= 'z')) || // ALPHA (lower)
+                ((c >= 'A') && (c <= 'Z')) ||  // ALPHA (upper)
+                ((c >= '0') && (c <= '9')) || // DIGIT
+                (c == '-') || (c == '.') || (c == '_') || (c == '~'));
+        }
+
+        private static boolean isSubDelim(char c)
+        {
+            return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
+        }
+
+        static boolean isUnreservedPctEncodedOrSubDelim(char c)
+        {
+            return c < __unreservedPctEncodedSubDelims.length && __unreservedPctEncodedSubDelims[c];
+        }
+
+        static
+        {
+            // Establish allowed and disallowed characters per the path rules of
+            // https://datatracker.ietf.org/doc/html/rfc3986#section-3.3
+            // ABNF
+            //   path          = path-abempty    ; begins with "/" or is empty
+            //                 / path-absolute   ; begins with "/" but not "//"
+            //                 / path-noscheme   ; begins with a non-colon segment
+            //                 / path-rootless   ; begins with a segment
+            //                 / path-empty      ; zero characters
+            //   path-abempty  = *( "/" segment )
+            //   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+            //   path-noscheme = segment-nz-nc *( "/" segment )
+            //   path-rootless = segment-nz *( "/" segment )
+            //   path-empty    = 0<pchar>
+            //
+            //   segment       = *pchar
+            //   segment-nz    = 1*pchar
+            //   segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
+            //                 ; non-zero-length segment without any colon ":"
+            //   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+            //   pct-encoded   = "%" HEXDIG HEXDIG
+            //
+            //   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+            //   reserved      = gen-delims / sub-delims
+            //   gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+            //   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+            //                 / "*" / "+" / "," / ";" / "="
+            //
+            //   authority     = [ userinfo "@" ] host [ ":" port ]
+            //   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+            //   host          = IP-literal / IPv4address / reg-name
+            //   port          = *DIGIT
+            //
+            //   reg-name      = *( unreserved / pct-encoded / sub-delims )
+            //
+            // we are limited to US-ASCII per https://datatracker.ietf.org/doc/html/rfc3986#section-2
+            __unreservedPctEncodedSubDelims = new boolean[128];
+
+            for (int i = 0; i < __unreservedPctEncodedSubDelims.length; i++)
+            {
+                char c = (char)i;
+                __unreservedPctEncodedSubDelims[i] = isUnreserved(c) || c == '%' || isSubDelim(c);
+            }
+        }
 
         private String _scheme;
         private String _user;
@@ -980,7 +1054,7 @@ public interface HttpURI
             int mark = 0; // the start of the current section being parsed
             int pathMark = 0; // the start of the path section
             int segment = 0; // the start of the current segment within the path
-            boolean encodedPath = false; // set to true if the path contains % encoded characters
+            boolean encoded = false; // set to true if the path contains % encoded characters
             boolean encodedUtf16 = false; // Is the current encoding for UTF16?
             int encodedCharacters = 0; // partial state of parsing a % encoded character<x>
             int encodedValue = 0; // the partial encoded value
@@ -1025,7 +1099,7 @@ public interface HttpURI
                                 state = State.ASTERISK;
                                 break;
                             case '%':
-                                encodedPath = true;
+                                encoded = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
                                 mark = pathMark = segment = i;
@@ -1078,7 +1152,7 @@ public interface HttpURI
                                 break;
                             case '%':
                                 // must have been in an encoded path
-                                encodedPath = true;
+                                encoded = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
                                 state = State.PATH;
@@ -1128,7 +1202,10 @@ public interface HttpURI
                         switch (c)
                         {
                             case '/':
+                                if (encodedCharacters > 0)
+                                    throw new IllegalArgumentException("Bad authority");
                                 _host = uri.substring(mark, i);
+                                encoded = false;
                                 pathMark = mark = i;
                                 segment = mark + 1;
                                 state = State.PATH;
@@ -1143,12 +1220,35 @@ public interface HttpURI
                                 if (_user != null)
                                     throw new IllegalArgumentException("Bad authority");
                                 _user = uri.substring(mark, i);
+                                _violations.add(Violation.USER_INFO);
                                 mark = i + 1;
                                 break;
                             case '[':
+                                if (i != mark)
+                                    throw new IllegalArgumentException("Bad authority");
                                 state = State.IPV6;
                                 break;
+                            case '%':
+                                if (encodedCharacters > 0)
+                                    throw new IllegalArgumentException("Bad authority");
+                                encodedCharacters = 2;
+                                encoded = true;
+                                break;
+                            case '#':
+                            case ';':
+                                throw new IllegalArgumentException("Bad authority");
+
                             default:
+                                if (encodedCharacters > 0)
+                                {
+                                    if (!isHexDigit(c))
+                                        throw new IllegalArgumentException("Bad authority");
+                                    encodedCharacters--;
+                                }
+                                else if (!isUnreservedPctEncodedOrSubDelim(c))
+                                {
+                                    throw new IllegalArgumentException("Bad authority");
+                                }
                                 break;
                         }
                         break;
@@ -1173,7 +1273,11 @@ public interface HttpURI
                                     state = State.PATH;
                                 }
                                 break;
+                            case ':':
+                                break;
                             default:
+                                if (!isHexDigit(c))
+                                    throw new IllegalArgumentException("Bad authority");
                                 break;
                         }
                         break;
@@ -1186,6 +1290,7 @@ public interface HttpURI
                                 throw new IllegalArgumentException("Bad authority");
                             // It wasn't a port, but a password!
                             _user = _host + ":" + uri.substring(mark, i);
+                            _violations.add(Violation.USER_INFO);
                             mark = i + 1;
                             state = State.HOST;
                         }
@@ -1261,7 +1366,7 @@ public interface HttpURI
                                     dot |= segment == i;
                                     break;
                                 case '%':
-                                    encodedPath = true;
+                                    encoded = true;
                                     encodedUtf16 = false;
                                     encodedCharacters = 2;
                                     encodedValue = 0;
@@ -1289,7 +1394,7 @@ public interface HttpURI
                                 state = State.FRAGMENT;
                                 break;
                             case '/':
-                                encodedPath = true;
+                                encoded = true;
                                 segment = i + 1;
                                 state = State.PATH;
                                 break;
@@ -1368,7 +1473,7 @@ public interface HttpURI
                     throw new IllegalStateException(state.toString());
             }
 
-            if (!encodedPath && !dot)
+            if (!encoded && !dot)
             {
                 if (_param == null)
                     _decodedPath = _path;
