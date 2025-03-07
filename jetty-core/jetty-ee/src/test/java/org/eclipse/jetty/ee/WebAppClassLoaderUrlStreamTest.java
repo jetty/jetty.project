@@ -100,7 +100,7 @@ public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
     }
 
     @BeforeEach
-    public void setup() throws Exception
+    public void setUp() throws Exception
     {
         URLStreamHandlerUtil.setFactory(new URLHandlers(_loader));
     }

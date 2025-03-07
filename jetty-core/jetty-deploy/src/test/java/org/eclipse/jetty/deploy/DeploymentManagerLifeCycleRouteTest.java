@@ -21,11 +21,20 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 public class DeploymentManagerLifeCycleRouteTest
 {
+    private String environmentName;
+
+    @BeforeEach
+    public void setUp(TestInfo testInfo)
+    {
+        environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+    }
+
     @Test
     public void testStateTransitionNewToDeployed(TestInfo testInfo) throws Exception
     {
@@ -33,7 +42,6 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
         MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         depman.addLifeCycleBinding(pathtracker);
@@ -66,7 +74,6 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
         MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         depman.addLifeCycleBinding(pathtracker);
@@ -92,7 +99,6 @@ public class DeploymentManagerLifeCycleRouteTest
         DeploymentManager depman = new DeploymentManager();
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
         MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         // Setup JMX
