@@ -275,9 +275,7 @@ public class GoalDeployerTest extends AbstractCleanEnvironmentTest
         finally
         {
             if (jetty != null)
-            {
                 jetty.stop();
-            }
         }
     }
 }

@@ -243,7 +243,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         installBean(this.contextHandlerFactory);
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
-        addBean(deployer);
+        installBean(deployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
         installBean(new DumpableCollection("monitored", monitoredDirs));
     }
@@ -275,7 +275,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         monitoredDirs.add(Objects.requireNonNull(dir));
     }
 
-    public void addScannerListener(Scanner.Listener listener)
+    /**
+     * Add a {@link LifeCycle.Listener} to this scanner, to be notified of files scanned.
+     * Primarily used for testing.
+     * @param listener The listener to add.
+     */
+    void addScannerListener(Scanner.Listener listener)
     {
         scanner.addListener(listener);
     }
@@ -291,6 +296,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         return new EnvironmentConfig(Environment.ensure(name));
     }
 
+    /**
+     * @return The {@link Comparator} used to sort the {@link DeployAction}s before acting on them.
+     */
     public Comparator<DeployAction> getActionComparator()
     {
         return actionComparator;
@@ -329,6 +337,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         this.defaultEnvironmentName = name;
     }
 
+    /**
+     * @return The {@link Path} of the directory to scan for environment configuration files,
+     *         or {@code null}
+     */
     public Path getEnvironmentsDirectory()
     {
         return environmentsDir;
@@ -343,6 +355,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         environmentsDir = dir;
     }
 
+    /**
+     * @return The {@link List} of {@link Path}s scanned for files to deploy.
+     */
     public List<Path> getMonitoredDirectories()
     {
         return monitoredDirs;
@@ -361,12 +376,20 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
+    /**
+     * @return scan interval (in seconds) to detect changes which need reloaded
+     * @see Scanner#getScanInterval()
+     */
     @ManagedAttribute("scanning interval to detect changes which need reloaded")
     public int getScanInterval()
     {
         return scanInterval;
     }
 
+    /**
+     * @param scanInterval scan interval (in seconds) to detect changes which need reloaded
+     * @see Scanner#setScanInterval(int)
+     */
     public void setScanInterval(int scanInterval)
     {
         this.scanInterval = scanInterval;

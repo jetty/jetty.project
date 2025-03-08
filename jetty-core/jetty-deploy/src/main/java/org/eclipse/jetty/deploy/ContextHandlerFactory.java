@@ -27,10 +27,25 @@ import org.eclipse.jetty.util.component.Environment;
  */
 public interface ContextHandlerFactory
 {
+    /**
+     * The attribute name for the value holding the specific class to used to create the ContextHandler
+     */
     String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    /**
+     * The attribute name for the value holding the default class to used for creating ContextHandlers in the environment
+     */
     String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
+    /**
+     * The attribute name for the environment name.
+     */
     String ENVIRONMENT = "environment";
+    /**
+     * TODO
+     */
     String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
+    /**
+     * TODO
+     */
     String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
 
     /**

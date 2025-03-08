@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -39,7 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Creates a {@link ContextHandler} from a {@link PathsApp}.
+ * Creates a {@link ContextHandler} from a WAR file and/or one or more XML files and property files.
+ * TODO explain more of what is done here.
  */
 public class PathsContextHandlerFactory implements ContextHandlerFactory
 {
