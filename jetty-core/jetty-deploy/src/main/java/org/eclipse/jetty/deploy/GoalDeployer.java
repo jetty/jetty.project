@@ -47,14 +47,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A Goal oriented Deployer.
- * <p>
- * Responsibilities:
- * <p>
+ * <p>Responsibilities:</p>
  * <ol>
  * <li>Tracking ContextHandlers and their location in the Deployment graph.</li>
  * <li>Moving ContextHandlers through the Deployment graph (eg: DEPLOYED, STARTED, UNDEPLOYED, etc.).</li>
  * </ol>
- * <p>
  */
 // TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
 @ManagedObject("Goal Oriented Deployer")

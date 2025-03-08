@@ -75,7 +75,7 @@ import org.slf4j.LoggerFactory;
  * The instances of the {@link Deployer} and {@link ContextHandlerFactory} used can be:<ul>
  *     <li>passed into a constructor;</li>
  *     <li>or, discovered as a singleton {{@link org.eclipse.jetty.util.component.Container#getBean(Class)} bean} on
- *     the {@link Server}</li>;
+ *     the {@link Server};</li>
  *     <li>or, a default implementation instantiated by this scanner.</li>
  * </ul>
  * <p>To avoid double deployments and allow flexibility of the content of the scanned directories, the provider
