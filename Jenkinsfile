@@ -9,12 +9,6 @@ pipeline {
     //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
   }
-  script{
-    properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.0.x'?'60':'5'))])
-  }
-  environment {
-    LAUNCHABLE_TOKEN = credentials('launchable-token')
-  }
   stages {
     stage("Parallel Stage") {
       parallel {
@@ -22,6 +16,9 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
+              script{
+                properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.0.x'?'60':'5'))])
+              }
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
