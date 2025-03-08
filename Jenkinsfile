@@ -6,8 +6,11 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
+  }
+  script{
+    properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.0.x'?'60':'5'))])
   }
   environment {
     LAUNCHABLE_TOKEN = credentials('launchable-token')
