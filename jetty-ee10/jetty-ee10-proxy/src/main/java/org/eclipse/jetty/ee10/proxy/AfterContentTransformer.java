@@ -65,6 +65,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
     private long maxOutputBufferSize = maxInputBufferSize;
     private long outputBufferSize;
     private FileChannel outputFile;
+    private long maxFileSizeMap;
 
     /**
      * <p>Returns the directory where input and output are overflown to
@@ -99,7 +100,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
     {
         return inputFilePrefix;
     }
-
+    
     /**
      * @param inputFilePrefix the prefix of the input overflow temporary files
      * @see #getInputFilePrefix()
@@ -107,6 +108,24 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
     public void setInputFilePrefix(String inputFilePrefix)
     {
         this.inputFilePrefix = inputFilePrefix;
+    }
+    
+    /**
+     * @return the max files size which can be mapped into memory
+     * @see #setMaxFileSizeMap(long) 
+     */
+    public long getMaxFileSizeMap()
+    {
+        return maxFileSizeMap;
+    }
+    
+    /**
+     * @param maxFileSizeMap set the maximum file size which can be mapped into memory
+     * @see #getMaxFileSizeMap()
+     */
+    public void setMaxFileSizeMap(long maxFileSizeMap)
+    {
+        this.maxFileSizeMap = maxFileSizeMap;
     }
 
     /**
@@ -266,6 +285,16 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         long position = 0;
         long length = file.size();
         file.position(position);
+        
+        // Don't map a file into memory if size less than maxFileSizeMap
+        if (getMaxFileSizeMap() > 0 && length <= getMaxFileSizeMap()) 
+        {
+            ByteBuffer buffer = ByteBuffer.allocate(Math.toIntExact(length));
+            file.read(buffer);
+            output.add(buffer);
+            return;
+        }
+        
         while (length > 0)
         {
             // At most 1 GiB file maps.
