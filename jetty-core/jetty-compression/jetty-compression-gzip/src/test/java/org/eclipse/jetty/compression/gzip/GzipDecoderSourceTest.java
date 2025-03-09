@@ -16,7 +16,7 @@ package org.eclipse.jetty.compression.gzip;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.compression.gzip.internal.GzipDecoderSource;
+import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class GzipDecoderSourceTest extends AbstractGzipTest
 {
@@ -38,21 +39,22 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = gzip.newDecoderSource(fileSource);
-        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
-        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk eof = decoderSource.read();
         assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
 
+        // Failed after EOF, too late.
         decoderSource.fail(new Throwable());
 
-        Content.Chunk err = decoderSource.read();
-        assertTrue(Content.Chunk.isFailure(err));
+        Content.Chunk chunk = decoderSource.read();
+        assertTrue(chunk.isLast() && chunk.isEmpty() && !Content.Chunk.isFailure(chunk));
     }
 
     @ParameterizedTest
@@ -64,11 +66,11 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = gzip.newDecoderSource(fileSource);
-        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
@@ -83,16 +85,19 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = gzip.newDecoderSource(fileSource);
-        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         Content.Chunk chunk = decoderSource.read();
         assertTrue(chunk.hasRemaining());
         chunk.release();
-        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+        // This test tests the behavior of
+        // a failure before the last chunk.
+        assumeFalse(chunk.isLast());
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));

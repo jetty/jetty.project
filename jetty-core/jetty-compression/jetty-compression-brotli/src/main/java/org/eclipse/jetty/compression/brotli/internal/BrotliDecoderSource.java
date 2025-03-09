@@ -28,7 +28,6 @@ public class BrotliDecoderSource extends DecoderSource
 {
     private final DecoderJNI.Wrapper decoder;
     private final BrotliCompression compression;
-    private boolean released;
 
     public BrotliDecoderSource(Content.Source source, BrotliCompression compression, BrotliDecoderConfig config)
     {
@@ -94,19 +93,10 @@ public class BrotliDecoderSource extends DecoderSource
         }
     }
 
-    // Only used for testing.
-    public boolean isReleased()
-    {
-        return released;
-    }
-
     @Override
     protected void release()
     {
-        if (!released)
-        {
-            decoder.destroy();
-            released = true;
-        }
+        super.release();
+        decoder.destroy();
     }
 }

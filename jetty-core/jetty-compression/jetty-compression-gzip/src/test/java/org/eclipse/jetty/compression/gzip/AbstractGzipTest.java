@@ -16,31 +16,22 @@ package org.eclipse.jetty.compression.gzip;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractGzipTest
 {
-    // Signed Integer Max
-    protected static final long INT_MAX = Integer.MAX_VALUE;
-    // Unsigned Integer Max == 2^32
-    protected static final long UINT_MAX = 0xFFFFFFFFL;
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractGzipTest.class);
     protected ArrayByteBufferPool.Tracking pool;
     protected ByteBufferPool.Sized sizedPool;
     protected GzipCompression gzip;
@@ -89,18 +80,6 @@ public abstract class AbstractGzipTest
         }
     }
 
-    /**
-     * Decompress ByteBuffer using JVM Built-In GZIP features.
-     *
-     * @param compressedBytes the data to decompress
-     * @return the decompressed bytes
-     * @throws IOException if unable to decompress
-     */
-    public byte[] decompress(ByteBuffer compressedBytes) throws IOException
-    {
-        return decompress(BufferUtil.toArray(compressedBytes));
-    }
-
     @BeforeEach
     public void initPool()
     {
@@ -125,7 +104,6 @@ public abstract class AbstractGzipTest
         gzip = new GzipCompression();
         if (bufferSize > 0)
             gzip.setBufferSize(bufferSize);
-
         gzip.setByteBufferPool(pool);
         gzip.start();
     }
