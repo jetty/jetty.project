@@ -43,7 +43,6 @@ public class GzipDecoderSource extends DecoderSource
     private int size;
     private long value;
     private byte flags;
-    private boolean released;
 
     public GzipDecoderSource(Content.Source source, GzipCompression compression, GzipDecoderConfig config)
     {
@@ -272,19 +271,10 @@ public class GzipDecoderSource extends DecoderSource
         }
     }
 
-    // Only used for testing.
-    public boolean isReleased()
-    {
-        return released;
-    }
-
     @Override
     protected void release()
     {
-        if (!released)
-        {
-            inflaterEntry.release();
-            released = true;
-        }
+        super.release();
+        inflaterEntry.release();
     }
 }

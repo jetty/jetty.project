@@ -16,7 +16,7 @@ package org.eclipse.jetty.compression.brotli;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.compression.brotli.internal.BrotliDecoderSource;
+import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class BrotliDecoderSourceTest extends AbstractBrotliTest
 {
@@ -38,21 +39,22 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
-        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
-        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk eof = decoderSource.read();
         assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
 
+        // Failed after EOF, too late.
         decoderSource.fail(new Throwable());
 
-        Content.Chunk err = decoderSource.read();
-        assertTrue(Content.Chunk.isFailure(err));
+        Content.Chunk chunk = decoderSource.read();
+        assertTrue(chunk.isLast() && chunk.isEmpty() && !Content.Chunk.isFailure(chunk));
     }
 
     @ParameterizedTest
@@ -64,11 +66,11 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
-        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
@@ -83,8 +85,8 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
-        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         Content.Chunk chunk = decoderSource.read();
         // skip empty chunks
@@ -92,10 +94,13 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
             chunk = decoderSource.read();
         assertTrue(chunk.hasRemaining());
         chunk.release();
-        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+        // This test tests the behavior of
+        // a failure before the last chunk.
+        assumeFalse(chunk.isLast());
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));

@@ -16,7 +16,8 @@ package org.eclipse.jetty.compression.zstandard;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.compression.zstandard.internal.ZstandardDecoderSource;
+import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class ZstandardDecoderSourceTest extends AbstractZstdTest
 {
@@ -37,24 +39,23 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
-        // TODO: sizedPool config of size 1?
-        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = zstd.newDecoderSource(fileSource);
+        Content.Source fileSource = Content.Source.from(new ByteBufferPool.Sized(pool, true, 256), compressed);
+        DecoderSource decoderSource = zstd.newDecoderSource(fileSource);
 
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
-        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk eof = decoderSource.read();
         assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
 
+        // Failed after EOF, too late.
         decoderSource.fail(new Throwable());
 
-        Content.Chunk err = decoderSource.read();
-        assertTrue(Content.Chunk.isFailure(err));
+        Content.Chunk chunk = decoderSource.read();
+        assertTrue(chunk.isLast() && chunk.isEmpty() && !Content.Chunk.isFailure(chunk));
     }
-
 
     @ParameterizedTest
     @MethodSource("textResources")
@@ -66,11 +67,11 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
 
         // TODO: sizedPool config of size 1?
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = zstd.newDecoderSource(fileSource);
-        assertFalse(((ZstandardDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = zstd.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
@@ -84,10 +85,9 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
         String compressedName = String.format("%s.%s", textResourceName, zstd.getFileExtensionNames().get(0));
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
 
-        // TODO: sizedPool config of size 1?
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = zstd.newDecoderSource(fileSource);
-        assertFalse(((ZstandardDecoderSource)decoderSource).isReleased());
+        DecoderSource decoderSource = zstd.newDecoderSource(fileSource);
+        assertFalse(decoderSource.isComplete());
 
         Content.Chunk chunk = decoderSource.read();
         // skip empty chunks
@@ -95,9 +95,13 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
             chunk = decoderSource.read();
         assertTrue(chunk.hasRemaining());
         chunk.release();
+        // This test tests the behavior of
+        // a failure before the last chunk.
+        assumeFalse(chunk.isLast());
+        assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
-        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+        assertTrue(decoderSource.isComplete());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
