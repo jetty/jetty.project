@@ -97,8 +97,8 @@
             </configuration>
           </plugin>
           <plugin>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-jspc-maven-plugin</artifactId>
+            <groupId>org.eclipse.jetty.ee9</groupId>
+            <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>
             <version>${project.version}</version>
             <executions>
               <execution>

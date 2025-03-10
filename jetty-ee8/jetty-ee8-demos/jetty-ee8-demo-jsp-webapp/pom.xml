@@ -95,12 +95,12 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>
             <configuration>
-              <webXml>${basedir}/target/web.xml</webXml>
+              <webXml>${basedir}/target/webapp/WEB-INF/web.xml</webXml>
             </configuration>
           </plugin>
           <plugin>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-jspc-maven-plugin</artifactId>
+            <groupId>org.eclipse.jetty.ee8</groupId>
+            <artifactId>jetty-ee8-jspc-maven-plugin</artifactId>
             <version>${project.version}</version>
             <executions>
               <execution>
@@ -108,14 +108,15 @@
                 <goals>
                   <goal>jspc</goal>
                 </goals>
-                <!-- example configuration
-                 <configuration>
+                <configuration>
+                  <!-- example configuration
                    <includes>**/*.foo</includes>
                    <excludes>**/*.fff</excludes>
                    <sourceVersion>1.8</sourceVersion>
                    <targetVersion>1.8</targetVersion>
-                 </configuration>
                  -->
+                  <webAppSourceDirectory>${basedir}/target/webapp</webAppSourceDirectory>
+                </configuration>
               </execution>
             </executions>
           </plugin>
