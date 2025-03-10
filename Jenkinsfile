@@ -36,6 +36,24 @@ pipeline {
           }
         }
 
+        stage("Build / Test - JDK17 Javadoc") {
+          agent { node { label 'linux-light' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              withEnv(["JAVA_HOME=${ tool 'jdk17' }",
+                       "PATH+MAVEN=${ tool 'jdk17' }/bin:${tool 'maven3'}/bin",
+                       "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+                configFileProvider(
+                        [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
+                         configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
+                  sh "mvn -DsettingsPath=$GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate  -Pjavadoc-aggregate"
+                }
+              }
+            }
+          }
+        }
+
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
