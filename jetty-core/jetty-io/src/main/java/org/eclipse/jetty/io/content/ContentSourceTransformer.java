@@ -36,7 +36,7 @@ public abstract class ContentSourceTransformer implements Content.Source
 
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Content.Source rawSource;
-    private Content.Chunk rawChunk;
+    private volatile Content.Chunk rawChunk;
     private volatile boolean needsRawRead;
 
     protected ContentSourceTransformer(Content.Source rawSource)
@@ -158,7 +158,7 @@ public abstract class ContentSourceTransformer implements Content.Source
         }
     }
 
-    private Content.Chunk afterRead(State.Type type, Content.Chunk chunk)
+    private Content.Chunk afterRead(State.Type targetType, Content.Chunk chunk)
     {
         while (true)
         {
@@ -168,7 +168,7 @@ public abstract class ContentSourceTransformer implements Content.Source
                 case IDLE, EOF, FAILED -> throw new IllegalStateException();
                 case READING ->
                 {
-                    switch (type)
+                    switch (targetType)
                     {
                         case IDLE ->
                         {
