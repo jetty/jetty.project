@@ -9,9 +9,7 @@
     <Call name="addBean">
       <Arg>
         <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">
-          <Arg name="contexts">
-            <Ref refid="Contexts" />
-          </Arg>
+          <Arg name="contexts"><Ref refid="Contexts"/></Arg>
         </New>
       </Arg>
     </Call>
