@@ -863,7 +863,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         List<Path> rawEnvXmlPaths = deployAttributes.getAttributeNameSet()
             .stream()
-            .filter(k -> k.startsWith(ContextHandlerFactory.ENVIRONMENT_XML))
+            .filter(k -> k.startsWith(ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE))
             .map(k -> Path.of((String)deployAttributes.getAttribute(k)))
             .toList();
 
@@ -1149,11 +1149,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param classname the classname for this environment's context deployable.
-         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS
+         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
         public void setContextHandlerClass(String classname)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
+            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_ATTRIBUTE, classname);
         }
 
         /**
@@ -1166,11 +1166,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param classname the default classname for this environment's context deployable.
-         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT
+         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
          */
         public void setDefaultContextHandlerClass(String classname)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
+            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE, classname);
         }
 
         /**

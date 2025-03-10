@@ -76,12 +76,12 @@ public class PathsContextHandlerFactory implements ContextHandlerFactory
     public static List<Path> getEnvironmentXmlPaths(Attributes attributes)
     {
         //noinspection unchecked
-        return (List<Path>)attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS);
+        return (List<Path>)attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE);
     }
 
     public static void setEnvironmentXmlPaths(Attributes attributes, List<Path> paths)
     {
-        attributes.setAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS, paths);
+        attributes.setAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE, paths);
     }
 
     @Override
@@ -385,9 +385,9 @@ public class PathsContextHandlerFactory implements ContextHandlerFactory
      * The search order is:
      * </p>
      * <ol>
-     * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS} is specified, use it, and initialize context</li>
+     * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS_ATTRIBUTE} is specified, use it, and initialize context</li>
      * <li>If app deployable path is XML, apply XML {@code <Configuration>}</li>
-     * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT}, and initialize context.</li>
+     * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}, and initialize context.</li>
      * </ol>
      *
      * @param environment the environment context applies to
@@ -402,7 +402,7 @@ public class PathsContextHandlerFactory implements ContextHandlerFactory
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);
 
-        Object context = newInstance((String)attributes.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS));
+        Object context = newInstance((String)attributes.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_ATTRIBUTE));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);
@@ -440,7 +440,7 @@ public class PathsContextHandlerFactory implements ContextHandlerFactory
             return context;
 
         // fallback to default from environment.
-        context = newInstance((String)environment.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT));
+        context = newInstance((String)environment.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);

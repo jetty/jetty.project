@@ -30,23 +30,23 @@ public interface ContextHandlerFactory
     /**
      * The attribute name for the value holding the specific class to used to create the ContextHandler
      */
-    String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    String CONTEXT_HANDLER_CLASS_ATTRIBUTE = "jetty.deploy.contextHandlerClass";
     /**
      * The attribute name for the value holding the default class to used for creating ContextHandlers in the environment
      */
-    String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
+    String CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE = "jetty.deploy.default.contextHandlerClass";
     /**
      * The attribute name for the environment name.
      */
-    String ENVIRONMENT = "environment";
+    String ENVIRONMENT_ATTRIBUTE = "environment";
     /**
      * TODO
      */
-    String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
+    String ENVIRONMENT_XML_ATTRIBUTE = "jetty.deploy.environmentXml";
     /**
      * TODO
      */
-    String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
+    String ENVIRONMENT_XML_PATHS_ATTRIBUTE = "jetty.deploy.paths.environmentXmls";
 
     /**
      * @param server The server for the context.
@@ -56,11 +56,11 @@ public interface ContextHandlerFactory
      * @param deployAttributes Attributes describing the details of the deployment and that are made available to the
      *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <UL>
      *                             <li>Attributes defined in {@link org.eclipse.jetty.server.Deployable}</li>
-     *                             <li>{@link #CONTEXT_HANDLER_CLASS}</li>
-     *                             <li>{@link #CONTEXT_HANDLER_CLASS_DEFAULT}</li>
-     *                             <li>{@link #ENVIRONMENT}</li>
-     *                             <li>{@link #ENVIRONMENT_XML}</li>
-     *                             <li>{@link #ENVIRONMENT_XML_PATHS}</li>
+     *                             <li>{@link #CONTEXT_HANDLER_CLASS_ATTRIBUTE}</li>
+     *                             <li>{@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}</li>
+     *                             <li>{@link #ENVIRONMENT_ATTRIBUTE}</li>
+     *                             <li>{@link #ENVIRONMENT_XML_ATTRIBUTE}</li>
+     *                             <li>{@link #ENVIRONMENT_XML_PATHS_ATTRIBUTE}</li>
      *                         </UL>
      * @return The created {@link ContextHandler}
      * @throws Exception If there is a problem creating the {@link ContextHandler}

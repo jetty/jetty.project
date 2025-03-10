@@ -98,12 +98,12 @@ public class PathsApp
 
     public Environment getEnvironment()
     {
-        return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT);
+        return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
     }
 
     public void setEnvironment(Environment env)
     {
-        getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT, env);
+        getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, env);
     }
 
     public String getEnvironmentName()
@@ -243,7 +243,7 @@ public class PathsApp
         }
 
         // Look for simple old school environment name.
-        String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT);
+        String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
         if (StringUtil.isNotBlank(environmentName))
         {
             setEnvironment(Environment.get(environmentName));
