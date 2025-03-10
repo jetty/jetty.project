@@ -64,6 +64,7 @@ import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
@@ -2020,7 +2021,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector))));
-                URI serverUri = URI.create("https://localhost:" + port + "/test/");
+                URI serverUri = URI.create("https://localhost:" + port + "/");
                 ContentResponse response = client.newRequest(serverUri)
                     .headers(h -> h.put("Forwarded", "for=" + forwarded))
                     .timeout(15, TimeUnit.SECONDS)
@@ -2028,11 +2029,19 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
                 Path logs = distribution.getJettyBase().resolve("logs");
-                List<Path> logFiles = Files.list(logs).toList();
-                assertEquals(1, logFiles.size());
-                List<String> lines = Files.lines(logFiles.get(0)).toList();
-                assertEquals(1, lines.size());
-                assertThat(lines.get(0), startsWith(forwarded));
+                try (Stream<Path> logsPaths = Files.list(logs))
+                {
+                    List<Path> logsFiles = logsPaths.toList();
+                    assertEquals(1, logsFiles.size());
+                    List<String> logLines = await().atMost(5, TimeUnit.SECONDS).until(() ->
+                    {
+                        try (Stream<String> lines = Files.lines(logsFiles.get(0)))
+                        {
+                            return lines.toList();
+                        }
+                    }, Matchers.hasSize(1));
+                    assertThat(logLines.get(0), startsWith(forwarded));
+                }
             }
         }
     }
