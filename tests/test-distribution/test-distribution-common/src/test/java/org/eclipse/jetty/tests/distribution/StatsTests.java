@@ -49,7 +49,6 @@ public class StatsTests extends AbstractJettyHomeTest
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            run1.getLogs().forEach(System.err::println);
             assertEquals(0, run1.getExitValue());
 
             // Make a context
