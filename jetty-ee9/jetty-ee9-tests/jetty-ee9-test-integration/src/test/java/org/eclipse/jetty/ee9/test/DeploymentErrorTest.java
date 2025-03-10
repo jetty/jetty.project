@@ -31,6 +31,7 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
@@ -49,7 +50,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -61,15 +61,14 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
 {
-
     private StacklessLogging stacklessLogging;
     private Server server;
     private DeploymentManager deploymentManager;
-    private ContextHandlerCollection contexts;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer, Path docroots) throws Exception
     {
@@ -83,11 +82,10 @@ public class DeploymentErrorTest
         ResourceFactory resourceFactory = ResourceFactory.of(server);
 
         // Empty contexts collections
-        contexts = new ContextHandlerCollection();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         //Environment
-        Environment ee9 = Environment.ensure("ee9", WebAppContext.class.getClassLoader());
-        ee9.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee9.webapp.WebAppContext");
+        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee9.webapp.WebAppContext");
         
         // Deployment Manager
         deploymentManager = new DeploymentManager();
@@ -173,11 +171,11 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots), workDir.getEmptyPathDir());
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         String contextPath = "/badapp-uaf";
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler coreContext = app.getContextHandler();
         org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
         if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
@@ -226,10 +224,10 @@ public class DeploymentErrorTest
         // Wait for deployment manager to do its thing
         assertThat("AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler coreContext = app.getContextHandler();
         org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
         if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
@@ -277,12 +275,12 @@ public class DeploymentErrorTest
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        startTracking.startedLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
-        List<App> apps = new ArrayList<>();
-        apps.addAll(deploymentManager.getApps());
+        List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler coreContext = app.getContextHandler();
         org.eclipse.jetty.ee9.nested.ContextHandler contextHandler = null;
         if (coreContext instanceof org.eclipse.jetty.ee9.nested.ContextHandler.CoreContextHandler coreContextHandler)
@@ -313,16 +311,11 @@ public class DeploymentErrorTest
     private void assertHttpState(String contextPath, int expectedStatusCode) throws Exception
     {
         URI destURI = server.getURI().resolve(contextPath);
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 
@@ -359,7 +352,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void preConfigure(WebAppContext context) throws Exception
+        public void preConfigure(WebAppContext context)
         {
             incrementCount(context, preConfigureCounts);
         }
@@ -371,7 +364,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void postConfigure(WebAppContext context) throws Exception
+        public void postConfigure(WebAppContext context)
         {
             incrementCount(context, postConfigureCounts);
         }

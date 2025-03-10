@@ -29,6 +29,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated
 public class DeploymentManagerTest
 {
 
@@ -95,23 +97,23 @@ public class DeploymentManagerTest
         DeploymentManager depman = new DeploymentManager();
         assertThat(depman.getDefaultEnvironmentName(), Matchers.nullValue());
         ClassLoader mockLoader = new URLClassLoader(new URL[0]);
-        Environment.ensure("ee7", mockLoader);
+        Environment.create("ee7", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee7"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee7"));
 
-        Environment.ensure("ee12", mockLoader);
+        Environment.create("ee12", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee12"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("ee11", mockLoader);
+        Environment.create("ee11", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee11"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("somethingElse", mockLoader);
+        Environment.create("somethingElse", mockLoader);
         depman.addAppProvider(new MockAppProvider("somethingElse"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("other", mockLoader);
+        Environment.create("other", mockLoader);
         depman.addAppProvider(new MockAppProvider("other"));
 
         assertThat(depman.getAppProviders().stream().map(AppProvider::getEnvironmentName).sorted(Deployable.ENVIRONMENT_COMPARATOR).toList(),

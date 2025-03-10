@@ -31,6 +31,7 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -51,7 +52,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +63,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
@@ -88,8 +89,7 @@ public class DeploymentErrorTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         //Environment
-        Environment ee10 = Environment.ensure("ee10", WebAppContext.class.getClassLoader());
-        ee10.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
+        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
 
         // Deployment Manager
         deploymentManager = new DeploymentManager();
@@ -131,7 +131,7 @@ public class DeploymentErrorTest
     }
 
     @AfterEach
-    public void tearDownServer() throws Exception
+    public void tearDownServer()
     {
         if (stacklessLogging != null)
             stacklessLogging.close();
@@ -183,6 +183,7 @@ public class DeploymentErrorTest
         assertThat("Apps tracked", apps.size(), is(1));
         String contextPath = "/badapp-uaf";
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler context = app.getContextHandler();
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
@@ -228,6 +229,7 @@ public class DeploymentErrorTest
         List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler context = app.getContextHandler();
         assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
@@ -268,11 +270,12 @@ public class DeploymentErrorTest
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        startTracking.startedLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
         List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
         App app = findApp(contextPath, apps);
+        assert app != null;
         ContextHandler context = app.getContextHandler();
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
@@ -296,16 +299,12 @@ public class DeploymentErrorTest
     private void assertHttpState(String contextPath, int expectedStatusCode) throws Exception
     {
         URI destURI = server.getURI().resolve(contextPath);
-        HttpClient client = new HttpClient();
-        try
+
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 

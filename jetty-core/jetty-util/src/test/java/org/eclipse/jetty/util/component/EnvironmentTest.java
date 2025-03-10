@@ -43,7 +43,6 @@ public class EnvironmentTest
         ClassLoader loaderAX = new URLClassLoader(new URL[0]);
         assertThrows(IllegalStateException.class, () -> Environment.create("envA", loaderAX));
 
-        System.err.println(Environment.getAll());
         assertThat(Environment.getAll(), Matchers.hasItems(envA, envB));
     }
 
@@ -51,7 +50,6 @@ public class EnvironmentTest
     public void testEnsure() throws Exception
     {
         ClassLoader loaderC = new URLClassLoader(new URL[0]);
-        @SuppressWarnings("resource")
         ClassLoader loaderD = new URLClassLoader(new URL[0]);
         Environment envC = Environment.create("envC", loaderC);
 
