@@ -49,8 +49,10 @@ public interface Environment extends Attributes
      * Gets the environment with the given name, creating it with the default classloader if necessary.
      *
      * @param name the environment name
+     * @param classLoader The loader to either: use to create the environment; or to check the environments loader matches
+     *                    the passed loader.
      * @return the environment
-     * @throws IllegalStateException if an environment with the given name but a non-default classloader already exists
+     * @throws IllegalArgumentException if an environment with the given name but a different classloader already exists
      */
     static Environment ensure(String name, ClassLoader classLoader) throws IllegalStateException
     {
