@@ -20,7 +20,7 @@ import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Blocker;
 
 public class StandardUndeployerBinding implements DeploymentNodeBinding
 {
@@ -34,9 +34,11 @@ public class StandardUndeployerBinding implements DeploymentNodeBinding
     public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
         ContextHandlerCollection contexts = goalDeployer.getContexts();
-        Callback.Completable blocker = new Callback.Completable();
-        contexts.undeployHandler(contextHandler, blocker);
-        blocker.get();
+        try (Blocker.Callback blocker = Blocker.callback())
+        {
+            contexts.undeployHandler(contextHandler, blocker);
+            blocker.block();
+        }
         contextHandler.destroy();
     }
 }
