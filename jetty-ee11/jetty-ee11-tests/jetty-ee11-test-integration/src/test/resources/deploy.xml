@@ -9,15 +9,14 @@
   <Call name="addBean">
     <Arg>
       <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">
-        <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
+        <Arg name="contexts"><Ref refid="Contexts"/></Arg>
 
         <Call name="addBean">
           <Arg>
             <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
               <Arg name="server"><Ref refid="Server"/></Arg>
               <Arg name="deployer"><Ref refid="Deployer"/></Arg>
+
               <Call name="addMonitoredDirectory">
                 <Arg>
                   <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
