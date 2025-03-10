@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.Attributes;
 public interface Environment extends Attributes
 {
     // Ensure there is a core environment for possible later deployments to it
-    Environment CORE = ensure("core");
+    Environment CORE = ensure("core", Environment.class.getClassLoader());
 
     /**
      * Gets all existing environments.
@@ -47,13 +47,17 @@ public interface Environment extends Attributes
 
     /**
      * Gets the environment with the given name, creating it with the default classloader if necessary.
+     *
      * @param name the environment name
      * @return the environment
      * @throws IllegalStateException if an environment with the given name but a non-default classloader already exists
      */
-    static Environment ensure(String name) throws IllegalStateException
+    static Environment ensure(String name, ClassLoader classLoader) throws IllegalStateException
     {
-        return NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, null));
+        Environment environment = NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, classLoader));
+        if (environment.getClassLoader() != classLoader)
+            throw new IllegalArgumentException("%s has different classloader".formatted(name));
+        return environment;
     }
 
     /**

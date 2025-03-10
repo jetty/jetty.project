@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
@@ -92,24 +94,24 @@ public class DeploymentManagerTest
     {
         DeploymentManager depman = new DeploymentManager();
         assertThat(depman.getDefaultEnvironmentName(), Matchers.nullValue());
-
-        Environment.ensure("ee7");
+        ClassLoader mockLoader = new URLClassLoader(new URL[0]);
+        Environment.ensure("ee7", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee7"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee7"));
 
-        Environment.ensure("ee12");
+        Environment.ensure("ee12", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee12"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("ee11");
+        Environment.ensure("ee11", mockLoader);
         depman.addAppProvider(new MockAppProvider("ee11"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("somethingElse");
+        Environment.ensure("somethingElse", mockLoader);
         depman.addAppProvider(new MockAppProvider("somethingElse"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("other");
+        Environment.ensure("other", mockLoader);
         depman.addAppProvider(new MockAppProvider("other"));
 
         assertThat(depman.getAppProviders().stream().map(AppProvider::getEnvironmentName).sorted(Deployable.ENVIRONMENT_COMPARATOR).toList(),

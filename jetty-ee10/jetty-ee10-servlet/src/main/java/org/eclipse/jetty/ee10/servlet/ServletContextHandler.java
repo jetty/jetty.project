@@ -133,7 +133,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee10");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee10", ServletContextHandler.class.getClassLoader());
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */

@@ -19,7 +19,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Environment;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
@@ -35,7 +34,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     @Override
     public String getEnvironmentName()
     {
-        return Environment.ensure(environmentName).getName();
+        return environmentName;
     }
 
     @Override

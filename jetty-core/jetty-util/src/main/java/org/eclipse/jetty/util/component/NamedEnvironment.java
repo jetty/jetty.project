@@ -49,6 +49,19 @@ class NamedEnvironment extends Attributes.Mapped implements Environment, Dumpabl
     }
 
     @Override
+    public int hashCode()
+    {
+        return _name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        // Only do instance equality
+        return this == o;
+    }
+
+    @Override
     public String toString()
     {
         return "%s@%x{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);

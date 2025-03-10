@@ -88,7 +88,7 @@ public class DeploymentErrorTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         //Environment
-        Environment ee10 = Environment.ensure("ee10");
+        Environment ee10 = Environment.ensure("ee10", WebAppContext.class.getClassLoader());
         ee10.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
 
         // Deployment Manager
