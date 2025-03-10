@@ -424,7 +424,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     }
 
     /**
+     * If {@link Scanner} is configured to {@code reportRealPaths}.
+     *
      * @return True if the real path of the scanned files should be used for deployment.
+     * @see Scanner and {@code reportRealPaths} constructor variable.
      */
     public boolean isUseRealPaths()
     {
@@ -432,7 +435,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     }
 
     /**
+     * Tells {@link Scanner} to {@code reportRealPaths}.
+     *
      * @param useRealPaths True if the real path of the scanned files should be used for deployment.
+     * @see Scanner and {@code reportRealPaths} constructor variable.
      */
     public void setUseRealPaths(boolean useRealPaths)
     {

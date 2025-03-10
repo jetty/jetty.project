@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Creates a {@link ContextHandler} from a WAR file and/or one or more XML files and property files.
- * TODO explain more of what is done here.
  */
 public class PathsContextHandlerFactory implements ContextHandlerFactory
 {
