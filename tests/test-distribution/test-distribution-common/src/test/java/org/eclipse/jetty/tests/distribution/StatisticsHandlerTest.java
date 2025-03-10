@@ -31,11 +31,11 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StatsTests extends AbstractJettyHomeTest
+public class StatisticsHandlerTest extends AbstractJettyHomeTest
 {
     @ParameterizedTest
     @ValueSource(strings = {"ee9", "ee10", "ee11"})
-    public void testStatsServlet(String env) throws Exception
+    public void testStatisticsHandler(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -56,15 +56,10 @@ public class StatsTests extends AbstractJettyHomeTest
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
             FS.ensureDirExists(webappsDir.resolve("demo"));
 
-            // Configure server to dump stats on stop, so we can assert on them
-            try (FileOutputStream fos = new FileOutputStream(distribution.getJettyBase().resolve("start.d/server.ini").toString(), true))
-            {
-                fos.write("\njetty.server.dumpBeforeStop=true\n".getBytes(StandardCharsets.UTF_8));
-            }
-
             int httpPort = Tester.freePort();
             int stopPort = httpPort + 1;
             String[] args2 = {
+                "jetty.server.dumpBeforeStop=true", // Dump stats on stop, so we can assert on them
                 "jetty.http.port=" + httpPort,
                 "STOP.PORT=" + stopPort,
                 "STOP.KEY=secret"
