@@ -2,9 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-    <Arg>ee11</Arg>
-  </Call>
+  <Get id="Environment" class="org.eclipse.jetty.ee11.servlet.ServletContextHandler" name="ENVIRONMENT"/>
   <Ref refid="Environment">
     <Call name="setAttribute">
       <Arg>contextHandlerClass</Arg>

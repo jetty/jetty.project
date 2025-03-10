@@ -67,10 +67,7 @@
       </Arg>
     </New>
   </Set>
-
-   <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-    <Arg>ee9</Arg>
-   </Call>
+   <Get id="Environment" class="org.eclipse.jetty.ee9.nested.ContextHandler" name="ENVIRONMENT"/>
    <Ref refid="Environment">
     <Call name="setAttribute">
       <Arg>contextHandlerClass</Arg>
