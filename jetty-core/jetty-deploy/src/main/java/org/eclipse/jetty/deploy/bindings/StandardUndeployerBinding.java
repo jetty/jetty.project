@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.util.Collection;
+import java.util.List;
+
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -22,9 +25,9 @@ import org.eclipse.jetty.util.Callback;
 public class StandardUndeployerBinding implements DeploymentNodeBinding
 {
     @Override
-    public String[] getBindingTargets()
+    public Collection<String> getBindingTargets()
     {
-        return new String[]{"undeploying"};
+        return List.of("undeploying");
     }
 
     @Override

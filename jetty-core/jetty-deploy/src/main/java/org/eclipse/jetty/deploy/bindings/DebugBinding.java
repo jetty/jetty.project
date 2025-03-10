@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.util.Collection;
+import java.util.List;
+
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -23,20 +26,25 @@ public class DebugBinding implements DeploymentNodeBinding
 {
     private static final Logger LOG = LoggerFactory.getLogger(DebugBinding.class);
 
-    final String[] _targets;
+    private final List<String> _targets;
 
     public DebugBinding(String target)
     {
-        _targets = new String[]{target};
+        this(List.of(target));
     }
 
-    public DebugBinding(final String... targets)
+    public DebugBinding(String... targets)
+    {
+        this(List.of(targets));
+    }
+
+    public DebugBinding(List<String> targets)
     {
         _targets = targets;
     }
 
     @Override
-    public String[] getBindingTargets()
+    public Collection<String> getBindingTargets()
     {
         return _targets;
     }

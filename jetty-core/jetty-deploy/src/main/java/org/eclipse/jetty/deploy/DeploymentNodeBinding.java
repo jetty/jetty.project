@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.util.Collection;
+
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
@@ -26,7 +28,7 @@ public interface DeploymentNodeBinding
      *
      * @return the array of String node names to bind to. (use <code>"*"</code> to bind to all known node names)
      */
-    String[] getBindingTargets();
+    Collection<String> getBindingTargets();
 
     /**
      * Event called to perform an action when targeted node on the Deployment graph

@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.test;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.GoalDeployer;
-import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
@@ -363,11 +363,9 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public String[] getBindingTargets()
+        public Collection<String> getBindingTargets()
         {
-            return new String[]{
-                DeploymentGraph.STARTING, DeploymentGraph.STARTED, DeploymentGraph.FAILED
-            };
+            return List.of("starting", "started", "failed");
         }
 
         @Override

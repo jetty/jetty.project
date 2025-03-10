@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
@@ -23,9 +25,9 @@ import org.eclipse.jetty.util.Callback;
 public class StandardDeployerBinding implements DeploymentNodeBinding
 {
     @Override
-    public String[] getBindingTargets()
+    public Collection<String> getBindingTargets()
     {
-        return new String[]{"deploying"};
+        return List.of("deploying");
     }
 
     @Override

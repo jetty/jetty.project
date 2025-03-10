@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
@@ -26,11 +29,16 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  */
 public class OrderedGroupBinding implements DeploymentNodeBinding
 {
-    private String[] _bindingTargets;
+    private Collection<String> _bindingTargets;
 
-    private LinkedList<DeploymentNodeBinding> _orderedBindings;
+    private List<DeploymentNodeBinding> _orderedBindings;
 
-    public OrderedGroupBinding(String[] bindingTargets)
+    public OrderedGroupBinding(String... bindingTargets)
+    {
+        this(List.of(bindingTargets));
+    }
+
+    public OrderedGroupBinding(Collection<String> bindingTargets)
     {
         _bindingTargets = bindingTargets;
     }
@@ -39,7 +47,7 @@ public class OrderedGroupBinding implements DeploymentNodeBinding
     {
         if (_orderedBindings == null)
         {
-            _orderedBindings = new LinkedList<>();
+            _orderedBindings = new ArrayList<>();
         }
 
         _orderedBindings.add(binding);
@@ -56,7 +64,7 @@ public class OrderedGroupBinding implements DeploymentNodeBinding
     }
 
     @Override
-    public String[] getBindingTargets()
+    public Collection<String> getBindingTargets()
     {
         return _bindingTargets;
     }

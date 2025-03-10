@@ -14,6 +14,7 @@
 package org.eclipse.jetty.deploy.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
@@ -40,10 +41,9 @@ public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
     }
 
     @Override
-    public String[] getBindingTargets()
+    public Collection<String> getBindingTargets()
     {
-        return new String[]
-            {"*"};
+        return List.of("*");
     }
 
     @Override
