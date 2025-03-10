@@ -284,15 +284,15 @@ The module properties are:
 include::{jetty-home}/modules/http3.mod[tags=documentation]
 ----
 
-[[http-forwarded]]
-== Module `http-forwarded`
+[[forwarded]]
+== Module `forwarded`
 
-The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
+The `forwarded` module provides support for processing the `Forwarded` HTTP header (defined in https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
 
 The module properties are:
 
 ----
-include::{jetty-home}/modules/http-forwarded.mod[tags=documentation]
+include::{jetty-home}/modules/forwarded.mod[tags=documentation]
 ----
 
 [[https]]

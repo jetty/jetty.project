@@ -1035,22 +1035,22 @@ Let's assume you have already configured Jetty with the HTTP/1.1 protocol with t
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
-Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module:
+Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `forwarded` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=http-forwarded
+$ java -jar $JETTY_HOME/start.jar --add-modules=forwarded
 ----
 
 [jetty%nowrap]
 ....
 [jetty]
 setupArgs=--add-modules=http
-args=--add-modules=http-forwarded
+args=--add-modules=forwarded
 ....
 
-With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
+With the `forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
 
-For further information about configuring the `http-forwarded` Jetty module, see xref:modules/standard.adoc#http-forwarded[this section].
+For further information about configuring the `forwarded` Jetty module, see xref:modules/standard.adoc#forwarded[this section].
 
 [[proxy-protocol]]
 === Configuring the Proxy Protocol
