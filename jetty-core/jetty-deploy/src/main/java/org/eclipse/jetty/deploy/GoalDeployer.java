@@ -23,10 +23,10 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.bindings.StandardDeployer;
-import org.eclipse.jetty.deploy.bindings.StandardStarter;
-import org.eclipse.jetty.deploy.bindings.StandardStopper;
-import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
+import org.eclipse.jetty.deploy.bindings.StandardDeployerBinding;
+import org.eclipse.jetty.deploy.bindings.StandardStarterBinding;
+import org.eclipse.jetty.deploy.bindings.StandardStopperBinding;
+import org.eclipse.jetty.deploy.bindings.StandardUndeployerBinding;
 import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.deploy.internal.graph.Edge;
 import org.eclipse.jetty.deploy.internal.graph.Node;
@@ -283,10 +283,10 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
         if (_useStandardBindings)
         {
             LOG.debug("GoalDeployer using standard bindings");
-            addLifeCycleBinding(new StandardDeployer());
-            addLifeCycleBinding(new StandardStarter());
-            addLifeCycleBinding(new StandardStopper());
-            addLifeCycleBinding(new StandardUndeployer());
+            addLifeCycleBinding(new StandardDeployerBinding());
+            addLifeCycleBinding(new StandardStarterBinding());
+            addLifeCycleBinding(new StandardStopperBinding());
+            addLifeCycleBinding(new StandardUndeployerBinding());
         }
 
         super.doStart();

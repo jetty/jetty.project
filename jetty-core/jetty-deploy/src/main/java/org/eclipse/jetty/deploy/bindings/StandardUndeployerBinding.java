@@ -16,22 +16,24 @@ package org.eclipse.jetty.deploy.bindings;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.Callback;
 
-public class StandardStopper implements DeploymentNodeBinding
+public class StandardUndeployerBinding implements DeploymentNodeBinding
 {
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]{"stopping"};
+        return new String[]{"undeploying"};
     }
 
     @Override
     public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
-        // Before stopping, take back management from the context
-        goalDeployer.getContexts().unmanage(contextHandler);
-
-        // Stop it
-        contextHandler.stop();
+        ContextHandlerCollection contexts = goalDeployer.getContexts();
+        Callback.Completable blocker = new Callback.Completable();
+        contexts.undeployHandler(contextHandler, blocker);
+        blocker.get();
+        contextHandler.destroy();
     }
 }

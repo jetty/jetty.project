@@ -14,7 +14,7 @@
 package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.deploy.GoalDeployer;
-import org.eclipse.jetty.deploy.bindings.StandardDeployer;
+import org.eclipse.jetty.deploy.bindings.StandardDeployerBinding;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
  * Extension of standard Jetty deployer that emits OSGi EventAdmin
  * events whenever a webapp is deployed into OSGi via Jetty.
  */
-public class OSGiDeployer extends StandardDeployer
+public class OSGiDeployer extends StandardDeployerBinding
 {
     private final Server _server;
 

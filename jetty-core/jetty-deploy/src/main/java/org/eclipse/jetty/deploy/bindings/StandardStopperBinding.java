@@ -16,28 +16,22 @@ package org.eclipse.jetty.deploy.bindings;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
-public class StandardStarter implements DeploymentNodeBinding
+public class StandardStopperBinding implements DeploymentNodeBinding
 {
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]{"starting"};
+        return new String[]{"stopping"};
     }
 
     @Override
     public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
-        ContextHandlerCollection contexts = goalDeployer.getContexts();
+        // Before stopping, take back management from the context
+        goalDeployer.getContexts().unmanage(contextHandler);
 
-        if (contexts.isStarted() && contextHandler.isStopped())
-        {
-            // start the handler manually
-            contextHandler.start();
-
-            // After starting let the context manage state
-            contexts.manage(contextHandler);
-        }
+        // Stop it
+        contextHandler.stop();
     }
 }

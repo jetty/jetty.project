@@ -20,7 +20,7 @@ import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 
-public class StandardDeployer implements DeploymentNodeBinding
+public class StandardDeployerBinding implements DeploymentNodeBinding
 {
     @Override
     public String[] getBindingTargets()

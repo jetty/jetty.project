@@ -17,23 +17,27 @@ import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.Callback;
 
-public class StandardUndeployer implements DeploymentNodeBinding
+public class StandardStarterBinding implements DeploymentNodeBinding
 {
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]{"undeploying"};
+        return new String[]{"starting"};
     }
 
     @Override
     public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
         ContextHandlerCollection contexts = goalDeployer.getContexts();
-        Callback.Completable blocker = new Callback.Completable();
-        contexts.undeployHandler(contextHandler, blocker);
-        blocker.get();
-        contextHandler.destroy();
+
+        if (contexts.isStarted() && contextHandler.isStopped())
+        {
+            // start the handler manually
+            contextHandler.start();
+
+            // After starting let the context manage state
+            contexts.manage(contextHandler);
+        }
     }
 }

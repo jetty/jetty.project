@@ -14,7 +14,7 @@
 package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.deploy.GoalDeployer;
-import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
+import org.eclipse.jetty.deploy.bindings.StandardUndeployerBinding;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
  * Extension of the Jetty Undeployer which emits OSGi EventAdmin events
  * whenever a webapp is undeployed from Jetty.
  */
-public class OSGiUndeployer extends StandardUndeployer
+public class OSGiUndeployer extends StandardUndeployerBinding
 {
     private final Server _server;
 

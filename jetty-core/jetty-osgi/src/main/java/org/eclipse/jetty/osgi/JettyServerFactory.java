@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.GoalDeployer;
-import org.eclipse.jetty.deploy.bindings.StandardStarter;
-import org.eclipse.jetty.deploy.bindings.StandardStopper;
+import org.eclipse.jetty.deploy.bindings.StandardStarterBinding;
+import org.eclipse.jetty.deploy.bindings.StandardStopperBinding;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -179,8 +179,8 @@ public class JettyServerFactory
             goalDeployer.setUseStandardBindings(false);
             List<DeploymentNodeBinding> deploymentLifeCycleBindings = new ArrayList<>();
             deploymentLifeCycleBindings.add(new OSGiDeployer(server));
-            deploymentLifeCycleBindings.add(new StandardStarter());
-            deploymentLifeCycleBindings.add(new StandardStopper());
+            deploymentLifeCycleBindings.add(new StandardStarterBinding());
+            deploymentLifeCycleBindings.add(new StandardStopperBinding());
             deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
             goalDeployer.setLifeCycleBindings(deploymentLifeCycleBindings);
             
