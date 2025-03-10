@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -17,43 +17,41 @@
         <Set name="contexts">
           <Ref refid="Contexts" />
         </Set>
-        
+
         <Call name="addAppProvider">
-         <Arg>
-          <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
-            <Set name="environmentName">ee10</Set>
-            <Set name="monitoredDirName">
-              <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-                <Arg>target</Arg>
-                <Arg>webapps</Arg>
-              </Call>
-            </Set>
+          <Arg>
+            <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="environmentName">ee10</Set>
+              <Set name="monitoredDirName">
+                <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                  <Arg>target</Arg>
+                  <Arg>webapps</Arg>
+                </Call>
+              </Set>
 
-            <Set name="scanInterval">1</Set>
-            <Set name="extractWars">true</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="extractWars">true</Set>
 
-            <Get name="properties">
-              <Put name="jetty.deploy.containerScanJarPattern">
-                <Property name="jetty.deploy.containerScanJarPattern">
-                  <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
-                </Property>
-              </Put>
-              <Put name="jetty.deploy.webInfScanJarPattern">
-                <Property name="jetty.deploy.webInfScanJarPattern"/>
-              </Put>
-              <Put name="jetty.deploy.servletContainerInitializerExclusionPattern">
-                <Property name="jetty.deploy.servletContainerInitializerExclusionPattern"/>
-              </Put>
-              <Put name="jetty.deploy.servletContainerInitializerOrder">
-                <Property name="jetty.deploy.servletContainerInitializerOrder"/>
-              </Put>
-            </Get>
-          </New>
-        </Arg>
-      </Call>
-        
-        
-        
+              <Get name="properties">
+                <Put name="jetty.deploy.containerScanJarPattern">
+                  <Property name="jetty.deploy.containerScanJarPattern">
+                    <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                  </Property>
+                </Put>
+                <Put name="jetty.deploy.webInfScanJarPattern">
+                  <Property name="jetty.deploy.webInfScanJarPattern" />
+                </Put>
+                <Put name="jetty.deploy.servletContainerInitializerExclusionPattern">
+                  <Property name="jetty.deploy.servletContainerInitializerExclusionPattern" />
+                </Put>
+                <Put name="jetty.deploy.servletContainerInitializerOrder">
+                  <Property name="jetty.deploy.servletContainerInitializerOrder" />
+                </Put>
+              </Get>
+            </New>
+          </Arg>
+        </Call>
+
       </New>
     </Arg>
   </Call>

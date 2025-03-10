@@ -1069,7 +1069,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     overReleaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetained(), w);
+                String stacks = w.toString();
+                return ("%s@%x of %d bytes on %s wrapping %s%n" +
+                    " %s%n" +
+                    " acquired at %s")
+                    .formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetained(),
+                        BufferUtil.toDetailString(getByteBuffer()),
+                        stacks);
             }
         }
     }
