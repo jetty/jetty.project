@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.FileOutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,26 +56,50 @@ public class StatsTests extends AbstractJettyHomeTest
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
             FS.ensureDirExists(webappsDir.resolve("demo"));
 
-            // TODO add some actual content to it
-
-            int port = Tester.freePort();
-            String[] args2 = {
-                "jetty.http.port=" + port
-            };
-            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            // Configure server to dump stats on stop, so we can assert on them
+            try (FileOutputStream fos = new FileOutputStream(distribution.getJettyBase().resolve("start.d/server.ini").toString(), true))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
-
-                startHttpClient();
-
-                ContentResponse response;
-                URI serverBaseURI = URI.create("http://localhost:" + port);
-
-                response = client.GET(serverBaseURI.resolve("/demo/"));
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-
-                // TODO test the StatisticsHandler somehow
+                fos.write("\njetty.server.dumpBeforeStop=true\n".getBytes(StandardCharsets.UTF_8));
             }
+
+            int httpPort = Tester.freePort();
+            int stopPort = httpPort + 1;
+            String[] args2 = {
+                "jetty.http.port=" + httpPort,
+                "STOP.PORT=" + stopPort,
+                "STOP.KEY=secret"
+            };
+            JettyHomeTester.Run run2 = distribution.start(args2);
+            assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+            startHttpClient();
+
+            ContentResponse response;
+            URI serverBaseURI = URI.create("http://localhost:" + httpPort);
+
+            // Make a few requests to increase the stat values
+            response = client.GET(serverBaseURI.resolve("/demo"));
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            response = client.GET(serverBaseURI.resolve("/demo/"));
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            response = client.GET(serverBaseURI.resolve("/does-not-exist/"));
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            response = client.GET(serverBaseURI.resolve("/does-not-exist-either/"));
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+            // Stop the server
+            assertTrue(distribution.start("STOP.PORT=" + stopPort, "STOP.KEY=secret", "--stop").awaitFor(5, TimeUnit.SECONDS));
+
+            // Wait until the server stopped
+            assertTrue(run2.awaitFor(5, TimeUnit.SECONDS));
+
+            // Assert stats are as expected
+            await().atMost(5, TimeUnit.SECONDS).until(() ->
+                run2.getLogs().stream().filter(log -> log.endsWith("+> 1xxResponses: 0")).findFirst().orElse(null) != null &&
+                run2.getLogs().stream().filter(log -> log.endsWith("+> 2xxResponses: 2")).findFirst().orElse(null) != null &&
+                run2.getLogs().stream().filter(log -> log.endsWith("+> 3xxResponses: 1")).findFirst().orElse(null) != null &&
+                run2.getLogs().stream().filter(log -> log.endsWith("+> 4xxResponses: 2")).findFirst().orElse(null) != null &&
+                run2.getLogs().stream().filter(log -> log.endsWith("+> 5xxResponses: 0")).findFirst().orElse(null) != null);
         }
     }
 }
