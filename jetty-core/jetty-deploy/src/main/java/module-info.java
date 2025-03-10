@@ -27,5 +27,4 @@ module org.eclipse.jetty.deploy
 
     exports org.eclipse.jetty.deploy.jmx to
         org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.deploy.internal;
 }
