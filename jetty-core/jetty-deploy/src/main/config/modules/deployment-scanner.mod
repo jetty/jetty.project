@@ -30,3 +30,7 @@ etc/jetty-deployment-scanner.xml
 
 ## Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=0
+
+## Environments directory name (relative to $jetty.base)
+# This is where environment specific configurations are stored.
+# jetty.deploy.environmentsDir=environments
