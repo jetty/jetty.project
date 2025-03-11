@@ -101,11 +101,10 @@ public abstract class ContentSourceTransformer implements Content.Source
             if (Content.Chunk.isFailure(rawChunk))
             {
                 Content.Chunk failureChunk = rawChunk;
-                rawChunk = Content.Chunk.next(rawChunk);
-                needsRawRead = rawChunk == null;
-                if (rawChunk != null)
-                    return afterRead(State.Type.FAILED, failureChunk);
-                return afterRead(State.Type.IDLE, failureChunk);
+                Content.Chunk nextChunk = Content.Chunk.next(failureChunk);
+                needsRawRead = nextChunk == null;
+                afterRead(nextChunk == null ? State.Type.IDLE : State.Type.FAILED, nextChunk);
+                return failureChunk;
             }
 
             boolean rawLast = rawChunk != null && rawChunk.isLast();
@@ -197,9 +196,12 @@ public abstract class ContentSourceTransformer implements Content.Source
                 case FAILING ->
                 {
                     Content.Chunk failedChunk = ((State.Failing)current).chunk;
+                    Throwable failure = failedChunk.getFailure();
+                    if (Content.Chunk.isFailure(chunk))
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, chunk.getFailure());
                     if (state.compareAndSet(current, new State.Failed(failedChunk)))
                     {
-                        dispose(failedChunk.getFailure());
+                        dispose(failure);
                         return chunk;
                     }
                 }
