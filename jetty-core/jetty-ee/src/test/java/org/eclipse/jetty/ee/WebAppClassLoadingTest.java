@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -32,18 +33,21 @@ import static org.hamcrest.Matchers.sameInstance;
 
 public class WebAppClassLoadingTest
 {
+    private String environmentName;
+
     @BeforeEach
-    public void beforeEach()
+    public void beforeEach(TestInfo testInfo)
     {
-        Environment.ensure("Test");
+        environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        Environment.create(environmentName, null);
     }
 
     @AfterEach
     public void afterEach()
     {
-        Environment.ensure("Test").clearAttributes();
+        Environment.get(environmentName).clearAttributes();
     }
-    
+
     @Test
     public void testServerDefaults()
     {
@@ -128,7 +132,7 @@ public class WebAppClassLoadingTest
     @Test
     public void testEnvironmentDefaults()
     {
-        Environment environment = Environment.get("Test");
+        Environment environment = Environment.get(environmentName);
         ClassMatcher protect = WebAppClassLoading.getProtectedClasses(environment);
         assertThat(protect, equalTo(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES));
         assertThat(environment.getAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE), sameInstance(protect));
@@ -140,7 +144,7 @@ public class WebAppClassLoadingTest
     @Test
     public void testEnvironmentAttributeDefaults()
     {
-        Environment environment = Environment.get("Test");
+        Environment environment = Environment.get(environmentName);
         ClassMatcher protect = new ClassMatcher("org.protect.");
         environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, protect);
         ClassMatcher hide = new ClassMatcher("org.hide.");
@@ -153,7 +157,7 @@ public class WebAppClassLoadingTest
     @Test
     public void testEnvironmentStringAttributeDefaults()
     {
-        Environment environment = Environment.get("Test");
+        Environment environment = Environment.get(environmentName);
         environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, new String[] {"org.protect."});
         environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, new String[] {"org.hide."});
 
@@ -170,7 +174,7 @@ public class WebAppClassLoadingTest
     @Test
     public void testEnvironmentProgrammaticDefaults()
     {
-        Environment environment = Environment.get("Test");
+        Environment environment = Environment.get(environmentName);
         WebAppClassLoading.addProtectedClasses(environment, "org.protect.");
         WebAppClassLoading.addHiddenClasses(environment, "org.hide.");
 
@@ -193,7 +197,7 @@ public class WebAppClassLoadingTest
     @Test
     public void testEnvironmentAddPatterns()
     {
-        Environment environment = Environment.get("Test");
+        Environment environment = Environment.get(environmentName);
         ClassMatcher protect = WebAppClassLoading.getProtectedClasses(environment);
         ClassMatcher hide = WebAppClassLoading.getHiddenClasses(environment);
 
