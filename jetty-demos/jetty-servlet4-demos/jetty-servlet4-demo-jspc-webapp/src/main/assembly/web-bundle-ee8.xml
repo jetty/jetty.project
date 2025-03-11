@@ -14,6 +14,7 @@
       </includes>
       <excludes>
         <exclude>WEB-INF/lib/**</exclude>
+        <exclude>**/*.jsp</exclude>
       </excludes>
     </fileSet>
   </fileSets>

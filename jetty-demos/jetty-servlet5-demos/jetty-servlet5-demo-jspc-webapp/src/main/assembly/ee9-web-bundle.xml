@@ -15,6 +15,7 @@
       <excludes>
         <exclude>WEB-INF/lib/**</exclude>
         <exclude>META-INF/**</exclude>
+        <exclude>**/*.jsp</exclude>
       </excludes>
     </fileSet>
   </fileSets>

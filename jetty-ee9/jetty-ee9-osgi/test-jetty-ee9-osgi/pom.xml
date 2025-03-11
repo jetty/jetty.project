@@ -315,6 +315,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jspc-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee9</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee9</classifier>
