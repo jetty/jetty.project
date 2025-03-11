@@ -129,7 +129,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
           //sh "cp $MVN_BUILD_CACHE_CONFIG .mvn/maven-build-cache-config.xml"
           //-Dmaven.build.cache.configPath=$MVN_BUILD_CACHE_CONFIG
-          buildCache = useBuildCache()
+          def buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
             extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
