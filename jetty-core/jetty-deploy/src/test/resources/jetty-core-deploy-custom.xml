@@ -2,9 +2,7 @@
 
 <Configure>
   <Ref refid="deploymentScanner">
-    <Call id="coreEnv" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-      <Arg>core</Arg>
-    </Call>
+    <Get id="coreEnv" class="org.eclipse.jetty.util.component.Environment" name="CORE"/>
     <Call name="configureEnvironment">
       <Arg>core</Arg>
       <Set name="contextHandlerClass">

@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.GoalDeployer;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
@@ -49,7 +50,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -84,8 +84,8 @@ public class DeploymentErrorTest
         // Empty contexts collections
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-        // Environment
-        Environment.ensure("ee11");
+        //Environment
+        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee11.webapp.WebAppContext");
 
         // Deployment Manager
         _goalDeployer = new GoalDeployer(contexts);

@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.GoalDeployer;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -64,10 +64,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
 {
-
     private StacklessLogging stacklessLogging;
     private Server server;
-    private GoalDeployer _goalDeployer;
+    private GoalDeployer goalDeployer;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer, Path docroots) throws Exception
     {
@@ -77,15 +76,15 @@ public class DeploymentErrorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-        
+
         // Empty contexts collections
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-        // Environment
-        Environment.ensure("ee9");
-
+        //Environment
+        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee9.webapp.WebAppContext");
+        
         // Deployment Manager
-        _goalDeployer = new GoalDeployer(contexts);
+        goalDeployer = new GoalDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -95,12 +94,12 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server, _goalDeployer);
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, goalDeployer);
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee9");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee9.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addMonitoredDirectory(docroots);
-        server.addBean(_goalDeployer);
+        server.addBean(goalDeployer);
         server.addBean(deploymentScanner);
 
         // Server handlers
@@ -168,7 +167,7 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots), workDir.getEmptyPathDir());
 
-        List<ContextHandler> contexts = _goalDeployer.getContextHandlers().stream().toList();
+        List<ContextHandler> contexts = goalDeployer.getContextHandlers().stream().toList();
         assertThat("Contexts tracked", contexts.size(), is(1));
         String contextPath = "/badapp-uaf";
         ContextHandler contextHandler = findContext(contextPath, contexts);
@@ -337,7 +336,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void preConfigure(WebAppContext context) throws Exception
+        public void preConfigure(WebAppContext context)
         {
             incrementCount(context, preConfigureCounts);
         }
@@ -349,7 +348,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void postConfigure(WebAppContext context) throws Exception
+        public void postConfigure(WebAppContext context)
         {
             incrementCount(context, postConfigureCounts);
         }

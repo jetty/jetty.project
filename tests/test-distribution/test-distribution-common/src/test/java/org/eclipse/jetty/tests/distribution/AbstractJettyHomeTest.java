@@ -55,7 +55,9 @@ public class AbstractJettyHomeTest
             startHttpClient(() -> new HttpClient(httpClientTransportOverHTTP));
         }
         else
+        {
             startHttpClient(HttpClient::new);
+        }
     }
 
     protected void startHttpClient(Supplier<HttpClient> supplier) throws Exception

@@ -13,37 +13,13 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.util.List;
-
-import org.eclipse.jetty.util.component.Environment;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.Isolated;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Ensure that each test is using a clean (empty) Environment,
- * and in the case of parallel test execution, is not using
- * a shared Environment.
+ * by running isolated.
  */
 @Isolated
 public abstract class AbstractCleanEnvironmentTest
 {
-    /**
-     * Cleanup the {@link Environment} singleton
-     */
-    @BeforeEach
-    @AfterEach
-    public void clearEnvironments()
-    {
-        List<String> envnames = Environment.getAll().stream()
-            .map(Environment::getName)
-            .toList();
-        for (String envname : envnames)
-        {
-            Environment.remove(envname);
-        }
-        assertEquals(0, Environment.getAll().size());
-    }
 }

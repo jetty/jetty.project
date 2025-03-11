@@ -168,7 +168,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         Path environments = jetty.getJettyBasePath().resolve("environments");
         FS.ensureDirExists(environments);
 
-        Environment.ensure("core").setAttribute("testname", "Initial");
+        Environment.CORE.setAttribute("testname", "Initial");
 
         // Setup initial webapp, with XML
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");

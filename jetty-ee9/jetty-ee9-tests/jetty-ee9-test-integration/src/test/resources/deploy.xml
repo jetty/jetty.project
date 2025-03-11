@@ -2,10 +2,8 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-    <Arg>ee9</Arg>
-  </Call>
 
+  <Get id="Environment" class="org.eclipse.jetty.ee9.nested.ContextHandler" name="ENVIRONMENT"/>
   <Call name="addBean">
     <Arg>
       <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">

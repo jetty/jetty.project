@@ -2,9 +2,8 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
-    <Arg>ee10</Arg>
-  </Call>
+
+  <Get id="Environment" class="org.eclipse.jetty.ee10.servlet.ServletContextHandler" name="ENVIRONMENT"/>
 
   <Call name="addBean">
     <Arg>

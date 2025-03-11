@@ -293,7 +293,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      */
     public EnvironmentConfig configureEnvironment(String name)
     {
-        return new EnvironmentConfig(Environment.ensure(name));
+        return new EnvironmentConfig(Environment.get(name));
     }
 
     /**

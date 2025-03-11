@@ -27,6 +27,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-cdi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-glassfish-jstl</artifactId>
       <exclusions>
         <exclusion>
