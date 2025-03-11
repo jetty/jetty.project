@@ -187,7 +187,53 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testJspCDump(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        int httpPort = Tester.freePort();
+        int sslPort = Tester.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demo-jspc", env)
+        };
+
+        String baseURI = "http://localhost:%d/%s-demo-jspc".formatted(httpPort, env);
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.ssl.port=" + sslPort
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET(baseURI + "/dump.jsp");
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat(response.getContentAsString(), containsString("PathInfo"));
+                assertThat(response.getContentAsString(), not(containsString("<%")));
+
+
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
     public void testJaasDemo(String env) throws Exception
