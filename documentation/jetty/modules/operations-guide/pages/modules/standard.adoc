@@ -446,15 +446,15 @@ The value could be: one of the predefined link:{javadoc-url}/org/eclipse/jetty/h
 +
 For example, `jetty.httpConfig.multiPartCompliance=RFC7578,-CONTENT_TRANSFER_ENCODING` means that the MultiPart compliance is that defined by `RFC7578`, but also does not allow the `MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING`, so that parts that specify the `Content-Transfer-Encoding` header are rejected (they would be accepted when using just `MultiPartCompliance.RFC7578`).
 
-[[http-forwarded]]
-== Module `http-forwarded`
+[[forwarded]]
+== Module `forwarded`
 
-The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
+The `forwarded` module provides support for processing the `Forwarded` HTTP header (defined in https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
 
 The module properties are:
 
 ----
-include::{jetty-home}/modules/http-forwarded.mod[tags=documentation]
+include::{jetty-home}/modules/forwarded.mod[tags=documentation]
 ----
 
 [[https]]

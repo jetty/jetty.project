@@ -15,7 +15,6 @@ ssl
 [after]
 alpn
 http2
-http-forwarded
 
 [xml]
 etc/jetty-https.xml

@@ -79,6 +79,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
@@ -2292,6 +2293,54 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(contentEncoding.get(), is(expected));
                 assertThat(response.getContentAsString(), containsStringIgnoringCase("Hello World"));
+            }
+        }
+    }
+
+    @Test
+    public void testForwardedWithHTTP2() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=forwarded,test-keystore,http2,requestlog"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.ssl.selectors=1", "jetty.ssl.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                String forwarded = "10.1.1.1";
+
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+                startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector))));
+                URI serverUri = URI.create("https://localhost:" + port + "/");
+                ContentResponse response = client.newRequest(serverUri)
+                    .headers(h -> h.put("Forwarded", "for=" + forwarded))
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+                Path logs = distribution.getJettyBase().resolve("logs");
+                try (Stream<Path> logsPaths = Files.list(logs))
+                {
+                    List<Path> logsFiles = logsPaths.toList();
+                    assertEquals(1, logsFiles.size());
+                    List<String> logLines = await().atMost(5, TimeUnit.SECONDS).until(() ->
+                    {
+                        try (Stream<String> lines = Files.lines(logsFiles.get(0)))
+                        {
+                            return lines.toList();
+                        }
+                    }, Matchers.hasSize(1));
+                    assertThat(logLines.get(0), startsWith(forwarded));
+                }
             }
         }
     }

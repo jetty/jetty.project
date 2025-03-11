@@ -24,6 +24,8 @@ import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -275,30 +277,51 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getAvailableDirectMemory(), is(30L));
     }
 
-    @Test
-    public void testFactorAndCapacity()
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+        minCapacity, factor, maxCapacity, buckets
+                 10,      3,          20, 12;15;18;21
+                 10,      4,          20, 12;16;20
+                 10,      5,          20, 10;15;20
+                 10,     10,          20, 10;20
+        """)
+    public void testFactorCapacityAcquireRelease(int minCapacity, int factor, int maxCapacity, String buckets)
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
+        ArrayByteBufferPool pool = new ArrayByteBufferPool(minCapacity, factor, maxCapacity, Integer.MAX_VALUE);
+        pool.setStatisticsEnabled(true);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, true);
-        RetainableByteBuffer buf2 = pool.acquire(10, true);
-        RetainableByteBuffer buf3 = pool.acquire(20, true);
-        RetainableByteBuffer buf4 = pool.acquire(30, true);
+        String[] expectedBuckets = buckets.split(";");
+        int bucketCount = expectedBuckets.length;
+        List<Map<String, Object>> stats = pool.getDirectBucketsStatistics();
+        assertEquals(bucketCount, stats.size());
+        for (int i = 0; i < bucketCount; ++i)
+        {
+            assertEquals(expectedBuckets[i], String.valueOf(stats.get(i).get("capacity")));
+        }
+
+        RetainableByteBuffer bufUnder = pool.acquire(1, true);
+        RetainableByteBuffer bufMin = pool.acquire(minCapacity, true);
+        RetainableByteBuffer bufMid = pool.acquire((minCapacity + maxCapacity) / 2, true);
+        RetainableByteBuffer bufMax = pool.acquire(maxCapacity, true);
+        RetainableByteBuffer bufOver = pool.acquire(maxCapacity + 1, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
 
-        assertTrue(buf1.release()); // not pooled, < minCapacity
-        assertTrue(buf2.release()); // pooled
-        assertTrue(buf3.release()); // pooled
-        assertTrue(buf4.release()); // not pooled, > maxCapacity
+        assertTrue(bufUnder.release()); // not pooled, < minCapacity
+        assertTrue(bufMin.release()); // pooled
+        assertTrue(bufMid.release()); // pooled
+        assertTrue(bufMax.release()); // pooled
+        assertTrue(bufOver.release()); // not pooled, > maxCapacity
 
-        assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(30L));
-        assertThat(pool.getAvailableDirectByteBufferCount(), is(2L));
-        assertThat(pool.getAvailableDirectMemory(), is(30L));
+        long bufferCount = 3;
+        assertThat(pool.getDirectByteBufferCount(), is(bufferCount));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(bufferCount));
+
+        Map<Integer, Long> noBucketAcquires = pool.getNoBucketDirectAcquires();
+        assertEquals(2, noBucketAcquires.size());
     }
 
     @Test
@@ -406,40 +429,56 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getHeapMemory(), is(0L));
     }
 
-    @Test
-    public void testQuadraticPoolBucketSizes()
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+        minCapacity, maxCapacity, buckets
+                 -1,          -1, 1024;2048;4096;8192;16384;32768;65536
+                100,         800, 128;256;512;1024
+                  2,         200, 2;4;8;16;32;64;128;256
+        """)
+    public void testQuadraticFactorCapacityAcquireRelease(int minCapacity, int maxCapacity, String buckets)
     {
-        ArrayByteBufferPool pool1 = new ArrayByteBufferPool.Quadratic();
-        String dump1 = pool1.dump();
-        assertThat(dump1, containsString("direct size=7\n"));
-        assertThat(dump1, containsString("[capacity=1024,"));
-        assertThat(dump1, containsString("[capacity=2048,"));
-        assertThat(dump1, containsString("[capacity=4096,"));
-        assertThat(dump1, containsString("[capacity=8192,"));
-        assertThat(dump1, containsString("[capacity=16384,"));
-        assertThat(dump1, containsString("[capacity=32768,"));
-        assertThat(dump1, containsString("[capacity=65536,"));
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(minCapacity, maxCapacity, Integer.MAX_VALUE);
+        pool.setStatisticsEnabled(true);
 
-        ArrayByteBufferPool pool2 = new ArrayByteBufferPool.Quadratic(100, 800, Integer.MAX_VALUE);
-        String dump2 = pool2.dump();
-        assertThat(dump2, containsString("direct size=4\n"));
-        assertThat(dump2, containsString("[capacity=128,"));
-        assertThat(dump2, containsString("[capacity=256,"));
-        assertThat(dump2, containsString("[capacity=512,"));
-        assertThat(dump2, containsString("[capacity=800,"));
+        String[] expectedBuckets = buckets.split(";");
+        int bucketCount = expectedBuckets.length;
+        List<Map<String, Object>> stats = pool.getHeapBucketsStatistics();
+        assertEquals(bucketCount, stats.size());
+        for (int i = 0; i < bucketCount; ++i)
+        {
+            assertEquals(expectedBuckets[i], String.valueOf(stats.get(i).get("capacity")));
+        }
 
-        ArrayByteBufferPool pool3 = new ArrayByteBufferPool.Quadratic(1, 200, Integer.MAX_VALUE);
-        String dump3 = pool3.dump();
-        assertThat(dump3, containsString("direct size=9\n"));
-        assertThat(dump3, containsString("[capacity=1,"));
-        assertThat(dump3, containsString("[capacity=2,"));
-        assertThat(dump3, containsString("[capacity=4,"));
-        assertThat(dump3, containsString("[capacity=8,"));
-        assertThat(dump3, containsString("[capacity=16,"));
-        assertThat(dump3, containsString("[capacity=32,"));
-        assertThat(dump3, containsString("[capacity=64,"));
-        assertThat(dump3, containsString("[capacity=128,"));
-        assertThat(dump3, containsString("[capacity=200,"));
+        if (minCapacity < 0)
+            minCapacity = 0;
+        if (maxCapacity < 0)
+            maxCapacity = (int)stats.get(stats.size() - 1).get("capacity");
+
+        RetainableByteBuffer bufUnder = pool.acquire(1, false);
+        RetainableByteBuffer bufMin = pool.acquire(minCapacity, false);
+        RetainableByteBuffer bufMid = pool.acquire((minCapacity + maxCapacity) / 2, false);
+        RetainableByteBuffer bufMax = pool.acquire(maxCapacity, false);
+        RetainableByteBuffer bufOver = pool.acquire(maxCapacity + 1, false);
+
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
+
+        assertTrue(bufUnder.release()); // pooled = minCapacity < 1
+        assertTrue(bufMin.release()); // pooled
+        assertTrue(bufMid.release()); // pooled
+        assertTrue(bufMax.release()); // pooled
+        assertTrue(bufOver.release()); // not pooled, > maxCapacity
+
+        boolean bufUnderIsPooled = minCapacity < 1;
+        long bufferCount = bufUnderIsPooled ? 4L : 3L;
+        assertThat(pool.getHeapByteBufferCount(), is(bufferCount));
+        assertThat(pool.getAvailableHeapByteBufferCount(), is(bufferCount));
+
+        Map<Integer, Long> noBucketAcquires = pool.getNoBucketHeapAcquires();
+        assertEquals(bufUnderIsPooled ? 1 : 2, noBucketAcquires.size());
     }
 
     @Test

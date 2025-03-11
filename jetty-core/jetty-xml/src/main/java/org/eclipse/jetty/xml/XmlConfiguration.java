@@ -1990,7 +1990,6 @@ public class XmlConfiguration
                         if (envBuilder != null)
                         {
                             environment = envBuilder.build();
-                            Environment.set(environment);
                             envBuilder = null;
                         }
                     }
@@ -2086,10 +2085,7 @@ public class XmlConfiguration
                 }
             }
             if (envBuilder != null)
-            {
-                environment = envBuilder.build();
-                Environment.set(environment);
-            }
+                envBuilder.build();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("objects={}", objects);
