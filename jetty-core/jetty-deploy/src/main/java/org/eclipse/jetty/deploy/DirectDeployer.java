@@ -89,30 +89,30 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         }
     }
 
-    // TODO this is a speculative new API to better support hot redeploy without interruption of service.
-    public void redeploy(ContextHandler oldHandler, ContextHandler newHandler)
+    @Override
+    public void redeploy(ContextHandler oldHandler, ContextHandler newContextHandler)
     {
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("deploy: {} {}", this, newHandler);
+                LOG.debug("deploy: {} {}", this, newContextHandler);
 
-            requireNonNull(newHandler).setServer(requireNonNull(oldHandler.getServer()));
+            requireNonNull(newContextHandler).setServer(requireNonNull(oldHandler.getServer()));
             if (_startBeforeRedeploy && _contexts.isRunning())
-                newHandler.start();
+                newContextHandler.start();
 
             Callback.Completable blocker = new Callback.Completable();
-            _contexts.redeployHandler(oldHandler, newHandler, blocker);
+            _contexts.redeployHandler(oldHandler, newContextHandler, blocker);
             blocker.get();
 
             if (!_startBeforeRedeploy && _contexts.isRunning())
-                newHandler.start();
-            _contexts.manage(newHandler);
+                newContextHandler.start();
+            _contexts.manage(newContextHandler);
         }
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Redeploy failed {}", this, newHandler, t);
+                LOG.debug("{} Redeploy failed {}", this, newContextHandler, t);
 
             ExceptionUtil.ifExceptionThrowUnchecked(t);
         }

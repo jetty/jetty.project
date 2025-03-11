@@ -31,6 +31,23 @@ public interface Deployer
     void deploy(ContextHandler contextHandler);
 
     /**
+     * Redeploy a ContextHandler to the server, and start it if appropriate.
+     * If possible, this is done atomically without any period of no handler being deployed.
+     * However, it maybe implemented as an {@link #undeploy(ContextHandler)} followed
+     * by a {@link #deploy(ContextHandler)}
+     *
+     * @param oldContextHandler the {@link ContextHandler} to undeploy.
+     * @param newContextHandler the {@link ContextHandler} to deploy.
+     *
+     */
+    @ManagedOperation(value = "Redeploy the ContextHandler",  impact = "ACTION")
+    default void redeploy(ContextHandler oldContextHandler, ContextHandler newContextHandler)
+    {
+        undeploy(oldContextHandler);
+        deploy(newContextHandler);
+    }
+
+    /**
      * Undeploy and stop a ContextHandler.
      *
      * @param contextHandler the {@link ContextHandler} to undeploy.

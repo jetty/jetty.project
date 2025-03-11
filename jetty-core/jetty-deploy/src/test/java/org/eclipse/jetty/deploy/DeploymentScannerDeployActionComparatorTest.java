@@ -36,8 +36,8 @@ public class DeploymentScannerDeployActionComparatorTest
         appBar.putPath(Path.of("bar.xml"), PathsApp.State.ADDED);
 
         List<DeployAction> actions = new ArrayList<>();
-        actions.add(new DeployAction(DeployAction.Type.ADD, "bar"));
-        actions.add(new DeployAction(DeployAction.Type.ADD, "foo"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "bar"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "foo"));
 
         actions.sort(new DeploymentScanner.DeployActionComparator());
 
@@ -47,11 +47,11 @@ public class DeploymentScannerDeployActionComparatorTest
 
         // expected in ascending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("bar"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("foo"));
     }
 
@@ -65,8 +65,8 @@ public class DeploymentScannerDeployActionComparatorTest
         appBar.putPath(Path.of("bar.xml"), PathsApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "foo"));
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "bar"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "foo"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "bar"));
 
         actions.sort(new DeploymentScanner.DeployActionComparator());
 
@@ -76,11 +76,11 @@ public class DeploymentScannerDeployActionComparatorTest
 
         // expected in descending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("foo"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("bar"));
     }
 
@@ -94,10 +94,10 @@ public class DeploymentScannerDeployActionComparatorTest
         appBar.putPath(Path.of("bar.xml"), PathsApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "foo"));
-        actions.add(new DeployAction(DeployAction.Type.ADD, "foo"));
-        actions.add(new DeployAction(DeployAction.Type.ADD, "bar"));
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "bar"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "foo"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "foo"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "bar"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "bar"));
 
         // Perform sort
         actions.sort(new DeploymentScanner.DeployActionComparator());
@@ -110,22 +110,22 @@ public class DeploymentScannerDeployActionComparatorTest
 
         // REMOVE is in descending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("foo"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("bar"));
 
         // expecting ADD next
 
         // ADD is in ascending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("bar"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("foo"));
     }
 
@@ -146,15 +146,15 @@ public class DeploymentScannerDeployActionComparatorTest
 
         List<DeployAction> actions = new ArrayList<>();
         // app A is going through hot-reload
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "app-a"));
-        actions.add(new DeployAction(DeployAction.Type.ADD, "app-a"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "app-a"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "app-a"));
         // app B is being removed
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "app-b"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "app-b"));
         // app C is being removed
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "app-c"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "app-c"));
         // app D is going through hot-reload
-        actions.add(new DeployAction(DeployAction.Type.ADD, "app-d"));
-        actions.add(new DeployAction(DeployAction.Type.REMOVE, "app-d"));
+        actions.add(new DeployAction(DeployAction.Type.DEPLOY, "app-d"));
+        actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, "app-d"));
 
         assertThat(actions.size(), is(6));
 
@@ -169,30 +169,30 @@ public class DeploymentScannerDeployActionComparatorTest
 
         // REMOVE is in descending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("app-d"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("app-c"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("app-b"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.REMOVE));
+        assertThat(action.type(), is(DeployAction.Type.UNDEPLOY));
         assertThat(action.name(), is("app-a"));
 
         // expecting ADD next
 
         // ADD is in ascending basename order
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("app-a"));
 
         action = iterator.next();
-        assertThat(action.type(), is(DeployAction.Type.ADD));
+        assertThat(action.type(), is(DeployAction.Type.DEPLOY));
         assertThat(action.name(), is("app-d"));
     }
 }

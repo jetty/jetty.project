@@ -613,16 +613,15 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 {
                     // new paths are not being tracked yet.
                     startTracking(app);
-                    actions.add(new DeployAction(DeployAction.Type.ADD, app.getName()));
+                    actions.add(new DeployAction(DeployAction.Type.DEPLOY, app.getName()));
                 }
                 case CHANGED ->
                 {
-                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app.getName()));
-                    actions.add(new DeployAction(DeployAction.Type.ADD, app.getName()));
+                    actions.add(new DeployAction(DeployAction.Type.REDEPLOY, app.getName()));
                 }
                 case REMOVED ->
                 {
-                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app.getName()));
+                    actions.add(new DeployAction(DeployAction.Type.UNDEPLOY, app.getName()));
                 }
             }
         }
@@ -796,13 +795,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             {
                 switch (step.type())
                 {
-                    case REMOVE ->
+                    case UNDEPLOY ->
                     {
                         // Track removal
                         removedApps.add(app);
                         deployer.undeploy(app.getContextHandler());
                     }
-                    case ADD ->
+                    case DEPLOY ->
                     {
                         // Undo tracking for prior removal in this list of actions.
                         removedApps.remove(app);
@@ -836,6 +835,42 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Introduce the ContextHandler to the Deployer
                         startTracking(app);
                         deployer.deploy(app.getContextHandler());
+                    }
+
+                    case REDEPLOY ->
+                    {
+                        // Undo tracking for prior removal in this list of actions.
+                        ContextHandler oldContextHandler = app.getContextHandler();
+
+                        // Load <basename>.properties into app.
+                        app.loadProperties();
+
+                        // Ensure Environment name is set
+                        String appEnvironment = app.getEnvironmentName();
+                        if (StringUtil.isBlank(appEnvironment))
+                            appEnvironment = getDefaultEnvironmentName();
+                        app.setEnvironment(Environment.get(appEnvironment));
+
+                        // Create a new Attributes layer for the app deployment, which is the
+                        // combination of layered Environment Attributes with app Attributes overlaying them.
+                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
+
+                        // Ensure that Environment configuration XMLs are listed in deployAttributes
+                        List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
+                        envXmlPaths.sort(PathCollators.byName(true));
+                        PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
+
+                        // Create the Context Handler
+                        Path mainPath = app.getMainPath();
+                        if (mainPath == null)
+                            throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
+                        app.setContextHandler(contextHandler);
+
+                        // Introduce the ContextHandler to the Deployer
+                        startTracking(app);
+                        deployer.redeploy(oldContextHandler, app.getContextHandler());
                     }
                 }
             }
@@ -1019,8 +1054,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         public enum Type
         {
-            REMOVE,
-            ADD
+            UNDEPLOY,
+            REDEPLOY,
+            DEPLOY
         }
     }
 
@@ -1028,10 +1064,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * <p>The List of {@link DeployAction} sort.</p>
      *
      * <ul>
-     *     <li>{@link DeployAction#type()} is sorted by all {@link DeployAction.Type#REMOVE}
-     *         actions first, followed by all {@link DeployAction.Type#ADD} actions.</li>
-     *     <li>{@link DeployAction.Type#REMOVE} type are in descending alphabetically order.</li>
-     *     <li>{@link DeployAction.Type#ADD} type are in ascending alphabetically order.</li>
+     *     <li>{@link DeployAction#type()} is sorted by all {@link DeployAction.Type#UNDEPLOY}
+     *         actions first, followed by all {@link DeployAction.Type#DEPLOY} actions.</li>
+     *     <li>{@link DeployAction.Type#UNDEPLOY} type are in descending alphabetically order.</li>
+     *     <li>{@link DeployAction.Type#DEPLOY} type are in ascending alphabetically order.</li>
      * </ul>>
      */
     public static class DeployActionComparator implements Comparator<DeployAction>
@@ -1053,8 +1089,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return diff;
             return switch (o1.type())
             {
-                case REMOVE -> basenameComparator.compare(o2, o1);
-                case ADD -> basenameComparator.compare(o1, o2);
+                case UNDEPLOY -> basenameComparator.compare(o2, o1);
+                case REDEPLOY, DEPLOY -> basenameComparator.compare(o1, o2);
             };
         }
     }
