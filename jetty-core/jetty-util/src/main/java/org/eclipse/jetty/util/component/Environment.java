@@ -72,7 +72,7 @@ public interface Environment extends Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("Environment.ensure: {} not same loader {} != {}", name, environment.getClassLoader(), loader);
 
-        // Could be JPMS. Check if we load the same class instance
+        // TODO This is to work around a JPMS environment bug.
         try
         {
             Class<?> loadClass = environment.getClassLoader().loadClass(classToLoad.getName());
