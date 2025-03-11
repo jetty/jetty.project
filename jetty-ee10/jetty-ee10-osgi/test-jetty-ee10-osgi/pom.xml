@@ -302,6 +302,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee10</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
