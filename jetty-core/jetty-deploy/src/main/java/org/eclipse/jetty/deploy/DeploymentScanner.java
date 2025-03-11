@@ -819,7 +819,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
-                        Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, app.getAttributes());
+                        Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
