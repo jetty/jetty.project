@@ -81,7 +81,7 @@
     </New>
   </Set>
 
-  <Get id="Environment" class="org.eclipse.jetty.ee10.nested.ContextHandler" name="ENVIRONMENT"/>
+  <Get id="Environment" class="org.eclipse.jetty.ee10.servlet.ServletContextHandler" name="ENVIRONMENT"/>
   <Ref refid="Environment">
     <Call name="setAttribute">
       <Arg>contextHandlerClass</Arg>
