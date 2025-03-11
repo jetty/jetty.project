@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 public interface Deployer
 {
     /**
-     * Deploy a web application to the server, and start it if appropriate.
+     * Deploy a ContextHandler to the server, and start it if appropriate.
      *
      * @param contextHandler the {@link ContextHandler} to deploy.
      *
@@ -31,7 +31,7 @@ public interface Deployer
     void deploy(ContextHandler contextHandler);
 
     /**
-     * Undeploy and stop a web application.
+     * Undeploy and stop a ContextHandler.
      *
      * @param contextHandler the {@link ContextHandler} to undeploy.
      *
@@ -45,7 +45,7 @@ public interface Deployer
     interface GoalOriented extends Deployer
     {
         /**
-         * Add a ContextHandler int the graph but perform no actions on it, leaving it in undeployed state.
+         * Add a ContextHandler into the graph but perform no actions on it, leaving it in undeployed state.
          *
          * @param contextHandler the ContextHandler to add to the graph.
          */
