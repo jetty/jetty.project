@@ -15,16 +15,21 @@ package org.eclipse.jetty.util.component;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Attributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A named runtime environment containing a {@link ClassLoader} and {@link Attributes}.
  */
 public interface Environment extends Attributes
 {
+    Logger LOG = LoggerFactory.getLogger(Environment.class);
+
     // Ensure there is a core environment for possible later deployments to it
-    Environment CORE = ensure("core", Environment.class.getClassLoader());
+    Environment CORE = ensure("core", Environment.class);
 
     /**
      * Gets all existing environments.
@@ -49,17 +54,39 @@ public interface Environment extends Attributes
      * Gets the environment with the given name, creating it with the default classloader if necessary.
      *
      * @param name the environment name
-     * @param classLoader The loader to either: use to create the environment; or to check the environments loader matches
-     *                    the passed loader.
+     * @param classToLoad A class to either: use to create the environment with its classloader;
+     *                    or to check the environments can load the passed class.
      * @return the environment
      * @throws IllegalArgumentException if an environment with the given name but a different classloader already exists
      */
-    static Environment ensure(String name, ClassLoader classLoader) throws IllegalStateException
+    static Environment ensure(String name, Class<?> classToLoad) throws IllegalStateException
     {
-        Environment environment = NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, classLoader));
-        if (environment.getClassLoader() != classLoader)
-            throw new IllegalArgumentException("%s has different classloader".formatted(name));
-        return environment;
+        ClassLoader loader = Objects.requireNonNull(classToLoad).getClassLoader() == null ? Environment.class.getClassLoader() : classToLoad.getClassLoader();
+        Environment environment = NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, loader));
+        if (LOG.isDebugEnabled())
+            LOG.debug("Environment.ensure: {} {} {}", name, classToLoad, environment);
+
+        if (environment.getClassLoader() == loader)
+            return environment;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Environment.ensure: {} not same loader {} != {}", name, environment.getClassLoader(), loader);
+
+        // TODO This is to work around a JPMS environment bug.
+        try
+        {
+            Class<?> loadClass = environment.getClassLoader().loadClass(classToLoad.getName());
+            if (loadClass == classToLoad)
+                return environment;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Environment.ensure: {} cannot load same class instance {} != {}", name, loadClass.getClassLoader(), classToLoad.getClassLoader());
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new IllegalArgumentException("%s has different classloader".formatted(name), e);
+        }
+
+        throw new IllegalArgumentException("%s has different classloader".formatted(name));
     }
 
     /**
@@ -73,6 +100,8 @@ public interface Environment extends Attributes
     {
         return NamedEnvironment.ENVIRONMENTS.compute(name, (n, environment) ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Environment.create: {} {} {}", name, classLoader, environment);
             if (environment != null)
                 throw new IllegalStateException("Environment already exists: " + n);
             return new NamedEnvironment(n, classLoader);
