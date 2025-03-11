@@ -49,16 +49,8 @@ public class EnvironmentTest
     @Test
     public void testEnsure() throws Exception
     {
-        ClassLoader loaderC = new URLClassLoader(new URL[0]);
-        ClassLoader loaderD = new URLClassLoader(new URL[0]);
-        Environment envC = Environment.create("envC", loaderC);
-
-        assertThat(Environment.ensure("envC", loaderC), sameInstance(envC));
-        assertThrows(IllegalArgumentException.class, () -> Environment.ensure("envC", loaderD));
-
-        Environment envD = Environment.ensure("envD", loaderD);
-        assertThat(envD.getClassLoader(), sameInstance(loaderD));
-        assertThat(Environment.get("envD"), sameInstance(envD));
-        assertThat(Environment.getAll(), Matchers.hasItems(envC, envD));
+        Environment envC = Environment.ensure("envC", EnvironmentTest.class);
+        assertThat(envC.getClassLoader(), sameInstance(EnvironmentTest.class.getClassLoader()));
+        assertThat(Environment.ensure("envC", EnvironmentTest.class), sameInstance(envC));
     }
 }
