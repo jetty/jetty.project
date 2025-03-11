@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.util.Objects;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -27,6 +25,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A Direct {@link Deployer} implementation.
  * This {@code Deployer} will {@link ContextHandlerCollection#deployHandler(Handler, Callback) deploy}
@@ -37,13 +37,25 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
     private final ContextHandlerCollection _contexts;
+    private final boolean _startBeforeRedeploy;
 
     /**
      * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
      */
     public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
-        _contexts = Objects.requireNonNull(contexts);
+        this(contexts, false);
+    }
+
+    /**
+     * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
+     * @param startBeforeRedeploy If {@code true}, the new handler is started before a redeploy.
+     */
+    public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts,
+                          @Name("startBeforeRedeploy") boolean startBeforeRedeploy)
+    {
+        _contexts = requireNonNull(contexts);
+        _startBeforeRedeploy = startBeforeRedeploy;
         installBean(_contexts, false);
     }
 
@@ -59,8 +71,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("deploy: {} {}", this, contextHandler);
-            Objects.requireNonNull(_contexts);
-            Objects.requireNonNull(contextHandler);
+            requireNonNull(contextHandler);
             Callback.Completable blocker = new Callback.Completable();
             _contexts.deployHandler(contextHandler, blocker);
             blocker.get();
@@ -73,6 +84,35 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} Deploy failed {}", this, contextHandler, t);
+
+            ExceptionUtil.ifExceptionThrowUnchecked(t);
+        }
+    }
+
+    // TODO this is a speculative new API to better support hot redeploy without interruption of service.
+    public void redeploy(ContextHandler oldHandler, ContextHandler newHandler)
+    {
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("deploy: {} {}", this, newHandler);
+
+            requireNonNull(newHandler).setServer(requireNonNull(oldHandler.getServer()));
+            if (_startBeforeRedeploy && _contexts.isRunning())
+                newHandler.start();
+
+            Callback.Completable blocker = new Callback.Completable();
+            _contexts.redeployHandler(oldHandler, newHandler, blocker);
+            blocker.get();
+
+            if (!_startBeforeRedeploy && _contexts.isRunning())
+                newHandler.start();
+            _contexts.manage(newHandler);
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} Redeploy failed {}", this, newHandler, t);
 
             ExceptionUtil.ifExceptionThrowUnchecked(t);
         }
@@ -101,6 +141,6 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     @Override
     public String toString()
     {
-        return "%s@%x{contexts=%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts);
+        return "%s@%x{contexts=%s,sbrd=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _startBeforeRedeploy);
     }
 }
