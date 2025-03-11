@@ -13,40 +13,49 @@
 
 = Web Application Deployment
 
-Most of the time you want to be able to customize the deployment of your web applications, for example by changing the `contextPath`, or by adding JNDI entries, or by configuring virtual hosts, etc.
+The Jetty Web Application Deployment mechanism provides for:
+
+ * the discovery of Web Applications to deploy (e.g. war files, directories or Jetty XML descriptors)
+ * determination of default values for key configurations (e.g. contextPath, environment, resource base, temporary directory, etc.)
+ * optional extraction of archived resources (e.g. war files and jar files)
+ * the discovery of associated configuration files (e.g. properties and XML files) that can be used to customize the deployment (e.g. changing the `contextPath`, or by adding JNDI entries, or by configuring virtual hosts, etc.). The association may be by application or by environment.
+ * optional monitoring of all discovered files for hot deployment and/or undeployment.
 
 Jetty supports the deployment of each web application to a specific _environment_.
 The available environments are:
 
-* Java EE 8 -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
-* Jakarta EE 9 -- Supports Servlet 5.0 (and associated specifications) in the `+jakarta.*+` packages.
-* Jakarta EE 10 -- Supports Servlet 6.0 (and associated specifications) in the `+jakarta.*+` packages.
-* Jetty Core -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
+ * Java EE 8 -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
+ * Jakarta EE 9 -- Supports Servlet 5.0 (and associated specifications) in the `+jakarta.*+` packages.
+ * Jakarta EE 10 -- Supports Servlet 6.0 (and associated specifications) in the `+jakarta.*+` packages.
+ * Jetty Core -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
 
-This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the Jetty `Handler` APIs, say `app-jetty.xml`.
+This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, say `app-jetty.xml`.
 
 The customization of the deployment (for example, web application context path, etc.) is performed by processing <<jetty,Jetty context XML files>>.
 
-The `deploy` module contains the `GoalDeployer` component that scans the `$JETTY_BASE/webapps` directory for changes, following the deployment rules described in <<rules,this section>>.
+The `deployment-scanner` module contains the `DeploymentScanner` component that scans the `$JETTY_BASE/webapps` and `$JETTY_BASE/environments` directories for changes, following the deployment rules described in <<rules,this section>>.
 
-For each specific environment there is a specific deploy module that you must enable:
+For each specific environment there is a specific deploy module that also must be enabled:
 
-* For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
-* For Java EE 9, xref:modules/standard.adoc#eeN-deploy[`ee9-deploy`]
-* For Java {ee-current-caps}, xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy`]
-* For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
+ * For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
+ * For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
+ * For Java EE 9, xref:modules/standard.adoc#eeN-deploy[`ee9-deploy`]
+ * For Java {ee-current-caps}, xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy`]
 
 Each of these modules provide the environment specific features, and depend on the `deploy` module that provides the scanning features.
+
+By default, deployment uses the `deployer-goal` module, which provides the `GoalDeployer`, which is used by the scanner to deploy individual Web Applications in a way that allows actions to be bound to deployment trigger points in a defined deployment lifecycle.    If instead, the `deployer-direct` module is explicitly enabled, then the `DirectDeployer` will be used to directly add deployed Web Applications to the `ContextHandlerCollection` using only the standard jetty util `LifeCycle`.
+
 
 [[hot-static]]
 == Hot vs Static Deployment
 
-The `GoalDeployer` scans the `$JETTY_BASE/webapps` directory for changes every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
+The `DeploymentScanner` scans the `$JETTY_BASE/webapps` and `$JETTY_BASE/environments` directories for changes every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
 
-By default, the scan interval is `0` seconds, which means _static_ deployment, and the `GoalDeployer` will not scan the `$JETTY_BASE/webapps` directory for changes.
+By default, the scan interval is `0` seconds, which means _static_ deployment, and the `DeploymentScanner` will not scan the `$JETTY_BASE/webapps` directory for changes.
 This means that to deploy/redeploy/undeploy a web application you will need to stop and restart Jetty.
 
-Setting the scan interval to a value of `1` second (or greater) means that _hot_ deployment is enabled: if a file is added/changed/removed from the `$JETTY_BASE/webapps` directory, the `GoalDeployer` will notice the change and respectively deploy/redeploy/undeploy the web application.
+Setting the scan interval to a value of `1` second (or greater) means that _hot_ deployment is enabled: if a file is added/changed/removed from the `$JETTY_BASE/webapps` directory, the `DeplymentScanner` will notice the change and respectively deploy/redeploy/undeploy the web application; and if a file is added/changed/removed from the `$JETTY_BASE/environments` directory, the `DeploymentScanner` will deploy/redeploy all web applications in that environment.
 
 The following command line enables _hot_ deployment by specifying the `jetty.deploy.scanInterval` property on the command line, and therefore only for this particular run:
 
@@ -54,7 +63,7 @@ The following command line enables _hot_ deployment by specifying the `jetty.dep
 $ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=1
 ----
 
-To make _hot_ deployment persistent, you need to edit the appropriate `<env>-deploy` module configuration file, `$JETTY_BASE/start.d/<env>-deploy.ini` (eg: `ee11-deploy.ini`), uncomment the module property `jetty.deploy.scanInterval` and change the value to `1` second (or greater):
+To make _hot_ deployment configuration persistent, you need to edit the appropriate `<env>-deploy` module configuration file, `$JETTY_BASE/start.d/<env>-deploy.ini` (eg: `ee11-deploy.ini`), uncomment the module property `jetty.deploy.scanInterval` and change the value to `1` second (or greater):
 
 .<env>-deploy.ini
 [source,subs=+quotes]
@@ -67,16 +76,16 @@ To make _hot_ deployment persistent, you need to edit the appropriate `<env>-dep
 [[rules]]
 == Deployment Rules
 
-_Adding_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory to `$JETTY_BASE/webapps` causes the `GoalDeployer` to deploy the new web application.
+_Adding_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory to `$JETTY_BASE/webapps` causes the `DeploymentScanner` to deploy the new web application.
 
-_Updating_ a `+*.war+` file or a Jetty context XML file causes the `GoalDeployer` to redeploy the web application, which means that the Jetty context component representing the web application is stopped, then reconfigured, and then restarted.
+_Updating_ a `+*.war+` file or a Jetty context XML file causes the `DeploymentScanner` to redeploy the web application, which means that the Jetty context component representing the web application is stopped, then reconfigured, and then restarted.
 
-_Removing_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory from `$JETTY_BASE/webapps` causes the `GoalDeployer` to undeploy the web application, which means that the Jetty context component representing the web application is stopped and removed from the Jetty server.
+_Removing_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory from `$JETTY_BASE/webapps` causes the `DeploymentScanner` to undeploy the web application, which means that the Jetty context component representing the web application is stopped and removed from the Jetty server.
 
 [[rules-context-path]]
 === Context Path Resolution
 
-When a file or directory is added to `$JETTY_BASE/webapps`, the `GoalDeployer` derives the web application `contextPath` from the file or directory name, with the following rules:
+When a file or directory is added to `$JETTY_BASE/webapps`, the `DeploymentScanner` derives the web application `contextPath` from the file or directory name, with the following rules:
 
 * If the directory name is, for example, `mywebapp/`, it is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as a web application of static content.
 The `contextPath` would be `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
@@ -130,7 +139,7 @@ This unspecified deployment may not work as the EE 9 web application may use API
 
 A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
 
-NOTE: Recall that the `GoalDeployer` component of the Jetty `deploy` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
+NOTE: Recall that the `DeploymentScanner` component of the Jetty `deploy` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
 
 To deploy a web application using a Jetty context XML file, simply place the file in the `$JETTY_BASE/webapps` directory.
 
@@ -177,7 +186,7 @@ $JETTY_BASE
 
 TIP: The `+*.war+` file may be placed anywhere in the file system and does not need to be placed in the `$JETTY_BASE/webapps` directory.
 
-IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must have the same file name, for example `wiki.xml` and `wiki.war`, so that the `GoalDeployer` deploys the web application only once using the Jetty context XML file (and not the `+*.war+` file).
+IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must have the same file name, for example `wiki.xml` and `wiki.war`, so that the `DeploymentScanner` deploys the web application only once using the Jetty context XML file (and not the `+*.war+` file).
 
 You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using system properties:
 
@@ -206,7 +215,7 @@ xref:xml/index.adoc[Jetty context XML file] files can be applied to _all_ webapp
 
 Add a properties file to the deployment directory that contains a property naming the location of the xml file to apply.
 The properties file name must be prefixed by the name of the `environment`.
-For example `ee8.properties, ee8-more.properties ee8-other.properties` would all apply to all contexts deployed in the `ee8` environment.
+For example `$JETTY_BASE/environments/ee8.properties`, `$JETTY_BASE/environments/ee8-more.properties` and `$JETTY_BASE/environments/ee8-other.properties` would all apply to all contexts deployed in the `ee8` environment.
 
 If the property file(s) contain one or more properties whose names are prefixed with `org.eclipse.jetty.deploy.environmentXml`, then their values are used as additional context XML files to apply to all contexts deployed in the corresponding environment.
 So for example `org.eclipse.jetty.deploy.environmentXml, org.eclipse.jetty.deploy.environmentXml.more, org.eclipse.jetty.deploy.environmentXml.other` are all acceptable as names.
