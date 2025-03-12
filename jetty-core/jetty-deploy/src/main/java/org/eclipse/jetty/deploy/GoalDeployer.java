@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  */
 // TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
 @ManagedObject("Goal Oriented Deployer")
-public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOriented
+public class GoalDeployer extends ContainerLifeCycle implements Deployer
 {
     private static final Logger LOG = LoggerFactory.getLogger(GoalDeployer.class);
     private final DeploymentGraph _lifecycle = new DeploymentGraph();
@@ -87,7 +87,6 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
      *
      * @param contextHandler the ContextHandler to add to the graph.
      */
-    @Override
     public void addUndeployed(ContextHandler contextHandler)
     {
         if (LOG.isDebugEnabled())
@@ -226,7 +225,6 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
      * @param contextHandler the ContextHandler to move
      * @param goalName the goal graph node by name
      */
-    @Override
     public void move(ContextHandler contextHandler, String goalName)
     {
         if (LOG.isDebugEnabled())

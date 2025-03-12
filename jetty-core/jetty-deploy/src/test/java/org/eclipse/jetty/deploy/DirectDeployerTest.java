@@ -33,7 +33,7 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
 {
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
-    private final DirectDeployer deployer = new DirectDeployer(contexts);
+    private final DirectDeployer deployer = new DirectDeployer(contexts, true);
     private final ContextHandler context = new ContextHandler("/context");
 
     private final List<String> history = new CopyOnWriteArrayList<>();
@@ -43,7 +43,7 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
     {
         server.setHandler(contexts);
         server.addBean(deployer);
-        deployer.addEventListener(new DirectDeployer.DeploymentListener()
+        deployer.addEventListener(new Deployer.Listener()
         {
             @Override
             public void onAdded(ContextHandler contextHandler)
@@ -208,6 +208,50 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
             "onStopping /context",
             "onStopped /context",
             "onRemoved /context"
+        ));
+    }
+
+    @Test
+    public void testRedeploy() throws Exception
+    {
+        server.start();
+        deployer.deploy(context);
+        assertThat(contexts.getHandlers(), contains(context));
+        assertTrue(context.isStarted());
+
+        ContextHandler contextB = new ContextHandler("/contextB");
+        deployer.redeploy(context, contextB);
+        assertThat(contexts.getHandlers(), contains(contextB));
+        assertFalse(context.isStarted());
+        assertTrue(contextB.isStarted());
+
+        deployer.undeploy(contextB);
+        assertThat(contexts.getHandlers(), empty());
+        assertFalse(contextB.isStarted());
+
+        server.stop();
+        assertThat(contexts.getHandlers(), empty());
+        assertFalse(context.isStarted());
+
+        history.forEach(System.err::println);
+        assertThat(history, contains(
+            "onCreated /context",
+            "onAdded /context",
+            "onStarting /context",
+            "onStarted /context",
+
+            "onCreated /contextB",
+            "onStarting /contextB",
+            "onStarted /contextB",
+            "onAdded /contextB",
+
+            "onRemoved /context",
+            "onStopping /context",
+            "onStopped /context",
+
+            "onStopping /contextB",
+            "onStopped /contextB",
+            "onRemoved /contextB"
         ));
     }
 

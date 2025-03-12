@@ -869,9 +869,23 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             if (isDynamic() && server != null && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
                 throw new IllegalArgumentException("Cannot change invocation type of started server");
 
-            updateBeans(_handlers, handlers);
+            List<Handler> oldHandlers = _handlers;
+
+            // add new handlers not in old
+            for (Handler h : newHandlers)
+            {
+                if (!oldHandlers.contains(h))
+                    addBean(h);
+            }
 
             _handlers = newHandlers;
+
+            // remove old handler not in newHandler
+            for (Handler h : oldHandlers)
+            {
+                if (!newHandlers.contains(h))
+                    removeBean(h);
+            }
         }
 
         @Override

@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.util.EventListener;
+
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
  * Deployer for ContextHandlers
@@ -56,24 +59,67 @@ public interface Deployer
     @ManagedOperation(value = "Undeploy the ContextHandler",  impact = "ACTION")
     void undeploy(ContextHandler contextHandler);
 
-    /**
-     * A Goal Oriented Deployer that will allow deployment in steps.
-     */
-    interface GoalOriented extends Deployer
+    interface Listener extends EventListener
     {
         /**
-         * Add a ContextHandler into the graph but perform no actions on it, leaving it in undeployed state.
-         *
-         * @param contextHandler the ContextHandler to add to the graph.
+         * Called when a {@link ContextHandler} is first seen by the {@link Deployer}.
+         * @param contextHandler The {@link ContextHandler} seen.
          */
-         void addUndeployed(ContextHandler contextHandler);
+        default void onCreated(ContextHandler contextHandler)
+        {}
 
         /**
-         * Advanced usage, move a ContextHandler through the Deployment graph by name.
-         *
-         * @param contextHandler the ContextHandler to move
-         * @param goalName the goal graph node by name
+         * Event called when a {@link ContextHandler} is added to the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
+         * A {@code contextHandler} is deployed when it is both added and {@link #onStarted(ContextHandler) started}.
+         * @param contextHandler The {@link ContextHandler} added.
          */
-        void move(ContextHandler contextHandler, String goalName);
+        default void onAdded(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is removed to the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
+         * A {@code contextHandler} is deployed when it is both added and {@link #onStarted(ContextHandler) started}.
+         * @param contextHandler The {@link ContextHandler} removed.
+         */
+        default void onRemoved(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is {@link LifeCycle#isStarting() starting}.
+         * @param contextHandler The {@link ContextHandler} starting.
+         */
+        default void onStarting(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is {@link LifeCycle#isStarted() started}.
+         * A {@code contextHandler} is deployed when it is both {@link #onAdded(ContextHandler) added} and started.
+         * @param contextHandler The {@link ContextHandler} added.
+         */
+        default void onStarted(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is {@link LifeCycle#isStopping() stopping}.
+         * @param contextHandler The {@link ContextHandler} stopping.
+         */
+        default void onStopping(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is {@link LifeCycle#isStopped() stopped}.
+         * @param contextHandler The {@link ContextHandler} stopped.
+         */
+        default void onStopped(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is {@link LifeCycle#isFailed() failed}.
+         * @param contextHandler The {@link ContextHandler} that failed.
+         * @param cause The cause of the failure.
+         */
+        default void onFailure(ContextHandler contextHandler, Throwable cause)
+        {}
+
     }
 }
