@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HTTP3Session extends ContainerLifeCycle implements Session, ParserListener
+public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Session.class);
 
@@ -62,6 +62,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private final Session.Listener listener;
     private final AtomicInteger streamCount = new AtomicInteger();
     private final StreamTimeouts streamTimeouts;
+    private final ParserListener parserListener;
     private long streamIdleTimeout;
     private CloseState closeState = CloseState.CLOSED;
     private GoAwayFrame goAwaySent;
@@ -74,6 +75,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         this.session = session;
         this.listener = listener;
         this.streamTimeouts = new StreamTimeouts(scheduler);
+        this.parserListener = new FrameListener();
     }
 
     public ProtocolSession getProtocolSession()
@@ -84,6 +86,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public Session.Listener getListener()
     {
         return listener;
+    }
+
+    public ParserListener getParserListener()
+    {
+        return parserListener;
     }
 
     public void onOpen()
@@ -348,12 +355,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
     }
 
-    @Override
-    public void onSettings(SettingsFrame frame)
-    {
-        notifySettings(frame);
-    }
-
     private void notifySettings(SettingsFrame frame)
     {
         try
@@ -391,8 +392,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
     }
 
-    @Override
-    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+    protected void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
@@ -425,8 +425,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
     }
 
-    @Override
-    public void onData(long streamId, DataFrame frame)
+    protected void onData(long streamId, DataFrame frame)
     {
         HTTP3Stream stream = getStream(streamId);
         if (LOG.isDebugEnabled())
@@ -437,8 +436,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
     }
 
-    @Override
-    public void onGoAway(GoAwayFrame frame)
+    protected void onSettings(SettingsFrame frame)
+    {
+        notifySettings(frame);
+    }
+
+    protected void onGoAway(GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {} on {}", frame, this);
@@ -544,6 +547,23 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
 
         tryRunZeroStreamsAction();
+    }
+
+    public void onStreamFailure(long streamId, long error, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
+        HTTP3Stream stream = getStream(streamId);
+        if (stream != null)
+            stream.onFailure(error, failure);
+    }
+
+    public void onSessionFailure(long error, String reason, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("session failure 0x{}/{} on {}", Long.toHexString(error), failure.getMessage(), this);
+        notifyFailure(error, reason, failure);
+        close(error, reason, Promise.Invocable.noop());
     }
 
     public boolean onIdleTimeout(TimeoutException timeout)
@@ -797,25 +817,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
     }
 
-    @Override
-    public void onStreamFailure(long streamId, long error, Throwable failure)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
-        HTTP3Stream stream = getStream(streamId);
-        if (stream != null)
-            stream.onFailure(error, failure);
-    }
-
-    @Override
-    public void onSessionFailure(long error, String reason, Throwable failure)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("session failure 0x{}/{} on {}", Long.toHexString(error), failure.getMessage(), this);
-        notifyFailure(error, reason, failure);
-        close(error, reason, Promise.Invocable.noop());
-    }
-
     private void notifyFailure(long error, String reason, Throwable failure)
     {
         try
@@ -843,6 +844,51 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public String toString()
     {
         return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
+    }
+
+    /**
+     * <p>Processes the HTTP/3 parser events.</p>
+     * <p>Control frames (such as GOAWAY) arrive on the unidirectional control stream,
+     * possibly concurrently with message frames (such as HEADERS and DATA) arriving
+     * on bidirectional streams.</p>
+     */
+    private class FrameListener implements ParserListener
+    {
+        @Override
+        public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+        {
+            HTTP3Session.this.onHeaders(streamId, frame, wasBlocked);
+        }
+
+        @Override
+        public void onData(long streamId, DataFrame frame)
+        {
+            HTTP3Session.this.onData(streamId, frame);
+        }
+
+        @Override
+        public void onSettings(SettingsFrame frame)
+        {
+            HTTP3Session.this.onSettings(frame);
+        }
+
+        @Override
+        public void onGoAway(GoAwayFrame frame)
+        {
+            HTTP3Session.this.onGoAway(frame);
+        }
+
+        @Override
+        public void onStreamFailure(long streamId, long error, Throwable failure)
+        {
+            HTTP3Session.this.onStreamFailure(streamId, error, failure);
+        }
+
+        @Override
+        public void onSessionFailure(long error, String reason, Throwable failure)
+        {
+            HTTP3Session.this.onSessionFailure(error, reason, failure);
+        }
     }
 
     private enum CloseState

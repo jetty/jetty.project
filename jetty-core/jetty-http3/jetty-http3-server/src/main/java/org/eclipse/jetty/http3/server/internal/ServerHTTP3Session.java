@@ -176,7 +176,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     {
         if (endPoint.getStream().isBidirectional())
             return super.newConnection(endPoint);
-        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session);
+        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener());
     }
 
     public void onSettings(SettingsFrame frame)

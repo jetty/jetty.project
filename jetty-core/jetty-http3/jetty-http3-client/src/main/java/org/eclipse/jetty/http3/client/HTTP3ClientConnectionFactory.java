@@ -50,7 +50,7 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
         StreamEndPoint streamEndPoint = (StreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStream().getId();
         ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getProtocolSession();
-        MessageParser parser = new MessageParser(http3Session.getSessionClient(), http3Session.getQpackDecoder(), streamId);
+        MessageParser parser = new MessageParser(http3Session.getSessionClient().getParserListener(), http3Session.getQpackDecoder(), streamId);
         ClientHTTP3StreamConnection connection = new ClientHTTP3StreamConnection(streamEndPoint, http3Session, parser);
         return customize(connection, context);
     }

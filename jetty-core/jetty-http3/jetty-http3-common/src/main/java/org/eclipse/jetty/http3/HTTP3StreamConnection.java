@@ -153,6 +153,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // Notify the application via onRequest()/onResponse().
                             action.task().run();
 
+                            // TODO: is this unavoidable?
+                            //  If we managed to throw from action.run() above,
+                            //  we'd go through the proper dispose code.
+                            if (stream == null)
+                                yield false;
+
                             // Notify onDataAvailable() if the application
                             // demanded in onRequest()/onResponse().
                             if (!interim)
@@ -181,6 +187,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing frames failure on {}", this, x);
             tryReleaseData(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             // Notify the application that a failure happened.

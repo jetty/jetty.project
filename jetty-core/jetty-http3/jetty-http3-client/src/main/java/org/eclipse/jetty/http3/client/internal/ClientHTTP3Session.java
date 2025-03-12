@@ -217,7 +217,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         if (endPoint.getStream().isBidirectional())
             return super.newConnection(endPoint);
-        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session);
+        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener());
     }
 
     @Override

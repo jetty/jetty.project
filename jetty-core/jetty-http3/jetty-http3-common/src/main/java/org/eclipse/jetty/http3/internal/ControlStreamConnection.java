@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ControlStreamConnection extends AbstractConnection implements Connection.UpgradeTo
+public class ControlStreamConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 

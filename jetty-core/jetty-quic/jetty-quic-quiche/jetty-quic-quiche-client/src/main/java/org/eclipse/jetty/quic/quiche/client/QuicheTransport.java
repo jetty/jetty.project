@@ -113,10 +113,10 @@ public class QuicheTransport extends Transport.Wrapper
             try
             {
                 ClientQuicheSession qSession = (ClientQuicheSession)session;
-                context.put(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY, qSession.getNegotiatedProtocol());
                 ProtocolSession pSession = newProtocolSession(qSession);
                 qSession.addManaged(pSession);
                 protocolSession.set(pSession);
+                context.put(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY, qSession.getNegotiatedProtocol());
             }
             catch (Throwable x)
             {

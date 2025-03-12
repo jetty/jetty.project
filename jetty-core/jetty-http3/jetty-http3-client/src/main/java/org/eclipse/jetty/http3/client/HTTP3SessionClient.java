@@ -66,7 +66,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+    protected void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isResponse())
         {
