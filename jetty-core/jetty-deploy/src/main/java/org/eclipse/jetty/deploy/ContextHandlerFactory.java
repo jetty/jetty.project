@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.component.Environment;
 
 /**
  * A factory to create a ContextHandler from a set of associated files.
+ *
  * @see DeploymentScanner
  */
 public interface ContextHandlerFactory
@@ -40,11 +41,18 @@ public interface ContextHandlerFactory
      */
     String ENVIRONMENT_ATTRIBUTE = "environment";
     /**
-     * TODO
+     * Attributes that start with this name return a String pointing to XML on the filesystem that should be used for Environment based
+     * modifications to the ContextHandler that was created.
+     *
+     * <pre>
+     * jetty.deploy.environmentXml=config/base-ee8.xml
+     * jetty.deploy.environmentXml.auditing=config/auditing-ee8.xml
+     * </pre>
      */
     String ENVIRONMENT_XML_ATTRIBUTE = "jetty.deploy.environmentXml";
     /**
-     * TODO
+     * Attribute name that stores the {@code List<Path>} pointing to XML files that represent
+     * the Environment XML files to apply to the ContextHandler has been created.
      */
     String ENVIRONMENT_XML_PATHS_ATTRIBUTE = "jetty.deploy.paths.environmentXmls";
 
