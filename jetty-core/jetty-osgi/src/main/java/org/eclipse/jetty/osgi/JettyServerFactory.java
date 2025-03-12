@@ -26,10 +26,8 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.DeploymentNodeBinding;
-import org.eclipse.jetty.deploy.GoalDeployer;
-import org.eclipse.jetty.deploy.bindings.StandardStarterBinding;
-import org.eclipse.jetty.deploy.bindings.StandardStopperBinding;
+import org.eclipse.jetty.deploy.Deployer;
+import org.eclipse.jetty.deploy.DirectDeployer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -175,15 +173,9 @@ public class JettyServerFactory
             }
 
             //ensure a deployer
-            GoalDeployer goalDeployer = ensureDeployer(server);
-            goalDeployer.setUseStandardBindings(false);
-            List<DeploymentNodeBinding> deploymentLifeCycleBindings = new ArrayList<>();
-            deploymentLifeCycleBindings.add(new OSGiDeployer(server));
-            deploymentLifeCycleBindings.add(new StandardStarterBinding());
-            deploymentLifeCycleBindings.add(new StandardStopperBinding());
-            deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
-            goalDeployer.setLifeCycleBindings(deploymentLifeCycleBindings);
-            
+            DirectDeployer deployer = ensureDeployer(server);
+            deployer.addEventListener(new OSGiDeploymentListener());
+
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
             server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
@@ -212,23 +204,27 @@ public class JettyServerFactory
         }
     }
 
-   private static GoalDeployer ensureDeployer(Server server)
+    private static DirectDeployer ensureDeployer(Server server)
    {
-       Collection<GoalDeployer> deployers = server.getBeans(GoalDeployer.class);
-       GoalDeployer goalDeployer = null;
+       Collection<Deployer> deployers = server.getBeans(Deployer.class);
+       DirectDeployer deployer = null;
 
        if (deployers != null)
        {
-           goalDeployer = deployers.stream().findFirst().orElse(null);
+           deployer = deployers.stream()
+               .filter(d -> (d instanceof DirectDeployer))
+               .map(DirectDeployer.class::cast)
+               .findFirst()
+               .orElse(null);
        }
 
-       if (goalDeployer == null)
+       if (deployer == null)
        {
-           goalDeployer = new GoalDeployer(getContextHandlerCollection(server));
-           server.addBean(goalDeployer);
+           deployer = new DirectDeployer(getContextHandlerCollection(server));
+           server.addBean(deployer);
        }
-       
-       return goalDeployer;
+
+       return deployer;
    }
    
    private static ContextHandlerCollection getContextHandlerCollection(Server server)

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.test;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +25,9 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.deploy.DeploymentScanner;
-import org.eclipse.jetty.deploy.GoalDeployer;
+import org.eclipse.jetty.deploy.DirectDeployer;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
@@ -70,11 +69,11 @@ public class DeploymentErrorTest
 
     private StacklessLogging stacklessLogging;
     private Server server;
-    private GoalDeployer _goalDeployer;
+    private DirectDeployer deployer;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
-        stacklessLogging = new StacklessLogging(WebAppContext.class, GoalDeployer.class, NoClassDefFoundError.class);
+        stacklessLogging = new StacklessLogging(WebAppContext.class, DirectDeployer.class, NoClassDefFoundError.class);
 
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -88,7 +87,7 @@ public class DeploymentErrorTest
         ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
 
         // Deployment Manager
-        _goalDeployer = new GoalDeployer(contexts);
+        deployer = new DirectDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -101,25 +100,25 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server, _goalDeployer);
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee10");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee10.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addMonitoredDirectory(docroots);
         server.addBean(deploymentScanner);
 
-        server.addBean(_goalDeployer);
+        server.addBean(deployer);
 
         // Server handlers
         server.setHandler(new Handler.Sequence(contexts, new DefaultHandler()));
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-                .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
-                        "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
-                        "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
-                        TrackedConfiguration.class.getName()
-                );
+            .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
+                TrackedConfiguration.class.getName()
+            );
 
         server.start();
         return docroots;
@@ -174,7 +173,7 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
-        List<ContextHandler> contexts = _goalDeployer.getContextHandlers().stream().toList();
+        List<ContextHandler> contexts = getContextHandlers(deployer);
         assertThat("Contexts tracked", contexts.size(), is(1));
         String contextPath = "/badapp-uaf";
         ContextHandler context = findContext(contextPath, contexts);
@@ -211,16 +210,16 @@ public class DeploymentErrorTest
         Path docroots = startServer(null);
 
         String contextPath = "/badapp";
-        AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        GoalDeployer goalDeployer = server.getBean(GoalDeployer.class);
-        goalDeployer.addLifeCycleBinding(startTracking);
+        AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
+        DirectDeployer deployer = server.getBean(DirectDeployer.class);
+        deployer.addEventListener(startTracking);
 
         copyBadApp("badapp.xml", docroots);
 
         // Wait for deployment manager to do its thing
         assertThat("ContextHandlerLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<ContextHandler> apps = goalDeployer.getContextHandlers().stream().toList();
+        List<ContextHandler> apps = getContextHandlers(deployer);
         assertThat("Contexts tracked", apps.size(), is(1));
         ContextHandler context = findContext(contextPath, apps);
         assertNotNull(context);
@@ -256,16 +255,16 @@ public class DeploymentErrorTest
         Path docroots = startServer(null);
 
         String contextPath = "/badapp-uaf";
-        AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        GoalDeployer goalDeployer = server.getBean(GoalDeployer.class);
-        goalDeployer.addLifeCycleBinding(startTracking);
+        AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
+        DirectDeployer deployer = server.getBean(DirectDeployer.class);
+        deployer.addEventListener(startTracking);
 
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
         assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
-        List<ContextHandler> apps = goalDeployer.getContextHandlers().stream().toList();
+        List<ContextHandler> apps = getContextHandlers(this.deployer);
         assertThat("Contexts tracked", apps.size(), is(1));
         ContextHandler context = findContext(contextPath, apps);
         assertNotNull(context);
@@ -297,6 +296,14 @@ public class DeploymentErrorTest
             ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
         }
+    }
+
+    private List<ContextHandler> getContextHandlers(DirectDeployer deployer)
+    {
+        return deployer.getContexts().getHandlers().stream()
+            .filter(h -> (h instanceof ContextHandler))
+            .map(ContextHandler.class::cast)
+            .toList();
     }
 
     private ContextHandler findContext(String contextPath, List<ContextHandler> apps)
@@ -350,36 +357,37 @@ public class DeploymentErrorTest
         }
     }
 
-    public static class AppLifeCycleTrackingBinding implements DeploymentNodeBinding
+    public static class AppLifeCycleTracking implements Deployer.Listener
     {
         public final CountDownLatch startingLatch = new CountDownLatch(1);
         public final CountDownLatch startedLatch = new CountDownLatch(1);
         public final CountDownLatch failedLatch = new CountDownLatch(1);
         private final String expectedContextPath;
 
-        public AppLifeCycleTrackingBinding(String expectedContextPath)
+        public AppLifeCycleTracking(String expectedContextPath)
         {
             this.expectedContextPath = expectedContextPath;
         }
 
         @Override
-        public Collection<String> getBindingTargets()
+        public void onStarting(ContextHandler contextHandler)
         {
-            return List.of("starting", "started", "failed");
+            if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
+                startingLatch.countDown();
         }
 
         @Override
-        public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler)
+        public void onStarted(ContextHandler contextHandler)
         {
             if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
-            {
-                switch (nodeName)
-                {
-                    case "starting" -> startingLatch.countDown();
-                    case "started" -> startedLatch.countDown();
-                    case "failed" -> failedLatch.countDown();
-                }
-            }
+                startedLatch.countDown();
+        }
+
+        @Override
+        public void onFailure(ContextHandler contextHandler, Throwable cause)
+        {
+            if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
+                failedLatch.countDown();
         }
     }
 }

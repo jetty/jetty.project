@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.GoalDeployer;
+import org.eclipse.jetty.deploy.DirectDeployer;
 import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -131,7 +131,7 @@ public class EE10Activator implements BundleActivator
                 server.setAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES, contributedBundles);
             }
 
-            Optional<GoalDeployer> deployer = getDeploymentManager(server);
+            Optional<DirectDeployer> serverDeployer = getDeployer(server);
             BundleWebAppProvider webAppProvider = null;
             BundleContextProvider contextProvider = null;
 
@@ -143,10 +143,11 @@ public class EE10Activator implements BundleActivator
                     .collect(Collectors.joining("|"));
             }
 
-            if (deployer.isPresent())
+            if (serverDeployer.isPresent())
             {
-                GoalDeployer goalDeployer = deployer.get();
-                Collection<AbstractContextProvider> osgiProviders = goalDeployer.getBeans(AbstractContextProvider.class);
+                DirectDeployer deployer = serverDeployer.get();
+
+                Collection<AbstractContextProvider> osgiProviders = deployer.getBeans(AbstractContextProvider.class);
 
                 for (AbstractContextProvider provider : osgiProviders)
                 {
@@ -164,14 +165,14 @@ public class EE10Activator implements BundleActivator
 
                 if (contextProvider == null)
                 {
-                    contextProvider = new BundleContextProvider(server, goalDeployer, ENVIRONMENT, new EE10ContextFactory(_myBundle));
-                    goalDeployer.addBean(contextProvider);
+                    contextProvider = new BundleContextProvider(server, deployer, ENVIRONMENT, new EE10ContextFactory(_myBundle));
+                    deployer.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
-                    webAppProvider = new BundleWebAppProvider(server, goalDeployer, ENVIRONMENT, new EE10WebAppFactory(_myBundle));
-                    goalDeployer.addBean(webAppProvider);
+                    webAppProvider = new BundleWebAppProvider(server, deployer, ENVIRONMENT, new EE10WebAppFactory(_myBundle));
+                    deployer.addBean(webAppProvider);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
@@ -208,9 +209,9 @@ public class EE10Activator implements BundleActivator
         {
         }
 
-        private Optional<GoalDeployer> getDeploymentManager(Server server)
+        private Optional<DirectDeployer> getDeployer(Server server)
         {
-            Collection<GoalDeployer> deployers = server.getBeans(GoalDeployer.class);
+            Collection<DirectDeployer> deployers = server.getBeans(DirectDeployer.class);
             return deployers.stream().findFirst();
         }
 

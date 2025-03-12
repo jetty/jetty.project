@@ -6,7 +6,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">
+      <New id="Deployer" class="org.eclipse.jetty.deploy.DirectDeployer">
         <Arg name="contexts"><Ref refid="Contexts"/></Arg>
 
         <!-- Add a customize step to the deployment lifecycle -->

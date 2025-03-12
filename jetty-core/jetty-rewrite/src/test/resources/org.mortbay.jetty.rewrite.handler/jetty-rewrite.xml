@@ -169,16 +169,13 @@
   <!-- deployments at the configured scanInterval.                 -->
   <!--                                                             -->
   <!-- This deployer is configured to deploy contexts configured   -->
-  <!-- in the $JETTY_HOME/contexts directory                       -->
+  <!-- in the $JETTY_BASE/contexts directory                       -->
   <!--                                                             -->
   <!-- =========================================================== -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.server.deployer.GoalDeployer">
+      <New class="org.eclipse.jetty.server.deploy.DirectDeployer">
         <Arg name="contexts"><Ref refid="Contexts"/></Arg>
-        <Set name="configurationDir"><SystemProperty name="jetty.home" default="." />/contexts
-        </Set>
-        <Set name="scanInterval">1</Set>
       </New>
     </Arg>
   </Call>
