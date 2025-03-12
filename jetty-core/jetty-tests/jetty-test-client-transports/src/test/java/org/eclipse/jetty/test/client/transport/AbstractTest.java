@@ -131,8 +131,6 @@ public class AbstractTest
     @AfterEach
     public void dispose(TestInfo testInfo) throws Exception
     {
-        // Stop the client so that all connections are closed and any saved buffers are released
-        LifeCycle.stop(client);
         try
         {
             if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
@@ -142,7 +140,7 @@ public class AbstractTest
         }
         finally
         {
-            LifeCycle.stop(server);
+            stop();
         }
     }
 

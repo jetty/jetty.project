@@ -420,11 +420,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             }
             finally
             {
-                if (networkBuffer.isRetained() && !shutdown)
-                {
-                    holdBuffer(networkBuffer);
-                }
-                else
+// TODO this keeps a buffer around when the client is at rest
+//                if (networkBuffer.isRetained() && !shutdown)
+//                {
+//                    holdBuffer(networkBuffer);
+//                }
+//                else
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Released after process {}", networkBuffer);
