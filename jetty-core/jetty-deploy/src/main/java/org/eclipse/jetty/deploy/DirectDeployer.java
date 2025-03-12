@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.util.EventListener;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -20,6 +25,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
@@ -38,6 +44,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
     private final ContextHandlerCollection _contexts;
     private final boolean _startBeforeRedeploy;
+    private final ListenerAdaptor _listenerAdaptor = new ListenerAdaptor();
 
     /**
      * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
@@ -57,6 +64,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         _contexts = requireNonNull(contexts);
         _startBeforeRedeploy = startBeforeRedeploy;
         installBean(_contexts, false);
+        _contexts.addEventListener(_listenerAdaptor);
     }
 
     public ContextHandlerCollection getContexts()
@@ -65,13 +73,41 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     }
 
     @Override
+    public boolean addEventListener(EventListener listener)
+    {
+        if  (super.addEventListener(listener))
+        {
+            if (listener instanceof DeploymentListener deploymentListener)
+                _listenerAdaptor._listeners.add(deploymentListener);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeEventListener(EventListener listener)
+    {
+        if  (super.removeEventListener(listener))
+        {
+            if (listener instanceof DeploymentListener deploymentListener)
+                _listenerAdaptor._listeners.remove(deploymentListener);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public void deploy(ContextHandler contextHandler)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("deploy: {} {}", this, contextHandler);
+        requireNonNull(contextHandler);
+
+        contextHandler.addEventListener(_listenerAdaptor);
+        _listenerAdaptor.notify(contextHandler, DeploymentListener::onCreated);
+
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("deploy: {} {}", this, contextHandler);
-            requireNonNull(contextHandler);
             Callback.Completable blocker = new Callback.Completable();
             _contexts.deployHandler(contextHandler, blocker);
             blocker.get();
@@ -142,5 +178,102 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     public String toString()
     {
         return "%s@%x{contexts=%s,sbrd=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _startBeforeRedeploy);
+    }
+
+    public interface DeploymentListener extends EventListener
+    {
+        default void onCreated(ContextHandler contextHandler)
+        {}
+
+        default void onAdded(ContextHandler contextHandler)
+        {}
+
+        default void onRemoved(ContextHandler contextHandler)
+        {}
+
+        default void onStarting(ContextHandler contextHandler)
+        {}
+
+        default void onStarted(ContextHandler contextHandler)
+        {}
+
+        default void onStopping(ContextHandler contextHandler)
+        {}
+
+        default void onStopped(ContextHandler contextHandler)
+        {}
+
+        default void onFailure(ContextHandler contextHandler, Throwable cause)
+        {}
+
+    }
+
+    private static class ListenerAdaptor implements LifeCycle.Listener, Container.Listener
+    {
+        private final List<DeploymentListener> _listeners = new CopyOnWriteArrayList<>();
+
+        private void notify(ContextHandler contextHandler, BiConsumer<DeploymentListener, ContextHandler> method)
+        {
+            for (DeploymentListener listener : _listeners)
+            {
+                try
+                {
+                    method.accept(listener, contextHandler);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("listener failure {}", listener, t);
+                }
+            }
+        }
+
+        @Override
+        public void beanAdded(Container parent, Object child)
+        {
+            if (child instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onAdded);
+        }
+
+        @Override
+        public void beanRemoved(Container parent, Object child)
+        {
+            if (child instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onRemoved);
+        }
+
+        @Override
+        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+            if (event instanceof ContextHandler contextHandler)
+                notify(contextHandler, (dl, ch) -> dl.onFailure(ch, cause));
+        }
+
+        @Override
+        public void lifeCycleStarted(LifeCycle event)
+        {
+            if (event instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onStarted);
+        }
+
+        @Override
+        public void lifeCycleStarting(LifeCycle event)
+        {
+            if (event instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onStarting);
+        }
+
+        @Override
+        public void lifeCycleStopped(LifeCycle event)
+        {
+            if (event instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onStopped);
+        }
+
+        @Override
+        public void lifeCycleStopping(LifeCycle event)
+        {
+            if (event instanceof ContextHandler contextHandler)
+                notify(contextHandler, DeploymentListener::onStopping);
+        }
     }
 }

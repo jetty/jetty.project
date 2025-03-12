@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -31,13 +34,65 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
     private final DirectDeployer deployer = new DirectDeployer(contexts);
-    private final ContextHandler context = new ContextHandler();
+    private final ContextHandler context = new ContextHandler("/context");
+
+    private final List<String> history = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     public void beforeEach()
     {
         server.setHandler(contexts);
         server.addBean(deployer);
+        deployer.addEventListener(new DirectDeployer.DeploymentListener()
+        {
+            @Override
+            public void onAdded(ContextHandler contextHandler)
+            {
+                history.add("onAdded " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onCreated(ContextHandler contextHandler)
+            {
+                history.add("onCreated " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onFailure(ContextHandler contextHandler, Throwable cause)
+            {
+                history.add("onFailure " + contextHandler.getContextPath() + " " + cause.getMessage());
+            }
+
+            @Override
+            public void onRemoved(ContextHandler contextHandler)
+            {
+                history.add("onRemoved " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onStarted(ContextHandler contextHandler)
+            {
+                history.add("onStarted " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onStarting(ContextHandler contextHandler)
+            {
+                history.add("onStarting " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onStopped(ContextHandler contextHandler)
+            {
+                history.add("onStopped " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onStopping(ContextHandler contextHandler)
+            {
+                history.add("onStopping " + contextHandler.getContextPath());
+            }
+        });
     }
 
     @Test
@@ -50,6 +105,12 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         deployer.undeploy(context);
         assertThat(contexts.getHandlers(), empty());
         assertFalse(context.isStarted());
+
+        assertThat(history, contains(
+            "onCreated /context",
+            "onAdded /context",
+            "onRemoved /context"
+        ));
     }
 
     @Test
@@ -70,6 +131,16 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         deployer.undeploy(context);
         assertThat(contexts.getHandlers(), empty());
         assertFalse(context.isStarted());
+
+        assertThat(history, contains(
+            "onCreated /context",
+            "onAdded /context",
+            "onStarting /context",
+            "onStarted /context",
+            "onStopping /context",
+            "onStopped /context",
+            "onRemoved /context"
+        ));
     }
 
     @Test
@@ -101,6 +172,16 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         server.stop();
         assertThat(contexts.getHandlers(), empty());
         assertFalse(context.isStarted());
+
+        assertThat(history, contains(
+            "onCreated /context",
+            "onAdded /context",
+            "onStarting /context",
+            "onStarted /context",
+            "onStopping /context",
+            "onStopped /context",
+            "onRemoved /context"
+        ));
     }
 
     @Test
@@ -118,6 +199,16 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         server.stop();
         assertThat(contexts.getHandlers(), empty());
         assertFalse(context.isStarted());
+
+        assertThat(history, contains(
+            "onCreated /context",
+            "onAdded /context",
+            "onStarting /context",
+            "onStarted /context",
+            "onStopping /context",
+            "onStopped /context",
+            "onRemoved /context"
+        ));
     }
 
 }
