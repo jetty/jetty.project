@@ -46,33 +46,15 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         deployer.addEventListener(new Deployer.Listener()
         {
             @Override
-            public void onAdded(ContextHandler contextHandler)
-            {
-                history.add("onAdded " + contextHandler.getContextPath());
-            }
-
-            @Override
             public void onCreated(ContextHandler contextHandler)
             {
                 history.add("onCreated " + contextHandler.getContextPath());
             }
 
             @Override
-            public void onFailure(ContextHandler contextHandler, Throwable cause)
+            public void onDeploying(ContextHandler contextHandler)
             {
-                history.add("onFailure " + contextHandler.getContextPath() + " " + cause.getMessage());
-            }
-
-            @Override
-            public void onRemoved(ContextHandler contextHandler)
-            {
-                history.add("onRemoved " + contextHandler.getContextPath());
-            }
-
-            @Override
-            public void onStarted(ContextHandler contextHandler)
-            {
-                history.add("onStarted " + contextHandler.getContextPath());
+                history.add("onDeploying " + contextHandler.getContextPath());
             }
 
             @Override
@@ -82,15 +64,51 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
             }
 
             @Override
-            public void onStopped(ContextHandler contextHandler)
+            public void onStarted(ContextHandler contextHandler)
             {
-                history.add("onStopped " + contextHandler.getContextPath());
+                history.add("onStarted " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onDeployed(ContextHandler contextHandler)
+            {
+                history.add("onDeployed " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onFailure(ContextHandler contextHandler, Throwable cause)
+            {
+                history.add("onFailure " + contextHandler.getContextPath() + " " + cause.getMessage());
+            }
+
+            @Override
+            public void onUndeploying(ContextHandler contextHandler)
+            {
+                history.add("onUndeploying " + contextHandler.getContextPath());
             }
 
             @Override
             public void onStopping(ContextHandler contextHandler)
             {
                 history.add("onStopping " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onStopped(ContextHandler contextHandler)
+            {
+                history.add("onStopped " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onUndeployed(ContextHandler contextHandler)
+            {
+                history.add("onUndeployed " + contextHandler.getContextPath());
+            }
+
+            @Override
+            public void onRemoved(ContextHandler contextHandler)
+            {
+                history.add("onRemoved " + contextHandler.getContextPath());
             }
         });
     }
@@ -108,7 +126,8 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
 
         assertThat(history, contains(
             "onCreated /context",
-            "onAdded /context",
+            "onDeploying /context",
+            "onUndeployed /context",
             "onRemoved /context"
         ));
     }
@@ -134,11 +153,14 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
 
         assertThat(history, contains(
             "onCreated /context",
-            "onAdded /context",
+            "onDeploying /context",
             "onStarting /context",
             "onStarted /context",
+            "onDeployed /context",
+            "onUndeploying /context",
             "onStopping /context",
             "onStopped /context",
+            "onUndeployed /context",
             "onRemoved /context"
         ));
     }
@@ -175,11 +197,14 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
 
         assertThat(history, contains(
             "onCreated /context",
-            "onAdded /context",
+            "onDeploying /context",
             "onStarting /context",
             "onStarted /context",
+            "onDeployed /context",
+            "onUndeploying /context",
             "onStopping /context",
             "onStopped /context",
+            "onUndeployed /context",
             "onRemoved /context"
         ));
     }
@@ -202,11 +227,14 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
 
         assertThat(history, contains(
             "onCreated /context",
-            "onAdded /context",
+            "onDeploying /context",
             "onStarting /context",
             "onStarted /context",
+            "onDeployed /context",
+            "onUndeploying /context",
             "onStopping /context",
             "onStopped /context",
+            "onUndeployed /context",
             "onRemoved /context"
         ));
     }
@@ -233,24 +261,29 @@ public class DirectDeployerTest extends AbstractCleanEnvironmentTest
         assertThat(contexts.getHandlers(), empty());
         assertFalse(context.isStarted());
 
-        history.forEach(System.err::println);
         assertThat(history, contains(
             "onCreated /context",
-            "onAdded /context",
+            "onDeploying /context",
             "onStarting /context",
             "onStarted /context",
+            "onDeployed /context",
 
             "onCreated /contextB",
+            "onDeploying /contextB",
             "onStarting /contextB",
             "onStarted /contextB",
-            "onAdded /contextB",
+            "onDeployed /contextB",
 
-            "onRemoved /context",
+            "onUndeploying /context",
             "onStopping /context",
             "onStopped /context",
+            "onUndeployed /context",
+            "onRemoved /context",
 
+            "onUndeploying /contextB",
             "onStopping /contextB",
             "onStopped /contextB",
+            "onUndeployed /contextB",
             "onRemoved /contextB"
         ));
     }

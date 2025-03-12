@@ -44,7 +44,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
     private final ContextHandlerCollection _contexts;
     private final boolean _startBeforeRedeploy;
-    private final ListenerAdaptor _listenerAdaptor = new ListenerAdaptor();
+    private final ListenerAdaptor _listenerAdaptor;
 
     /**
      * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
@@ -64,6 +64,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         _contexts = requireNonNull(contexts);
         _startBeforeRedeploy = startBeforeRedeploy;
         installBean(_contexts, false);
+        _listenerAdaptor = new ListenerAdaptor(_contexts);
         _contexts.addEventListener(_listenerAdaptor);
     }
 
@@ -158,6 +159,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         }
         finally
         {
+            _listenerAdaptor.notify(oldHandler, Deployer.Listener::onRemoved);
             oldHandler.removeEventListener(_listenerAdaptor);
         }
     }
@@ -181,6 +183,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
             }
             finally
             {
+                _listenerAdaptor.notify(contextHandler, Deployer.Listener::onRemoved);
                 contextHandler.removeEventListener(_listenerAdaptor);
             }
         }
@@ -194,7 +197,13 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
 
     private static class ListenerAdaptor implements LifeCycle.Listener, Container.Listener
     {
+        private final ContextHandlerCollection _contexts;
         private final List<Deployer.Listener> _listeners = new CopyOnWriteArrayList<>();
+
+        private ListenerAdaptor(ContextHandlerCollection contexts)
+        {
+            _contexts = contexts;
+        }
 
         private void notify(ContextHandler contextHandler, BiConsumer<Deployer.Listener, ContextHandler> method)
         {
@@ -215,49 +224,73 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         public void beanAdded(Container parent, Object child)
         {
             if (child instanceof ContextHandler contextHandler)
-                notify(contextHandler, Deployer.Listener::onAdded);
+            {
+                notify(contextHandler, contextHandler.isStarted()
+                    ? Deployer.Listener::onDeployed
+                    : Deployer.Listener::onDeploying);
+            }
         }
 
         @Override
         public void beanRemoved(Container parent, Object child)
         {
             if (child instanceof ContextHandler contextHandler)
-                notify(contextHandler, Deployer.Listener::onRemoved);
+            {
+                notify(contextHandler, contextHandler.isStarted()
+                    ? Deployer.Listener::onUndeploying
+                    : Deployer.Listener::onUndeployed);
+            }
         }
 
         @Override
-        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        public void lifeCycleFailure(LifeCycle bean, Throwable cause)
         {
-            if (event instanceof ContextHandler contextHandler)
+            if (bean instanceof ContextHandler contextHandler)
                 notify(contextHandler, (dl, ch) -> dl.onFailure(ch, cause));
         }
 
         @Override
-        public void lifeCycleStarted(LifeCycle event)
+        public void lifeCycleStarted(LifeCycle bean)
         {
-            if (event instanceof ContextHandler contextHandler)
+            if (bean instanceof ContextHandler contextHandler)
+            {
                 notify(contextHandler, Deployer.Listener::onStarted);
+                if (_contexts.contains(contextHandler))
+                    notify(contextHandler, Deployer.Listener::onDeployed);
+            }
         }
 
         @Override
         public void lifeCycleStarting(LifeCycle event)
         {
             if (event instanceof ContextHandler contextHandler)
+            {
+                if (!_contexts.contains(contextHandler))
+                    notify(contextHandler, Deployer.Listener::onDeploying);
                 notify(contextHandler, Deployer.Listener::onStarting);
+            }
         }
 
         @Override
         public void lifeCycleStopped(LifeCycle event)
         {
             if (event instanceof ContextHandler contextHandler)
+            {
                 notify(contextHandler, Deployer.Listener::onStopped);
+                if (!_contexts.contains(contextHandler))
+                    notify(contextHandler, Deployer.Listener::onUndeployed);
+            }
         }
 
         @Override
         public void lifeCycleStopping(LifeCycle event)
         {
             if (event instanceof ContextHandler contextHandler)
+            {
+                if (_contexts.contains(contextHandler))
+                    notify(contextHandler, Deployer.Listener::onUndeploying);
                 notify(contextHandler, Deployer.Listener::onStopping);
+            }
         }
     }
 }

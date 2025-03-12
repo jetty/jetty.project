@@ -70,18 +70,10 @@ public interface Deployer
 
         /**
          * Event called when a {@link ContextHandler} is added to the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
-         * A {@code contextHandler} is deployed when it is both added and {@link #onStarted(ContextHandler) started}.
+         * A {@code ContextHandler} is deployed when it is both added and {@link #onStarted(ContextHandler) started}.
          * @param contextHandler The {@link ContextHandler} added.
          */
-        default void onAdded(ContextHandler contextHandler)
-        {}
-
-        /**
-         * Event called when a {@link ContextHandler} is removed to the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
-         * A {@code contextHandler} is deployed when it is both added and {@link #onStarted(ContextHandler) started}.
-         * @param contextHandler The {@link ContextHandler} removed.
-         */
-        default void onRemoved(ContextHandler contextHandler)
+        default void onDeploying(ContextHandler contextHandler)
         {}
 
         /**
@@ -93,10 +85,26 @@ public interface Deployer
 
         /**
          * Event called when a {@link ContextHandler} is {@link LifeCycle#isStarted() started}.
-         * A {@code contextHandler} is deployed when it is both {@link #onAdded(ContextHandler) added} and started.
+         * A {@code contextHandler} is deployed when it is both {@link #onDeploying(ContextHandler) added} and started.
          * @param contextHandler The {@link ContextHandler} added.
          */
         default void onStarted(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is both {@link LifeCycle#isStarted() started} and
+         * added to the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
+         * @param contextHandler The {@link ContextHandler} deployed.
+         */
+        default void onDeployed(ContextHandler contextHandler)
+        {}
+
+        /**
+         * Event called when a {@link ContextHandler} is removed from the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
+         * A {@code ContextHandler} is undeployed when it is both removed and {@link #onStopped(ContextHandler) stopped}.
+         * @param contextHandler The {@link ContextHandler} undeploying.
+         */
+        default void onUndeploying(ContextHandler contextHandler)
         {}
 
         /**
@@ -114,11 +122,26 @@ public interface Deployer
         {}
 
         /**
+         * Event called when a {@link ContextHandler} is both {@link #onStopped(ContextHandler) stopped} and
+         * removed from the {@link org.eclipse.jetty.server.handler.ContextHandlerCollection}.
+         * @param contextHandler The {@link ContextHandler} undeployed.
+         */
+        default void onUndeployed(ContextHandler contextHandler)
+        {}
+
+        /**
          * Event called when a {@link ContextHandler} is {@link LifeCycle#isFailed() failed}.
          * @param contextHandler The {@link ContextHandler} that failed.
          * @param cause The cause of the failure.
          */
         default void onFailure(ContextHandler contextHandler, Throwable cause)
+        {}
+
+        /**
+         * Called when a {@link ContextHandler} is last seen by the {@link Deployer}.
+         * @param contextHandler The {@link ContextHandler} seen.
+         */
+        default void onRemoved(ContextHandler contextHandler)
         {}
 
     }
