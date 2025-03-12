@@ -262,28 +262,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public void onData(DataFrame frame)
     {
-        RetainableByteBuffer.Mutable networkBuffer;
-        try (AutoLock ignore = producer.lock.lock())
-        {
-            networkBuffer = producer.networkBuffer;
-        }
-        session.onData(new StreamData(frame, networkBuffer, () ->
-        {
-            // This releaser is run for every release, not just the last one!
-            try (AutoLock ignore = producer.lock.lock())
-            {
-                RetainableByteBuffer.Mutable held = producer.heldBuffer;
-                if (producer.networkBuffer == null && held == null)
-                {
-                    producer.networkBuffer = HTTP2Producer.RELEASE_MARKER;
-                }
-                else if (held != null)
-                {
-                    held.release();
-                    producer.heldBuffer = null;
-                }
-            }
-        }));
+        session.onData(producer.newStreamData(frame));
     }
 
     @Override
@@ -456,7 +435,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             {
                 try (AutoLock ignore = lock.lock())
                 {
-                    if (networkBuffer.isRetained() && this.networkBuffer != RELEASE_MARKER && !shutdown)
+                    if (networkBuffer.isRetained() && this.heldBuffer != RELEASE_MARKER && !shutdown)
                     {
                         lockedHoldBuffer(networkBuffer);
                     }
@@ -471,6 +450,32 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
                 if (interested)
                     fillInterested(fillableCallback);
+            }
+        }
+
+        private StreamData newStreamData(DataFrame frame)
+        {
+            try (AutoLock ignore = lock.lock())
+            {
+                return new StreamData(frame, networkBuffer, this::releaseHeldBuffer);
+            }
+        }
+
+        private void releaseHeldBuffer()
+        {
+            try (AutoLock ignore = lock.lock())
+            {
+                LOG.info("releaseHeldBuffer networkBuffer={} heldBuffer={}", networkBuffer, heldBuffer);
+                RetainableByteBuffer.Mutable held = heldBuffer;
+                if (held == null)
+                {
+                    heldBuffer = HTTP2Producer.RELEASE_MARKER;
+                }
+                else
+                {
+                    held.release();
+                    heldBuffer = null;
+                }
             }
         }
 
@@ -590,7 +595,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         public boolean release()
         {
             boolean released = retainable.release();
-            releaser.run();
+            if (!released && !isRetained())
+                releaser.run();
             return released;
         }
     }
