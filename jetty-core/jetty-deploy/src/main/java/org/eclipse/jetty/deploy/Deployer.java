@@ -16,12 +16,14 @@ package org.eclipse.jetty.deploy;
 import java.util.EventListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
  * Deployer for ContextHandlers
  */
+@ManagedObject(value = "Deployer")
 public interface Deployer
 {
     /**
