@@ -2296,6 +2296,42 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
+    public void testEnvExtModules(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+        String[] modules = {
+            "server",
+            toEnvironment("deploy", env),
+            toEnvironment("ext", env)
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+            Path envExt = jettyBase.resolve("lib/" + env + "/ext");
+            assertTrue(Files.isDirectory(envExt));
+            Path envExtJar = envExt.resolve("empty.jar");
+            Files.createFile(envExtJar);
+            assertTrue(Files.exists(envExtJar));
+        }
+
+        // Verify that the empty.jar is listed as being on the classpath
+        try (JettyHomeTester.Run run = distribution.start(" jetty.server.dumpAfterStart=true"))
+        {
+            assertThat(run.awaitConsoleLogsFor("lib/" + env + "/ext/empty.jar", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+            run.stop();
+            assertThat(run.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), is(true));
+        }
+    }
+
     @Test
     public void testForwardedWithHTTP2() throws Exception
     {
