@@ -1444,7 +1444,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public boolean isInputShutdown()
         {
-            return BufferUtil.isEmpty(_decryptedInput) && (getEndPoint().isInputShutdown() || isInboundDone());
+            return (_encryptedInput == null || !_encryptedInput.hasRemaining()) &&
+                    BufferUtil.isEmpty(_decryptedInput) &&
+                    (getEndPoint().isInputShutdown() || isInboundDone());
         }
 
         private boolean isInboundDone()
