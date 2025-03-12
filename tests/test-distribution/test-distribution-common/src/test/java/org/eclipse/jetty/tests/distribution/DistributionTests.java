@@ -1285,7 +1285,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] args1 = {"--add-module=server,http,deploy,requestlog"};
+        String[] args1 = {"--add-module=server,http,requestlog"};
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));

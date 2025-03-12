@@ -4,14 +4,14 @@ This module enables the direct Deployer, which simply adds and starts a context.
 [tags]
 deployment
 
-[provides]
-deployer | default
+[depends]
+server
 
 [lib]
 lib/jetty-deploy-${jetty.version}.jar
 
 [xml]
-etc/jetty-direct-deployer.xml
+etc/jetty-deployer.xml
 
 [ini-template]
 
