@@ -81,7 +81,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     {
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
-        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-goal-deployer.xml"));
+        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-direct-deployer.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 

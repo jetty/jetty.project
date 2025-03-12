@@ -36,7 +36,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1336,6 +1335,322 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return false;
 
             return true;
+        }
+    }
+
+    /**
+     * A representation of all the filesystem components that are used to
+     * create a {@link ContextHandler}
+     */
+    protected static class PathsApp
+    {
+        public enum State
+        {
+            UNCHANGED,
+            ADDED,
+            CHANGED,
+            REMOVED
+        }
+
+        private static final Logger LOG = LoggerFactory.getLogger(PathsApp.class);
+        private final String name;
+        private final Map<Path, PathsApp.State> paths = new HashMap<>();
+        private final Attributes attributes = new Attributes.Mapped();
+        private PathsApp.State state;
+        private ContextHandler contextHandler;
+
+        public PathsApp(String name)
+        {
+            this.name = name;
+            this.state = calcState();
+        }
+
+        private static String asStringList(Collection<Path> paths)
+        {
+            return paths.stream()
+                .sorted(PathCollators.byName(true))
+                .map(Path::toString)
+                .collect(Collectors.joining(", ", "[", "]"));
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o == null || getClass() != o.getClass())
+                return false;
+            PathsApp that = (PathsApp)o;
+            return Objects.equals(name, that.name);
+        }
+
+        public Attributes getAttributes()
+        {
+            return this.attributes;
+        }
+
+        public ContextHandler getContextHandler()
+        {
+            return contextHandler;
+        }
+
+        public void setContextHandler(ContextHandler contextHandler)
+        {
+            this.contextHandler = contextHandler;
+        }
+
+        public Environment getEnvironment()
+        {
+            return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+        }
+
+        public void setEnvironment(Environment env)
+        {
+            getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, env);
+        }
+
+        public String getEnvironmentName()
+        {
+            Environment env = getEnvironment();
+            if (env == null)
+                return "";
+            else
+                return env.getName();
+        }
+
+        /**
+         * Get the main path used for deployment.
+         * <p>
+         * Applies the heuristics reference in the main
+         * javadoc for {@link DeploymentScanner}
+         * </p>
+         *
+         * @return the main deployable path
+         */
+        public Path getMainPath()
+        {
+            List<Path> livePaths = paths
+                .entrySet()
+                .stream()
+                .filter((e) -> e.getValue() != PathsApp.State.REMOVED)
+                .map(Map.Entry::getKey)
+                .sorted(PathCollators.byName(true))
+                .toList();
+
+            if (livePaths.isEmpty())
+                return null;
+
+            // XML always win.
+            List<Path> xmls = livePaths.stream()
+                .filter(FileID::isXml)
+                .toList();
+            if (xmls.size() == 1)
+                return xmls.get(0);
+            else if (xmls.size() > 1)
+                throw new IllegalStateException("More than 1 XML for deployable " + asStringList(xmls));
+
+            // WAR files are next.
+            List<Path> wars = livePaths.stream()
+                .filter(FileID::isWebArchive)
+                .toList();
+            if (wars.size() == 1)
+                return wars.get(0);
+            else if (wars.size() > 1)
+                throw new IllegalStateException("More than 1 WAR for deployable " + asStringList(wars));
+
+            // Directories next.
+            List<Path> dirs = livePaths.stream()
+                .filter(Files::isDirectory)
+                .toList();
+            if (dirs.size() == 1)
+                return dirs.get(0);
+            if (dirs.size() > 1)
+                throw new IllegalStateException("More than 1 Directory for deployable " + asStringList(dirs));
+
+            LOG.warn("Unable to determine main deployable for {}", this);
+            return null;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public Map<Path, PathsApp.State> getPaths()
+        {
+            return paths;
+        }
+
+        public PathsApp.State getState()
+        {
+            return state;
+        }
+
+        public void setState(PathsApp.State state)
+        {
+            this.state = state;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hashCode(name);
+        }
+
+        /**
+         * Load all {@code properties} files belonging to this PathsApp
+         * into its {@link Attributes}.
+         *
+         * @see #getAttributes()
+         */
+        public void loadProperties()
+        {
+            // look for properties file for main basename.
+            String propFilename = String.format("%s.properties", getName());
+            List<Path> propFiles = paths.keySet().stream()
+                .filter(Files::isRegularFile)
+                .filter(p -> p.getFileName().toString().equalsIgnoreCase(propFilename))
+                .sorted(PathCollators.byName(true))
+                .toList();
+
+            if (propFiles.isEmpty())
+            {
+                // No properties file found
+                return;
+            }
+
+            if (propFiles.size() > 1)
+            {
+                LOG.warn("Multiple matching files with name [{}]: {}", propFilename,
+                    asStringList(propFiles));
+            }
+
+            for (Path propFile : propFiles)
+            {
+                try (InputStream inputStream = Files.newInputStream(propFile))
+                {
+                    Properties props = new Properties();
+                    props.load(inputStream);
+                    props.stringPropertyNames().forEach(
+                        (name) ->
+                        {
+                            String value = props.getProperty(name);
+                            String key = DeploymentScanner.stripOldAttributePrefix(name);
+                            getAttributes().setAttribute(key, value);
+                        });
+                }
+                catch (IOException e)
+                {
+                    LOG.warn("Unable to read properties file: {}", propFile, e);
+                }
+            }
+
+            // Look for simple old school environment name.
+            String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+            if (StringUtil.isNotBlank(environmentName))
+            {
+                setEnvironment(Environment.get(environmentName));
+            }
+        }
+
+        public void putPath(Path path, PathsApp.State state)
+        {
+            this.paths.put(path, state);
+            setState(calcState());
+        }
+
+        public void resetStates()
+        {
+            // Drop paths that were removed.
+            List<Path> removedPaths = paths.entrySet()
+                .stream().filter(e -> e.getValue() == PathsApp.State.REMOVED)
+                .map(Map.Entry::getKey)
+                .toList();
+            for (Path removedPath : removedPaths)
+            {
+                paths.remove(removedPath);
+            }
+            // Set all remaining path states to UNCHANGED
+            paths.replaceAll((p, v) -> PathsApp.State.UNCHANGED);
+            state = calcState();
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder str = new StringBuilder("%s@%x".formatted(this.getClass().getSimpleName(), hashCode()));
+            str.append("[").append(name);
+            str.append("|").append(getState());
+            str.append(", env=").append(getEnvironmentName());
+            str.append(", mainPath=").append(getMainPath());
+            str.append(", paths=");
+            str.append(paths.entrySet().stream()
+                .map((e) -> String.format("%s|%s", e.getKey(), e.getValue()))
+                .collect(Collectors.joining(", ", "[", "]"))
+            );
+            str.append(", contextHandler=");
+            if (contextHandler == null)
+                str.append("<unset>");
+            else
+                str.append(contextHandler);
+            str.append("]");
+            return str.toString();
+        }
+
+        /**
+         * <p>
+         * Calculate the State of the overall State based on the States in the Paths.
+         * </p>
+         * <dl>
+         * <dt>UNCHANGED</dt>
+         * <dd>All Path states are in UNCHANGED state</dd>
+         * <dt>ADDED</dt>
+         * <dd>All Path states are in ADDED state</dd>
+         * <dt>CHANGED</dt>
+         * <dd>At least one Path state is CHANGED, or there is a variety of states</dd>
+         * <dt>REMOVED</dt>
+         * <dd>All Path states are in REMOVED state, or there are no Paths being tracked</dd>
+         * </dl>
+         *
+         * @return the state.
+         */
+        private PathsApp.State calcState()
+        {
+            if (paths.isEmpty())
+                return PathsApp.State.REMOVED;
+
+            // Calculate state of unit from Path states.
+            PathsApp.State ret = null;
+            for (PathsApp.State pathState : paths.values())
+            {
+                switch (pathState)
+                {
+                    case UNCHANGED ->
+                    {
+                        if (ret == null)
+                            ret = PathsApp.State.UNCHANGED;
+                        else if (ret != PathsApp.State.UNCHANGED)
+                            ret = PathsApp.State.CHANGED;
+                    }
+                    case ADDED ->
+                    {
+                        if (ret == null)
+                            ret = PathsApp.State.ADDED;
+                        else if (ret == PathsApp.State.UNCHANGED || ret == PathsApp.State.REMOVED)
+                            ret = PathsApp.State.ADDED;
+                    }
+                    case CHANGED ->
+                    {
+                        ret = PathsApp.State.CHANGED;
+                    }
+                    case REMOVED ->
+                    {
+                        if (ret == null)
+                            ret = PathsApp.State.REMOVED;
+                        else if (ret != PathsApp.State.REMOVED)
+                            ret = PathsApp.State.CHANGED;
+                    }
+                }
+            }
+            return ret != null ? ret : PathsApp.State.UNCHANGED;
         }
     }
 }

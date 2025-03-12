@@ -54,14 +54,14 @@ public interface ContextHandlerFactory
      * @param mainPath The {@link Path} of the main file of the context (e.g. a WAR file or XML}
      * @param otherPaths Other files associated with the context (e.g. property files)
      * @param deployAttributes Attributes describing the details of the deployment and that are made available to the
-     *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <UL>
+     *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <ul>
      *                             <li>Attributes defined in {@link org.eclipse.jetty.server.Deployable}</li>
      *                             <li>{@link #CONTEXT_HANDLER_CLASS_ATTRIBUTE}</li>
      *                             <li>{@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}</li>
      *                             <li>{@link #ENVIRONMENT_ATTRIBUTE}</li>
      *                             <li>{@link #ENVIRONMENT_XML_ATTRIBUTE}</li>
      *                             <li>{@link #ENVIRONMENT_XML_PATHS_ATTRIBUTE}</li>
-     *                         </UL>
+     *                         </ul>
      * @return The created {@link ContextHandler}
      * @throws Exception If there is a problem creating the {@link ContextHandler}
      */

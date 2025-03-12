@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.internal;
+package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;

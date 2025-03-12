@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
-import org.eclipse.jetty.deploy.internal.PathsApp;
+import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

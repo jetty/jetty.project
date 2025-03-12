@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
-import org.eclipse.jetty.deploy.internal.PathsApp;
+import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

@@ -226,7 +226,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         try (StacklessLogging ignore = new StacklessLogging(
             // screwy name courtesy of SerializedInvoker.onError() logic
             "org.eclipse.jetty.server.handler.ContextHandlerCollection$1",
-            GoalDeployer.class.getName(),
+            DirectDeployer.class.getName(),
             DeploymentScanner.class.getName(),
             Scanner.class.getName()))
         {
@@ -283,7 +283,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
-        try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, GoalDeployer.class))
+        try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, DirectDeployer.class))
         {
             Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
 
