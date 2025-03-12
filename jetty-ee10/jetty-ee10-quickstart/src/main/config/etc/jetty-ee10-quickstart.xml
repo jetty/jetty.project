@@ -7,7 +7,7 @@
     <Arg><Property name="jetty.quickstart.mode"/></Arg>
   </Call>
 
-  <Call class="org.eclipse.jetty.util.component.Environment" name="ensure">
+  <Call class="org.eclipse.jetty.util.component.Environment" name="get">
     <Arg>ee10</Arg>
     <Call name="setAttribute">
       <Arg>org.eclipse.jetty.quickstart.mode</Arg>

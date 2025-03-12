@@ -136,8 +136,8 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
 
                 // Wait for reload to start context
                 assertTrue(run2.awaitConsoleLogsFor(logToSearch, START_TIMEOUT, TimeUnit.SECONDS));
-                // wait for deployer node to complete so context is Started not Starting
-                assertTrue(run2.awaitConsoleLogsFor("Executing Node Node[started]", START_TIMEOUT, TimeUnit.SECONDS));
+                // wait for deployer to complete so context is Started
+                assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");
