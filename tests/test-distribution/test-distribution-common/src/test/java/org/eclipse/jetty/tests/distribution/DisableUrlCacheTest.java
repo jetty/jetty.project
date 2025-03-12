@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -28,12 +27,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +134,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 // Wait for reload to start context
                 assertTrue(run2.awaitConsoleLogsFor(logToSearch, START_TIMEOUT, TimeUnit.SECONDS));
                 // wait for deployer to complete so context is Started
-                assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oej%sw.WebAppContext@".formatted(env.substring(1)), START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");
