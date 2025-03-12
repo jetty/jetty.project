@@ -43,7 +43,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
     private final ContextHandlerCollection _contexts;
-    private final boolean _startBeforeRedeploy;
+    private final boolean _atomicRedeploy;
     private final ListenerAdaptor _listenerAdaptor;
 
     /**
@@ -51,18 +51,19 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
      */
     public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
-        this(contexts, false);
+        this(contexts, true);
     }
 
     /**
      * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
-     * @param startBeforeRedeploy If {@code true}, the new handler is started before a redeploy.
+     * @param atomicRedeploy If {@code true}, the new handler is deployed before undeploying the old handler
+     *                       This may result in instances of the same application running at the same time.
      */
     public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts,
-                          @Name("startBeforeRedeploy") boolean startBeforeRedeploy)
+                          @Name("atomicRedeploy") boolean atomicRedeploy)
     {
         _contexts = requireNonNull(contexts);
-        _startBeforeRedeploy = startBeforeRedeploy;
+        _atomicRedeploy = atomicRedeploy;
         installBean(_contexts, false);
         _listenerAdaptor = new ListenerAdaptor(_contexts);
         _contexts.addEventListener(_listenerAdaptor);
@@ -139,14 +140,14 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
             newContextHandler.addEventListener(_listenerAdaptor);
             _listenerAdaptor.notify(newContextHandler, Deployer.Listener::onCreated);
 
-            if (_startBeforeRedeploy && _contexts.isRunning())
+            if (_atomicRedeploy && _contexts.isRunning())
                 newContextHandler.start();
 
             Callback.Completable blocker = new Callback.Completable();
             _contexts.redeployHandler(oldHandler, newContextHandler, blocker);
             blocker.get();
 
-            if (!_startBeforeRedeploy && _contexts.isRunning())
+            if (!_atomicRedeploy && _contexts.isRunning())
                 newContextHandler.start();
             _contexts.manage(newContextHandler);
         }
@@ -192,7 +193,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     @Override
     public String toString()
     {
-        return "%s@%x{contexts=%s,sbrd=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _startBeforeRedeploy);
+        return "%s@%x{contexts=%s,sbrd=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _atomicRedeploy);
     }
 
     private static class ListenerAdaptor implements LifeCycle.Listener, Container.Listener

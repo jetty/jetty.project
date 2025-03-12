@@ -8,6 +8,7 @@
     <Arg>
       <New id="Deployer" class="org.eclipse.jetty.deploy.DirectDeployer">
         <Arg name="contexts"><Ref refid="Contexts"/></Arg>
+        <Arg name="atomicRedeploy" type="boolean"><Property name="jetty.deploy.atomicRedeploy" default="true"/></Arg>
       </New>
     </Arg>
   </Call>
