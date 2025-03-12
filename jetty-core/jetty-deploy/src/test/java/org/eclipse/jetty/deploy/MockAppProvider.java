@@ -19,17 +19,22 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Environment;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
+    private final String environmentName;
     private DeploymentManager deployMan;
     private Path webappsDir;
+
+    public MockAppProvider(String environmentName)
+    {
+        this.environmentName = environmentName;
+    }
 
     @Override
     public String getEnvironmentName()
     {
-        return Environment.ensure("mock").getName();
+        return environmentName;
     }
 
     @Override

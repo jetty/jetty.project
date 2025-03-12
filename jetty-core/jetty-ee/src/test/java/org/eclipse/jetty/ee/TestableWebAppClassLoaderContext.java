@@ -31,19 +31,12 @@ public class TestableWebAppClassLoaderContext implements WebAppClassLoader.Conte
     private ClassMatcher hiddenClassMatcher;
     private List<Resource> extraClasspath;
 
-    public static void initEnvironment()
-    {
-        Environment environment = Environment.ensure("testable");
-        environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, "");
-        environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, "");
-    }
-
-    public TestableWebAppClassLoaderContext(ResourceFactory resourceFactory)
+    public TestableWebAppClassLoaderContext(ResourceFactory resourceFactory, String environmentName)
     {
         this.resourceFactory = resourceFactory;
-        Environment environment = Environment.get("testable");
-        if (environment == null)
-            throw new IllegalStateException("The [testable] Environment hasn't been configured yet");
+        Environment environment = Environment.create(environmentName, null);
+        environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, "");
+        environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, "");
 
         this.protectedClassMatcher = new ClassMatcher(WebAppClassLoading.getProtectedClasses(environment));
         this.hiddenClassMatcher = new ClassMatcher(WebAppClassLoading.getHiddenClasses(environment));

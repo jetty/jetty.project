@@ -133,7 +133,7 @@ import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee11");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee11", ServletContextHandler.class);
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */
