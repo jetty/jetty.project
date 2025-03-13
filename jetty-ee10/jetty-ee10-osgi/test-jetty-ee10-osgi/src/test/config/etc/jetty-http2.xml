@@ -5,20 +5,14 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
-        <Arg name="config">
-          <Ref refid="sslHttpConfig" />
-        </Arg>
-        <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams" />
-        <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow" />
-        <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow" />
-        <Set name="maxSettingsKeys">
-          <Property name="jetty.http2.maxSettingsKeys" default="64" />
-        </Set>
+        <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+        <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow"/>
+        <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
+        <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
         <Set name="rateControlFactory">
           <New class="org.eclipse.jetty.http2.WindowRateControl$Factory">
-            <Arg type="int">
-              <Property name="jetty.http2.rateControl.maxEventsPerSecond" default="50" />
-            </Arg>
+            <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="50"/></Arg>
           </New>
         </Set>
       </New>
@@ -27,7 +21,7 @@
 
   <Ref refid="sslContextFactory">
     <Set name="CipherComparator">
-      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR" />
+      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
     </Set>
     <Set name="useCipherSuitesOrder">true</Set>
   </Ref>

@@ -44,6 +44,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-keystore</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
     <dependency>
@@ -235,21 +239,6 @@
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-atinject_1.0_spec</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.conscrypt</groupId>
-      <artifactId>conscrypt-openjdk-uber</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -539,11 +528,8 @@
               <!-- uncomment to be able to use jetty logging -->
               <!-- pax.exam.system>default</pax.exam.system -->
             </systemPropertyVariables>
-            <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->
             <excludes>
-              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
-              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
               <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
             </excludes>
           </configuration>
