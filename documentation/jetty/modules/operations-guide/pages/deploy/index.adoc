@@ -228,6 +228,8 @@ The order in which they are applied is determined by _the name of the properties
 
 IMPORTANT: The contents of the environment specific context XML file may only contain references to classes appropriate for that environment.
 
+The `core-environment`, `ee8-environment`, ..., and `{ee-current}-environment` modules, each create template configuration files for the appropriate environment in the `$JETTY_BASE/environments/` directory.
+
 For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and its accompanying `$JETTY_BASE/webapps/wiki.properties` file that declares the `wiki` webapp should be deployed to environment `{ee-current}`, files called `$JETTY_BASE/webapps/{ee-current}.properties` and `$JETTY_BASE/webapps/{ee-current}-feature.properties` can be defined to further configure the webapp.
 
 The `{ee-current}.properties` file contains:
