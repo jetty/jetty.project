@@ -238,7 +238,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         @Name("filenameFilter") FilenameFilter filter,
         @Name("contextHandlerFactory") ContextHandlerFactory contextHandlerFactory)
     {
-        this.contextHandlerFactory = contextHandlerFactory == null ? new PathsContextHandlerFactory() : contextHandlerFactory;
+        this.contextHandlerFactory = contextHandlerFactory == null ? new StandardContextHandlerFactory() : contextHandlerFactory;
         installBean(this.contextHandlerFactory);
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
@@ -641,7 +641,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 Collection<ContextHandlerCollection> chcs = server.getContainedBeans(ContextHandlerCollection.class);
                 if (chcs.size() == 1)
                 {
-                    deployer = new DirectDeployer(chcs.iterator().next());
+                    deployer = new StandardDeployer(chcs.iterator().next());
                     addBean(deployer, true);
                     LifeCycle.start(deployer);
                 }
@@ -822,7 +822,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
                         envXmlPaths.sort(PathCollators.byName(true));
-                        PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
+                        StandardContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
@@ -858,7 +858,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
                         envXmlPaths.sort(PathCollators.byName(true));
-                        PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
+                        StandardContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
@@ -1190,7 +1190,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param classname the classname for this environment's context deployable.
-         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_ATTRIBUTE
+         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
         public void setContextHandlerClass(String classname)
         {
@@ -1207,7 +1207,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param classname the default classname for this environment's context deployable.
-         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
+         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
          */
         public void setDefaultContextHandlerClass(String classname)
         {

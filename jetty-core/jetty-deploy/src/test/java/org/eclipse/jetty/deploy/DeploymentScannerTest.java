@@ -51,7 +51,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
 
         public AssertActionListDeploymentScanner()
         {
-            super(new Server(), new DirectDeployer(new ContextHandlerCollection()));
+            super(new Server(), new StandardDeployer(new ContextHandlerCollection()));
         }
 
         @Override

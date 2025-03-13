@@ -29,11 +29,11 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DirectDeployerTest extends AbstractCleanEnvironmentTest
+public class StandardDeployerTest extends AbstractCleanEnvironmentTest
 {
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
-    private final DirectDeployer deployer = new DirectDeployer(contexts, true);
+    private final StandardDeployer deployer = new StandardDeployer(contexts, true);
     private final ContextHandler context = new ContextHandler("/context");
 
     private final List<String> history = new CopyOnWriteArrayList<>();

@@ -27,7 +27,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.deploy.DeploymentScanner;
-import org.eclipse.jetty.deploy.DirectDeployer;
+import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
@@ -69,11 +69,11 @@ public class DeploymentErrorTest
 
     private StacklessLogging stacklessLogging;
     private Server server;
-    private DirectDeployer deployer;
+    private StandardDeployer deployer;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
-        stacklessLogging = new StacklessLogging(WebAppContext.class, DirectDeployer.class, NoClassDefFoundError.class);
+        stacklessLogging = new StacklessLogging(WebAppContext.class, StandardDeployer.class, NoClassDefFoundError.class);
 
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -87,7 +87,7 @@ public class DeploymentErrorTest
         ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee11.webapp.WebAppContext");
 
         // Deployment Manager
-        deployer = new DirectDeployer(contexts);
+        deployer = new StandardDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -211,7 +211,7 @@ public class DeploymentErrorTest
 
         String contextPath = "/badapp";
         AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
-        DirectDeployer deployer = server.getBean(DirectDeployer.class);
+        StandardDeployer deployer = server.getBean(StandardDeployer.class);
         deployer.addEventListener(startTracking);
 
         copyBadApp("badapp.xml", docroots);
@@ -256,7 +256,7 @@ public class DeploymentErrorTest
 
         String contextPath = "/badapp-uaf";
         AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
-        DirectDeployer deployer = server.getBean(DirectDeployer.class);
+        StandardDeployer deployer = server.getBean(StandardDeployer.class);
         deployer.addEventListener(startTracking);
 
         copyBadApp("badapp-unavailable-false.xml", docroots);
@@ -298,7 +298,7 @@ public class DeploymentErrorTest
         }
     }
 
-    private List<ContextHandler> getContextHandlers(DirectDeployer deployer)
+    private List<ContextHandler> getContextHandlers(StandardDeployer deployer)
     {
         return deployer.getContexts().getHandlers().stream()
             .filter(h -> (h instanceof ContextHandler))

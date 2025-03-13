@@ -109,8 +109,8 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
 
             server.addEventListener(eventCaptureListener);
 
-            DirectDeployer deployer = server.getBean(DirectDeployer.class);
-            assertNotNull(deployer, "Should have found DirectDeployer");
+            StandardDeployer deployer = server.getBean(StandardDeployer.class);
+            assertNotNull(deployer, "Should have found StandardDeployer");
             DeploymentScanner defaultProvider = server.getBean(DeploymentScanner.class);
             assertNotNull(defaultProvider, "Should have found DeploymentScanner");
             assertTrue(defaultProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");

@@ -6,7 +6,7 @@
   <Get id="Environment" class="org.eclipse.jetty.ee9.nested.ContextHandler" name="ENVIRONMENT"/>
   <Call name="addBean">
     <Arg>
-      <New id="Deployer" class="org.eclipse.jetty.deploy.DirectDeployer">
+      <New id="Deployer" class="org.eclipse.jetty.deploy.StandardDeployer">
         <Arg name="contexts"><Ref refid="contexts"/></Arg>
 
         <Call name="addBean">

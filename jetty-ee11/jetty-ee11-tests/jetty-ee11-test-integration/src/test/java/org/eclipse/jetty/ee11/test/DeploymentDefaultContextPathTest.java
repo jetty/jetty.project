@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
-import org.eclipse.jetty.deploy.DirectDeployer;
+import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -58,7 +58,7 @@ public class DeploymentDefaultContextPathTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        DirectDeployer deployer = new DirectDeployer(contexts);
+        StandardDeployer deployer = new StandardDeployer(contexts);
         server.addBean(deployer);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);

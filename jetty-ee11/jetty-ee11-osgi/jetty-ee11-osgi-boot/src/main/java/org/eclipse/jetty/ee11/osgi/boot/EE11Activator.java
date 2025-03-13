@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.DirectDeployer;
+import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
@@ -131,7 +131,7 @@ public class EE11Activator implements BundleActivator
                 server.setAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES, contributedBundles);
             }
 
-            Optional<DirectDeployer> serverDeployer = getDeployer(server);
+            Optional<StandardDeployer> serverDeployer = getDeployer(server);
             BundleWebAppProvider webAppProvider = null;
             BundleContextProvider contextProvider = null;
 
@@ -145,7 +145,7 @@ public class EE11Activator implements BundleActivator
 
             if (serverDeployer.isPresent())
             {
-                DirectDeployer deployer = serverDeployer.get();
+                StandardDeployer deployer = serverDeployer.get();
 
                 Collection<AbstractContextProvider> osgiProviders = deployer.getBeans(AbstractContextProvider.class);
 
@@ -209,9 +209,9 @@ public class EE11Activator implements BundleActivator
         {
         }
 
-        private Optional<DirectDeployer> getDeployer(Server server)
+        private Optional<StandardDeployer> getDeployer(Server server)
         {
-            Collection<DirectDeployer> deployers = server.getBeans(DirectDeployer.class);
+            Collection<StandardDeployer> deployers = server.getBeans(StandardDeployer.class);
             return deployers.stream().findFirst();
         }
 

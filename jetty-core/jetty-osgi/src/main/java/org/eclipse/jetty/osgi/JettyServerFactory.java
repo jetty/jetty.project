@@ -27,7 +27,7 @@ import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.Deployer;
-import org.eclipse.jetty.deploy.DirectDeployer;
+import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -173,7 +173,7 @@ public class JettyServerFactory
             }
 
             //ensure a deployer
-            DirectDeployer deployer = ensureDeployer(server);
+            StandardDeployer deployer = ensureDeployer(server);
             deployer.addEventListener(new OSGiDeploymentListener());
 
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
@@ -204,23 +204,23 @@ public class JettyServerFactory
         }
     }
 
-    private static DirectDeployer ensureDeployer(Server server)
+    private static StandardDeployer ensureDeployer(Server server)
    {
        Collection<Deployer> deployers = server.getBeans(Deployer.class);
-       DirectDeployer deployer = null;
+       StandardDeployer deployer = null;
 
        if (deployers != null)
        {
            deployer = deployers.stream()
-               .filter(d -> (d instanceof DirectDeployer))
-               .map(DirectDeployer.class::cast)
+               .filter(d -> (d instanceof StandardDeployer))
+               .map(StandardDeployer.class::cast)
                .findFirst()
                .orElse(null);
        }
 
        if (deployer == null)
        {
-           deployer = new DirectDeployer(getContextHandlerCollection(server));
+           deployer = new StandardDeployer(getContextHandlerCollection(server));
            server.addBean(deployer);
        }
 

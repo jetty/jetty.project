@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Creates a {@link ContextHandler} from a WAR file and/or one or more XML files and property files.
  */
-public class PathsContextHandlerFactory implements ContextHandlerFactory
+public class StandardContextHandlerFactory implements ContextHandlerFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardContextHandlerFactory.class);
 
     private static Map<String, String> asProperties(Attributes attributes)
     {
@@ -175,8 +175,8 @@ public class PathsContextHandlerFactory implements ContextHandlerFactory
                     }
                     else
                     {
-                        PathsContextHandlerFactory.this.initializeContextPath(contextHandler, xml, attributes);
-                        PathsContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
+                        StandardContextHandlerFactory.this.initializeContextPath(contextHandler, xml, attributes);
+                        StandardContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
                     }
                 }
             };

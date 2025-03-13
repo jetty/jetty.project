@@ -87,7 +87,7 @@
 
   <Call name="addBean">
     <Arg>
-      <New id="Deployer" class="org.eclipse.jetty.deploy.DirectDeployer">
+      <New id="Deployer" class="org.eclipse.jetty.deploy.StandardDeployer">
         <Arg name="contexts"><Ref refid="Contexts" /></Arg>
 
         <Call name="addBean">

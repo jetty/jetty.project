@@ -39,9 +39,9 @@ import static java.util.Objects.requireNonNull;
  * a {@link ContextHandler} directly to the {@link ContextHandlerCollection} and {@link LifeCycle#start() start} it if
  * appropriate.
  */
-public class DirectDeployer extends ContainerLifeCycle implements Deployer
+public class StandardDeployer extends ContainerLifeCycle implements Deployer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardDeployer.class);
     private final ContextHandlerCollection _contexts;
     private final boolean _atomicRedeploy;
     private final ListenerAdaptor _listenerAdaptor;
@@ -49,7 +49,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     /**
      * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
      */
-    public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts)
+    public StandardDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
         this(contexts, true);
     }
@@ -59,8 +59,8 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
      * @param atomicRedeploy If {@code true}, the new handler is deployed before undeploying the old handler
      *                       This may result in instances of the same application running at the same time.
      */
-    public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts,
-                          @Name("atomicRedeploy") boolean atomicRedeploy)
+    public StandardDeployer(@Name("contexts") ContextHandlerCollection contexts,
+                            @Name("atomicRedeploy") boolean atomicRedeploy)
     {
         _contexts = requireNonNull(contexts);
         _atomicRedeploy = atomicRedeploy;

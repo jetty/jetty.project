@@ -24,10 +24,11 @@ The Jetty Web Application Deployment mechanism provides for:
 Jetty supports the deployment of each web application to a specific _environment_.
 The available environments are:
 
+ * Jetty Core -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
  * Java EE 8 -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
  * Jakarta EE 9 -- Supports Servlet 5.0 (and associated specifications) in the `+jakarta.*+` packages.
- * Jakarta EE 10 -- Supports Servlet 6.0 (and associated specifications) in the `+jakarta.*+` packages.
- * Jetty Core -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
+ * ...
+ * Jakarta {ee-current-caps} -- Supports latest Servlet (and associated specifications) in the `+jakarta.*+` packages.
 
 This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, say `app-jetty.xml`.
 
@@ -39,13 +40,12 @@ For each specific environment there is a specific deploy module that also must b
 
  * For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
  * For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
- * For Java EE 9, xref:modules/standard.adoc#eeN-deploy[`ee9-deploy`]
- * For Java {ee-current-caps}, xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy`]
+ * ...
+ * For Jakarta {ee-current-caps}, xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy`]
 
 Each of these modules provide the environment specific features, and depend on the `deploy` module that provides the scanning features.
 
-By default, deployment uses the `deployer-goal` module, which provides the `GoalDeployer`, which is used by the scanner to deploy individual Web Applications in a way that allows actions to be bound to deployment trigger points in a defined deployment lifecycle.    If instead, the `deployer-direct` module is explicitly enabled, then the `DirectDeployer` will be used to directly add deployed Web Applications to the `ContextHandlerCollection` using only the standard jetty util `LifeCycle`.
-
+By default, deployment uses the `deployer-standard` module, which provides the `StandardDeployer`, which is used by the scanner to deploy individual Web Applications in a way that allows listeners to be bound to deployment trigger points in a defined deployment lifecycle.
 
 [[hot-static]]
 == Hot vs Static Deployment
@@ -139,7 +139,7 @@ This unspecified deployment may not work as the EE 9 web application may use API
 
 A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
 
-NOTE: Recall that the `DeploymentScanner` component of the Jetty `deploy` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
+NOTE: Recall that the `DeploymentScanner` component of the Jetty `deployment-scanner` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
 
 To deploy a web application using a Jetty context XML file, simply place the file in the `$JETTY_BASE/webapps` directory.
 
