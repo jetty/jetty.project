@@ -16,6 +16,7 @@ http2
 test-keystore
 work
 demo-root
+ee10-environment
 ee10-demo-async-rest
 ee10-demo-jaas
 ee10-demo-jetty

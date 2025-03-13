@@ -17,3 +17,4 @@ test-keystore
 work
 demo-root
 demo-moved-context
+core-environment

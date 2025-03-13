@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+  <!-- Configuration for applications in EE9 Environment -->
+</Configure>

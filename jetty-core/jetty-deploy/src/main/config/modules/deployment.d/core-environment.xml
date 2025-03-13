@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.server.handler.ContextHandler">
+  <!-- Configuration for applications in Core Environment -->
+</Configure>
