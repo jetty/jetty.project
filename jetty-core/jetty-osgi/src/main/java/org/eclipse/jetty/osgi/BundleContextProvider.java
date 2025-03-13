@@ -105,9 +105,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
-    public BundleContextProvider(Server server, Deployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleContextProvider(Server server, Deployer deployer, String environment, ContextFactory contextFactory)
     {
-        super(server, contextHandlerManagement, environment, contextFactory);
+        super(server, deployer, environment, contextFactory);
     }
 
     @Override

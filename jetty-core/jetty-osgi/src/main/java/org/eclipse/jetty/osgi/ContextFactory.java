@@ -20,5 +20,5 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  */
 public interface ContextFactory
 {
-    ContextHandler createContextHandler(AbstractContextProvider provider, BundleMetadata osgiBundleDeployment) throws Exception;
+    ContextHandler createContextHandler(AbstractContextProvider provider, BundleMetadata bundleMetadata) throws Exception;
 }

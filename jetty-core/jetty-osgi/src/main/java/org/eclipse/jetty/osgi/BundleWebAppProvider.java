@@ -95,9 +95,9 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
     }
 
-    public BundleWebAppProvider(Server server, Deployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleWebAppProvider(Server server, Deployer deployer, String environment, ContextFactory contextFactory)
     {
-        super(server, contextHandlerManagement, environment, contextFactory);
+        super(server, deployer, environment, contextFactory);
     }
 
     @Override

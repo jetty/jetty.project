@@ -40,10 +40,10 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
     private String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
 
-    public AbstractContextProvider(Server server, Deployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public AbstractContextProvider(Server server, Deployer deployer, String environment, ContextFactory contextFactory)
     {
         _server = server;
-        _deployer = contextHandlerManagement;
+        _deployer = deployer;
         _environment = Objects.requireNonNull(environment);
         _contextFactory = Objects.requireNonNull(contextFactory);
     }
