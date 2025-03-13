@@ -1,4 +1,10 @@
-jetty-11.0.25-SNAPSHOT
+jetty-11.0.25 - 12 March 2025
+ + 12268 `IteratingCallback` may iterate too much when `process()` returns
+   Action.IDLE
+ + 12776 ByteBufferPool - all ongoing requests fail when single request is
+   cancelled on HTTP/2
+ + 12821 Better document ContextHandler.setCompactPath(boolean) deprecation
+ + 12869 XmlConfiguration shouldn't treat non-XML command line options as XML
 
 jetty-11.0.24 - 26 August 2024
  + 12201 backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
