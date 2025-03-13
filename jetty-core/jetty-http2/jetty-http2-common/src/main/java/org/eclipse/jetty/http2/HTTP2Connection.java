@@ -435,7 +435,15 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             {
                 try (AutoLock ignore = lock.lock())
                 {
-                    if (networkBuffer.isRetained() && this.heldBuffer != RELEASE_MARKER && !shutdown)
+                    // There is a race between the producer thread and the one executing user code:
+                    // this finally block may execute before or after releaseHeldBuffer() and
+                    // the last thread must be the one doing the release. If heldBuffer contains
+                    // the release marker, this means the producer thread lost the race, and we
+                    // must release the buffer here to avoid leaving a buffer at rest out of the pool.
+                    // Note that networkBuffer.isRetained() is always true if the parser generated a
+                    // data frame as the networkBuffer has been sliced to create the data frame
+                    // and the latter is waiting in a queue for the user code to read it.
+                    if (networkBuffer.isRetained() && heldBuffer != RELEASE_MARKER && !shutdown)
                     {
                         lockedHoldBuffer(networkBuffer);
                     }
@@ -465,14 +473,20 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         {
             try (AutoLock ignore = lock.lock())
             {
-                LOG.info("releaseHeldBuffer networkBuffer={} heldBuffer={}", networkBuffer, heldBuffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("releaseHeldBuffer networkBuffer={} heldBuffer={}", networkBuffer, heldBuffer);
                 RetainableByteBuffer.Mutable held = heldBuffer;
                 if (held == null)
                 {
+                    // If no buffer is held and the networkBuffer did not change since acquisition, it means
+                    // the user thread won the race, so it must leave a marker to tell the producer thread to release
+                    // instead of holding onto the buffer.
                     heldBuffer = HTTP2Producer.RELEASE_MARKER;
                 }
                 else
                 {
+                    // If a buffer is still held, it means the producer thread won the race and the user thread
+                    // must release the held buffer to avoid leaving a buffer at rest out of the pool.
                     held.release();
                     heldBuffer = null;
                 }
@@ -484,6 +498,10 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             assert lock.isHeldByCurrentThread();
 
             RetainableByteBuffer.Mutable buffer = heldBuffer;
+            // This can happen when re-acquiring a buffer while the user thread won the release race;
+            // release is done by the re-acquisition so we can safely ignore the release marker.
+            if (buffer == RELEASE_MARKER)
+                buffer = null;
             heldBuffer = null;
             RetainableByteBuffer.Mutable held = buffer;
             if (buffer == null)
