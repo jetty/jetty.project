@@ -65,7 +65,7 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
         jetty = new XmlConfiguredJetty(realBase);
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
-        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployer.xml"));
+        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployer-standard.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 
