@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.nio.channels.ReadPendingException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.slf4j.Logger;
@@ -31,11 +34,10 @@ public abstract class ContentSourceTransformer implements Content.Source
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContentSourceTransformer.class);
 
+    private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Content.Source rawSource;
-    private Content.Chunk rawChunk;
-    private Content.Chunk transformedChunk;
+    private volatile Content.Chunk rawChunk;
     private volatile boolean needsRawRead;
-    private boolean finished;
 
     protected ContentSourceTransformer(Content.Source rawSource)
     {
@@ -48,11 +50,41 @@ public abstract class ContentSourceTransformer implements Content.Source
         return rawSource;
     }
 
+    private Content.Chunk beforeRead()
+    {
+        while (true)
+        {
+            State current = state.get();
+            switch (current.type)
+            {
+                case IDLE ->
+                {
+                    if (state.compareAndSet(current, State.READING))
+                        return null;
+                }
+                case READING -> throw new ReadPendingException();
+                case EOF ->
+                {
+                    return Content.Chunk.EOF;
+                }
+                case FAILING -> throw new IllegalStateException();
+                case FAILED ->
+                {
+                    return ((State.Failed)current).chunk;
+                }
+            }
+        }
+    }
+
     @Override
     public Content.Chunk read()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Reading {}", this);
+
+        Content.Chunk chunk = beforeRead();
+        if (chunk != null)
+            return chunk;
 
         while (true)
         {
@@ -63,31 +95,21 @@ public abstract class ContentSourceTransformer implements Content.Source
                     LOG.debug("Raw chunk {} {}", rawChunk, this);
                 needsRawRead = rawChunk == null;
                 if (rawChunk == null)
-                    return null;
+                    return afterRead(State.Type.IDLE, null);
             }
 
             if (Content.Chunk.isFailure(rawChunk))
             {
-                Content.Chunk failure = rawChunk;
-                rawChunk = Content.Chunk.next(rawChunk);
-                needsRawRead = rawChunk == null;
-                if (rawChunk != null)
-                {
-                    finished = true;
-                    release();
-                }
-                return failure;
+                Content.Chunk failureChunk = rawChunk;
+                Content.Chunk nextChunk = Content.Chunk.next(failureChunk);
+                needsRawRead = nextChunk == null;
+                afterRead(nextChunk == null ? State.Type.IDLE : State.Type.FAILED, nextChunk);
+                return failureChunk;
             }
-
-            if (Content.Chunk.isFailure(transformedChunk))
-                return transformedChunk;
-
-            if (finished)
-                return Content.Chunk.EOF;
 
             boolean rawLast = rawChunk != null && rawChunk.isLast();
 
-            transformedChunk = process(rawChunk != null ? rawChunk : Content.Chunk.EMPTY);
+            Content.Chunk transformedChunk = process(rawChunk != null ? rawChunk : Content.Chunk.EMPTY);
             if (LOG.isDebugEnabled())
                 LOG.debug("Transformed chunk {} {}", transformedChunk, this);
 
@@ -122,22 +144,68 @@ public abstract class ContentSourceTransformer implements Content.Source
                         transformedChunk = Content.Chunk.asChunk(transformedChunk.getByteBuffer(), false, transformedChunk);
                 }
 
-                boolean terminated = rawLast && transformedLast;
-                boolean terminalFailure = transformedFailure && transformedLast;
+                if (transformedFailure && transformedLast)
+                    return afterRead(State.Type.FAILED, transformedChunk);
 
-                Content.Chunk result = transformedChunk;
-                transformedChunk = Content.Chunk.next(result);
+                if (rawLast && transformedLast)
+                    return afterRead(State.Type.EOF, transformedChunk);
 
-                if (terminated || terminalFailure)
-                {
-                    finished = true;
-                    release();
-                }
-
-                return result;
+                return afterRead(State.Type.IDLE, transformedChunk);
             }
 
             needsRawRead = rawChunk == null;
+        }
+    }
+
+    private Content.Chunk afterRead(State.Type targetType, Content.Chunk chunk)
+    {
+        while (true)
+        {
+            State current = state.get();
+            switch (current.type)
+            {
+                case IDLE, EOF, FAILED -> throw new IllegalStateException();
+                case READING ->
+                {
+                    switch (targetType)
+                    {
+                        case IDLE ->
+                        {
+                            if (state.compareAndSet(current, State.IDLE))
+                                return chunk;
+                        }
+                        case FAILED ->
+                        {
+                            if (state.compareAndSet(current, new State.Failed(chunk)))
+                            {
+                                dispose(chunk.getFailure());
+                                return chunk;
+                            }
+                        }
+                        case EOF ->
+                        {
+                            if (state.compareAndSet(current, State.EOF))
+                            {
+                                release();
+                                return chunk;
+                            }
+                        }
+                        default -> throw new IllegalStateException();
+                    }
+                }
+                case FAILING ->
+                {
+                    Content.Chunk failedChunk = ((State.Failing)current).chunk;
+                    Throwable failure = failedChunk.getFailure();
+                    if (Content.Chunk.isFailure(chunk))
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, chunk.getFailure());
+                    if (state.compareAndSet(current, new State.Failed(failedChunk)))
+                    {
+                        dispose(failure);
+                        return chunk;
+                    }
+                }
+            }
         }
     }
 
@@ -158,7 +226,41 @@ public abstract class ContentSourceTransformer implements Content.Source
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Failing {}", this, failure);
+
+        while (true)
+        {
+            State current = state.get();
+            switch (current.type)
+            {
+                case IDLE ->
+                {
+                    if (state.compareAndSet(current, new State.Failed(Content.Chunk.from(failure, true))))
+                    {
+                        dispose(failure);
+                        return;
+                    }
+                }
+                case READING ->
+                {
+                    if (state.compareAndSet(current, new State.Failing(Content.Chunk.from(failure, true))))
+                        return;
+                }
+                default ->
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    private void dispose(Throwable failure)
+    {
         rawSource.fail(failure);
+        needsRawRead = false;
+        if (rawChunk != null)
+            rawChunk.release();
+        rawChunk = Content.Chunk.from(failure, true);
+        release();
     }
 
     private Content.Chunk process(Content.Chunk rawChunk)
@@ -213,14 +315,102 @@ public abstract class ContentSourceTransformer implements Content.Source
     {
     }
 
+    /**
+     * @return whether the transformation is complete, either successfully or with a failure.
+     */
+    public boolean isComplete()
+    {
+        return switch (state.get().type)
+        {
+            case EOF, FAILED -> true;
+            default -> false;
+        };
+    }
+
     @Override
     public String toString()
     {
-        return "%s@%x[finished=%b,source=%s]".formatted(
+        return "%s@%x[state=%s,source=%s]".formatted(
             getClass().getSimpleName(),
             hashCode(),
-            finished,
+            state.get(),
             rawSource
         );
+    }
+
+    /**
+     * <p>State transitions are:</p>
+     * <p>IDLE -> FAILED, when {@link #fail(Throwable)} is called</p>
+     * <p>IDLE -> READING, when {@link #read()} is called</p>
+     * <p>READING -> IDLE, when {@link #read()} returns a non-last chunk</p>
+     * <p>READING -> EOF, when {@link #read()} returns a last chunk</p>
+     * <p>READING -> FAILED, when reading from the raw source returns a failure chunk</p>
+     * <p>READING -> FAILING, when a concurrent call to {@link #fail(Throwable)} happens during a read</p>
+     * <p>FAILING -> FAILED, when just before returning, {@link #read()} detects a concurrent call to {@link #fail(Throwable)}</p>
+     *
+     */
+    private static sealed class State
+    {
+        private static final State IDLE = new Idle();
+        private static final State READING = new Reading();
+        private static final State EOF = new EOF();
+
+        private final Type type;
+
+        private State(Type type)
+        {
+            this.type = type;
+        }
+
+        private static final class Idle extends State
+        {
+            private Idle()
+            {
+                super(Type.IDLE);
+            }
+        }
+
+        private static final class Reading extends State
+        {
+            private Reading()
+            {
+                super(Type.READING);
+            }
+        }
+
+        private static final class EOF extends State
+        {
+            private EOF()
+            {
+                super(Type.EOF);
+            }
+        }
+
+        private static final class Failing extends State
+        {
+            private final Content.Chunk chunk;
+
+            private Failing(Content.Chunk chunk)
+            {
+                super(Type.FAILING);
+                this.chunk = chunk;
+            }
+        }
+
+        private static final class Failed extends State
+        {
+            private final Content.Chunk chunk;
+
+            private Failed(Content.Chunk chunk)
+            {
+                super(Type.FAILED);
+                this.chunk = chunk;
+            }
+        }
+
+        private enum Type
+        {
+            IDLE, READING, EOF, FAILING, FAILED
+        }
     }
 }

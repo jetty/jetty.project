@@ -73,14 +73,19 @@ public class TestOSGiUtil
         List<String> xmlReferences = new ArrayList<>();
 
         Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
+
+        xmlReferences.add(resolveFile(etc, "jetty-http-config.xml"));
         xmlReferences.add(resolveFile(etc, "jetty.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-http.xml"));
         if (ssl)
         {
+            options.add(CoreOptions.systemProperty("jetty.sslContext.keyStorePassword").value("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"));
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlReferences.add(resolveFile(etc, "jetty-ssl.xml"));
             xmlReferences.add(resolveFile(etc, "jetty-ssl-context.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-ssl.xml"));
             xmlReferences.add(resolveFile(etc, "jetty-alpn.xml"));
             xmlReferences.add(resolveFile(etc, "jetty-https.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-https-listener.xml"));
         }
         xmlReferences.add(resolveFile(etc, jettySelectorFileName));
         xmlReferences.add(resolveFile(etc, "jetty-deploy.xml"));

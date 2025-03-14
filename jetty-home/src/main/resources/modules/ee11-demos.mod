@@ -26,6 +26,7 @@ ee11-demo-jndi
 ee11-demo-spec
 ee11-demo-spec-6-1
 ee11-demo-jsp
+ee11-demo-jspc
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

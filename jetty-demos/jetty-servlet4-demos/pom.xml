@@ -19,6 +19,7 @@
     <module>jetty-servlet4-demo-jetty-webapp</module>
     <module>jetty-servlet4-demo-jndi-webapp</module>
     <module>jetty-servlet4-demo-jsp-webapp</module>
+    <module>jetty-servlet4-demo-jspc-webapp</module>
     <module>jetty-servlet4-demo-mock-resources</module>
     <module>jetty-servlet4-demo-simple-webapp</module>
     <module>jetty-servlet4-demo-spec</module>
