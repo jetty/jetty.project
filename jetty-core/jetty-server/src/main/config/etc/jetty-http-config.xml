@@ -13,6 +13,7 @@
   <Set name="persistentConnectionsEnabled" property="jetty.httpConfig.persistentConnectionsEnabled" />
   <Set name="requestHeaderSize" property="jetty.httpConfig.requestHeaderSize" />
   <Set name="responseHeaderSize" property="jetty.httpConfig.responseHeaderSize" />
+  <Set name="maxResponseHeaderSize" property="jetty.httpConfig.maxResponseHeaderSize" />
   <Set name="sendServerVersion" property="jetty.httpConfig.sendServerVersion" />
   <Set name="sendDateHeader" property="jetty.httpConfig.sendDateHeader" />
   <Set name="headerCacheSize" property="jetty.httpConfig.headerCacheSize" />

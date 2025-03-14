@@ -78,6 +78,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
@@ -2291,6 +2292,90 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(contentEncoding.get(), is(expected));
                 assertThat(response.getContentAsString(), containsStringIgnoringCase("Hello World"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
+    public void testEnvExtModules(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+        String[] modules = {
+            "server",
+            toEnvironment("deploy", env),
+            toEnvironment("ext", env)
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+            Path envExt = jettyBase.resolve("lib/" + env + "/ext");
+            assertTrue(Files.isDirectory(envExt));
+            Path envExtJar = envExt.resolve("empty.jar");
+            Files.createFile(envExtJar);
+            assertTrue(Files.exists(envExtJar));
+        }
+
+        // Verify that the empty.jar is listed as being on the classpath
+        try (JettyHomeTester.Run run = distribution.start(" jetty.server.dumpAfterStart=true"))
+        {
+            assertThat(run.awaitConsoleLogsFor("lib/" + env + "/ext/empty.jar", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+            run.stop();
+            assertThat(run.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), is(true));
+        }
+    }
+
+    @Test
+    public void testForwardedWithHTTP2() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=forwarded,test-keystore,http2,requestlog"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.ssl.selectors=1", "jetty.ssl.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                String forwarded = "10.1.1.1";
+
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+                startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector))));
+                URI serverUri = URI.create("https://localhost:" + port + "/");
+                ContentResponse response = client.newRequest(serverUri)
+                    .headers(h -> h.put("Forwarded", "for=" + forwarded))
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+                Path logs = distribution.getJettyBase().resolve("logs");
+                try (Stream<Path> logsPaths = Files.list(logs))
+                {
+                    List<Path> logsFiles = logsPaths.toList();
+                    assertEquals(1, logsFiles.size());
+                    List<String> logLines = await().atMost(5, TimeUnit.SECONDS).until(() ->
+                    {
+                        try (Stream<String> lines = Files.lines(logsFiles.get(0)))
+                        {
+                            return lines.toList();
+                        }
+                    }, Matchers.hasSize(1));
+                    assertThat(logLines.get(0), startsWith(forwarded));
+                }
             }
         }
     }

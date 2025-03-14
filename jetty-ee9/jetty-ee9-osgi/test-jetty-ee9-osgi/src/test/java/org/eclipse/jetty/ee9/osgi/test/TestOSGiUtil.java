@@ -13,15 +13,17 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.osgi.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
@@ -69,35 +71,53 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        File etc = new File(FS.separators("src/test/config/etc"));
-
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
+        // List of XML URI Reference strings
+        List<String> xmlReferences = new ArrayList<>();
+
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
+
+        xmlReferences.add(resolveFile(etc, "jetty-http-config.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-http.xml"));
         if (ssl)
         {
+            options.add(CoreOptions.systemProperty("jetty.sslContext.keyStorePassword").value("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"));
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
+            xmlReferences.add(resolveFile(etc, "jetty-ssl-context.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-ssl.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-alpn.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-https.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-https-listener.xml"));
         }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deploy.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        xmlReferences.add(resolveFile(etc, jettySelectorFileName));
+        xmlReferences.add(resolveFile(etc, "jetty-deploy.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Convert list of XML URI Reference to String separated by ";" (separator is not OS specific, but OSGI specific)
+        String xmlConfigLine = String.join(";", xmlReferences);
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParent().toString()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
-    
+
+    /**
+     * Resolve a file path, ensuring that it exists, returning the URI String to said path.
+     *
+     * @param base the base path to look in
+     * @param relative the relative path to resolve
+     * @return the URI String of the resolved file.
+     */
+    private static String resolveFile(Path base, String relative)
+    {
+        Path file = base.resolve(Objects.requireNonNull(relative));
+        assertTrue("Unable to find file: " + file, Files.isRegularFile(file));
+        return file.toUri().toASCIIString();
+    }
+
     public static List<Option> configurePaxExamLogging()
     {
         //sort out logging from the pax-exam environment

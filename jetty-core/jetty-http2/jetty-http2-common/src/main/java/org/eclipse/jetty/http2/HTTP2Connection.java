@@ -20,7 +20,6 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -263,8 +262,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public void onData(DataFrame frame)
     {
-        RetainableByteBuffer.Mutable networkBuffer = producer.networkBuffer;
-        session.onData(new StreamData(frame, networkBuffer));
+        session.onData(producer.newStreamData(frame));
     }
 
     @Override
@@ -325,18 +323,26 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private static final RetainableByteBuffer.Mutable STOPPED = new RetainableByteBuffer.NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
+        private static final RetainableByteBuffer.Mutable RELEASE_MARKER = new RetainableByteBuffer.NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
         private final Callback fillableCallback = new FillableCallback();
-        private final AtomicReference<RetainableByteBuffer.Mutable> heldBuffer = new AtomicReference<>();
+        private final AutoLock lock = new AutoLock();
+        private RetainableByteBuffer.Mutable heldBuffer;
         private RetainableByteBuffer.Mutable networkBuffer;
         private boolean shutdown;
         private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
-            RetainableByteBuffer.Mutable networkBuffer = acquireBuffer();
-            if (!networkBuffer.append(byteBuffer))
-                throw new IllegalStateException("overflow");
-            holdBuffer(networkBuffer);
+            try (AutoLock ignore = lock.lock())
+            {
+                RetainableByteBuffer.Mutable networkBuffer = lockedAcquireBuffer();
+                if (!networkBuffer.append(byteBuffer))
+                {
+                    networkBuffer.release();
+                    throw new IllegalStateException("overflow");
+                }
+                lockedHoldBuffer(networkBuffer);
+            }
         }
 
         @Override
@@ -352,7 +358,11 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 return null;
 
             boolean interested = false;
-            networkBuffer = acquireBuffer();
+            RetainableByteBuffer.Mutable networkBuffer;
+            try (AutoLock ignore = lock.lock())
+            {
+                this.networkBuffer = networkBuffer = lockedAcquireBuffer();
+            }
             try
             {
                 boolean parse = networkBuffer.hasRemaining();
@@ -391,7 +401,10 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Released retained {}", networkBuffer);
                             networkBuffer.release();
-                            networkBuffer = acquireBuffer();
+                            try (AutoLock ignore = lock.lock())
+                            {
+                                this.networkBuffer = networkBuffer = lockedAcquireBuffer();
+                            }
                         }
                     }
 
@@ -420,25 +433,76 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             }
             finally
             {
-                if (networkBuffer.isRetained() && !shutdown)
+                try (AutoLock ignore = lock.lock())
                 {
-                    holdBuffer(networkBuffer);
+                    // There is a race between the producer thread and the one executing user code:
+                    // this finally block may execute before or after releaseHeldBuffer() and
+                    // the last thread must be the one doing the release. If heldBuffer contains
+                    // the release marker, this means the producer thread lost the race, and we
+                    // must release the buffer here to avoid leaving a buffer at rest out of the pool.
+                    // Note that networkBuffer.isRetained() is always true if the parser generated a
+                    // data frame as the networkBuffer has been sliced to create the data frame
+                    // and the latter is waiting in a queue for the user code to read it.
+                    if (networkBuffer.isRetained() && heldBuffer != RELEASE_MARKER && !shutdown)
+                    {
+                        lockedHoldBuffer(networkBuffer);
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Released after process {}", networkBuffer);
+                        networkBuffer.release();
+                    }
+                    this.networkBuffer = null;
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Released after process {}", networkBuffer);
-                    networkBuffer.release();
-                }
-                networkBuffer = null;
+
                 if (interested)
                     fillInterested(fillableCallback);
             }
         }
 
-        private RetainableByteBuffer.Mutable acquireBuffer()
+        private StreamData newStreamData(DataFrame frame)
         {
-            RetainableByteBuffer.Mutable buffer = heldBuffer.getAndSet(null);
+            try (AutoLock ignore = lock.lock())
+            {
+                return new StreamData(frame, networkBuffer, this::releaseHeldBuffer);
+            }
+        }
+
+        private void releaseHeldBuffer()
+        {
+            try (AutoLock ignore = lock.lock())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("releaseHeldBuffer networkBuffer={} heldBuffer={}", networkBuffer, heldBuffer);
+                RetainableByteBuffer.Mutable held = heldBuffer;
+                if (held == null)
+                {
+                    // If no buffer is held and the networkBuffer did not change since acquisition, it means
+                    // the user thread won the race, so it must leave a marker to tell the producer thread to release
+                    // instead of holding onto the buffer.
+                    heldBuffer = HTTP2Producer.RELEASE_MARKER;
+                }
+                else
+                {
+                    // If a buffer is still held, it means the producer thread won the race and the user thread
+                    // must release the held buffer to avoid leaving a buffer at rest out of the pool.
+                    held.release();
+                    heldBuffer = null;
+                }
+            }
+        }
+
+        private RetainableByteBuffer.Mutable lockedAcquireBuffer()
+        {
+            assert lock.isHeldByCurrentThread();
+
+            RetainableByteBuffer.Mutable buffer = heldBuffer;
+            // This can happen when re-acquiring a buffer while the user thread won the release race;
+            // release is done by the re-acquisition so we can safely ignore the release marker.
+            if (buffer == RELEASE_MARKER)
+                buffer = null;
+            heldBuffer = null;
             RetainableByteBuffer.Mutable held = buffer;
             if (buffer == null)
                 buffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
@@ -447,16 +511,19 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             return buffer;
         }
 
-        private void holdBuffer(RetainableByteBuffer.Mutable buffer)
+        private void lockedHoldBuffer(RetainableByteBuffer.Mutable buffer)
         {
-            if (heldBuffer.compareAndSet(null, buffer))
+            assert lock.isHeldByCurrentThread();
+
+            if (heldBuffer == null)
             {
+                heldBuffer = buffer;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Held {} in {}", buffer, HTTP2Connection.this);
             }
             else
             {
-                if (heldBuffer.get() == STOPPED)
+                if (heldBuffer == STOPPED)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Released instead of holding {}", buffer);
@@ -471,12 +538,16 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
         private void stop()
         {
-            RetainableByteBuffer.Mutable buffer = heldBuffer.getAndSet(STOPPED);
-            if (buffer != null)
+            try (AutoLock ignore = lock.lock())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released in stop {}", buffer);
-                buffer.release();
+                RetainableByteBuffer.Mutable buffer = heldBuffer;
+                heldBuffer = STOPPED;
+                if (buffer != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Released in stop {}", buffer);
+                    buffer.release();
+                }
             }
         }
 
@@ -511,11 +582,13 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     private static class StreamData extends Stream.Data
     {
         private final Retainable retainable;
+        private final Runnable releaser;
 
-        private StreamData(DataFrame frame, Retainable retainable)
+        private StreamData(DataFrame frame, Retainable retainable, Runnable releaser)
         {
             super(frame);
             this.retainable = retainable;
+            this.releaser = releaser;
         }
 
         @Override
@@ -539,7 +612,10 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         @Override
         public boolean release()
         {
-            return retainable.release();
+            boolean released = retainable.release();
+            if (!released && !isRetained())
+                releaser.run();
+            return released;
         }
     }
 }

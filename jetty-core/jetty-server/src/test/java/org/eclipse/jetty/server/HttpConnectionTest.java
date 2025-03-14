@@ -91,6 +91,7 @@ public class HttpConnectionTest
 
         httpConfig.setRequestHeaderSize(1024);
         httpConfig.setResponseHeaderSize(1024);
+        httpConfig.setMaxResponseHeaderSize(1024);
         httpConfig.setSendDateHeader(true);
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
 
@@ -1171,8 +1172,6 @@ public class HttpConnectionTest
     @Test
     public void testOversizedResponse() throws Exception
     {
-        httpConfig.setMaxResponseHeaderSize(httpConfig.getResponseHeaderSize());
-
         String str = "thisisastringthatshouldreachover1kbytes-";
         for (int i = 0; i < 500; i++)
         {
@@ -1211,7 +1210,7 @@ public class HttpConnectionTest
     @Test
     public void testAllowedLargeResponse() throws Exception
     {
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setResponseHeaderSize(16 * 1024);
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMaxResponseHeaderSize(16 * 1024);
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setOutputBufferSize(8 * 1024);
 
         byte[] bytes = new byte[12 * 1024];

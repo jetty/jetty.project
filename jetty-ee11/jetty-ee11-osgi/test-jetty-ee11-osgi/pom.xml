@@ -234,21 +234,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.conscrypt</groupId>
-      <artifactId>conscrypt-openjdk-uber</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-client</artifactId>
       <scope>test</scope>
@@ -305,6 +290,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee11</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee11</classifier>
       <scope>test</scope>
@@ -545,11 +537,8 @@
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
-            <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->
             <excludes>
-              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
-              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
               <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
             </excludes>
           </configuration>

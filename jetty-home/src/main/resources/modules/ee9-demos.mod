@@ -24,6 +24,7 @@ ee9-demo-rewrite
 ee9-demo-jndi
 ee9-demo-spec
 ee9-demo-jsp
+ee9-demo-jspc
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

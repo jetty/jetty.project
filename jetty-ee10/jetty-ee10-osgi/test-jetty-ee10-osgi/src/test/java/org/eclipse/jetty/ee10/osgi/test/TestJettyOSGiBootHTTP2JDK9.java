@@ -60,7 +60,7 @@ public class TestJettyOSGiBootHTTP2JDK9
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
         
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2-jdk9.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
             "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -69,13 +69,12 @@ public class TestJettyOSGiBootHTTP2JDK9
 
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        //deploy a test webapp
+        //deploy a test webapp and the http2 clients
         options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-jsp-webapp").classifier("webbundle-ee10").versionAsInProject());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client-transport").versionAsInProject().start());
-
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }
@@ -84,11 +83,9 @@ public class TestJettyOSGiBootHTTP2JDK9
     {
         List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
-
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-alpn").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
-
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-hpack").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-server").versionAsInProject().start());
@@ -129,7 +126,7 @@ public class TestJettyOSGiBootHTTP2JDK9
             httpClient.setExecutor(executor);
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:" + port + "/ee10-demo-jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/servlet5-demo-jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
         }
