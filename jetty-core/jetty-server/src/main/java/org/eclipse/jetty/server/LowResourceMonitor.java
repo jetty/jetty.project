@@ -103,7 +103,9 @@ public class LowResourceMonitor extends ContainerLifeCycle
                 addLowResourceCheck(new ConnectorsThreadPoolLowResourceCheck());
         }
         else
+        {
             getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
+        }
     }
 
     @ManagedAttribute("The reasons the monitored connectors are low on resources")
