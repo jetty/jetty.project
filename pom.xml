@@ -1801,6 +1801,30 @@
         <groupId>io.github.olamy.maven.plugins</groupId>
         <artifactId>jacoco-aggregator-maven-plugin</artifactId>
         <version>1.0.0</version>
+        <configuration>
+          <excludes>
+            <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/com/oracle/**</exclude>
+            <exclude>**/javax/**</exclude>
+            <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
+            <!-- example code / documentation -->
+            <exclude>**/org/eclipse/jetty/embedded/**</exclude>
+            <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
+            <exclude>**/org/eclipse/jetty/demo/**</exclude>
+            <exclude>**/org/eclipse/jdt/**</exclude>
+            <exclude>**/jmh**/**</exclude>
+            <exclude>**/org/eclipse/jetty/docs/programming/**</exclude>
+            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+            <!-- test classes -->
+            <exclude>**/org/eclipse/jetty/tests/**</exclude>
+            <exclude>**/org/eclipse/jetty/test/**</exclude>
+            <exclude>**/jakarta/xml/**</exclude>
+            <exclude>**/org/apache/**</exclude>
+            <exclude>**/org/slf4j/**</exclude>
+            <exclude>**/org/objectweb/**</exclude>
+            <exclude>**/**Benchmark**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
