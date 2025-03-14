@@ -23,6 +23,14 @@ lib/jetty-io-${jetty.version}.jar
 [xml]
 etc/jetty.xml
 
+[jpms]
+# ALL-DEFAULT is necessary to expose JDK modules such as java.sql
+# or java.instrument to the ModuleLayer of an eeN environment.
+# ALL-MODULE-PATH is necessary to allow the org.eclipse.jetty.xml
+# JPMS module to load classes from other JPMS modules such as
+# org.eclipse.jetty.io while processing XML files.
+add-modules: ALL-DEFAULT,ALL-MODULE-PATH
+
 [ini-template]
 # tag::documentation-http-config[]
 ### Common HTTP configuration

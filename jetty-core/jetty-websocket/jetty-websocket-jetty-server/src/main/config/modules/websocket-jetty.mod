@@ -5,11 +5,9 @@ Enables the Jetty WebSocket API support for deployed web applications.
 websocket
 
 [depend]
-server
+websocket-core-server
 
 [lib]
-lib/jetty-websocket-core-common-${jetty.version}.jar
-lib/jetty-websocket-core-server-${jetty.version}.jar
 lib/jetty-websocket-jetty-api-${jetty.version}.jar
 lib/jetty-websocket-jetty-common-${jetty.version}.jar
 lib/jetty-websocket-jetty-server-${jetty.version}.jar
