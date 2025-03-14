@@ -174,7 +174,6 @@ public class JettyServerFactory
 
             //ensure a deployer
             StandardDeployer deployer = ensureDeployer(server);
-            deployer.addEventListener(new OSGiDeploymentListener());
 
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
@@ -222,6 +221,12 @@ public class JettyServerFactory
        {
            deployer = new StandardDeployer(getContextHandlerCollection(server));
            server.addBean(deployer);
+       }
+
+       // Ensure that OSGiDeploymentListener is present
+       if (deployer.getEventListeners().stream().noneMatch(l -> (l instanceof OSGiDeploymentListener)))
+       {
+           deployer.addEventListener(new OSGiDeploymentListener());
        }
 
        return deployer;
