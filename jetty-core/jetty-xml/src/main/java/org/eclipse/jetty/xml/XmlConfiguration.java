@@ -1903,12 +1903,16 @@ public class XmlConfiguration
         for (int i = 0; i < args.length; i++)
         {
             String arg = args[i];
-
             switch (arg)
             {
                 case "--env" ->
                 {
-                    // TODO: in case of --env ee9 foo9.jar --env ee10 foo10.jar, we don't close the previous environment; do it here?
+                    if (envBuilder != null)
+                    {
+                        environment = envBuilder.build();
+                        Environment.set(environment);
+                        envBuilder = null;
+                    }
                     String envName = args[++i];
                     environment = Environment.get(envName);
                     if (environment == null)
@@ -1925,7 +1929,6 @@ public class XmlConfiguration
                 case "--add-reads" -> envBuilder.addReads(args[++i]);
                 default ->
                 {
-                    // Finish building the environment, if any.
                     if (envBuilder != null)
                     {
                         environment = envBuilder.build();

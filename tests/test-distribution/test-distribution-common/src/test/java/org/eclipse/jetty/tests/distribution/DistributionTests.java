@@ -2045,4 +2045,52 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testMultipleEnvironments(boolean jpms) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        List<String> modules = new ArrayList<>();
+        modules.add("http");
+        List.of("ee9", "ee10").forEach(env ->
+        {
+            modules.add(toEnvironment("deploy", env));
+            modules.add(toEnvironment("demo-simple", env));
+        });
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = Tester.freePort();
+            List<String> args = new ArrayList<>();
+            args.add("jetty.http.selectors=1");
+            args.add("jetty.http.port=" + httpPort);
+            if (jpms)
+                args.add("--jpms");
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+
+                ContentResponse ee9Response = client.newRequest("localhost", httpPort)
+                    .path("/ee9-demo-simple/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, ee9Response.getStatus());
+
+                ContentResponse ee10Response = client.newRequest("localhost", httpPort)
+                    .path("/ee10-demo-simple/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, ee10Response.getStatus());
+            }
+        }
+    }
 }
