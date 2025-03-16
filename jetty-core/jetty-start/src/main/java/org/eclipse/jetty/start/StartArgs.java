@@ -565,7 +565,7 @@ public class StartArgs
                 }
 
                 // Add JPMS options such as --add-opens.
-                jettyEnvironment.getJPMSOpts().toCommandLine(cmd);
+                jettyEnvironment.getJPMSArgs().toCommandLine(cmd);
 
                 StartLog.debug("JPMS resulting cmd=%s", cmd.toCommandLine());
             }
@@ -647,7 +647,7 @@ public class StartArgs
                     });
 
                 if (isJPMS())
-                    environment.getJPMSOpts().toCommandLine(cmd);
+                    environment.getJPMSArgs().toCommandLine(cmd);
 
                 Props props = environment.getProperties();
                 for (Prop property : props)

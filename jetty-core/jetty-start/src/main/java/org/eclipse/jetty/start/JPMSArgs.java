@@ -24,7 +24,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class JPMSOpts
+/**
+ * <p>Collects JPMS arguments specified in a Jetty module under the
+ * {@code [jpms]} section, and outputs them to a command line.</p>
+ */
+class JPMSArgs
 {
     private final Set<String> _adds = new LinkedHashSet<>();
     private final Map<String, Set<String>> _patches = new LinkedHashMap<>();
@@ -32,36 +36,43 @@ class JPMSOpts
     private final Map<String, Set<String>> _exports = new LinkedHashMap<>();
     private final Map<String, Set<String>> _reads = new LinkedHashMap<>();
 
-    void resolve(Module module, StartEnvironment environment) throws IOException
+    /**
+     * <p>Collects JPMS arguments from a Jetty module {@code [jpms]} section.</p>
+     *
+     * @param module the Jetty module
+     * @param environment the current EE environment
+     * @throws IOException when a JPMS path argument is invalid
+     */
+    void collect(Module module, StartEnvironment environment) throws IOException
     {
-        for (String jpmsOpt : module.getJPMS())
+        for (String jpmsArg : module.getJPMS())
         {
-            jpmsOpt = environment.getProperties().expand(jpmsOpt);
+            jpmsArg = environment.getProperties().expand(jpmsArg);
             String directive;
-            if (jpmsOpt.startsWith(directive = "add-modules:"))
+            if (jpmsArg.startsWith(directive = "add-modules:"))
             {
-                String[] names = jpmsOpt.substring(directive.length()).split(",");
+                String[] names = jpmsArg.substring(directive.length()).split(",");
                 Arrays.stream(names).map(String::trim).collect(Collectors.toCollection(() -> _adds));
             }
-            else if (jpmsOpt.startsWith(directive = "patch-module:"))
+            else if (jpmsArg.startsWith(directive = "patch-module:"))
             {
-                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsOpt, directive, true, _patches);
+                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsArg, directive, true, _patches);
             }
-            else if (jpmsOpt.startsWith(directive = "add-opens:"))
+            else if (jpmsArg.startsWith(directive = "add-opens:"))
             {
-                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsOpt, directive, false, _opens);
+                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsArg, directive, false, _opens);
             }
-            else if (jpmsOpt.startsWith(directive = "add-exports:"))
+            else if (jpmsArg.startsWith(directive = "add-exports:"))
             {
-                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsOpt, directive, false, _exports);
+                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsArg, directive, false, _exports);
             }
-            else if (jpmsOpt.startsWith(directive = "add-reads:"))
+            else if (jpmsArg.startsWith(directive = "add-reads:"))
             {
-                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsOpt, directive, false, _reads);
+                parseJPMSKeyValue(environment.getBaseHome(), module, jpmsArg, directive, false, _reads);
             }
             else
             {
-                throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + jpmsOpt);
+                throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + jpmsArg);
             }
         }
 
@@ -94,6 +105,11 @@ class JPMSOpts
         }
     }
 
+    /**
+     * <p>Outputs the JPMS arguments of this class to a command line.</p>
+     *
+     * @param cmd the command line builder to add JPMS arguments to
+     */
     void toCommandLine(CommandLineBuilder cmd)
     {
         if (!_adds.isEmpty())

@@ -39,7 +39,7 @@ public class StartEnvironment
     private final List<String> _cmdLineXmls = new ArrayList<>();
     private final List<String> _cmdLinePropertyFiles = new ArrayList<>();
     private final List<String> _cmdLineLibs = new ArrayList<>();
-    private final JPMSOpts _jpmsOpts = new JPMSOpts();
+    private final JPMSArgs _jpmsArgs = new JPMSArgs();
 
     StartEnvironment(String name, BaseHome baseHome)
     {
@@ -262,12 +262,12 @@ public class StartEnvironment
 
     void resolveJPMS(Module module) throws IOException
     {
-        _jpmsOpts.resolve(module, this);
+        _jpmsArgs.collect(module, this);
     }
 
-    JPMSOpts getJPMSOpts()
+    JPMSArgs getJPMSArgs()
     {
-        return _jpmsOpts;
+        return _jpmsArgs;
     }
 
     @Override
