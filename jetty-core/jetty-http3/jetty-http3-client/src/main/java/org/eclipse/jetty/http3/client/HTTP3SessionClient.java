@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.client;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
@@ -71,26 +72,13 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         if (frame.getMetaData().isResponse())
         {
             StreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            if (endPoint != null)
-            {
-                HTTP3StreamClient stream = (HTTP3StreamClient)getStream(endPoint.getStream().getId());
-                if (stream != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("received response {} on {}", frame, stream);
-                    stream.onResponse(frame);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("dropping response {}: no stream on {}", frame, this);
-                }
-            }
+            HTTP3StreamClient stream = (HTTP3StreamClient)getStream(endPoint.getStream().getId());
+            if (LOG.isDebugEnabled())
+                LOG.debug("received response {} on {}", frame, stream);
+            if (stream != null)
+                stream.onResponse(frame);
             else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("dropping response {}: no stream endpoint on {}", frame, this);
-            }
+                throw new HTTP3Exception.StreamException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "missing_http3_stream");
         }
         else
         {

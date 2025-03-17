@@ -255,11 +255,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
         session.close(frame.getErrorCode(), frame.getReason(), Promise.Invocable.toPromise(promise, s -> this));
     }
 
-    // TODO
-//    @Override
-    protected void onFailure(long error, String reason, Throwable failure)
+    private void onFailure(long error, String reason, Throwable failure)
     {
-        session.onSessionFailure(HTTP3ErrorCode.NO_ERROR.code(), "failure", failure);
+        session.onSessionFailure(error, reason, failure);
     }
 
     @Override

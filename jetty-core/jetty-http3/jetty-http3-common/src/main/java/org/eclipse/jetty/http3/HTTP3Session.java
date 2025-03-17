@@ -279,7 +279,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return streams.compute(streamId, (id, stream) ->
         {
             if (stream != null)
-                throw new IllegalStateException("duplicate stream id " + streamId);
+                throw new HTTP3Exception.StreamException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "duplicate_stream_id");
             return createHTTP3Stream(endPoint, true);
         });
     }
@@ -288,10 +288,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     {
         try (AutoLock ignored = lock.lock())
         {
-            if (closeState == CloseState.LOCALLY_CLOSED && endPoint.getStream().getId() > goAwaySent.getLastId())
-                throw new IllegalStateException("goaway sent");
+            if (closeState == CloseState.LOCALLY_CLOSED)
+            {
+                if (endPoint.getStream().getId() > goAwaySent.getLastId())
+                    throw new HTTP3Exception.StreamException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "goaway_sent");
+            }
             else if (closeState != CloseState.NOT_CLOSED)
-                throw new IllegalStateException("session closed");
+            {
+                throw new HTTP3Exception.SessionException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "session_closed");
+            }
             streamCount.incrementAndGet();
         }
 
@@ -396,33 +401,16 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
-        {
-            throw new IllegalStateException("invalid metadata");
-        }
+            throw new HTTP3Exception.StreamException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "invalid_metadata");
+
+        StreamEndPoint endPoint = session.getStreamEndPoint(streamId);
+        HTTP3Stream stream = getStream(endPoint.getStream().getId());
+        if (LOG.isDebugEnabled())
+            LOG.debug("received trailer {} on {}", frame, stream);
+        if (stream != null)
+            stream.onTrailer(frame);
         else
-        {
-            StreamEndPoint endPoint = session.getStreamEndPoint(streamId);
-            if (endPoint != null)
-            {
-                HTTP3Stream stream = getStream(endPoint.getStream().getId());
-                if (stream != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("received trailer {} on {}", frame, stream);
-                    stream.onTrailer(frame);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("dropping trailer {}: no stream on {}", frame, this);
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("dropping trailer {}: no stream endpoint on {}", frame, this);
-            }
-        }
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     protected void onData(long streamId, DataFrame frame)
@@ -433,7 +421,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     protected void onSettings(SettingsFrame frame)
@@ -555,7 +543,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
+        {
             stream.onFailure(error, failure);
+        }
+        else
+        {
+            StreamEndPoint endPoint = session.getStreamEndPoint(streamId);
+            if (endPoint != null)
+                endPoint.disconnect(error, failure, true, Promise.Invocable.noop());
+        }
     }
 
     public void onSessionFailure(long error, String reason, Throwable failure)
@@ -849,8 +845,9 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     /**
      * <p>Processes the HTTP/3 parser events.</p>
      * <p>Control frames (such as GOAWAY) arrive on the unidirectional control stream,
-     * possibly concurrently with message frames (such as HEADERS and DATA) arriving
-     * on bidirectional streams.</p>
+     * while message frames (such as HEADERS and DATA) arrive on bidirectional streams.
+     * This class offers a chance or serializing the frame processing, if necessary;
+     * this depends on the logic in {@link StreamEndPoint}.</p>
      */
     private class FrameListener implements ParserListener
     {

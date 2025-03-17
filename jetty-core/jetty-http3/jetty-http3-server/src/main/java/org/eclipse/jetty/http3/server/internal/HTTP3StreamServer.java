@@ -47,12 +47,10 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
 
     public void onRequest(HeadersFrame frame)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
-        {
-            onHeaders(frame);
-            updateClose(frame.isLast(), false);
-            listener = notifyRequest(frame);
-        }
+        validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER);
+        onHeaders(frame);
+        updateClose(frame.isLast(), false);
+        listener = notifyRequest(frame);
     }
 
     private Listener notifyRequest(HeadersFrame frame)

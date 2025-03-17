@@ -59,19 +59,16 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
     {
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         int status = response.getStatus();
-        boolean valid = switch (status)
+        switch (status)
         {
             case HttpStatus.CONTINUE_100 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
             case HttpStatus.PROCESSING_102,
                 HttpStatus.EARLY_HINTS_103 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
             default -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
         };
-        if (valid)
-        {
-            onHeaders(frame);
-            updateClose(frame.isLast(), false);
-            notifyResponse(frame);
-        }
+        onHeaders(frame);
+        updateClose(frame.isLast(), false);
+        notifyResponse(frame);
     }
 
     private void notifyNewStream()

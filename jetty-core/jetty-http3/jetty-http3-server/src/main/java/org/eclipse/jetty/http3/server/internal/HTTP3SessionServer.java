@@ -65,18 +65,10 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         if (frame.getMetaData().isRequest())
         {
             StreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            if (endPoint != null)
-            {
-                HTTP3StreamServer stream = (HTTP3StreamServer)createStream(endPoint);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("received request {} on {}", frame, stream);
-                stream.onRequest(frame);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("dropping request {}: no stream endpoint on {}", frame, this);
-            }
+            HTTP3StreamServer stream = (HTTP3StreamServer)createStream(endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("received request {} on {}", frame, stream);
+            stream.onRequest(frame);
         }
         else
         {

@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -581,10 +580,14 @@ public class StreamEndPoint implements EndPoint
             LOG.debug("notifying fillable via {} on {}", callback, this);
         if (callback != null)
         {
-            // This is how protocols on top of QUIC streams are parallelized.
-            // For example H1 on top of SEPs would register a BLOCKING callback,
-            // and the AES at the QUIC session level would run them concurrently.
-            protocolSession.offerTask(new FillableTask(callback));
+            // QUIC streams are serialized by succeeding the callback.
+            // For only-1-stream-per-connection protocols such as HTTP/1
+            // and HTTP/2, this is equivalent to TCP.
+            // For multiple-streams-per-connection protocols such as HTTP/3,
+            // this simplifies the handling of HTTP/3 frames from the control
+            // stream and from message streams, because they are serialized and
+            // not executed concurrently, which would require careful locking.
+            callback.succeeded();
         }
     }
 
@@ -681,23 +684,6 @@ public class StreamEndPoint implements EndPoint
         public boolean isLast()
         {
             return true;
-        }
-    }
-
-    private static class FillableTask extends Invocable.Task.Abstract
-    {
-        private final Callback callback;
-
-        private FillableTask(Callback callback)
-        {
-            super(callback.getInvocationType());
-            this.callback = callback;
-        }
-
-        @Override
-        public void run()
-        {
-            callback.succeeded();
         }
     }
 }

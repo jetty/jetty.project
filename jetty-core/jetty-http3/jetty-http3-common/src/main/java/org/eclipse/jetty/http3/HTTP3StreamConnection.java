@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -114,89 +115,94 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
         try
         {
-            if (drivesFillInterest)
+            try
             {
-                while (true)
+                if (drivesFillInterest)
                 {
-                    if (result == null)
-                        result = parseAndFill();
-                    boolean loop = switch (result)
+                    while (true)
                     {
-                        case NO_FRAME ->
+                        if (result == null)
+                            result = parseAndFill();
+                        boolean loop = switch (result)
                         {
-                            fillInterested();
-                            yield false;
-                        }
-                        case BLOCKED_FRAME ->
-                        {
-                            // Return immediately because another thread may
-                            // resume the processing as the stream is unblocked.
-                            yield false;
-                        }
-                        case FRAME ->
-                        {
-                            FrameAction action = frameAction.getAndSet(null);
-
-                            boolean interim = false;
-                            if (action.frame() instanceof HeadersFrame headers)
+                            case NO_FRAME ->
                             {
-                                MetaData metaData = headers.getMetaData();
-                                if (metaData instanceof MetaData.Response response)
-                                    interim = HttpStatus.isInterim(response.getStatus());
-                            }
-
-                            // Now the application drives fill interest via Stream.demand().
-                            drivesFillInterest = interim;
-
-                            tryReleaseData(false);
-
-                            // Notify the application via onRequest()/onResponse().
-                            action.task().run();
-
-                            // TODO: is this unavoidable?
-                            //  If we managed to throw from action.run() above,
-                            //  we'd go through the proper dispose code.
-                            if (stream == null)
+                                fillInterested();
                                 yield false;
+                            }
+                            case BLOCKED_FRAME ->
+                            {
+                                // Return immediately because another thread may
+                                // resume the processing as the stream is unblocked.
+                                yield false;
+                            }
+                            case FRAME ->
+                            {
+                                FrameAction action = frameAction.getAndSet(null);
 
-                            // Notify onDataAvailable() if the application
-                            // demanded in onRequest()/onResponse().
-                            if (!interim)
-                                stream.processData(false);
+                                boolean interim = false;
+                                if (action.frame() instanceof HeadersFrame headers)
+                                {
+                                    MetaData metaData = headers.getMetaData();
+                                    if (metaData instanceof MetaData.Response response)
+                                        interim = HttpStatus.isInterim(response.getStatus());
+                                }
 
-                            yield interim;
-                        }
-                        case EOF ->
-                        {
-                            yield false;
-                        }
-                    };
+                                // Now the application drives fill interest via Stream.demand().
+                                drivesFillInterest = interim;
 
-                    if (loop)
-                        result = null;
-                    else
-                        break;
+                                tryReleaseData(false);
+
+                                // Notify the application via onRequest()/onResponse().
+                                action.task().run();
+
+                                // Notify onDataAvailable() if the application
+                                // demanded in onRequest()/onResponse().
+                                if (!interim)
+                                    stream.processData(false);
+
+                                yield interim;
+                            }
+                            case EOF ->
+                            {
+                                yield false;
+                            }
+                        };
+
+                        if (loop)
+                            result = null;
+                        else
+                            break;
+                    }
+                }
+                else
+                {
+                    if (result != null)
+                        readData(result);
+                    stream.processData(true);
                 }
             }
-            else
+            catch (Throwable x)
             {
-                if (result != null)
-                    readData(result);
-                stream.processData(true);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure processing frames on {}", this, x);
+                tryReleaseData(true);
+                throw x;
             }
+        }
+        catch (HTTP3Exception.StreamException x)
+        {
+            parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), x.getErrorCode(), x);
+        }
+        catch (HTTP3Exception.SessionException x)
+        {
+            parser.getListener().onSessionFailure(x.getErrorCode(), x.getReason(), x);
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("processing frames failure on {}", this, x);
-            tryReleaseData(true);
+            // Assume a stream failure, rather than a session failure.
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
-            // Notify the application that a failure happened.
             parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, x);
-            if (stream != null)
-                stream.disconnect(error, x, Promise.Invocable.noop());
-            else
-                getEndPoint().disconnect(error, x, true, Promise.Invocable.noop());
         }
     }
 
@@ -209,62 +215,84 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         try
         {
-            if (remotelyClosed)
-                return Stream.Data.EOF;
-
-            if (result == null)
-                result = parseAndFill();
-            return switch (result)
+            try
             {
-                case NO_FRAME ->
-                {
-                    yield null;
-                }
-                case BLOCKED_FRAME ->
-                {
-                    // A blocked trailer HEADERS frame.
-                    // Return null immediately because another thread may
-                    // resume the processing as the stream is unblocked.
-                    yield null;
-                }
-                case FRAME ->
-                {
-                    FrameAction action = frameAction.getAndSet(null);
-                    action.task().run();
+                if (remotelyClosed)
+                    return Stream.Data.EOF;
 
-                    Frame frame = action.frame();
-                    if (frame instanceof DataFrame dataFrame)
+                if (result == null)
+                    result = parseAndFill();
+                return switch (result)
+                {
+                    case NO_FRAME ->
                     {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
-                        {
-                            tryReleaseData(true);
-                            yield Stream.Data.EOF;
-                        }
-                        else
-                        {
-                            Stream.Data data = new StreamData(dataFrame, quicData);
-                            // Retain because multiple data can be parsed from the same QUIC data.
-                            data.retain();
-                            if (data.isLast())
-                                tryReleaseData(true);
-                            yield data;
-                        }
+                        yield null;
                     }
+                    case BLOCKED_FRAME ->
+                    {
+                        // A blocked trailer HEADERS frame.
+                        // Return null immediately because another thread may
+                        // resume the processing as the stream is unblocked.
+                        yield null;
+                    }
+                    case FRAME ->
+                    {
+                        FrameAction action = frameAction.getAndSet(null);
+                        action.task().run();
 
-                    // It is a trailer HEADERS frame.
-                    tryReleaseData(true);
-                    yield Stream.Data.EOF;
-                }
-                case EOF ->
-                {
-                    yield Stream.Data.EOF;
-                }
-            };
+                        Frame frame = action.frame();
+                        if (frame instanceof DataFrame dataFrame)
+                        {
+                            if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
+                            {
+                                tryReleaseData(true);
+                                yield Stream.Data.EOF;
+                            }
+                            else
+                            {
+                                Stream.Data data = new StreamData(dataFrame, quicData);
+                                // Retain because multiple data can be parsed from the same QUIC data.
+                                data.retain();
+                                if (data.isLast())
+                                    tryReleaseData(true);
+                                yield data;
+                            }
+                        }
+
+                        // It is a trailer HEADERS frame.
+                        tryReleaseData(true);
+                        yield Stream.Data.EOF;
+                    }
+                    case EOF ->
+                    {
+                        yield Stream.Data.EOF;
+                    }
+                };
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure reading data on {}", this, x);
+                tryReleaseData(true);
+                throw x;
+            }
         }
-        catch (IOException x)
+        catch (HTTP3Exception.StreamException x)
         {
-            tryReleaseData(true);
-            throw new UncheckedIOException(x);
+            parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), x.getErrorCode(), x);
+            throw x;
+        }
+        catch (HTTP3Exception.SessionException x)
+        {
+            parser.getListener().onSessionFailure(x.getErrorCode(), x.getReason(), x);
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            // Assume a stream failure, rather than a session failure.
+            long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+            parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, x);
+            throw new UncheckedIOException(IO.rethrow(x));
         }
     }
 

@@ -187,8 +187,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not read {}", this, x);
-            disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, Promise.Invocable.noop());
             // Rethrow to the application, so don't notify onFailure().
+            // Disconnection has already happened in HTTP3StreamConnection.
             throw x;
         }
     }
@@ -301,8 +301,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void onData(DataFrame ignored)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA))
-            notIdle();
+        validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA);
+        notIdle();
     }
 
     private void onDataAvailable()
@@ -316,12 +316,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void onTrailer(HeadersFrame frame)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER))
-        {
-            notIdle();
-            updateClose(frame.isLast(), false);
-            notifyTrailer(frame);
-        }
+        validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER);
+        notIdle();
+        updateClose(frame.isLast(), false);
+        notifyTrailer(frame);
     }
 
     protected abstract void notifyTrailer(HeadersFrame frame);
@@ -336,22 +334,18 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected abstract void notifyFailure(long error, Throwable failure);
 
-    protected boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
+    protected void validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {
         if (allowed.contains(frameState))
         {
             frameState = target;
-            return true;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("invalid frame sequence, current={}, allowed={}, next={}", frameState, allowed, target);
-            if (frameState == FrameState.FAILED)
-                return false;
             frameState = FrameState.FAILED;
-            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
-            return false;
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR, "invalid_frame_sequence");
         }
     }
 
