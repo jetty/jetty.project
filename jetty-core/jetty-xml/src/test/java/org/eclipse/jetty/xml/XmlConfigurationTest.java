@@ -1907,6 +1907,27 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testMainWithDuplicateEnvironment()
+    {
+        Path base = MavenTestingUtils.getBasePath().resolve("src").resolve("test").resolve("base");
+        assertThrows(IllegalArgumentException.class, () -> XmlConfiguration.main(
+            "--env",
+            "envA",
+            "-cp",
+            base.resolve("envA").toString(),
+            "--env",
+            "envB",
+            "-cp",
+            base.resolve("envB").toString(),
+            // Duplicate --env envA section is not allowed.
+            "--env",
+            "envA",
+            "-cp",
+            base.resolve("envB").toString()
+        ));
+    }
+
+    @Test
     public void testPropertyNoNameAttributeWithDeprecatedAttribute() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration(

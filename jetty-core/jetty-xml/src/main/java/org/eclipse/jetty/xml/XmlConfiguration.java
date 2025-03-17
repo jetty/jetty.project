@@ -1911,12 +1911,12 @@ public class XmlConfiguration
                     {
                         environment = envBuilder.build();
                         Environment.set(environment);
-                        envBuilder = null;
                     }
                     String envName = args[++i];
                     environment = Environment.get(envName);
-                    if (environment == null)
-                        envBuilder = new EnvironmentBuilder(envName);
+                    if (environment != null)
+                        throw new IllegalArgumentException("Duplicated --env " + envName + " command line arguments");
+                    envBuilder = new EnvironmentBuilder(envName);
                     envProperties.clear();
                     lastEnvConfiguration = null;
                 }
