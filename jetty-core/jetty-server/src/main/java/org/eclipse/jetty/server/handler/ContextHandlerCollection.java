@@ -92,7 +92,7 @@ public class ContextHandlerCollection extends Handler.Sequence
     @Override
     protected List<Handler> newHandlers(List<Handler> handlers)
     {
-        if (handlers == null || handlers.size() == 0)
+        if (handlers == null || handlers.isEmpty())
             return Collections.emptyList();
 
         // Create map of contextPath to handler Branch
@@ -102,10 +102,7 @@ public class ContextHandlerCollection extends Handler.Sequence
         {
             Branch branch = new Branch(handler);
             for (String contextPath : branch.getContextPaths())
-            {
-                Branch[] branches = path2Branches.get(contextPath);
-                path2Branches.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
-            }
+                path2Branches.compute(contextPath, (k, branches) -> ArrayUtil.addToArray(branches, branch, Branch.class));
         }
 
         // Sort the branches for each contextPath so those with virtual hosts are considered before those without
@@ -231,6 +228,40 @@ public class ContextHandlerCollection extends Handler.Sequence
             {
                 addHandler(handler);
                 callback.succeeded();
+            }
+
+            @Override
+            public void accept(Throwable throwable)
+            {
+                callback.failed(throwable);
+            }
+        });
+    }
+
+    /**
+     * Thread safe redeploy of a Handler.
+     * <p>
+     * This method is the equivalent of {@link #addHandler(Handler)},
+     * but its execution is non-blocking and mutually excluded from all
+     * other callers to itself and {@link #undeployHandler(Handler, Callback)}.
+     * The handler may be added after this call returns.
+     * </p>
+     *
+     * @param oldHandler the handler to remove
+     * @param newHandler the handler to deploy
+     * @param callback Called after handler has been added
+     */
+    public void redeployHandler(Handler oldHandler, Handler newHandler, Callback callback)
+    {
+        _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
+        {
+            @Override
+            public void run()
+            {
+                if (replaceHandler(oldHandler, newHandler))
+                    callback.succeeded();
+                else
+                    callback.failed(new IllegalStateException("No such handler: " + oldHandler));
             }
 
             @Override

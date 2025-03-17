@@ -1,0 +1,18 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="deploymentScanner">
+    <Get id="coreEnv" class="org.eclipse.jetty.util.component.Environment" name="CORE"/>
+    <Call name="configureEnvironment">
+      <Arg>core</Arg>
+      <Set name="contextHandlerClass">
+        <Property name="contextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />
+      </Set>
+      <Call name="loadPropertiesFromPathName">
+        <Arg>
+          <Property name="jetty.deploy.common.properties" />
+        </Arg>
+      </Call>
+    </Call>
+  </Ref>
+</Configure>

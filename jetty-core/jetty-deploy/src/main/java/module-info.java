@@ -15,6 +15,7 @@ module org.eclipse.jetty.deploy
 {
     requires java.xml;
     requires org.eclipse.jetty.xml;
+    requires transitive org.eclipse.jetty.util;
     requires transitive org.eclipse.jetty.server;
     requires org.slf4j;
 
@@ -22,10 +23,4 @@ module org.eclipse.jetty.deploy
     requires static org.eclipse.jetty.jmx;
 
     exports org.eclipse.jetty.deploy;
-    exports org.eclipse.jetty.deploy.bindings;
-    exports org.eclipse.jetty.deploy.graph;
-    exports org.eclipse.jetty.deploy.providers;
-
-    exports org.eclipse.jetty.deploy.jmx to
-        org.eclipse.jetty.jmx;
 }

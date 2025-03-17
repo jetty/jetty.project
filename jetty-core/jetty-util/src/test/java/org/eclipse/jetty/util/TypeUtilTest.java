@@ -243,7 +243,9 @@ public class TypeUtilTest
     {
         return Stream.of(
             Arguments.of(TypeUtilTest.class, "oeju.TypeUtilTest"),
-            Arguments.of(ExampleClass.class, "oejut10.ExampleClass")
+            Arguments.of(ExampleClass.class, "oejut10.ExampleClass"),
+            // example of inner type
+            Arguments.of(Attributes.Wrapper.class, "oeju.Attributes$Wrapper")
         );
     }
 

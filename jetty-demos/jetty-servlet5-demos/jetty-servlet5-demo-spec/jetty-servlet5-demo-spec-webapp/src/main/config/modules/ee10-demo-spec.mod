@@ -11,7 +11,7 @@ demo
 webapp
 
 [depends]
-deploy
+ee10-deploy
 jdbc
 ee10-jsp
 ee10-annotations

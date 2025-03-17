@@ -4,14 +4,12 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- =========================================================== -->
-    <!-- Configure the deployment manager                            -->
+    <!-- Configure a deployer for WebAppContexts and ContextHandlers -->
     <!-- =========================================================== -->
     <Call name="addBean">
       <Arg>
-        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <Set name="contexts">
-            <Ref refid="Contexts" />
-          </Set>
+        <New id="Deployer" class="org.eclipse.jetty.deploy.StandardDeployer">
+          <Arg name="contexts"><Ref refid="Contexts"/></Arg>
         </New>
       </Arg>
     </Call>

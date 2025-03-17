@@ -278,6 +278,12 @@ public class ExceptionUtil
         {
             ExceptionUtil.call(task, this::add);
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x%s".formatted(TypeUtil.toShortName(MultiException.class), hashCode(), _multiException);
+        }
     }
 
     /**
