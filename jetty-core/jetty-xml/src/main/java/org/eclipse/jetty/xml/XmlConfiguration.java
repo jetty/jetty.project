@@ -1914,7 +1914,7 @@ public class XmlConfiguration
                     }
                     String envName = args[++i];
                     environment = Environment.get(envName);
-                    if (environment != null)
+                    if (environment != null && environment != Environment.CORE)
                         throw new IllegalArgumentException("Duplicated --env " + envName + " command line arguments");
                     envBuilder = new EnvironmentBuilder(envName);
                     envProperties.clear();
