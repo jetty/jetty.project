@@ -594,7 +594,7 @@ public class CustomRequestLogTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t"})
+    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York|ja}t"})
     public void testLogRequestTimeCustomFormats(String format) throws Exception
     {
         AtomicLong requestTimeRef = new AtomicLong();
