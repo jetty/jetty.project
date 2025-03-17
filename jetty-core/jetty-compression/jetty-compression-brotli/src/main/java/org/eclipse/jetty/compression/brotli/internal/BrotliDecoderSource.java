@@ -96,6 +96,7 @@ public class BrotliDecoderSource extends DecoderSource
     @Override
     protected void release()
     {
+        super.release();
         decoder.destroy();
     }
 }

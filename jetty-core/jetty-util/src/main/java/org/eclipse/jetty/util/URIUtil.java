@@ -1779,6 +1779,9 @@ public final class URIUtil
         if (colon < 0)
             return uri; // path portion not found
 
+        if ((colon + 2) == rawURI.length())
+            return URI.create("file:///");
+
         int end = -1;
         if (rawURI.charAt(colon + 2) != '/')
             end = colon + 2;

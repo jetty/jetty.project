@@ -144,7 +144,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Supplier<Handler>
 {
-    public static final Environment ENVIRONMENT = Environment.ensure("ee9", ContextHandler.class.getClassLoader());
+    public static final Environment ENVIRONMENT = Environment.ensure("ee9", ContextHandler.class);
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
