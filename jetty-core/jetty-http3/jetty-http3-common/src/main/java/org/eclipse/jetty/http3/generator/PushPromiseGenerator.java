@@ -26,7 +26,7 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return 0;
     }

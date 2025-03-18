@@ -35,13 +35,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private int generateSettings(ByteBufferPool.Accumulator accumulator, SettingsFrame frame)
+    private long generateSettings(ByteBufferPool.Accumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();

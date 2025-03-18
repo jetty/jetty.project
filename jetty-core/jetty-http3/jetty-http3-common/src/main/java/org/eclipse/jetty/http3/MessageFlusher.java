@@ -69,7 +69,7 @@ public class MessageFlusher extends IteratingCallback
 
         Frame frame = entry.frame;
 
-        int generated = generator.generate(accumulator, entry.endPoint.getStream().getId(), frame, this::onGenerateFailure);
+        long generated = generator.generate(accumulator, entry.endPoint.getStream().getId(), frame, this::onGenerateFailure);
         if (generated < 0)
             return Action.SCHEDULED;
 
