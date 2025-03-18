@@ -188,7 +188,7 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
     <google.errorprone.version>2.35.1</google.errorprone.version>
-    <groovy.version>4.0.6</groovy.version>
+    <groovy.version>4.0.26</groovy.version>
     <grpc.version>1.68.1</grpc.version>
     <gson.version>2.11.0</gson.version>
     <guava.version>33.3.1-jre</guava.version>
@@ -1457,6 +1457,23 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy-json</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy-xml</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
