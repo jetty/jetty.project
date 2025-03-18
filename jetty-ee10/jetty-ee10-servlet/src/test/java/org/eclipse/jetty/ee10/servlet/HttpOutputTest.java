@@ -1057,6 +1057,7 @@ public class HttpOutputTest
         assertThat(expected, not(emptyString()));
         assertThat(response.replace("\r\n", System.lineSeparator()), containsString(expected));
     }
+
     @Test
     public void testReset() throws Exception
     {
