@@ -1128,7 +1128,7 @@ public class HttpOutput extends ServletOutputStream
 
             // If there is enough room left in the aggregation buffer, just fill it;
             // otherwise either do 2 writes if blocking or copy into a bigger byte array if async.
-            boolean canAggregate = false;
+            boolean aggregated = false;
             boolean blocking = false;
             try (AutoLock ignored = _channelState.lock())
             {
@@ -1138,16 +1138,14 @@ public class HttpOutput extends ServletOutputStream
                     if (len <= maximizeAggregateSpace())
                     {
                         BufferUtil.fill(_aggregate.getByteBuffer(), bytes, 0, bytes.length);
-                        canAggregate = true;
+                        aggregated = true;
                     }
                 }
-                else if (_apiState == ApiState.BLOCKING)
-                {
+                if (!aggregated && _apiState == ApiState.BLOCKING)
                     blocking = true;
-                }
             }
 
-            if (canAggregate)
+            if (aggregated)
             {
                 write(IO.CRLF_BYTES);
             }
