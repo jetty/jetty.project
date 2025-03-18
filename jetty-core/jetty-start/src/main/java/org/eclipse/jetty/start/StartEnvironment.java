@@ -30,37 +30,16 @@ import java.util.Properties;
  */
 public class StartEnvironment
 {
-    private final BaseHome _baseHome;
     private final String _name;
+    private final BaseHome _baseHome;
     private final Props _properties = new Props();
-
-    /**
-     * List of all property files
-     */
     private final List<Path> _propertyFiles = new ArrayList<>();
-
-    /**
-     * List of all active [lib] sections from enabled modules
-     */
-    private final Classpath _classpath = new Classpath();
-
-    /**
-     * List of all active [xml] sections from enabled modules
-     */
+    private final Classpath _libs = new Classpath();
     private final List<Path> _xmls = new ArrayList<>();
-
-    /**
-     * List of all xml references found directly on command line or start.ini
-     */
-
-    private final List<String> _xmlRefs = new ArrayList<>();
-
-    /**
-     * List of all property references found directly on command line or start.ini
-     */
-    private final List<String> _propertyFileRefs = new ArrayList<>();
-
-    private final List<String> _libRefs = new ArrayList<>();
+    private final List<String> _cmdLineXmls = new ArrayList<>();
+    private final List<String> _cmdLinePropertyFiles = new ArrayList<>();
+    private final List<String> _cmdLineLibs = new ArrayList<>();
+    private final JPMSArgs _jpmsArgs = new JPMSArgs();
 
     StartEnvironment(String name, BaseHome baseHome)
     {
@@ -68,56 +47,51 @@ public class StartEnvironment
         _baseHome = baseHome;
     }
 
-    public void addLibRef(String lib)
+    BaseHome getBaseHome()
     {
-        _libRefs.add(lib);
+        return _baseHome;
     }
 
-    public void addPropertyFileRef(String arg)
+    void addCmdLineLib(String lib)
+    {
+        _cmdLineLibs.add(lib);
+    }
+
+    void addCmdLinePropertyFile(String arg)
     {
         // only add non-duplicates
-        if (!_propertyFileRefs.contains(arg))
-        {
-            _propertyFileRefs.add(arg);
-        }
+        if (!_cmdLinePropertyFiles.contains(arg))
+            _cmdLinePropertyFiles.add(arg);
     }
 
-    public void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
+    private void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
     {
         if (!"Jetty".equalsIgnoreCase(getName()))
             throw new IllegalStateException("Property files not supported in environment " + getName());
 
         if (!FS.canReadFile(propertyFile))
-        {
             throw new IOException("Cannot read file: " + propertyFileRef);
-        }
+
         propertyFile = FS.toRealPath(propertyFile);
         if (!_propertyFiles.contains(propertyFile))
-        {
             _propertyFiles.add(propertyFile);
-        }
     }
 
     public void addUniqueXmlFile(String xmlRef, Path xmlfile) throws IOException
     {
         if (!FS.canReadFile(xmlfile))
-        {
             throw new IOException("Cannot read file: " + xmlRef);
-        }
+
         xmlfile = FS.toRealPath(xmlfile);
         if (!getXmlFiles().contains(xmlfile))
-        {
             getXmlFiles().add(xmlfile);
-        }
     }
 
-    public void addXmlRef(String arg)
+    public void addCmdLineXml(String arg)
     {
         // only add non-duplicates
-        if (!_xmlRefs.contains(arg))
-        {
-            _xmlRefs.add(arg);
-        }
+        if (!_cmdLineXmls.contains(arg))
+            _cmdLineXmls.add(arg);
     }
 
     public void dumpActiveXmls(PrintStream out)
@@ -147,9 +121,7 @@ public class StartEnvironment
         for (Props.Prop prop : _properties)
         {
             if (prop.source.equals(Props.ORIGIN_SYSPROP))
-            {
                 continue; // skip
-            }
             sortedKeys.add(prop.key);
         }
 
@@ -194,7 +166,7 @@ public class StartEnvironment
 
     public Classpath getClasspath()
     {
-        return _classpath;
+        return _libs;
     }
 
     public String getName()
@@ -214,10 +186,7 @@ public class StartEnvironment
 
     public void resolve() throws IOException
     {
-        // 6) Resolve Extra XMLs
         resolveExtraXmls();
-
-        // 8) Resolve Property Files
         resolvePropertyFiles();
     }
 
@@ -229,18 +198,18 @@ public class StartEnvironment
     public void resolveLibs() throws IOException
     {
         StartLog.debug("Expanding Libs");
-        for (String rawlibref : _libRefs)
+        for (String cmdLineLib : _cmdLineLibs)
         {
-            StartLog.debug("rawlibref = %s", rawlibref);
-            String libref = getProperties().expand(rawlibref);
-            StartLog.debug("expanded = %s", libref);
+            StartLog.debug("cmdLineLib = %s", cmdLineLib);
+            String lib = getProperties().expand(cmdLineLib);
+            StartLog.debug("expanded = %s", lib);
 
-            // perform path escaping (needed by windows)
-            libref = libref.replaceAll("\\\\([^\\\\])", "\\\\\\\\$1");
+            // Perform path escaping (needed by windows).
+            lib = lib.replaceAll("\\\\([^\\\\])", "\\\\\\\\$1");
 
-            for (Path libpath : _baseHome.getPaths(libref))
+            for (Path libPath : _baseHome.getPaths(lib))
             {
-                getClasspath().addComponent(libpath);
+                getClasspath().addComponent(libPath);
             }
         }
     }
@@ -248,14 +217,12 @@ public class StartEnvironment
     private void resolveExtraXmls() throws IOException
     {
         // Find and Expand XML files
-        for (String xmlRef : _xmlRefs)
+        for (String xmlRef : _cmdLineXmls)
         {
             // Straight Reference
             Path xmlfile = _baseHome.getPath(xmlRef);
             if (!FS.exists(xmlfile))
-            {
                 xmlfile = _baseHome.getPath("etc/" + xmlRef);
-            }
             addUniqueXmlFile(xmlRef, xmlfile);
         }
     }
@@ -263,15 +230,13 @@ public class StartEnvironment
     private void resolvePropertyFiles() throws IOException
     {
         // Find and Expand property files
-        for (String propertyFileRef : _propertyFileRefs)
+        for (String cmdLinePropertyFile : _cmdLinePropertyFiles)
         {
             // Straight Reference
-            Path propertyFile = _baseHome.getPath(propertyFileRef);
+            Path propertyFile = _baseHome.getPath(cmdLinePropertyFile);
             if (!FS.exists(propertyFile))
-            {
-                propertyFile = _baseHome.getPath("etc/" + propertyFileRef);
-            }
-            addUniquePropertyFile(propertyFileRef, propertyFile);
+                propertyFile = _baseHome.getPath("etc/" + cmdLinePropertyFile);
+            addUniquePropertyFile(cmdLinePropertyFile, propertyFile);
         }
     }
 
@@ -293,6 +258,16 @@ public class StartEnvironment
     protected List<Path> getPropertyFiles()
     {
         return _propertyFiles;
+    }
+
+    void resolveJPMS(Module module) throws IOException
+    {
+        _jpmsArgs.collect(module, this);
+    }
+
+    JPMSArgs getJPMSArgs()
+    {
+        return _jpmsArgs;
     }
 
     @Override

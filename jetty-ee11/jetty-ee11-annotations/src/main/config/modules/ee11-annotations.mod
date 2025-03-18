@@ -20,6 +20,3 @@ lib/ee11-annotations/asm-analysis-${ee11.asm.version}.jar
 lib/ee11-annotations/asm-commons-${ee11.asm.version}.jar
 lib/ee11-annotations/asm-tree-${ee11.asm.version}.jar
 lib/ee11-annotations/jakarta.annotation-api-${ee11.jakarta.annotation.api.version}.jar
-
-[jpms]
-add-modules:org.objectweb.asm

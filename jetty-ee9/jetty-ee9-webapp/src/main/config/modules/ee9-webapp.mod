@@ -36,6 +36,3 @@ lib/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini]
 contextHandlerClass?=org.eclipse.jetty.ee9.webapp.WebAppContext
-
-[jpms]
-add-modules:java.instrument
