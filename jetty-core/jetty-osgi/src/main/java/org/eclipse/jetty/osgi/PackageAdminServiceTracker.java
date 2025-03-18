@@ -11,13 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.osgi.boot;
+package org.eclipse.jetty.osgi;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -36,31 +37,44 @@ import org.slf4j.LoggerFactory;
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and do a fake "activate" on them.
  * <p>
- * See particularly the jetty-ee9-osgi-boot-jsp fragment bundle that uses this
- * facility.
+ * See particularly the jetty-ee9-osgi-boot-jsp fragment bundle that uses this facility.
  */
 public class PackageAdminServiceTracker implements ServiceListener
 {
-    private static Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
-    private BundleContext _context;
+    private static final Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
 
+    private final String _environment;
+    private final BundleContext _context;
     private List<BundleActivator> _activatedFragments = new ArrayList<>();
-
     private boolean _fragmentsWereActivated = false;
 
-    // Use the deprecated StartLevel to stay compatible with older versions of
-    // OSGi.
+    // Use the deprecated StartLevel to stay compatible with older versions of OSGi.
     private StartLevel _startLevel;
-
     private int _maxStartLevel = 6;
 
-    public static PackageAdminServiceTracker INSTANCE = null;
+    private static final Map<String, PackageAdminServiceTracker> INSTANCES = new ConcurrentHashMap<>();
 
-    public PackageAdminServiceTracker(BundleContext context)
+    public static PackageAdminServiceTracker getInstance(String environment)
+    {
+        return INSTANCES.get(environment);
+    }
+
+    public static void setInstance(String environment, PackageAdminServiceTracker packageAdminServiceTracker)
+    {
+        INSTANCES.put(environment, packageAdminServiceTracker);
+    }
+
+    private static void clearInstance(String environment)
+    {
+        INSTANCES.remove(environment);
+    }
+
+    public PackageAdminServiceTracker(String environment, BundleContext context)
         throws Exception
     {
-        INSTANCE = this;
+        _environment = environment;
         _context = context;
+        setInstance(environment, this);
         if (!setup())
         {
             _context.addServiceListener(this, "(objectclass=" + PackageAdmin.class.getName() + ")");
@@ -299,7 +313,7 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     public void stop()
     {
-        INSTANCE = null;
+        clearInstance(_environment);
         for (BundleActivator fragAct : _activatedFragments)
         {
             try

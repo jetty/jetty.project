@@ -31,6 +31,7 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.PackageAdminServiceTracker;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.util.FileID;
@@ -167,7 +168,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
             mergedResources.addAll(webInfJars);
 
         //add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
-        Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
+        Bundle[] bundles = PackageAdminServiceTracker.getInstance(EE10Activator.ENVIRONMENT).getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
             @SuppressWarnings("unchecked")

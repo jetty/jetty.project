@@ -13,51 +13,35 @@
 
 package org.eclipse.jetty.ee11.osgi.boot;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
-import org.eclipse.jetty.osgi.BundleContextProvider;
+import org.eclipse.jetty.osgi.AbstractEEActivator;
 import org.eclipse.jetty.osgi.BundleMetadata;
-import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
-import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
-import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,200 +50,39 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Enable deployment of webapps/contexts to E10E
  */
-public class EE11Activator implements BundleActivator
+public class EE11Activator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EE11Activator.class);
 
     public static final String ENVIRONMENT = "ee11";
 
-    private static Collection<ServerClasspathContributor> __serverClasspathContributors = new ArrayList<>();
-
-    public static void registerServerClasspathContributor(ServerClasspathContributor contributor)
+    @Override
+    public String getEnvironment()
     {
-        __serverClasspathContributors.add(contributor);
+        return ENVIRONMENT;
     }
 
-    public static void unregisterServerClasspathContributor(ServerClasspathContributor contributor)
+    @Override
+    public ContextFactory getContextFactory(Bundle bundle)
     {
-        __serverClasspathContributors.remove(contributor);
+        return new EE11ContextFactory(bundle);
     }
 
-    public static Collection<ServerClasspathContributor> getServerClasspathContributors()
+    @Override
+    public String getMetaInfContainerBundlePatternAttributeName()
     {
-        return __serverClasspathContributors;
+        return OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN;
     }
 
-    /**
-     * ServerTracker
-     *
-     * Tracks appearance of Server instances as OSGi services, and then configures them
-     * for deployment of EE11 contexts and webapps.
-     */
-    public static class ServerTracker implements ServiceTrackerCustomizer<Server, Object>
+    @Override
+    public ContextFactory getWebAppFactory(Bundle bundle)
     {
-        private Bundle _myBundle = null;
-
-        public ServerTracker(Bundle bundle)
-        {
-            _myBundle = bundle;
-        }
-
-        @Override
-        public Object addingService(ServiceReference<Server> sr)
-        {
-            Bundle contributor = sr.getBundle();
-            Server server = contributor.getBundleContext().getService(sr);
-            //find bundles that should be on the container classpath and convert to URLs
-            List<URL> contributedURLs = new ArrayList<>();
-            List<Bundle> contributedBundles = new ArrayList<>();
-            Collection<ServerClasspathContributor> serverClasspathContributors = getServerClasspathContributors();
-            serverClasspathContributors.stream().forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
-            contributedBundles.stream().forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
-
-            if (!contributedURLs.isEmpty())
-            {
-                //There should already be a default set up by the JettyServerFactory
-                ClassLoader serverClassLoader = (ClassLoader)server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
-                if (serverClassLoader != null)
-                {
-                    server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER,
-                        new FakeURLClassLoader(serverClassLoader, contributedURLs.toArray(new URL[contributedURLs.size()])));
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Server classloader for contexts = {}", server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
-                }
-                server.setAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES, contributedBundles);
-            }
-
-            Optional<StandardDeployer> serverDeployer = getDeployer(server);
-            BundleWebAppProvider webAppProvider = null;
-            BundleContextProvider contextProvider = null;
-
-            String containerScanBundlePattern = null;
-            if (!contributedBundles.isEmpty())
-            {
-                containerScanBundlePattern = contributedBundles.stream()
-                    .map(Bundle::getSymbolicName)
-                    .collect(Collectors.joining("|"));
-            }
-
-            if (serverDeployer.isPresent())
-            {
-                StandardDeployer deployer = serverDeployer.get();
-
-                Collection<AbstractContextProvider> osgiProviders = deployer.getBeans(AbstractContextProvider.class);
-
-                for (AbstractContextProvider provider : osgiProviders)
-                {
-                    if (provider instanceof BundleContextProvider bundleContextProvider)
-                    {
-                        if (bundleContextProvider.getEnvironmentName().equalsIgnoreCase(ENVIRONMENT))
-                            contextProvider = bundleContextProvider;
-                    }
-                    if (provider instanceof BundleWebAppProvider bundleWebAppProvider)
-                    {
-                        if (bundleWebAppProvider.getEnvironmentName().equalsIgnoreCase(ENVIRONMENT))
-                            webAppProvider = bundleWebAppProvider;
-                    }
-                }
-
-                if (contextProvider == null)
-                {
-                    contextProvider = new BundleContextProvider(server, deployer, ENVIRONMENT, new EE11ContextFactory(_myBundle));
-                    deployer.addBean(contextProvider);
-                }
-
-                if (webAppProvider == null)
-                {
-                    webAppProvider = new BundleWebAppProvider(server, deployer, ENVIRONMENT, new EE11WebAppFactory(_myBundle));
-                    deployer.addBean(webAppProvider);
-                }
-
-                //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
-                if (containerScanBundlePattern != null)
-                {
-                    contextProvider.getAttributes().setAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
-                    webAppProvider.getAttributes().setAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
-                }
-            }
-            else
-                LOG.info("No DeploymentManager for Server {}", server);
-
-            try
-            {
-                if (!server.isStarted())
-                    server.start();
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed to start server {}", server);
-            }
-            return server;
-        }
-
-        @Override
-        public void modifiedService(ServiceReference<Server> reference, Object service)
-        {
-            removedService(reference, service);
-            addingService(reference);
-        }
-
-        @Override
-        public void removedService(ServiceReference<Server> reference, Object service)
-        {
-        }
-
-        private Optional<StandardDeployer> getDeployer(Server server)
-        {
-            Collection<StandardDeployer> deployers = server.getBeans(StandardDeployer.class);
-            return deployers.stream().findFirst();
-        }
-
-        private List<URL> convertBundleToURL(Bundle bundle)
-        {
-            List<URL> urls = new ArrayList<>();
-            try
-            {
-                File file = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-
-                if (file.isDirectory())
-                {
-                    for (File f : file.listFiles())
-                    {
-                        if (FileID.isJavaArchive(f.getName()) && f.isFile())
-                        {
-                            urls.add(f.toURI().toURL());
-                        }
-                        else if (f.isDirectory() && f.getName().equals("lib"))
-                        {
-                            for (File f2 : file.listFiles())
-                            {
-                                if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
-                                {
-                                    urls.add(f2.toURI().toURL());
-                                }
-                            }
-                        }
-                    }
-                    urls.add(file.toURI().toURL());
-                }
-                else
-                {
-                    urls.add(file.toURI().toURL());
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to convert bundle {} to url", bundle, e);
-            }
-
-            return urls;
-        }
+        return new EE11WebAppFactory(bundle);
     }
 
     public static class EE11ContextFactory implements ContextFactory
     {
-        private Bundle _myBundle;
+        private final Bundle _myBundle;
 
         public EE11ContextFactory(Bundle bundle)
         {
@@ -354,7 +177,7 @@ public class EE11Activator implements BundleActivator
 
     public static class EE11WebAppFactory implements ContextFactory
     {
-        private Bundle _myBundle;
+        private final Bundle _myBundle;
 
         public EE11WebAppFactory(Bundle bundle)
         {
@@ -580,44 +403,6 @@ public class EE11Activator implements BundleActivator
             }
 
             return webApp;
-        }
-    }
-
-    private PackageAdminServiceTracker _packageAdminServiceTracker;
-    private ServiceTracker<Server, Object> _tracker;
-
-    /**
-     * Track jetty Server instances and add ability to deploy EE11 contexts/webapps
-     *
-     * @param context the bundle context
-     */
-    @Override
-    public void start(final BundleContext context) throws Exception
-    {
-        // track other bundles and fragments attached to this bundle that we
-        // should activate.
-        _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
-
-        //track jetty Server instances
-        _tracker = new ServiceTracker<Server, Object>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
-        _tracker.open();
-
-        //register for bundleresource: url resource handling
-        ResourceFactory.registerResourceFactory("bundleresource", new URLResourceFactory());
-    }
-
-    /**
-     * Stop the activator.
-     *
-     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
-     */
-    @Override
-    public void stop(BundleContext context) throws Exception
-    {
-        if (_tracker != null)
-        {
-            _tracker.close();
-            _tracker = null;
         }
     }
 }
