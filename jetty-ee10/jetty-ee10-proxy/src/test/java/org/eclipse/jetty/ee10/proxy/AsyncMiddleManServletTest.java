@@ -108,6 +108,7 @@ public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
+
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
@@ -689,6 +690,17 @@ public class AsyncMiddleManServletTest
         // Tests the race between an incomplete write performed from ProxyResponseListener.onSuccess()
         // and ProxyResponseListener.onComplete() being called before the write has completed.
 
+        Random random = new Random();
+        byte[] bytes = new byte[16 * 1024 * 1024];
+        random.nextBytes(bytes);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (OutputStream gzipOutput = new GZIPOutputStream(baos))
+        {
+            gzipOutput.write(bytes);
+        }
+        byte[] gzipBytes = baos.toByteArray();
+
         startServer(new HttpServlet()
         {
             @Override
@@ -697,22 +709,19 @@ public class AsyncMiddleManServletTest
                 OutputStream output = response.getOutputStream();
                 if (gzipped)
                 {
-                    output = new GZIPOutputStream(output);
                     response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                    output = new GZIPOutputStream(output);
                 }
 
                 // Flush to force chunked transfer.
-                response.flushBuffer();
+                output.flush();
 
                 // Large non-compressible write to make the proxy TCP congested.
-                Random random = new Random();
-                byte[] chunk = new byte[1024 * 1024];
-                random.nextBytes(chunk);
-                for (int i = 0; i < 16; ++i)
-                {
-                    output.write(chunk);
-                    output.flush();
-                }
+                output.write(bytes);
+
+                // Make sure the GZIPOutputStream is closed to ensure all of it is written.
+                if (gzipped)
+                    output.close();
             }
         });
         startProxy(new AsyncMiddleManServlet()
@@ -748,7 +757,23 @@ public class AsyncMiddleManServletTest
 
             client.socket().setSoTimeout(5000);
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            byte[] rawBytes = response.getContentBytes();
+
             assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            if (gzipped)
+            {
+                assertArrayEquals(gzipBytes, rawBytes);
+                byte[] ungzipped = new GZIPInputStream(new ByteArrayInputStream(rawBytes)).readAllBytes();
+                assertArrayEquals(bytes, ungzipped);
+            }
+            else
+            {
+                assertArrayEquals(bytes, rawBytes);
+            }
+
+            byte[] result = gzipped ? new GZIPInputStream(new ByteArrayInputStream(rawBytes)).readAllBytes() : rawBytes;
+            assertArrayEquals(bytes, result);
         }
     }
 
