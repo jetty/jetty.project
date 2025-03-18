@@ -726,6 +726,7 @@ public class AsyncMiddleManServletTest
                 return transformer;
             }
         });
+
         // Connect to the proxy, but send a request for the server.
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", proxyConnector.getLocalPort())))
         {
