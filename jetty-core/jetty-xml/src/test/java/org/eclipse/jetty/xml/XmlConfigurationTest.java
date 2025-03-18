@@ -1910,18 +1910,19 @@ public class XmlConfigurationTest
     public void testMainWithDuplicateEnvironment()
     {
         Path base = MavenTestingUtils.getBasePath().resolve("src").resolve("test").resolve("base");
+        // Don't use environment names used in other tests, as they are stored in a static map.
         assertThrows(IllegalArgumentException.class, () -> XmlConfiguration.main(
             "--env",
-            "envA",
+            "env1",
             "-cp",
             base.resolve("envA").toString(),
             "--env",
-            "envB",
+            "env2",
             "-cp",
             base.resolve("envB").toString(),
             // Duplicate --env envA section is not allowed.
             "--env",
-            "envA",
+            "env1",
             "-cp",
             base.resolve("envB").toString()
         ));
