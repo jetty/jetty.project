@@ -264,8 +264,25 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        // TODO Implement after #12742 is merged
-        return () -> appCallback.failed(new UnsupportedOperationException("Implement after #12742 is merged"));
+        return () -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause, new Promise.Invocable.Abstract<>(appCallback.getInvocationType())
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                completed();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completed();
+            }
+
+            private void completed()
+            {
+                appCallback.failed(cause);
+            }
+        });
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)

@@ -62,7 +62,7 @@ public class AbstractClientServerTest
 {
     public static List<TransportType> transports()
     {
-        return List.of(TransportType.H3_QUICHE);
+        return List.of(TransportType.values());
     }
 
     public WorkDir workDir;
