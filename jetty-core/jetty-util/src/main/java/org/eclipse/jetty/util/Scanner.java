@@ -904,6 +904,8 @@ public class Scanner extends ContainerLifeCycle
         if (changes.isEmpty())
             return; // nothing to report
 
+        ExceptionUtil.MultiException startFailures = isStarting() ? new ExceptionUtil.MultiException() : null;
+
         for (Listener listener : _listeners)
         {
             if (listener == null)
@@ -917,7 +919,10 @@ public class Scanner extends ContainerLifeCycle
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn("{} failed on '{}'", listener, changes, t);
+                    if (startFailures == null)
+                        LOG.warn("{} failed on '{}'", listener, changes, t);
+                    else
+                        startFailures.add(t);
                 }
             }
 
@@ -940,10 +945,19 @@ public class Scanner extends ContainerLifeCycle
                     }
                     catch (Throwable t)
                     {
-                        LOG.warn("{} failed on '{}'", listener, entry.getKey(), t);
+                        if (startFailures == null)
+                            LOG.warn("{} failed on '{}'", listener, entry.getKey(), t);
+                        else
+                            startFailures.add(t);
                     }
                 }
             }
+        }
+
+        if (startFailures != null)
+        {
+            LOG.debug("scan failures {}", startFailures);
+            startFailures.ifExceptionThrowRuntime();
         }
     }
 

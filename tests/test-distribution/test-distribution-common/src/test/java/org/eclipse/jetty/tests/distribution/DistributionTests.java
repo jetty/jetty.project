@@ -1285,7 +1285,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] args1 = {"--add-module=server,http,deploy,requestlog"};
+        String[] args1 = {"--add-module=server,http,requestlog"};
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
@@ -1967,8 +1967,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
             Files.writeString(webapps.resolve(name + ".xml"), """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
                   <Set name="contextPath">/test</Set>
                   <Set name="handler">
                     <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />

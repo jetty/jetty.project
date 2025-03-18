@@ -47,7 +47,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
-    
+
     /**
      * Null FragmentActivator for the fake bundle
      * that exposes src/test/resources/jetty-logging.properties in
@@ -143,7 +143,7 @@ public class TestOSGiUtil
         //sort out logging from the pax-exam environment
         List<Option> options = new ArrayList<>();
         options.add(systemProperty("pax.exam.logging").value("none"));
-        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "INFO");
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
         return options;
     }
@@ -186,7 +186,7 @@ public class TestOSGiUtil
         loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        
+
         res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet").artifactId("jakarta.servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
@@ -273,7 +273,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-boot-jsp").versionAsInProject().noStart());
     }
-    
+
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
@@ -316,14 +316,14 @@ public class TestOSGiUtil
             }
         }
     }
-    
+
     protected static void dumpBundle(Bundle b)
     {
         System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
     }
 
     protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
-    {        
+    {
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -346,7 +346,9 @@ public class TestOSGiUtil
         System.err.println("RESOLVED: " + Bundle.RESOLVED);
         System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
+        {
             dumpBundle(b);
+        }
     }
 
     @SuppressWarnings("rawtypes")

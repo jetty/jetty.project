@@ -16,6 +16,7 @@ http2
 test-keystore
 work
 demo-root
+ee9-environment
 ee9-demo-async-rest
 ee9-demo-jaas
 ee9-demo-jetty

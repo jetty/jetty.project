@@ -12,7 +12,7 @@
 //
 
 /**
- * Jetty Deploy : Webapp Deploy Management
+ * Jetty Deploy : Deploy Management
  */
 package org.eclipse.jetty.deploy;
 

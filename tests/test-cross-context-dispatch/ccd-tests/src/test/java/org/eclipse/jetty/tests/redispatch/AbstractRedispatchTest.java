@@ -88,6 +88,14 @@ public abstract class AbstractRedispatchTest
                 Path startDir = jettyBase.resolve("start.d");
                 FS.ensureDirExists(startDir);
 
+                Path resourcesDir = jettyBase.resolve("resources");
+                FS.ensureDirExists(resourcesDir);
+                String loggingText = """
+                    #org.eclipse.jetty.LEVEL=DEBUG
+                    #org.eclipse.jetty.deploy.LEVEL=DEBUG
+                    """;
+                Files.writeString(resourcesDir.resolve("jetty-logging.properties"), loggingText, StandardCharsets.UTF_8);
+
                 // Configure the DispatchPlanHandler
                 Path ccdJar = distribution.resolveArtifact("org.eclipse.jetty.tests.ccd:ccd-common:jar:" + jettyVersion);
                 Files.copy(ccdJar, libDir.resolve(ccdJar.getFileName()));

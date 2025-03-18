@@ -155,7 +155,7 @@
                   <artifactId>jetty-ee9-test-webapp-rfc2616</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
-                  <destFileName>ee9-test-rfc2616.war</destFileName>
+                  <destFileName>jetty-ee9-test-rfc2616.war</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
@@ -167,7 +167,7 @@
                   <groupId>org.eclipse.jetty.ee9.demos</groupId>
                   <artifactId>jetty-ee9-demo-jetty-websocket-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>ee9-demo-jetty-websocket.war</destFileName>
+                  <destFileName>jetty-ee9-demo-jetty-websocket.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>

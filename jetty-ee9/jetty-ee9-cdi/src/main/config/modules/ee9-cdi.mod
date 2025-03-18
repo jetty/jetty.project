@@ -22,7 +22,7 @@ cdi
 cdi
 
 [depend]
-deploy
+ee9-deploy
 
 [xml]
 etc/cdi/jetty-ee9-cdi.xml

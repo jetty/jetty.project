@@ -436,10 +436,26 @@ public class XmlConfiguration
      */
     public static String resolvePath(String dir, String destPath)
     {
+        Path resolved = resolvedPath(dir, destPath);
+        if (resolved == null)
+            return null;
+        return resolved.toString();
+    }
+
+    /**
+     * Utility method to resolve a provided path against a directory.
+     *
+     * @param dir the directory (should be a directory reference, does not have to exist)
+     * @param destPath the destination path (can be relative or absolute, syntax depends on OS + FileSystem in use,
+     * and does not need to exist)
+     * @return String to resolved and normalized path, or null if dir or destPath is empty.
+     */
+    public static Path resolvedPath(String dir, String destPath)
+    {
         if (StringUtil.isEmpty(dir) || StringUtil.isEmpty(destPath))
             return null;
 
-        return Paths.get(dir).resolve(destPath).normalize().toString();
+        return Paths.get(dir).resolve(destPath).normalize();
     }
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
@@ -1078,7 +1094,7 @@ public class XmlConfiguration
                 }
             }
 
-            throw new NoSuchMethodException(methodName);
+            throw new NoSuchMethodException(obj + " . " + methodName + "(" + args + ")");
         }
 
         /**

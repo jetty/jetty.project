@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.FileOutputStream;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 

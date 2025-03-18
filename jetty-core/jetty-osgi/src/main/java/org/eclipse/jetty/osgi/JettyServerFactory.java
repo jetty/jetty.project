@@ -26,10 +26,8 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.AppLifeCycle;
-import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.bindings.StandardStarter;
-import org.eclipse.jetty.deploy.bindings.StandardStopper;
+import org.eclipse.jetty.deploy.Deployer;
+import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -118,11 +116,11 @@ public class JettyServerFactory
                     {
                         try
                         {
-                            Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
-                            if (!Resources.isReadableFile(xmlresource))
-                                throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
+                        Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
+                        if (!Resources.isReadableFile(xmlresource))
+                            throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
                             // Execute a Jetty configuration file
-                            XmlConfiguration config = new XmlConfiguration(xmlresource);
+                        XmlConfiguration config = new XmlConfiguration(xmlresource);
 
                             config.getIdMap().putAll(idMap);
                             config.getProperties().putAll(properties);
@@ -174,16 +172,9 @@ public class JettyServerFactory
                 server.setHandler(contextHandlerCollection);
             }
 
-            //ensure DeploymentManager
-            DeploymentManager deploymentManager = ensureDeploymentManager(server);
-            deploymentManager.setUseStandardBindings(false);
-            List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
-            deploymentLifeCycleBindings.add(new OSGiDeployer(server));
-            deploymentLifeCycleBindings.add(new StandardStarter());
-            deploymentLifeCycleBindings.add(new StandardStopper());
-            deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
-            deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
-            
+            //ensure a deployer
+            StandardDeployer deployer = ensureDeployer(server);
+
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
             server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
@@ -212,24 +203,33 @@ public class JettyServerFactory
         }
     }
 
-   private static DeploymentManager ensureDeploymentManager(Server server)
+    private static StandardDeployer ensureDeployer(Server server)
    {
-       Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
-       DeploymentManager deploymentManager = null;
+       Collection<Deployer> deployers = server.getBeans(Deployer.class);
+       StandardDeployer deployer = null;
 
        if (deployers != null)
        {
-           deploymentManager = deployers.stream().findFirst().orElse(null);
+           deployer = deployers.stream()
+               .filter(d -> (d instanceof StandardDeployer))
+               .map(StandardDeployer.class::cast)
+               .findFirst()
+               .orElse(null);
        }
 
-       if (deploymentManager == null)
+       if (deployer == null)
        {
-           deploymentManager = new DeploymentManager();
-           deploymentManager.setContexts(getContextHandlerCollection(server));
-           server.addBean(deploymentManager);
+           deployer = new StandardDeployer(getContextHandlerCollection(server));
+           server.addBean(deployer);
        }
-       
-       return deploymentManager;
+
+       // Ensure that OSGiDeploymentListener is present
+       if (deployer.getEventListeners().stream().noneMatch(l -> (l instanceof OSGiDeploymentListener)))
+       {
+           deployer.addEventListener(new OSGiDeploymentListener());
+       }
+
+       return deployer;
    }
    
    private static ContextHandlerCollection getContextHandlerCollection(Server server)

@@ -50,6 +50,7 @@ public class TestJettyOSGiBootWithBundleJettyHome
 
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPortViaBootBundle("jetty-http-connector-listener.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));

@@ -55,7 +55,7 @@ public class JettyWebSocketTest
     @Test
     public void testChatEndpoint() throws Exception
     {
-        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/ee11-demo-jetty-websocket/jetty.websocket/foo"));
+        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/jetty-ee11-demo-jetty-websocket/jetty.websocket/foo"));
 
         WebSocketClient client = new WebSocketClient();
 

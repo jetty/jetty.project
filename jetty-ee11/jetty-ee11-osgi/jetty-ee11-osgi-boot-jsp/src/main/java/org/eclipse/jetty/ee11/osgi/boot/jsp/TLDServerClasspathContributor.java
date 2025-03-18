@@ -24,7 +24,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 /**
- * @author janb
  *
  */
 public class TLDServerClasspathContributor implements ServerClasspathContributor

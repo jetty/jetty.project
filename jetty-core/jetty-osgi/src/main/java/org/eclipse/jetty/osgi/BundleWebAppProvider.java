@@ -18,9 +18,10 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -38,18 +39,18 @@ import org.slf4j.LoggerFactory;
  */
 public class BundleWebAppProvider extends AbstractContextProvider implements BundleProvider
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BundleWebAppProvider.class);
 
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
      */
-    private Map<Bundle, App> _bundleMap = new HashMap<>();
+    private Map<Bundle, ContextHandler> _bundleMap = new HashMap<>();
 
-    private ServiceRegistration _serviceRegForBundles;
+    private ServiceRegistration<?> _serviceRegForBundles;
 
     private WebAppTracker _webappTracker;
 
-    public class WebAppTracker extends BundleTracker
+    public class WebAppTracker extends BundleTracker<Object>
     {
         protected String _managedServerName;
 
@@ -94,9 +95,9 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
     }
 
-    public BundleWebAppProvider(String environment, Server server, ContextFactory contextFactory)
+    public BundleWebAppProvider(Server server, Deployer deployer, String environment, ContextFactory contextFactory)
     {
-        super(environment, server, contextFactory);
+        super(server, deployer, environment, contextFactory);
     }
 
     @Override
@@ -182,13 +183,10 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             String staticResourcesLocation = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (staticResourcesLocation != null)
             {
-                //TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
-                //exceptions inside the impl of addApp. Need to send the Event and also register as a service
-                //only if the deployment succeeded
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setPathToResourceBase(staticResourcesLocation);
-                _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                BundleMetadata app = new BundleMetadata(bundle, staticResourcesLocation);
+                ContextHandler contextHandler = createContextHandler(app);
+                _bundleMap.put(bundle, contextHandler);
+                getContextHandlerManagement().deploy(contextHandler);
                 return true;
             }
 
@@ -196,10 +194,10 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setPathToResourceBase(base);
-                _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                BundleMetadata app = new BundleMetadata(bundle, base);
+                ContextHandler contextHandler = createContextHandler(app);
+                _bundleMap.put(bundle, contextHandler);
+                getContextHandlerManagement().deploy(contextHandler);
                 return true;
             }
 
@@ -208,10 +206,10 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setPathToResourceBase(base);
-                _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                BundleMetadata app = new BundleMetadata(bundle, base);
+                ContextHandler contextHandler = createContextHandler(app);
+                _bundleMap.put(bundle, contextHandler);
+                getContextHandlerManagement().deploy(contextHandler);
                 return true;
             }
 
@@ -231,12 +229,12 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
      * @return true if this was a webapp we had deployed, false otherwise
      */
     @Override
-    public boolean bundleRemoved(Bundle bundle) throws Exception
+    public boolean bundleRemoved(Bundle bundle)
     {
-        App app = _bundleMap.remove(bundle);
-        if (app != null)
+        ContextHandler contextHandler = _bundleMap.remove(bundle);
+        if (contextHandler != null)
         {
-            getDeploymentManager().removeApp(app);
+            getContextHandlerManagement().undeploy(contextHandler);
             return true;
         }
         return false;
