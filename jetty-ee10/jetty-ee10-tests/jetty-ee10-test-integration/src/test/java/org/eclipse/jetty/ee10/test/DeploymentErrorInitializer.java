@@ -20,7 +20,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 
 /**
- * A SCI that tosses an Error to intentionally to cause issues with the DeploymentManager
+ * A SCI that tosses an Error to intentionally to cause issues with the Deployer
  *
  * @see <a href="https://github.com/jetty/jetty.project/issues/1602">Issue #1602</a>
  */

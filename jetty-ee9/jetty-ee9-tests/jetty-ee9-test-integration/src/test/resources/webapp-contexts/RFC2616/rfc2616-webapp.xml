@@ -3,7 +3,8 @@
 
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/rfc2616-webapp</Set>
-  <Set name="war"><Property name="test.webapps" default="target/webapps" />/ee9-test-rfc2616.war</Set>
+  <Set name="war"><Property name="test.webapps" default="target/webapps" />/jetty-ee9-test-rfc2616.war
+  </Set>
   <Get name="systemClassMatcher">
     <Call name="add">
       <Arg>org.slf4j.</Arg>

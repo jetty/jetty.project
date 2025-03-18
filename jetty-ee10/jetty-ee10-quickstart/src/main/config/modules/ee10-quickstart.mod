@@ -8,7 +8,7 @@ ee10
 
 [depend]
 server
-deploy
+ee10-deploy
 
 [lib]
 lib/jetty-ee10-quickstart-${jetty.version}.jar

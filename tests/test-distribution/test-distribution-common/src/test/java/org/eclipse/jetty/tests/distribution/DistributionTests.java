@@ -1286,7 +1286,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] args1 = {"--add-module=server,http,deploy,requestlog"};
+        String[] args1 = {"--add-module=server,http,requestlog"};
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
@@ -1968,8 +1968,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
             Files.writeString(webapps.resolve(name + ".xml"), """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
                   <Set name="contextPath">/test</Set>
                   <Set name="handler">
                     <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />
@@ -2377,6 +2377,60 @@ public class DistributionTests extends AbstractJettyHomeTest
                     }, Matchers.hasSize(1));
                     assertThat(logLines.get(0), startsWith(forwarded));
                 }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testMultipleEnvironments(boolean jpms) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        List<String> modules = new ArrayList<>();
+        modules.add("http");
+        List.of("ee9", "ee10", "ee11").forEach(env ->
+        {
+            modules.add(toEnvironment("deploy", env));
+            modules.add(toEnvironment("demo-simple", env));
+        });
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = Tester.freePort();
+            List<String> args = new ArrayList<>();
+            args.add("jetty.http.selectors=1");
+            args.add("jetty.http.port=" + httpPort);
+            if (jpms)
+                args.add("--jpms");
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+
+                ContentResponse ee9Response = client.newRequest("localhost", httpPort)
+                    .path("/ee9-demo-simple/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, ee9Response.getStatus());
+
+                ContentResponse ee10Response = client.newRequest("localhost", httpPort)
+                    .path("/ee10-demo-simple/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, ee10Response.getStatus());
+
+                ContentResponse ee11Response = client.newRequest("localhost", httpPort)
+                    .path("/ee11-demo-simple/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, ee11Response.getStatus());
             }
         }
     }
