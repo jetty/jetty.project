@@ -85,6 +85,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -171,11 +172,11 @@ public class AsyncMiddleManServletTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
-        client.stop();
-        proxy.stop();
-        server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(proxy);
+        LifeCycle.stop(server);
     }
 
     @Test
