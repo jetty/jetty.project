@@ -3,6 +3,7 @@ Installs the Conscrypt JSSE provider.
 
 [tags]
 3rdparty
+ssl
 conscrypt
 
 [depend]

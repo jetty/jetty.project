@@ -3,6 +3,7 @@ Installs the Bouncy Castle JSSE provider.
 
 [tags]
 3rdparty
+ssl
 bouncycastle
 
 [depend]
