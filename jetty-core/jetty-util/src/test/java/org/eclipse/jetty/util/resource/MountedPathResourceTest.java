@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -77,6 +78,19 @@ public class MountedPathResourceTest
         finally
         {
             Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    @Test
+    public void testNewResourceByUrlHasCorrectUri() throws Exception
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URL url = testZip.toUri().toURL();
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newResource(url);
+            URI uri = r.getURI();
+            assertThat(uri.toASCIIString(), is(URIUtil.correctURI(uri).toASCIIString()));
         }
     }
 

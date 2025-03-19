@@ -423,7 +423,7 @@ public interface ResourceFactory
 
         try
         {
-            return newResource(url.toURI());
+            return newResource(URIUtil.correctURI(url.toURI()));
         }
         catch (URISyntaxException e)
         {
