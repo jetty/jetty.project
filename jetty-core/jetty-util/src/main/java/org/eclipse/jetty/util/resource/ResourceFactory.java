@@ -234,7 +234,7 @@ public interface ResourceFactory
                     while (urls.hasMoreElements())
                     {
                         // Get the resource
-                        Resource r = newResource(urls.nextElement().toURI());
+                        Resource r = newResource(URIUtil.correctURI(urls.nextElement().toURI()));
                         // If it is not a directory, then return it as the singular found resource
                         if (!r.isDirectory())
                             return r;

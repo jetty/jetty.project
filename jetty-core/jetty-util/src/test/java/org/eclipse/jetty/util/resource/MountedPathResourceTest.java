@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
@@ -58,6 +60,24 @@ public class MountedPathResourceTest
     public void afterEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
+    public void testClassLoaderResourceIsNotAnAlias() throws Exception
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        ClassLoader loader = new URLClassLoader(new URL[] {testZip.toUri().toURL()});
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(loader);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newClassLoaderResource("rez/deep/zzz", false);
+            assertThat("file inside a JAR should NOT be an alias", r.isAlias(), is(false));
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
     }
 
     @Test
