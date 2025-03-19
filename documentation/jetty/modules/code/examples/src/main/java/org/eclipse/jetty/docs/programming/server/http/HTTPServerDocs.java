@@ -29,6 +29,8 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
@@ -605,9 +607,24 @@ public class HTTPServerDocs
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
-        // Configure Jetty's SslContextFactory to use Conscrypt.
+        // Configure Jetty's SslContextFactory to use the Conscrypt provider.
         sslContextFactory.setProvider("Conscrypt");
         // end::conscrypt[]
+    }
+
+    public void bouncyCastle()
+    {
+        // tag::bouncyCastle[]
+        // Configure the JDK with the Bouncy Castle providers, you need both.
+        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleJsseProvider());
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure Jetty's SslContextFactory to use the Bouncy Castle provider.
+        sslContextFactory.setProvider("BCJSSE");
+        // end::bouncyCastle[]
     }
 
     public void keyStoreScanner() throws Exception
