@@ -45,25 +45,17 @@ public class BouncyCastleModuleTest
             assertEquals(0, configRun.getExitValue());
 
             int httpsPort = Tester.freePort();
-            List<String> jvmArgs = List.of("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005", "-Dorg.eclipse.jetty.LEVEL=DEBUG");
-            try (JettyHomeTester.Run startRun = distribution.start(jvmArgs, List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + httpsPort)))
+            try (JettyHomeTester.Run startRun = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + httpsPort)))
             {
-                try
-                {
-                    assertTrue(startRun.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
-                    assertTrue(startRun.getLogs().stream().anyMatch(line -> line.contains("provider=BCJSSE")));
+                assertTrue(startRun.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(startRun.getLogs().stream().anyMatch(line -> line.contains("provider=BCJSSE")));
 
-                    try (HttpClient httpClient = new HttpClient())
-                    {
-                        httpClient.setSslContextFactory(new SslContextFactory.Client(true));
-                        httpClient.start();
-                        ContentResponse response = httpClient.GET("https://localhost:" + httpsPort);
-                        assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-                    }
-                }
-                finally
+                try (HttpClient httpClient = new HttpClient())
                 {
-                    startRun.getLogs().forEach(System.err::println);
+                    httpClient.setSslContextFactory(new SslContextFactory.Client(true));
+                    httpClient.start();
+                    ContentResponse response = httpClient.GET("https://localhost:" + httpsPort);
+                    assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
                 }
             }
         }
