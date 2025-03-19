@@ -98,6 +98,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -607,6 +608,41 @@ public class HTTPServerDocs
         // Configure Jetty's SslContextFactory to use Conscrypt.
         sslContextFactory.setProvider("Conscrypt");
         // end::conscrypt[]
+    }
+
+    public void keyStoreScanner() throws Exception
+    {
+        // tag::keyStoreScanner[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Add the SecureRequestCustomizer because TLS is used.
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // Configure the SslContextFactory with the keyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        // The ConnectionFactory for TLS.
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+
+        // The ServerConnector instance.
+        ServerConnector connector = new ServerConnector(server, tls, http11);
+        connector.setPort(8443);
+
+        server.addConnector(connector);
+
+        KeyStoreScanner keyStoreScanner = new KeyStoreScanner(sslContextFactory);
+        keyStoreScanner.setScanInterval(60);
+        server.addBean(keyStoreScanner);
+
+        server.start();
+        // end::keyStoreScanner[]
     }
 
     public void handlerTree()
