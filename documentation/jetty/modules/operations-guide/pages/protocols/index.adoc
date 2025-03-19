@@ -861,6 +861,21 @@ To use Conscrypt as the TLS provider just enable the `conscrypt` Jetty module:
 $ java -jar $JETTY_HOME/start.jar --add-modules=conscrypt
 ----
 
+[[ssl-bouncycastle]]
+=== Using Bouncy Castle as SSL/TLS Provider
+
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
+
+link:https://www.bouncycastle.org/[Bouncy Castle] is a pure Java alternative provider for the Java security APIs, and includes a TLS provider.
+
+To use Bouncy Castle as the TLS provider just enable the `bouncycastle` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=bouncycastle
+----
+
 [[ssl-sni]]
 === Configuring SNI
 
