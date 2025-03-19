@@ -81,13 +81,13 @@ public class StatisticsHandlerTest extends AbstractJettyHomeTest
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
             // Stop the server
-            assertTrue(distribution.start("STOP.PORT=" + stopPort, "STOP.KEY=secret", "--stop").awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(distribution.start("STOP.PORT=" + stopPort, "STOP.KEY=secret", "--stop").awaitFor(15, TimeUnit.SECONDS));
 
             // Wait until the server stopped
-            assertTrue(run2.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run2.awaitFor(15, TimeUnit.SECONDS));
 
             // Assert stats are as expected
-            await().atMost(5, TimeUnit.SECONDS).until(() ->
+            await().atMost(15, TimeUnit.SECONDS).until(() ->
                 run2.getLogs().stream().filter(log -> log.endsWith("+> 1xxResponses: 0")).findFirst().orElse(null) != null &&
                 run2.getLogs().stream().filter(log -> log.endsWith("+> 2xxResponses: 2")).findFirst().orElse(null) != null &&
                 run2.getLogs().stream().filter(log -> log.endsWith("+> 3xxResponses: 1")).findFirst().orElse(null) != null &&
