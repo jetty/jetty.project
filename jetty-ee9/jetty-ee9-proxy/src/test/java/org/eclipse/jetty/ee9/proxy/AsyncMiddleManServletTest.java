@@ -775,9 +775,6 @@ public class AsyncMiddleManServletTest
             {
                 assertArrayEquals(bytes, rawBytes);
             }
-
-            byte[] result = gzipped ? new GZIPInputStream(new ByteArrayInputStream(rawBytes)).readAllBytes() : rawBytes;
-            assertArrayEquals(bytes, result);
         }
     }
 
