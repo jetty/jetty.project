@@ -66,7 +66,9 @@ pipeline {
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
-              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED',
+              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
+                             tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml']],
+                             sourceCodeRetention: 'MODIFIED',
                              sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
             }
           }
