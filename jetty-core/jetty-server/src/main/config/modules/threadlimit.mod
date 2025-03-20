@@ -5,5 +5,12 @@ the number of requests per IP address, for denial-of-service protection.
 [deprecated]
 Use 'thread-limit' module instead.
 
-[depend]
+[tags]
+deprecated
+server
+
+[deprecated]
+Use module thread-limit instead.
+
+[depends]
 thread-limit

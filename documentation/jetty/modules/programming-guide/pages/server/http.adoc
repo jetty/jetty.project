@@ -590,6 +590,20 @@ Then, you must configure the JDK with the Conscrypt provider, and configure Jett
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=conscrypt]
 ----
 
+[[connector-protocol-tls-keystore-auto-reload]]
+==== SslContextFactory KeyStore Auto-Reload
+
+Jetty can be configured to monitor the KeyStore file specified in the `SslContextFactory`, and reload the `SslContextFactory` if any changes are detected to the KeyStore file.
+
+If changes need to be done to other files, such as the TrustStore file, this must be done before the change to the Keystore file which will then trigger the `SslContextFactory` reload.
+
+For embedded usage the `KeyStoreScanner` should be created for the specific `SslContextFactory` and added as a bean on the `Server`.
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=keyStoreScanner]
+----
+
 [[connector-protocol-proxy-http11]]
 ==== Jetty Behind a Load Balancer
 
