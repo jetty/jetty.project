@@ -475,25 +475,29 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::inputStreamResponseListener[]
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        httpClient.newRequest("http://domain.com/path")
-            .send(listener);
-
-        // Wait for the response headers to arrive.
-        Response response = listener.get(5, TimeUnit.SECONDS);
-
-        // Look at the response before streaming the content.
-        if (response.getStatus() == HttpStatus.OK_200)
+        // Use try-with-resources to make sure that resources
+        // are released even if the InputStream is not used.
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            // Use try-with-resources to close input stream.
-            try (InputStream responseContent = listener.getInputStream())
+            httpClient.newRequest("http://domain.com/path")
+                .send(listener);
+
+            // Wait for the response headers to arrive.
+            Response response = listener.get(5, TimeUnit.SECONDS);
+
+            // Look at the response before streaming the content.
+            if (response.getStatus() == HttpStatus.OK_200)
             {
-                // Your logic here
+                // Use try-with-resources to close input stream.
+                try (InputStream responseContent = listener.getInputStream())
+                {
+                    // Your logic here
+                }
             }
-        }
-        else
-        {
-            response.abort(new IOException("Unexpected HTTP response"));
+            else
+            {
+                response.abort(new IOException("Unexpected HTTP response"));
+            }
         }
         // end::inputStreamResponseListener[]
     }

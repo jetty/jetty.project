@@ -158,30 +158,32 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-
-        int length = 0;
-        while (input.read() == value)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            if (length % 100 == 0)
-                Thread.sleep(1);
-            ++length;
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+
+            int length = 0;
+            while (input.read() == value)
+            {
+                if (length % 100 == 0)
+                    Thread.sleep(1);
+                ++length;
+            }
+
+            assertEquals(data.length, length);
+
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertNotNull(result);
+            assertFalse(result.isFailed());
+            assertSame(response, result.getResponse());
         }
-
-        assertEquals(data.length, length);
-
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertNotNull(result);
-        assertFalse(result.isFailed());
-        assertSame(response, result.getResponse());
     }
 
     @ParameterizedTest
@@ -199,29 +201,31 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-
-        for (byte b : data)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            int read = input.read();
-            assertTrue(read >= 0);
-            assertEquals(b & 0xFF, read);
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+
+            for (byte b : data)
+            {
+                int read = input.read();
+                assertTrue(read >= 0);
+                assertEquals(b & 0xFF, read);
+            }
+
+            assertEquals(-1, input.read());
+
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertNotNull(result);
+            assertFalse(result.isFailed());
+            assertSame(response, result.getResponse());
         }
-
-        assertEquals(-1, input.read());
-
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertNotNull(result);
-        assertFalse(result.isFailed());
-        assertSame(response, result.getResponse());
     }
 
     @ParameterizedTest
@@ -247,32 +251,34 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-
-        AtomicInteger length = new AtomicInteger();
-
-        assertThrows(IOException.class, () ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            while (input.read() == value)
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+
+            AtomicInteger length = new AtomicInteger();
+
+            assertThrows(IOException.class, () ->
             {
-                if (length.incrementAndGet() % 100 == 0)
-                    Thread.sleep(1);
-            }
-        });
+                while (input.read() == value)
+                {
+                    if (length.incrementAndGet() % 100 == 0)
+                        Thread.sleep(1);
+                }
+            });
 
-        assertThat(length.get(), lessThanOrEqualTo(data.length));
+            assertThat(length.get(), lessThanOrEqualTo(data.length));
 
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertNotNull(result);
-        assertTrue(result.isFailed());
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertNotNull(result);
+            assertTrue(result.isFailed());
+        }
     }
 
     @ParameterizedTest
@@ -290,18 +296,20 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        InputStream stream = listener.getInputStream();
-        // Close the stream immediately.
-        stream.close();
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            InputStream stream = listener.getInputStream();
+            // Close the stream immediately.
+            stream.close();
 
-        client.newRequest(newURI(transport))
-            .body(new BytesRequestContent(new byte[]{0, 1, 2, 3}))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+            client.newRequest(newURI(transport))
+                .body(new BytesRequestContent(new byte[]{0, 1, 2, 3}))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
 
-        assertThrows(IOException.class, stream::read);
+            assertThrows(IOException.class, stream::read);
+        }
     }
 
     @ParameterizedTest
@@ -325,7 +333,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        InputStreamResponseListener listener = new InputStreamResponseListener()
+        try (InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
@@ -333,22 +341,24 @@ public class HttpClientStreamTest extends AbstractTest
                 super.onContent(response, chunk, demander);
                 latch.countDown();
             }
-        };
-        client.newRequest(newURI(transport))
-            .send(listener);
+        })
+        {
+            client.newRequest(newURI(transport))
+                .send(listener);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        InputStream input = listener.getInputStream();
-        input.close();
+            InputStream input = listener.getInputStream();
+            input.close();
 
-        HandlerContext handlerContext = contextRef.get();
-        handlerContext.response().write(true, ByteBuffer.allocate(1024), handlerContext.callback());
+            HandlerContext handlerContext = contextRef.get();
+            handlerContext.response().write(true, ByteBuffer.allocate(1024), handlerContext.callback());
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertThrows(IOException.class, input::read);
+            assertThrows(IOException.class, input::read);
+        }
     }
 
     @ParameterizedTest
@@ -372,7 +382,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         CountDownLatch failedLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
-        InputStreamResponseListener listener = new InputStreamResponseListener()
+        try (InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
@@ -387,21 +397,23 @@ public class HttpClientStreamTest extends AbstractTest
                 super.onFailure(response, failure);
                 failedLatch.countDown();
             }
-        };
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        })
+        {
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Wait until we get some content.
-        assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+            // Wait until we get some content.
+            assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
 
-        // Close the stream.
-        InputStream stream = listener.getInputStream();
-        stream.close();
+            // Close the stream.
+            InputStream stream = listener.getInputStream();
+            stream.close();
 
-        // Make sure that the callback has been invoked.
-        assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+            // Make sure that the callback has been invoked.
+            assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @ParameterizedTest
@@ -426,7 +438,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         CountDownLatch failedLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
-        InputStreamResponseListener listener = new InputStreamResponseListener()
+        try (InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
@@ -441,20 +453,22 @@ public class HttpClientStreamTest extends AbstractTest
                 super.onFailure(response, failure);
                 failedLatch.countDown();
             }
-        };
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        })
+        {
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Wait until we get some content.
-        assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+            // Wait until we get some content.
+            assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
 
-        // Abort the response.
-        response.abort(new Exception());
+            // Abort the response.
+            response.abort(new Exception());
 
-        // Make sure that the callback has been invoked.
-        assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+            // Make sure that the callback has been invoked.
+            assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @ParameterizedTest
@@ -469,12 +483,14 @@ public class HttpClientStreamTest extends AbstractTest
         URI uri = newURI(transport);
         server.stop();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        // Connect to the wrong port
-        client.newRequest(uri)
-            .send(listener);
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertNotNull(result);
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            // Connect to the wrong port
+            client.newRequest(uri)
+                .send(listener);
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertNotNull(result);
+        }
     }
 
     @ParameterizedTest
@@ -546,21 +562,23 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
 
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-        input.close();
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+            input.close();
 
-        latch.countDown();
+            latch.countDown();
 
-        IOException ioException = assertThrows(IOException.class, input::read);
-        assertTrue(ioException instanceof AsynchronousCloseException || ioException.getCause() instanceof AsynchronousCloseException);
+            IOException ioException = assertThrows(IOException.class, input::read);
+            assertTrue(ioException instanceof AsynchronousCloseException || ioException.getCause() instanceof AsynchronousCloseException);
+        }
     }
 
     @ParameterizedTest
@@ -598,26 +616,28 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-
-        for (byte datum1 : data1)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertEquals(datum1, input.read());
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+
+            for (byte datum1 : data1)
+            {
+                assertEquals(datum1, input.read());
+            }
+
+            input.close();
+
+            latch.countDown();
+
+            assertThrows(AsynchronousCloseException.class, input::read);
         }
-
-        input.close();
-
-        latch.countDown();
-
-        assertThrows(AsynchronousCloseException.class, input::read);
     }
 
     @ParameterizedTest
@@ -635,28 +655,30 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        assertNotNull(input);
-
-        for (byte datum : data)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertEquals(datum, input.read());
+            client.newRequest(newURI(transport))
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            assertNotNull(input);
+
+            for (byte datum : data)
+            {
+                assertEquals(datum, input.read());
+            }
+
+            // Read EOF
+            assertEquals(-1, input.read());
+
+            input.close();
+
+            // Must not throw
+            assertEquals(-1, input.read());
         }
-
-        // Read EOF
-        assertEquals(-1, input.read());
-
-        input.close();
-
-        // Must not throw
-        assertEquals(-1, input.read());
     }
 
     @ParameterizedTest
@@ -1162,38 +1184,40 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .timeout(5, TimeUnit.SECONDS)
-            .send(listener);
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        HandlerContext context = contextRef.get();
-        assertNotNull(context);
-
-        Random random = new Random();
-
-        byte[] chunk = new byte[64];
-        random.nextBytes(chunk);
-        context.response().write(false, ByteBuffer.wrap(chunk), Callback.NOOP);
-
-        // Use a buffer larger than the data
-        // written to test that the read returns.
-        byte[] buffer = new byte[2 * chunk.length];
-        InputStream stream = listener.getInputStream();
-        int totalRead = 0;
-        while (totalRead < chunk.length)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            int read = stream.read(buffer);
-            assertTrue(read > 0);
-            totalRead += read;
+            client.newRequest(newURI(transport))
+                .timeout(5, TimeUnit.SECONDS)
+                .send(listener);
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            HandlerContext context = contextRef.get();
+            assertNotNull(context);
+
+            Random random = new Random();
+
+            byte[] chunk = new byte[64];
+            random.nextBytes(chunk);
+            context.response().write(false, ByteBuffer.wrap(chunk), Callback.NOOP);
+
+            // Use a buffer larger than the data
+            // written to test that the read returns.
+            byte[] buffer = new byte[2 * chunk.length];
+            InputStream stream = listener.getInputStream();
+            int totalRead = 0;
+            while (totalRead < chunk.length)
+            {
+                int read = stream.read(buffer);
+                assertTrue(read > 0);
+                totalRead += read;
+            }
+
+            context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
+
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
         }
-
-        context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
-
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
     }
 
     @ParameterizedTest
@@ -1212,17 +1236,19 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .path("/303")
-            .followRedirects(true)
-            .send(listener);
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            client.newRequest(newURI(transport))
+                .path("/303")
+                .followRedirects(true)
+                .send(listener);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertTrue(result.isSucceeded());
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertTrue(result.isSucceeded());
+        }
     }
 
     @ParameterizedTest

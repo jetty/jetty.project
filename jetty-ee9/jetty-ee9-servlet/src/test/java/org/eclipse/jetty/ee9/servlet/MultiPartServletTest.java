@@ -217,22 +217,24 @@ public class MultiPartServletTest
         String contentType = "multipart/form-data; boundary=---------------boundaryXYZ123";
         StringRequestContent emptyContent = new StringRequestContent(contentType, "");
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(emptyContent)
-            .send(listener);
-
-        Response response = listener.get(60, TimeUnit.SECONDS);
-        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("Missing content for multipart request"));
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(emptyContent)
+                .send(listener);
+
+            Response response = listener.get(60, TimeUnit.SECONDS);
+            assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("Missing content for multipart request"));
+            });
+        }
     }
 
     @ParameterizedTest
@@ -246,28 +248,30 @@ public class MultiPartServletTest
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
-
-        // Write large amount of content to the part.
-        byte[] byteArray = new byte[1024 * 1024];
-        Arrays.fill(byteArray, (byte)1);
-        for (int i = 0; i < 1024 * 2; i++)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            content.getOutputStream().write(byteArray);
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
+
+            // Write large amount of content to the part.
+            byte[] byteArray = new byte[1024 * 1024];
+            Arrays.fill(byteArray, (byte)1);
+            for (int i = 0; i < 1024 * 2; i++)
+            {
+                content.getOutputStream().write(byteArray);
+            }
+            content.close();
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("Form is larger than max length"));
+            });
         }
-        content.close();
-
-        assert400orEof(listener, responseContent ->
-        {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("Form is larger than max length"));
-        });
     }
 
     @ParameterizedTest
@@ -290,19 +294,21 @@ public class MultiPartServletTest
             incompleteForm
         );
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(incomplete)
-            .send(listener);
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("Incomplete Multipart"));
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(incomplete)
+                .send(listener);
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("Incomplete Multipart"));
+            });
+        }
     }
 
     @ParameterizedTest
@@ -330,26 +336,28 @@ public class MultiPartServletTest
             rawForm
         );
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(form)
-            .send(listener);
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            if (multiPartCompliance == MultiPartCompliance.RFC7578)
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(form)
+                .send(listener);
+
+            assert400orEof(listener, responseContent ->
             {
-                assertThat(responseContent, containsString("Illegal character ALPHA=&apos;s&apos"));
-            }
-            else if (multiPartCompliance == MultiPartCompliance.LEGACY)
-            {
-                assertThat(responseContent, containsString("Incomplete Multipart"));
-            }
-        });
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                if (multiPartCompliance == MultiPartCompliance.RFC7578)
+                {
+                    assertThat(responseContent, containsString("Illegal character ALPHA=&apos;s&apos"));
+                }
+                else if (multiPartCompliance == MultiPartCompliance.LEGACY)
+                {
+                    assertThat(responseContent, containsString("Incomplete Multipart"));
+                }
+            });
+        }
     }
 
     @ParameterizedTest
@@ -366,19 +374,21 @@ public class MultiPartServletTest
             rawForm
         );
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(form)
-            .send(listener);
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("Missing content for multipart request"));
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(form)
+                .send(listener);
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("Missing content for multipart request"));
+            });
+        }
     }
 
     /**
@@ -450,19 +460,21 @@ public class MultiPartServletTest
             rawForm
         );
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(form)
-            .send(listener);
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("java.lang.IllegalArgumentException: Last unit does not have enough valid bits"));
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(form)
+                .send(listener);
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("java.lang.IllegalArgumentException: Last unit does not have enough valid bits"));
+            });
+        }
     }
 
     /**
@@ -523,19 +535,21 @@ public class MultiPartServletTest
         }
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
-
-        assert400orEof(listener, responseContent ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertThat(responseContent, containsString("Unable to parse form content"));
-            assertThat(responseContent, containsString("Form with too many keys"));
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
+
+            assert400orEof(listener, responseContent ->
+            {
+                assertThat(responseContent, containsString("Unable to parse form content"));
+                assertThat(responseContent, containsString("Form with too many keys"));
+            });
+        }
     }
 
     @ParameterizedTest
@@ -549,56 +563,55 @@ public class MultiPartServletTest
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/requestSizeLimit")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
-
-        Throwable writeError = null;
-        try
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            // Write large amount of content to the part.
-            byte[] byteArray = new byte[1024 * 1024];
-            Arrays.fill(byteArray, (byte)1);
-            for (int i = 0; i < 1024 * 1024; i++)
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/requestSizeLimit")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
+
+            Throwable writeError = null;
+            try
             {
-                content.getOutputStream().write(byteArray);
+                // Write large amount of content to the part.
+                byte[] byteArray = new byte[1024 * 1024];
+                Arrays.fill(byteArray, (byte)1);
+                for (int i = 0; i < 1024 * 1024; i++)
+                {
+                    content.getOutputStream().write(byteArray);
+                }
+                fail("We should never be able to write all the content.");
             }
-            fail("We should never be able to write all the content.");
-        }
-        catch (Exception e)
-        {
-            writeError = e;
-        }
+            catch (Exception e)
+            {
+                writeError = e;
+            }
 
-        assertThat(writeError, instanceOf(EofException.class));
+            assertThat(writeError, instanceOf(EofException.class));
 
-        assert400orEof(listener, null);
+            assert400orEof(listener, null);
+        }
     }
 
     private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody) throws InterruptedException, TimeoutException
     {
         // There is a race here, either we fail trying to write some more content OR
         // we get 400 response, for some reason reading the content throws EofException.
-        String responseContent = null;
         try
         {
             Response response = listener.get(60, TimeUnit.SECONDS);
             assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-            responseContent = IO.toString(listener.getInputStream());
+            String responseContent = IO.toString(listener.getInputStream());
+            if (checkbody != null)
+                checkbody.accept(responseContent);
         }
         catch (ExecutionException | IOException e)
         {
             Throwable cause = e.getCause();
             assertThat(cause, instanceOf(EofException.class));
-            return;
         }
-
-        if (checkbody != null)
-            checkbody.accept(responseContent);
     }
 
     @ParameterizedTest
@@ -648,27 +661,29 @@ public class MultiPartServletTest
 
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
-            InputStreamResponseListener responseStream = new InputStreamResponseListener();
-            client.newRequest("localhost", connector.getLocalPort())
-                .path("/echo")
-                .scheme(HttpScheme.HTTP.asString())
-                .method(HttpMethod.POST)
-                .headers(h -> h.add(HttpHeader.ACCEPT_ENCODING, "gzip"))
-                .body(multiPart)
-                .send(responseStream);
-
-            Response response = responseStream.get(5, TimeUnit.SECONDS);
-            HttpFields headers = response.getHeaders();
-            assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
-            assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
-
-            try (InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
+            try (InputStreamResponseListener responseStream = new InputStreamResponseListener())
             {
-                String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-                MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
-                List<Part> parts = new ArrayList<>(mpis.getParts());
-                assertThat(parts.size(), is(1));
-                assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+                client.newRequest("localhost", connector.getLocalPort())
+                    .path("/echo")
+                    .scheme(HttpScheme.HTTP.asString())
+                    .method(HttpMethod.POST)
+                    .headers(h -> h.add(HttpHeader.ACCEPT_ENCODING, "gzip"))
+                    .body(multiPart)
+                    .send(responseStream);
+
+                Response response = responseStream.get(5, TimeUnit.SECONDS);
+                HttpFields headers = response.getHeaders();
+                assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
+                assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
+
+                try (InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
+                {
+                    String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+                    MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
+                    List<Part> parts = new ArrayList<>(mpis.getParts());
+                    assertThat(parts.size(), is(1));
+                    assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+                }
             }
         }
     }
