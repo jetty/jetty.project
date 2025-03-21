@@ -161,28 +161,30 @@ public class CoreMultiPartTest
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
-
-        // The write side will eventually throw because connection is closed.
-        assertThrows(Throwable.class, () ->
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            // Write large amount of content to the part.
-            byte[] byteArray = new byte[1024 * 1024];
-            Arrays.fill(byteArray, (byte)1);
-            for (int i = 0; i < 1024 * 2; i++)
-            {
-                content.getOutputStream().write(byteArray);
-            }
-            content.close();
-        });
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
 
-        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
+            // The write side will eventually throw because connection is closed.
+            assertThrows(Throwable.class, () ->
+            {
+                // Write large amount of content to the part.
+                byte[] byteArray = new byte[1024 * 1024];
+                Arrays.fill(byteArray, (byte)1);
+                for (int i = 0; i < 1024 * 2; i++)
+                {
+                    content.getOutputStream().write(byteArray);
+                }
+                content.close();
+            });
+
+            assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
+        }
     }
 
     @Test
@@ -210,15 +212,17 @@ public class CoreMultiPartTest
         }
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/defaultConfig")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/defaultConfig")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
 
-        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
+            assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
+        }
     }
 
     @Test
@@ -240,56 +244,55 @@ public class CoreMultiPartTest
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
         multiPart.close();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/requestSizeLimit")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .body(multiPart)
-            .send(listener);
-
-        Throwable writeError = null;
-        try
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            // Write large amount of content to the part.
-            byte[] byteArray = new byte[1024 * 1024];
-            Arrays.fill(byteArray, (byte)1);
-            for (int i = 0; i < 1024 * 1024; i++)
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/requestSizeLimit")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .body(multiPart)
+                .send(listener);
+
+            Throwable writeError = null;
+            try
             {
-                content.getOutputStream().write(byteArray);
+                // Write large amount of content to the part.
+                byte[] byteArray = new byte[1024 * 1024];
+                Arrays.fill(byteArray, (byte)1);
+                for (int i = 0; i < 1024 * 1024; i++)
+                {
+                    content.getOutputStream().write(byteArray);
+                }
+                fail("We should never be able to write all the content.");
             }
-            fail("We should never be able to write all the content.");
-        }
-        catch (Exception e)
-        {
-            writeError = e;
-        }
+            catch (Exception e)
+            {
+                writeError = e;
+            }
 
-        assertThat(writeError, instanceOf(EofException.class));
+            assertThat(writeError, instanceOf(EofException.class));
 
-        assert400orEof(listener, null);
+            assert400orEof(listener, null);
+        }
     }
 
     private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody) throws InterruptedException, TimeoutException
     {
         // There is a race here, either we fail trying to write some more content OR
         // we get 400 response, for some reason reading the content throws EofException.
-        String responseContent = null;
         try
         {
             org.eclipse.jetty.client.Response response = listener.get(60, TimeUnit.SECONDS);
             assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-            responseContent = IO.toString(listener.getInputStream());
+            String responseContent = IO.toString(listener.getInputStream());
+            if (checkbody != null)
+                checkbody.accept(responseContent);
         }
         catch (ExecutionException | IOException e)
         {
             Throwable cause = e.getCause();
             assertThat(cause, instanceOf(EofException.class));
-            return;
         }
-
-        if (checkbody != null)
-            checkbody.accept(responseContent);
     }
 
     @Test
@@ -487,30 +490,32 @@ public class CoreMultiPartTest
         multiPartContent.addPart(new MultiPart.ContentSourcePart("stringPart", null, HttpFields.EMPTY, content));
         multiPartContent.close();
 
-        InputStreamResponseListener responseStream = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/echo")
-            .scheme(HttpScheme.HTTP.asString())
-            .method(HttpMethod.POST)
-            .headers(h -> h.add(HttpHeader.ACCEPT_ENCODING, "gzip"))
-            .body(multiPartContent)
-            .send(responseStream);
+        try (InputStreamResponseListener responseStream = new InputStreamResponseListener())
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .path("/echo")
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .headers(h -> h.add(HttpHeader.ACCEPT_ENCODING, "gzip"))
+                .body(multiPartContent)
+                .send(responseStream);
 
-        org.eclipse.jetty.client.Response response = responseStream.get(5, TimeUnit.SECONDS);
-        HttpFields headers = response.getHeaders();
-        assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
-        assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
+            org.eclipse.jetty.client.Response response = responseStream.get(5, TimeUnit.SECONDS);
+            HttpFields headers = response.getHeaders();
+            assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
+            assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
 
-        String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-        String boundary = MultiPart.extractBoundary(contentType);
-        InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
-        formData.setMaxParts(1);
-        formData.setMaxMemoryFileSize(-1);
-        MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
+            String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+            String boundary = MultiPart.extractBoundary(contentType);
+            InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
+            MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
+            formData.setMaxParts(1);
+            formData.setMaxMemoryFileSize(-1);
+            MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
 
-        assertThat(parts.size(), is(1));
-        assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+            assertThat(parts.size(), is(1));
+            assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+        }
     }
 
     @Test

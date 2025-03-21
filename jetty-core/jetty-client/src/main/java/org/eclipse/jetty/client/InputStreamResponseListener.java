@@ -42,31 +42,33 @@ import org.slf4j.LoggerFactory;
  * that allows applications to read the response content.
  * <p>
  * Typical usage is:
- * <pre>
- * InputStreamResponseListener listener = new InputStreamResponseListener();
- * client.newRequest(...).send(listener);
- *
- * // Wait for the response headers to arrive
- * Response response = listener.get(5, TimeUnit.SECONDS);
- * if (response.getStatus() == 200)
+ * <pre>{@code
+ * try (InputStreamResponseListener listener = new InputStreamResponseListener())
  * {
- *     // Obtain the input stream on the response content
- *     try (InputStream input = listener.getInputStream())
+ *     client.newRequest(...).send(listener);
+ *
+ *     // Wait for the response headers to arrive.
+ *     Response response = listener.get(5, TimeUnit.SECONDS);
+ *     if (response.getStatus() == 200)
  *     {
- *         // Read the response content
+ *         // Obtain the input stream on the response content.
+ *         try (InputStream input = listener.getInputStream())
+ *         {
+ *             // Read the response content
+ *         }
  *     }
  * }
- * </pre>
+ * }</pre>
  * <p>
  * The {@link HttpClient} implementation (the producer) will feed the input stream
  * asynchronously while the application (the consumer) is reading from it.
  * <p>
  * If the consumer is faster than the producer, then the consumer will block
  * with the typical {@link InputStream#read()} semantic.
- * If the consumer is slower than the producer, then the producer will block
- * until the client consumes.
+ * If the consumer is slower than the producer, then the producer will await
+ * non-blocking until the client consumes, and then will resume production.
  */
-public class InputStreamResponseListener implements Listener
+public class InputStreamResponseListener implements Listener, AutoCloseable
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});
@@ -185,6 +187,12 @@ public class InputStreamResponseListener implements Listener
         }
 
         chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        stream.updateAndGet(input -> input == null ? InputStream.nullInputStream() : input).close();
     }
 
     /**
