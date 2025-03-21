@@ -17,7 +17,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               script{
-                properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.0.x'?'60':'5'))])
+                properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.1.x'?'60':'5'))])
               }
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
