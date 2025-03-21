@@ -2188,6 +2188,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             "qos",
             "size-limit",
             "thread-limit",
+            "accept-rate-limit",
+            "connection-limit",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env)
         };

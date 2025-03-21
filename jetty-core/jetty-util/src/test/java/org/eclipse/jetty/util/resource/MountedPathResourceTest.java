@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -58,6 +61,37 @@ public class MountedPathResourceTest
     public void afterEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
+    public void testClassLoaderResourceIsNotAnAlias() throws Exception
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        ClassLoader loader = new URLClassLoader(new URL[] {testZip.toUri().toURL()});
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(loader);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newClassLoaderResource("rez/deep/zzz", false);
+            assertThat("file inside a JAR should NOT be an alias", r.isAlias(), is(false));
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    @Test
+    public void testNewResourceByUrlHasCorrectUri() throws Exception
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URL url = testZip.toUri().toURL();
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newResource(url);
+            URI uri = r.getURI();
+            assertThat(uri.toASCIIString(), is(URIUtil.correctURI(uri).toASCIIString()));
+        }
     }
 
     @Test
