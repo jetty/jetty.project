@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestSPIServer
 {
@@ -180,7 +181,9 @@ public class TestSPIServer
                 client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertEquals("1, 2", response.getHeaders().get("Multi-Value"));
+                String headers = response.getHeaders().asString();
+                assertTrue(headers.contains("Multi-value: 2"));
+                assertTrue(headers.contains("Multi-value: 1"));
             }
             finally
             {
