@@ -140,6 +140,8 @@ public class TestSPIServer
                 {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set("Content-Type", "text/plain");
+                    responseHeaders.add("Multi-Value", "1");
+                    responseHeaders.add("Multi-Value", "2");
                     exchange.sendResponseHeaders(200, 0);
 
                     OutputStream responseBody = exchange.getResponseBody();
@@ -178,6 +180,7 @@ public class TestSPIServer
                 client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals("1, 2", response.getHeaders().get("Multi-Value"));
             }
             finally
             {
