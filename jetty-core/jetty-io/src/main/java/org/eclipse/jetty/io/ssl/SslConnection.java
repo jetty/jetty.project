@@ -846,7 +846,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            _sslEndPoint.getWriteFlusher().onFail(failure);
+                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().onFail(failure));
                         }
                         throw failure;
                     }
@@ -857,7 +857,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            _sslEndPoint.getWriteFlusher().completeWrite();
+                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().completeWrite());
                         }
 
                         if (LOG.isDebugEnabled())
