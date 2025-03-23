@@ -110,6 +110,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (chunk != null)
             chunk.release();
         chunk = null;
+        releaseNetworkBuffer();
         disposed = true;
     }
 

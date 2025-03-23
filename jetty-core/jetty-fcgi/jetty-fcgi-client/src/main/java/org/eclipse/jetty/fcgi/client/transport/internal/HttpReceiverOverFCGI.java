@@ -29,11 +29,16 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         super(channel);
     }
 
+    private HttpConnectionOverFCGI getHttpConnection()
+    {
+        return getHttpChannel().getHttpConnection();
+    }
+
     void receive()
     {
         if (!hasContent())
         {
-            HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+            HttpConnectionOverFCGI httpConnection = getHttpConnection();
             boolean setFillInterest = httpConnection.parseAndFill(true);
             if (!hasContent() && setFillInterest)
                 httpConnection.fillInterested();
@@ -80,7 +85,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         Content.Chunk chunk = consumeChunk();
         if (chunk != null)
             return chunk;
-        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean needFillInterest = httpConnection.parseAndFill(false);
         chunk = consumeChunk();
         if (chunk != null)
@@ -100,11 +105,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     @Override
     public void failAndClose(Throwable failure)
     {
+        HttpConnectionOverFCGI httpConnection = getHttpConnection();
         responseFailure(failure, Promise.from(failed ->
         {
             if (failed)
-                getHttpChannel().getHttpConnection().close(failure);
-        }, x -> getHttpChannel().getHttpConnection().close(failure)));
+                httpConnection.close(failure);
+        }, x -> httpConnection.close(failure)));
     }
 
     void content(Content.Chunk chunk)
@@ -135,7 +141,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (chunk != null)
             throw new IllegalStateException();
 
-        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean setFillInterest = httpConnection.parseAndFill(true);
         if (!hasContent() && setFillInterest)
             httpConnection.fillInterested();
