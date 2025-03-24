@@ -331,7 +331,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
                             break;
 
                         if (failure != null)
-                            throw new IOException(failure);
+                            throw IO.rethrow(failure);
 
                         if (closed)
                             throw new AsynchronousCloseException();

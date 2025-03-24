@@ -261,7 +261,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Closed/Shutdown {} in {}", connection, this);
-                    releaseNetworkBuffer();
                     return false;
                 }
 
