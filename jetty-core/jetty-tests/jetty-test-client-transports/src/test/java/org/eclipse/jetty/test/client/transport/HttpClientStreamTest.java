@@ -138,7 +138,7 @@ public class HttpClientStreamTest extends AbstractTest
 
             InputStream input = listener.getInputStream();
             assertEquals(0, input.read());
-            input.close();
+            listener.close();
 
             Result result = listener.await(5, TimeUnit.SECONDS);
             assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
