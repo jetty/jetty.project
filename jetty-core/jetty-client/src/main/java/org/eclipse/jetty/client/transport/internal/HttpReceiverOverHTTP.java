@@ -201,7 +201,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return byteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
-    private void releaseNetworkBuffer()
+    void releaseNetworkBuffer()
     {
         if (networkBuffer == null)
             return;
@@ -295,7 +295,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Error processing {} in {}", endPoint, this, x);
-            releaseNetworkBuffer();
             failAndClose(x);
             return false;
         }

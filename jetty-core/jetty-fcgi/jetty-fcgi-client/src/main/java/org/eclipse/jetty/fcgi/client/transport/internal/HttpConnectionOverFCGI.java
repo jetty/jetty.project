@@ -222,7 +222,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill from endpoint {}", endPoint, x);
-            disposeNetworkBuffer();
             close(x);
             return false;
         }
