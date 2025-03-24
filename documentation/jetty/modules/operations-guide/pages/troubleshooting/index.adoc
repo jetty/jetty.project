@@ -15,101 +15,39 @@
 
 To troubleshoot Jetty when used as a standalone server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
 
-Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
+It is typically very helpful to enable JMX, as detailed in xref:jmx/index.adoc[this section].
+Enabling JMX allows to access the Jetty server (possibly a production server) from a remote location, and obtain the information exported by Jetty via JMX.
 
-As explained in the xref:jmx/index.adoc[JMX section], these components can be exported as JMX MBeans and therefore be accessible from JMX Consoles such as Java Missions Control (JMC).
-
-Being able to take a snapshot of the state of Jetty while it is running is the most useful information that can be attached when reporting an issue.
-Such state includes:
-
-* The thread pool configuration and its current state, including how many threads are in use, and their stack trace.
-* The TLS configuration.
-* The I/O configuration and its current state, including the ports Jetty listens to, how many connections are currently open, and he state of each connection, and the state of the request/response handling for each connection.
-* The `Handler` structure and its configuration.
-* The web applications deployed and their configurations, including the class loader information.
-
-The prerequisite for troubleshooting is to enable JMX, so that Jetty -- possibly a production server -- can be accessed from a remote location to obtain the information exported via JMX, and possibly be able to reconfigure Jetty to solve the issue.
+Access to the Jetty server via JMX allows to either diagnose the problem, possibly reconfigure and restart the Jetty server.
 
 IMPORTANT: Make sure you read about how to secure the access to Jetty when using xref:jmx/index.adoc#remote[remote JMX].
 
 [[dump]]
-== Server Dump
+== Jetty Server Dump
 
-The Jetty Server Dump is obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
+The most useful too to troubleshoot a Jetty server is the xref:programming-guide:troubleshooting/component-dump.adoc[Jetty Component Dump], that reports the _internal_ state of the Jetty server and all its components (the thread pool, the `ByteBuffer` pool, the currently established connections, and so on).
 
-image::jmc-server-dump.png[]
-
-Find the `Server` MBean in the MBean Tree, under `org.eclipse.jetty.server:type=server,id=0`.
-Then click on the "Operations" tab, select the `dump()` operation, and then click the `Execute` button.
-In the bottom panel you will see the result of the invocation, that you can copy into a text editor and save to your file system.
-
-[CAUTION]
-====
-Taking a Jetty Server Dump is a relatively expensive operation, as it dumps the state of all connections (which can be thousands), and the state of all threads.
-
-The result of the invocation may produce a large string, possibly few MiB, that may impact the server memory usage.
-
-Furthermore, dumping the state of the I/O Jetty components takes a little CPU time off the handling of the actual I/O, possibly slowing it down temporarily.
-
-While the slow-down caused by taking the Jetty Server Dump may be noticeable on highly loaded systems, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
-====
-
-[NOTE]
-====
-The format of the Jetty Server Dump output is subject to change at any time, as Jetty developers modify the Jetty code and decide to include more state, or remove state that is no longer relevant.
-
-The Jetty Server Dump is organized in a tree whose structure is similar to the runtime Jetty component tree.
-
-At the end of the dump output there is a legend that explains the type of tree node: whether it is a node that represent a _managed_ component, or an _array_ node (or a _map_ node) that represent some component state, etc.
-====
+The Jetty server dump can easily be obtained via JMX using a JMX console such as Java Mission Control (JMC), as explained in xref:programming-guide:troubleshooting/component-dump.adoc#dump-invoke[this section].
 
 [[dump-start-stop]]
 === Dump at Server Start/Stop
 
-The `Server.dump()` operation may also be invoked just after the `Server` starts (to log the state of the freshly started server), and just before the `Server` stops (which may be useful to log the state of server that is not working properly).
+The Jetty server dump may be reported just after the `Server` starts.
+This is useful to verify that all the expected components have been correctly configured and started for the optimal functioning of the server.
 
-You can temporarily enable the Jetty Server Dump at start time by overriding the `jetty.server.dumpAfterStart` property on the command line:
+Similarly, the Jetty server dump may be reported just before the `Server` stops.
+This is useful to log the state of a server that is not working properly.
+
+The xref:modules/standard.adoc#server[server] Jetty module defines, in xref:modules/standard.adoc#server-config[this section], the properties `jetty.server.dumpAfterStart` and `jetty.server.dumpBeforeStop` that you can configure to report the Jetty server dump.
+
+These properties can be specified temporarily as command line arguments, as explained in xref:start/index.adoc#configure-enable-command-line[this section]:
 
 [source,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar *jetty.server.dumpAfterStart=true*
 ----
 
-To make this change persistent across server restarts, see the xref:modules/standard.adoc#server[`server` module] configuration for more information about how to configure the server to dump at start/stop time.
-
-[[dump-detailed]]
-=== Detailed ThreadPool Information
-
-By default, the dump of the thread pool will only dump the topmost stack frame of each thread.
-It is possible to configure the thread pool to dump the whole stack trace for each thread; while this may be a little more expensive, it provides complete information about the state of each thread, which may be important to diagnose the issue.
-
-See the xref:modules/standard.adoc#threadpool[`threadpool` module] configuration for more information about how to configure the thread pool to dump detailed thread information.
-
-Detailed thread pool information can also be turned on/off on-the-fly via JMX, by finding the `ThreadPool` MBean under `org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0`, then selecting the `detailedDump` attribute and setting it to `true`. You can now perform the `Server.dump()` operation as explained above, and then set `detailedDump` back to `false`.
-
-[[dump-example]]
-=== Dump Example
-
-Below you can find a simple example of a Jetty Server Dump, with annotations for the principal components:
-
-[jetty.small%nowrap]
-....
-[jetty]
-setupArgs=--add-modules=http
-args=jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true
-delete=^[0-9]\{4}
-callouts= <$N>,Server@,= QueuedThreadPool,HandlerCollection@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged
-....
-ifdef::run-jetty[]
-<1> The `Server` instance at the root of the tree
-<2> The thread pool component
-<3> The root of the `Handler` structure
-<4> The connector listening on port `8080` for the HTTP/1.1 protocol
-<5> A selector component that manages connections
-<6> The connections currently managed by the selector component
-<7> The server `ClassLoader` and its classpath
-<8> The legend for the dump nodes
-endif::[]
+Alternatively, you can specify these properties in the `$JETTY_BASE/start.d/server.ini` file, as explained in xref:start/index.adoc#configure-edit-ini[this section], to make the values persistent across server restarts.
 
 [[logging]]
 == Enabling DEBUG Logging
@@ -125,7 +63,7 @@ Enabling DEBUG level logging for `org.eclipse.jetty` is very, *very* expensive.
 Your server could be slowed down to almost a halt, especially if it is under heavy load.
 Furthermore, the log file could quickly fill up the entire filesystem (unless configured to roll over), so you want to be really careful using DEBUG logging.
 
-For production servers, consider using the <<dump,Jetty Server Dump>> first, and enable DEBUG logging only as a last resort.
+For production servers, consider using the xref:dump[Jetty Server Dump] first, and enable DEBUG logging only as a last resort.
 ====
 
 However, sometimes issues are such that only DEBUG logging can really tell what's going on in the system, and enabling DEBUG logging is your best chance to figure the issue out.
