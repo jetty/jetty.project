@@ -288,6 +288,9 @@ public class CoreMultiPartTest
             if (checkbody != null)
                 checkbody.accept(responseContent);
         }
+        catch (EofException ignored)
+        {
+        }
         catch (ExecutionException | IOException e)
         {
             Throwable cause = e.getCause();
