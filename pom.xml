@@ -2691,7 +2691,31 @@
           <name>OSS Snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
+        <repository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <id>apache.snapshots</id>
+          <name>Apache Snapshots</name>
+          <url>https://repository.apache.org/content/groups/snapshots</url>
+        </repository>
       </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <id>apache.snapshots</id>
+          <name>Apache Snapshots</name>
+          <url>https://repository.apache.org/content/groups/snapshots</url>
+        </pluginRepository>
+      </pluginRepositories>
     </profile>
     <profile>
       <id>fast</id>
