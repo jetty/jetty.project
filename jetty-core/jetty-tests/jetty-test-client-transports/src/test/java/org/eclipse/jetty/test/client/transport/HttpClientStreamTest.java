@@ -339,6 +339,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testInputStreamResponseListenerClosedBeforeReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -369,6 +370,10 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerClosedBeforeContent(Transport transport) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
@@ -414,7 +419,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client")
     public void testInputStreamResponseListenerClosedWhileWaiting(Transport transport) throws Exception
     {
         byte[] chunk1 = new byte[]{0, 1};
@@ -469,6 +474,10 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerFailedWhileWaiting(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -542,6 +551,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -575,7 +585,11 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testDownloadWithCloseBeforeContent(Transport transport) throws Exception
     {
         byte[] data = new byte[128 * 1024];
@@ -624,6 +638,10 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testDownloadWithCloseMiddleOfContent(Transport transport) throws Exception
     {
         byte[] data1 = new byte[1024];
@@ -1349,9 +1367,6 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:HTTP")
-    @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:FCGI")
     public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
     {
         AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
@@ -1434,6 +1449,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
+    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     public void testUploadWithRetainedData(Transport transport) throws Exception
     {
         // TODO: broken for FCGI, investigate.

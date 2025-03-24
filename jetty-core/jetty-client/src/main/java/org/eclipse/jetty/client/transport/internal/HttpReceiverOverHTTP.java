@@ -110,7 +110,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (chunk != null)
             chunk.release();
         chunk = null;
-        releaseNetworkBuffer();
         disposed = true;
     }
 
@@ -201,7 +200,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return byteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
-    void releaseNetworkBuffer()
+    private void releaseNetworkBuffer()
     {
         if (networkBuffer == null)
             return;
@@ -261,6 +260,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Closed/Shutdown {} in {}", connection, this);
+                    releaseNetworkBuffer();
                     return false;
                 }
 
@@ -294,6 +294,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Error processing {} in {}", endPoint, this, x);
+            releaseNetworkBuffer();
             failAndClose(x);
             return false;
         }

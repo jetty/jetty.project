@@ -293,7 +293,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
             abort(failure, Promise.noop());
             channel.destroy();
             delegate.destroy();
-            channel.getHttpReceiver().releaseNetworkBuffer();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
