@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -118,6 +119,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
     public void testListenerCloseDuringResponseContent(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -412,6 +414,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
     public void testInputStreamResponseListenerClosedWhileWaiting(Transport transport) throws Exception
     {
         byte[] chunk1 = new byte[]{0, 1};
@@ -572,6 +575,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
     public void testDownloadWithCloseBeforeContent(Transport transport) throws Exception
     {
         byte[] data = new byte[128 * 1024];
@@ -1201,6 +1205,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
     public void testInputStreamResponseListenerBufferedRead(Transport transport) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
@@ -1344,6 +1349,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
     {
         AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
