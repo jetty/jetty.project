@@ -168,6 +168,17 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.networkBuffer = null;
     }
 
+    private void disposeNetworkBuffer()
+    {
+        if (networkBuffer == null)
+            return;
+        networkBuffer.clear();
+        networkBuffer.release();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Disposed {}", networkBuffer);
+        networkBuffer = null;
+    }
+
     boolean parseAndFill(boolean notifyContentAvailable)
     {
         if (LOG.isDebugEnabled())
@@ -180,6 +191,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             while (true)
             {
                 if (parse(networkBuffer.getByteBuffer(), notifyContentAvailable))
+                    return false;
+
+                // Disposed by a parser callback.
+                if (networkBuffer == null)
                     return false;
 
                 if (networkBuffer.isRetained())
@@ -207,8 +222,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill from endpoint {}", endPoint, x);
-            networkBuffer.clear();
-            releaseNetworkBuffer();
             close(x);
             return false;
         }
@@ -291,13 +304,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             getHttpDestination().remove(this);
             abort(failure);
             channel.destroy();
+            delegate.destroy();
+            disposeNetworkBuffer();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
             getEndPoint().close();
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
-            delegate.destroy();
         }
     }
 

@@ -20,9 +20,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -116,9 +118,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * Those jars that do match will be later examined for META-INF
      * information and annotations.
      * <p>
-     * To find them, examine the classloaders in the hierarchy above the
-     * webapp classloader that are URLClassLoaders. For jdk-9 we also
-     * look at the java.class.path, and the jdk.module.path.
+     * To find them, examine the ModuleLayers hierarchy and the
+     * ClassLoaders hierarchy above the webapp classloader that are
+     * URLClassLoaders, and the system property java.class.path.
      * <p>
      * Any {@code jar:file:} resources found will be mounted in the
      * {@link ResourceFactory} of the context.
@@ -173,26 +175,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 .forEach(addContainerResource);
         }
 
-        // We also need to examine the module path.
-        // TODO need to consider the jdk.module.upgrade.path - how to resolve
-        // which modules will be actually used. If its possible, it can
-        // only be attempted in jetty-10 with jdk-9 specific apis.
-        String modulePath = System.getProperty("jdk.module.path");
-        if (modulePath != null)
-        {
-            Stream.of(modulePath.split(File.pathSeparator))
-                .map(resourceFactory::newResource)
-                .filter(Objects::nonNull)
-                .filter(r -> uriPatternPredicate.test(r.getURI()))
-                .forEach(r ->
-                {
-                    if (r.isDirectory())
-                        r.list().forEach(i -> context.getMetaData().addContainerResource(i));
-                    else
-                        context.getMetaData().addContainerResource(r);
-                });
-        }
-
         if (LOG.isDebugEnabled())
             LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
     }
@@ -228,20 +210,39 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    protected List<URI> getAllContainerJars(final WebAppContext context)
+    protected List<URI> getAllContainerJars(WebAppContext context)
     {
+        Set<URI> locations = new HashSet<>();
+        Module module = MetaInfConfiguration.class.getModule();
+        // If the module is named, the JVM is running in JPMS mode.
+        if (module.isNamed())
+        {
+            Deque<ModuleLayer> layers = new ArrayDeque<>();
+            layers.push(module.getLayer());
+            while (!layers.isEmpty())
+            {
+                ModuleLayer layer = layers.pop();
+                // Process all the parent layers.
+                layers.addAll(layer.parents());
+                // Collect all the locations of the current configuration.
+                layer.configuration().modules().stream()
+                    .map(m -> m.reference().location())
+                    .map(optional -> optional.orElse(null))
+                    .filter(Objects::nonNull)
+                    // Skip the JDK modules.
+                    .filter(uri -> !uri.getScheme().equalsIgnoreCase("jrt"))
+                    .collect(Collectors.toCollection(() -> locations));            }
+        }
+
         ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
-        List<URI> uris = new ArrayList<>();
         while (loader != null)
         {
             if (loader instanceof URLClassLoader urlCL)
-            {
-                URIUtil.streamOf(urlCL).forEach(uris::add);
-            }
+                URIUtil.streamOf(urlCL).forEach(locations::add);
             loader = loader.getParent();
         }
 
-        return uris;
+        return List.copyOf(locations);
     }
 
     @Override

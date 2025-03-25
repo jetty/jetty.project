@@ -594,7 +594,7 @@ public class CustomRequestLogTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t"})
+    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York|ja}t"})
     public void testLogRequestTimeCustomFormats(String format) throws Exception
     {
         AtomicLong requestTimeRef = new AtomicLong();
@@ -1028,6 +1028,51 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("value1234"));
+    }
+
+    @Test
+    public void testLogBadUserAgent() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i, \"%{User-Agent}i\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: bad"value
+
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: \"bad\\\"value\", \"bad\\\"value\""));
+    }
+
+    @Test
+    public void testLogEscapedUserAgent() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i, \"%{User-Agent}i\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: bad\\"value
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: \"bad\\\\\\\"value\", \"bad\\\\\\\"value\""));
+    }
+
+    @Test
+    public void testLogWithSloshSeparator() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i\\\"%m\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: jetty
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: jetty\\\"GET\""));
     }
 
     class TestRequestLogWriter implements RequestLog.Writer

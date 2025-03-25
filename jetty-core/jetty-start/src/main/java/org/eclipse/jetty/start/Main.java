@@ -384,7 +384,6 @@ public class Main
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
         // Processing Order is important!
-        // 1) Configuration Locations
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         baseHome = new BaseHome(cmdLineSource);
         StartArgs args = new StartArgs(baseHome);
@@ -392,13 +391,12 @@ public class Main
         StartLog.debug("jetty.home=%s", baseHome.getHome());
         StartLog.debug("jetty.base=%s", baseHome.getBase());
 
-        // 3) Module Registration
         Modules modules = new Modules(baseHome, args);
         StartLog.debug("Registering all modules");
         modules.registerAll();
         args.setAllModules(modules);
 
-        // 2) Parse everything provided.
+        // Parse everything provided.
         // This would be the directory information +
         // the various start inis
         // and then the raw command line arguments
@@ -420,7 +418,6 @@ public class Main
             normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.source);
 
-        // 4) Active Module Resolution
         Set<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
         List<String> unknownModules = new ArrayList<>(selectedModules);
@@ -459,10 +456,6 @@ public class Main
             module.setSkipFilesValidation(true);
         }
 
-        // 5) Lib & XML Expansion / Resolution
-        // 6) Resolve Extra XMLs
-        // 7) JPMS Expansion
-        // 8) Resolve Property Files
         args.expandEnvironments(activeModules);
 
         return args;

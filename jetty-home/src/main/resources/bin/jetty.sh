@@ -22,7 +22,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 9 webserver
+# description: Eclipse Jetty webserver
 # processname: jetty
 # ========================
 

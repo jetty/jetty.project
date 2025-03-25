@@ -84,6 +84,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         configuration.setInputBufferSize(httpClient.getResponseBufferSize());
         configuration.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
         configuration.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+        configuration.setMaxRequestHeadersSize(httpClient.getMaxRequestHeadersSize());
         configuration.setMaxResponseHeadersSize(httpClient.getMaxResponseHeadersSize());
     }
 

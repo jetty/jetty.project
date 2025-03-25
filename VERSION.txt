@@ -1,4 +1,56 @@
-jetty-12.0.17-SNAPSHOT
+jetty-12.0.19-SNAPSHOT
+
+jetty-12.0.18 - 12 March 2025
+ + 12802 Make Server::setDefaultHandler and Server::setErrorHandler arguments
+   consistent
+ + 12882 HttpConfiguration setResponseHeaderSize is ineffective in 12.0.17
+ + 12888 ErrorPageHandler dispatcher returns incorrect 405 for failing POST
+   requests (e.g. JAX-RS)
+ + 12892 Module http-forwarded does not appear to be able to use the IP in
+   X-Forwarded-For header with any TLS HTTP request if the module http2 is also
+   loaded
+
+jetty-12.0.17 - 03 March 2025
+ + 11413 Conscrypt does not support server-side SNI
+ + 12428 No ALPNProcessor for org.bouncycastle.jsse.provider.ProvSSLEngine
+   error with jetty http2 client
+ + 12603 ee9 / UnsupportedOperationException: Read Only
+ + 12609 Change of behaviour with HttpServletResponse.sendError(0) in EE10
+ + 12625 Request.getBeginNanoTime returns invalid values
+ + 12639 Request.Content.getContentType()'s Javadoc contradicts
+   HttpConnection.normalizeRequest()
+ + 12646 CompleteListener may be invoked twice
+ + 12650 Attribute org.eclipse.jetty.multipartConfig is null
+ + 12652 Jetty Reactive client hangs for HTTP 401 responses
+ + 12663 Improve scalability of HttpCookieStore.Default
+ + 12670 Improve buffer management of HTTP/1 response headers
+ + 12674 EE8 has reference to Xalan jars that are no longer needed on new JVMs
+ + 12681 CachingHttpContentFactory$CachedHttpContent already released buffer
+ + 12683 Cross context dispatch to root context uses incorrect target path
+ + 12689 Add statistics about `ByteBufferPool.acquire()` calls made for which
+   there is no bucket
+ + 12690 Add configurable capping for values of H2 `MAX_HEADER_LIST_SIZE`
+   settings frames
+ + 12705 Orphaned sessions are never deleted at runtime in the
+   SessionDataStore.
+ + 12706 Export ArrayByteBufferPool statistics via JMX
+ + 12714 MongoSessionDataStore can't upsert sessions if workerName contains
+   token deliminators
+ + 12723 Windows & OSGi: Failed startup of context oeje8w.WebAppContext
+ + 12730 Regex rules have configs for query matching and merging
+ + 12739 Regression in handing CombinedResource WEB-INF between Jetty 11 and
+   Jetty 12
+ + 12750 UriCompliance is ignored for query string parsing
+ + 12775 EE9 Servlet API avoid unnecessary exceptoin in getInputStream()
+ + 12790 Cannot invoke
+   "org.eclipse.jetty.io.RetainableByteBuffer.getByteBuffer()" because "buffer"
+   is null
+ + 12792 Jetty 12 issue rendering imbedded videos
+ + 12810 Add `jetty-ee` to a BOM
+ + 12821 Restore ee9/ee8 ContextHandler.setCompactPath(boolean) behavior for
+   backward compat reasons
+ + 12828 HttpServletResponse.encodeURL() does not support relative paths
+ + 12834 Quotes should be escaped in request logs
 
 jetty-12.0.16 - 09 December 2024
  + 9529 Expose TCP connection establishment information
@@ -7,13 +59,13 @@ jetty-12.0.16 - 09 December 2024
    rs=ASYNC os=OPEN is=IDLE awp=false se=false i=true al=0
  + 12272 Potential deadlock with Vaadin
  + 12323 AsyncMiddleManServlet response flushing
- + 12429 HandshakeRequest getHeaders are case sensitive.
+ + 12429 HandshakeRequest getHeaders are case sensitive
  + 12469 Content.Sink.write(sink, last, utf8Content, callback) could become
    faster
  + 12481 Exception when a Content-Length is set on a 304 response
  + 12482 CustomRequestLog %q inconsistency with a doc
  + 12488 HTTP/2 headers may not be split in CONTINUATION frames
- + 12496 MultiPartFormData.Parser question.
+ + 12496 MultiPartFormData.Parser question
  + 12520 Numerous stack traces logged at warning level when running under
    HTTP/2 (regression in 12.0.15)
  + 12553 Execute immediately HTTP/2 failures

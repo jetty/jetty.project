@@ -6,7 +6,6 @@
     <format>jar</format>
   </formats>
   <includeBaseDirectory>false</includeBaseDirectory>
-  <!-- baseDirectory>${basedir}/${project.build.directory}/${project.build.finalName}</baseDirectory -->
   <fileSets>
     <fileSet>
       <directory>${basedir}/${project.build.directory}/${project.build.finalName}/</directory>
@@ -20,19 +19,4 @@
       </excludes>
     </fileSet>
   </fileSets>
-<!-- Removed until PropertyUserStore supports packed realm.properties -->
-<!--
-  <files>
-    <file>
-      <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
-      <outputDirectory>WEB-INF</outputDirectory>
-      <destName>jetty-web.xml</destName>
-    </file>
-    <file>
-      <source>src/main/config/demo-base/etc/realm.properties</source>
-      <outputDirectory>WEB-INF</outputDirectory>
-      <destName>realm.properties</destName>
-    </file>
-  </files>
--->
 </assembly>

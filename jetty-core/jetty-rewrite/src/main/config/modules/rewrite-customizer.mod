@@ -10,6 +10,9 @@ rewrite
 [depend]
 server
 
+[before]
+ssl
+
 [lib]
 lib/jetty-rewrite-${jetty.version}.jar
 

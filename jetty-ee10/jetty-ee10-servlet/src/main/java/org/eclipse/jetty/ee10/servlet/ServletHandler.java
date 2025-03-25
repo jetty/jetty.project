@@ -1395,6 +1395,8 @@ public class ServletHandler extends Handler.Wrapper
             if (isRunning())
                 updateMappings();
             invalidateChainsCache();
+            _matchBeforeIndex = -1;
+            _matchAfterIndex = -1;
         }
     }
 

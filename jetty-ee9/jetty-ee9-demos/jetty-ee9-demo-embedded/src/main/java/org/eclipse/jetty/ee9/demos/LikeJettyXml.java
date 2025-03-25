@@ -14,8 +14,9 @@
 package org.eclipse.jetty.ee9.demos;
 
 /**
- * Starts the Jetty Distribution's demo-base directory using entirely
- * embedded jetty techniques.
+ * Starts a new Jetty Base in the target/embedded/ directory using entirely
+ * embedded jetty techniques, in ways similar to the various Jetty XML files
+ * from {@code jetty-home}
  */
 public class LikeJettyXml
 {

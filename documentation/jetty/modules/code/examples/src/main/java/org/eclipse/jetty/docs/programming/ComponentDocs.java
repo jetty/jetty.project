@@ -281,4 +281,30 @@ public class ComponentDocs
         parent.addBean(younger);
         // end::containerSiblings[]
     }
+
+    public void dump() throws Exception
+    {
+        // tag::dump[]
+        Server server = new Server();
+        server.start();
+
+        // Get the server dump as a string.
+        String dumpString = server.dump();
+
+        // Or dump to standard error stream.
+        server.dumpStdErr();
+        // end::dump[]
+    }
+
+    public void dumpStartStop() throws Exception
+    {
+        // tag::dumpStartStop[]
+        Server server = new Server();
+
+        server.setDumpAfterStart(true);
+        server.setDumpBeforeStop(true);
+
+        server.start();
+        // end::dumpStartStop[]
+    }
 }

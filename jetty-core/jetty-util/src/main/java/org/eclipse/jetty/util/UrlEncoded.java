@@ -127,7 +127,7 @@ public class UrlEncoded
 
                     if (val != null)
                     {
-                        if (val.length() > 0)
+                        if (!val.isEmpty())
                         {
                             result.append('=');
                             result.append(encodeString(val, charset));
@@ -225,7 +225,7 @@ public class UrlEncoded
 
         if (StandardCharsets.UTF_8.equals(charset))
         {
-            decodeUtf8To(content, 0, content.length(), adder, false);
+            decodeUtf8To(content, 0, content.length(), adder);
             return;
         }
 
@@ -247,12 +247,11 @@ public class UrlEncoded
                     {
                         adder.accept(key, value);
                     }
-                    else if (value != null && value.length() > 0)
+                    else if (value != null && !value.isEmpty())
                     {
                         adder.accept(value, "");
                     }
                     key = null;
-                    value = null;
                     break;
                 case '=':
                     if (key != null)
@@ -279,7 +278,7 @@ public class UrlEncoded
             key = encoded
                 ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
                 : content.substring(mark + 1);
-            if (key != null && key.length() > 0)
+            if (key != null && !key.isEmpty())
             {
                 adder.accept(key, "");
             }
@@ -320,7 +319,7 @@ public class UrlEncoded
     @Deprecated
     public static void decodeUtf8To(String query, int offset, int length, MultiMap<String> map)
     {
-        decodeUtf8To(query, offset, length, map::add, false);
+        decodeUtf8To(query, offset, length, map::add);
     }
 
     /**
@@ -333,7 +332,7 @@ public class UrlEncoded
      */
     public static void decodeUtf8To(String uri, int offset, int length, Fields fields)
     {
-        decodeUtf8To(uri, offset, length, fields::add, false);
+        decodeUtf8To(uri, offset, length, fields::add);
     }
 
     /**
@@ -343,11 +342,28 @@ public class UrlEncoded
      * @param offset the offset at which query parameters start.
      * @param length the length of query parameters string to parse.
      * @param adder the method to call to add decoded parameters.
+     * @return {@code true} if the string was decoded without any bad UTF-8
+     * @throws org.eclipse.jetty.util.Utf8StringBuilder.Utf8IllegalArgumentException if there is illegal UTF-8 and `allowsBadUtf8` is {@code false}
+     */
+    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder)
+        throws Utf8StringBuilder.Utf8IllegalArgumentException
+    {
+        return decodeUtf8To(query, offset, length, adder, false, false, false);
+    }
+
+    /**
+     * <p>Decodes URI query parameters as UTF8 string</p>
+     *
+     * @param query the URI string.
+     * @param offset the offset at which query parameters start.
+     * @param length the length of query parameters string to parse.
+     * @param adder the method to call to add decoded parameters.
+     * @param allowBadPercent if {@code true} allow bad percent encoding.
      * @param allowBadUtf8 if {@code true} allow bad UTF-8 and insert the replacement character.
      * @return {@code true} if the string was decoded without any bad UTF-8
      * @throws org.eclipse.jetty.util.Utf8StringBuilder.Utf8IllegalArgumentException if there is illegal UTF-8 and `allowsBadUtf8` is {@code false}
      */
-    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadUtf8)
+    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadPercent, boolean allowBadUtf8, boolean allowTruncatedUtf8)
         throws Utf8StringBuilder.Utf8IllegalArgumentException
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
@@ -379,7 +395,8 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.takeCompleteString(onCodingError);
+                    value = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
+
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -397,7 +414,8 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.takeCompleteString(onCodingError);
+
+                    key = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
                     break;
 
                 case '+':
@@ -409,12 +427,51 @@ public class UrlEncoded
                     {
                         char hi = query.charAt(++i);
                         char lo = query.charAt(++i);
-                        buffer.append(decodeHexByte(hi, lo));
+                        try
+                        {
+                            decodeHexByteTo(buffer, hi, lo);
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            boolean replaced = buffer.replaceIncomplete();
+                            if (replaced && !allowBadUtf8 || !allowBadPercent)
+                                throw e;
+
+                            if (hi == '&' || key == null && hi == '=')
+                            {
+                                if (!replaced)
+                                    buffer.append('%');
+                                i = i - 2;
+                            }
+                            else if (lo == '&' || key == null && lo == '=')
+                            {
+                                if (!replaced)
+                                {
+                                    buffer.append('%');
+                                    buffer.append(hi);
+                                }
+                                i = i - 1;
+                            }
+                            else
+                            {
+                                if (!replaced)
+                                {
+                                    buffer.append('%');
+                                    buffer.append(hi);
+                                    buffer.append(lo);
+                                }
+                            }
+                        }
                     }
-                    else if (allowBadUtf8)
+                    else if (buffer.replaceIncomplete())
                     {
-                        buffer.append(Utf8StringBuilder.REPLACEMENT);
+                        if (!allowBadUtf8 || !allowBadPercent)
+                            throw new Utf8StringBuilder.Utf8IllegalArgumentException();
                         i = end;
+                    }
+                    else if (allowBadPercent)
+                    {
+                        buffer.append('%');
                     }
                     else
                     {
@@ -430,15 +487,35 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeCompleteString(onCodingError);
+            value = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            adder.accept(buffer.toCompleteString(), "");
+            key = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
+            adder.accept(key, "");
         }
 
         return badUtf8 == null || !badUtf8.get();
+    }
+
+    private static <X extends Throwable> String take(boolean allowBadUtf8, Boolean allowTruncatedUtf8, Utf8StringBuilder buffer, AtomicBoolean badUtf8, Supplier<X> onCodingError) throws X
+    {
+        if (!allowBadUtf8 && !allowTruncatedUtf8)
+            return buffer.takeCompleteString(onCodingError);
+
+        boolean codingError = buffer.hasCodingErrors();
+        if (codingError && !allowBadUtf8)
+            return buffer.takeCompleteString(onCodingError);
+
+        if (buffer.replaceIncomplete() && !allowTruncatedUtf8)
+            return buffer.takeCompleteString(onCodingError);
+
+        String result = buffer.takeCompleteString(null);
+        buffer.reset();
+        if (badUtf8 != null)
+            badUtf8.set(true);
+        return result;
     }
 
     /**
@@ -481,14 +558,14 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.length() == 0 ? "" : buffer.toString();
+                    value = buffer.isEmpty() ? "" : buffer.toString();
                     buffer.setLength(0);
                     if (key != null)
                     {
                         adder.accept(key, value);
                         keys++;
                     }
-                    else if (value.length() > 0)
+                    else if (!value.isEmpty())
                     {
                         adder.accept(value, "");
                         keys++;
@@ -526,12 +603,12 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.length() == 0 ? "" : buffer.toString();
+            value = buffer.isEmpty() ? "" : buffer.toString();
             buffer.setLength(0);
             adder.accept(key, value);
             keys++;
         }
-        else if (buffer.length() > 0)
+        else if (!buffer.isEmpty())
         {
             adder.accept(buffer.toString(), "");
             keys++;
@@ -543,11 +620,28 @@ public class UrlEncoded
      * Decoded parameters to Map.
      *
      * @param in InputSteam to read
-     * @param map MultiMap to add parameters to
+     * @param fields the Fields to store the parameters
      * @param maxLength maximum form length to decode or -1 for no limit
      * @param maxKeys the maximum number of keys to read or -1 for no limit
      * @throws IOException if unable to decode the input stream
      */
+    public static void decodeUtf8To(InputStream in, Fields fields, int maxLength, int maxKeys)
+        throws IOException
+    {
+        decodeUtf8To(in, fields::add, maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param in InputSteam to read
+     * @param map MultiMap to add parameters to
+     * @param maxLength maximum form length to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the input stream
+     * @deprecated use {@link #decodeUtf8To(InputStream, Fields, int, int)} instead.
+     */
+    @Deprecated(since = "12.0.17", forRemoval = true)
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
     {
@@ -586,7 +680,7 @@ public class UrlEncoded
                         adder.accept(key, value);
                         keys++;
                     }
-                    else if (value != null && value.length() > 0)
+                    else if (value != null && !value.isEmpty())
                     {
                         adder.accept(value, "");
                         keys++;
@@ -738,7 +832,7 @@ public class UrlEncoded
                             adder.accept(key, value);
                             keys++;
                         }
-                        else if (value != null && value.length() > 0)
+                        else if (value != null && !value.isEmpty())
                         {
                             adder.accept(value, "");
                             keys++;
@@ -1012,6 +1106,11 @@ public class UrlEncoded
         {
             throw new IllegalArgumentException("Not valid encoding '%" + hi + lo + "'");
         }
+    }
+
+    private static void decodeHexByteTo(Utf8StringBuilder buffer, char hi, char lo)
+    {
+        buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
     /**

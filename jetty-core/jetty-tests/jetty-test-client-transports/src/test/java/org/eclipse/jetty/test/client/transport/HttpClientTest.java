@@ -438,20 +438,22 @@ public class HttpClientTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .onResponseSuccess(response -> latch.countDown())
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            client.newRequest(newURI(transport))
+                .onResponseSuccess(response -> latch.countDown())
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
 
-        // Response cannot succeed until we read the content.
-        assertFalse(latch.await(500, TimeUnit.MILLISECONDS));
+            // Response cannot succeed until we read the content.
+            assertFalse(latch.await(500, TimeUnit.MILLISECONDS));
 
-        InputStream input = listener.getInputStream();
-        assertEquals(content, IO.toString(input));
+            InputStream input = listener.getInputStream();
+            assertEquals(content, IO.toString(input));
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @ParameterizedTest

@@ -379,7 +379,6 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testVeryShortTimeout(Transport transport) throws Exception
     {
         start(transport, new EmptyServerHandler());

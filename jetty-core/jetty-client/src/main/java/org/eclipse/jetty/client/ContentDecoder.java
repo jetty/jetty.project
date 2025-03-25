@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -21,6 +22,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * {@link ContentDecoder} decodes content bytes of a response.
@@ -109,7 +111,7 @@ public interface ContentDecoder
         public abstract ContentDecoder newContentDecoder();
     }
 
-    public static class Factories implements Iterable<ContentDecoder.Factory>
+    public static class Factories implements Iterable<ContentDecoder.Factory>, Dumpable
     {
         private final Map<String, Factory> factories = new LinkedHashMap<>();
         private HttpField acceptEncodingField;
@@ -137,6 +139,18 @@ public interface ContentDecoder
             String value = String.join(",", factories.keySet());
             acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value);
             return result;
+        }
+
+        @Override
+        public String dump()
+        {
+            return Dumpable.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, factories);
         }
     }
 }

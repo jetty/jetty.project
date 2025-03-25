@@ -39,6 +39,8 @@ public class quiche_path_stats
         C_LONG.withName("lost"),
         C_LONG.withName("retrans"),
         C_LONG.withName("rtt"),
+        C_LONG.withName("min_rtt"),
+        C_LONG.withName("rttvar"),
         C_LONG.withName("cwnd"),
         C_LONG.withName("sent_bytes"),
         C_LONG.withName("recv_bytes"),

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-alpn</artifactId>
+    <version>12.0.19-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-alpn-bouncycastle-client</artifactId>
+  <name>Core :: ALPN :: Bouncy Castle Client</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.alpn.bouncycastle.client</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bctls-jdk18on</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Description>Bouncy Castle Client ALPN</Bundle-Description>
+            <Import-Package>${osgi.slf4j.import.packages},org.bouncycastle;version="${bouncycastle.version}",*</Import-Package>
+            <Export-Package>*</Export-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

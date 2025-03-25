@@ -63,6 +63,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -916,9 +917,12 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
+
+        // Try to write a 100 continue if it is necessary
+        if (_inputState == ServletContextRequest.INPUT_NONE && _servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+
         _inputState = ServletContextRequest.INPUT_STREAM;
-        // Try to write a 100 continue, ignoring failure result if it was not necessary.
-        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
