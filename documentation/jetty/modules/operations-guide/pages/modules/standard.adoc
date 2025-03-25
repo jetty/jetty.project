@@ -361,7 +361,7 @@ As an example, in a Linux machine named `beryl`, the `/etc/hosts` file may conta
 ----
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI implementation uses the host name `beryl` to figure out the IP address to store in the RMI stub, in this case `127.0.1.1`.
-However, we the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
+However, the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
 

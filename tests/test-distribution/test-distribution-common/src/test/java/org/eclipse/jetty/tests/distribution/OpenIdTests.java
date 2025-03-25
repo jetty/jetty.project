@@ -24,8 +24,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.util.Fields;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,33 +42,28 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
-
-    private static final KeycloakContainer KEYCLOAK_CONTAINER = new KeycloakContainer();
-
     private static final String clientId = "jetty-api";
     private static final String clientSecret = "JettyRocks!";
-
     private static final String userName = "jetty";
     private static final String password = "JettyRocks!Really";
-
     private static final String firstName = "John";
     private static final String lastName = "Doe";
     private static final String email = "jetty@jetty.org";
 
-    private static String userId;
+    private final KeycloakContainer keycloakContainer = new KeycloakContainer();
+    private String userId;
 
-    @BeforeAll
-    public static void startKeycloak()
+    @BeforeEach
+    public void startKeycloak()
     {
-        KEYCLOAK_CONTAINER.start();
+        keycloakContainer.start();
         // init keycloak
-        try (Keycloak keycloak = KEYCLOAK_CONTAINER.getKeycloakAdminClient())
+        try (Keycloak keycloak = keycloakContainer.getKeycloakAdminClient())
         {
             RealmRepresentation jettyRealm = new RealmRepresentation();
             jettyRealm.setId("jetty");
@@ -103,13 +98,11 @@ public class OpenIdTests extends AbstractJettyHomeTest
         }
     }
 
-    @AfterAll
-    public static void stopKeycloak()
+    @AfterEach
+    public void stopKeycloak()
     {
-        if (KEYCLOAK_CONTAINER.isRunning())
-        {
-            KEYCLOAK_CONTAINER.stop();
-        }
+        if (keycloakContainer.isRunning())
+            keycloakContainer.stop();
     }
 
     public static Stream<Arguments> tests()
@@ -134,7 +127,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
         String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + openIdModule
+                "--add-modules=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + openIdModule
         };
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
@@ -144,7 +137,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
 
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-openid-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test");
-            String openIdProvider = KEYCLOAK_CONTAINER.getAuthServerUrl() + "/realms/jetty";
+            String openIdProvider = keycloakContainer.getAuthServerUrl() + "/realms/jetty";
             LOGGER.info("openIdProvider: {}", openIdProvider);
 
             int port = Tester.freePort();
@@ -196,7 +189,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
                 content = contentResponse.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
-
             }
         }
     }

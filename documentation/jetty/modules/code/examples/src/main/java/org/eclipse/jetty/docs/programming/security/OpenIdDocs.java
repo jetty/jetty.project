@@ -37,49 +37,12 @@ import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
+@SuppressWarnings("unused")
 public class OpenIdDocs
 {
-    public void combinedExample() throws Exception
+    public void combinedExample()
     {
-        Server server = new Server(8080);
-        // tag::openIdUsageExample[]
-        server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                PrintStream writer = new PrintStream(Content.Sink.asOutputStream(response));
-
-                String pathInContext = Request.getPathInContext(request);
-                if (pathInContext.startsWith("/error"))
-                {
-                    // Handle requests to the error page which may have an error description parameter.
-                    Fields parameters = Request.getParameters(request);
-                    writer.println("error_description: " + parameters.get("error_description_jetty") + "<br>");
-                }
-                else
-                {
-                    Principal userPrincipal = AuthenticationState.getUserPrincipal(request);
-                    writer.println("userPrincipal: " + userPrincipal);
-                    if (userPrincipal != null)
-                    {
-                        // You can access the full openid claims for an authenticated session.
-                        Session session = request.getSession(false);
-                        @SuppressWarnings("unchecked")
-                        Map<String, String> claims = (Map<String, String>)session.getAttribute("org.eclipse.jetty.security.openid.claims");
-                        writer.println("claims: " + claims);
-                        writer.println("name: " + claims.get("name"));
-                        writer.println("sub: " + claims.get("sub"));
-                    }
-                }
-
-                writer.close();
-                callback.succeeded();
-                return true;
-            }
-        });
-        // end::openIdUsageExample[]
-
+        Server server = new Server();
         // tag::openIdConfigExample[]
         // To create an OpenIdConfiguration you can rely on discovery of the OIDC metadata.
         OpenIdConfiguration openIdConfig = new OpenIdConfiguration(
@@ -129,7 +92,43 @@ public class OpenIdDocs
         // Session handler is required for OpenID authentication.
         server.insertHandler(new SessionHandler());
         // end::openIdConfigExample[]
-        server.start();
-        server.join();
+
+        // tag::openIdUsageExample[]
+        class OpenIdExampleHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                PrintStream writer = new PrintStream(Content.Sink.asOutputStream(response));
+
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext.startsWith("/error"))
+                {
+                    // Handle requests to the error page which may have an error description parameter.
+                    Fields parameters = Request.getParameters(request);
+                    writer.println("error_description: " + parameters.get("error_description_jetty") + "<br>");
+                }
+                else
+                {
+                    Principal userPrincipal = AuthenticationState.getUserPrincipal(request);
+                    writer.println("userPrincipal: " + userPrincipal);
+                    if (userPrincipal != null)
+                    {
+                        // You can access the full openid claims for an authenticated session.
+                        Session session = request.getSession(false);
+                        @SuppressWarnings("unchecked")
+                        Map<String, String> claims = (Map<String, String>)session.getAttribute("org.eclipse.jetty.security.openid.claims");
+                        writer.println("claims: " + claims);
+                        writer.println("name: " + claims.get("name"));
+                        writer.println("sub: " + claims.get("sub"));
+                    }
+                }
+
+                writer.close();
+                callback.succeeded();
+                return true;
+            }
+        }
+        // end::openIdUsageExample[]
     }
 }
