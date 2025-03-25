@@ -1697,17 +1697,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             if (provider != null)
-            {
                 return CertificateFactory.getInstance(type, provider);
-            }
         }
         catch (Throwable cause)
         {
             String msg = String.format("Unable to get CertificateFactory instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
-            else
-                LOG.info(msg);
         }
 
         return CertificateFactory.getInstance(type);
@@ -1721,17 +1717,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             if (provider != null)
-            {
                 return CertStore.getInstance(type, new CollectionCertStoreParameters(crls), provider);
-            }
         }
         catch (Throwable cause)
         {
             String msg = String.format("Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
-            else
-                LOG.info(msg);
         }
 
         return CertStore.getInstance(type, new CollectionCertStoreParameters(crls));
@@ -1745,18 +1737,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             if (provider != null)
-            {
                 return KeyManagerFactory.getInstance(algorithm, provider);
-            }
         }
         catch (Throwable cause)
         {
-            // fall back to non-provider option
             String msg = String.format("Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
-            else
-                LOG.info(msg);
         }
 
         return KeyManagerFactory.getInstance(algorithm);
@@ -1773,17 +1760,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             try
             {
                 if (provider != null)
-                {
                     return SecureRandom.getInstance(algorithm, provider);
-                }
             }
             catch (Throwable cause)
             {
                 String msg = String.format("Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
                 if (LOG.isDebugEnabled())
                     LOG.debug(msg, cause);
-                else
-                    LOG.info(msg);
             }
 
             return SecureRandom.getInstance(algorithm);
@@ -1800,17 +1783,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             if (provider != null)
-            {
                 return SSLContext.getInstance(protocol, provider);
-            }
         }
         catch (Throwable cause)
         {
             String msg = String.format("Unable to get SSLContext instance for protocol [%s] on provider [%s], using default", protocol, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
-            else
-                LOG.info(msg);
         }
 
         return SSLContext.getInstance(protocol);
@@ -1823,17 +1802,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             if (provider != null)
-            {
                 return TrustManagerFactory.getInstance(algorithm, provider);
-            }
         }
         catch (Throwable cause)
         {
             String msg = String.format("Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
-            else
-                LOG.info(msg);
         }
 
         return TrustManagerFactory.getInstance(algorithm);

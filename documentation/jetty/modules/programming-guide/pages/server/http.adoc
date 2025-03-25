@@ -590,6 +590,24 @@ Then, you must configure the JDK with the Conscrypt provider, and configure Jett
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=conscrypt]
 ----
 
+[[connector-protocol-tls-bouncycastle]]
+==== Using Bouncy Castle as SSL/TLS Provider
+
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
+
+link:https://www.bouncycastle.org/[Bouncy Castle] is a pure Java alternative provider for the Java security APIs, and includes a TLS provider.
+
+To use Bouncy Castle as TLS provider, you must have the Bouncy Castle jars and the Jetty dependency `jetty-alpn-bouncycastle-server-{jetty-version}.jar` in the class-path or module-path.
+
+Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=bouncyCastle]
+----
+
 [[connector-protocol-tls-keystore-auto-reload]]
 ==== SslContextFactory KeyStore Auto-Reload
 

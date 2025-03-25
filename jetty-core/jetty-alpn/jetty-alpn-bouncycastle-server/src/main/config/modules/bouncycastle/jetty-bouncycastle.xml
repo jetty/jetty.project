@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure>
+  <Call class="java.security.Security" name="addProvider">
+    <Arg>
+      <New class="org.bouncycastle.jce.provider.BouncyCastleProvider" />
+    </Arg>
+  </Call>
+  <Call class="java.security.Security" name="addProvider">
+    <Arg>
+      <New class="org.bouncycastle.jsse.provider.BouncyCastleJsseProvider" />
+    </Arg>
+  </Call>
+</Configure>

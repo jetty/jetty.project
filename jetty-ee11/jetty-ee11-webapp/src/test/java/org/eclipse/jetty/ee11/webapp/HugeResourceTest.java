@@ -261,25 +261,26 @@ public class HugeResourceTest
     public void testDownloadStatic(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        client.newRequest(destUri)
-            .method(HttpMethod.GET)
-            .send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
-        long contentLengthLong = Long.parseLong(contentLength);
-        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
-
-        try (ByteCountingOutputStream out = new ByteCountingOutputStream();
-             InputStream in = responseListener.getInputStream())
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener())
         {
-            IO.copy(in, out);
-            assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
+            client.newRequest(destUri)
+                .method(HttpMethod.GET)
+                .send(responseListener);
+            Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+            assertThat("HTTP Response Code", response.getStatus(), is(200));
+            // dumpResponse(response);
+
+            String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
+            long contentLengthLong = Long.parseLong(contentLength);
+            assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
+
+            try (ByteCountingOutputStream out = new ByteCountingOutputStream();
+                 InputStream in = responseListener.getInputStream())
+            {
+                IO.copy(in, out);
+                assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
+            }
         }
     }
 
@@ -288,24 +289,25 @@ public class HugeResourceTest
     public void testDownloadChunked(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/chunked/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.GET);
-        request.send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
-        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
-
-        try (ByteCountingOutputStream out = new ByteCountingOutputStream();
-             InputStream in = responseListener.getInputStream())
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener())
         {
-            IO.copy(in, out);
-            assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
+            Request request = client.newRequest(destUri)
+                .method(HttpMethod.GET);
+            request.send(responseListener);
+            Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+            assertThat("HTTP Response Code", response.getStatus(), is(200));
+            // dumpResponse(response);
+
+            String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
+            assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
+
+            try (ByteCountingOutputStream out = new ByteCountingOutputStream();
+                 InputStream in = responseListener.getInputStream())
+            {
+                IO.copy(in, out);
+                assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
+            }
         }
     }
 
@@ -314,24 +316,25 @@ public class HugeResourceTest
     public void testHeadStatic(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        client.newRequest(destUri)
-            .method(HttpMethod.HEAD)
-            .send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        try (InputStream in = responseListener.getInputStream())
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener())
         {
-            assertThat(in.read(), is(-1));
+            client.newRequest(destUri)
+                .method(HttpMethod.HEAD)
+                .send(responseListener);
+            Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+            try (InputStream in = responseListener.getInputStream())
+            {
+                assertThat(in.read(), is(-1));
+            }
+
+            assertThat("HTTP Response Code", response.getStatus(), is(200));
+            // dumpResponse(response);
+
+            String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
+            long contentLengthLong = Long.parseLong(contentLength);
+            assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
         }
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
-        long contentLengthLong = Long.parseLong(contentLength);
-        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
     }
 
     @ParameterizedTest
@@ -339,23 +342,24 @@ public class HugeResourceTest
     public void testHeadChunked(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/chunked/" + filename);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.HEAD);
-        request.send(responseListener);
-        Response response = responseListener.get(5, TimeUnit.SECONDS);
-
-        try (InputStream in = responseListener.getInputStream())
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener())
         {
-            assertThat(in.read(), is(-1));
+            Request request = client.newRequest(destUri)
+                .method(HttpMethod.HEAD);
+            request.send(responseListener);
+            Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+            try (InputStream in = responseListener.getInputStream())
+            {
+                assertThat(in.read(), is(-1));
+            }
+
+            assertThat("HTTP Response Code", response.getStatus(), is(200));
+            // dumpResponse(response);
+
+            String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
+            assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
         }
-
-        assertThat("HTTP Response Code", response.getStatus(), is(200));
-        // dumpResponse(response);
-
-        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
-        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
     }
 
     @ParameterizedTest
