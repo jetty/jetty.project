@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.Response.Listener;
@@ -76,8 +75,8 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
-    private final AtomicReference<InputStream> stream = new AtomicReference<>();
     private final Queue<ChunkCallback> chunkCallbacks = new ArrayDeque<>();
+    private InputStream stream;
     private Response response;
     private Result result;
     private Throwable failure;
@@ -100,17 +99,12 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
     @Override
     public void onContent(Response response, Content.Chunk chunk, Runnable demander)
     {
-        if (!chunk.hasRemaining())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Skipped empty chunk {}", chunk);
-            demander.run();
-            return;
-        }
-
+        boolean closed;
+        boolean hasContent = chunk.hasRemaining();
         try (AutoLock.WithCondition l = lock.lock())
         {
-            if (!closed)
+            closed = this.closed;
+            if (!closed && hasContent)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing chunk {}", chunk);
@@ -121,9 +115,18 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("InputStream closed, ignored chunk {}", chunk);
-        response.abort(new AsynchronousCloseException());
+        if (closed)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("InputStream closed, dropped chunk {}", chunk);
+            response.abort(new AsynchronousCloseException());
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Skipped empty chunk {}", chunk);
+            demander.run();
+        }
     }
 
     @Override
@@ -189,12 +192,6 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        stream.updateAndGet(input -> input == null ? InputStream.nullInputStream() : input).close();
-    }
-
     /**
      * Waits for the given timeout for the response to be available, then returns it.
      * <p>
@@ -253,12 +250,14 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
      */
     public InputStream getInputStream()
     {
-        InputStream result = new Input();
-        if (stream.compareAndSet(null, result))
+        try (AutoLock ignored = lock.lock())
+        {
+            if (stream == null && !closed)
+                return stream = new Input();
+            InputStream result = InputStream.nullInputStream();
+            IO.close(result);
             return result;
-        result = InputStream.nullInputStream();
-        IO.close(result);
-        return result;
+        }
     }
 
     private List<ChunkCallback> drain()
@@ -276,6 +275,29 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
             }
         }
         return failures;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closing {}", this);
+
+        List<ChunkCallback> chunkCallbacks;
+        try (AutoLock.WithCondition l = lock.lock())
+        {
+            if (closed)
+                return;
+            closed = true;
+            chunkCallbacks = drain();
+            l.signalAll();
+        }
+
+        if (!chunkCallbacks.isEmpty())
+        {
+            Throwable failure = new AsynchronousCloseException();
+            chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
+        }
     }
 
     private class Input extends InputStream
@@ -309,7 +331,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
                             break;
 
                         if (failure != null)
-                            throw new IOException(failure);
+                            throw IO.rethrow(failure);
 
                         if (closed)
                             throw new AsynchronousCloseException();
@@ -338,25 +360,9 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         @Override
         public void close() throws IOException
         {
-            List<ChunkCallback> chunkCallbacks;
-            try (AutoLock.WithCondition l = lock.lock())
-            {
-                if (closed)
-                    return;
-                closed = true;
-                chunkCallbacks = drain();
-                l.signalAll();
-            }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("InputStream close");
-
-            if (!chunkCallbacks.isEmpty())
-            {
-                Throwable failure = new AsynchronousCloseException();
-                chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
-            }
-
+                LOG.debug("Closing {}", this);
+            InputStreamResponseListener.this.close();
             super.close();
         }
     }

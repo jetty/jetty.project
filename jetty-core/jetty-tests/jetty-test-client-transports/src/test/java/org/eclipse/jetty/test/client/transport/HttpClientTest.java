@@ -294,7 +294,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testRequestAfterFailedRequest(TransportType transportType) throws Exception
     {
@@ -843,7 +843,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testContentSourceListenersFailure(TransportType transportType) throws Exception
     {
@@ -1003,7 +1003,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testParallelContentSourceListenersTotalFailure(TransportType transportType) throws Exception
     {

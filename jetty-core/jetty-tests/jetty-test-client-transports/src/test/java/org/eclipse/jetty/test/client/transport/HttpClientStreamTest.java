@@ -94,6 +94,64 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    public void testListenerCloseBeforeResponseContent(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.allocate(1024), callback);
+                return true;
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        // Close immediately, the response should be aborted.
+        listener.close();
+        client.newRequest(newURI(transportType))
+            .send(listener);
+
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+        assertNotNull(result.getResponseFailure());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
+    public void testListenerCloseDuringResponseContent(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws IOException
+            {
+                Content.Sink.write(response, false, ByteBuffer.allocate(16));
+                response.write(true, ByteBuffer.allocate(8), callback);
+                return true;
+            }
+        });
+
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            client.newRequest(newURI(transportType))
+                .send(listener);
+
+            InputStream input = listener.getInputStream();
+            assertEquals(0, input.read());
+            listener.close();
+
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            assertNotNull(result.getResponseFailure());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
     public void testFileUpload(TransportType transportType) throws Exception
     {
         // Prepare a big file to upload
@@ -317,7 +375,6 @@ public class HttpClientStreamTest extends AbstractTest
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerClosedBeforeContent(TransportType transportType) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
@@ -421,7 +478,6 @@ public class HttpClientStreamTest extends AbstractTest
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerFailedWhileWaiting(TransportType transportType) throws Exception
     {
         start(transportType, new Handler.Abstract()
@@ -531,10 +587,8 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
     @Tag("DisableLeakTracking:client:FCGI")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
-    @Tag("flaky")
     public void testDownloadWithCloseBeforeContent(TransportType transportType) throws Exception
     {
         byte[] data = new byte[128 * 1024];
@@ -582,12 +636,10 @@ public class HttpClientStreamTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @Tag("flaky")
+    @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
-    @MethodSource("transports")
     public void testDownloadWithCloseMiddleOfContent(TransportType transportType) throws Exception
     {
         byte[] data1 = new byte[1024];
@@ -1169,6 +1221,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3_QUICHE")
     public void testInputStreamResponseListenerBufferedRead(TransportType transportType) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
@@ -1395,7 +1448,6 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     @Tag("DisableLeakTracking:server:HTTP")
     @Tag("DisableLeakTracking:server:HTTPS")
     public void testUploadWithRetainedData(TransportType transportType) throws Exception
