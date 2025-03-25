@@ -46,6 +46,7 @@
 * Jetty Security
 ** xref:security/siwe-support.adoc[]
 ** xref:security/configuring-form-size.adoc[]
+** xref:security/openid-support.adoc[]
 * Migration Guides
 ** xref:migration/94-to-10.adoc[]
 ** xref:migration/11-to-12.adoc[]

@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Get id="ThreadPool" name="threadPool"/>
   <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
     <Arg>
       <New class="org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP">
@@ -18,7 +17,7 @@
         </Arg>
       </New>
     </Arg>
-    <Set name="executor"><Ref refid="ThreadPool"/></Set>
+    <Set name="executor"><Ref refid="threadPool"/></Set>
   </New>
   <New class="org.eclipse.jetty.security.openid.OpenIdConfiguration$Builder">
     <Arg name="issuer"><Property name="jetty.openid.provider"/></Arg>
@@ -37,7 +36,6 @@
         </Call>
       </Arg>
     </Call>
-
     <Call id="OpenIdConfiguration" name="build"/>
   </New>
   <Call name="addBean">

@@ -56,6 +56,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
     </dependency>
     <dependency>
@@ -124,6 +128,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
