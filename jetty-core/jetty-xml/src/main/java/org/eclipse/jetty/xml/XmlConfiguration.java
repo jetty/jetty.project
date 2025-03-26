@@ -1886,175 +1886,164 @@ public class XmlConfiguration
      */
     public static void main(final String... args) throws Exception
     {
-        try
+        if (LOG.isDebugEnabled())
+            LOG.debug("args={}", Arrays.asList(args));
+
+        EnvironmentBuilder envBuilder = null;
+        Environment environment = null;
+        Properties coreProperties = new Properties();
+        Properties envProperties = new Properties();
+        coreProperties.putAll(System.getProperties());
+        XmlConfiguration lastEnvConfiguration = null;
+        XmlConfiguration lastCoreConfiguration = null;
+        List<Object> objects = new ArrayList<>();
+        ContainerLifeCycle mountContainer = new ContainerLifeCycle();
+        objects.add(mountContainer);
+
+        for (int i = 0; i < args.length; i++)
         {
-            // For all arguments, load properties
-            if (LOG.isDebugEnabled())
-                LOG.debug("args={}", Arrays.asList(args));
-
-            EnvironmentBuilder envBuilder = null;
-            Environment environment = null;
-            Properties coreProperties = new Properties();
-            Properties envProperties = new Properties();
-            coreProperties.putAll(System.getProperties());
-            XmlConfiguration lastEnvConfiguration = null;
-            XmlConfiguration lastCoreConfiguration = null;
-            List<Object> objects = new ArrayList<>();
-            ContainerLifeCycle mountContainer = new ContainerLifeCycle();
-            objects.add(mountContainer);
-
-            for (int i = 0; i < args.length; i++)
+            String arg = args[i];
+            switch (arg)
             {
-                String arg = args[i];
-
-                // check env status
-                switch (arg)
+                case "--env" ->
                 {
-                    case "--class-path", "-cp", "--module-path", "-p" ->
+                    if (envBuilder != null)
                     {
-                        // must be building an environment
-                        if (envBuilder == null)
-                            throw new IllegalStateException("Not building an environment");
+                        environment = envBuilder.build();
+                        Environment.set(environment);
                     }
-                    default ->
+                    String envName = args[++i];
+                    environment = Environment.get(envName);
+                    if (environment != null && environment != Environment.CORE)
+                        throw new IllegalArgumentException("Duplicated --env " + envName + " command line arguments");
+                    if (environment == null)
+                        envBuilder = new EnvironmentBuilder(envName);
+                    envProperties.clear();
+                    lastEnvConfiguration = null;
+                }
+                case "--class-path", "-cp" -> envBuilder.addClassPath(args[++i]);
+                case "--module-path", "-p" -> envBuilder.addModulePath(args[++i]);
+                case "--add-modules" -> envBuilder.addModules(args[++i]);
+                case "--patch-module" -> envBuilder.patchModule(args[++i]);
+                case "--add-opens" -> envBuilder.addOpens(args[++i]);
+                case "--add-exports" -> envBuilder.addExports(args[++i]);
+                case "--add-reads" -> envBuilder.addReads(args[++i]);
+                default ->
+                {
+                    if (envBuilder != null)
                     {
-                        // finish building any environment
-                        if (envBuilder != null)
+                        environment = envBuilder.build();
+                        Environment.set(environment);
+                        envBuilder = null;
+                    }
+
+                    // Process any other argument.
+
+                    if (arg.startsWith("-"))
+                        throw new IllegalArgumentException("unknown arg " + arg);
+
+                    if (arg.indexOf('=') >= 0)
+                    {
+                        int equals = arg.indexOf('=');
+                        String name = arg.substring(0, equals);
+                        String value = arg.substring(equals + 1);
+                        (environment == null ? coreProperties : envProperties).put(name, value);
+                    }
+                    else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                    {
+                        Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
+                        try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                         {
-                            environment = envBuilder.build();
-                            Environment.set(environment);
-                            envBuilder = null;
+                            (environment == null ? coreProperties : envProperties).load(inputStream);
                         }
                     }
-                }
-
-                // process args
-                switch (arg)
-                {
-                    case "--env" ->
+                    else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                     {
-                        String envName = args[++i];
-                        environment = Environment.get(envName);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Parsing xml file {}", arg);
+                        // Create an XmlConfiguration
+                        XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
+
+                        // Copy Id map
+                        if (lastCoreConfiguration != null)
+                            configuration.getIdMap().putAll(lastCoreConfiguration.getIdMap());
+                        if (lastEnvConfiguration != null)
+                            configuration.getIdMap().putAll(lastEnvConfiguration.getIdMap());
+                        if (environment != null)
+                            configuration.getIdMap().put("Environment", environment);
+
+                        // copy properties
+                        for (Object name : coreProperties.keySet())
+                            configuration.getProperties().put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
+                        for (Object name : envProperties.keySet())
+                            configuration.getProperties().put(String.valueOf(name), String.valueOf(envProperties.get(name)));
+
+                        // remember the last configuration
                         if (environment == null)
-                            envBuilder = new EnvironmentBuilder(envName);
-                        lastEnvConfiguration = null;
-                        envProperties.clear();
-                    }
-                    case "--class-path", "-cp" -> envBuilder.addClassPath(args[++i]);
-                    case "--module-path", "-p" -> envBuilder.addModulePath(args[++i]);
-                    default ->
-                    {
-                        if (arg.startsWith("-"))
-                            throw new IllegalArgumentException("unknown arg " + arg);
-
-                        if (arg.indexOf('=') >= 0)
-                        {
-                            int equals = arg.indexOf('=');
-                            String name = arg.substring(0, equals);
-                            String value = arg.substring(equals + 1);
-                            (environment == null ? coreProperties : envProperties).put(name, value);
-                        }
-                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                        {
-                            Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
-                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
-                            {
-                                (envBuilder == null ? coreProperties : envProperties).load(inputStream);
-                            }
-                        }
-                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsing xml file {}", arg);
-                            // Create an XmlConfiguration
-                            XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
-
-                            // Copy Id map
-                            if (lastCoreConfiguration != null)
-                                configuration.getIdMap().putAll(lastCoreConfiguration.getIdMap());
-                            if (lastEnvConfiguration != null)
-                                configuration.getIdMap().putAll(lastEnvConfiguration.getIdMap());
-                            if (environment != null)
-                                configuration.getIdMap().put("Environment", environment);
-
-                            // copy properties
-                            for (Object name : coreProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
-                            for (Object name : envProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(envProperties.get(name)));
-
-                            // remember the last configuration
-                            if (environment == null)
-                                lastCoreConfiguration = configuration;
-                            else
-                                lastEnvConfiguration = configuration;
-
-                            // do the configuration
-                            Runnable configure = () ->
-                            {
-                                try
-                                {
-                                    Object obj = configuration.configure();
-
-                                    if (obj != null && !objects.contains(obj))
-                                        objects.add(obj);
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new RuntimeException(e);
-                                }
-                            };
-
-                            if (environment == null)
-                                configure.run();
-                            else
-                                environment.run(configure);
-                        }
+                            lastCoreConfiguration = configuration;
                         else
-                        {
-                            throw new IllegalArgumentException(arg);
-                        }
-                    }
-                }
-            }
-            if (envBuilder != null)
-            {
-                environment = envBuilder.build();
-                Environment.set(environment);
-            }
+                            lastEnvConfiguration = configuration;
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("objects={}", objects);
-
-            // For all objects created by XmlConfigurations, start them if they are lifecycles.
-            List<LifeCycle> started = new ArrayList<>(objects.size());
-            for (Object obj : objects)
-            {
-                if (obj instanceof LifeCycle lifeCycle)
-                {
-                    if (!lifeCycle.isRunning())
-                    {
-                        lifeCycle.start();
-                        if (lifeCycle.isStarted())
-                            started.add(lifeCycle);
-                        else
+                        // do the configuration
+                        Runnable configure = () ->
                         {
-                            // Failed to start a component, so stop all started components
-                            Collections.reverse(started);
-                            for (LifeCycle slc : started)
+                            try
                             {
-                                slc.stop();
+                                Object obj = configuration.configure();
+
+                                if (obj != null && !objects.contains(obj))
+                                    objects.add(obj);
                             }
-                            break;
-                        }
+                            catch (Exception e)
+                            {
+                                throw new RuntimeException(e);
+                            }
+                        };
+
+                        if (environment == null)
+                            configure.run();
+                        else
+                            environment.run(configure);
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException(arg);
                     }
                 }
             }
         }
-        catch (Error | Exception e)
+        if (envBuilder != null)
         {
-            LOG.warn("Unable to execute XmlConfiguration", e);
-            throw e;
+            environment = envBuilder.build();
+            Environment.set(environment);
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("objects={}", objects);
+
+        // For all objects created by XmlConfigurations, start them if they are lifecycles.
+        List<LifeCycle> started = new ArrayList<>(objects.size());
+        for (Object obj : objects)
+        {
+            if (obj instanceof LifeCycle lifeCycle)
+            {
+                if (!lifeCycle.isRunning())
+                {
+                    lifeCycle.start();
+                    if (lifeCycle.isStarted())
+                        started.add(lifeCycle);
+                    else
+                    {
+                        // Failed to start a component, so stop all started components
+                        Collections.reverse(started);
+                        for (LifeCycle slc : started)
+                        {
+                            slc.stop();
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 

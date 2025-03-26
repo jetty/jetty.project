@@ -571,9 +571,10 @@ public interface Request extends Attributes, Content.Source
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
                 uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
-                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowTruncatedUtf8, allowBadUtf8))
+                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                 {
                     HttpChannel httpChannel = HttpChannel.from(request);
                     if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
@@ -588,8 +589,6 @@ public interface Request extends Attributes, Content.Source
         }
         catch (Throwable t)
         {
-//            if (uriCompliance == UriCompliance.LEGACY)
-//                throw t;
             throw new BadMessageException("Bad query", t);
         }
     }

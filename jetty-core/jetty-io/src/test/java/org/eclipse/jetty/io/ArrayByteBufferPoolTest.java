@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.hamcrest.Matchers;
@@ -41,6 +43,44 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ArrayByteBufferPoolTest
 {
+    @Test
+    public void testRemoveAndReleaseFromCompoundPool()
+    {
+        int bufferCount = ConcurrentPool.OPTIMAL_MAX_SIZE * 2;
+        List<RetainableByteBuffer> rbbs = new ArrayList<>();
+
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+        pool.setStatisticsEnabled(true);
+        for (int i = 0; i < bufferCount; i++)
+        {
+            RetainableByteBuffer rbb = pool.acquire(1, false);
+            rbbs.add(rbb);
+        }
+        rbbs.forEach(Retainable::release);
+        rbbs.clear();
+
+        for (int i = 0; i < bufferCount; i++)
+        {
+            RetainableByteBuffer rbb = pool.acquire(1, false);
+            ByteBuffer byteBuffer = rbb.getByteBuffer();
+            BufferUtil.flipToFill(byteBuffer);
+            byteBuffer.position(1);
+            rbbs.add(rbb);
+        }
+        rbbs.forEach(pool::removeAndRelease);
+
+        for (RetainableByteBuffer rbb : rbbs)
+        {
+            assertThat(rbb.getByteBuffer(), notNullValue());
+            assertEquals(1, rbb.getByteBuffer().position());
+        }
+
+        assertEquals(0L, pool.getAvailableHeapByteBufferCount());
+
+        String dump = pool.dump();
+        assertThat(dump, containsString("[capacity=4096,in-use=0/0,pooled/acquires/releases=512/1024/1024(50.000%),non-pooled/evicts/removes=0/0/512]"));
+    }
+
     @Test
     public void testDump()
     {

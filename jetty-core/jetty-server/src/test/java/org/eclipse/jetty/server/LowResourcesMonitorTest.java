@@ -79,6 +79,16 @@ public class LowResourcesMonitorTest
     }
 
     @Test
+    public void testSetMonitorThreads()
+    {
+        _lowResourcesMonitor.setMonitorThreads(true);
+        assertTrue(_lowResourcesMonitor.getMonitorThreads());
+
+        _lowResourcesMonitor.setMonitorThreads(false);
+        assertFalse(_lowResourcesMonitor.getMonitorThreads());
+    }
+
+    @Test
     public void testLowOnThreads() throws Exception
     {
         _lowResourcesMonitor.setMonitorThreads(true);

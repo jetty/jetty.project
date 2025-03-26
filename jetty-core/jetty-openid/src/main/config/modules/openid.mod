@@ -19,6 +19,7 @@ etc/jetty-openid-baseloginservice.xml
 etc/jetty-openid.xml
 
 [ini-template]
+# tag::documentation[]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
 # jetty.openid.provider=https://id.example.com/
 
@@ -48,3 +49,4 @@ etc/jetty-openid.xml
 
 ## Whether the user should be logged out after the idToken expires.
 # jetty.openid.logoutWhenIdTokenIsExpired=false
+# end::documentation[]

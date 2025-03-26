@@ -53,7 +53,10 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         http3Configuration.setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         http3Configuration.setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
         http3Configuration.setMaxRequestHeadersSize(httpConfiguration.getRequestHeaderSize());
-        http3Configuration.setMaxResponseHeadersSize(httpConfiguration.getMaxResponseHeaderSize());
+        int maxResponseHeaderSize = httpConfiguration.getMaxResponseHeaderSize();
+        if (maxResponseHeaderSize < 0)
+            maxResponseHeaderSize = getHttpConfiguration().getResponseHeaderSize();
+        http3Configuration.setMaxResponseHeadersSize(maxResponseHeaderSize);
     }
 
     public ServerQuicConfiguration getQuicConfiguration()

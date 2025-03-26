@@ -640,10 +640,12 @@ public class URIUtilTest
     {
         return Stream.of(
             // Already valid URIs
+            Arguments.of("file:///", "file:///"),
             Arguments.of("file:///foo.jar", "file:///foo.jar"),
             Arguments.of("jar:file:///foo.jar!/", "jar:file:///foo.jar!/"),
             Arguments.of("jar:file:///foo.jar!/zed.txt", "jar:file:///foo.jar!/zed.txt"),
             // Badly created File.toURL.toURI URIs
+            Arguments.of("file:/", "file:///"),
             Arguments.of("file:/foo.jar", "file:///foo.jar"),
             Arguments.of("jar:file:/foo.jar", "jar:file:///foo.jar"),
             Arguments.of("jar:file:/foo.jar!/", "jar:file:///foo.jar!/"),

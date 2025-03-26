@@ -257,7 +257,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         RetainableByteBuffer actual = buffer;
         while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
+        {
             actual = wrapper.getWrapped();
+        }
 
         if (actual instanceof ReservedBuffer reservedBuffer)
         {
@@ -306,6 +308,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         bucket.recordRelease();
 
+        if (entry.isTerminated())
+            return;
+
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
 
@@ -314,7 +319,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry.release())
         {
             if (used % 100 == 0)
-               checkMaxMemory(bucket, buffer.isDirect());
+                checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
@@ -443,7 +448,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
+        {
             size += count.applyAsLong(bucket) * bucket.getCapacity();
+        }
         return size;
     }
 

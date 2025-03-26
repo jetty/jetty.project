@@ -268,33 +268,35 @@ public class HttpTrailersTest extends AbstractTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .timeout(15, TimeUnit.SECONDS)
-            .send(listener);
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        // Read slowly.
-        while (true)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            int read = input.read();
-            if (read < 0)
-                break;
-            output.write(read);
+            client.newRequest(newURI(transport))
+                .timeout(15, TimeUnit.SECONDS)
+                .send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            // Read slowly.
+            while (true)
+            {
+                int read = input.read();
+                if (read < 0)
+                    break;
+                output.write(read);
+            }
+
+            assertArrayEquals(content, output.toByteArray());
+
+            // Wait for the request/response cycle to complete.
+            listener.await(5, TimeUnit.SECONDS);
+
+            HttpFields trailers = response.getTrailers();
+            assertNotNull(trailers);
+            assertEquals(trailerValue, trailers.get(trailerName));
         }
-
-        assertArrayEquals(content, output.toByteArray());
-
-        // Wait for the request/response cycle to complete.
-        listener.await(5, TimeUnit.SECONDS);
-
-        HttpFields trailers = response.getTrailers();
-        assertNotNull(trailers);
-        assertEquals(trailerValue, trailers.get(trailerName));
     }
 
     @ParameterizedTest

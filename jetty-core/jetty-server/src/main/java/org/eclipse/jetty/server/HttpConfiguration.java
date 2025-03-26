@@ -62,7 +62,7 @@ public class HttpConfiguration implements Dumpable
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
     private int _responseHeaderSize = 8 * 1024;
-    private int _maxResponseHeaderSize = 16 * 1024;
+    private int _maxResponseHeaderSize = -1;
     private int _headerCacheSize = 1024;
     private boolean _headerCacheCaseSensitive = false;
     private int _securePort;
@@ -447,10 +447,14 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection).
-     * However, larger headers will also consume more memory.</p>
+     * <p>Sets the default size in bytes for the HTTP response line and headers.</p>
+     * <p>Consider using a value that fits most responses, and use {@link #setMaxResponseHeaderSize(int)}
+     * for larger responses.</p>
+     * <p>Large values allow for more and/or larger cookies and longer HTTP headers (for example,
+     * very long redirect URIs). However, large values will also consume more memory.</p>
      *
      * @param responseHeaderSize the default size in bytes of the response headers buffer
+     * @see #setMaxResponseHeaderSize(int)
      */
     public void setResponseHeaderSize(int responseHeaderSize)
     {
@@ -458,10 +462,13 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection).
-     * However, larger headers will also consume more memory.</p>
+     * <p>Sets the maximum size in bytes for the HTTP response line and headers.</p>
+     * <p>When the value is negative, then the value of {@link #getResponseHeaderSize()} is used.</p>
+     * <p>Large values allow for more and/or larger cookies and longer HTTP headers (for example,
+     * very long redirect URIs). However, large values will also consume more memory.</p>
      *
      * @param maxResponseHeaderSize the maximum size in bytes of the response headers buffer
+     * @see #setResponseHeaderSize(int)
      */
     public void setMaxResponseHeaderSize(int maxResponseHeaderSize)
     {

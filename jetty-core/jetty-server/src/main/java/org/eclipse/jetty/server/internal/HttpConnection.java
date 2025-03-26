@@ -753,6 +753,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 throw new IllegalStateException();
 
             int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
+            int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -776,14 +777,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     }
                     case NEED_HEADER:
                     {
-                        _generator.setMaxHeaderBytes(getHttpConfiguration().getMaxResponseHeaderSize());
+                        int maxHeaderBytes = maxResponseHeadersSize;
+                        if (maxHeaderBytes < 0)
+                            maxHeaderBytes = getHttpConfiguration().getResponseHeaderSize();
+                        _generator.setMaxHeaderBytes(maxHeaderBytes);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
-                        if (maxResponseHeadersSize > responseHeadersSize)
+                        if (maxResponseHeadersSize > 0 && maxResponseHeadersSize > responseHeadersSize)
                         {
                             _generator.reset();
                             _header.release();

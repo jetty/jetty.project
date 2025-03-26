@@ -6,11 +6,8 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
-  }
-  environment {
-    LAUNCHABLE_TOKEN = credentials('launchable-token')
   }
   stages {
     stage("Parallel Stage") {
@@ -19,6 +16,9 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
+              script{
+                properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.0.x'?'60':'5'))])
+              }
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
@@ -28,13 +28,31 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK23") {
+        stage("Build / Test - JDK24") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk23", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk23", name: "Static Analysis jdk23", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              mavenBuild( "jdk24", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+            }
+          }
+        }
+
+        stage("Build / Test - JDK17 Javadoc") {
+          agent { node { label 'linux-light' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              withEnv(["JAVA_HOME=${ tool 'jdk17' }",
+                       "PATH+MAVEN=${ tool 'jdk17' }/bin:${tool 'maven3'}/bin",
+                       "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+                configFileProvider(
+                        [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
+                         configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
+                  sh "mvn -DsettingsPath=$GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
+                }
+              }
             }
           }
         }

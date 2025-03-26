@@ -29,6 +29,8 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
@@ -98,6 +100,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -604,9 +607,59 @@ public class HTTPServerDocs
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
-        // Configure Jetty's SslContextFactory to use Conscrypt.
+        // Configure Jetty's SslContextFactory to use the Conscrypt provider.
         sslContextFactory.setProvider("Conscrypt");
         // end::conscrypt[]
+    }
+
+    public void bouncyCastle()
+    {
+        // tag::bouncyCastle[]
+        // Configure the JDK with the Bouncy Castle providers, you need both.
+        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleJsseProvider());
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure Jetty's SslContextFactory to use the Bouncy Castle provider.
+        sslContextFactory.setProvider("BCJSSE");
+        // end::bouncyCastle[]
+    }
+
+    public void keyStoreScanner() throws Exception
+    {
+        // tag::keyStoreScanner[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Add the SecureRequestCustomizer because TLS is used.
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // Configure the SslContextFactory with the keyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        // The ConnectionFactory for TLS.
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+
+        // The ServerConnector instance.
+        ServerConnector connector = new ServerConnector(server, tls, http11);
+        connector.setPort(8443);
+
+        server.addConnector(connector);
+
+        KeyStoreScanner keyStoreScanner = new KeyStoreScanner(sslContextFactory);
+        keyStoreScanner.setScanInterval(60);
+        server.addBean(keyStoreScanner);
+
+        server.start();
+        // end::keyStoreScanner[]
     }
 
     public void handlerTree()

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.17-SNAPSHOT</version>
+    <version>12.0.19-SNAPSHOT</version>
     <relativePath>../../../../pom.xml</relativePath>
   </parent>
   <artifactId>code-examples</artifactId>
@@ -18,6 +18,14 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bctls-jdk18on</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.conscrypt</groupId>
+      <artifactId>conscrypt-openjdk-uber</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
@@ -44,6 +52,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
     </dependency>
     <dependency>
@@ -53,6 +65,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-session</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -104,6 +120,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

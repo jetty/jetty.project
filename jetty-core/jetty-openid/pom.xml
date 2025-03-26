@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.17-SNAPSHOT</version>
+    <version>12.0.19-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-openid</artifactId>
   <name>EE10 :: OpenID</name>
@@ -45,6 +45,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

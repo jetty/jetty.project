@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.17-SNAPSHOT</version>
+    <version>12.0.19-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-openid</artifactId>
   <name>EE9 :: OpenID</name>
@@ -53,6 +53,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

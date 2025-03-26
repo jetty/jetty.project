@@ -1272,34 +1272,36 @@ public class ProxyServletTest
         startProxy(proxyServletClass, proxyParams);
         startClient();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        int port = serverConnector.getLocalPort();
-        Request request = client.newRequest("localhost", port);
-        request.send(listener);
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            int port = serverConnector.getLocalPort();
+            Request request = client.newRequest("localhost", port);
+            request.send(listener);
 
-        // Make the proxy request fail; given the small content, the
-        // proxy-to-client response is not committed yet so it will be reset.
-        TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
+            // Make the proxy request fail; given the small content, the
+            // proxy-to-client response is not committed yet so it will be reset.
+            TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(504, response.getStatus());
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(504, response.getStatus());
 
-        // Make sure there is error page content, as the proxy-to-client response has been reset.
-        InputStream input = listener.getInputStream();
-        String body = IO.toString(input);
-        assertThat(body, containsString("HTTP ERROR 504"));
-        chunk1Latch.countDown();
+            // Make sure there is error page content, as the proxy-to-client response has been reset.
+            InputStream input = listener.getInputStream();
+            String body = IO.toString(input);
+            assertThat(body, containsString("HTTP ERROR 504"));
+            chunk1Latch.countDown();
 
-        // Result succeeds because a 504 is a valid HTTP response.
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertTrue(result.isSucceeded());
+            // Result succeeds because a 504 is a valid HTTP response.
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertTrue(result.isSucceeded());
 
-        // Make sure the proxy does not receive chunk2.
-        assertEquals(-1, input.read());
+            // Make sure the proxy does not receive chunk2.
+            assertEquals(-1, input.read());
 
-        Destination destination = client.resolveDestination(request);
-        ConnectionPool connectionPool = destination.getConnectionPool();
-        assertTrue(connectionPool.isEmpty());
+            Destination destination = client.resolveDestination(request);
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            assertTrue(connectionPool.isEmpty());
+        }
     }
 
     @ParameterizedTest
@@ -1346,33 +1348,35 @@ public class ProxyServletTest
         startProxy(proxyServletClass, proxyParams);
         startClient();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        int port = serverConnector.getLocalPort();
-        Request request = client.newRequest("localhost", port);
-        request.send(listener);
-
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        for (byte b : chunk1)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertEquals(b & 0xFF, input.read());
+            int port = serverConnector.getLocalPort();
+            Request request = client.newRequest("localhost", port);
+            request.send(listener);
+
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            for (byte b : chunk1)
+            {
+                assertEquals(b & 0xFF, input.read());
+            }
+
+            TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
+
+            chunk1Latch.countDown();
+
+            assertThrows(IOException.class, () ->
+            {
+                // Make sure the proxy does not receive chunk2.
+                input.read();
+            });
+
+            Destination destination = client.resolveDestination(request);
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            assertTrue(connectionPool.isEmpty());
         }
-
-        TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
-
-        chunk1Latch.countDown();
-
-        assertThrows(IOException.class, () ->
-        {
-            // Make sure the proxy does not receive chunk2.
-            input.read();
-        });
-
-        Destination destination = client.resolveDestination(request);
-        ConnectionPool connectionPool = destination.getConnectionPool();
-        assertTrue(connectionPool.isEmpty());
     }
 
     @ParameterizedTest

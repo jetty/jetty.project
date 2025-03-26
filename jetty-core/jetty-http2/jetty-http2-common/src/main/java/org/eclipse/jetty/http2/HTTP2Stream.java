@@ -441,15 +441,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             return;
         }
 
-        if (isReset())
-        {
-            // Just drop the frame.
-            if (LOG.isDebugEnabled())
-                LOG.debug("Data {} for already reset {}", data, this);
-            session.dataConsumed(this, data.frame().flowControlLength());
-            return;
-        }
-
         if (dataLength >= 0)
         {
             dataLength -= frame.remaining();
@@ -469,17 +460,25 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
-        // Retain the data because it is stored for later use.
-        data.retain();
-        boolean process;
         try (AutoLock ignored = lock.lock())
         {
-            process = dataQueue.isEmpty() && dataDemand;
-            dataQueue.offer(data);
+            if (failure == null)
+            {
+                boolean process = dataQueue.isEmpty() && dataDemand;
+                // Retain the data because it is stored for later use.
+                data.retain();
+                dataQueue.offer(data);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
+                return process;
+            }
         }
+
+        // Drop the frame.
         if (LOG.isDebugEnabled())
-            LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
-        return process;
+            LOG.debug("Data {} dropped for already reset/failed {}", data, this);
+        session.dataConsumed(this, data.frame().flowControlLength());
+        return false;
     }
 
     @Override

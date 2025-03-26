@@ -85,37 +85,39 @@ public class TrailersTest extends AbstractTest
         });
 
         HttpFields.Mutable requestTrailers = HttpFields.build();
-        OutputStreamRequestContent body = new OutputStreamRequestContent();
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        try (OutputStream output = body.getOutputStream())
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            client.newRequest(newURI(transport))
-                .trailersSupplier(() -> requestTrailers)
-                .body(body)
-                .timeout(15, TimeUnit.SECONDS)
-                .send(listener);
-
-            // Write the content first, then the trailers.
-            output.write(new byte[1024 * 1024]);
-            requestTrailers.put(trailerName, trailerValue);
-        }
-
-        var response = listener.get(10, TimeUnit.SECONDS);
-
-        // Read slowly.
-        try (InputStream input = listener.getInputStream())
-        {
-            while (true)
+            OutputStreamRequestContent body = new OutputStreamRequestContent();
+            try (OutputStream output = body.getOutputStream())
             {
-                int read = input.read();
-                if (read < 0)
-                    break;
-            }
-        }
+                client.newRequest(newURI(transport))
+                    .trailersSupplier(() -> requestTrailers)
+                    .body(body)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send(listener);
 
-        HttpFields responseTrailers = response.getTrailers();
-        assertNotNull(responseTrailers);
-        assertEquals(trailerValue, responseTrailers.get(trailerName));
+                // Write the content first, then the trailers.
+                output.write(new byte[1024 * 1024]);
+                requestTrailers.put(trailerName, trailerValue);
+            }
+
+            var response = listener.get(10, TimeUnit.SECONDS);
+
+            // Read slowly.
+            try (InputStream input = listener.getInputStream())
+            {
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                }
+            }
+
+            HttpFields responseTrailers = response.getTrailers();
+            assertNotNull(responseTrailers);
+            assertEquals(trailerValue, responseTrailers.get(trailerName));
+        }
     }
 
     @ParameterizedTest

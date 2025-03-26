@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.URIUtil;
@@ -73,6 +76,15 @@ public class DefaultServlet extends ResourceServlet
         if ("true".equalsIgnoreCase(getInitParameter("pathInfoOnly")))
             LOG.warn("DefaultServlet pathInfoOnly is set to true. Use ResourceServlet instead.");
         super.init();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        if (request.getDispatcherType() == DispatcherType.ERROR)
+            doGet(request, response);
+        else
+            super.doPost(request, response);
     }
 
     /**

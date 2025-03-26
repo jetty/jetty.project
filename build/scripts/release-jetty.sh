@@ -187,6 +187,10 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         git push $GIT_REMOTE_ID $GIT_BRANCH_ID
         git push $GIT_REMOTE_ID $TAG_NAME
     fi
+
+    if proceedyn "Do you want to build aggregated Javadoc in target/reports/apidocs/? (Y/n)" y; then
+        mvn mvn clean install -Pjavadoc-aggregate javadoc:aggregate -DskipTests
+    fi
 else
     echo "Not performing release"
 fi

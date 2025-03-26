@@ -1188,8 +1188,6 @@ public class HttpConnectionTest
     @Test
     public void testOversizedResponse() throws Exception
     {
-        httpConfig.setMaxResponseHeaderSize(httpConfig.getResponseHeaderSize());
-
         String str = "thisisastringthatshouldreachover1kbytes-";
         for (int i = 0; i < 500; i++)
         {
@@ -1559,6 +1557,8 @@ public class HttpConnectionTest
             
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.JETTY_11);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));

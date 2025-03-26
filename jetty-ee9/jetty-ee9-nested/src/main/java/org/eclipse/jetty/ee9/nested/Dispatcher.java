@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,9 +186,8 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                String decodedPathInContext = URIUtil.decodePath(_pathInContext);
                 baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
-                baseRequest.setContext(_contextHandler.getServletContext(), decodedPathInContext);
+                baseRequest.setContext(_contextHandler.getServletContext(), _pathInContext);
 
                 if (_uri.getQuery() != null || old_uri.getQuery() != null)
                 {
@@ -212,7 +210,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                 }
 
-                _contextHandler.handle(decodedPathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 // If we are not async and not closed already, then close via the possibly wrapped response.
                 if (!baseRequest.getHttpChannelState().isAsync() && !baseResponse.getHttpOutput().isClosed())

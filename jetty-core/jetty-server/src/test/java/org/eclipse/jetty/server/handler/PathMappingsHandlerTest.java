@@ -149,13 +149,12 @@ public class PathMappingsHandlerTest
     }
 
     /**
-     * Test where there are a few mappings, with a root mapping, and no wrapper.
-     * This means the wrapper would not ever be hit, as all inputs would match at
-     * least 1 mapping.
+     * Test where there are a few mappings, with a root mapping, and a ContextHandler
+     * wrapping the PathMappingsHandler.
      */
     @ParameterizedTest
     @MethodSource("severalMappingsInput")
-    public void testSeveralMappingAndNoWrapper(String requestPath, int expectedStatus, String expectedResponseBody) throws Exception
+    public void testSeveralMappingWithContextHandler(String requestPath, int expectedStatus, String expectedResponseBody) throws Exception
     {
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/");
@@ -167,6 +166,31 @@ public class PathMappingsHandlerTest
         contextHandler.setHandler(pathMappingsHandler);
 
         startServer(contextHandler);
+
+        HttpTester.Response response = executeRequest("""
+            GET %s HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+             
+            """.formatted(requestPath));
+        assertEquals(expectedStatus, response.getStatus());
+        assertEquals(expectedResponseBody, response.getContent());
+    }
+
+    /**
+     * Test where there are a few mappings, with a root mapping, and NO ContextHandler
+     * wrapping the PathMappingsHandler.
+     */
+    @ParameterizedTest
+    @MethodSource("severalMappingsInput")
+    public void testSeveralMappingNoContextHandler(String requestPath, int expectedStatus, String expectedResponseBody) throws Exception
+    {
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("FakeResourceHandler Hit"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("PhpHandler Hit"));
+
+        startServer(pathMappingsHandler);
 
         HttpTester.Response response = executeRequest("""
             GET %s HTTP/1.1\r

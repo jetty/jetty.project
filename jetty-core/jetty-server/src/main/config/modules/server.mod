@@ -23,6 +23,14 @@ lib/jetty-io-${jetty.version}.jar
 [xml]
 etc/jetty.xml
 
+[jpms]
+# ALL-DEFAULT is necessary to expose JDK modules such as java.sql
+# or java.instrument to the ModuleLayer of an eeN environment.
+# ALL-MODULE-PATH is necessary to allow the org.eclipse.jetty.xml
+# JPMS module to load classes from other JPMS modules such as
+# org.eclipse.jetty.io while processing XML files.
+add-modules: ALL-DEFAULT,ALL-MODULE-PATH
+
 [ini-template]
 # tag::documentation-http-config[]
 ### Common HTTP configuration
@@ -44,8 +52,11 @@ etc/jetty.xml
 ## Max request headers size (in bytes)
 # jetty.httpConfig.requestHeaderSize=8192
 
-## Max response headers size (in bytes)
+## Response headers size (in bytes)
 # jetty.httpConfig.responseHeaderSize=8192
+
+## Max response headers size (in bytes), or -1 to use jetty.httpConfig.responseHeaderSize as the max.
+# jetty.httpConfig.maxResponseHeaderSize=16384
 
 ## Whether to send the Server: header
 # jetty.httpConfig.sendServerVersion=true

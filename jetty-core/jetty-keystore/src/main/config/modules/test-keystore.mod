@@ -5,6 +5,8 @@ DO NOT USE IN PRODUCTION!!!
 [tags]
 demo
 ssl
+bouncycastle
+keystore
 
 [before]
 ssl

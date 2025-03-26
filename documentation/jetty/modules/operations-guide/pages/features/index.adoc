@@ -23,7 +23,7 @@ Protocols::
 
 Technologies::
 * xref:annotations/index.adoc[Servlet Annotations]
-* xref:jaas/index.adoc[JAAS]
+* xref:security/jaas-support.adoc[JAAS]
 * xref:jndi/index.adoc[JNDI]
 * xref:jsp/index.adoc[JSP]
 * xref:jmx/index.adoc[JMX Monitoring & Management]

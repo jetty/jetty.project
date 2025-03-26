@@ -750,9 +750,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         var requestCount = 10_000;
         IntStream.range(0, requestCount).forEach(i ->
         {
-            try
+            try (InputStreamResponseListener listener = new InputStreamResponseListener())
             {
-                InputStreamResponseListener listener = new InputStreamResponseListener();
                 httpClient.newRequest("localhost", connector.getLocalPort()).headers(httpFields -> httpFields.put("X-Request-Id", Integer.toString(i))).send(listener);
                 Response response = listener.get(15, TimeUnit.SECONDS);
                 assertEquals(HttpStatus.OK_200, response.getStatus());

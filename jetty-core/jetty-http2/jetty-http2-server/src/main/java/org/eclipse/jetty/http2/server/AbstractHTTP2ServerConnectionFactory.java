@@ -306,7 +306,10 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
-        generator.getHpackEncoder().setMaxHeaderListSize(getHttpConfiguration().getMaxResponseHeaderSize());
+        int maxResponseHeaderSize = getHttpConfiguration().getMaxResponseHeaderSize();
+        if (maxResponseHeaderSize < 0)
+            maxResponseHeaderSize = getHttpConfiguration().getResponseHeaderSize();
+        generator.getHpackEncoder().setMaxHeaderListSize(maxResponseHeaderSize);
 
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
 
