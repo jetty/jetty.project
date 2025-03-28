@@ -60,7 +60,7 @@ public class FormFieldsTest
             Arguments.of(List.of("name=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("name", "=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("n", "ame", "=", "value"), UTF_8, -1, -1, Map.of("name", "value")),
-            Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 4, Map.of("n", "v", "X", "Y")),
+            Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 7, Map.of("n", "v", "X", "Y")),
             Arguments.of(List.of("name=f¤¤&X=Y"), UTF_8, -1, -1, Map.of("name", "f¤¤", "X", "Y")),
             Arguments.of(List.of("na+me=", "va", "+", "lue"), UTF_8, -1, -1, Map.of("na me", "va lue")),
             Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v")),

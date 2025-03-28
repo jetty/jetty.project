@@ -325,11 +325,20 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
         _fields = new Fields(true);
+        if (_maxLength > 0 && source.getLength() > _maxLength)
+            throw new IllegalStateException("form too large > " + _maxLength);
     }
 
     @Override
     protected Fields parse(Content.Chunk chunk) throws CharacterCodingException
     {
+        if (_maxLength >= 0)
+        {
+            _length += chunk.remaining();
+            if (_length > _maxLength)
+                throw new IllegalStateException("form too large > " + _maxLength);
+        }
+
         ByteBuffer buffer = chunk.getByteBuffer();
 
         while (BufferUtil.hasContent(buffer))
@@ -346,7 +355,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                 case 2 ->
                 {
                     _percent = 0;
-                    checkMaxLength();
                     _builder.append(decodeHexByte((char)_percentCode, (char)b));
                     continue;
                 }
@@ -362,15 +370,10 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                         onNewField(name, "");
                     }
                     case '=' -> _name = _builder.build();
-                    case '+' ->
-                    {
-                        checkMaxLength();
-                        _builder.append(' ');
-                    }
+                    case '+' -> _builder.append(' ');
                     case '%' -> _percent++;
                     default ->
                     {
-                        checkMaxLength();
                         _builder.append(b);
                     }
                 }
@@ -385,17 +388,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                         onNewField(_name, value);
                         _name = null;
                     }
-                    case '+' ->
-                    {
-                        checkMaxLength();
-                        _builder.append(' ');
-                    }
+                    case '+' -> _builder.append(' ');
                     case '%' -> _percent++;
-                    default ->
-                    {
-                        checkMaxLength();
-                        _builder.append(b);
-                    }
+                    default -> _builder.append(b);
                 }
             }
         }
@@ -417,16 +412,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
 
         onNewField(_name, value);
         return _fields;
-    }
-
-    private void checkMaxLength()
-    {
-        if (_maxLength >= 0)
-        {
-            _length++;
-            if (_length > _maxLength)
-                throw new IllegalStateException("form too large > " + _maxLength);
-        }
     }
 
     private void onNewField(String name, String value)
