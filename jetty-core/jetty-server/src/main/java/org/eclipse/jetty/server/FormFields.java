@@ -346,6 +346,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                 case 2 ->
                 {
                     _percent = 0;
+                    checkMaxLength();
                     _builder.append(decodeHexByte((char)_percentCode, (char)b));
                     continue;
                 }
@@ -358,17 +359,20 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                     case '&' ->
                     {
                         String name = _builder.build();
-                        checkMaxLength(name);
                         onNewField(name, "");
                     }
-                    case '=' ->
+                    case '=' -> _name = _builder.build();
+                    case '+' ->
                     {
-                        _name = _builder.build();
-                        checkMaxLength(_name);
+                        checkMaxLength();
+                        _builder.append(' ');
                     }
-                    case '+' -> _builder.append(' ');
                     case '%' -> _percent++;
-                    default -> _builder.append(b);
+                    default ->
+                    {
+                        checkMaxLength();
+                        _builder.append(b);
+                    }
                 }
             }
             else
@@ -378,13 +382,20 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                     case '&' ->
                     {
                         String value = _builder.build();
-                        checkMaxLength(value);
                         onNewField(_name, value);
                         _name = null;
                     }
-                    case '+' -> _builder.append(' ');
+                    case '+' ->
+                    {
+                        checkMaxLength();
+                        _builder.append(' ');
+                    }
                     case '%' -> _percent++;
-                    default -> _builder.append(b);
+                    default ->
+                    {
+                        checkMaxLength();
+                        _builder.append(b);
+                    }
                 }
             }
         }
@@ -400,23 +411,19 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (_name == null)
         {
             if (!value.isEmpty())
-            {
-                checkMaxLength(value);
                 onNewField(value, "");
-            }
             return _fields;
         }
 
-        checkMaxLength(value);
         onNewField(_name, value);
         return _fields;
     }
 
-    private void checkMaxLength(String nameOrValue)
+    private void checkMaxLength()
     {
         if (_maxLength >= 0)
         {
-            _length += nameOrValue.length();
+            _length++;
             if (_length > _maxLength)
                 throw new IllegalStateException("form too large > " + _maxLength);
         }
