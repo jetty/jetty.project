@@ -472,8 +472,8 @@ public class ServletChannel
                             if (!_httpInput.consumeAvailable())
                                 ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
 
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+                            Request.Handler errorHandler = _servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT) instanceof ContextHandler.ScopedContext scopedContext
+                                ? ErrorHandler.getErrorHandler(getServer(), scopedContext.getContextHandler()) : null;
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
                             if (HttpStatus.hasNoBody(getServletContextResponse().getStatus()) || errorHandler == null)
