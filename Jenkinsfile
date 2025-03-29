@@ -149,8 +149,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
-          // -DsettingsPath=$GLOBAL_MVN_SETTINGS
-          // -s $GLOBAL_MVN_SETTINGS
           sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Psnapshot-repositories -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
