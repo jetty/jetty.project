@@ -98,21 +98,26 @@ public class FormTest
     public static Stream<Arguments> formContentSizeScenarios()
     {
         return Stream.of(
-            Arguments.of(null, true),
-            Arguments.of(null, false),
-            Arguments.of(-1, true),
-            Arguments.of(-1, false),
-            Arguments.of(0, true),
-            Arguments.of(0, false),
-            Arguments.of(MAX_FORM_CONTENT_SIZE, true),
-            Arguments.of(MAX_FORM_CONTENT_SIZE, false)
+            Arguments.of(null, ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE + 1, true, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(null, ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE + 1, false, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(-1, null,  true, HttpStatus.OK_200),
+            Arguments.of(-1, null, false, HttpStatus.OK_200),
+            Arguments.of(0, null, true, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(0, null, false, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(MAX_FORM_CONTENT_SIZE, MAX_FORM_CONTENT_SIZE + 1, true, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(MAX_FORM_CONTENT_SIZE, MAX_FORM_CONTENT_SIZE + 1, false, HttpStatus.BAD_REQUEST_400),
+            Arguments.of(MAX_FORM_CONTENT_SIZE, MAX_FORM_CONTENT_SIZE, true, HttpStatus.OK_200),
+            Arguments.of(MAX_FORM_CONTENT_SIZE, MAX_FORM_CONTENT_SIZE, false, HttpStatus.OK_200)
         );
     }
 
     @ParameterizedTest
     @MethodSource("formContentSizeScenarios")
-    public void testMaxFormContentSizeExceeded(Integer maxFormContentSize, boolean withContentLength) throws Exception
+    public void testMaxFormContentSizeExceeded(Integer maxFormContentSize, Integer contentSize, boolean withContentLength, int expectedStatus) throws Exception
     {
+        if (contentSize == null)
+            contentSize = ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+
         start(handler ->
         {
             if (maxFormContentSize != null)
@@ -127,16 +132,7 @@ public class FormTest
             };
         });
 
-        byte[] key = "foo=".getBytes(StandardCharsets.US_ASCII);
-        int length = (maxFormContentSize == null || maxFormContentSize < 0)
-            ? ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE
-            : maxFormContentSize;
-        // Avoid empty value.
-        length = length + 1;
-        byte[] value = new byte[length];
-        Arrays.fill(value, (byte)'x');
-        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(key), ByteBuffer.wrap(value));
-
+        AsyncRequestContent content = newContent(contentSize);
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .path(contextPath + servletPath)
@@ -154,10 +150,15 @@ public class FormTest
             })
             .send();
 
-        int expected = (maxFormContentSize != null && maxFormContentSize < 0)
-            ? HttpStatus.OK_200
-            : HttpStatus.BAD_REQUEST_400;
-        assertEquals(expected, response.getStatus());
+        assertEquals(expectedStatus, response.getStatus());
+    }
+
+    private AsyncRequestContent newContent(int size)
+    {
+        byte[] key = "foo=".getBytes(StandardCharsets.US_ASCII);
+        byte[] value = new byte[size - key.length];
+        Arrays.fill(value, (byte)'x');
+        return new AsyncRequestContent(ByteBuffer.wrap(key), ByteBuffer.wrap(value));
     }
 
     public static Stream<Integer> formKeysScenarios()
