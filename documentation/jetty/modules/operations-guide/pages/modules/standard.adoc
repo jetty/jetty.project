@@ -522,9 +522,33 @@ As an example, in a Linux machine named `beryl`, the `/etc/hosts` file may conta
 ----
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI implementation uses the host name `beryl` to figure out the IP address to store in the RMI stub, in this case `127.0.1.1`.
-However, we the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
+However, the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
+
+[[openid]]
+== Module `openid`
+
+The `openid` module enables support for OpenID Connect (OIDC) authentication in Jetty, as detailed in xref:security/openid-support.adoc#openid-support[this section].
+
+This module allows Jetty to authenticate users via an OpenID Connect identity provider, making possible to integrate features like "Sign in with Google" or "Sign in with Microsoft", among others.
+
+This simplifies user authentication while leveraging the security and convenience of external identity providers.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/openid.mod[tags=documentation]
+----
+
+Among the configurable properties, the only required properties are:
+
+`jetty.openid.provider`::
+The issuer identifier of the OpenID Provider, which is the base URL before .well-known/openid-configuration. It must match the issuer field in the provider's configuration and is case-sensitive.
+`jetty.openid.clientId`::
+The Client Identifier assigned to your application by the OpenID Provider, used to uniquely identify your app during authentication requests.
+`jetty.openid.clientSecret`::
+The Client Secret issued by the OpenID Provider, used to verify your application's identity during the authentication process. This must be kept confidential.
 
 [[qos]]
 == Module `qos`

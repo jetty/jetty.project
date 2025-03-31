@@ -60,10 +60,11 @@ public class FormFieldsTest
             Arguments.of(List.of("name=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("name", "=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("n", "ame", "=", "value"), UTF_8, -1, -1, Map.of("name", "value")),
-            Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 4, Map.of("n", "v", "X", "Y")),
+            Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 7, Map.of("n", "v", "X", "Y")),
             Arguments.of(List.of("name=f¤¤&X=Y"), UTF_8, -1, -1, Map.of("name", "f¤¤", "X", "Y")),
             Arguments.of(List.of("na+me=", "va", "+", "lue"), UTF_8, -1, -1, Map.of("na me", "va lue")),
-            Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v"))
+            Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v")),
+            Arguments.of(List.of("n1=v1&n2&n3=v3&n4"), UTF_8, 4, -1, Map.of("n1", "v1", "n2", "", "n3", "v3", "n4", ""))
         );
     }
 
@@ -125,7 +126,12 @@ public class FormFieldsTest
             Arguments.of(List.of("n%AH=v"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%AH"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=%%TOK%%"), UTF_8, -1, -1, IllegalArgumentException.class),
-            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class)
+            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class),
+            Arguments.of(List.of("a=0&b=1&c=2&d=4"), UTF_8, 2, -1, IllegalStateException.class),
+            Arguments.of(List.of("a=0", "&b=1&", "c=", "2&d=4"), UTF_8, 2, -1, IllegalStateException.class),
+            Arguments.of(List.of("abcde=123456"), UTF_8, -1, 10, IllegalStateException.class),
+            Arguments.of(List.of("abc=1234", "def=567"), UTF_8, -1, 10, IllegalStateException.class),
+            Arguments.of(List.of("abcefghijklmnop="), UTF_8, -1, 10, IllegalStateException.class)
         );
     }
 

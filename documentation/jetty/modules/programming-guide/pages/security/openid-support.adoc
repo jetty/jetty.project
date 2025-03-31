@@ -1,0 +1,72 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[openid-support]]
+= OpenID Support
+
+Jetty supports authentication using the OpenID Connect protocol (see link:https://openid.net/specs/openid-connect-core-1_0-final.html[OpenID Connect Core 1.0]).
+
+This allows users to authenticate with third party OpenID Providers, making possible to integrate features like "Sign in with Google" or "Sign in with Microsoft", among others.
+
+With OpenID Connect, Jetty applications can offload the responsibility of managing user credentials while enabling features like single sign-on (SSO).
+
+== External Configuration
+
+To use OpenID Connect authentication with Jetty you are required to set up an external OpenID Provider for your web application; some examples of OpenID Providers are link:https://developers.google.com/identity/protocols/OpenIDConnect[Google] and link:https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html[Amazon].
+
+Once you have set up your OpenID Provider you will have access to a Client ID and Client Secret which you can use to configure Jetty.
+
+You must also configure your OpenID Provider to recognize the redirect URIs that your web application will use to handle authentication responses.
+By default, the redirect path is `/j_security_check`, but this can be customized through the `OpenIdAuthenticator` configuration if needed.
+
+For example, you may wish to register the following URIs:
+
+ * For a deployed application, `+https://example.com/j_security_check+`.
+ * For local development, `+http://localhost:8080/j_security_check+`.
+
+Ensure that all relevant environments where your web application is deployed have their corresponding URIs registered with the OpenID Provider to avoid authentication errors.
+
+== Jetty Configuration
+
+=== Code Example
+
+This is an example of how you can configure OpenID Connect authentication with an embedded Jetty environment with the Jetty Core API.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/OpenIdDocs.java[tags=openIdConfigExample]
+----
+
+=== Application Usage
+
+Here is an example of a Jetty Core `Handler` which handles authenticated requests by accessing the OpenID claims, and also handles authentication errors at `/error`.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/OpenIdDocs.java[tags=openIdUsageExample]
+----
+
+==== Claims and Access Token
+Claims about the user can be found using attributes in the HTTP session attribute `org.eclipse.jetty.security.openid.claims`, and the full response containing the OAuth 2.0 Access Token can be found in the HTTP session attribute `org.eclipse.jetty.security.openid.response`.
+
+=== Authorization with Security Roles
+
+If security roles are required, they can be configured through a wrapped `LoginService` which is deferred to for role information by the `OpenIdLoginService`.
+
+The wrapped `LoginService` be configured through the constructor arguments of `OpenIdLoginService`, or left `null` if no user roles are required.
+
+When using authorization roles, the property `authenticateNewUsers`, which can be configured through the `OpenIdConfiguration` or directly on the `OpenIdLoginService`, becomes significant.
+
+When `authenticateNewUsers` is set to `true`, users not found by the wrapped `LoginService` will still be authenticated but will have no roles.
+
+When `authenticateNewUsers` is set to `false`, users not found by the wrapped `LoginService` will be not be allowed to authenticate and are redirected to the error page.

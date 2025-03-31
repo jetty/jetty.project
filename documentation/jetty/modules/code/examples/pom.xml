@@ -56,6 +56,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
     </dependency>
     <dependency>
@@ -132,6 +136,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>jetty-quic-quiche-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
