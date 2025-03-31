@@ -215,11 +215,6 @@ public abstract class IteratingCallback implements Callback
         {
             switch (_state)
             {
-                case PENDING:
-                case CALLED:
-                    // process will be called when callback is handled
-                    break;
-
                 case IDLE:
                     _state = State.PROCESSING;
                     process = true;
@@ -229,14 +224,8 @@ public abstract class IteratingCallback implements Callback
                     _iterate = true;
                     break;
 
-                case FAILED:
-                case SUCCEEDED:
-                    break;
-
-                case CLOSED:
-                case ABORTED:
                 default:
-                    throw new IllegalStateException(toString());
+                    break;
             }
         }
         if (process)
