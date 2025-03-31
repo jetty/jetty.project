@@ -144,7 +144,7 @@ public class FormTest
             })
             .send();
 
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        assertEquals(expectedStatus, response.getStatus());
     }
 
     private AsyncRequestContent newContent(int size)
