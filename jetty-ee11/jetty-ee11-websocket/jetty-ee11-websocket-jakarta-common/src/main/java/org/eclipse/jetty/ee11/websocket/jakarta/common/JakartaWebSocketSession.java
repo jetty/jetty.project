@@ -195,7 +195,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
             {
                 if (!CloseStatus.isOrdinary(closeCode))
                     frameHandler.handleError(new CloseException(closeCode, "Abnormal Close"));
-            }));        }
+            }));
+        }
         catch (Throwable t)
         {
             LOG.trace("IGNORED", t);
