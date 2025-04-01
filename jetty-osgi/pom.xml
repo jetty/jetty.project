@@ -32,7 +32,7 @@
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-services-version>3.12.100</osgi-services-version>
+    <osgi-services-version>3.12.200</osgi-services-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
     <osgi-util-position-version>1.0.1</osgi-util-position-version>
@@ -40,7 +40,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.300</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.21.0</osgi-version>
+    <osgi-version>3.23.0</osgi-version>
   </properties>
 
   <dependencyManagement>
