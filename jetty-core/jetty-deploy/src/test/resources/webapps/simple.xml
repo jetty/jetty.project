@@ -7,4 +7,5 @@
   <Set name="handler">
     <New class="org.eclipse.jetty.server.handler.ResourceHandler" />
   </Set>
+  <Set name="displayName">Simple <Property name="testname" /></Set>
 </Configure>

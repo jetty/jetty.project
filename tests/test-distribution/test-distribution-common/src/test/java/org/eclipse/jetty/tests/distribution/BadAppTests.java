@@ -49,8 +49,10 @@ public class BadAppTests extends AbstractJettyHomeTest
     @CsvSource({"ee9", "ee10", "ee11"})
     public void testXmlThrowOnUnavailableTrue(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyBase(jettyBase)
             .jettyVersion(jettyVersion)
             .build();
 
@@ -88,8 +90,10 @@ public class BadAppTests extends AbstractJettyHomeTest
     @CsvSource({"ee9", "ee10", "ee11"})
     public void testXmlThrowOnUnavailableFalse(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyBase(jettyBase)
             .jettyVersion(jettyVersion)
             .build();
 
@@ -130,8 +134,10 @@ public class BadAppTests extends AbstractJettyHomeTest
     @CsvSource({"ee9", "ee10", "ee11"})
     public void testNoXmlThrowOnUnavailableDefault(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyBase(jettyBase)
             .jettyVersion(jettyVersion)
             .build();
 
@@ -161,8 +167,10 @@ public class BadAppTests extends AbstractJettyHomeTest
     @CsvSource({"ee9", "ee10", "ee11"})
     public void testBadWebSocketWebapp(String env) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyBase(jettyBase)
             .jettyVersion(jettyVersion)
             .build();
         String mods = "resources,server,http," + 

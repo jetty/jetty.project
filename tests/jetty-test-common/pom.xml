@@ -12,7 +12,7 @@
   <name>Tests :: Test Utilities</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.testers</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>

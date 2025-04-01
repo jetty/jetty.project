@@ -1,0 +1,93 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[openid-support]]
+= OpenID Support
+
+A more general discussion about OpenID and its support in Jetty is available in the xref:programming-guide:security/openid-support.adoc[programming guide section].
+
+== OpenID Provider Configuration
+
+To enable OpenID support, you need to enable the xref:operations-guide:modules/standard.adoc#openid[`openid` module]:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=openid
+----
+
+To configure OpenID Authentication with Jetty you will need to specify the OpenID Provider's issuer identifier (a case-sensitive URL) and the OAuth 2.0 Client ID and Client Secret.
+
+If the OpenID Provider does not allow metadata discovery you will also need to specify the token endpoint and authorization endpoint of the OpenID Provider.
+
+These values can be set as properties in `$JETTY_BASE/start.d/openid.ini` file.
+Refer to the xref:modules/standard.adoc#openid[`openid`] Jetty module for the list of configurable properties.
+
+This is an example of an `openid.ini` file which uses discovery of the OpenID endpoints:
+
+----
+## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
+jetty.openid.provider=https://id.example.com/
+
+## The Client Identifier
+jetty.openid.clientId=test1234
+
+## The Client Secret
+jetty.openid.clientSecret=XT_Mafv_aUCGheuCaKY8P
+----
+
+== Web Application Specific Configuration in `web.xml`
+
+The web application's `web.xml` file needs some specific configuration to use OpenID.
+
+There must be a `<login-config>` element with an `<auth-method>` value of `OPENID`, and a `<realm-name>` value of the exact URL string used to set the OpenID Provider.
+
+To set the error page, you must set an `context-param` named `org.eclipse.jetty.security.openid.error_page` whose value should be a path relative to the web application where authentication errors should be redirected.
+
+For example:
+
+[,xml,subs=attributes+]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+  ...
+  <login-config>
+    <auth-method>OPENID</auth-method>
+    <realm-name>https://accounts.google.com</realm-name>
+  </login-config>
+
+  <context-param>
+    <param-name>org.eclipse.jetty.security.openid.error_page</param-name>
+    <param-value>/error</param-value>
+  </context-param>
+  ...
+</web-app>
+----
+
+== Authorization with Security Roles
+
+If security roles are required, they can be configured through a wrapped `LoginService` which is deferred to for role information by the `OpenIdLoginService`, and assigns security roles to users.
+
+You can configure the wrapped `LoginService` by modifying the `$JETTY_BASE/etc/openid-baseloginservice.xml` file.
+
+You can further configure whether to only authenticate users known to the wrapped `LoginService` by configuring the property `jetty.openid.authenticateNewUsers` in the `$JETTY_BASE/start.d/openid.ini` file.
+
+== Supporting Multiple OpenID Providers
+
+By default, Jetty defines one OpenID Provider that you can configure using the properties defined in the `$JETTY_BASE/start.d/openid.ini` file.
+
+You can support multiple OpenID Providers by creating a custom Jetty module (as described in xref:operations-guide:modules/custom.adoc[this section]).
+The custom Jetty module XML file should add an additional `OpenIdConfiguration` as a bean on the `Server` instance, for the additional OpenID Provider.
+
+If there are multiple OpenID configuration instances in the `Server`, then the `OpenIdAuthenticationFactory` will select the one with an `issuer` matching the `<realm-name>` of the `<login-config>` element in the `web.xml` of a given web application.

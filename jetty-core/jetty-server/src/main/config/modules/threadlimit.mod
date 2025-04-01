@@ -1,9 +1,12 @@
 [description]
-Installs ThreadLimitHandler at the root of the `Handler` tree, to limit
-the number of requests per IP address, for denial-of-service protection.
+DEPRECATED - use the thread-limit module instead.
 
 [deprecated]
-Use 'thread-limit' module instead.
+Use module thread-limit module instead.
 
-[depend]
+[tags]
+deprecated
+server
+
+[depends]
 thread-limit

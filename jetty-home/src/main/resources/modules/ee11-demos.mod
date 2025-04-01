@@ -16,6 +16,7 @@ http2
 test-keystore
 work
 demo-root
+ee11-environment
 ee11-demo-async-rest
 ee11-demo-jaas
 ee11-demo-jetty
@@ -25,6 +26,7 @@ ee11-demo-jndi
 ee11-demo-spec
 ee11-demo-spec-6-1
 ee11-demo-jsp
+ee11-demo-jspc
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

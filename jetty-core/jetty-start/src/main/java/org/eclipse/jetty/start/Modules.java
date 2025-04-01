@@ -200,7 +200,7 @@ public class Modules implements Iterable<Module>
         Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
         if (max.isEmpty())
             return;
-        String format = "%" + max.get() + "s - %s%s%n";
+        String format = "  %-" + max.get() + "s - %s%s%n";
 
         Comparator<Module> comparator = wild ? Comparator.comparing(Module::getName) : Module::compareTo;
         AtomicReference<String> tag = new AtomicReference<>();

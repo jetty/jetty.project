@@ -23,9 +23,11 @@ import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -67,7 +69,10 @@ import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -80,6 +85,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +94,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -100,6 +107,7 @@ public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
+
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
@@ -164,11 +172,11 @@ public class AsyncMiddleManServletTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
-        client.stop();
-        proxy.stop();
-        server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(proxy);
+        LifeCycle.stop(server);
     }
 
     @Test
@@ -657,8 +665,19 @@ public class AsyncMiddleManServletTest
 
     private void testLargeChunkedBufferedDownstreamTransformation(boolean gzipped) throws Exception
     {
-        // Tests the race between a incomplete write performed from ProxyResponseListener.onSuccess()
+        // Tests the race between an incomplete write performed from ProxyResponseListener.onSuccess()
         // and ProxyResponseListener.onComplete() being called before the write has completed.
+
+        Random random = new Random();
+        byte[] bytes = new byte[16 * 1024 * 1024];
+        random.nextBytes(bytes);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (OutputStream gzipOutput = new GZIPOutputStream(baos))
+        {
+            gzipOutput.write(bytes);
+        }
+        byte[] gzipBytes = baos.toByteArray();
 
         startServer(new HttpServlet()
         {
@@ -668,18 +687,19 @@ public class AsyncMiddleManServletTest
                 OutputStream output = response.getOutputStream();
                 if (gzipped)
                 {
-                    output = new GZIPOutputStream(output);
                     response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                    output = new GZIPOutputStream(output);
                 }
 
-                Random random = new Random();
-                byte[] chunk = new byte[1024 * 1024];
-                for (int i = 0; i < 16; ++i)
-                {
-                    random.nextBytes(chunk);
-                    output.write(chunk);
-                    output.flush();
-                }
+                // Flush to force chunked transfer.
+                output.flush();
+
+                // Large non-compressible write to make the proxy TCP congested.
+                output.write(bytes);
+
+                // Make sure the GZIPOutputStream is closed to ensure all of it is written.
+                if (gzipped)
+                    output.close();
             }
         });
         startProxy(new AsyncMiddleManServlet()
@@ -693,24 +713,43 @@ public class AsyncMiddleManServletTest
                 return transformer;
             }
         });
-        startClient();
 
-        CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", serverConnector.getLocalPort())
-            .onResponseContent((response, content) ->
-            {
-                // Slow down the reader so that the
-                // write from the proxy gets congested.
-                sleep(1);
-            })
-            .send(result ->
-            {
-                assertTrue(result.isSucceeded());
-                assertEquals(200, result.getResponse().getStatus());
-                latch.countDown();
-            });
+        // Connect to the proxy, but send a request for the server.
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", proxyConnector.getLocalPort())))
+        {
+            String request = """
+                GET http://localhost:$P/ HTTP/1.1
+                Host: localhost:$P
+                Accept-Encoding: gzip
+                
+                """.replace("$P", String.valueOf(serverConnector.getLocalPort()));
+            client.write(BufferUtil.toBuffer(request, StandardCharsets.UTF_8));
 
-        assertTrue(latch.await(15, TimeUnit.SECONDS));
+            // Do not read yet, wait for the proxy to become TCP congested.
+            await().atMost(15, TimeUnit.SECONDS).until(() ->
+                proxyConnector.getConnectedEndPoints().stream()
+                    .filter(endPoint -> endPoint instanceof AbstractEndPoint)
+                    .map(endPoint -> ((AbstractEndPoint)endPoint).getWriteFlusher())
+                    .anyMatch(WriteFlusher::isPending)
+            );
+
+            client.socket().setSoTimeout(5000);
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            byte[] rawBytes = response.getContentBytes();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            if (gzipped)
+            {
+                assertArrayEquals(gzipBytes, rawBytes);
+                byte[] ungzipped = new GZIPInputStream(new ByteArrayInputStream(rawBytes)).readAllBytes();
+                assertArrayEquals(bytes, ungzipped);
+            }
+            else
+            {
+                assertArrayEquals(bytes, rawBytes);
+            }
+        }
     }
 
     @Test

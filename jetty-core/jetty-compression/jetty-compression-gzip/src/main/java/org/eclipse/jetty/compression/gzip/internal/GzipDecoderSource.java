@@ -274,6 +274,7 @@ public class GzipDecoderSource extends DecoderSource
     @Override
     protected void release()
     {
+        super.release();
         inflaterEntry.release();
     }
 }

@@ -371,29 +371,31 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .timeout(20, TimeUnit.SECONDS)
-            .send(listener);
-
-        Response response = listener.get(20, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        // No Content-Length because HttpClient does not know yet the length of the decoded content.
-        assertNull(response.getHeaders().get(HttpHeader.CONTENT_LENGTH));
-        // No Content-Encoding, because the content will be decoded automatically.
-        // In this way applications will know that the content is already un-gzipped
-        // and will not do the un-gzipping themselves.
-        assertNull(response.getHeaders().get(HttpHeader.CONTENT_ENCODING));
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try (InputStream input = listener.getInputStream())
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            IO.copy(input, output);
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .timeout(20, TimeUnit.SECONDS)
+                .send(listener);
+
+            Response response = listener.get(20, TimeUnit.SECONDS);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            // No Content-Length because HttpClient does not know yet the length of the decoded content.
+            assertNull(response.getHeaders().get(HttpHeader.CONTENT_LENGTH));
+            // No Content-Encoding, because the content will be decoded automatically.
+            // In this way applications will know that the content is already un-gzipped
+            // and will not do the un-gzipping themselves.
+            assertNull(response.getHeaders().get(HttpHeader.CONTENT_ENCODING));
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            try (InputStream input = listener.getInputStream())
+            {
+                IO.copy(input, output);
+            }
+            assertArrayEquals(content, output.toByteArray());
+            // After the content has been decoded, the length is known again.
+            assertEquals(content.length, response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH));
         }
-        assertArrayEquals(content, output.toByteArray());
-        // After the content has been decoded, the length is known again.
-        assertEquals(content.length, response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH));
     }
 
     private static void sleep(long ms) throws IOException

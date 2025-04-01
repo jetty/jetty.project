@@ -11,7 +11,7 @@ demo
 webapp
 
 [depends]
-deploy
+ee11-deploy
 jdbc
 ee11-jsp
 ee11-annotations

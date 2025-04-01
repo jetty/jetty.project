@@ -11,16 +11,101 @@
 // ========================================================================
 //
 
-= Component Tree Dump
+[[dump]]
+= Jetty Component Dump
 
-Jetty components are organized in a xref:arch/bean.adoc[component tree].
+Jetty is based on components organized as a tree of objects (refer to xref:arch/bean.adoc[this section]), with the `Server` instance or the `HttpClient` instance typically at the root of the tree.
 
-At the root of the component tree there is typically a `ContainerLifeCycle` instance -- typically a `Server` instance on the server and an `HttpClient` instance on the client.
+As explained in the xref:arch/jmx.adoc[JMX section], these components can be exported as JMX MBeans and therefore be accessible from JMX Consoles such as Java Missions Control (JMC).
 
-`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly on the `Server` instance, or xref:arch/jmx.adoc[via JMX].
+Being able to take a snapshot of a Jetty component tree while it is running is the most useful information that can be attached when reporting an issue as it can contain both configuration and current state of Jetty.
+A dump of the component tree for the Server includes:
 
-You can invoke `Server.dump()` via JMX using a JMX console such as https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
+* The thread pool configuration and its current state, including how many threads are in use, and their stack trace.
+* The Connector configuration (including TLS configuration), state and statistics.
+* The I/O configuration and its current state, including the ports Jetty listens to, how many connections are currently open, and he state of each connection, and the state of the request/response handling for each connection.
+* The `Handler` structure and its configuration.
+* The web applications deployed and their configurations, including the class loader information.
+
+[[dump-start-stop]]
+== Component Dump at Server Start/Stop
+
+You can get the server dump at any time using these methods.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=dump]
+----
+
+However, it is often useful to configure the server to dump the state of the freshly started server, and also dump the state just before the `Server` stops (which may be useful to log the state of server that is not working properly).
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=dumpStartStop]
+----
+
+[NOTE]
+====
+The format of the Jetty Server Dump output is subject to change at any time, as Jetty developers modify the Jetty code and decide to include more state, or remove state that is no longer relevant.
+
+The Jetty Server Dump is organized in a tree whose structure is similar to the runtime Jetty component tree.
+
+At the end of the dump output there is a legend that explains the type of tree node: whether it is a node that represent a _managed_ component, or an _array_ node (or a _map_ node) that represent some component state, etc.
+====
+
+[[dump-invoke]]
+== Obtaining Dump via JMX
+
+The Jetty Component Dump can be obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
 
 image::jmc-server-dump.png[]
 
-TIP: You can get more details from a Jetty's `QueuedThreadPool` dump by enabling detailed dumps via `queuedThreadPool.setDetailedDump(true)`.
+Find the `Server` MBean in the MBean Tree, under `org.eclipse.jetty.server:type=server,id=0`.
+Then click on the "Operations" tab, select the `dump()` operation, and then click the `Execute` button.
+In the bottom panel you will see the result of the invocation, that you can copy into a text editor and save to your file system.
+
+[CAUTION]
+====
+Taking a Jetty Component Dump is a relatively expensive operation, as it dumps the state of all connections (which can be thousands), and the state of all threads.
+
+The result of the invocation may produce a large string, possibly few MiB, that may impact the server memory usage.
+
+Furthermore, dumping the state of the I/O Jetty components takes a little CPU time off the handling of the actual I/O, possibly slowing it down temporarily.
+
+The slow-down caused by taking the Jetty Component Dump may be noticeable on highly loaded systems.
+However, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
+====
+
+[[dump-detailed]]
+== Detailed ThreadPool Information
+
+By default, the dump of the thread pool will only dump the topmost stack frame of each thread.
+It is possible to configure the thread pool to dump the whole stack trace for each thread; while this may be a little more expensive, it provides complete information about the state of each thread, which may be important to diagnose the issue.
+
+See the xref:operations-guide:modules/standard.adoc#threadpool[`threadpool` module] configuration for more information about how to configure the thread pool to dump detailed thread information.
+
+Detailed thread pool information can also be turned on/off on-the-fly via JMX, by finding the `ThreadPool` MBean under `org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0`, then selecting the `detailedDump` attribute and setting it to `true`. You can now perform the `Server.dump()` operation as explained above, and then set `detailedDump` back to `false`.
+
+[[dump-example]]
+== Dump Example
+
+Below you can find a simple example of a Jetty Component Dump, with annotations for the principal components:
+
+[jetty.small%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=http
+args=jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true
+delete=^[0-9]\{4}
+callouts= <$N>,Server@,= QueuedThreadPool,HandlerCollection@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged
+....
+ifdef::run-jetty[]
+<1> The `Server` instance at the root of the tree
+<2> The thread pool component
+<3> The root of the `Handler` structure
+<4> The connector listening on port `8080` for the HTTP/1.1 protocol
+<5> A selector component that manages connections
+<6> The connections currently managed by the selector component
+<7> The server `ClassLoader` and its classpath
+<8> The legend for the dump nodes
+endif::[]

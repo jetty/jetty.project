@@ -41,7 +41,19 @@ public class FileID
         Path filename = path.getFileName();
         if (filename == null)
             return "";
-        String basename = filename.toString();
+        return getBasename(filename.toString());
+    }
+
+    /**
+     * Retrieve the basename of a path. This is the name of the
+     * last segment of the path, with any dot suffix (e.g. ".war") removed
+     *
+     * @param filename The filename only (no paths)
+     * @return the filename without any dot suffix
+     */
+    public static String getBasename(String filename)
+    {
+        String basename = filename;
         int dot = basename.lastIndexOf('.');
         if (dot >= 0)
             basename = basename.substring(0, dot);

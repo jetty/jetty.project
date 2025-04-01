@@ -34,8 +34,9 @@
 * xref:jndi/index.adoc[]
 * Jetty Security
 ** xref:security/configuring-form-size.adoc[]
-* xref:jaas/index.adoc[]
-* xref:jaspi/index.adoc[]
+** xref:security/jaas-support.adoc[]
+** xref:security/jaspi-support.adoc[]
+** xref:security/openid-support.adoc[]
 * xref:jmx/index.adoc[]
 * xref:tools/index.adoc[]
 * xref:troubleshooting/index.adoc[]

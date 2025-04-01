@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.server.handler.SizeLimitHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +71,7 @@ public class SizeLimitHandlerServletTest
         _server.addConnector(_connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setMaxFormContentSize(10 * SIZE_LIMIT);
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setInflateBufferSize(1024);
         SizeLimitHandler sizeLimitHandler = new SizeLimitHandler(SIZE_LIMIT, SIZE_LIMIT);
@@ -289,5 +292,28 @@ public class SizeLimitHandlerServletTest
         gzipOutputStream.write(bytes);
         gzipOutputStream.close();
         return new BytesRequestContent(outputStream.toByteArray());
+    }
+
+    @Test
+    public void testFormSize() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.getWriter().print(req.getParameterMap());
+            }
+        });
+
+        String key = "x".repeat(SIZE_LIMIT * 2);
+        Fields fields = new Fields();
+        fields.add(key, "value");
+
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+        ContentResponse response = _client.POST(uri)
+            .body(new FormRequestContent(fields)).send();
+
+        assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }
 }

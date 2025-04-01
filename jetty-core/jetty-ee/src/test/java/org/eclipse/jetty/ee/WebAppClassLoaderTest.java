@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,14 +56,13 @@ public class WebAppClassLoaderTest
     private ContainerLifeCycle _container;
 
     @BeforeEach
-    public void init() throws Exception
+    public void init(TestInfo testInfo) throws Exception
     {
-        TestableWebAppClassLoaderContext.initEnvironment();
-
         _container = new ContainerLifeCycle();
         ResourceFactory resourceFactory = ResourceFactory.of(_container);
 
-        _context = new TestableWebAppClassLoaderContext(resourceFactory);
+        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        _context = new TestableWebAppClassLoaderContext(resourceFactory, environmentName);
 
         _testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         Resource webapp = resourceFactory.newResource(_testWebappDir);

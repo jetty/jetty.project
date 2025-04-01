@@ -8,7 +8,7 @@ ee11
 
 [depend]
 server
-deploy
+ee11-deploy
 
 [lib]
 lib/jetty-ee11-quickstart-${jetty.version}.jar

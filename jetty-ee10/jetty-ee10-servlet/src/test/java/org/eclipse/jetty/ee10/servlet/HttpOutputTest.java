@@ -51,8 +51,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -149,7 +151,7 @@ public class HttpOutputTest
         _contentServlet._contentInputStream = IOResources.asInputStream(big);
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -203,7 +205,7 @@ public class HttpOutputTest
         _contentServlet._contentChannel = Files.newByteChannel(big.getPath());
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -227,7 +229,7 @@ public class HttpOutputTest
         _contentServlet._contentResource = big;
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -315,7 +317,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -330,7 +332,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -345,7 +347,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -360,7 +362,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -458,7 +460,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -474,7 +476,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -490,7 +492,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -555,7 +557,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -572,7 +574,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -589,7 +591,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -606,7 +608,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -627,7 +629,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
@@ -643,7 +645,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -660,7 +662,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -677,7 +679,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -695,7 +697,7 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
         assertThat(_contentServlet._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
@@ -714,9 +716,9 @@ public class HttpOutputTest
         String response = _connector.getResponse("HEAD / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(_contentServlet._owp.get() - start, Matchers.greaterThan(0));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, Matchers.not(containsString("Content-Length")));
-        assertThat(response, Matchers.not(containsString("1\tThis is a big file")));
-        assertThat(response, Matchers.not(containsString("400\tThis is a big file")));
+        assertThat(response, not(containsString("Content-Length")));
+        assertThat(response, not(containsString("1\tThis is a big file")));
+        assertThat(response, not(containsString("400\tThis is a big file")));
     }
 
     @Test
@@ -753,7 +755,7 @@ public class HttpOutputTest
         assertThat(_contentServlet._owp.get() - start, Matchers.equalTo(1));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
-        assertThat(response, Matchers.not(containsString("simple text")));
+        assertThat(response, not(containsString("simple text")));
     }
 
     @Test
@@ -1004,13 +1006,13 @@ public class HttpOutputTest
     public void testPrint() throws Exception
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintWriter exp = new PrintWriter(bout);
+        PrintWriter exp = new PrintWriter(bout, true, StandardCharsets.UTF_8);
         HttpServlet servlet = new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.setCharacterEncoding("UTF8");
+                response.setCharacterEncoding("UTF-8");
                 HttpOutput out = (HttpOutput)response.getOutputStream();
 
                 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -1048,9 +1050,12 @@ public class HttpOutputTest
         };
         _servletContextHandler.addServlet(servlet, "/test");
         _server.start();
-        String response = _connector.getResponse("GET /test HTTP/1.0\nHost: localhost:80\n\n");
+        ByteBuffer responseBuf = _connector.getResponse(ByteBuffer.wrap("GET /test HTTP/1.0\nHost: localhost:80\n\n".getBytes(StandardCharsets.UTF_8)));
+        String response = BufferUtil.toString(responseBuf, StandardCharsets.UTF_8);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString(bout.toString()));
+        String expected = bout.toString(StandardCharsets.UTF_8);
+        assertThat(expected, not(emptyString()));
+        assertThat(response.replace("\r\n", System.lineSeparator()), containsString(expected));
     }
 
     @Test

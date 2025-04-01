@@ -464,32 +464,25 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
-        boolean reset;
-        boolean process = false;
         try (AutoLock ignored = lock.lock())
         {
-            reset = isReset();
-            if (!reset)
+            if (failure == null)
             {
-                process = dataQueue.isEmpty() && dataDemand;
+                boolean process = dataQueue.isEmpty() && dataDemand;
                 // Retain the data because it is stored for later use.
                 data.retain();
                 dataQueue.offer(data);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
+                return process;
             }
         }
 
-        if (reset)
-        {
-            // Drop the frame.
-            if (LOG.isDebugEnabled())
-                LOG.debug("Data {} for already reset {}", data, this);
-            session.dataConsumed(this, data.frame().flowControlLength());
-            return false;
-        }
-
+        // Drop the frame.
         if (LOG.isDebugEnabled())
-            LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
-        return process;
+            LOG.debug("Data {} dropped for already reset/failed {}", data, this);
+        session.dataConsumed(this, data.frame().flowControlLength());
+        return false;
     }
 
     @Override

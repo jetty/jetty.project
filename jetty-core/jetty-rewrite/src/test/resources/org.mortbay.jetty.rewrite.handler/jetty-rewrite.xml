@@ -169,48 +169,13 @@
   <!-- deployments at the configured scanInterval.                 -->
   <!--                                                             -->
   <!-- This deployer is configured to deploy contexts configured   -->
-  <!-- in the $JETTY_HOME/contexts directory                       -->
+  <!-- in the $JETTY_BASE/contexts directory                       -->
   <!--                                                             -->
   <!-- =========================================================== -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.server.deployer.ContextDeployer">
-        <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
-        <Set name="configurationDir"><SystemProperty name="jetty.home" default="." />/contexts
-        </Set>
-        <Set name="scanInterval">1</Set>
-      </New>
-    </Arg>
-  </Call>
-
-  <!-- =========================================================== -->
-  <!-- Configure the webapp deployer.                              -->
-  <!-- A webapp  deployer will deploy standard webapps discovered  -->
-  <!-- in a directory at startup, without the need for additional  -->
-  <!-- configuration files.    It does not support hot deploy or   -->
-  <!-- non standard contexts (see ContextDeployer above).          -->
-  <!--                                                             -->
-  <!-- This deployer is configured to deploy webapps from the      -->
-  <!-- $JETTY_HOME/webapps directory                               -->
-  <!--                                                             -->
-  <!-- Normally only one type of deployer need be used.            -->
-  <!--                                                             -->
-  <!-- =========================================================== -->
-  <Call name="addBean">
-    <Arg>
-      <New class="org.eclipse.jetty.server.deployer.WebAppDeployer">
-        <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
-        <Set name="webAppDir"><SystemProperty name="jetty.home" default="." />/webapps
-        </Set>
-        <Set name="parentLoaderPriority">false</Set>
-        <Set name="extract">true</Set>
-        <Set name="allowDuplicates">false</Set>
-        <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml
-        </Set>
+      <New class="org.eclipse.jetty.server.deploy.DirectDeployer">
+        <Arg name="contexts"><Ref refid="Contexts"/></Arg>
       </New>
     </Arg>
   </Call>

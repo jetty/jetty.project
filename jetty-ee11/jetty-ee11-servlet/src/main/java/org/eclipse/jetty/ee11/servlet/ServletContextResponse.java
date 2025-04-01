@@ -525,7 +525,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             assert oldField != null && newField != null;
 
             if (isCommitted())
-                return null;
+                return oldField;
 
             if (newField.getHeader() == null)
                 return newField;
