@@ -21,9 +21,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorClientTest
@@ -99,8 +99,9 @@ public class HttpGeneratorClientTest
 
         HttpFields.Mutable fields = HttpFields.build();
         fields.add("Host", "something");
-        assertThrows(NullPointerException.class, () -> fields.add("Null", (String)null));
-        assertThrows(NullPointerException.class, () -> fields.add("Null", (List<String>)null));
+        fields.add("Null", (String)null);
+        fields.add("Null", (List<String>)null);
+        assertThat(fields.size(), equalTo(1));
         fields.add("Empty", "");
         RequestInfo info = new RequestInfo("GET", "/index.html", fields);
         assertFalse(gen.isChunking());
