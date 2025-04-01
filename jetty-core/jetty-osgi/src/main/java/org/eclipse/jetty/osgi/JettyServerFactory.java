@@ -63,7 +63,7 @@ public class JettyServerFactory
         throws Exception
     {
         Objects.requireNonNull(name);
-        
+
         Server server = null;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
@@ -116,11 +116,11 @@ public class JettyServerFactory
                     {
                         try
                         {
-                        Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
-                        if (!Resources.isReadableFile(xmlresource))
-                            throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
+                            Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
+                            if (!Resources.isReadableFile(xmlresource))
+                                throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
                             // Execute a Jetty configuration file
-                        XmlConfiguration config = new XmlConfiguration(xmlresource);
+                            XmlConfiguration config = new XmlConfiguration(xmlresource);
 
                             config.getIdMap().putAll(idMap);
                             config.getProperties().putAll(properties);
@@ -172,8 +172,8 @@ public class JettyServerFactory
                 server.setHandler(contextHandlerCollection);
             }
 
-            //ensure a deployer
-            StandardDeployer deployer = ensureDeployer(server);
+            //ensure a deployer exists
+            ensureDeployer(server);
 
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
@@ -204,39 +204,39 @@ public class JettyServerFactory
     }
 
     private static StandardDeployer ensureDeployer(Server server)
-   {
-       Collection<Deployer> deployers = server.getBeans(Deployer.class);
-       StandardDeployer deployer = null;
+    {
+        Collection<Deployer> deployers = server.getBeans(Deployer.class);
+        StandardDeployer deployer = null;
 
-       if (deployers != null)
-       {
-           deployer = deployers.stream()
-               .filter(d -> (d instanceof StandardDeployer))
-               .map(StandardDeployer.class::cast)
-               .findFirst()
-               .orElse(null);
-       }
+        if (deployers != null)
+        {
+            deployer = deployers.stream()
+                .filter(d -> (d instanceof StandardDeployer))
+                .map(StandardDeployer.class::cast)
+                .findFirst()
+                .orElse(null);
+        }
 
-       if (deployer == null)
-       {
-           deployer = new StandardDeployer(getContextHandlerCollection(server));
-           server.addBean(deployer);
-       }
+        if (deployer == null)
+        {
+            deployer = new StandardDeployer(getContextHandlerCollection(server));
+            server.addBean(deployer);
+        }
 
-       // Ensure that OSGiDeploymentListener is present
-       if (deployer.getEventListeners().stream().noneMatch(l -> (l instanceof OSGiDeploymentListener)))
-       {
-           deployer.addEventListener(new OSGiDeploymentListener());
-       }
+        // Ensure that OSGiDeploymentListener is present
+        if (deployer.getEventListeners().stream().noneMatch(l -> (l instanceof OSGiDeploymentListener)))
+        {
+            deployer.addEventListener(new OSGiDeploymentListener());
+        }
 
-       return deployer;
-   }
-   
-   private static ContextHandlerCollection getContextHandlerCollection(Server server)
-   {
-       return (ContextHandlerCollection)server.getDescendant(ContextHandlerCollection.class);
-   }
-       
+        return deployer;
+    }
+
+    private static ContextHandlerCollection getContextHandlerCollection(Server server)
+    {
+        return (ContextHandlerCollection)server.getDescendant(ContextHandlerCollection.class);
+    }
+
     /**
      * Get the Jetty Shared Lib Folder URLs in a form that is suitable for
      * {@link LibExtClassLoaderHelper} to use.

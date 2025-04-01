@@ -39,14 +39,14 @@ import org.slf4j.LoggerFactory;
  * <p>
  * See particularly the jetty-ee9-osgi-boot-jsp fragment bundle that uses this facility.
  */
+@SuppressWarnings("deprecation")
 public class PackageAdminServiceTracker implements ServiceListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
 
     private final String _environment;
     private final BundleContext _context;
-    private List<BundleActivator> _activatedFragments = new ArrayList<>();
-    private boolean _fragmentsWereActivated = false;
+    private final List<BundleActivator> _activatedFragments = new ArrayList<>();
 
     // Use the deprecated StartLevel to stay compatible with older versions of OSGi.
     private StartLevel _startLevel;
@@ -87,9 +87,9 @@ public class PackageAdminServiceTracker implements ServiceListener
     private boolean setup()
     throws Exception
     {
-        ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
-        _fragmentsWereActivated = sr != null;
-        if (sr != null)
+        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
+        boolean fragmentsWereActivated = (sr != null);
+        if (fragmentsWereActivated)
             invokeFragmentActivators(sr);
 
         sr = _context.getServiceReference(StartLevel.class.getName());
@@ -106,7 +106,7 @@ public class PackageAdminServiceTracker implements ServiceListener
                 _maxStartLevel = 6;
             }
         }
-        return _fragmentsWereActivated;
+        return fragmentsWereActivated;
     }
 
     /**
@@ -143,7 +143,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      */
     public Bundle[] getFragments(Bundle bundle)
     {
-        ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
+        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
         if (sr == null)
         {
             // we should never be here really.
@@ -163,7 +163,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      */
     public Bundle[] getFragmentsAndRequiredBundles(Bundle bundle)
     {
-        ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
+        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
         if (sr == null)
         {
             // we should never be here really.
@@ -172,7 +172,7 @@ public class PackageAdminServiceTracker implements ServiceListener
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         LinkedHashMap<String, Bundle> deps = new LinkedHashMap<>();
         collectFragmentsAndRequiredBundles(bundle, admin, deps, false);
-        return deps.values().toArray(new Bundle[deps.size()]);
+        return deps.values().toArray(new Bundle[0]);
     }
 
     /**
@@ -198,7 +198,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             // bundles that extend it
             for (Bundle f : fragments)
             {
-                if (!deps.keySet().contains(f.getSymbolicName()))
+                if (!deps.containsKey(f.getSymbolicName()))
                 {
                     deps.put(f.getSymbolicName(), f);
                     collectRequiredBundles(f, admin, deps, onlyReexport);
@@ -222,7 +222,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      */
     protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
-        String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
+        String requiredBundleHeader = bundle.getHeaders().get("Require-Bundle");
         if (requiredBundleHeader == null)
         {
             return;
@@ -233,7 +233,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             String tok = tokenizer.nextToken().trim();
             StringTokenizer tokenizer2 = new StringTokenizer(tok, ";");
             String symbolicName = tokenizer2.nextToken().trim();
-            if (deps.keySet().contains(symbolicName))
+            if (deps.containsKey(symbolicName))
             {
                 // was already added. 2 dependencies pointing at the same
                 // bundle.
@@ -288,7 +288,7 @@ public class PackageAdminServiceTracker implements ServiceListener
         }
     }
 
-    private void invokeFragmentActivators(ServiceReference sr)
+    private void invokeFragmentActivators(ServiceReference<?> sr)
     throws Exception
     {
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
@@ -300,13 +300,17 @@ public class PackageAdminServiceTracker implements ServiceListener
         for (Bundle frag : fragments)
         {
             // find a convention to look for a class inside the fragment.
-            String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
-            Class<?> c = Class.forName(fragmentActivator);
-            if (c != null)
+            try
             {
+                String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
+                Class<?> c = Class.forName(fragmentActivator);
                 BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
                 bActivator.start(_context);
                 _activatedFragments.add(bActivator);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to invoke fragment: {}", frag, e);
             }
         }
     }
@@ -322,7 +326,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.warn("Unable to stop context {}", _context, e);
             }
         }
     }
@@ -332,7 +336,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      */
     public boolean frameworkHasCompletedAutostarts()
     {
-        return _startLevel == null ? true : _startLevel.getStartLevel() >= _maxStartLevel;
+        return _startLevel == null || _startLevel.getStartLevel() >= _maxStartLevel;
     }
 
     private static class ManifestTokenizer extends StringTokenizer

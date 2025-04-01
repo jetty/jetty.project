@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.osgi;
 
-import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
@@ -27,6 +31,7 @@ import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
 import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.osgi.framework.Bundle;
@@ -40,7 +45,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractEEActivator implements BundleActivator
 {
-    private PackageAdminServiceTracker _packageAdminServiceTracker;
     private ServiceTracker<Server, Object> _tracker;
 
     /**
@@ -51,12 +55,11 @@ public abstract class AbstractEEActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
-        // track other bundles and fragments attached to this bundle that we
-        // should activate.
-        _packageAdminServiceTracker = new PackageAdminServiceTracker(getEnvironment(), context);
+        // track other bundles and fragments attached to this bundle that we should activate.
+        new PackageAdminServiceTracker(getEnvironment(), context);
 
         //track jetty Server instances
-        _tracker = new ServiceTracker<Server, Object>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
+        _tracker = new ServiceTracker<>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
         _tracker.open();
 
         //register for bundleresource: url resource handling
@@ -105,7 +108,7 @@ public abstract class AbstractEEActivator implements BundleActivator
 
     /**
      * ServerTracker
-     *
+     * <p>
      * Tracks appearance of Server instances as OSGi services, and then configures them
      * for deployment of EE11 contexts and webapps.
      */
@@ -128,8 +131,8 @@ public abstract class AbstractEEActivator implements BundleActivator
             List<URL> contributedURLs = new ArrayList<>();
             List<Bundle> contributedBundles = new ArrayList<>();
             Collection<ServerClasspathContributor> serverClasspathContributors = getServerClasspathContributors();
-            serverClasspathContributors.stream().forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
-            contributedBundles.stream().forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
+            serverClasspathContributors.forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
+            contributedBundles.forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
 
             if (!contributedURLs.isEmpty())
             {
@@ -138,7 +141,7 @@ public abstract class AbstractEEActivator implements BundleActivator
                 if (serverClassLoader != null)
                 {
                     server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER,
-                        new FakeURLClassLoader(serverClassLoader, contributedURLs.toArray(new URL[contributedURLs.size()])));
+                        new FakeURLClassLoader(serverClassLoader, contributedURLs.toArray(new URL[0])));
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Server classloader for contexts = {}", server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
@@ -232,35 +235,36 @@ public abstract class AbstractEEActivator implements BundleActivator
 
         private List<URL> convertBundleToURL(Bundle bundle)
         {
-            List<URL> urls = new ArrayList<>();
+            List<URI> uris = new ArrayList<>();
             try
             {
-                File file = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+                Path location = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle).toPath();
 
-                if (file.isDirectory())
+                if (Files.isDirectory(location))
                 {
-                    for (File f : file.listFiles())
+                    for (Path path : listing(location))
                     {
-                        if (FileID.isJavaArchive(f.getName()) && f.isFile())
+                        if (FileID.isJavaArchive(path))
                         {
-                            urls.add(f.toURI().toURL());
+                            uris.add(path.toUri());
                         }
-                        else if (f.isDirectory() && f.getName().equals("lib"))
+                        else if (Files.isDirectory(path))
                         {
-                            for (File f2 : file.listFiles())
+                            Path filename = path.getFileName();
+                            if (filename != null && filename.toString().equalsIgnoreCase("lib"))
                             {
-                                if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
+                                for (Path lib : listing(path))
                                 {
-                                    urls.add(f2.toURI().toURL());
+                                    if (FileID.isJavaArchive(lib))
+                                        uris.add(lib.toUri());
                                 }
                             }
                         }
                     }
-                    urls.add(file.toURI().toURL());
                 }
                 else
                 {
-                    urls.add(file.toURI().toURL());
+                    uris.add(location.toUri());
                 }
             }
             catch (Exception e)
@@ -268,7 +272,29 @@ public abstract class AbstractEEActivator implements BundleActivator
                 LOG.warn("Unable to convert bundle {} to url", bundle, e);
             }
 
-            return urls;
+            List<URL> list = new ArrayList<>();
+            try
+            {
+                for (URI uri : uris)
+                {
+                    URI correctURI = URIUtil.correctURI(uri);
+                    URL url = correctURI.toURL();
+                    list.add(url);
+                }
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to convert bundle {} to url", bundle, e);
+            }
+            return list;
+        }
+
+        private List<Path> listing(Path dir) throws IOException
+        {
+            try (Stream<Path> listing = Files.list(dir))
+            {
+                return listing.toList();
+            }
         }
     }
 }
