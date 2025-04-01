@@ -21,7 +21,7 @@
       <plugin>
         <groupId>org.antora</groupId>
         <artifactId>antora-maven-plugin</artifactId>
-        <version>1.0.0-alpha.4</version>
+        <version>1.0.0-alpha.5</version>
         <extensions>true</extensions>
         <configuration>
           <options>
