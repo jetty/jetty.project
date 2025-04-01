@@ -90,34 +90,33 @@ public class QuicheStream extends AbstractStream
         return session;
     }
 
-    boolean readable()
+    boolean readable(boolean notify)
     {
         boolean hasDemand;
         try (AutoLock ignored = lock.lock())
         {
             hasDemand = dataDemand;
-            dataDemand = false;
+            if (notify)
+                dataDemand = false;
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("readable demand={} {} on {}", hasDemand, this, session);
 
-        if (hasDemand)
+        if (hasDemand && notify)
         {
             notifyDataAvailable();
-        }
-        else
-        {
-            // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
-            if (session.isFinished(this))
-            {
-                Throwable failure = isReset();
-                if (failure != null)
-                    notifyFailure(failure);
-            }
+            return true;
         }
 
-        return hasDemand;
+        // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
+        if (session.isFinished(this))
+        {
+            Throwable failure = isReset();
+            if (failure != null)
+                notifyFailure(failure);
+        }
+        return false;
     }
 
     private Throwable isReset()

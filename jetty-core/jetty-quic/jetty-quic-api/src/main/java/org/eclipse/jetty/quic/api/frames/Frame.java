@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import org.eclipse.jetty.util.TypeUtil;
+
+/**
+ * <p>A generic QUIC frame carrying a frame type.</p>
+ *
+ * @see WithStreamId
+ */
 public class Frame
 {
     public static final int DEFAULT_MAX_SIZE = 16384;
@@ -32,9 +39,12 @@ public class Frame
     @Override
     public String toString()
     {
-        return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 
+    /**
+     * <p>A QUIC frame that carries a stream id.</p>
+     */
     public static class WithStreamId extends Frame
     {
         private final long streamId;

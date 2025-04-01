@@ -14,10 +14,15 @@
 package org.eclipse.jetty.quic.api.frames;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.util.Promise;
 
+/**
+ * <p>A QUIC frame carrying stream data bytes.</p>
+ */
 public class StreamFrame extends Frame.WithStreamId
 {
     public static final long END_STREAM_MASK = 0x01;
@@ -43,10 +48,11 @@ public class StreamFrame extends Frame.WithStreamId
     private final boolean endData;
 
     /**
-     * <p>Creates the first stream frame with {@code offset=0} for a {@link Stream}.</p>
+     * <p>Creates the first stream frame with {@code offset=0} for a new {@link Stream}.</p>
      * <p>Applications should use this constructor in conjunction with
-     * {@link Session#newStream(long, Stream.Listener)}, and for subsequent
-     * data to send on the same stream use {@link Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)},
+     * {@link Session#newStream(long, Stream.Listener)}.
+     * For subsequent data to be sent on the same stream, applications should use
+     * {@link Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)},
      * so that the implementation can compute the {@code offset} on behalf of the application.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
@@ -60,7 +66,8 @@ public class StreamFrame extends Frame.WithStreamId
 
     /**
      * <p>Creates a stream frame with the given {@code offset} for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor.</p>
+     * <p>Applications should not use this constructor, but instead use
+     * {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
      * @param data the data bytes to send
@@ -74,7 +81,8 @@ public class StreamFrame extends Frame.WithStreamId
 
     /**
      * <p>Creates a stream frame for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor.</p>
+     * <p>Applications should not use this constructor, but instead
+     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
      * @param data the data bytes to send
@@ -89,7 +97,8 @@ public class StreamFrame extends Frame.WithStreamId
 
     /**
      * <p>Creates a stream frame for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor.</p>
+     * <p>Applications should not use this constructor, but instead
+     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
      *
      * @param frameType the frame type
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
@@ -106,26 +115,41 @@ public class StreamFrame extends Frame.WithStreamId
         this.endData = endData;
     }
 
+    /**
+     * @return the stream offset of the data bytes carried by this frame
+     */
     public long getOffset()
     {
         return offset;
     }
 
+    /**
+     * @return the data bytes
+     */
     public ByteBuffer getData()
     {
         return data;
     }
 
+    /**
+     * @return the number of data bytes
+     */
     public int getLength()
     {
         return length;
     }
 
+    /**
+     * @return whether this frame is the last in the stream
+     */
     public boolean isEndStream()
     {
         return endStream;
     }
 
+    /**
+     * @return whether this frame is the last carrying data for the stream
+     */
     public boolean isEndData()
     {
         return endData;

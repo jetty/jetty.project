@@ -18,6 +18,15 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.eclipse.jetty.util.TypeUtil;
+
+/**
+ * <p>The QUIC transport parameters as a map {@code ID -> value}.</p>
+ * <p>The type of the value depends on the parameter ID; for most
+ * parameters, the value type is a {@code long}, but for other
+ * parameters, such as tokens or connection IDs, the value type
+ * is a {@code byte[]}.</p>
+ */
 public class TransportParameters implements Iterable<Map.Entry<TransportParameters.Id<?>, Object>>
 {
     // The max N that can produce a grease parameter id that fits a VarLenInt.
@@ -26,43 +35,43 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
     /**
      * <p>The session max idle timeout in milliseconds.</p>
      */
-    public static final Id<Long> MAX_IDLE_TIMEOUT = new LongId(0x01);
+    public static final Id<Long> MAX_IDLE_TIMEOUT = Id.from(0x01);
     /**
      * <p>The initial session max data.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max data the local peer is willing to receive on the session.</p>
      */
-    public static final Id<Long> INITIAL_MAX_DATA = new LongId(0x04);
+    public static final Id<Long> INITIAL_MAX_DATA = Id.from(0x04);
     /**
      * <p>The initial local bidirectional stream max data.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max data the local peer is willing to receive on local bidirectional streams.</p>
      */
-    public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL = new LongId(0x05);
+    public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL = Id.from(0x05);
     /**
      * <p>The initial remote bidirectional stream max data.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max data the local peer is willing to receive on remote bidirectional streams.</p>
      */
-    public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE = new LongId(0x06);
+    public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE = Id.from(0x06);
     /**
      * <p>The initial unidirectional stream max data.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max data the local peer is willing to receive on unidirectional streams.</p>
      */
-    public static final Id<Long> INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL = new LongId(0x07);
+    public static final Id<Long> INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL = Id.from(0x07);
     /**
      * <p>The initial bidirectional max streams.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max number of streams the local peer is willing to receive.</p>
      */
-    public static final Id<Long> INITIAL_MAX_STREAMS_BIDIRECTIONAL = new LongId(0x08);
+    public static final Id<Long> INITIAL_MAX_STREAMS_BIDIRECTIONAL = Id.from(0x08);
     /**
      * <p>The initial unidirectional max streams.</p>
      * <p>A local peer sends this parameter to inform the remote peer about
      * the max number of streams the local peer is willing to receive.</p>
      */
-    public static final Id<Long> INITIAL_MAX_STREAMS_UNIDIRECTIONAL = new LongId(0x09);
+    public static final Id<Long> INITIAL_MAX_STREAMS_UNIDIRECTIONAL = Id.from(0x09);
 
     private final Map<Id<?>, Object> parameters;
 
@@ -77,20 +86,23 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         return parameters.entrySet().iterator();
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T get(Id<T> id)
     {
         Object value = parameters.get(id);
-        return id.cast(value);
+        return (T)value;
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T put(Id<T> id, T value)
     {
-        return id.cast(parameters.put(id, value));
+        return (T)parameters.put(id, value);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(Id<T> id, T value)
     {
-        return id.cast(parameters.putIfAbsent(id, value));
+        return (T)parameters.putIfAbsent(id, value);
     }
 
     public void putGreaseParameter()
@@ -99,7 +111,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         long id = 31 * random.nextLong(MAX_N + 1) + 27;
         byte[] bytes = new byte[8];
         random.nextBytes(bytes);
-        put(new BytesId(id), bytes);
+        put(Id.from(id), bytes);
     }
 
     public int size()
@@ -113,11 +125,25 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), parameters);
     }
 
-    public abstract static class Id<T>
+    /**
+     * <p>The parameter ID with the type of the value.</p>
+     * <p>For most parameter IDs, the value type is {@code long},
+     * but for other parameters, such as tokens or connection IDs,
+     * the value type is a {@code byte[]}.</p>
+     *
+     * @param <T> the type of the value
+     */
+    public static class Id<T>
     {
+        @SuppressWarnings("unchecked")
+        public static <R> Id<R> from(long id)
+        {
+            return (Id<R>)Ids.ids.computeIfAbsent(id, Id::new);
+        }
+
         private final long id;
 
-        public Id(long id)
+        private Id(long id)
         {
             this.id = id;
         }
@@ -126,8 +152,6 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         {
             return id;
         }
-
-        public abstract T cast(Object value);
 
         @Override
         public int hashCode()
@@ -148,35 +172,12 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         @Override
         public String toString()
         {
-            return "%d".formatted(id);
-        }
-    }
-
-    public static class BytesId extends Id<byte[]>
-    {
-        public BytesId(long id)
-        {
-            super(id);
+            return "%s[%d]".formatted(TypeUtil.toShortName(getClass()), id);
         }
 
-        @Override
-        public byte[] cast(Object value)
+        private static class Ids
         {
-            return (byte[])value;
-        }
-    }
-
-    public static class LongId extends Id<Long>
-    {
-        public LongId(long id)
-        {
-            super(id);
-        }
-
-        @Override
-        public Long cast(Object value)
-        {
-            return (Long)value;
+            private static final Map<Long, Id<?>> ids = new HashMap<>();
         }
     }
 }

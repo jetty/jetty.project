@@ -617,15 +617,19 @@ public abstract class QuicheSession extends AbstractSession
                 List<Long> readable = quiche.readableStreamIds();
                 if (LOG.isDebugEnabled())
                     LOG.debug("readable stream ids: {} on {}", readable, QuicheSession.this);
-
+                // Unfortunately, Quiche does not mark a stream as readable
+                // if it received a RESET_STREAM, so try to figure out whether
+                // there is an existing stream that has been reset.
                 boolean process = false;
+                for (QuicheStream stream : streams.values())
+                {
+                    boolean removed = readable.remove(stream.getId());
+                    process |= stream.readable(removed);
+                }
                 for (long streamId : readable)
                 {
-                    QuicheStream stream = getStream(streamId);
-                    if (stream == null)
-                        stream = createRemoteStream(streamId);
-
-                    process |= stream.readable();
+                    QuicheStream stream = createRemoteStream(streamId);
+                    process |= stream.readable(true);
                 }
 
                 if (!process)

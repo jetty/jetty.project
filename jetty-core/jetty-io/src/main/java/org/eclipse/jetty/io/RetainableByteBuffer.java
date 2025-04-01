@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -721,7 +722,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public String toString()
         {
-            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped().toString());
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
 
         @Override
@@ -925,7 +926,7 @@ public interface RetainableByteBuffer extends Retainable
 
         protected void addStringInfo(StringBuilder builder)
         {
-            builder.append(getClass().getSimpleName());
+            builder.append(TypeUtil.toShortName(getClass()));
             builder.append("@");
             builder.append(Integer.toHexString(System.identityHashCode(this)));
             builder.append("[");
