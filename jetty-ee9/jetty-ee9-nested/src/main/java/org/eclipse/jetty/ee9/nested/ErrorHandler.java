@@ -366,10 +366,9 @@ public class ErrorHandler extends AbstractHandler
             writer.write("\"/>\n");
         }
         writer.write("<title>Error ");
-        // TODO this code is duplicated in writeErrorPageMessage
         String status = Integer.toString(code);
         writer.write(status);
-        if (message != null && !message.equals(status))
+        if (isShowMessageInTitle() && message != null && !message.equals(status))
         {
             writer.write(' ');
             writer.write(StringUtil.sanitizeXmlString(message));
@@ -586,7 +585,16 @@ public class ErrorHandler extends AbstractHandler
         _showMessageInTitle = showMessageInTitle;
     }
 
+    /**
+     * @deprecated use {@link #isShowMessageInTitle()} instead
+     */
+    @Deprecated
     public boolean getShowMessageInTitle()
+    {
+        return _showMessageInTitle;
+    }
+
+    public boolean isShowMessageInTitle()
     {
         return _showMessageInTitle;
     }
