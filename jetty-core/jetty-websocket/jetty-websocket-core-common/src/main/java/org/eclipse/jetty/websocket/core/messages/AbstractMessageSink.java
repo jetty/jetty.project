@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
 public abstract class AbstractMessageSink implements MessageSink
 {
     private final CoreSession session;
-    private final MethodHolder methodHandle;
+    private final MethodHolder methodHolder;
     private final boolean autoDemand;
 
     /**
@@ -56,7 +56,7 @@ public abstract class AbstractMessageSink implements MessageSink
     public AbstractMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
         this.session = Objects.requireNonNull(session, "CoreSession");
-        this.methodHandle = Objects.requireNonNull(methodHolder, "MethodHolder");
+        this.methodHolder = Objects.requireNonNull(methodHolder, "MethodHolder");
         this.autoDemand = autoDemand;
     }
 
@@ -75,7 +75,7 @@ public abstract class AbstractMessageSink implements MessageSink
      */
     public MethodHolder getMethodHolder()
     {
-        return methodHandle;
+        return methodHolder;
     }
 
     /**

@@ -99,6 +99,14 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
         }
 
         @Override
+        public boolean containsKey(Object key)
+        {
+            if (key instanceof String s)
+                return httpFields.contains(s);
+            return false;
+        }
+
+        @Override
         public Set<Entry<String, List<String>>> entrySet()
         {
             return new AbstractSet<>()
@@ -176,6 +184,14 @@ abstract class HttpFieldsMap extends AbstractMap<String, List<String>>
         public List<String> remove(Object key)
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsKey(Object key)
+        {
+            if (key instanceof String s)
+                return httpFields.contains(s);
+            return false;
         }
 
         @Override
