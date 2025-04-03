@@ -180,8 +180,9 @@ public class DigestAuthenticator extends LoginAuthenticator
                     "\", algorithm=MD5" +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
-            Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
 
+            // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
+            Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
             return AuthenticationState.CHALLENGE;
         }
 

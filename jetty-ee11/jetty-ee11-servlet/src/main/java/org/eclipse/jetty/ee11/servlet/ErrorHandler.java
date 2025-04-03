@@ -36,13 +36,28 @@ import org.slf4j.LoggerFactory;
 public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
-    public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
 
     public ErrorHandler()
     {
         setShowOrigin(true);
         setShowStacks(true);
         setShowMessageInTitle(true);
+    }
+
+    @Override
+    public boolean writeError(Request request, Response response, Callback callback, int code)
+    {
+        // If we have not entered the servlet channel we should trigger a sendError for when we do enter the servlet channel.
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        boolean enteredServletChannel = servletContextRequest.getServletChannel().getCallback() != null;
+        if (!enteredServletChannel)
+        {
+            response.setStatus(code);
+            request.setAttribute(ERROR_STATUS, code);
+            return false;
+        }
+
+        return super.writeError(request, response, callback, code);
     }
 
     @Override
@@ -70,7 +85,13 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Integer errorStatus = (Integer)request.getAttribute(ERROR_STATUS);
         Throwable errorCause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-        if (this instanceof ErrorPageMapper mapper)
+
+        // Error page mapping can only be supported from within the ServletChannel handling.
+        // If an error that may be mapped to an error page occurs before entering ServletChannel,
+        // then the ErrorHandler#writeError(...) method should be used to delay
+        // invoking sendError until the handling is within the ServletChannel.
+        boolean enteredServletChannel = servletContextRequest.getServletChannel().getCallback() != null;
+        if (this instanceof ErrorPageMapper mapper && enteredServletChannel)
         {
             ErrorPageMapper.ErrorPage errorPage = mapper.getErrorPage(errorStatus, errorCause);
             if (LOG.isDebugEnabled())

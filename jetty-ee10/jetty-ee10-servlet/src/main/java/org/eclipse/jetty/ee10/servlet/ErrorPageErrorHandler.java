@@ -20,6 +20,7 @@ import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +32,6 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 {
     public static final String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
     private static final Logger LOG = LoggerFactory.getLogger(ErrorPageErrorHandler.class);
-
-    private enum PageLookupTechnique
-    {
-        THROWABLE, STATUS_CODE, GLOBAL
-    }
 
     private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
     private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
@@ -58,119 +54,62 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     }
 
     @Override
-    public String getErrorPage(HttpServletRequest request)
+    public void prepare(ErrorPage errorPage, HttpServletRequest request, HttpServletResponse response)
     {
-        String errorPage = null;
-
-        PageLookupTechnique pageSource = null;
-
-        Class<?> matchedThrowable = null;
-        Throwable error = (Throwable)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
-        Throwable cause = error;
-
-        // Walk the cause hierarchy
-        while (errorPage == null && cause != null)
+        if (errorPage.error() instanceof ServletException && _unwrapServletException)
         {
-            pageSource = PageLookupTechnique.THROWABLE;
-
-            Class<?> exClass = cause.getClass();
-            errorPage = _errorPages.get(exClass.getName());
-
-            // walk the inheritance hierarchy
-            while (errorPage == null)
-            {
-                exClass = exClass.getSuperclass();
-                if (exClass == null)
-                    break;
-                errorPage = _errorPages.get(exClass.getName());
-            }
-
-            if (errorPage != null)
-                matchedThrowable = exClass;
-
-            cause = (cause instanceof ServletException) ? ((ServletException)cause).getRootCause() : null;
-        }
-
-        if (error instanceof ServletException && _unwrapServletException)
-        {
-            Throwable unwrapped = unwrapServletException(error, matchedThrowable);
+            Throwable unwrapped = unwrapServletException(errorPage.error(), errorPage.matchedClass());
             if (unwrapped != null)
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, unwrapped.getClass());
                 request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION, unwrapped);
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, unwrapped.getClass());
             }
         }
+    }
 
-        Integer errorStatusCode = null;
+    @Override
+    public ErrorPage getErrorPage(Integer errorStatusCode, Throwable error)
+    {
+        String errorPage;
 
-        if (errorPage == null)
+        // Walk the cause hierarchy
+        Throwable cause = error;
+        while (cause != null)
         {
-            pageSource = PageLookupTechnique.STATUS_CODE;
+            Class<?> exClass = cause.getClass();
 
-            // look for an exact code match
-            errorStatusCode = (Integer)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS);
-            if (errorStatusCode != null)
+            while (exClass != null)
             {
-                errorPage = _errorPages.get(Integer.toString(errorStatusCode));
+                errorPage = _errorPages.get(exClass.getName());
+                if (errorPage != null)
+                    return new ErrorPage(errorPage, PageLookupTechnique.THROWABLE, error, cause, exClass);
+                exClass = exClass.getSuperclass();
+            }
 
-                // if still not found
-                if (errorPage == null)
-                {
-                    // look for an error code range match.
-                    for (ErrorCodeRange errCode : _errorPageList)
-                    {
-                        if (errCode.isInRange(errorStatusCode))
-                        {
-                            errorPage = errCode.getUri();
-                            break;
-                        }
-                    }
-                }
+            cause = (cause instanceof ServletException se) ? se.getRootCause() : cause.getCause();
+        }
+
+        // look for an exact code match
+        if (errorStatusCode != null)
+        {
+            errorPage = _errorPages.get(Integer.toString(errorStatusCode));
+            if (errorPage != null)
+                return new ErrorPage(errorPage, PageLookupTechnique.STATUS_CODE, error, error, null);
+
+            // look for an error code range match.
+            for (ErrorCodeRange errCode : _errorPageList)
+            {
+                if (errCode.isInRange(errorStatusCode))
+                    return new ErrorPage(errCode.getUri(), PageLookupTechnique.STATUS_CODE, error, error, null);
             }
         }
 
         // Try servlet 3.x global error page.
-        if (errorPage == null)
-        {
-            pageSource = PageLookupTechnique.GLOBAL;
-            errorPage = _errorPages.get(GLOBAL_ERROR_PAGE);
-        }
+        errorPage = _errorPages.get(GLOBAL_ERROR_PAGE);
+        if (errorPage != null)
+            return new ErrorPage(errorPage, PageLookupTechnique.GLOBAL, error, error, null);
 
-        if (LOG.isDebugEnabled())
-        {
-            StringBuilder dbg = new StringBuilder();
-            dbg.append("getErrorPage(");
-            dbg.append(request.getMethod()).append(' ');
-            dbg.append(request.getRequestURI());
-            dbg.append(") => error_page=").append(errorPage);
-            switch (pageSource)
-            {
-                case THROWABLE:
-                    dbg.append(" (using matched Throwable ");
-                    dbg.append(matchedThrowable.getName());
-                    dbg.append(" / actually thrown as ");
-                    Throwable originalThrowable = (Throwable)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
-                    dbg.append(originalThrowable.getClass().getName());
-                    dbg.append(')');
-                    LOG.debug(dbg.toString(), cause);
-                    break;
-                case STATUS_CODE:
-                    dbg.append(" (from status code ");
-                    dbg.append(errorStatusCode);
-                    dbg.append(')');
-                    LOG.debug(dbg.toString());
-                    break;
-                case GLOBAL:
-                    dbg.append(" (from global default)");
-                    LOG.debug(dbg.toString());
-                    break;
-                default:
-                    throw new IllegalStateException(pageSource.toString());
-            }
-        }
-
-        return errorPage;
+        return null;
     }
 
     /**

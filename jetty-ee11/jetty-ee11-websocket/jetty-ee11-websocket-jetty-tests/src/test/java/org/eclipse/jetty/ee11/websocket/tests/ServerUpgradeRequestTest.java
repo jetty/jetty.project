@@ -134,8 +134,7 @@ public class ServerUpgradeRequestTest
             if (user != null)
                 return new UserAuthenticationSucceeded(getAuthenticationType(), user);
 
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-            return AuthenticationState.SEND_FAILURE;
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         }
     }
 
