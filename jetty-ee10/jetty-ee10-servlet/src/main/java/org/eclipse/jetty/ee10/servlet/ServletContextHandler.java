@@ -1214,13 +1214,14 @@ public class ServletContextHandler extends ContextHandler
 
         if (isProtectedTarget(pathInContext))
         {
-            // At this point we have not entered the state machine of the ServletChannelState, so we do nothing here
-            // other than to set the error status attribute (and also status). When execution proceeds normally into the
-            // state machine the request will be treated as an error. Note that we set both the error status and request
-            // status because the request status is cheaper to check than the error status attribute.
-            request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS, 404);
-            response.setStatus(HttpStatus.NOT_FOUND_404);
+            // If we have a Servlet ErrorHandler, then writeError will return false, and it will signal
+            // the ServletChannel to trigger a sendError() when it is started.
+            if (request.getContext().getErrorHandler() instanceof org.eclipse.jetty.server.handler.ErrorHandler errorHandler)
+                return errorHandler.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            return true;
         }
+
         return false;
     }
 

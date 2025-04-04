@@ -15,16 +15,21 @@ package org.eclipse.jetty.websocket.core.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 
@@ -141,19 +146,49 @@ public class ReflectUtils
 
     public static Method[] findAnnotatedMethods(Class<?> pojo, Class<? extends Annotation> anno)
     {
-        Class<?> clazz = pojo;
-        List<Method> methods = new ArrayList<>();
-        while ((clazz != null) && Object.class.isAssignableFrom(clazz))
+        Set<MethodSignature> seenSignatures = new HashSet<>();
+        List<Method> annotatedMethods = new ArrayList<>();
+
+        for (Class<?> clazz = pojo; (clazz != null) && Object.class.isAssignableFrom(clazz); clazz = clazz.getSuperclass())
         {
-            Stream.of(clazz.getDeclaredMethods())
-                .filter(method -> !method.isSynthetic() && (method.getAnnotation(anno) != null))
-                .forEach(methods::add);
-            clazz = clazz.getSuperclass();
+            for (Method method : clazz.getDeclaredMethods())
+            {
+                if (method.isSynthetic() || method.getAnnotation(anno) == null)
+                    continue;
+                if (seenSignatures.add(new MethodSignature(method)))
+                    annotatedMethods.add(method);
+            }
         }
 
-        if (methods.isEmpty())
+        if (annotatedMethods.isEmpty())
             return null;
-        return methods.toArray(new Method[0]);
+        return annotatedMethods.toArray(new Method[0]);
+    }
+
+    private static class MethodSignature
+    {
+        private final String name;
+        private final Class<?>[] parameterTypes;
+
+        MethodSignature(Method method)
+        {
+            this.name = method.getName();
+            this.parameterTypes = method.getParameterTypes();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o instanceof MethodSignature that)
+                return Objects.equals(name, that.name) && Arrays.equals(parameterTypes, that.parameterTypes);
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * name.hashCode() + Arrays.hashCode(parameterTypes);
+        }
     }
 
     /**
@@ -168,6 +203,15 @@ public class ReflectUtils
         GenericRef ref = new GenericRef(baseClass, ifaceClass);
         if (resolveGenericRef(ref, baseClass))
             return ref.genericClass;
+
+        return null;
+    }
+
+    public static Type findGenericTypeFor(Class<?> baseClass, Class<?> ifaceClass)
+    {
+        GenericRef ref = new GenericRef(baseClass, ifaceClass);
+        if (resolveGenericRef(ref, baseClass))
+            return ref.genericType;
 
         return null;
     }
@@ -367,5 +411,62 @@ public class ReflectUtils
             delim = true;
         }
         str.append(")");
+    }
+
+    /**
+     * Check if a type is assignable from another type.
+     * This only handles Class, ParameterizedType, and GenericArrayType, and does not handle wildcard types or type variables.
+     *
+     * @param superType the superType.
+     * @param subType the subType.
+     * @return true if the superType is assignable from the subType.
+     */
+    public static boolean isAssignableFrom(Type superType, Type subType)
+    {
+        if (superType instanceof Class<?> superClass && subType instanceof Class<?> subClass)
+            return superClass.isAssignableFrom(subClass);
+
+        if (superType instanceof ParameterizedType pSuperType && subType instanceof ParameterizedType pSubType)
+        {
+            if (!((Class<?>)pSubType.getRawType()).isAssignableFrom((Class<?>)pSuperType.getRawType()))
+                return false;
+
+            Type[] subTypeArgs = pSubType.getActualTypeArguments();
+            Type[] superTypeArgs = pSuperType.getActualTypeArguments();
+            if (subTypeArgs.length != superTypeArgs.length)
+                return false;
+
+            for (int i = 0; i < subTypeArgs.length; i++)
+            {
+                if (!isAssignableFrom(subTypeArgs[i], superTypeArgs[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        if (superType instanceof ParameterizedType pSuperType && subType instanceof Class<?> subClass)
+            return ((Class<?>)pSuperType.getRawType()).isAssignableFrom(subClass);
+
+        if (superType instanceof GenericArrayType superTypeArray && subType instanceof GenericArrayType subTypeArray)
+            return isAssignableFrom(superTypeArray.getGenericComponentType(), subTypeArray.getGenericComponentType());
+
+        return false;
+    }
+
+    public static Class<?> getClassFromType(Type type)
+    {
+        if (type instanceof Class<?>)
+            return (Class<?>)type;
+
+        if (type instanceof ParameterizedType)
+            return (Class<?>)((ParameterizedType)type).getRawType();
+
+        if (type instanceof GenericArrayType gType)
+        {
+            Class<?> componentClass = getClassFromType(gType.getGenericComponentType());
+            return componentClass != null ? Array.newInstance(componentClass, 0).getClass() : null;
+        }
+
+        return null;
     }
 }

@@ -365,7 +365,7 @@ public class FormAuthenticator extends LoginAuthenticator
     private AuthenticationState sendError(Request request, Response response, Callback callback)
     {
         if (_formErrorPage == null)
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         else if (_dispatch)
             return dispatch(_formErrorPage, request, response, callback);
         else

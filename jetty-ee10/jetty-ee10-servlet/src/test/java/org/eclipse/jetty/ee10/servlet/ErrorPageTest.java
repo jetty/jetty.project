@@ -742,6 +742,59 @@ public class ErrorPageTest
     }
 
     @Test
+    public void testErrorAttributes() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException
+            {
+                response.sendError(599);
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                doGet(req, resp);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/fail/599");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(599, "/error/599");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        String rawRequest = """
+            POST /fail/599?name=value HTTP/1.1\r
+            Host: test\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(599));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+        String responseBody = response.getContent();
+
+        assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+    }
+
+    @Test
     public void testErrorCode() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);

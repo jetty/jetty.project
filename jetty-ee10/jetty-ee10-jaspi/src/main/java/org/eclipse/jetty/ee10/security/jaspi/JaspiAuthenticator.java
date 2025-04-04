@@ -233,8 +233,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
             if (authStatus == AuthStatus.FAILURE)
             {
-                Response.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
-                return AuthenticationState.SEND_FAILURE;
+                return AuthenticationState.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
             }
             // should not happen
             throw new IllegalStateException("No AuthStatus returned");

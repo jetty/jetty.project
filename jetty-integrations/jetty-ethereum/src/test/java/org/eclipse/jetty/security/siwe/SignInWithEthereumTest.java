@@ -72,7 +72,9 @@ public class SignInWithEthereumTest
                 String pathInContext = Request.getPathInContext(request);
                 if ("/error".equals(pathInContext))
                 {
-                    response.write(true, BufferUtil.toBuffer("ERROR"), callback);
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                    String error = Request.getParameters(request).get(EthereumAuthenticator.ERROR_PARAMETER).getValue();
+                    response.write(true, BufferUtil.toBuffer(error), callback);
                     return true;
                 }
                 if ("/login".equals(pathInContext))
@@ -94,6 +96,7 @@ public class SignInWithEthereumTest
         };
 
         _authenticator = new EthereumAuthenticator();
+        _authenticator.setErrorPage("/error");
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         securityHandler.setAuthenticator(_authenticator);

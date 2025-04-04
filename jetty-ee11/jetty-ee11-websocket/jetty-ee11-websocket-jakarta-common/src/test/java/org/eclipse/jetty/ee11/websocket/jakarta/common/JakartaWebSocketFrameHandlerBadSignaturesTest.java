@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
@@ -24,14 +25,16 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JakartaWebSocketFrameHandlerBadSignaturesTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {
-        Exception e = assertThrows(InvalidSignatureException.class, () -> newJakartaFrameHandler(socket));
-        assertThat(e.getMessage(), containsString(expectedString));
+        Exception e = assertThrows(DeploymentException.class, () -> newJakartaFrameHandler(socket));
+        assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
+        assertThat(e.getCause().getMessage(), containsString(expectedString));
     }
 
     @SuppressWarnings("UnusedParameters")

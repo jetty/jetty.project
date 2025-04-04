@@ -50,6 +50,18 @@ jetty-12.1.0.alpha0 - 05 November 2024
  + 12404 Parsing URI with HttpUri.from(String uri) throws
    "IllegalArgumentException: Bad authority" when path is empty
 
+jetty-12.0.19 - 01 April 2025
+ + 12361 ErrorHandler#getShowMessageInTitle() is ignored
+ + 12537 Correct logic in org.eclipse.jetty.server.LowResourceMonitor#setMonitorThreads
+ + 12900 Make JPMS work with new Environments features
+ + 12906 URIUtil#correctURI throws StringIndexOutOfBoundsException
+ + 12913 Resource located inside JAR file is wrongfully treated as an alias
+ + 12923 Introduce Bouncy Castle Jetty module
+ + 12936 UnsupportedOperationException when modifying HttpServletResponse after
+   commit
+ + 12943 Unable to handle - IllegalStateException in Jetty Client Request
+   send()
+
 jetty-12.0.18 - 12 March 2025
  + 12802 Make Server::setDefaultHandler and Server::setErrorHandler arguments
    consistent

@@ -41,7 +41,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components));
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components, false));
     }
 
     public <T> MethodHolder getAcceptHandle(Consumer<T> copy, Class<T> type)

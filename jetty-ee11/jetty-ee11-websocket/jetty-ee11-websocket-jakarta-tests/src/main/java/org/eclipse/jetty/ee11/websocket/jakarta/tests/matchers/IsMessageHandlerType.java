@@ -81,7 +81,7 @@ public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
         switch (expectedType)
         {
             case PONG:
-                return PongMessage.class.isAssignableFrom(registeredDecoder.objectType);
+                return registeredDecoder.isType(PongMessage.class);
             case BINARY:
                 return (Decoder.Binary.class.isAssignableFrom(registeredDecoder.interfaceType) ||
                     Decoder.BinaryStream.class.isAssignableFrom(registeredDecoder.interfaceType));

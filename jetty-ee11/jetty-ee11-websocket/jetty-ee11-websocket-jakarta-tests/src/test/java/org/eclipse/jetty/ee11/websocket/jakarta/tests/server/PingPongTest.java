@@ -23,10 +23,12 @@ import java.util.function.Consumer;
 import com.acme.websocket.PongContextListener;
 import com.acme.websocket.PongMessageEndpoint;
 import com.acme.websocket.PongSocket;
+import com.acme.websocket.PongSocketStringReturn;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.Timeouts;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -56,6 +58,8 @@ public class PingPongTest
         app.copyClass(PongContextListener.class);
         app.copyClass(PongMessageEndpoint.class);
         app.copyClass(PongSocket.class);
+        app.copyClass(PongSocketStringReturn.class);
+        app.copyClass(BufferUtil.class);
         app.deploy();
 
         server.start();
@@ -121,6 +125,18 @@ public class PingPongTest
             {
                 session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
             }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
+        });
+    }
+
+    @Test
+    public void testPongSocketReturnsString() throws Exception
+    {
+        assertTimeout(Duration.ofMillis(6000), () ->
+        {
+            assertEcho("/app/pong-socket-string-return", (session) ->
+            {
+                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+            }, "PongSocket.onPong(PongMessage)[/pong-socket-string-return]:hello");
         });
     }
 }

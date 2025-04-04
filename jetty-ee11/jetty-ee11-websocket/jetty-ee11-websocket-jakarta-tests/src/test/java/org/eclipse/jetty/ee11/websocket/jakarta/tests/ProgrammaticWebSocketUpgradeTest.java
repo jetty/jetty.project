@@ -190,11 +190,11 @@ public class ProgrammaticWebSocketUpgradeTest
             try
             {
                 client.connectToServer(socket, uri);
-                fail("expected IOException");
+                fail("expected Exception");
             }
-            catch (IOException ioe)
+            catch (DeploymentException e)
             {
-                assertInstanceOf(UpgradeException.class, ioe.getCause());
+                assertInstanceOf(UpgradeException.class, e.getCause());
             }
         }
     }

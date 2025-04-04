@@ -513,14 +513,11 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         return AuthenticationState.CHALLENGE;
     }
 
-    private boolean validateSignInWithEthereumToken(SignInWithEthereumToken siwe, SignedMessage signedMessage, Request request, Response response, Callback callback)
+    private AuthenticationState validateSignInWithEthereumToken(SignInWithEthereumToken siwe, SignedMessage signedMessage, Request request, Response response, Callback callback)
     {
         Session session = request.getSession(false);
         if (siwe == null)
-        {
-            sendError(request, response, callback, "failed to parse SIWE message");
-            return false;
-        }
+            return sendError(request, response, callback, "failed to parse SIWE message");;
 
         try
         {
@@ -528,11 +525,10 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         }
         catch (Throwable t)
         {
-            sendError(request, response, callback, t.getMessage());
-            return false;
+            return sendError(request, response, callback, t.getMessage());
         }
 
-        return true;
+        return null;
     }
 
     @Override
@@ -552,10 +548,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
             {
                 session = request.getSession(true);
                 if (session == null)
-                {
-                    sendError(request, response, callback, "session could not be created");
-                    return AuthenticationState.SEND_FAILURE;
-                }
+                    return sendError(request, response, callback, "session could not be created");
             }
 
             if (isNonceRequest(uri))
@@ -568,10 +561,14 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                 // Parse and validate SIWE Message.
                 SignedMessage signedMessage = parseMessage(request, response, callback);
                 if (signedMessage == null)
-                    return AuthenticationState.SEND_FAILURE;
+                    return sendError(request, response, callback, "failed to read SIWE message");
                 SignInWithEthereumToken siwe = SignInWithEthereumToken.from(signedMessage.message());
-                if (siwe == null || !validateSignInWithEthereumToken(siwe, signedMessage, request, response, callback))
-                    return AuthenticationState.SEND_FAILURE;
+                if (siwe == null)
+                    return sendError(request, response, callback, "failed to parse SIWE message");
+
+                AuthenticationState authenticationState = validateSignInWithEthereumToken(siwe, signedMessage, request, response, callback);
+                if (authenticationState != null)
+                    return authenticationState;
 
                 String address = siwe.address();
                 UserIdentity user = login(address, null, request, response);
@@ -592,8 +589,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                     return formAuth;
                 }
 
-                sendError(request, response, callback, "auth failed");
-                return AuthenticationState.SEND_FAILURE;
+                return sendError(request, response, callback, "auth failed");
             }
 
             // Look for cached authentication in the Session.
@@ -605,13 +601,13 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                     !_loginService.validate(((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("auth revoked {}", authenticationState);
+                        LOG.debug("authentication revoked {}", authenticationState);
                     logoutWithoutRedirect(request, response);
-                    return AuthenticationState.SEND_FAILURE;
+                    return sendError(request, response, callback, "authentication revoked");
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("auth {}", authenticationState);
+                    LOG.debug("authenticationState {}", authenticationState);
                 return authenticationState;
             }
 
@@ -619,7 +615,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
             if (AuthenticationState.Deferred.isDeferred(response))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("auth deferred {}", session.getId());
+                    LOG.debug("authentication deferred {}", session.getId());
                 return null;
             }
 
@@ -667,23 +663,17 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
      * @param callback the callback.
      * @param message the reason for the error or null.
      */
-    private void sendError(Request request, Response response, Callback callback, String message)
+    private AuthenticationState sendError(Request request, Response response, Callback callback, String message)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Authentication FAILED: {}", message);
 
         if (_errorPath == null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("auth failed 403");
-            if (response != null)
-                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, message);
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         }
         else
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("auth failed {}", _errorPath);
-
             String contextPath = Request.getContextPath(request);
             String redirectUri = URIUtil.addPaths(contextPath, _errorPath);
             if (message != null)
@@ -695,6 +685,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
             int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                 ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, callback, redirectCode, redirectUri, true);
+            return AuthenticationState.SEND_FAILURE;
         }
     }
 

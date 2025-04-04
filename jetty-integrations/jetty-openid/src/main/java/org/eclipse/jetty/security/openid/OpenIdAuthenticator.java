@@ -432,17 +432,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (session == null)
                 session = request.getSession(true);
             if (session == null)
-            {
-                sendError(request, response, cb, "session could not be created");
-                return AuthenticationState.SEND_FAILURE;
-            }
+                return sendError(request, response, cb, "session could not be created");
 
             String sessionIdFrom = (String)request.getAttribute("org.eclipse.jetty.session.RequestedSession.sessionIdFrom");
             if (sessionIdFrom != null && !sessionIdFrom.startsWith("cookie"))
-            {
-                sendError(request, response, cb, "Session ID must be a cookie to support OpenID authentication");
-                return AuthenticationState.SEND_FAILURE;
-            }
+                return sendError(request, response, cb, "Session ID must be a cookie to support OpenID authentication");
 
             // Handle a request for authentication.
             if (isJSecurityCheck(uri))
@@ -450,17 +444,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 Fields parameters = getParameters(request);
                 String authCode = parameters.getValue("code");
                 if (authCode == null)
-                {
-                    sendError(request, response, cb, "auth failed: no code parameter");
-                    return AuthenticationState.SEND_FAILURE;
-                }
+                    return sendError(request, response, cb, "auth failed: no code parameter");
 
                 String state = parameters.getValue("state");
                 if (state == null)
-                {
-                    sendError(request, response, cb, "auth failed: no state parameter");
-                    return AuthenticationState.SEND_FAILURE;
-                }
+                    return sendError(request, response, cb, "auth failed: no state parameter");
 
                 // Verify anti-forgery state token.
                 UriRedirectInfo uriRedirectInfo;
@@ -469,19 +457,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     uriRedirectInfo = removeAndClearCsrfMap(session, state);
                 }
                 if (uriRedirectInfo == null)
-                {
-                    sendError(request, response, cb, "auth failed: invalid state parameter");
-                    return AuthenticationState.SEND_FAILURE;
-                }
+                    return sendError(request, response, cb, "auth failed: invalid state parameter");
 
                 // Attempt to login with the provided authCode.
                 OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
                 UserIdentity user = login(null, credentials, request, response);
                 if (user == null)
-                {
-                    sendError(request, response, cb, null);
-                    return AuthenticationState.SEND_FAILURE;
-                }
+                    return sendError(request, response, cb, null);
 
                 LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
                 if (LOG.isDebugEnabled())
@@ -612,23 +594,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      * @param message the reason for the error or null.
      * @throws IOException if sending the error fails for any reason.
      */
-    private void sendError(Request request, Response response, Callback callback, String message) throws IOException
+    private AuthenticationState sendError(Request request, Response response, Callback callback, String message) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("OpenId authentication FAILED: {}", message);
 
         if (_errorPage == null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("auth failed 403");
-            if (response != null)
-                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         }
         else
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("auth failed {}", _errorPage);
-
             String contextPath = Request.getContextPath(request);
             String redirectUri = URIUtil.addPaths(contextPath, _errorPage);
             if (message != null)
@@ -640,6 +616,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                 ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, callback, redirectCode, redirectUri, true);
+            return AuthenticationState.SEND_FAILURE;
         }
     }
 
