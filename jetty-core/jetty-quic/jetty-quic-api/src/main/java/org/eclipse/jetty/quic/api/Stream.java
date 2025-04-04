@@ -18,12 +18,11 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
 
 /**
@@ -110,29 +109,29 @@ public interface Stream
 
     /**
      * <p>Reads data from this stream, if any.</p>
-     * <p>The returned {@link Data} object may be {@code null} indicating
+     * <p>The returned {@link Content.Chunk} object may be {@code null} indicating
      * that the end of the read side of the stream has not yet been reached,
      * which may happen when not all the bytes have been received so far,
      * for example the remote peer did not send them yet, or they are
      * in-flight.</p>
-     * <p>When the returned {@link Data} object is not {@code null},
+     * <p>When the returned {@link Content.Chunk} object is not {@code null},
      * the flow control window has been enlarged by the data length.
      * Applications <em>must</em> call, either immediately or later (even
-     * asynchronously from a different thread) {@link Data#release()}
+     * asynchronously from a different thread) {@link Content.Chunk#release()}
      * to notify the implementation that the bytes have been processed.</p>
-     * <p>{@link Data} objects may be stored away for later,
+     * <p>{@link Content.Chunk} objects may be stored away for later,
      * asynchronous, processing (for example, to process them only when
      * all of them have been received).</p>
-     * <p>Once the returned {@link Data} object indicates that the end
+     * <p>Once the returned {@link Content.Chunk} object indicates that the end
      * of the read side of the stream has been reached, further calls to this
-     * method will return a {@link Data} object with the same indication,
+     * method will return a {@link Content.Chunk} object with the same indication,
      * although the instance may be different.</p>
      *
-     * @return a {@link Data} object containing the data bytes,
-     * or {@code null} if no data bytes are available
+     * @return a {@link Content.Chunk} object containing the data bytes
+     * or a failure, or {@code null} if no data bytes are available
      * @see #demand()
      */
-    Data read();
+    Content.Chunk read();
 
     /**
      * <p>Demands more data bytes for this stream.</p>
@@ -256,21 +255,21 @@ public interface Stream
          *         while (true)
          *         {
          *             // Read a chunk of the content.
-         *             Stream.Data data = stream.read();
-         *             if (data == null)
+         *             Content.Chunk chunk = stream.read();
+         *             if (chunk == null)
          *             {
          *                 // No data available now, demand to be called back.
          *                 stream.demand();
          *                 return;
          *             }
          *
-         *             // Process the content.
-         *             process(data.getByteBuffer());
+         *             // Process the content chunk.
+         *             process(chunk);
          *
          *             // Notify that the content has been consumed.
-         *             data.release();
+         *             chunk.release();
          *
-         *             if (data.isLast())
+         *             if (chunk.isLast())
          *             {
          *                 // All data has been processed.
          *                 return;
@@ -287,14 +286,14 @@ public interface Stream
         {
             while (true)
             {
-                Data data = stream.read();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
-                data.release();
-                if (data.isLast())
+                chunk.release();
+                if (chunk.isLast())
                     return;
             }
         }
@@ -373,56 +372,5 @@ public interface Stream
         default void onFailure(Stream stream, Throwable failure)
         {
         }
-    }
-
-    /**
-     * <p>A {@link Retainable} wrapper for stream data bytes.</p>
-     */
-    interface Data extends Retainable
-    {
-        /**
-         * <p>An empty last {@link Data}.</p>
-         */
-        Data EOF = new Data()
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return BufferUtil.EMPTY_BUFFER;
-            }
-
-            @Override
-            public int getLength()
-            {
-                return 0;
-            }
-
-            @Override
-            public boolean isLast()
-            {
-                return true;
-            }
-        };
-
-        /**
-         * <p>Returns the {@link ByteBuffer} containing the data bytes.</p>
-         *
-         * @return the {@link ByteBuffer} containing the data bytes
-         */
-        ByteBuffer getByteBuffer();
-
-        /**
-         * <p>Returns the initial length of the data.</p>
-         *
-         * @return the initial length of the data
-         */
-        int getLength();
-
-        /**
-         * <p>Returns whether the data is last.</p>
-         *
-         * @return whether the data is last
-         */
-        boolean isLast();
     }
 }

@@ -87,13 +87,18 @@ import org.slf4j.LoggerFactory;
  *     @Override
  *     public void onDataAvailable(Stream.Client stream)
  *     {
- *         Stream.Data data = stream.readData();
- *         if (data != null)
+ *         Content.Chunk chunk = stream.read();
+ *         if (chunk == null)
  *         {
- *             // Process the response content chunk.
+ *             stream.demand();
+ *             return;
  *         }
+ *         // Process the response content chunk.
+ *         process(chunk);
+ *         // Release the chunk.
+ *         chunk.release();
  *         // Demand for more response content.
- *         if (!data.isLast())
+ *         if (!chunk.isLast())
  *             stream.demand();
  *     }
  * }, p));

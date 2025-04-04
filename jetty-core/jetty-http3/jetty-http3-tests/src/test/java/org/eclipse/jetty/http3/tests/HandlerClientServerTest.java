@@ -115,21 +115,21 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
 
-                ByteBuffer byteBuffer = data.getByteBuffer();
+                ByteBuffer byteBuffer = chunk.getByteBuffer();
                 ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
                 copy.put(byteBuffer);
                 copy.flip();
                 clientReceivedBuffers.add(copy);
-                data.release();
+                chunk.release();
 
-                if (data.isLast())
+                if (chunk.isLast())
                 {
                     clientResponseLatch.countDown();
                     return;

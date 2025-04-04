@@ -78,7 +78,8 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 if ("/idle".equals(request.getHttpURI().getPath()))
                 {
                     assertFalse(frame.isLast());
-                    stream.demand();
+                    // Do not demand, so the failure is delivered
+                    // to onFailure() rather than through read().
                     return new Stream.Server.Listener()
                     {
                         @Override

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
@@ -53,22 +52,31 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             LOG.debug("Reading, fillInterestIfNeeded={} from {} in {}", fillInterestIfNeeded, stream, this);
         if (stream == null)
             return Content.Chunk.from(new EOFException("Channel has been released"));
-        Stream.Data data = stream.readData();
+        Content.Chunk chunk = stream.read();
         if (LOG.isDebugEnabled())
-            LOG.debug("Read stream data {} in {}", data, this);
-        if (data == null)
+            LOG.debug("Read stream data {} in {}", chunk, this);
+        if (chunk == null)
         {
             if (fillInterestIfNeeded)
                 stream.demand();
             return null;
         }
-        ByteBuffer byteBuffer = data.getByteBuffer();
-        boolean last = !byteBuffer.hasRemaining() && data.isLast();
-        if (!last)
-            return Content.Chunk.asChunk(byteBuffer, last, data);
-        data.release();
-        responseSuccess(getHttpExchange(), null);
-        return Content.Chunk.EOF;
+        if (!chunk.isLast() || chunk.hasRemaining())
+        {
+            // Convert to non-last chunk.
+            return Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
+        }
+        chunk.release();
+        if (Content.Chunk.isFailure(chunk))
+        {
+            responseFailure(chunk.getFailure(), Promise.noop());
+            return chunk;
+        }
+        else
+        {
+            responseSuccess(getHttpExchange(), null);
+            return Content.Chunk.EOF;
+        }
     }
 
     @Override

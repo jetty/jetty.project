@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -115,7 +116,12 @@ public class QuicheServerConnector extends DatagramServerConnector
     public CompletableFuture<Void> shutdown()
     {
         return container.shutdown()
-            .whenComplete((r, x) -> super.shutdown())
-            .whenComplete((r, x) -> LifeCycle.stop(this));
+            .handleAsync((r, x) ->
+            {
+                CompletableFuture<Void> shutdown = super.shutdown();
+                LifeCycle.stop(this);
+                return shutdown;
+            }, getExecutor())
+            .thenCompose(Function.identity());
     }
 }

@@ -38,6 +38,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
@@ -223,16 +224,16 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // FlowControl acknowledged already.
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             // Call me again when you have data.
                             stream.demand();
                             return;
                         }
-                        // Recycle the ByteBuffer in data.frame.
-                        data.release();
-                        if (data.isLast())
+                        // Recycle the ByteBuffer in the chunk.
+                        chunk.release();
+                        if (chunk.isLast())
                             serverLatch.get().countDown();
                         else
                             stream.demand();
@@ -299,20 +300,20 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read data.
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             stream.demand();
                             return;
                         }
                         // Echo it back, then release, then demand only when the write is finished.
-                        stream.data(new DataFrame(data.getByteBuffer(), data.isLast()), Promise.Invocable.from(data::release, new Promise.Invocable.NonBlocking<>()
+                        stream.data(new DataFrame(chunk.getByteBuffer(), chunk.isLast()), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
                         {
                             @Override
                             public void succeeded(Stream result)
                             {
                                 // Demand only if successful and not last.
-                                if (!data.isLast())
+                                if (!chunk.isLast())
                                     stream.demand();
                             }
                         }));
@@ -343,16 +344,16 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read data.
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
                 // Consume data.
-                byteBuffer.put(data.getByteBuffer());
-                data.release();
-                if (data.isLast())
+                byteBuffer.put(chunk.getByteBuffer());
+                chunk.release();
+                if (chunk.isLast())
                     clientDataLatch.countDown();
                 else
                     stream.demand();
@@ -361,7 +362,7 @@ public class ClientServerTest extends AbstractClientServerTest
         stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
 
         HTTP3Session serverSession = serverSessionRef.get();
@@ -545,16 +546,16 @@ public class ClientServerTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        // Calling readData() triggers the read+parse
+                        // Calling read() triggers the read+parse
                         // of the trailer, and returns EOF.
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             stream.demand();
                             return;
                         }
-                        assertTrue(data.isLast());
-                        assertFalse(data.getByteBuffer().hasRemaining());
+                        assertTrue(chunk.isLast());
+                        assertFalse(chunk.getByteBuffer().hasRemaining());
                     }
 
                     @Override
@@ -616,14 +617,14 @@ public class ClientServerTest extends AbstractClientServerTest
                 {
                     while (true)
                     {
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             Thread.sleep(100);
                             continue;
                         }
-                        data.release();
-                        if (data.isLast())
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                             break;

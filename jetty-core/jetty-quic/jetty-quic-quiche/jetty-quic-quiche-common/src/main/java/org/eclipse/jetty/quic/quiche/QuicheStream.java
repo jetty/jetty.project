@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
@@ -23,7 +21,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.common.AbstractStream;
@@ -46,7 +44,7 @@ public class QuicheStream extends AbstractStream
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final QuicheSession session;
     private RetainableByteBuffer inputBuffer;
-    private boolean inputFailed;
+    private Content.Chunk chunk;
     private boolean dataDemand;
 
     public QuicheStream(QuicheSession session, long streamId, boolean local)
@@ -128,93 +126,80 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public Data read()
+    public Content.Chunk read()
     {
-        RetainableByteBuffer inputBuffer = tryAcquireInputBuffer();
+        RetainableByteBuffer inputBuffer;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (chunk != null)
+                return chunk;
+            inputBuffer = this.inputBuffer;
+            this.inputBuffer = null;
+        }
+        inputBuffer = tryAcquireInputBuffer(inputBuffer);
+
         try
         {
-            try
+            ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
+            int position = byteBuffer.position();
+            byteBuffer.limit(byteBuffer.capacity());
+            boolean[] outLast = new boolean[1];
+            int filled = session.read(this, byteBuffer, outLast);
+            BufferUtil.flipToFlush(byteBuffer, position);
+            boolean last = outLast[0];
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("read {} bytes last={} on {}", filled, last, this);
+
+            if (last)
+                updateCloseState(CloseState.REMOTELY_CLOSED);
+
+            if (filled > 0)
             {
-                if (inputBuffer == null)
-                    throw new IOException("could not read from stream #" + getId());
-
-                ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
-                int position = byteBuffer.position();
-                byteBuffer.limit(byteBuffer.capacity());
-                boolean[] outLast = new boolean[1];
-                int filled = session.read(this, byteBuffer, outLast);
-                BufferUtil.flipToFlush(byteBuffer, position);
-                boolean last = outLast[0];
-
+                ByteBuffer slice = byteBuffer.slice();
+                byteBuffer.position(byteBuffer.limit());
+                Content.Chunk chunk = Content.Chunk.asChunk(slice, last, inputBuffer);
+                // Retain because multiple data can be read with the same inputBuffer.
+                chunk.retain();
                 if (last)
-                    updateCloseState(CloseState.REMOTELY_CLOSED);
-
-                if (filled > 0)
-                {
-                    ByteBuffer slice = byteBuffer.slice();
-                    byteBuffer.position(byteBuffer.limit());
-                    QuicheStreamData data = new QuicheStreamData(inputBuffer, slice, last);
-                    // Retain because multiple data can be read with the same inputBuffer.
-                    data.retain();
-                    if (last)
-                        tryReleaseInputBuffer(inputBuffer);
-                    else
-                        tryStoreInputBuffer(inputBuffer);
-                    return data;
-                }
-
-                if (filled == 0 && !last)
-                {
-                    // Keep the buffer around only if it is retained.
-                    if (inputBuffer.isRetained())
-                        tryStoreInputBuffer(inputBuffer);
-                    else
-                        tryReleaseInputBuffer(inputBuffer);
-                    return null;
-                }
-
-                tryReleaseInputBuffer(inputBuffer);
-
-                return Stream.Data.EOF;
+                    tryReleaseInputBuffer(inputBuffer);
+                else
+                    tryStoreInputBuffer(inputBuffer);
+                return chunk;
             }
-            catch (IOException x)
+
+            if (filled == 0 && !last)
             {
-                throw new UncheckedIOException(x);
+                // Keep the buffer around only if it is retained.
+                if (inputBuffer.isRetained())
+                    tryStoreInputBuffer(inputBuffer);
+                else
+                    tryReleaseInputBuffer(inputBuffer);
+                return null;
             }
+
+            tryReleaseInputBuffer(inputBuffer);
+
+            return Content.Chunk.EOF;
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failure reading from {}", this, x);
 
+            Content.Chunk failure;
             try (AutoLock ignored = lock.lock())
             {
-                inputFailed = true;
+                chunk = failure = Content.Chunk.from(x);
             }
             tryReleaseInputBuffer(inputBuffer);
-
             updateCloseState(CloseState.REMOTELY_CLOSED);
-
-            // Stream.read() typically does not throw, but with
-            // Quiche we have to make an exception because it
-            // does not report events for RESET_STREAM frames.
-            // Cannot return null or EOF here, otherwise the caller
-            // would be forced to read and then check for errors.
-            throw x;
+            return failure;
         }
     }
 
-    private RetainableByteBuffer tryAcquireInputBuffer()
+    private RetainableByteBuffer tryAcquireInputBuffer(RetainableByteBuffer buffer)
     {
-        RetainableByteBuffer buffer;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (inputFailed)
-                return null;
-            buffer = inputBuffer;
-            inputBuffer = null;
-        }
-
         QuicConfiguration quicConfiguration = session.getQuicConfiguration();
         if (buffer != null)
         {
@@ -240,9 +225,11 @@ public class QuicheStream extends AbstractStream
         try (AutoLock ignored = lock.lock())
         {
             assert inputBuffer == null;
-            if (!inputFailed)
+            if (chunk == null)
             {
                 inputBuffer = buffer;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("stored {} on {}", buffer, this);
                 return;
             }
         }
@@ -451,7 +438,7 @@ public class QuicheStream extends AbstractStream
         RetainableByteBuffer buffer;
         try (AutoLock ignored = lock.lock())
         {
-            inputFailed = true;
+            chunk = Content.Chunk.from(failure);
             buffer = inputBuffer;
             inputBuffer = null;
         }
@@ -612,42 +599,5 @@ public class QuicheStream extends AbstractStream
     private enum CloseState
     {
         NOT_CLOSED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
-    }
-
-    private static class QuicheStreamData extends Retainable.Wrapper implements Stream.Data
-    {
-        private final ByteBuffer byteBuffer;
-        private final boolean last;
-
-        private QuicheStreamData(Retainable retainable, ByteBuffer byteBuffer, boolean last)
-        {
-            super(retainable);
-            this.byteBuffer = byteBuffer;
-            this.last = last;
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return byteBuffer;
-        }
-
-        @Override
-        public int getLength()
-        {
-            return byteBuffer.capacity();
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return last;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[bytes=%d/%d,last=%b,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getByteBuffer().remaining(), getLength(), isLast(), getWrapped());
-        }
     }
 }

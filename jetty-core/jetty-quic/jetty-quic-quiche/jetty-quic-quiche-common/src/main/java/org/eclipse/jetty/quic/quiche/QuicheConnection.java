@@ -90,6 +90,9 @@ public abstract class QuicheConnection extends AbstractConnection
         @Override
         public InvocationType getInvocationType()
         {
+            // Must be EITHER so that its invocation is not deferred,
+            // since this task may read from the network a flow control
+            // update that would unblock stalled threads.
             return InvocationType.EITHER;
         }
 

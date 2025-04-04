@@ -36,6 +36,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.util.ErrorCode;
@@ -611,10 +612,10 @@ public class GoAwayTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        Stream.Data data = stream.readData();
-                        if (data != null)
-                            data.release();
-                        if (data != null && data.isLast())
+                        Content.Chunk chunk = stream.read();
+                        if (chunk != null)
+                            chunk.release();
+                        if (chunk != null && chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                             serverStream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
@@ -1288,11 +1289,11 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Stream.Data data = stream.readData();
-                if (data != null)
+                Content.Chunk chunk = stream.read();
+                if (chunk != null)
                 {
-                    data.release();
-                    if (data.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                     {
                         dataLatch.countDown();
                         return;
@@ -1353,11 +1354,11 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Stream.Data data = stream.readData();
-                if (data != null)
+                Content.Chunk chunk = stream.read();
+                if (chunk != null)
                 {
-                    data.release();
-                    if (data.isLast())
+                    chunk.release();
+                    if (chunk.isLast())
                     {
                         dataLatch.countDown();
                         return;

@@ -180,6 +180,11 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
     {
         private StreamsProducerTask()
         {
+            // Must be EITHER so that its invocation is not deferred,
+            // since this task may process a stream that would unblock
+            // stalled threads.
+            // NON_BLOCKING could have worked too, but EITHER provides
+            // parallelization of session processing which is a plus.
             super(InvocationType.EITHER);
         }
 

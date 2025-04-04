@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.api.Stream;
@@ -56,7 +57,7 @@ public class StreamEndPoint implements EndPoint
     private final ProtocolSession protocolSession;
     private final Stream stream;
     private Connection connection;
-    private Stream.Data data;
+    private Content.Chunk chunk;
     private Callback fillInterest;
 
     public StreamEndPoint(ProtocolSession protocolSession, Stream stream)
@@ -154,7 +155,7 @@ public class StreamEndPoint implements EndPoint
     {
         try (AutoLock ignored = lock.lock())
         {
-            return data == Stream.Data.EOF;
+            return chunk != null && chunk.isLast() && !chunk.hasRemaining();
         }
     }
 
@@ -222,24 +223,23 @@ public class StreamEndPoint implements EndPoint
         Callback callback;
         try (AutoLock ignored = lock.lock())
         {
-            if (data == null)
+            if (chunk == null)
             {
-                data = new StreamDataFailure(failure);
+                chunk = Content.Chunk.from(failure);
             }
             else
             {
                 // Keep EOF or existing failure, otherwise release and replace.
-                if (!data.isLast() || data.getByteBuffer().hasRemaining())
+                if (!chunk.isLast() || chunk.hasRemaining())
                 {
-                    data.release();
-                    data = new StreamDataFailure(failure);
+                    chunk.release();
+                    chunk = Content.Chunk.from(failure);
                 }
             }
 
             callback = fillInterest;
             fillInterest = null;
         }
-        // TODO: feed callback to AES or executeImmediately.
         if (callback != null)
             callback.succeeded();
         else
@@ -249,13 +249,13 @@ public class StreamEndPoint implements EndPoint
     @Override
     public int fill(ByteBuffer sink) throws IOException
     {
-        Stream.Data current;
+        Content.Chunk current;
         try (AutoLock ignored = lock.lock())
         {
-            current = data;
+            current = chunk;
             // Keep EOF or failure, otherwise null out to allow for concurrent failures.
-            if (current == null || !current.isLast() || current.getByteBuffer().hasRemaining())
-                data = null;
+            if (current == null || !current.isLast() || current.hasRemaining())
+                chunk = null;
         }
 
         while (true)
@@ -273,9 +273,9 @@ public class StreamEndPoint implements EndPoint
                         try (AutoLock ignored = lock.lock())
                         {
                             // Do not overwrite concurrent failures.
-                            if (data == null)
+                            if (chunk == null)
                             {
-                                data = current;
+                                chunk = current;
                                 release = false;
                             }
                         }
@@ -285,8 +285,8 @@ public class StreamEndPoint implements EndPoint
                         try (AutoLock ignored = lock.lock())
                         {
                             // Do not overwrite concurrent failures.
-                            if (data == null && current.isLast())
-                                data = Stream.Data.EOF;
+                            if (chunk == null && current.isLast())
+                                chunk = Content.Chunk.EOF;
                         }
                     }
 
@@ -299,17 +299,26 @@ public class StreamEndPoint implements EndPoint
                     return filled;
                 }
 
+                if (Content.Chunk.isFailure(current))
+                {
+                    try (AutoLock ignored = lock.lock())
+                    {
+                        // Do not overwrite concurrent failures.
+                        if (chunk == null)
+                            chunk = current;
+                    }
+                    throw IO.rethrow(current.getFailure());
+                }
+
                 if (current.isLast())
                 {
-                    if (current instanceof StreamDataFailure f)
-                        throw IO.rethrow(f.failure);
-                    if (current != Stream.Data.EOF)
+                    if (current != Content.Chunk.EOF)
                     {
                         try (AutoLock ignored = lock.lock())
                         {
                             // Do not overwrite concurrent failures.
-                            if (data == null)
-                                data = Stream.Data.EOF;
+                            if (chunk == null)
+                                chunk = Content.Chunk.EOF;
                         }
                         current.release();
                     }
@@ -317,7 +326,7 @@ public class StreamEndPoint implements EndPoint
                 }
             }
 
-            current = read();
+            current = stream.read();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("read {} from {} on {}", current, stream, this);
@@ -334,44 +343,29 @@ public class StreamEndPoint implements EndPoint
      * needs to know both the bytes and whether the QUIC data is the last in the
      * stream, for example in HTTP/3.</p>
      * <p>The code calling this method is responsible to organize for the returned
-     * {@link Stream.Data} to be eventually {@link Stream.Data#release() released}.</p>
+     * {@link Content.Chunk} to be eventually {@link Content.Chunk#release() released}.</p>
      *
-     * @return a QUIC {@link Stream.Data}, or {@code null} if there is no data
-     * @throws IOException when a failure occurred while filling data from the QUIC stream
+     * @return a {@link Content.Chunk} with data bytes or a failure, or {@code null}
+     * if there are no data bytes
      */
-    public Stream.Data fill() throws IOException
+    public Content.Chunk fill()
     {
-        Stream.Data current;
+        Content.Chunk current;
         try (AutoLock ignored = lock.lock())
         {
-            current = data;
+            current = chunk;
         }
 
         if (current == null)
-            current = read();
-
-        if (current instanceof StreamDataFailure f)
-            throw IO.rethrow(f.failure());
+            current = stream.read();
 
         return current;
     }
 
-    private Stream.Data read()
-    {
-        try
-        {
-            return stream.read();
-        }
-        catch (Throwable x)
-        {
-            return new StreamDataFailure(IO.rethrow(x));
-        }
-    }
-
-    private int copy(Stream.Data data, ByteBuffer sink)
+    private int copy(Content.Chunk chunk, ByteBuffer sink)
     {
         int length = 0;
-        ByteBuffer source = data.getByteBuffer();
+        ByteBuffer source = chunk.getByteBuffer();
         if (source.hasRemaining())
         {
             int sinkPosition = BufferUtil.flipToFill(sink);
@@ -658,32 +652,11 @@ public class StreamEndPoint implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[d=%s,%s]", TypeUtil.toShortName(getClass()), hashCode(), getStream().getId(), data, toConnectionString());
+        return String.format("%s@%x#%d[d=%s,%s]", TypeUtil.toShortName(getClass()), hashCode(), getStream().getId(), chunk, toConnectionString());
     }
 
     private enum WriteState
     {
         IDLE, PENDING, CLOSING, CLOSED, FAILED
-    }
-
-    private record StreamDataFailure(Throwable failure) implements Stream.Data
-    {
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return BufferUtil.EMPTY_BUFFER;
-        }
-
-        @Override
-        public int getLength()
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return true;
-        }
     }
 }

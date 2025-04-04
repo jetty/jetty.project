@@ -160,14 +160,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (chunk != null)
                 return chunk;
 
-            Stream.Data data = stream.readData();
-            if (data == null)
+            chunk = stream.read();
+            if (chunk == null)
                 return null;
 
-            // The data instance should be released after readData() above;
-            // the chunk is stored below for later use, so should be retained;
+            // Above, the chunk instance should be released after the read();
+            // below, the chunk is stored for later use, so should be retained;
             // the two actions cancel each other, no need to further retain or release.
-            storeAsChunk(data);
+            if (!store(chunk))
+                chunk.release();
         }
     }
 
@@ -202,20 +203,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return httpChannel.onContentAvailable();
     }
 
-    private void storeAsChunk(Stream.Data data)
+    private boolean store(Content.Chunk chunk)
     {
         try (AutoLock ignored = lock.lock())
         {
-            if (data == Stream.Data.EOF)
-            {
-                if (chunk instanceof Trailers)
-                    return;
-                chunk = Content.Chunk.EOF;
-            }
-            else
-            {
-                chunk = Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
-            }
+            if (this.chunk != null)
+                return false;
+            this.chunk = chunk;
+            return true;
         }
     }
 
@@ -233,16 +228,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             chunk = new Trailers(trailers);
         }
         return httpChannel.onContentAvailable();
-    }
-
-    private Content.Chunk createChunk(Stream.Data data)
-    {
-        if (data == Stream.Data.EOF)
-        {
-            data.release();
-            return Content.Chunk.EOF;
-        }
-        return Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
     }
 
     @Override

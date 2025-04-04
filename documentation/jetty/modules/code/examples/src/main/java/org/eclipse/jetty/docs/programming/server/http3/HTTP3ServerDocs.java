@@ -32,6 +32,7 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -150,9 +151,9 @@ public class HTTP3ServerDocs
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read a chunk of the request content.
-                        Stream.Data data = stream.readData();
+                        Content.Chunk chunk = stream.read();
 
-                        if (data == null)
+                        if (chunk == null)
                         {
                             // No data available now, demand to be called back.
                             stream.demand();
@@ -160,15 +161,15 @@ public class HTTP3ServerDocs
                         else
                         {
                             // Get the content buffer.
-                            ByteBuffer buffer = data.getByteBuffer();
+                            ByteBuffer buffer = chunk.getByteBuffer();
 
                             // Consume the buffer, here - as an example - just log it.
                             System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
 
                             // Tell the implementation that the buffer has been consumed.
-                            data.release();
+                            chunk.release();
 
-                            if (!data.isLast())
+                            if (!chunk.isLast())
                             {
                                 // Demand to be called back.
                                 stream.demand();
@@ -205,17 +206,17 @@ public class HTTP3ServerDocs
                         @Override
                         public void onDataAvailable(Stream.Server stream)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data == null)
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
                             {
                                 stream.demand();
                             }
                             else
                             {
                                 // Consume the request content.
-                                data.release();
+                                chunk.release();
 
-                                if (data.isLast())
+                                if (chunk.isLast())
                                     respond(stream, request);
                                 else
                                     stream.demand();

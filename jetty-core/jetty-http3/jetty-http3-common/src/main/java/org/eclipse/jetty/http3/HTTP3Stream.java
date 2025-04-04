@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Attachable;
@@ -162,35 +163,24 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public Data readData()
+    public Content.Chunk read()
     {
-        try
+        HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
+        Content.Chunk chunk = connection.read();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("read {} on {}", chunk, this);
+
+        try (AutoLock ignored = lock.lock())
         {
-            HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-            Data data = connection.readData();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {} on {}", data, this);
-
-            try (AutoLock ignored = lock.lock())
-            {
-                dataAvailable = data != null;
-                dataLast = data != null && data.isLast();
-            }
-
-            if (data != null)
-                updateClose(data.isLast(), false);
-
-            return data;
+            dataAvailable = chunk != null;
+            dataLast = chunk != null && chunk.isLast();
         }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not read {}", this, x);
-            // Rethrow to the application, so don't notify onFailure().
-            // Disconnection has already happened in HTTP3StreamConnection.
-            throw x;
-        }
+
+        if (chunk != null)
+            updateClose(chunk.isLast(), false);
+
+        return chunk;
     }
 
     @Override
@@ -429,6 +419,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         {
             closeState = CloseState.CLOSED;
         }
+
+        // TODO: reset data* fields?
 
         if (notifyFailure)
             notifyFailure(appErrorCode, failure);

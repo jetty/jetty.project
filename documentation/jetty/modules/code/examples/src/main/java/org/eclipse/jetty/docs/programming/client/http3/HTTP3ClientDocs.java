@@ -32,6 +32,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
@@ -223,8 +224,8 @@ public class HTTP3ClientDocs
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read a chunk of the content.
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     // No data available now, demand to be called back.
                     stream.demand();
@@ -232,12 +233,12 @@ public class HTTP3ClientDocs
                 else
                 {
                     // Process the content.
-                    process(data.getByteBuffer());
+                    process(chunk.getByteBuffer());
 
                     // Notify the implementation that the content has been consumed.
-                    data.release();
+                    chunk.release();
 
-                    if (!data.isLast())
+                    if (!chunk.isLast())
                     {
                         // Demand to be called back.
                         stream.demand();

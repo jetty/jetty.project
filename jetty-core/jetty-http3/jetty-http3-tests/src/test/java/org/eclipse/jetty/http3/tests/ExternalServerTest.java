@@ -30,6 +30,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
@@ -106,13 +107,13 @@ public class ExternalServerTest
                 @Override
                 public void onDataAvailable(Stream.Client stream)
                 {
-                    Stream.Data data = stream.readData();
+                    Content.Chunk chunk = stream.read();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("RESPONSE DATA = {}", data);
-                    if (data != null)
+                        LOG.debug("RESPONSE DATA = {}", chunk);
+                    if (chunk != null)
                     {
-                        data.release();
-                        if (data.isLast())
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             requestLatch.countDown();
                             return;
