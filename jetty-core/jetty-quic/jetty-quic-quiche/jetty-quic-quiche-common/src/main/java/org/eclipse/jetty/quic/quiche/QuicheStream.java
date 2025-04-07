@@ -28,9 +28,11 @@ import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -471,15 +473,22 @@ public class QuicheStream extends AbstractStream
 
     void onIdleTimeout(TimeoutException timeout)
     {
-        boolean expired = notifyIdleTimeout(timeout);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("stream idle timeout {}ms {} on {}", getIdleTimeout(), expired ? "expired" : "ignored", this);
-
-        if (expired)
-            disconnect(ErrorCode.NO_ERROR.code(), timeout, Promise.Invocable.noop());
-        else
-            notIdle();
+        notifyIdleTimeout(timeout, Promise.Invocable.from(Invocable.InvocationType.NON_BLOCKING, (expired, x) ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream idle timeout {}ms {} on {}", getIdleTimeout(), expired ? "expired" : "ignored", this);
+            if (x == null)
+            {
+                if (expired)
+                    disconnect(ErrorCode.NO_ERROR.code(), timeout, Promise.Invocable.noop());
+                else
+                    notIdle();
+            }
+            else
+            {
+                disconnect(ErrorCode.NO_ERROR.code(), ExceptionUtil.combine(timeout, x), Promise.Invocable.noop());
+            }
+        }));
     }
 
     void resumeWrite()
@@ -521,19 +530,20 @@ public class QuicheStream extends AbstractStream
         }
     }
 
-    private boolean notifyIdleTimeout(TimeoutException failure)
+    private void notifyIdleTimeout(TimeoutException failure, Promise.Invocable<Boolean> promise)
     {
         Stream.Listener listener = getListener();
         try
         {
             if (listener != null)
-                return listener.onIdleTimeout(this, failure);
-            return true;
+                listener.onIdleTimeout(this, failure, promise);
+            else
+                promise.succeeded(true);
         }
         catch (Throwable x)
         {
             LOG.info("failure while notifying listener {}", listener, x);
-            return true;
+            promise.failed(x);
         }
     }
 

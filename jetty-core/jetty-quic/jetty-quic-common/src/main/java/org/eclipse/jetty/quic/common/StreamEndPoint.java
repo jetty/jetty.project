@@ -213,9 +213,9 @@ public class StreamEndPoint implements EndPoint
         getConnection().onClose(failure);
     }
 
-    boolean onIdleTimeout(TimeoutException timeout)
+    void onIdleTimeout(TimeoutException timeout, Promise.Invocable<Boolean> promise)
     {
-        return true;
+        promise.succeeded(true);
     }
 
     void onFailure(Throwable failure)

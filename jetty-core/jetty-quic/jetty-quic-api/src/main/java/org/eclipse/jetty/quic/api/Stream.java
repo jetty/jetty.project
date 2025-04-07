@@ -344,6 +344,13 @@ public interface Stream
 
         /**
          * <p>Invoked when the stream has been {@link Stream#isClosed() closed}.</p>
+         * <p>A stream is closed when either:</p>
+         * <ul>
+         * <li>The receiving side read the last frame in the stream,
+         * and the sending side sent the last frame in the stream</li>
+         * <li>The stream is {@link #disconnect(long, Throwable, Promise.Invocable) disconnected},
+         * for example due to failures.</li>
+         * </ul>
          *
          * @param stream the stream
          */
@@ -356,11 +363,11 @@ public interface Stream
          *
          * @param stream the stream
          * @param failure the idle timeout failure
-         * @return whether to notify the other peer that this stream is closing
+         * @param promise the promise to complete to notify the other peer that this stream is closing
          */
-        default boolean onIdleTimeout(Stream stream, TimeoutException failure)
+        default void onIdleTimeout(Stream stream, TimeoutException failure, Promise.Invocable<Boolean> promise)
         {
-            return true;
+            promise.succeeded(true);
         }
 
         /**

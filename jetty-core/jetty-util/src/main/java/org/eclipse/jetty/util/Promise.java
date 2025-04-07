@@ -330,6 +330,32 @@ public interface Promise<C>
         }
 
         /**
+         * <p>Factory method to create a promise from the given arguments.</p>
+         *
+         * @param invocationType the {@link InvocationType} of the promise
+         * @param consumer the consumer to run upon completion
+         * @return a new promise
+         * @param <T> the type of the promise result
+         */
+        static <T> Promise.Invocable<T> from(InvocationType invocationType, BiConsumer<T, Throwable> consumer)
+        {
+            return new Abstract<>(invocationType)
+            {
+                @Override
+                public void succeeded(T result)
+                {
+                    consumer.accept(result, null);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    consumer.accept(null, x);
+                }
+            };
+        }
+
+        /**
          * <p>Returns a promise that, when it is completed, completes
          * the given promise and then runs the given {@link Runnable}.</p>
          *

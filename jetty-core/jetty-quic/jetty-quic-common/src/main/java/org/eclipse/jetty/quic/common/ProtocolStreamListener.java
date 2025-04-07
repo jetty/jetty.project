@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.util.Promise;
 
 public class ProtocolStreamListener implements Stream.Listener
 {
@@ -34,9 +35,9 @@ public class ProtocolStreamListener implements Stream.Listener
     }
 
     @Override
-    public boolean onIdleTimeout(Stream stream, TimeoutException failure)
+    public void onIdleTimeout(Stream stream, TimeoutException failure, Promise.Invocable<Boolean> promise)
     {
-        return endPoint.get().onIdleTimeout(failure);
+        endPoint.get().onIdleTimeout(failure, promise);
     }
 
     @Override
