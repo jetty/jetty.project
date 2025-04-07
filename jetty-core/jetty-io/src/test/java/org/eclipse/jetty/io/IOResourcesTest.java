@@ -14,10 +14,14 @@
 package org.eclipse.jetty.io;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -46,12 +50,88 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    public static Stream<Resource> all()
+    private static class TestResource extends IOResources.ContentSourceResource
     {
-        URI resourceUri = MavenTestingUtils.getTestResourcePath("keystore.p12").toUri();
+        private final URI uri;
+        private final ByteBuffer buffer;
+
+        public TestResource(URI uri, byte[] bytes)
+        {
+            this.uri = uri;
+            this.buffer = ByteBuffer.wrap(bytes);
+        }
+
+        @Override
+        public boolean exists()
+        {
+            return true;
+        }
+
+        @Override
+        public long length()
+        {
+            return buffer.remaining();
+        }
+
+        @Override
+        public Path getPath()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isDirectory()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isReadable()
+        {
+            return true;
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return uri;
+        }
+
+        @Override
+        public String getName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public String getFileName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public Resource resolve(String subUriPath)
+        {
+            return null;
+        }
+
+        @Override
+        public Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException
+        {
+            return Content.Source.from(BufferUtil.slice(buffer, (int)first, (int)length));
+        }
+    }
+
+    public static Stream<Resource> all() throws Exception
+    {
+        Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        byte[] bytes = Files.readAllBytes(testResourcePath);
+        URI resourceUri = testResourcePath.toUri();
         return Stream.of(
             ResourceFactory.root().newResource(resourceUri),
-            new URLResourceFactory().newResource(resourceUri)
+            ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
+            new URLResourceFactory().newResource(resourceUri),
+            new TestResource(resourceUri, bytes)
         );
     }
 

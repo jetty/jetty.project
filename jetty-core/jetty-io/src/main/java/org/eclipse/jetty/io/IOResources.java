@@ -90,6 +90,20 @@ public class IOResources
             }
         }
 
+        // Optimize for ContentSourceResource.
+        if (resource instanceof ContentSourceResource contentSourceResource)
+        {
+            try
+            {
+                ByteBuffer buffer = Content.Source.asByteBuffer(contentSourceResource.newContentSource(bufferPool, 4096, direct, 0L, -1L));
+                return RetainableByteBuffer.wrap(buffer);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
+
         // Fallback to InputStream.
         try (InputStream inputStream = resource.newInputStream())
         {
@@ -143,6 +157,10 @@ public class IOResources
             byte[] bytes = memoryResource.getBytes();
             return new ByteBufferContentSource(ByteBuffer.wrap(bytes));
         }
+        if (resource instanceof ContentSourceResource contentSourceResource)
+        {
+            return contentSourceResource.newContentSource(bufferPool, bufferSize, direct, 0, -1);
+        }
 
         // Fallback to wrapping InputStream.
         try
@@ -185,7 +203,11 @@ public class IOResources
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return Content.Source.from(ByteBuffer.wrap(memoryResource.getBytes()));
+            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), (int)first, (int)length));
+
+        // Try ContentSourceSupplier.
+        if (resource instanceof ContentSourceResource contentSourceResource)
+            return contentSourceResource.newContentSource(bufferPool, bufferSize, direct, first, length);
 
         // Fallback to InputStream.
         try
@@ -409,5 +431,26 @@ public class IOResources
             IO.close(channel);
             super.onCompleteFailure(x);
         }
+    }
+
+    /**
+     * {@link Resource} capable of exposing itself as a {@link Content.Source} such as
+     * {@link IOResources} can use the more efficient {@link Content.Source} contract instead of
+     * relying on the much slower {@link InputStream} contract to perform the IO operations.
+     */
+    public static abstract class ContentSourceResource extends Resource
+    {
+        /**
+         * Creates a new {@link Content.Source} for this resource.
+         *
+         * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+         * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+         * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+         * @param first the first byte of the resource to start from.
+         * @param length the length of the resource's contents to copy.
+         * @return a {@link Content.Source}.
+         * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
+         */
+        public abstract Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException;
     }
 }
