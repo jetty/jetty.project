@@ -438,7 +438,7 @@ public class IOResources
      * {@link IOResources} can use the more efficient {@link Content.Source} contract instead of
      * relying on the much slower {@link InputStream} contract to perform the IO operations.
      */
-    public static abstract class ContentSourceResource extends Resource
+    public abstract static class ContentSourceResource extends Resource
     {
         /**
          * Creates a new {@link Content.Source} for this resource.
