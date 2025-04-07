@@ -21,27 +21,25 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.quic.quiche.QuicheBinding;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ForeignQuicheBinding implements QuicheBinding
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ForeignQuicheBinding.class);
-
     @Override
-    public boolean isUsable()
+    public Throwable checkUsable()
     {
         try
         {
-            // Make a Quiche call to confirm.
-            quiche_h.quiche_version();
-            return true;
+            quiche_h.initialize();
+            return null;
+        }
+        catch (ExceptionInInitializerError e)
+        {
+            Throwable cause = e.getCause();
+            return cause != null ? cause : e;
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("java.lang.foreign quiche binding is not usable", x);
-            return false;
+            return x;
         }
     }
 
@@ -78,6 +76,6 @@ public class ForeignQuicheBinding implements QuicheBinding
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{p=" + priority() + " u=" + isUsable() + "}";
+        return getClass().getSimpleName() + "{p=" + priority() + " f=" + checkUsable() + "}";
     }
 }

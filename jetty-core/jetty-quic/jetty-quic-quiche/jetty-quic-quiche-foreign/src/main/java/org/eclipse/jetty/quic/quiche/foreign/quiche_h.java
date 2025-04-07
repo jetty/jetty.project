@@ -33,12 +33,16 @@ public class quiche_h
     private static final String EXPECTED_QUICHE_VERSION = "0.23.5";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
-    static
+    static void initialize()
     {
+        String quicheVersion = quiche_version().getString(0L, StandardCharsets.UTF_8);
+        if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
+            throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
+
         if (LOG.isDebugEnabled())
         {
-            String quicheVersion = quiche_version().getString(0L, StandardCharsets.UTF_8);
-            LOG.debug("Quiche version {}", quicheVersion);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Quiche version {}", quicheVersion);
 
             MemorySegment cb = NativeHelper.upcallMemorySegment(LoggingCallback.class, "log", LoggingCallback.INSTANCE,
                 FunctionDescriptor.ofVoid(C_POINTER, C_POINTER), LoggingCallback.SCOPE);
@@ -46,13 +50,6 @@ public class quiche_h
             if (quiche_enable_debug_logging(cb, MemorySegment.NULL) != 0)
                 throw new AssertionError("Cannot enable quiche debug logging");
         }
-    }
-
-    static void versionCheck()
-    {
-        String quicheVersion = quiche_version().getString(0L, StandardCharsets.UTF_8);
-        if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
-            throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
     }
 
     private static class LoggingCallback

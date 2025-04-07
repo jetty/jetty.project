@@ -44,11 +44,6 @@ public class ForeignQuicheConnection extends QuicheConnection
     private static final Logger LOG = LoggerFactory.getLogger(ForeignQuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    static
-    {
-        quiche_h.versionCheck();
-    }
-
     // Quiche does not allow concurrent calls with the same connection.
     private final AutoLock lock = new AutoLock();
     private MemorySegment quicheConn;
