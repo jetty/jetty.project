@@ -58,7 +58,10 @@ public class InputStreamContentSource implements Content.Source
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool)
     {
         this.inputStream = Objects.requireNonNull(inputStream);
-        this.bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+        bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+        if (bufferPool.isDirect())
+            bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), false, bufferPool.getSize());
+        this.bufferPool = bufferPool;
     }
 
     public int getBufferSize()
@@ -86,17 +89,13 @@ public class InputStreamContentSource implements Content.Source
     }
 
     /**
+     * This method does nothing as {@code InputStreamContentSource} cannot use direct byte buffers.
      * @param useDirectByteBuffers {@code true} if direct buffers will be used.
      * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
      */
     @Deprecated(forRemoval = true, since = "12.0.11")
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (useDirectByteBuffers != bufferPool.isDirect())
-                bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), useDirectByteBuffers, bufferPool.getSize());
-        }
     }
     
     @Override
