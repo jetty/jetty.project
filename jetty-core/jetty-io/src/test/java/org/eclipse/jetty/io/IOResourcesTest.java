@@ -50,7 +50,7 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    private static class TestResource extends IOResources.ContentSourceResource
+    private static class TestResource extends Resource implements Content.Source.Factory
     {
         private final URI uri;
         private final ByteBuffer buffer;

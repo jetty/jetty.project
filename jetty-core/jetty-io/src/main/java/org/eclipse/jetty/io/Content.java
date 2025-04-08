@@ -156,6 +156,24 @@ public class Content
     public interface Source
     {
         /**
+         * Factory of {@link Content.Source}.
+         */
+        interface Factory
+        {
+            /**
+             * Creates a new {@link Content.Source}.
+             *
+             * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+             * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+             * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+             * @param first the first byte of the resource to start from.
+             * @param length the length of the resource's contents to copy.
+             * @return a {@link Content.Source}.
+             */
+            Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length);
+        }
+
+        /**
          * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
          * @param byteBuffers The {@link ByteBuffer}s to use as the source.
          * @return A {@code Content.Source}
