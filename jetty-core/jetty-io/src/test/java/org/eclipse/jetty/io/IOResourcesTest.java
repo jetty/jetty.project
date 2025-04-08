@@ -50,12 +50,12 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    private static class TestResource extends Resource implements Content.Source.Factory
+    private static class TestContentSourceFactoryResource extends Resource implements Content.Source.Factory
     {
         private final URI uri;
         private final ByteBuffer buffer;
 
-        public TestResource(URI uri, byte[] bytes)
+        public TestContentSourceFactoryResource(URI uri, byte[] bytes)
         {
             this.uri = uri;
             this.buffer = ByteBuffer.wrap(bytes);
@@ -131,7 +131,7 @@ public class IOResourcesTest
             ResourceFactory.root().newResource(resourceUri),
             ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
             new URLResourceFactory().newResource(resourceUri),
-            new TestResource(resourceUri, bytes)
+            new TestContentSourceFactoryResource(resourceUri, bytes)
         );
     }
 
