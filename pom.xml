@@ -1800,7 +1800,7 @@
       <plugin>
         <groupId>io.github.olamy.maven.plugins</groupId>
         <artifactId>jacoco-aggregator-maven-plugin</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
         <configuration>
           <excludes>
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
