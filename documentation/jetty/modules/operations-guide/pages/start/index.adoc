@@ -49,13 +49,13 @@ Within the Jetty start mechanism, the source of configurations is layered in thi
 You can enable Jetty modules persistently across restarts with the `--add-modules` command:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=server,http
+$ java -jar $JETTY_HOME/start.jar --add-modules=https,http2
 ----
 
 The Jetty start mechanism will look for the specified modules following the order specified above.
 In the common case (without a `--add-config-dir` directory), it will look in `$JETTY_BASE/modules/` first and then in `$JETTY_HOME/modules/`.
 
-Since the `server` and `http` modules are standard Jetty modules, they are present in `$JETTY_HOME/modules/` and loaded from there.
+Since the `https` and `http2` modules are standard Jetty modules, they are present in `$JETTY_HOME/modules/` and loaded from there.
 
 When you enable a Jetty module, the Jetty start mechanism:
 
@@ -63,17 +63,22 @@ When you enable a Jetty module, the Jetty start mechanism:
 The content of these `+*.ini+` files is copied from the `[ini-template]` section of the correspondent `+*.mod+` file.
 * Executes the directives specified in `[files]` section (if present) of the `+*.mod+` file.
 This may simply create a file or a directory, or download files from the Internet.
-This step is performed transitively for all module dependencies.
 
-For example, enabling the `server` and `http` modules results in the `$JETTY_BASE` directory to have the following structure:
+Both steps are performed transitively for all module dependencies.
+
+For example, enabling the `http` module results in the `$JETTY_BASE` directory to have the following structure:
 
 ----
 $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties
 └── start.d
+    ├── bytebufferpool.ini
+    ├── http-config.ini
     ├── http.ini
-    └── server.ini
+    ├── scheduler.ini
+    ├── server.ini
+    └── threadpool.ini
 ----
 
 The `$JETTY_BASE/resources/jetty-logging.properties` is created by the `[files]` directives of the `logging-jetty` module, which is a transitive dependency of the `server` module.
@@ -91,26 +96,6 @@ Deleting the correspondent `+$JETTY_BASE/start.d/*.ini+` file also disables the 
 === Editing `+*.ini+` Files
 
 You can now edit the `+$JETTY_BASE/start.d/*.ini+` configuration files, typically by uncommenting properties to change their default value.
-
-The `+$JETTY_BASE/start.d/*.ini+` configuration file may be missing, if the correspondent module is a transitive dependency.
-You can easily generate the configuration file by explicitly enabling the module, for example to generate the `$JETTY_BASE/start.d/logging-jetty.ini` configuration file you would issue the following command (the module order does not matter):
-
-----
-$ java -jar $JETTY_HOME/start.jar --add-modules=server,http,logging-jetty
-----
-
-The `$JETTY_BASE` directory structure is now:
-
-[source,subs=+quotes]
-----
-$JETTY_BASE
-├── resources
-│   └── jetty-logging.properties
-└── start.d
-    ├── http.ini
-    ├── ##logging-jetty.ini##
-    └── server.ini
-----
 
 You want to edit the `+$JETTY_BASE/start.d/*.ini+` configuration files so that the configuration is applied every time Jetty is started (or re-started).
 
@@ -135,16 +120,16 @@ When Jetty is started (or re-started) this configuration is applied and Jetty wi
 
 You can also enable a module transiently, only for the current execution of the `java -jar $JETTY_HOME/start.jar` command.
 
-If you have an empty `$JETTY_BASE`, the following command enables the `server` and `http` modules, but does not create any `+$JETTY_BASE/start.d/*.ini+` files.
+If you have an empty `$JETTY_BASE`, the following command enables the `http` module, but does not create any `+$JETTY_BASE/start.d/*.ini+` files.
 
 ----
-$ java -jar $JETTY_HOME/start.jar --module=server,http
+$ java -jar $JETTY_HOME/start.jar --module=http
 ----
 
 Since there are no `+$JETTY_BASE/start.d/*.ini+` files, you can only customize the properties via the command line, for example:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --module=server,http jetty.http.port=9876
+$ java -jar $JETTY_HOME/start.jar --module=http jetty.http.port=9876
 ----
 
 Enabling modules on the command line is useful to verify that the modules work as expected, or to try different configurations.
@@ -539,6 +524,18 @@ This property can also be set in `$JETTY_BASE/start.d/server.ini` so that it is 
 The `jetty.server.stopAtShutdown` property configures a JVM shutdown hook that is run, stopping the `Server` instance, when the JVM exits.
 
 Obviously, the JVM can also be stopped with `kill -KILL <pid>` that exits the process abruptly without running the JVM shutdown hooks.
+
+[[stop-graceful]]
+=== Stopping Gracefully
+
+Stopping Jetty abruptly when there are active HTTP requests being handled may result in a variety or errors, because Jetty components that are used to handle requests are being stopped concurrently.
+
+For example, when the Jetty thread pool is stopped, an attempt to submit a task would throw `RejectedExecutionException`; when a component is stopped, its fields may be nulled-out, resulting in a `NullPointerException` being thrown if the component is used; etc.
+
+You can stop Jetty _gracefully_ by adding the `graceful` Jetty module (see xref:modules/standard.adoc#graceful[this section] for more information).
+
+When Jetty is stopped, the `graceful` module organizes to reject new requests, but allows existing requests to finish within a configurable timeout; then closes all the connections, stops all the Jetty components, and then exits the JVM.
+In this way, existing requests are not responded with an error caused by the server stopping, provided they complete within the timeout.
 
 [[stop-remote]]
 === Stopping Jetty from Remote

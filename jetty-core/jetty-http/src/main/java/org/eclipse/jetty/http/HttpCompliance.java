@@ -54,7 +54,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * match and handle fields names insensitively and this violation only affects how the names are reported to the application.
          * There is a small performance and garbage impact of using this mode.
          */
-        CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
+        CASE_SENSITIVE_FIELD_NAME("https://datatracker.ietf.org/doc/html/rfc9110#name-field-names", "Field name is case-insensitive"),
 
         /**
          * The HTTP RFC(s) require that method names are case-sensitive, so that "{@code Get}" and "{@code GET}" are considered
@@ -62,20 +62,20 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * was violated.  Deployments which wish to retain this legacy violation can include this violation in the
          * {@link HttpCompliance} mode.
          */
-        CASE_INSENSITIVE_METHOD("https://tools.ietf.org/html/rfc7230#section-3.1.1", "Method is case-sensitive"),
+        CASE_INSENSITIVE_METHOD("https://datatracker.ietf.org/doc/html/rfc9110#name-methods", "Method is case-sensitive"),
 
         /**
          * Since RFC 7230, the expectation that HTTP/0.9 is supported has been removed from the specification.  If a deployment
          * wished to accept HTTP/0.9 requests, then it can include this violation in it's {@link HttpCompliance} mode.
          */
-        HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2", "HTTP/0.9 not supported"),
+        HTTP_0_9("https://datatracker.ietf.org/doc/html/rfc9112#appendix-C.1", "HTTP/0.9 not supported"),
 
         /**
          * Since <a href="https://tools.ietf.org/html/rfc7230#section-3.2.4">RFC 7230</a>, the HTTP protocol no longer supports
          * line folding, which allows a field value to be provided over several lines.  Deployments that wish to receive folder
          * field values may include this violation in their {@link HttpCompliance} mode.
          */
-        MULTILINE_FIELD_VALUE("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Line Folding not supported"),
+        MULTILINE_FIELD_VALUE("https://datatracker.ietf.org/doc/html/rfc9112#name-obsolete-line-folding", "Line Folding not supported"),
 
         /**
          * Since <a href="https://tools.ietf.org/html/rfc7230#section-3.3.2">RFC 7230</a>, the HTTP protocol has required that
@@ -90,42 +90,52 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * a request is invalid if it contains both a {@code Transfer-Encoding} field and  {@code Content-Length} field.
          * A deployment may include this violation to allow both fields to be in a received request.
          */
-        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
+        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://datatracker.ietf.org/doc/html/rfc9112#name-content-length", "Transfer-Encoding and Content-Length"),
 
         /**
          * Since <a href="https://tools.ietf.org/html/rfc7230#section-3.2.4">RFC 7230</a>, the HTTP protocol has required that
          * a request header field has no white space after the field name and before the ':'.
          * A deployment may include this violation to allow such fields to be in a received request.
          */
-        WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
+        WHITESPACE_AFTER_FIELD_NAME("https://datatracker.ietf.org/doc/html/rfc9112#name-field-syntax", "Whitespace not allowed after field name"),
 
         /**
          * Prior to <a href="https://tools.ietf.org/html/rfc7230#section-3.2">RFC 7230</a>, the HTTP protocol allowed a header
          * line of a single token with neither a colon nor value following, to be interpreted as a field name with no value.
          * A deployment may include this violation to allow such fields to be in a received request.
          */
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon"),
+        NO_COLON_AFTER_FIELD_NAME("https://datatracker.ietf.org/doc/html/rfc9112#name-field-syntax", "Fields must have a Colon"),
 
         /**
          * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
          * says that a Server must reject a request duplicate host headers.
          * A deployment may include this violation to allow duplicate host headers on a received request.
          */
-        DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
+        DUPLICATE_HOST_HEADERS("https://datatracker.ietf.org/doc/html/rfc9112#name-request-target", "Duplicate Host Header"),
 
         /**
          * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1">RFC 7230</a>, the HTTP protocol
          * should reject a request if the Host headers contains an invalid / unsafe authority.
-         * A deployment may include this violation to allow unsafe host headesr on a received request.
+         * A deployment may include this violation to allow unsafe host headers on a received request.
          */
-        UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority"),
+        UNSAFE_HOST_HEADER("https://datatracker.ietf.org/doc/html/rfc9112#name-request-target", "Invalid Authority"),
 
         /**
          * Since <a href="https://www.rfc-editor.org/rfc/rfc7230#section-5.4">RFC 7230: Section 5.4</a>, the HTTP protocol
          * must reject a request if the target URI has an authority that is different than a provided Host header.
          * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
          */
-        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
+        MISMATCHED_AUTHORITY("https://datatracker.ietf.org/doc/html/rfc9112#name-request-target", "Mismatched Authority"),
+
+        /**
+         * Allow LF termination of start line and header fields.
+         */
+        LF_HEADER_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2", "LF line terminator in header"),
+
+        /**
+         * Allow LF termination of chunk headers and chunks
+         */
+        LF_CHUNK_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1", "LF line terminator in chunk");
 
         private final String url;
         private final String description;
@@ -167,10 +177,19 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public static final String VIOLATIONS_ATTR = ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY;
 
     /**
-     * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>
-     * with no known violations.
+     * The HttpCompliance mode that supports no known violations.
      */
-    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
+    public static final HttpCompliance STRICT = new HttpCompliance("STRICT", noneOf(Violation.class));
+
+    /**
+     * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc9110">RFC 9110</a>.
+     */
+    public static final HttpCompliance RFC9110 = new HttpCompliance("RFC9110", of(Violation.LF_HEADER_TERMINATION));
+
+    /**
+     * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
+     */
+    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", of(Violation.LF_CHUNK_TERMINATION, Violation.LF_HEADER_TERMINATION));
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
@@ -179,7 +198,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
         Violation.HTTP_0_9,
         Violation.MULTILINE_FIELD_VALUE,
-        Violation.MISMATCHED_AUTHORITY
+        Violation.MISMATCHED_AUTHORITY,
+        Violation.LF_CHUNK_TERMINATION,
+        Violation.LF_HEADER_TERMINATION
     ));
 
     /**
@@ -202,7 +223,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
-    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(STRICT, RFC9110, RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     /**

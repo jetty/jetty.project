@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -26,19 +27,24 @@ import java.util.zip.GZIPOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SizeLimitHandler;
+import org.eclipse.jetty.server.handler.SizeLimitHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +71,7 @@ public class SizeLimitHandlerServletTest
         _server.addConnector(_connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setMaxFormContentSize(10 * SIZE_LIMIT);
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setInflateBufferSize(1024);
         SizeLimitHandler sizeLimitHandler = new SizeLimitHandler(SIZE_LIMIT, SIZE_LIMIT);
@@ -141,6 +148,54 @@ public class SizeLimitHandlerServletTest
         ContentResponse response = _client.POST(uri)
             .body(new StringRequestContent(content)).send();
 
+        assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
+    }
+
+    @Test
+    public void testChunkedEcho() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String requestContent = IO.toString(req.getInputStream());
+                resp.getWriter().print(requestContent);
+            }
+        });
+
+        String content = "x".repeat(SIZE_LIMIT);
+
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+        Exchanger<Response> exchanger = new Exchanger<>();
+        AsyncRequestContent asyncRequestContent = new AsyncRequestContent();
+        _client.POST(uri).body(asyncRequestContent).send(result ->
+        {
+            try
+            {
+                exchanger.exchange(result.getResponse());
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            asyncRequestContent.write(false, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.flush();
+            callback.block();
+        }
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            asyncRequestContent.write(true, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.flush();
+            callback.block();
+        }
+        asyncRequestContent.close();
+
+        Response response = exchanger.exchange(null);
         assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }
 
@@ -237,5 +292,28 @@ public class SizeLimitHandlerServletTest
         gzipOutputStream.write(bytes);
         gzipOutputStream.close();
         return new BytesRequestContent(outputStream.toByteArray());
+    }
+
+    @Test
+    public void testFormSize() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.getWriter().print(req.getParameterMap());
+            }
+        });
+
+        String key = "x".repeat(SIZE_LIMIT * 2);
+        Fields fields = new Fields();
+        fields.add(key, "value");
+
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+        ContentResponse response = _client.POST(uri)
+            .body(new FormRequestContent(fields)).send();
+
+        assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }
 }

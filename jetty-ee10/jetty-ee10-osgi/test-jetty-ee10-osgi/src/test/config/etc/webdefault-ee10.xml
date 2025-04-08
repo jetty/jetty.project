@@ -21,7 +21,7 @@
   <!--                                                                       -->
   <!-- A copy of this file is also placed into the $JETTY_HOME/etc dir of    -->
   <!-- the  distribution, and is referenced by some of the other xml files,  -->
-  <!-- eg the jetty-deploy.xml file.                                         -->
+  <!-- eg the jetty-deployment-scanner.xml file.                                         -->
   <!-- ===================================================================== -->
 
   <description>

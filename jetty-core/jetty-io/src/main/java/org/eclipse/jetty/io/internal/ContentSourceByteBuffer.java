@@ -18,8 +18,9 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
-public class ContentSourceByteBuffer implements Runnable
+public class ContentSourceByteBuffer implements Invocable.Task
 {
     private final RetainableByteBuffer.Mutable.DynamicCapacity dynamic = new RetainableByteBuffer.Mutable.DynamicCapacity();
     private final Content.Source source;
@@ -63,5 +64,11 @@ public class ContentSourceByteBuffer implements Runnable
                 return;
             }
         }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return Invocable.getInvocationType(promise);
     }
 }

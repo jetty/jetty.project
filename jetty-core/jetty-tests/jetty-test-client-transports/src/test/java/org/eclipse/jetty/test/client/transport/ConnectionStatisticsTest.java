@@ -40,14 +40,14 @@ public class ConnectionStatisticsTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConnectionStatistics(Transport transport) throws Exception
+    public void testConnectionStatistics(TransportType transportType) throws Exception
     {
         // Counting SslConnection opening/closing makes the test more complicated.
-        assumeTrue(!transport.isSecure());
+        assumeTrue(!transportType.isSecure());
         // FastCGI server does not have statistics.
-        assumeTrue(transport != Transport.FCGI);
+        assumeTrue(transportType != TransportType.FCGI);
 
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -87,7 +87,7 @@ public class ConnectionStatisticsTest extends AbstractTest
 
         byte[] content = new byte[3072];
         long contentLength = content.length;
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)

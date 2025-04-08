@@ -50,27 +50,27 @@ public class ServerTimeoutsTest extends AbstractTest
     private static final long IDLE_TIMEOUT = 1000L;
 
     @Override
-    protected void prepareServer(Transport transport, Handler handler) throws Exception
+    protected void prepareServer(TransportType transportType, Handler handler) throws Exception
     {
-        super.prepareServer(transport, handler);
+        super.prepareServer(transportType, handler);
         setStreamIdleTimeout(IDLE_TIMEOUT);
     }
 
     public static Stream<Arguments> transportsAndIdleTimeoutListener()
     {
-        Collection<Transport> transports = transports();
+        Collection<TransportType> transportTypes = transports();
         return Stream.concat(
-            transports.stream().map(t -> Arguments.of(t, false)),
-            transports.stream().map(t -> Arguments.arguments(t, true)));
+            transportTypes.stream().map(t -> Arguments.of(t, false)),
+            transportTypes.stream().map(t -> Arguments.arguments(t, true)));
     }
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
     @Tag("flaky")
-    public void testIdleTimeout(Transport transport, boolean addIdleTimeoutListener) throws Exception
+    public void testIdleTimeout(TransportType transportType, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -84,7 +84,7 @@ public class ServerTimeoutsTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .timeout(5 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS)
             .send();
 
@@ -97,13 +97,13 @@ public class ServerTimeoutsTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
     @Tag("flaky")
-    public void testIdleTimeoutWithDemand(Transport transport, boolean addIdleTimeoutListener) throws Exception
+    public void testIdleTimeoutWithDemand(TransportType transportType, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
         CountDownLatch demanded = new CountDownLatch(1);
         AtomicReference<Request> requestRef = new AtomicReference<>();
         AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -119,7 +119,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // The response will not be completed, so use a specialized listener.
         AsyncRequestContent content = new AsyncRequestContent();
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
+        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transportType))
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
             .headers(f -> f.put(HttpHeader.CONTENT_LENGTH, 10))
             .onResponseSuccess(s ->

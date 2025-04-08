@@ -73,6 +73,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.IOResources;
@@ -132,7 +133,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee10");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee10", ServletContextHandler.class);
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */
@@ -193,16 +194,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContext();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContextHandler();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContextHandler();
         return null;
     }
 
@@ -322,6 +323,8 @@ public class ServletContextHandler extends ContextHandler
             new ClassLoaderDump(getClassLoader()),
             Dumpable.named("context " + this, getContext()),
             Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
@@ -663,6 +666,9 @@ public class ServletContextHandler extends ContextHandler
         return _welcomeFiles;
     }
 
+    /**
+     * @return the maximum size of the form content (in bytes).
+     */
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
@@ -672,13 +678,19 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
      *
-     * @param maxSize the maximum size of the form content (in bytes)
+     * @param maxSize the maximum size of the form content (in bytes) or -1 for a default value.
      */
     public void setMaxFormContentSize(int maxSize)
     {
+        if (maxSize < 0)
+            maxSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
         _maxFormContentSize = maxSize;
     }
 
+    /**
+     * @return the maximum number of form Keys.
+     */
+    @ManagedAttribute("The maximum number of form keys")
     public int getMaxFormKeys()
     {
         return _maxFormKeys;
@@ -687,10 +699,12 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
      *
-     * @param max the maximum number of form keys
+     * @param max the maximum number of form keys or -1 for a default value.
      */
     public void setMaxFormKeys(int max)
     {
+        if (max < 0)
+            max = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
         _maxFormKeys = max;
     }
 
@@ -765,7 +779,16 @@ public class ServletContextHandler extends ContextHandler
         if (baseResource == null)
             return null;
 
-        return baseResource.resolve(pathInContext);
+        try
+        {
+            return baseResource.resolve(pathInContext);
+        }
+        catch (Exception e)
+        {
+            LOG.trace("IGNORED", e);
+        }
+
+        return null;
     }
 
     /**
@@ -861,7 +884,9 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public ServletScopedContext getContext()
     {
-        return (ServletScopedContext)super.getContext();
+        if (super.getContext() instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext;
+        throw new IllegalStateException("Context is not ServletScopedContext");
     }
 
     /**
@@ -1138,7 +1163,6 @@ public class ServletContextHandler extends ContextHandler
         decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
         matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -1161,7 +1185,7 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
-        Request.addCompletionListener(request, servletChannel::recycle);
+        Request.addCompletionListener(servletContextRequest, servletChannel::recycle);
         return servletContextRequest;
     }
 
@@ -1187,7 +1211,18 @@ public class ServletContextHandler extends ContextHandler
         boolean initialDispatch = request instanceof ServletContextRequest;
         if (!initialDispatch)
             return false;
-        return super.handleByContextHandler(pathInContext, request, response, callback);
+
+        if (isProtectedTarget(pathInContext))
+        {
+            // If we have a Servlet ErrorHandler, then writeError will return false, and it will signal
+            // the ServletChannel to trigger a sendError() when it is started.
+            if (request.getContext().getErrorHandler() instanceof org.eclipse.jetty.server.handler.ErrorHandler errorHandler)
+                return errorHandler.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -2038,6 +2073,53 @@ public class ServletContextHandler extends ContextHandler
         public void setExtendedListenerTypes(boolean b)
         {
             _servletContext.setExtendedListenerTypes(b);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
+                case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormKeys();
+                    if (attribute == null)
+                        setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
+                    else
+                        setMaxFormKeys(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                case FormFields.MAX_LENGTH_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormContentSize();
+                    if (attribute == null)
+                        setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
+                    else
+                        setMaxFormContentSize(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                default -> super.setAttribute(name, attribute);
+            };
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
+            names.add(FormFields.MAX_LENGTH_ATTRIBUTE);
+            return Collections.unmodifiableSet(names);
         }
     }
 

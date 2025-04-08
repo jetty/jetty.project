@@ -49,11 +49,6 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -117,6 +112,10 @@
                   <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/webapp-alt-jsp</directory>
                   <targetPath>webapp-alt-jsp</targetPath>
                 </resource>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/jetty-ee9-webapp/src/test/webapp-with-resources</directory>
+                  <targetPath>webapp-with-resources</targetPath>
+                </resource>
               </resources>
             </configuration>
           </execution>
@@ -127,6 +126,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
+               --add-exports org.eclipse.jetty.ee8.webapp/org.acme.webapp=org.eclipse.jetty.ee8.servlet
+               --add-exports org.eclipse.jetty.ee8.webapp/org.acme.webapp=org.eclipse.jetty.ee8.nested
                --add-reads org.eclipse.jetty.ee8.webapp=org.eclipse.jetty.logging</argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>

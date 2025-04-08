@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.Executor;
+
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -34,8 +36,8 @@ public interface Invocable
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
-     * <p>The behavior of an {@link Invocable} when it is invoked.</p>
-     * <p>Typically, {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
+     * <p>The behavior of an {@link Invocable} task when it is called.</p>
+     * <p>Typically, tasks such as {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
      * invocation type; this information is then used by the code that should
      * invoke the {@code Runnable} or {@code Callback} to decide whether to
      * invoke it directly, or submit it to a thread pool to be invoked by
@@ -44,38 +46,103 @@ public interface Invocable
     enum InvocationType
     {
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * <p>Invoking the task may block the invoker thread,
          * and the invocation may be performed immediately (possibly blocking
          * the invoker thread) or deferred to a later time, for example
-         * by submitting the {@code Invocable} to a thread pool.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
+         * by submitting the task to a thread pool.</p>
+         * <p>This invocation type is suitable for tasks that
          * call application code, for example to process an HTTP request.</p>
          */
-        BLOCKING,
+        BLOCKING
+        {
+            public void runWithoutBlocking(Runnable task, Executor executor)
+            {
+                executor.execute(task);
+            }
+        },
         /**
-         * <p>Invoking the {@link Invocable} does not block the invoker thread,
-         * and the invocation may be performed immediately in the invoker thread.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * call implementation code that is guaranteed to never block the
-         * invoker thread.</p>
+         * <p>Invoking the task does not block the invoker thread,
+         * and the invocation must be performed immediately in the invoker thread.</p>
+         * <p>This invocation type is suitable for tasks that cannot be deferred and
+         * guarantee that their code never blocks the invoker thread.</p>
          */
-        NON_BLOCKING,
+        NON_BLOCKING
+        {
+            public void runWithoutBlocking(Runnable task, Executor ignored)
+            {
+                task.run();
+            }
+        },
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
-         * but the invocation cannot be deferred to a later time, differently
-         * from {@link #BLOCKING}.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * themselves perform the non-deferrable action in a non-blocking way,
-         * thus advancing a possibly stalled system.</p>
+         * <p>Invoking the task may act either as a {@code BLOCKING} task if invoked directly;
+         * or as a {@code NON_BLOCKING} task if invoked via {@link Invocable#invokeNonBlocking(Runnable)}.</p>
+         * <p>The implementation of the task must check {@link Invocable#isNonBlockingInvocation()}
+         * to determine how it was called.</p>
+         * <p>This invocation type is suitable for tasks that have multiple subtasks,
+         * some of which that cannot be deferred mixed with other subtasks that can be.
+         * An invoker which has an {@code EITHER} task must call it immediately, either
+         * directly, so that it may block; or via {@link Invocable#invokeNonBlocking(Runnable)}
+         * so that it may not.
+         * The invoker cannot defer the task execution, and specifically it must not
+         * queue the {@code EITHER} task in a thread pool.</p>
+         * <p>See the {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy}
+         * for an example of both an invoker of {@code EITHER} tasks, and as an implementation
+         * of an {@code EITHER} task, when used in a chain of {@link ExecutionStrategy}s.</p>
          */
         EITHER
+        {
+            public void runWithoutBlocking(Runnable task, Executor ignored)
+            {
+                Invocable.invokeNonBlocking(task);
+            }
+        };
+
+        /**
+         * <p>Runs or executes the task according to the {@code InvocationType},
+         * without blocking the caller:</p>
+         * <dl>
+         *   <dt>{@link InvocationType#NON_BLOCKING}</dt>
+         *   <dd>The task is run directly</dd>
+         *   <dt>{@link InvocationType#BLOCKING}</dt>
+         *   <dd>The task is submitted to the given {@link Executor}</dd>
+         *   <dt>{@link InvocationType#EITHER}</dt>
+         *   <dd>The task is invoked via {@link Invocable#invokeNonBlocking(Runnable)}</dd>
+         * </dl>
+         * @param task The task to run
+         * @param executor The {@link Executor} to use if necessary
+         */
+        public abstract void runWithoutBlocking(Runnable task, Executor executor);
     }
 
     /**
-     * <p>A task with an {@link InvocationType}.</p>
+     * <p>A {@link Runnable} task with an {@link InvocationType}.</p>
      */
     interface Task extends Invocable, Runnable
     {
+        /**
+         * An abstract partial implementation of Task
+         */
+        abstract class Abstract implements Task
+        {
+            private final InvocationType type;
+
+            public Abstract(InvocationType type)
+            {
+                this.type = type;
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return type;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getInvocationType());
+            }
+        }
     }
 
     // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
@@ -88,15 +155,19 @@ public interface Invocable
     /**
      * <p>A {@link Runnable} decorated with an {@link InvocationType}.</p>
      */
-    class ReadyTask implements Task
+    class ReadyTask extends Task.Abstract
     {
-        private final InvocationType type;
         private final Runnable task;
 
         public ReadyTask(InvocationType type, Runnable task)
         {
-            this.type = type;
+            super(type);
             this.task = task;
+        }
+
+        public Runnable getTask()
+        {
+            return task;
         }
 
         @Override
@@ -106,15 +177,9 @@ public interface Invocable
         }
 
         @Override
-        public InvocationType getInvocationType()
-        {
-            return type;
-        }
-
-        @Override
         public String toString()
         {
-            return String.format("%s@%x[%s|%s]", getClass().getSimpleName(), hashCode(), type, task);
+            return String.format("%s[%s]", super.toString(), task);
         }
     }
 
@@ -127,11 +192,13 @@ public interface Invocable
      */
     static Task from(InvocationType type, Runnable task)
     {
+        if (task instanceof Task t && t.getInvocationType() == type)
+            return t;
         return new ReadyTask(type, task);
     }
 
     /**
-     * Test if the current thread has been tagged as non blocking
+     * Tests if the current thread has been tagged as non-blocking.
      *
      * @return True if the task the current thread is running has
      * indicated that it will not block.
@@ -165,7 +232,7 @@ public interface Invocable
      * Combine two invocation type.
      * @param it1 A type
      * @param it2 Another type
-     * @return The combination of both type, where any tendency to block overrules any non blocking.
+     * @return The combination of both type, where any tendency to block overrules any non-blocking.
      */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
@@ -181,8 +248,18 @@ public interface Invocable
         return InvocationType.BLOCKING;
     }
 
+    static InvocationType combineTypes(InvocationType... it)
+    {
+        if (it == null || it.length == 0)
+            return InvocationType.BLOCKING;
+        InvocationType type = it[0];
+        for (int i = 1; i < it.length; i++)
+            type = combine(type, it[i]);
+        return type;
+    }
+
     /**
-     * Get the invocation type of an Object.
+     * Get the {@code InvocationType} of the given object.
      *
      * @param o The object to check the invocation type of.
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
@@ -190,8 +267,8 @@ public interface Invocable
      */
     static InvocationType getInvocationType(Object o)
     {
-        if (o instanceof Invocable)
-            return ((Invocable)o).getInvocationType();
+        if (o instanceof Invocable i)
+            return i.getInvocationType();
         return InvocationType.BLOCKING;
     }
 

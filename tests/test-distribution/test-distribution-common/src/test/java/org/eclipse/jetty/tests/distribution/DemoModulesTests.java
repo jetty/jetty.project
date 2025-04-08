@@ -21,12 +21,14 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -184,7 +187,53 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testJspCDump(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        int httpPort = Tester.freePort();
+        int sslPort = Tester.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demo-jspc", env)
+        };
+
+        String baseURI = "http://localhost:%d/%s-demo-jspc".formatted(httpPort, env);
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.ssl.port=" + sslPort
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET(baseURI + "/dump.jsp");
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat(response.getContentAsString(), containsString("PathInfo"));
+                assertThat(response.getContentAsString(), not(containsString("<%")));
+
+
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
     public void testJaasDemo(String env) throws Exception
@@ -389,6 +438,29 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 response = client.POST(baseURI + "/dynamicjsp/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
+
+
+                if ("ee11".equalsIgnoreCase(env))
+                {
+                    baseURI = "http://localhost:%d/ee11-demo-spec-6-1".formatted(httpPort);
+
+                    // Test 6.1 features
+                    response = client.GET(baseURI + "/durable/test");
+                    assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                    assertThat(response.getContentAsString(), startsWith("OK"));
+
+                    response = client.POST(baseURI + "/echo/test")
+                        .body(new ByteBufferRequestContent("text/plain", BufferUtil.toBuffer("Hello World!")))
+                        .send();
+                    assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                    assertThat(response.getContentAsString(), is("Hello World!"));
+
+                    for (String ambiguous : new String[] {"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
+                    {
+                        response = client.GET(baseURI + ambiguous);
+                        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
+                    }
+                }
             }
         }
     }

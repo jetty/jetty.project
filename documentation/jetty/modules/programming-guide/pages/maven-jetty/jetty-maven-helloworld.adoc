@@ -248,8 +248,8 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee11</groupId>
+        <artifactId>jetty-ee11-maven-plugin</artifactId>
         <version>$\{jettyVersion}</version>
       </plugin>
     </plugins>

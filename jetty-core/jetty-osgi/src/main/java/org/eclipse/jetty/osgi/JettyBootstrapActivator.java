@@ -55,9 +55,14 @@ public class JettyBootstrapActivator implements BundleActivator
     public static final String JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
 
     /**
+     * List of XML reference strings to default XML files.
+     */
+    public static final List<String> DEFAULT_JETTY_XML_FILES = List.of("etc/jetty.xml", "etc/jetty-http.xml", "etc/jetty-deploy.xml");
+
+    /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
      */
-    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deploy.xml";
+    public static final String DEFAULT_JETTY_ETC_FILES = String.join(",", DEFAULT_JETTY_XML_FILES);
 
     /**
      * Default location within bundle of a jetty home dir.
@@ -65,7 +70,6 @@ public class JettyBootstrapActivator implements BundleActivator
     public static final String DEFAULT_JETTYHOME = "/jettyhome";
 
     private ServiceRegistration<?> _registeredServer;
-    /*    private PackageAdminServiceTracker _packageAdminServiceTracker;*/
     
     /**
      * Setup a new jetty Server, register it as a service. 
@@ -75,10 +79,6 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
-        // track other bundles and fragments attached to this bundle that we
-        // should activate, as OSGi will not call activators for them.
-        /*        _packageAdminServiceTracker = new PackageAdminServiceTracker(context);*/
-
         ServiceReference[] references = context.getAllServiceReferences("org.eclipse.jetty.http.HttpFieldPreEncoder", null);
 
         if (references == null || references.length == 0)
@@ -96,14 +96,6 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        
-        /*       if (_packageAdminServiceTracker != null)
-        {
-            _packageAdminServiceTracker.stop();
-            context.removeServiceListener(_packageAdminServiceTracker);
-            _packageAdminServiceTracker = null;
-        }
-        */
         try
         {
             if (_registeredServer != null)
@@ -194,7 +186,7 @@ public class JettyBootstrapActivator implements BundleActivator
             }
             if (jettyHomeBundle == null)
             {
-                LOG.warn("Unable to find the jetty.home.bundle named {}", jettyHomeSysProp);
+                LOG.warn("Unable to find the jetty.home.bundle named {}", jettyHomeBundleSysProp);
                 return;
             }
         }

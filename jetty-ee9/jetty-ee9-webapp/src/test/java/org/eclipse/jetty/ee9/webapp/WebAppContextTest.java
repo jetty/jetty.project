@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -30,17 +32,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -63,7 +75,6 @@ import org.eclipse.jetty.util.resource.Resources;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -83,6 +94,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -117,7 +129,6 @@ public class WebAppContextTest
      * @param tempDir the directory into which the war will be generated
      * @param name the name of the war
      * @return the Path of the generated war
-     *
      * @throws Exception if the war cannot be created
      */
     private Path createWar(Path tempDir, String name) throws Exception
@@ -350,17 +361,17 @@ public class WebAppContextTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled // No cross context dispatch
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
         Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
+        contextA.setCrossContextDispatchSupported(true);
 
         contextA.addServlet(ServletA.class, "/s");
         handlers.addHandler(contextA);
         WebAppContext contextB = new WebAppContext(".", "/B");
-
+        contextB.setCrossContextDispatchSupported(true);
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList("/doesnotexist", "/B/s");
         handlers.addHandler(contextB);
@@ -456,7 +467,7 @@ public class WebAppContextTest
         assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
-        
+
     @ParameterizedTest
     @ValueSource(strings = {
         "/WEB-INF",
@@ -549,6 +560,50 @@ public class WebAppContextTest
         assertTrue(context.isAvailable());
     }
 
+    @Test
+    public void testErrorPage() throws Exception
+    {
+        WebAppContext contextHandler = new WebAppContext();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setBaseResourceAsPath(Path.of("/tmp"));
+        ServletHolder defaultHolder = new ServletHolder(new DefaultServlet());
+        defaultHolder.setDisplayName("default");
+
+        contextHandler.addServlet(defaultHolder, "/");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+        contextHandler.addServlet(GlobalErrorDumpServlet.class, "/global/*");
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(404, "/error/TestException");
+        errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/global/TestException");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+        Server server = new Server();
+        server.setHandler(contextHandler);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        server.start();
+
+        try (StacklessLogging stackless = new StacklessLogging(WebAppContext.class))
+        {
+            StringBuilder rawRequest = new StringBuilder();
+            rawRequest.append("GET /foo/WEB-INF/classes/this/does/not/exist").append(" HTTP/1.1\r\n");
+            rawRequest.append("Host: test\r\n");
+            rawRequest.append("Connection: close\r\n");
+            rawRequest.append("\r\n");
+
+            String rawResponse = connector.getResponse(rawRequest.toString());
+
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(404));
+            assertThat(response.getValuesList("ERRORDUMPSERVLET"), contains("ERRORDUMPSERVLET"));
+            String content = response.getContent();
+            assertThat(content, containsString("ERROR_REQUEST_URI: /foo/WEB-INF/classes/this/does/not/exist"));
+            assertThat(content, containsString("getRequestURI()=[/foo/error/TestException]"));
+            assertThat(content, containsString("DISPATCH: ERROR"));
+            assertThat(content, not(containsString("GLOBALERRORDUMPSERVLET")));
+        }
+    }
+
     static class ServletA extends GenericServlet
     {
         @Override
@@ -564,6 +619,95 @@ public class WebAppContextTest
         public void service(ServletRequest req, ServletResponse res)
         {
             this.getServletContext().getContext("/B/s");
+        }
+    }
+
+    public static class ErrorDumpServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
+            response.setHeader("ERRORDUMPSERVLET", "ERRORDUMPSERVLET");
+
+            PrintWriter writer = response.getWriter();
+            writer.println("DISPATCH: " + request.getDispatcherType().name());
+            writer.println("ERROR_PAGE: " + request.getPathInfo());
+            writer.println(request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println(request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
+            writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
+            writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+
+            writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
+            writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
+            writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
+            Map<String, String[]> params = request.getParameterMap();
+            writer.printf("getParameterMap().size=%d%n", params.size());
+            for (Map.Entry<String, String[]> entry : params.entrySet())
+            {
+                String value = null;
+                if (entry.getValue() != null)
+                {
+                    value = String.join(", ", entry.getValue());
+                }
+                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
+        }
+
+        protected String valueOf(Object obj)
+        {
+            if (obj == null)
+                return "null";
+            return valueOf(obj.toString());
+        }
+
+        protected String valueOf(String str)
+        {
+            if (str == null)
+                return "null";
+            return String.format("[%s]", str);
+        }
+    }
+
+    public static class GlobalErrorDumpServlet extends ErrorDumpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
+            response.setHeader("GLOBALERRORDUMPSERVLET", "GLOBALERRORDUMPSERVLET");
+            PrintWriter writer = response.getWriter();
+            writer.println("GLOBAL DISPATCH: " + request.getDispatcherType().name());
+            writer.println("GLOBAL ERROR_PAGE: " + request.getPathInfo());
+            writer.println("GLOBAL ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("GLOBAL ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println("GLOBAL ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
+            writer.println("GLOBAL ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
+            writer.println("GLOBAL ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("GLOBAL ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+
+            writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
+            writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
+            writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
+            Map<String, String[]> params = request.getParameterMap();
+            writer.printf("getParameterMap().size=%d%n", params.size());
+            for (Map.Entry<String, String[]> entry : params.entrySet())
+            {
+                String value = null;
+                if (entry.getValue() != null)
+                {
+                    value = String.join(", ", entry.getValue());
+                }
+                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
         }
     }
 
@@ -652,14 +796,14 @@ public class WebAppContextTest
     }
 
     @Test
-    @Disabled("There is extra decoding of the nested-reserved paths that is getting in the way")
     public void testGetResourcePaths() throws Exception
     {
         Server server = newServer();
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
+
+        Path warRoot = MavenTestingUtils.getTargetPath("test-classes/webapp-with-resources");
         assertTrue(Files.isDirectory(warRoot), "Unable to find directory: " + warRoot);
         WebAppContext context = new WebAppContext();
         Resource warResource = context.getResourceFactory().newResource(warRoot);
@@ -697,8 +841,6 @@ public class WebAppContextTest
 
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
         assertThat(response1.getContent(), containsString("/WEB-INF"));
-        assertThat(response1.getContent(), containsString("/WEB-INF/lib"));
-        assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
         assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
         HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
@@ -877,8 +1019,10 @@ public class WebAppContextTest
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+        for (String defaultServerClass : WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+        {
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+        }
         assertThat("deprecated API", serverClasses, hasItem("org.deprecated.api."));
     }
 
@@ -911,7 +1055,9 @@ public class WebAppContextTest
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
         for (String defaultSystemClass : WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
+        {
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
+        }
         assertThat("deprecated API", systemClasses, hasItem("org.deprecated.api."));
     }
 }

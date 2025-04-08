@@ -116,11 +116,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-jetty-client</artifactId>
       <scope>test</scope>
@@ -145,7 +140,7 @@
                   <artifactId>jetty-ee10-test-webapp-rfc2616</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
-                  <destFileName>ee10-test-rfc2616.war</destFileName>
+                  <destFileName>jetty-ee10-test-rfc2616.war</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
@@ -157,7 +152,7 @@
                   <groupId>org.eclipse.jetty.ee10.demos</groupId>
                   <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>ee10-demo-jetty-websocket.war</destFileName>
+                  <destFileName>jetty-ee10-demo-jetty-websocket.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>

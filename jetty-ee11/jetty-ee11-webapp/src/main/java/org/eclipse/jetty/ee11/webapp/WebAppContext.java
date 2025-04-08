@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee11.servlet.ErrorHandler;
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
@@ -52,10 +53,10 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -77,7 +78,9 @@ import org.slf4j.LoggerFactory;
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
  * {@link JettyWebXmlConfiguration}.
- *
+ * </p>
+ * <p>The class implements {@link WebAppClassLoader.Context} and thus the {@link org.eclipse.jetty.util.ClassVisibilityChecker}
+ * API, which is used by any {@link WebAppClassLoader} to control visibility of classes to the context.</p>
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
@@ -193,34 +196,44 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public void initializeDefaults(Map<String, String> properties)
+    public void initializeDefaults(Attributes attributes)
     {
-        for (String property : properties.keySet())
+        for (String keyName : attributes.getAttributeNameSet())
         {
-            String value = properties.get(property);
+            Object value = attributes.getAttribute(keyName);
             if (LOG.isDebugEnabled())
-                LOG.debug("init {}: {}", property, value);
+                LOG.debug("init {}: {}", keyName, value);
 
-            switch (property)
+            switch (keyName)
             {
-                case Deployable.WAR -> setWar(value);
+                case Deployable.WAR ->
+                {
+                    if (getWar() == null)
+                        setWar((String)value);
+                }
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
-                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
+                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
-                case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
-                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
+                case Deployable.CONTEXT_PATH -> setContextPath((String)value);
+                case Deployable.DEFAULT_CONTEXT_PATH ->
+                {
+                    // Don't set default context path, if context-path is set before init (like from XML)
+                    if (isContextPathDefault())
+                        setDefaultContextPath((String)value);
+                }
+                case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
+                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
                 case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
-                case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor(value);
+                case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor((String)value);
                 case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
                 case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
                 default ->
                 {
-                    if (LOG.isDebugEnabled() && StringUtil.isNotBlank(value))
-                        LOG.debug("unknown property {}={}", property, value);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("skipped init property {}={}", keyName, value);
                 }
             }
         }
-        _defaultContextPath = true;
     }
 
     public boolean isContextPathDefault()
@@ -611,9 +624,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the hidden (server) classes patterns.
      * <p>
-     * These classes/packages are used to implement the server and are hidden
-     * from the context.  If the context needs to load these classes, it must have its
-     * own copy of them in WEB-INF/lib or WEB-INF/classes.
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader are hidden
+     * from the context.  The context may have its own copy of these classes/resources in WEB-INF/lib or WEB-INF/classes.
      *
      * @param hiddenClasses the server classes pattern
      */
@@ -626,9 +639,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the protected (system) classes patterns.
      * <p>
-     * These classes/packages are provided by the JVM and
-     * cannot be replaced by classes of the same name from WEB-INF,
-     * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
+     *
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader may not be
+     * overridden by the context.  The context may not have its own copy of these classes/resources.
      *
      * @param protectedClasses the system classes pattern
      */
@@ -642,7 +656,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a ClassMatcher for hidden (server) classes by combining with
      * any existing matcher.
      *
-     * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @param hiddenClasses The class matcher of patterns to add to the hidden (server) ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public void addHiddenClassMatcher(ClassMatcher hiddenClasses)
     {
@@ -654,6 +670,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * any existing matcher.
      *
      * @param protectedClasses The class matcher of patterns to add to the system ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public void addProtectedClassMatcher(ClassMatcher protectedClasses)
     {
@@ -661,7 +679,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match System (protected) classes
+     * @return The ClassMatcher used to match protected (system) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public ClassMatcher getProtectedClassMatcher()
     {
@@ -669,7 +689,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match Server (hidden) classes
+     * @return The ClassMatcher used to match hidden (server) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public ClassMatcher getHiddenClassMatcher()
     {
@@ -686,30 +708,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public String[] getHiddenClasses()
     {
         return _hiddenClasses.getPatterns();
-    }
-
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return _hiddenClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return _protectedClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return _hiddenClasses.match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return _protectedClasses.match(name, url);
     }
 
     @Override

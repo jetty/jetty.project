@@ -36,6 +36,9 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public int testInt;
     public URL url;
     public static boolean called = false;
+
+    public static boolean calledWithClass = false;
+
     public Object[] oa;
     public int[] ia;
     public int testField1;
@@ -48,6 +51,17 @@ public class ExampleConfiguration extends HashMap<String, Object>
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
     public Double number;
+    public String builder;
+
+    public interface TestInterface
+    {
+
+    }
+
+    public static class TestImpl implements TestInterface
+    {
+
+    }
 
     public ExampleConfiguration()
     {
@@ -131,6 +145,17 @@ public class ExampleConfiguration extends HashMap<String, Object>
         called = true;
     }
 
+    public static void callStaticWithVarArgs(TestInterface i, String... strings)
+    {
+        called = true;
+    }
+
+    public static void callStaticWithVarArgs(TestImpl i, String... strings)
+    {
+        called = true;
+        calledWithClass = true;
+    }
+
     public void call(Object[] oa)
     {
         this.oa = oa;
@@ -189,5 +214,11 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public void setMap(Map map)
     {
         this.map = map;
+    }
+
+    public ExampleConfiguration builder(String value)
+    {
+        this.builder = value;
+        return this;
     }
 }

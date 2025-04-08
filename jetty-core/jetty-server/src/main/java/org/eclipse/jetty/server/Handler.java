@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Callback;
@@ -221,7 +222,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
     /**
      * <p>A {@link Handler.Container} that can contain multiple other {@link Handler}s.</p>
      *
-     * @see Sequence for an implementation of {@link Collection}.
+     * @see Sequence for an implementation of {@code Collection}.
      * @see Singleton
      */
     interface Collection extends Container
@@ -236,6 +237,28 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             List<Handler> list = new ArrayList<>(getHandlers());
             list.add(handler);
             setHandlers(list);
+        }
+
+        /**
+         * <p>Replace the given {@code Handler} to this collection of {@code Handler}s.</p>
+         *
+         * @param oldHandler the {@code Handler} to replace
+         * @param newHandler the {@code Handler} to add
+         * @return {@code true} iff the oldHandler is replaced with the newHandler.
+         */
+        default boolean replaceHandler(Handler oldHandler, Handler newHandler)
+        {
+            List<Handler> list = new ArrayList<>(getHandlers());
+            for (ListIterator<Handler> i = list.listIterator(); i.hasNext();)
+            {
+                if (i.next() == oldHandler)
+                {
+                    i.set(newHandler);
+                    setHandlers(list);
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
@@ -290,7 +313,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * <p>This is a "singleton" in the sense of {@link Collections#singleton(Object)} and not
      * in the sense of the singleton pattern of a single instance per JVM.</p>
      *
-     * @see Wrapper for an implementation of {@link Singleton}.
+     * @see Wrapper for an implementation of {@code Singleton}.
      * @see Collection
      */
     @ManagedObject
@@ -846,9 +869,23 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             if (isDynamic() && server != null && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
                 throw new IllegalArgumentException("Cannot change invocation type of started server");
 
-            updateBeans(_handlers, handlers);
+            List<Handler> oldHandlers = _handlers;
+
+            // add new handlers not in old
+            for (Handler h : newHandlers)
+            {
+                if (!oldHandlers.contains(h))
+                    addBean(h);
+            }
 
             _handlers = newHandlers;
+
+            // remove old handler not in newHandler
+            for (Handler h : oldHandlers)
+            {
+                if (!newHandlers.contains(h))
+                    removeBean(h);
+            }
         }
 
         @Override

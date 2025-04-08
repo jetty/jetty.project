@@ -36,12 +36,13 @@ public class HttpRequestTesterTest
 
         ByteBuffer bBuff = request.generate();
 
-        StringBuffer expectedRequest = new StringBuffer();
-        expectedRequest.append("GET /uri HTTP/1.0\r\n");
-        expectedRequest.append("Host: fakehost\r\n");
-        expectedRequest.append("\r\n");
+        String expectedRequest = """
+            GET /uri HTTP/1.0\r
+            Host: fakehost\r
+            \r
+            """;
 
-        assertEquals(expectedRequest.toString(), BufferUtil.toString(bBuff), "Basic Request");
+        assertEquals(expectedRequest, BufferUtil.toString(bBuff));
     }
 
     @Test
@@ -57,14 +58,14 @@ public class HttpRequestTesterTest
 
         ByteBuffer bBuff = request.generate();
 
-        StringBuffer expectedRequest = new StringBuffer();
-        expectedRequest.append("GET /uri HTTP/1.1\r\n");
-        expectedRequest.append("Host: fakehost\r\n");
-        expectedRequest.append("Connection: close\r\n");
-        expectedRequest.append("Content-Length: 3\r\n");
-        expectedRequest.append("\r\n");
-        expectedRequest.append("aaa");
+        String expectedRequest = """
+            GET /uri HTTP/1.1\r
+            Host: fakehost\r
+            Content-Length: 3\r
+            Connection: close\r
+            \r
+            aaa""";
 
-        assertEquals(expectedRequest.toString(), BufferUtil.toString(bBuff), "Basic Request");
+        assertEquals(expectedRequest, BufferUtil.toString(bBuff));
     }
 }

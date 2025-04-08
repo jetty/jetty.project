@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,7 +29,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -162,35 +162,19 @@ public class AsyncServletLongPollTest
     @Test
     public void testSuspendedRequestThenServerStop() throws Exception
     {
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
         AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
         prepare(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
             {
+                threadRef.set(Thread.currentThread());
                 // Suspend the request.
+                // There is no AsyncListener, so when the server stops, an
+                // error response is sent by the implementation as per spec.
                 AsyncContext asyncContext = request.startAsync();
                 asyncContextRef.set(asyncContext);
-            }
-
-            @Override
-            public void destroy()
-            {
-                // Try to write an error response when shutting down.
-                AsyncContext asyncContext = asyncContextRef.get();
-                try
-                {
-                    HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
-                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                }
-                catch (IOException x)
-                {
-                    throw new RuntimeException(x);
-                }
-                finally
-                {
-                    asyncContext.complete();
-                }
             }
         });
 
@@ -202,12 +186,22 @@ public class AsyncServletLongPollTest
 
             await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, Matchers.notNullValue());
 
+            // Wait for the request on the server to become idle.
+            await().atMost(5, TimeUnit.SECONDS).until(() ->
+            {
+                Thread thread = threadRef.get();
+                return thread != null && EnumSet.of(Thread.State.WAITING, Thread.State.TIMED_WAITING).contains(thread.getState());
+            });
+
             server.stop();
 
             client.socket().setSoTimeout(1000);
 
             HttpTester.Response response = HttpTester.parseResponse(client);
-            assertEquals(500, response.getStatus());
+            // The response may or may not arrive, as the server is racing
+            // between sending an error response and closing the connections.
+            if (response != null)
+                assertEquals(500, response.getStatus());
         }
     }
 }

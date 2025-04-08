@@ -136,7 +136,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return configure(new ProxyProtocolV1Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private static class ProxyProtocolV1Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private static class ProxyProtocolV1Connection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             // 0     1 2       3       4 5 6
             // 98765432109876543210987654321
@@ -451,7 +451,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return configure(new ProxyProtocolV2Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private class ProxyProtocolV2Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private class ProxyProtocolV2Connection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             private static final int HEADER_LENGTH = 16;
 
@@ -801,6 +801,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _remote = remote;
             _tlvs = tlvs;
             _sslSessionData = sslSessionData;
+        }
+
+        @Override
+        public Callback cancelWrite(Throwable cause)
+        {
+            return _endPoint.cancelWrite(cause);
         }
 
         @Override

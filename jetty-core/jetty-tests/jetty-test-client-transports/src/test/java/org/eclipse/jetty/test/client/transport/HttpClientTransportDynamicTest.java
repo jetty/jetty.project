@@ -23,7 +23,6 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpHeader;
@@ -668,7 +668,7 @@ public class HttpClientTransportDynamicTest
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .body(new BytesRequestContent(bytes))
             .timeout(5, TimeUnit.SECONDS)
-            .send(new BufferingResponseListener(bytes.length)
+            .send(new RetainingResponseListener(bytes.length)
             {
                 @Override
                 public void onComplete(Result result)

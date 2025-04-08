@@ -62,8 +62,8 @@ public class DefaultHandler extends Handler.Abstract
     private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
     private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
     private ByteBuffer _favicon;
-    private boolean _serveFavIcon = true;
-    private boolean _showContexts = true;
+    private boolean _serveFavIcon;
+    private boolean _showContexts;
 
     public DefaultHandler()
     {

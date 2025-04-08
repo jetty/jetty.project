@@ -56,9 +56,10 @@ public class HeadersGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         int flags = Flags.NONE;
-
         if (priority != null)
             flags = Flags.PRIORITY;
+        if (endStream)
+            flags |= Flags.END_STREAM;
 
         // TODO Look for a way of not allocating a large buffer here.
         //      Possibly the hpack encoder could be changed to take the accumulator, but that is a lot of changes.
@@ -66,34 +67,36 @@ public class HeadersGenerator extends FrameGenerator
         //      So long as the buffer is not sliced into continuations, it at least should be available to aggregate
         //      subsequent frames into... but likely only a frame header followed by an accumulated data frame.
         //      It might also be good to be able to split the table into continuation frames as it is generated?
-        RetainableByteBuffer hpack = encode(encoder, metaData, getMaxFrameSize());
+        RetainableByteBuffer hpack = encode(encoder, metaData);
         BufferUtil.flipToFlush(hpack.getByteBuffer(), 0);
         int hpackLength = hpack.remaining();
 
+        int maxHeaderBlock = getMaxFrameSize();
+        if (maxHeaderBlockFragment > 0)
+            maxHeaderBlock = Math.min(maxHeaderBlock, maxHeaderBlockFragment);
+
         // Split into CONTINUATION frames if necessary.
-        if (maxHeaderBlockFragment > 0 && hpackLength > maxHeaderBlockFragment)
+        if (hpackLength > maxHeaderBlock)
         {
             int start = accumulator.remaining();
-            if (endStream)
-                flags |= Flags.END_STREAM;
 
-            int length = maxHeaderBlockFragment + (priority == null ? 0 : PriorityFrame.PRIORITY_LENGTH);
+            int length = maxHeaderBlock + (priority == null ? 0 : PriorityFrame.PRIORITY_LENGTH);
 
-            // generate first fragment with as HEADERS with possible priority
+            // Generate HEADERS frame with possible PRIORITY frame.
             generateHeader(accumulator, FrameType.HEADERS, length, flags, streamId);
             generatePriority(accumulator, priority);
-            accumulator.add(hpack.slice(maxHeaderBlockFragment));
-            hpack.skip(maxHeaderBlockFragment);
+            accumulator.add(hpack.slice(maxHeaderBlock));
+            hpack.skip(maxHeaderBlock);
 
-            // generate continuation frames that are not the last
-            while (hpack.remaining() > maxHeaderBlockFragment)
+            // Generate CONTINUATION frames that are not the last.
+            while (hpack.remaining() > maxHeaderBlock)
             {
-                generateHeader(accumulator, FrameType.CONTINUATION, maxHeaderBlockFragment, Flags.NONE, streamId);
-                accumulator.add(hpack.slice(maxHeaderBlockFragment));
-                hpack.skip(maxHeaderBlockFragment);
+                generateHeader(accumulator, FrameType.CONTINUATION, maxHeaderBlock, Flags.NONE, streamId);
+                accumulator.add(hpack.slice(maxHeaderBlock));
+                hpack.skip(maxHeaderBlock);
             }
 
-            // generate the last continuation frame
+            // Generate the last CONTINUATION frame.
             generateHeader(accumulator, FrameType.CONTINUATION, hpack.remaining(), Flags.END_HEADERS, streamId);
             accumulator.add(hpack);
 
@@ -102,8 +105,6 @@ public class HeadersGenerator extends FrameGenerator
         else
         {
             flags |= Flags.END_HEADERS;
-            if (endStream)
-                flags |= Flags.END_STREAM;
 
             int length = hpackLength + (priority == null ? 0 : PriorityFrame.PRIORITY_LENGTH);
             generateHeader(accumulator, FrameType.HEADERS, length, flags, streamId);

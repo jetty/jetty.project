@@ -29,11 +29,13 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Fields;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -56,14 +58,12 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             protected void service(Request request, Response response)
             {
                 assertEquals("POST", request.getMethod());
-                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                FormFields.from(request).whenComplete((fields, failure) ->
-                {
-                    assertEquals(value1, fields.get(name1).getValue());
-                    List<String> values = fields.get(name2).getValues();
-                    assertEquals(2, values.size());
-                    assertThat(values, containsInAnyOrder(value2, value3));
-                });
+                assertThat(request.getHeaders().get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase(MimeTypes.Type.FORM_ENCODED_UTF_8.asString()));
+                Fields fields = FormFields.getFields(request);
+                assertEquals(value1, fields.get(name1).getValue());
+                List<String> values = fields.get(name2).getValues();
+                assertEquals(2, values.size());
+                assertThat(values, containsInAnyOrder(value2, value3));
             }
         });
 
@@ -88,7 +88,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         fields.put(name1, value1);
         fields.add(name2, value2);
         final String content = FormRequestContent.convert(fields);
-        final String contentType = "text/plain;charset=UTF-8";
+        final String contentType = "text/plain;charset=utf-8";
 
         start(scenario, new EmptyServerHandler()
         {
@@ -96,7 +96,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             protected void service(Request request, Response response) throws Throwable
             {
                 assertEquals("POST", request.getMethod());
-                assertEquals(contentType, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertThat(request.getHeaders().get(HttpHeader.CONTENT_TYPE), Matchers.equalToIgnoringCase(contentType));
                 assertEquals(content, Content.Source.asString(request));
             }
         });

@@ -108,7 +108,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
             transport = wrapper.unwrap();
         assertThat(transport, sameInstance(Transport.UDP_IP));
 
-        HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getTransport();
+        HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getHTTP3Client().getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(1));
     }
@@ -148,7 +148,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
-        HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getTransport();
+        HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getHTTP3Client().getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(0));
     }

@@ -918,9 +918,10 @@ public abstract class IteratingCallback implements Callback
     @Override
     public String toString()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock ignored = _lock.tryLock())
         {
-            return String.format("%s@%x[%s, %b, %s]", getClass().getSimpleName(), hashCode(), _state, _aborted, _failure);
+            String held = _lock.isHeldByCurrentThread() ? "" : "?";
+            return String.format("%s@%x[%s:%s,aborted=%b,failure=%s]", getClass().getSimpleName(), hashCode(), held, _state, _aborted, _failure);
         }
     }
 

@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -89,7 +88,7 @@ public class FormAuthenticator extends LoginAuthenticator
      * If true, uris that cause a redirect to a login page will always
      * be remembered. If false, only the first uri that leads to a login
      * page redirect is remembered.
-     * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909
+     * See <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909">bug 379909</a>
      *
      * @param alwaysSave true to always save the uri
      */
@@ -202,8 +201,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 session.removeAttribute(__J_URI);
 
                 Object post = session.removeAttribute(__J_POST);
-                if (post instanceof CompletableFuture<?> futureFields)
-                    FormFields.set(request, (CompletableFuture<Fields>)futureFields);
+                if (post instanceof Fields futureFields)
+                    FormFields.setFields(request, futureFields);
 
                 String method = (String)session.removeAttribute(__J_METHOD);
                 if (method != null && request.getMethod().equals(method))
@@ -225,16 +224,9 @@ public class FormAuthenticator extends LoginAuthenticator
 
     protected Fields getParameters(Request request)
     {
-        try
-        {
-            Fields queryFields = Request.extractQueryParameters(request);
-            Fields formFields = FormFields.from(request).get();
-            return Fields.combine(queryFields, formFields);
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.getFields(request);
+        return Fields.combine(queryFields, formFields);
     }
 
     protected String encodeURL(String url, Request request)
@@ -334,15 +326,14 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     try
                     {
-                        CompletableFuture<Fields> futureFields = FormFields.from(request);
-                        futureFields.get();
+                        Fields futureFields = FormFields.getFields(request);
                         session.setAttribute(__J_POST, futureFields);
                     }
-                    catch (ExecutionException e)
+                    catch (CompletionException e)
                     {
                         throw new ServerAuthException(e.getCause());
                     }
-                    catch (InterruptedException e)
+                    catch (Exception e)
                     {
                         throw new ServerAuthException(e);
                     }
@@ -374,7 +365,7 @@ public class FormAuthenticator extends LoginAuthenticator
     private AuthenticationState sendError(Request request, Response response, Callback callback)
     {
         if (_formErrorPage == null)
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         else if (_dispatch)
             return dispatch(_formErrorPage, request, response, callback);
         else

@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * String jettyVersion = "12.0.0";
  * JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
  *         .jettyVersion(jettyVersion)
- *         .jettyBase(Paths.get("demo-base"))
+ *         .jettyBase(Paths.get("test-base"))
  *         .build();
  *
  * // The first run initializes the Jetty Base.
@@ -88,16 +89,6 @@ public class JettyHomeTester
         this.config = config;
     }
 
-    /**
-     * Starts the distribution with the given arguments
-     *
-     * @param args arguments to use to start the distribution
-     */
-    public JettyHomeTester.Run start(String... args) throws Exception
-    {
-        return start(Arrays.asList(args));
-    }
-
     public Path getJettyBase()
     {
         return config.getJettyBase();
@@ -109,11 +100,38 @@ public class JettyHomeTester
     }
 
     /**
+     * Starts the distribution with the given arguments
+     *
+     * @param args arguments to use to start the distribution
+     */
+    public JettyHomeTester.Run start(String... args) throws Exception
+    {
+        return start(Arrays.asList(args));
+    }
+
+    /**
      * Start the distribution with the arguments
      *
      * @param args arguments to use to start the distribution
      */
     public JettyHomeTester.Run start(List<String> args) throws Exception
+    {
+        return start(List.of(), args);
+    }
+
+    /**
+     * <p>Starts the distribution with the given JVM arguments, and program arguments.</p>
+     * <p>JVM arguments allow for example to attach to the JVM with a debugger, and/or
+     * set Jetty logging properties; specify respectively
+     * {@code -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005}
+     * and {@code -Dorg.eclipse.jetty.LEVEL=DEBUG}.</p>
+     *
+     * @param jvmArgs the JVM arguments
+     * @param args the program arguments
+     * @return the JVM process
+     * @throws Exception if the JVM process cannot be executed
+     */
+    public JettyHomeTester.Run start(List<String> jvmArgs, List<String> args) throws Exception
     {
         File jettyBaseDir = getJettyBase().toFile();
         Path workDir = Files.createDirectories(jettyBaseDir.toPath().resolve("work"));
@@ -121,6 +139,7 @@ public class JettyHomeTester
         List<String> commands = new ArrayList<>();
         commands.add(Tester.getJavaExecutable("java"));
         commands.addAll(config.getJVMArgs());
+        commands.addAll(jvmArgs);
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath());
         int debugPort = Integer.getInteger("distribution.debug.port", 0);
         if (debugPort > 0)
@@ -261,9 +280,9 @@ public class JettyHomeTester
                 }
             }
         }
-        catch (FileAlreadyExistsException e)
+        catch (FileSystemAlreadyExistsException | FileAlreadyExistsException e)
         {
-            LOG.warn("ignore FileAlreadyExistsException: archiveURI {}, outputDir {}", archiveURI, outputDir);
+            LOG.warn("ignore {}: archiveURI {}, outputDir {}", e.getClass().getSimpleName(), archiveURI, outputDir);
         }
     }
 

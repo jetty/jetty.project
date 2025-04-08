@@ -154,14 +154,14 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
             String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jmx,servlet,servlets,session-store-hazelcast-remote"
+                "--add-to-start=resources,server,http,webapp,ee10-deploy,jmx,servlet,servlets,session-store-hazelcast-remote"
             };
             try (JettyHomeTester.Run run1 = distribution.start(args1))
             {
                 assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
-                Path war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
+                Path war = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-simple-session-webapp:war:" + jettyVersion);
                 distribution.installWar(war, "test");
 
                 int port = Tester.freePort();

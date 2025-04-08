@@ -89,8 +89,7 @@ public class TestJettyOSGiBootWithAnnotations
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             String port = System.getProperty("boot.annotations.port");
@@ -119,10 +118,6 @@ public class TestJettyOSGiBootWithAnnotations
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

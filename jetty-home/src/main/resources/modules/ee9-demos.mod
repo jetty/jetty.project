@@ -16,6 +16,7 @@ http2
 test-keystore
 work
 demo-root
+ee9-environment
 ee9-demo-async-rest
 ee9-demo-jaas
 ee9-demo-jetty
@@ -24,6 +25,7 @@ ee9-demo-rewrite
 ee9-demo-jndi
 ee9-demo-spec
 ee9-demo-jsp
+ee9-demo-jspc
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

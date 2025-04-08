@@ -81,7 +81,7 @@ public class HTTP1TransportTest extends AbstractTransportTest
         Destination destination = destinations.get(0);
         assertThat(destination.getOrigin().getTransport(), sameInstance(Transport.TCP_IP));
 
-        HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getTransport();
+        HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(1));
     }
@@ -117,7 +117,7 @@ public class HTTP1TransportTest extends AbstractTransportTest
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
-        HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getTransport();
+        HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(0));
     }

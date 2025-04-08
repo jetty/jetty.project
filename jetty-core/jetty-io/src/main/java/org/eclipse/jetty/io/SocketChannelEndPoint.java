@@ -89,7 +89,8 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         }
         catch (IOException e)
         {
-            LOG.debug("Unable to shutdown output", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to shutdown input", e);
             shutdownInput();
             filled = -1;
         }

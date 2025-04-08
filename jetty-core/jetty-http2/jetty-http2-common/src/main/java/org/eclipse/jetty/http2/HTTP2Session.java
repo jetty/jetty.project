@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
@@ -81,8 +82,11 @@ import org.slf4j.LoggerFactory;
 public abstract class HTTP2Session extends ContainerLifeCycle implements Session, Parser.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
+    // SPEC: stream numbers can go up to 2^31-1, but increment by 2.
+    private static final int MAX_TOTAL_LOCAL_STREAMS = Integer.MAX_VALUE / 2;
 
     private final Map<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
+    private final Set<Integer> priorityStreams = ConcurrentHashMap.newKeySet();
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();
@@ -93,6 +97,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicLong bytesWritten = new AtomicLong();
+    private final AtomicInteger totalLocalStreams = new AtomicInteger();
     private final EndPoint endPoint;
     private final Parser parser;
     private final Generator generator;
@@ -102,6 +107,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private final StreamTimeouts streamTimeouts;
     private int maxLocalStreams;
     private int maxRemoteStreams;
+    private int maxTotalLocalStreams;
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
     private int writeThreshold;
@@ -120,6 +126,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.streamTimeouts = new StreamTimeouts(scheduler);
         this.maxLocalStreams = -1;
         this.maxRemoteStreams = -1;
+        this.maxTotalLocalStreams = MAX_TOTAL_LOCAL_STREAMS;
         this.localStreamIds.set(initialStreamId);
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
@@ -163,6 +170,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     public void setMaxLocalStreams(int maxLocalStreams)
     {
         this.maxLocalStreams = maxLocalStreams;
+    }
+
+    @ManagedAttribute("The maximum number of local streams that can be opened")
+    public int getMaxTotalLocalStreams()
+    {
+        return maxTotalLocalStreams;
+    }
+
+    public void setMaxTotalLocalStreams(int maxTotalLocalStreams)
+    {
+        if (maxTotalLocalStreams > MAX_TOTAL_LOCAL_STREAMS)
+            throw new IllegalArgumentException("Invalid max total local streams " + maxTotalLocalStreams);
+        if (maxTotalLocalStreams > 0)
+            this.maxTotalLocalStreams = maxTotalLocalStreams;
     }
 
     @ManagedAttribute("The maximum number of concurrent remote streams")
@@ -443,9 +464,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
                     if (local)
+                    {
                         parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    }
                     else
-                        generator.getHpackEncoder().setMaxHeaderListSize(value);
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxHeaderListSize(Math.min(value, hpackEncoder.getMaxHeaderListSize()));
+                    }
                 }
                 case SettingsFrame.ENABLE_CONNECT_PROTOCOL ->
                 {
@@ -710,6 +736,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }, callback), frame);
     }
 
+    public void flush(Callback callback)
+    {
+        Entry entry = new Entry(new FlushFrame(), null, callback)
+        {
+            @Override
+            public int getFrameBytesGenerated()
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean generate(RetainableByteBuffer.Mutable accumulator)
+            {
+                return true;
+            }
+        };
+        frame(entry, true);
+    }
+
     /**
      * <p>Invoked internally and by applications to send a GO_AWAY frame to the other peer.</p>
      *
@@ -741,11 +786,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private GoAwayFrame newGoAwayFrame(int error, String reason)
     {
-        return newGoAwayFrame(getLastRemoteStreamId(), error, reason);
-    }
-
-    private GoAwayFrame newGoAwayFrame(int lastRemoteStreamId, int error, String reason)
-    {
         byte[] payload = null;
         if (reason != null)
         {
@@ -753,7 +793,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             reason = reason.substring(0, Math.min(reason.length(), 32));
             payload = reason.getBytes(StandardCharsets.UTF_8);
         }
-        return new GoAwayFrame(lastRemoteStreamId, error, payload);
+        return new GoAwayFrame(getLastRemoteStreamId(), error, payload);
     }
 
     @Override
@@ -913,9 +953,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             remoteStreamCount.add(deltaStreams, deltaClosing);
     }
 
+    private boolean removeStream(int streamId)
+    {
+        HTTP2Stream removed = streams.get(streamId);
+        if (removed != null)
+            return removeStream(removed);
+        priorityStreams.remove(streamId);
+        onStreamClosed(streamId);
+        onStreamDestroyed(streamId);
+        return true;
+    }
+
     public boolean removeStream(Stream stream)
     {
         int streamId = stream.getId();
+        priorityStreams.remove(streamId);
         HTTP2Stream removed = streams.remove(streamId);
         if (removed == null)
             return false;
@@ -1073,6 +1125,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Closed stream {} for {}", stream, this);
+        onStreamClosed(stream.getId());
+    }
+
+    private void onStreamClosed(int streamId)
+    {
         streamsClosed.incrementAndGet();
     }
 
@@ -1169,7 +1226,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1267,15 +1324,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             return false;
         }
 
-        @Override
-        public void failed(Throwable x)
+        public void closeAndFail(Throwable failure)
         {
             if (stream != null)
             {
                 stream.close();
                 stream.getSession().removeStream(stream);
             }
-            super.failed(x);
+            failed(failure);
+        }
+
+        public void resetAndFail(Throwable x)
+        {
+            if (stream != null)
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.from(() -> failed(x)));
         }
 
         /**
@@ -1293,6 +1355,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case WINDOW_UPDATE:
                 case PREFACE:
                 case DISCONNECT:
+                case FAILURE:
+                case FLUSH:
                     return false;
                 // Frames of this type follow the logic below.
                 case DATA:
@@ -1808,10 +1872,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             if (failStreams)
             {
-                // Must compare the lastStreamId only with local streams.
-                // For example, a client that sent request with streamId=137 may send a GOAWAY(4),
-                // where streamId=4 is the last stream pushed by the server to the client.
-                // The server must not compare its local streamId=4 with remote streamId=137.
+                // The lastStreamId carried by the GOAWAY is that of a local stream,
+                // so the lastStreamId must be compared only to local streams ids.
                 Predicate<Stream> failIf = stream -> stream.isLocal() && stream.getId() > frame.getLastStreamId();
                 failStreams(failIf, "closing", false);
             }
@@ -1839,7 +1901,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     case REMOTELY_CLOSED ->
                     {
                         closed = CloseState.CLOSING;
-                        GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                        GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                         zeroStreamsAction = () -> terminate(goAwayFrame);
                         failure = new ClosedChannelException();
                         failStreams = true;
@@ -1869,7 +1931,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
             else
             {
-                GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                 abort(reason, cause, Callback.from(() -> terminate(goAwayFrame)));
             }
         }
@@ -1998,7 +2060,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         closed = CloseState.CLOSING;
                         zeroStreamsAction = () ->
                         {
-                            GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                            GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                             terminate(goAwayFrame);
                         };
                         failure = x;
@@ -2109,17 +2171,23 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             Slot slot = new Slot();
             int currentStreamId = frame.getStreamId();
             int streamId = reserveSlot(slot, currentStreamId, callback::failed);
-            if (streamId > 0)
+            if (streamId <= 0)
+                return 0;
+
+            if (!priorityStreams.add(streamId))
             {
-                if (currentStreamId <= 0)
-                    frame = frame.withStreamId(streamId);
-                slot.entries = List.of(newEntry(frame, null, Callback.from(callback::succeeded, x ->
-                {
-                    HTTP2Session.this.onStreamDestroyed(streamId);
-                    callback.failed(x);
-                })));
-                flush();
+                callback.failed(new IllegalStateException("Duplicate stream " + streamId));
+                return 0;
             }
+
+            if (currentStreamId <= 0)
+                frame = frame.withStreamId(streamId);
+            slot.entries = List.of(newEntry(frame, null, Callback.from(callback::succeeded, x ->
+            {
+                removeStream(streamId);
+                callback.failed(x);
+            })));
+            flush();
             return streamId;
         }
 
@@ -2128,19 +2196,19 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             Slot slot = new Slot();
             int currentStreamId = frameList.getStreamId();
             int streamId = reserveSlot(slot, currentStreamId, promise::failed);
-            if (streamId > 0)
+            if (streamId <= 0)
+                return;
+
+            List<StreamFrame> frames = frameList.getFrames();
+            if (currentStreamId <= 0)
             {
-                List<StreamFrame> frames = frameList.getFrames();
-                if (currentStreamId <= 0)
-                {
-                    frames = frames.stream()
-                        .map(frame -> frame.withStreamId(streamId))
-                        .collect(Collectors.toList());
-                }
-                if (createLocalStream(slot, frames, promise, listener, streamId))
-                    return;
-                freeSlot(slot, streamId);
+                frames = frames.stream()
+                    .map(frame -> frame.withStreamId(streamId))
+                    .collect(Collectors.toList());
             }
+            if (createLocalStream(slot, frames, promise, listener, streamId))
+                return;
+            freeSlot(slot, streamId);
         }
 
         private Stream newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Consumer<Throwable> failFn)
@@ -2149,7 +2217,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             HTTP2Session.this.onStreamCreated(streamId);
             HTTP2Stream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
             {
-                HTTP2Session.this.onStreamDestroyed(streamId);
+                removeStream(streamId);
                 failFn.accept(x);
             });
             if (stream != null)
@@ -2183,14 +2251,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
-            int streamId = reserveSlot(slot, 0, promise::failed);
-            if (streamId > 0)
-            {
-                frame = frame.withStreamId(streamId);
-                if (createLocalStream(slot, Collections.singletonList(frame), promise, listener, streamId))
-                    return;
-                freeSlot(slot, streamId);
-            }
+            int streamId = reserveSlot(slot, frame.getPromisedStreamId(), promise::failed);
+            if (streamId <= 0)
+                return;
+
+            frame = frame.withStreamId(streamId);
+            if (createLocalStream(slot, Collections.singletonList(frame), promise, listener, streamId))
+                return;
+            freeSlot(slot, streamId);
         }
 
         private boolean createLocalStream(Slot slot, List<StreamFrame> frames, Promise<Stream> promise, Stream.Listener listener, int streamId)
@@ -2207,7 +2275,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             Callback streamCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
             {
-                HTTP2Session.this.onStreamDestroyed(streamId);
+                removeStream(stream);
                 promise.failed(x);
             });
             int count = frames.size();
@@ -2237,19 +2305,105 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private int reserveSlot(Slot slot, int streamId, Consumer<Throwable> fail)
         {
+            if (streamId < 0 || (streamId > 0 && !isLocalStream(streamId)))
+            {
+                fail.accept(new IllegalArgumentException("invalid stream id " + streamId));
+                return 0;
+            }
+
+            int maxTotal = getMaxTotalLocalStreams();
+
+            boolean created = false;
+            int reservedStreamId = 0;
             Throwable failure = null;
-            boolean reserved = false;
             try (AutoLock ignored = lock.lock())
             {
                 // SPEC: cannot create new streams after receiving a GOAWAY.
                 if (closed == CloseState.NOT_CLOSED)
                 {
-                    if (streamId <= 0)
+                    if (streamId == 0)
                     {
-                        streamId = localStreamIds.getAndAdd(2);
-                        reserved = true;
+                        int total = incrementTotalLocalStreams(maxTotal);
+                        if (total <= maxTotal)
+                        {
+                            // Stream id generated internally.
+                            reservedStreamId = localStreamIds.getAndUpdate(v ->
+                            {
+                                if (v >= 0)
+                                    return v + 2;
+                                return v;
+                            });
+                            if (reservedStreamId > 0)
+                            {
+                                slots.offer(slot);
+                                created = true;
+                            }
+                            else
+                            {
+                                failure = decrementTotalLocalStreams("max stream id exceeded");
+                            }
+                        }
+                        else
+                        {
+                            failure = decrementTotalLocalStreams("max total streams exceeded");
+                        }
                     }
-                    slots.offer(slot);
+                    else
+                    {
+                        // Stream id is given.
+                        while (true)
+                        {
+                            int nextStreamId = localStreamIds.get();
+                            if (nextStreamId > 0)
+                            {
+                                if (streamId >= nextStreamId)
+                                {
+                                    int total = incrementTotalLocalStreams(maxTotal);
+                                    if (total <= maxTotal)
+                                    {
+                                        // This may overflow, but it's ok as the current streamId
+                                        // is valid; it is the next streamId that will be invalid.
+                                        int newNextStreamId = streamId + 2;
+                                        if (localStreamIds.compareAndSet(nextStreamId, newNextStreamId))
+                                        {
+                                            reservedStreamId = streamId;
+                                            slots.offer(slot);
+                                            created = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            totalLocalStreams.decrementAndGet();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        failure = decrementTotalLocalStreams("max total streams exceeded");
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (streams.containsKey(streamId) || priorityStreams.contains(streamId))
+                                    {
+                                        reservedStreamId = streamId;
+                                        slots.offer(slot);
+                                    }
+                                    else
+                                    {
+                                        failure = new IllegalArgumentException("invalid stream id " + streamId);
+                                    }
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                reservedStreamId = nextStreamId;
+                                failure = new IllegalStateException("max stream id exceeded");
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -2260,15 +2414,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
             if (failure == null)
             {
-                if (reserved)
+                if (created)
                     HTTP2Session.this.onStreamCreated(streamId);
-                return streamId;
             }
             else
             {
                 fail.accept(failure);
-                return 0;
             }
+            return reservedStreamId;
         }
 
         private void freeSlot(Slot slot, int streamId)
@@ -2279,6 +2432,22 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
             HTTP2Session.this.onStreamDestroyed(streamId);
             flush();
+        }
+
+        private int incrementTotalLocalStreams(int maxTotal)
+        {
+            return totalLocalStreams.updateAndGet(v ->
+            {
+                if (v <= maxTotal)
+                    return v + 1;
+                return v;
+            });
+        }
+
+        private Throwable decrementTotalLocalStreams(String message)
+        {
+            totalLocalStreams.decrementAndGet();
+            return new IllegalStateException(message);
         }
 
         /**
@@ -2368,6 +2537,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // The implementation of the Iterator returned above does not support
             // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
+        }
+    }
+
+    private static class FlushFrame extends Frame
+    {
+        public FlushFrame()
+        {
+            super(FrameType.FLUSH);
         }
     }
 }

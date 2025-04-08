@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="CompressionHandler" class="org.eclipse.jetty.compression.server.CompressionHandler">
+      </New>
+    </Arg>
+  </Call>
+</Configure>

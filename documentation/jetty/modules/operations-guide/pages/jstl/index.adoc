@@ -17,7 +17,7 @@ The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distributi
 
 [source,subs=attributes+]
 ----
-include::{jetty-home}/modules/ee10-jstl.mod[]
+include::{jetty-home}/modules/ee11-jstl.mod[]
 ----
 
 When enabled, Jetty will make the JSTL tags available for your webapps.

@@ -34,9 +34,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -65,35 +65,35 @@ public class ServerTimeoutsTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, false);
+        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, false);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, true);
+        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, true);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transport, false);
+        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transportType, false);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transport, true);
+        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transportType, true);
     }
 
-    private void testBlockingReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch) throws Exception
+    private void testBlockingReadWithDelayedFirstContentIdleTimeoutFires(TransportType transportType, boolean delayDispatch) throws Exception
     {
-        testReadWithDelayedFirstContentIdleTimeoutFires(transport, new HttpServlet()
+        testReadWithDelayedFirstContentIdleTimeoutFires(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -105,9 +105,9 @@ public class ServerTimeoutsTest extends AbstractTest
         }, delayDispatch);
     }
 
-    private void testAsyncReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch) throws Exception
+    private void testAsyncReadWithDelayedFirstContentIdleTimeoutFires(TransportType transportType, boolean delayDispatch) throws Exception
     {
-        testReadWithDelayedFirstContentIdleTimeoutFires(transport, new HttpServlet()
+        testReadWithDelayedFirstContentIdleTimeoutFires(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -139,11 +139,11 @@ public class ServerTimeoutsTest extends AbstractTest
         }, delayDispatch);
     }
 
-    private void testReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, HttpServlet servlet, boolean delayDispatch) throws Exception
+    private void testReadWithDelayedFirstContentIdleTimeoutFires(TransportType transportType, HttpServlet servlet, boolean delayDispatch) throws Exception
     {
         httpConfig.setDelayDispatchUntilContent(delayDispatch);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -161,17 +161,21 @@ public class ServerTimeoutsTest extends AbstractTest
         long idleTimeout = 1000;
         setStreamIdleTimeout(idleTimeout);
 
-        CountDownLatch resultLatch = new CountDownLatch(2);
+        CountDownLatch resultLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
-            .onResponseSuccess(response ->
+            .onResponseHeaders(r ->
             {
-                if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                    resultLatch.countDown();
+                // For the cases where the response is not failed,
+                // complete the request to complete the exchange.
                 content.close();
             })
-            .send(result -> resultLatch.countDown());
+            .send(result ->
+            {
+                assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, result.getResponse().getStatus());
+                resultLatch.countDown();
+            });
 
         // The client did not send the content, the request was
         // dispatched, the server should have idle timed it out.
@@ -181,10 +185,10 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncReadIdleTimeoutFires(TransportType transportType) throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -225,7 +229,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -242,10 +246,10 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncWriteIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncWriteIdleTimeoutFires(TransportType transportType) throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -278,7 +282,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         BlockingQueue<Runnable> demanders = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 // Do not succeed the callback so the server will block writing.
@@ -305,12 +309,12 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithMinimumDataRateBelowLimit(Transport transport) throws Exception
+    public void testBlockingReadWithMinimumDataRateBelowLimit(TransportType transportType) throws Exception
     {
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -338,9 +342,9 @@ public class ServerTimeoutsTest extends AbstractTest
         AtomicReference<Response> responseRef = new AtomicReference<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .body(content)
-            .onResponseSuccess(response ->
+            .onResponseHeaders(response ->
             {
                 responseRef.set(response);
                 responseLatch.countDown();
@@ -367,12 +371,12 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithMinimumDataRateAboveLimit(Transport transport) throws Exception
+    public void testBlockingReadWithMinimumDataRateAboveLimit(TransportType transportType) throws Exception
     {
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -390,7 +394,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -411,20 +415,20 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
+    public void testBlockingReadHttpIdleTimeoutOverridesIdleTimeout(TransportType transportType) throws Exception
     {
         long httpIdleTimeout = 2500;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new BlockingReadServlet(handlerLatch));
+        start(transportType, new BlockingReadServlet(handlerLatch));
         setStreamIdleTimeout(idleTimeout);
 
         try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
-            client.POST(newURI(transport))
+            client.POST(newURI(transportType))
                 .body(content)
                 .send(result ->
                 {
@@ -442,13 +446,13 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
+    public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(TransportType transportType) throws Exception
     {
         long httpIdleTimeout = 2500;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -488,7 +492,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -505,10 +509,10 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testIdleTimeoutBeforeReadIsIgnored(Transport transport) throws Exception
+    public void testIdleTimeoutBeforeReadIsIgnored(TransportType transportType) throws Exception
     {
         long idleTimeout = 1000;
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -534,9 +538,9 @@ public class ServerTimeoutsTest extends AbstractTest
         System.arraycopy(data, data1.length, data2, 0, data2.length);
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data1));
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -558,7 +562,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingWriteWithMinimumDataRateBelowLimit(Transport transport) throws Exception
+    public void testBlockingWriteWithMinimumDataRateBelowLimit(TransportType transportType) throws Exception
     {
         // This test needs a large write to stall the server, and a slow reading client.
         // In HTTP/1.1, when using the loopback interface, the buffers are so large that
@@ -571,12 +575,12 @@ public class ServerTimeoutsTest extends AbstractTest
         // In HTTP/2, we force the flow control window to be small, so that the server
         // stalls almost immediately without having written many bytes, so that the test
         // completes quickly.
-        assumeTrue(transport == Transport.H2C || transport == Transport.H2);
+        assumeTrue(transportType == TransportType.H2C || transportType == TransportType.H2);
 
         int bytesPerSecond = 16 * 1024;
         httpConfig.setMinResponseDataRate(bytesPerSecond);
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -592,12 +596,12 @@ public class ServerTimeoutsTest extends AbstractTest
                 }
             }
         });
-        ((HttpClientTransportOverHTTP2)client.getTransport()).getHTTP2Client().setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        ((HttpClientTransportOverHTTP2)client.getHttpClientTransport()).getHTTP2Client().setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
 
         // Setup the client to read slower than the min data rate.
         BlockingQueue<Object> objects = new LinkedBlockingQueue<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 objects.offer(chunk.remaining());

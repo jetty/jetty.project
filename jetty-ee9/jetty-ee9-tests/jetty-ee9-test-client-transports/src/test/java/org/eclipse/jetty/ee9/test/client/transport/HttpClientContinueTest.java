@@ -36,7 +36,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -67,21 +67,21 @@ public class HttpClientContinueTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithOneContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithOneContentRespond100Continue(TransportType transportType) throws Exception
     {
-        testExpect100ContinueRespond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8));
+        testExpect100ContinueRespond100Continue(transportType, "data1".getBytes(StandardCharsets.UTF_8));
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithMultipleContentsRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithMultipleContentsRespond100Continue(TransportType transportType) throws Exception
     {
-        testExpect100ContinueRespond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
+        testExpect100ContinueRespond100Continue(transportType, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void testExpect100ContinueRespond100Continue(Transport transport, byte[]... contents) throws Exception
+    private void testExpect100ContinueRespond100Continue(TransportType transportType, byte[]... contents) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -91,7 +91,7 @@ public class HttpClientContinueTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(contents))
             .timeout(5, TimeUnit.SECONDS)
@@ -113,9 +113,9 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithChunkedContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithChunkedContentRespond100Continue(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -130,7 +130,7 @@ public class HttpClientContinueTest extends AbstractTest
 
         byte[] content1 = new byte[10240];
         byte[] content2 = new byte[16384];
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content1, content2)
             {
@@ -160,21 +160,21 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentRespond417ExpectationFailed(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentRespond417ExpectationFailed(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transport, 417);
+        testExpect100ContinueWithContentRespondError(transportType, 417);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transport, 413);
+        testExpect100ContinueWithContentRespondError(transportType, 413);
     }
 
-    private void testExpect100ContinueWithContentRespondError(Transport transport, int error) throws Exception
+    private void testExpect100ContinueWithContentRespondError(TransportType transportType, int error) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -186,10 +186,10 @@ public class HttpClientContinueTest extends AbstractTest
         byte[] content1 = new byte[10240];
         byte[] content2 = new byte[16384];
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content1, content2))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -217,10 +217,10 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithRedirect(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithRedirect(TransportType transportType) throws Exception
     {
         String data = "success";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -241,12 +241,12 @@ public class HttpClientContinueTest extends AbstractTest
 
         byte[] content = new byte[10240];
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .path("/continue")
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -263,46 +263,37 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testRedirectWithExpect100ContinueWithContent(Transport transport) throws Exception
+    public void testRedirectWithExpect100ContinueWithContent(TransportType transportType) throws Exception
     {
-        // A request with Expect: 100-Continue cannot receive non-final responses like 3xx
+        // A request with Expect: 100-Continue cannot receive non-final responses like 3xx.
 
-        String data = "success";
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 if (request.getRequestURI().endsWith("/done"))
-                {
-                    // Send 100-Continue and consume the content
-                    IO.copy(request.getInputStream(), new ByteArrayOutputStream());
-                    response.getOutputStream().print(data);
-                }
-                else
-                {
-                    // Send a redirect
-                    response.sendRedirect("/done");
-                }
+                    throw new IOException("Redirect should not have been followed");
+                // Send a redirect.
+                response.sendRedirect("/done");
             }
         });
 
         byte[] content = new byte[10240];
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .path("/redirect")
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
                 {
                     assertTrue(result.isFailed());
                     assertNotNull(result.getRequestFailure());
-                    assertNull(result.getResponseFailure());
-                    assertEquals(302, result.getResponse().getStatus());
+                    assertEquals(HttpStatus.MOVED_TEMPORARILY_302, result.getResponse().getStatus());
                     latch.countDown();
                 }
             });
@@ -312,13 +303,13 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(TransportType transportType) throws Exception
     {
         AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
 
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException
@@ -338,12 +329,12 @@ public class HttpClientContinueTest extends AbstractTest
         });
 
         byte[] content = new byte[1024];
-        Request clientRequest = client.newRequest(newURI(transport));
+        Request clientRequest = client.newRequest(newURI(transportType));
         clientRequestRef.set(clientRequest);
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -361,12 +352,12 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(TransportType transportType) throws Exception
     {
         AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -388,12 +379,12 @@ public class HttpClientContinueTest extends AbstractTest
         });
 
         byte[] content = new byte[1024];
-        Request clientRequest = client.newRequest(newURI(transport));
+        Request clientRequest = client.newRequest(newURI(transportType));
         clientRequestRef.set(clientRequest);
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -411,9 +402,9 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureDuring100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureDuring100Continue(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -449,10 +440,10 @@ public class HttpClientContinueTest extends AbstractTest
 
         byte[] content = new byte[1024];
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -469,7 +460,7 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithDeferredContentRespond100Continue(TransportType transportType) throws Exception
     {
         byte[] chunk1 = new byte[]{0, 1, 2, 3};
         byte[] chunk2 = new byte[]{4, 5, 6, 7};
@@ -479,7 +470,7 @@ public class HttpClientContinueTest extends AbstractTest
 
         CountDownLatch serverLatch = new CountDownLatch(1);
         AtomicReference<Thread> handlerThread = new AtomicReference<>();
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -501,10 +492,10 @@ public class HttpClientContinueTest extends AbstractTest
 
         CountDownLatch requestLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -539,10 +530,10 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(TransportType transportType) throws Exception
     {
         AtomicReference<Thread> handlerThread = new AtomicReference<>();
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -561,10 +552,10 @@ public class HttpClientContinueTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(chunk1));
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -589,9 +580,9 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -605,7 +596,7 @@ public class HttpClientContinueTest extends AbstractTest
         AsyncRequestContent content = new AsyncRequestContent();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .onRequestHeaders(request ->
             {
@@ -613,7 +604,7 @@ public class HttpClientContinueTest extends AbstractTest
                 content.close();
             })
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -628,9 +619,9 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithInitialAndConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndConcurrentDeferredContentRespond100Continue(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -667,10 +658,10 @@ public class HttpClientContinueTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -690,7 +681,7 @@ public class HttpClientContinueTest extends AbstractTest
         // and immediately after with the "normal" response, say a 200 OK.
         // These may be read by the client in a single read, and must be handled correctly.
 
-        startClient(Transport.HTTP);
+        startClient(TransportType.HTTP);
 
         try (ServerSocket server = new ServerSocket())
         {
@@ -744,7 +735,7 @@ public class HttpClientContinueTest extends AbstractTest
     @Test
     public void testNoExpectRespond100Continue() throws Exception
     {
-        startClient(Transport.HTTP);
+        startClient(TransportType.HTTP);
         client.setMaxConnectionsPerDestination(1);
 
         try (ServerSocket server = new ServerSocket())
@@ -789,7 +780,7 @@ public class HttpClientContinueTest extends AbstractTest
     @Test
     public void testNoExpect100ContinueThen100ContinueThenRedirectThen100ContinueThenResponse() throws Exception
     {
-        startClient(Transport.HTTP);
+        startClient(TransportType.HTTP);
         client.setMaxConnectionsPerDestination(1);
 
         try (ServerSocket server = new ServerSocket())

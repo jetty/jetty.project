@@ -56,11 +56,8 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
         if (!(req.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData))
-        {
-            Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
-            return AuthenticationState.SEND_FAILURE;
-        }
-        
+            return AuthenticationState.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
+
         X509Certificate[] certs = sslSessionData.peerCertificates();
         
         try
@@ -106,10 +103,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
             }
 
             if (!AuthenticationState.Deferred.isDeferred(res))
-            {
-                Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
-                return AuthenticationState.SEND_FAILURE;
-            }
+                return AuthenticationState.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
 
             return null;
         }

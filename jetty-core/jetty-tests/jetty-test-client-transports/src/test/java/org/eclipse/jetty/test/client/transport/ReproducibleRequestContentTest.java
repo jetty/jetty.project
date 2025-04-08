@@ -43,9 +43,9 @@ public class ReproducibleRequestContentTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testRedirectWithReproducibleRequestContent(Transport transport) throws Exception
+    public void testRedirectWithReproducibleRequestContent(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -59,7 +59,7 @@ public class ReproducibleRequestContentTest extends AbstractTest
         });
 
         String text = "hello world";
-        ContentResponse response = client.newRequest(newURI(transport))
+        ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(new StringRequestContent(text))
             .send();
@@ -70,10 +70,10 @@ public class ReproducibleRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBasicAuthenticationWithReproducibleRequestContent(Transport transport) throws Exception
+    public void testBasicAuthenticationWithReproducibleRequestContent(TransportType transportType) throws Exception
     {
         String realm = "test-realm";
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -91,7 +91,7 @@ public class ReproducibleRequestContentTest extends AbstractTest
             }
         });
 
-        URI uri = newURI(transport);
+        URI uri = newURI(transportType);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "test", "secret"));
 
         String text = "hello world";
@@ -106,9 +106,9 @@ public class ReproducibleRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testRedirectWithReproducibleRequestContentSplitAndDelayed(Transport transport) throws Exception
+    public void testRedirectWithReproducibleRequestContentSplitAndDelayed(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -126,7 +126,7 @@ public class ReproducibleRequestContentTest extends AbstractTest
         ReproducibleAsyncRequestContent body = new ReproducibleAsyncRequestContent();
         body.write(StandardCharsets.UTF_8.encode(text1));
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .method(HttpMethod.POST)
                 .body(body)
         ).send();
@@ -146,10 +146,10 @@ public class ReproducibleRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBasicAuthenticationWithReproducibleRequestContentSplitAndDelayed(Transport transport) throws Exception
+    public void testBasicAuthenticationWithReproducibleRequestContentSplitAndDelayed(TransportType transportType) throws Exception
     {
         String realm = "test-realm";
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -167,7 +167,7 @@ public class ReproducibleRequestContentTest extends AbstractTest
             }
         });
 
-        URI uri = newURI(transport);
+        URI uri = newURI(transportType);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "test", "secret"));
 
         String text1 = "hello";
@@ -175,7 +175,7 @@ public class ReproducibleRequestContentTest extends AbstractTest
         ReproducibleAsyncRequestContent body = new ReproducibleAsyncRequestContent();
         body.write(StandardCharsets.UTF_8.encode(text1));
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .method(HttpMethod.POST)
                 .body(body)
         ).send();

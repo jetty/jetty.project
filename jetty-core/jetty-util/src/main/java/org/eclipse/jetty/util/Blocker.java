@@ -80,6 +80,12 @@ public class Blocker
         {
             return this;
         }
+
+        @Override
+        public String toString()
+        {
+            return "ACQUIRED";
+        }
     };
     private static final Throwable SUCCEEDED = new Throwable()
     {
@@ -87,6 +93,12 @@ public class Blocker
         public Throwable fillInStackTrace()
         {
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SUCCEEDED";
         }
     };
 
@@ -202,6 +214,65 @@ public class Blocker
                     else
                         LOG.warn("Blocking.Callback incomplete");
                 }
+            }
+        };
+    }
+
+    public interface Promise<C> extends org.eclipse.jetty.util.Promise.Invocable<C>, AutoCloseable
+    {
+        C block() throws IOException;
+
+        @Override
+        void close();
+    }
+
+    public static <C> Promise<C> promise()
+    {
+        return new Promise<>()
+        {
+            private final CompletableFuture<C> _future = new CompletableFuture<>();
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+
+            @Override
+            public C block() throws IOException
+            {
+                try
+                {
+                    return _future.get();
+                }
+                catch (Throwable t)
+                {
+                    throw IO.rethrow(t);
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                if (!_future.isDone())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Blocking.Promise incomplete", new Throwable());
+                    else
+                        LOG.warn("Blocking.Promise incomplete");
+                }
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                _future.complete(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                _future.completeExceptionally(x);
             }
         };
     }
@@ -374,6 +445,12 @@ public class Blocker
             {
                 _lock.unlock();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[c=%s]".formatted(getClass().getSimpleName(), hashCode(), _completed);
         }
     }
 }

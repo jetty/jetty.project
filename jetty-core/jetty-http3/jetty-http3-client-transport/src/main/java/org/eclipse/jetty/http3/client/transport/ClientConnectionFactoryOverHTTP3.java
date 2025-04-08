@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.client.transport;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http3.client.HTTP3Client;
@@ -29,13 +30,21 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory
+public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory, HttpClient.Aware
 {
     private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
+    private final HTTP3Client http3Client;
 
     public ClientConnectionFactoryOverHTTP3(HTTP3Client http3Client)
     {
+        this.http3Client = http3Client;
         installBean(http3Client);
+    }
+
+    @Override
+    public void setHttpClient(HttpClient httpClient)
+    {
+        HttpClientTransportOverHTTP3.configure(httpClient, http3Client);
     }
 
     @Override
@@ -53,17 +62,14 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
     {
         private static final List<String> protocols = List.of("h3");
 
-        private final HTTP3Client http3Client;
-
         public HTTP3(HTTP3Client client)
         {
-            super(new ClientConnectionFactoryOverHTTP3(client));
-            http3Client = client;
+            this(new ClientConnectionFactoryOverHTTP3(client));
         }
 
-        public HTTP3Client getHTTP3Client()
+        public HTTP3(ClientConnectionFactoryOverHTTP3 connectionFactory)
         {
-            return http3Client;
+            super(connectionFactory);
         }
 
         @Override
@@ -75,14 +81,15 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
         @Override
         public Transport newTransport()
         {
-            return new QuicTransport(getHTTP3Client().getQuicConfiguration());
+            ClientConnectionFactoryOverHTTP3 http3 = (ClientConnectionFactoryOverHTTP3)getClientConnectionFactory();
+            return new QuicTransport(http3.http3Client.getQuicConfiguration());
         }
 
         @Override
         public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
         {
             ClientConnectionFactoryOverHTTP3 http3 = (ClientConnectionFactoryOverHTTP3)getClientConnectionFactory();
-            context.put(HTTP3Client.CLIENT_CONTEXT_KEY, http3Client);
+            context.put(HTTP3Client.CLIENT_CONTEXT_KEY, http3.http3Client);
             SessionClientListener listener = new SessionClientListener(context);
             context.put(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY, listener);
             return http3.factory.newProtocolSession(quicSession, context);

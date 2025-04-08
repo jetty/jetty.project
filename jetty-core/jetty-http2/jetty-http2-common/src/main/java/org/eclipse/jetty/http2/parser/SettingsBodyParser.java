@@ -209,6 +209,10 @@ public class SettingsBodyParser extends BodyParser
         if (maxFrameSize != null && (maxFrameSize < Frame.DEFAULT_MAX_SIZE || maxFrameSize > Frame.MAX_MAX_SIZE))
             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
 
+        Integer maxHeaderListSize = settings.get(SettingsFrame.MAX_HEADER_LIST_SIZE);
+        if (maxHeaderListSize != null && maxHeaderListSize <= 0)
+            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_header_list_size");
+
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         return onSettings(buffer, frame);
     }

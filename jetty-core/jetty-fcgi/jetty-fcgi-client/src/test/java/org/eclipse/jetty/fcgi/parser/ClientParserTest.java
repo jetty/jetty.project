@@ -130,10 +130,11 @@ public class ClientParserTest
             }
 
             @Override
-            public void onEnd(int request)
+            public boolean onEnd(int request)
             {
                 assertEquals(id, request);
                 verifier.addAndGet(3);
+                return false;
             }
         });
 
@@ -181,10 +182,11 @@ public class ClientParserTest
             }
 
             @Override
-            public void onEnd(int request)
+            public boolean onEnd(int request)
             {
                 assertEquals(id, request);
                 verifier.addAndGet(3);
+                return false;
             }
         });
 
@@ -232,11 +234,12 @@ public class ClientParserTest
             }
 
             @Override
-            public void onEnd(int request)
+            public boolean onEnd(int request)
             {
                 assertEquals(id, request);
                 assertEquals(contentLength, totalLength.get());
                 verifier.set(true);
+                return false;
             }
         });
 

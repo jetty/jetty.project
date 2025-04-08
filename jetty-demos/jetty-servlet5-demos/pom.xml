@@ -19,6 +19,7 @@
     <module>jetty-servlet5-demo-jetty-webapp</module>
     <module>jetty-servlet5-demo-jndi-webapp</module>
     <module>jetty-servlet5-demo-jsp-webapp</module>
+    <module>jetty-servlet5-demo-jspc-webapp</module>
     <module>jetty-servlet5-demo-mock-resources</module>
     <module>jetty-servlet5-demo-simple-webapp</module>
     <module>jetty-servlet5-demo-spec</module>

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
@@ -40,10 +41,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
     private final CoreClientUpgradeRequest delegate;
+    private final Map<String, List<String>> headers;
 
     public DelegatedJettyClientUpgradeRequest(CoreClientUpgradeRequest delegate)
     {
         this.delegate = delegate;
+        this.headers = HttpFields.asMap(delegate.getHeaders());
     }
 
     @Override
@@ -78,7 +81,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return null;
+        return headers;
     }
 
     @Override

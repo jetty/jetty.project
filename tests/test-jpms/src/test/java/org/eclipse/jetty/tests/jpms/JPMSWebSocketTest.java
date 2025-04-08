@@ -91,6 +91,8 @@ public class JPMSWebSocketTest
                 .addToModulePath("org.eclipse.jetty:jetty-util:" + jettyVersion)
                 .addToModulePath("org.slf4j:slf4j-api:" + slf4jVersion)
                 .addToModulePath("org.eclipse.jetty:jetty-slf4j-impl:" + jettyVersion)
+                .addToModulePath("org.eclipse.jetty.compression:jetty-compression-common:" + jettyVersion)
+                .addToModulePath("org.eclipse.jetty.compression:jetty-compression-gzip:" + jettyVersion)
                 .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-jetty-common:" + jettyVersion)
                 .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-core-client:" + jettyVersion)
                 .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-core-common:" + jettyVersion)

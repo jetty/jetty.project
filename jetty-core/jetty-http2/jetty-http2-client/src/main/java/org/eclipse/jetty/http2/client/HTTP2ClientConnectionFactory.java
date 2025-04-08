@@ -54,10 +54,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
+        generator.getHpackEncoder().setMaxHeaderListSize(client.getMaxRequestHeadersSize());
+
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
         Parser parser = new Parser(bufferPool, client.getMaxResponseHeadersSize());
-        parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientSession session = new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);
@@ -83,7 +84,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         private HTTP2ClientConnection(HTTP2Client client, EndPoint endpoint, HTTP2ClientSession session, Promise<Session> sessionPromise, Session.Listener listener)
         {
-            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize());
+            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize(), -1);
             this.client = client;
             this.promise = sessionPromise;
             this.listener = listener;
@@ -172,12 +173,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             close();
             promise.failed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
         }
     }
 

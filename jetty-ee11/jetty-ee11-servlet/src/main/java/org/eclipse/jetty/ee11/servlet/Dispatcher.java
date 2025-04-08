@@ -382,7 +382,11 @@ public class Dispatcher implements RequestDispatcher
         public Enumeration<String> getAttributeNames()
         {
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            
+
+            //only return the multipart attribute name if this servlet mapping has multipart config
+            if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
+                names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+
             //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null)
                 return Collections.enumeration(names);
@@ -837,6 +841,13 @@ public class Dispatcher implements RequestDispatcher
                 case ERROR_QUERY_STRING -> _httpServletRequest.getQueryString();
                 case ERROR_STATUS_CODE -> super.getAttribute(ErrorHandler.ERROR_STATUS);
                 case ERROR_MESSAGE -> super.getAttribute(ErrorHandler.ERROR_MESSAGE);
+                case ERROR_SERVLET_NAME -> super.getAttribute(ErrorHandler.ERROR_ORIGIN);
+                case ERROR_EXCEPTION -> super.getAttribute(ErrorHandler.ERROR_EXCEPTION);
+                case ERROR_EXCEPTION_TYPE ->
+                {
+                    Object err = super.getAttribute(ErrorHandler.ERROR_EXCEPTION);
+                    yield err == null ? null : err.getClass();
+                }
                 default -> super.getAttribute(name);
             };
         }

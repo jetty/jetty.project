@@ -513,7 +513,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
     }
 
-    protected static class ConnectContext
+    public static class ConnectContext
     {
         private final ConcurrentMap<String, Object> context = new ConcurrentHashMap<>();
         private final Request request;
@@ -659,7 +659,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
     }
 
-    private abstract static class TunnelConnection extends AbstractConnection
+    private abstract static class TunnelConnection extends AbstractConnection.NonBlocking
     {
         private final IteratingCallback pipe = new ProxyIteratingCallback();
         private final ByteBufferPool bufferPool;
@@ -779,6 +779,12 @@ public class ConnectHandler extends Handler.Wrapper
             protected void onCompleteFailure(Throwable cause)
             {
                 buffer = Retainable.release(buffer);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
             }
 
             private void disconnect(Throwable x)

@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -367,14 +368,12 @@ public class ContentSourceTransformerTest
             @Override
             protected Content.Chunk transform(Content.Chunk rawChunk)
             {
-                if (rawChunk == null)
-                    return null;
-                String decoded = UTF_8.decode(rawChunk.getByteBuffer().duplicate()).toString();
+                String decoded = UTF_8.decode(rawChunk.getByteBuffer()).toString();
                 return switch (decoded)
                 {
                     case "B" -> Content.Chunk.from(originalFailure1, false);
                     case "D" -> Content.Chunk.from(originalFailure2, false);
-                    default -> Content.Chunk.from(rawChunk.getByteBuffer(), rawChunk.isLast());
+                    default -> Content.Chunk.from(UTF_8.encode(decoded), rawChunk.isLast());
                 };
             }
         };
@@ -399,11 +398,18 @@ public class ContentSourceTransformerTest
 
     private static class WordSplitLowCaseTransformer extends ContentSourceTransformer
     {
+        private final SerializedInvoker invoker = new SerializedInvoker();
         private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
 
         private WordSplitLowCaseTransformer(Content.Source rawSource)
         {
             super(rawSource);
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            super.demand(() -> invoker.run(demandCallback));
         }
 
         @Override

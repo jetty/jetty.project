@@ -64,6 +64,7 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -93,6 +94,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -142,7 +144,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Supplier<Handler>
 {
-    public static final Environment ENVIRONMENT = Environment.ensure("ee9");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee9", ContextHandler.class);
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
@@ -301,7 +303,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new DumpableCollection("initparams " + this, getInitParams().entrySet()));
+        dumpObjects(out, indent,
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
+            new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
     public APIContext getServletContext()
@@ -927,6 +932,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             String contextPath = getContextPath();
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || baseRequest.getCoreRequest().getContext().isCrossContextDispatch(baseRequest.getCoreRequest()))
             {
+                // Perform context-path (and url-pattern) matching on compacted path.
+                if (isCompactPath())
+                    target = URIUtil.compactPath(target);
+
                 if (target.length() > contextPath.length())
                 {
                     if (contextPath.length() > 1)
@@ -1372,6 +1381,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         _errorHandler = errorHandler;
     }
 
+    /**
+     * @return the maximum size of the form content (in bytes).
+     */
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
@@ -1381,13 +1393,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
      *
-     * @param maxSize the maximum size of the form content (in bytes)
+     * @param maxSize the maximum size of the form content (in bytes) or -1 for a default value.
      */
     public void setMaxFormContentSize(int maxSize)
     {
+        if (maxSize < 0)
+            maxSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
         _maxFormContentSize = maxSize;
     }
 
+    /**
+     * @return the maximum number of form Keys.
+     */
+    @ManagedAttribute("The maximum number of form keys")
     public int getMaxFormKeys()
     {
         return _maxFormKeys;
@@ -1396,27 +1414,44 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
      *
-     * @param max the maximum number of form keys
+     * @param max the maximum number of form keys or -1 for a default value.
      */
     public void setMaxFormKeys(int max)
     {
+        if (max < 0)
+            max = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
         _maxFormKeys = max;
     }
 
     /**
+     * Is a compacted path used for context-path and url-pattern matching?
+     *
      * @return True if URLs are compacted to replace multiple '/'s with a single '/'
-     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.
+     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.  Will be removed from ee10 onwards.
+     * @see URIUtil#compactPath(String)
      */
-    @Deprecated
+    @Deprecated(since = "10.0.5", forRemoval = true)
     public boolean isCompactPath()
     {
         return _compactPath;
     }
 
     /**
+     * <p>
+     * When performing context-path and url-pattern matching, do so with a compacted form of the
+     * request path.
+     * </p>
+     *
+     * <p>
+     * Note: this compacted path is not exposed to the Servlet API, the original request path
+     * is used.
+     * </p>
+     *
      * @param compactPath True if URLs are compacted to replace multiple '/'s with a single '/'
+     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.  Will be removed from ee10 onwards.
+     * @see URIUtil#compactPath(String)
      */
-    @Deprecated
+    @Deprecated(since = "10.0.5", forRemoval = true)
     public void setCompactPath(boolean compactPath)
     {
         _compactPath = compactPath;
@@ -1519,9 +1554,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         try
         {
-            // addPath with accept non-canonical paths that don't go above the root,
-            // but will treat them as aliases. So unless allowed by an AliasChecker
-            // they will be rejected below.
             return baseResource.resolve(pathInContext);
         }
         catch (Exception e)
@@ -1891,14 +1923,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 String contextPath = getContextPath();
                 // uriInContext is canonicalized by HttpURI.
                 HttpURI.Mutable uri = HttpURI.build(uriInContext);
-                String pathInfo = uri.getCanonicalPath();
+                String pathInfo = uri.getDecodedPath();
                 if (StringUtil.isEmpty(pathInfo))
                     return null;
 
                 if (!StringUtil.isEmpty(contextPath))
                 {
                     uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
-                    pathInfo = uri.getCanonicalPath().substring(contextPath.length());
+                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
                 }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);
             }
@@ -1912,10 +1944,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -1959,10 +1991,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);
@@ -1995,10 +2027,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ContextHandler.this.getResourcePaths(path);
@@ -2684,6 +2716,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
+        protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+        {
+            // The CoreContextHandler should never handle the request. Defer to the nested ContextHandler to do so if necessary.
+            return false;
+        }
+
+        @Override
         public void makeTempDirectory() throws Exception
         {
             super.makeTempDirectory();
@@ -2817,6 +2856,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
+            HttpChannel channel = httpChannel;
+            org.eclipse.jetty.server.Request.addCompletionListener(coreContextRequest, x ->
+            {
+                // WebSocket needs a reference to the HttpServletRequest,
+                // so do not recycle the HttpChannel if it's a WebSocket
+                // request, no matter if the response is successful or not.
+                if (!request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION))
+                    channel.recycle();
+            });
             return coreContextRequest;
         }
 
@@ -2859,6 +2907,53 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             {
                 return _apiContext;
             }
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return switch (name)
+                {
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
+                    default -> super.getAttribute(name);
+                };
+            }
+
+            @Override
+            public Object setAttribute(String name, Object attribute)
+            {
+                return switch (name)
+                {
+                    case FormFields.MAX_FIELDS_ATTRIBUTE ->
+                    {
+                        int oldValue = getMaxFormKeys();
+                        if (attribute == null)
+                            setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
+                        else
+                            setMaxFormKeys(Integer.parseInt(attribute.toString()));
+                        yield oldValue;
+                    }
+                    case FormFields.MAX_LENGTH_ATTRIBUTE ->
+                    {
+                        int oldValue = getMaxFormContentSize();
+                        if (attribute == null)
+                            setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
+                        else
+                            setMaxFormContentSize(Integer.parseInt(attribute.toString()));
+                        yield oldValue;
+                    }
+                    default -> super.setAttribute(name, attribute);
+                };
+            }
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
+            names.add(FormFields.MAX_LENGTH_ATTRIBUTE);
+            return Collections.unmodifiableSet(names);
         }
 
         private class CoreToNestedHandler extends Abstract

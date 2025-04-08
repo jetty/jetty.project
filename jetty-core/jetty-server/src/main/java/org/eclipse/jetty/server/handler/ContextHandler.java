@@ -589,11 +589,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         if (super.addEventListener(listener))
         {
-            if (listener instanceof ContextScopeListener)
+            if (listener instanceof ContextScopeListener contextScopeListener)
             {
-                _contextListeners.add((ContextScopeListener)listener);
+                _contextListeners.add(contextScopeListener);
                 if (__context.get() != null)
-                    ((ContextScopeListener)listener).enterScope(__context.get(), null);
+                    contextScopeListener.enterScope(__context.get(), null);
             }
             return true;
         }
@@ -605,9 +605,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         if (super.removeEventListener(listener))
         {
-            if (listener instanceof ContextScopeListener)
-                _contextListeners.remove(listener);
-
+            if (listener instanceof ContextScopeListener contextScopeListener)
+            {
+                _contextListeners.remove(contextScopeListener);
+                if (__context.get() != null)
+                    contextScopeListener.exitScope(__context.get(), null);
+            }
             return true;
         }
         return false;
@@ -1053,6 +1056,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return true;
 
         // Past this point we are calling the downstream handler in scope.
+        Context lastContext = getCurrentContext();
         ClassLoader lastLoader = enterScope(contextRequest);
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
@@ -1068,7 +1072,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             // We exit scope here, even though handle() is asynchronous,
             // as we have wrapped all our callbacks to re-enter the scope.
-            exitScope(contextRequest, request.getContext(), lastLoader);
+            exitScope(contextRequest, lastContext, lastLoader);
         }
     }
 

@@ -23,7 +23,7 @@ public class SignInWithEthereum
     public static SecurityHandler createSecurityHandler(Handler handler)
     {
         // tag::configureSecurityHandler[]
-        // This uses jetty-core, but you can configure a ConstraintSecurityHandler for use with EE10.
+        // This uses jetty-core, but you can configure a ConstraintSecurityHandler for use with EE11.
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         securityHandler.setHandler(handler);
         securityHandler.put("/*", Constraint.ANY_USER);

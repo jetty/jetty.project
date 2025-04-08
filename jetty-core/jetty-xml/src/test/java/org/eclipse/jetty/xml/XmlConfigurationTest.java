@@ -218,6 +218,13 @@ public class XmlConfigurationTest
         Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
         assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
         assertEquals(concurrentMap.get("KEY"), "ITEM");
+
+        assertThat(tc.builder, is("builder"));
+
+        if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
+        {
+            System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
+        }
     }
 
     @ParameterizedTest
@@ -781,6 +788,10 @@ public class XmlConfigurationTest
         {
         }
 
+        public void call(Ddd ddd)
+        {
+        }
+
         public void call(Abc abc)
         {
         }
@@ -808,14 +819,16 @@ public class XmlConfigurationTest
         List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
         Collections.shuffle(methods);
         methods.sort(EXECUTABLE_COMPARATOR);
+
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
             TestOrder.class.getMethod("call", int.class),
-            TestOrder.class.getMethod("call", Abc.class),
-            TestOrder.class.getMethod("call", Aaa.class),
+            TestOrder.class.getMethod("call", Ddd.class), //more derived than String, Bbb or Ccc
             TestOrder.class.getMethod("call", String.class),
             TestOrder.class.getMethod("call", Bbb.class),
             TestOrder.class.getMethod("call", Ccc.class),
+            TestOrder.class.getMethod("call", Abc.class),
+            TestOrder.class.getMethod("call", Aaa.class),
             TestOrder.class.getMethod("call", Object.class),
             TestOrder.class.getMethod("call", String[].class),
             TestOrder.class.getMethod("call", String.class, String[].class)
@@ -1907,6 +1920,28 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testMainWithDuplicateEnvironment()
+    {
+        Path base = MavenTestingUtils.getBasePath().resolve("src").resolve("test").resolve("base");
+        // Don't use environment names used in other tests, as they are stored in a static map.
+        assertThrows(IllegalArgumentException.class, () -> XmlConfiguration.main(
+            "--env",
+            "env1",
+            "-cp",
+            base.resolve("envA").toString(),
+            "--env",
+            "env2",
+            "-cp",
+            base.resolve("envB").toString(),
+            // Duplicate --env envA section is not allowed.
+            "--env",
+            "env1",
+            "-cp",
+            base.resolve("envB").toString()
+        ));
+    }
+
+    @Test
     public void testPropertyNoNameAttributeWithDeprecatedAttribute() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration(
@@ -1994,16 +2029,19 @@ public class XmlConfigurationTest
         assertThat(tc.testObject, instanceOf(ScheduledExecutorService.class));
     }
 
-    public static Stream<Arguments> xmlSystemIdSource()
+    private static List<String> systemIdVariants()
     {
-        List<Arguments> ids = new ArrayList<>();
-
-        String[] schemes = {"http", "https"};
-        String[] contexts = {"eclipse.org/jetty", "www.eclipse.org/jetty", "eclipse.dev/jetty", "www.eclipse.dev/jetty", "jetty.org"};
-        String[] paths = {"configure.dtd", // version-less
+        List<String> ids = new ArrayList<>();
+        List<String> schemes = List.of("http", "https");
+        List<String> contexts = List.of("eclipse.org/jetty",
+            "www.eclipse.org/jetty",
+            "eclipse.dev/jetty",
+            "www.eclipse.dev/jetty",
+            "jetty.org");
+        List<String> paths = List.of("configure.dtd", // version-less
                           "configure_9_0.dtd", // 9.0
                           "configure_9_3.dtd", // 9.3
-                          "configure_10_0.dtd"}; // 10.
+                          "configure_10_0.dtd"); // 10.0
 
         for (String scheme: schemes)
         {
@@ -2011,12 +2049,16 @@ public class XmlConfigurationTest
             {
                 for (String path: paths)
                 {
-                    ids.add(Arguments.of(String.format("%s://%s/%s", scheme, host, path)));
+                    ids.add(String.format("%s://%s/%s", scheme, host, path));
                 }
             }
         }
+        return ids;
+    }
 
-        return ids.stream();
+    public static Stream<Arguments> xmlSystemIdSource()
+    {
+        return systemIdVariants().stream().map(Arguments::of);
     }
 
     /**
@@ -2032,6 +2074,39 @@ public class XmlConfigurationTest
         XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
         InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
         assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
+    }
+
+    public static Stream<Arguments> xmlPublicIdSource()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // XML Public IDs seen in use with Jetty.
+        List<String> publicIds = List.of("-//Jetty//Configure//EN",
+            "-//Mort Bay Consulting//DTD Configure//EN");
+
+        for (String systemId: systemIdVariants())
+        {
+            for (String publicId: publicIds)
+            {
+                cases.add(Arguments.of(publicId, systemId));
+            }
+        }
+        return cases.stream();
+    }
+
+    /**
+     * Test to ensure that all required XML PUBLIC ID variants are covered in the
+     * {@link XmlConfiguration} internals.
+     */
+    @ParameterizedTest
+    @MethodSource("xmlPublicIdSource")
+    public void testPublicIdVariants(String xmlPublicId, String xmlSystemId) throws IOException, SAXException
+    {
+        // empty raw xml, just to instantiate XmlConfiguration, so we can access the XmlParser / ConfigurationParser.
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
+        XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
+        InputSource inputSource = configurationProcessor.resolveEntity(xmlPublicId, xmlSystemId);
+        assertNotNull(inputSource, "reference: PUBLIC " + xmlPublicId + " SYSTEM " + xmlSystemId + " does not exist");
     }
 
     private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception
@@ -2072,21 +2147,29 @@ public class XmlConfigurationTest
         aaa(null);
         bbb(null);
         ccc(null);
-
-        Stream.of(XmlConfigurationTest.class.getMethods())
-            .filter(m -> m.getName().length() == 3)
-            .filter(m -> !m.getName().equals("foo"))
-            .sorted(EXECUTABLE_COMPARATOR)
-            .map(Executable::toGenericString)
-            .forEach(System.out::println);
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        if (slf4jLogger.isDebugEnabled())
+        {
+            Stream.of(XmlConfigurationTest.class.getMethods())
+                .filter(m -> m.getName().length() == 3)
+                .filter(m -> !m.getName().equals("foo"))
+                .sorted(EXECUTABLE_COMPARATOR)
+                .map(Executable::toGenericString)
+                .forEach(System.out::println);
+        }
 
         List<Method> methods = Arrays.asList(Arrays.stream(XmlConfigurationTest.class.getMethods())
             .filter(m -> m.getName().length() == 3)
+            .sorted(EXECUTABLE_COMPARATOR)
             .toArray(Method[]::new));
 
         // The implementor must also ensure that the relation is transitive: ((compare(x, y)>0) && (compare(y, z)>0)) implies compare(x, z)>0
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2))));
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2))));
+        // Test that it is als reflexive
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(0))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(2), methods.get(0))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(2), methods.get(1))));
     }
 
     public void aaa(Aaa ignored)
@@ -2117,6 +2200,31 @@ public class XmlConfigurationTest
     {
     }
 
+    public abstract static class Ddd extends Ccc
+    {
+    }
+
+    @Test
+    public void testClassBeforeInterface()
+    {
+        List<String> orderedMethodIds = Stream.of(Example.class.getMethods())
+            .filter(m -> m.getName().equals("foo"))
+            .sorted(EXECUTABLE_COMPARATOR)
+            .map(Executable::toGenericString)
+            .collect(Collectors.toList());
+        orderedMethodIds.stream().forEach(System.err::println);
+
+        String[] expectedOrder = {
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo()",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo(int)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo(java.lang.Integer)",
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo(java.lang.String)",
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo(java.lang.CharSequence)"
+        };
+
+        assertThat(orderedMethodIds, contains(expectedOrder));
+    }
+
     @Test
     public void testFooExecutableComparator()
     {
@@ -2125,15 +2233,22 @@ public class XmlConfigurationTest
             .sorted(EXECUTABLE_COMPARATOR)
             .map(Executable::toGenericString)
             .collect(Collectors.toList());
-        orderedMethodIds.forEach(System.out::println);
+
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        if (slf4jLogger.isDebugEnabled())
+        {
+            orderedMethodIds.forEach(System.out::println);
+        }
+
         String[] expectedOrder = {
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo()", // favor fewer args
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int)", // favor primitives over non-primitives
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.temporal.Temporal)", // favor over Instant
-            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String)",
-            "public java.util.Locale org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.nio.charset.Charset)",
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.Instant)",
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.util.Locale)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo()", // favour fewer args
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int)", // favour primitives over non-primitives
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String)", //favour classes over interfaces
+            "public java.util.Locale org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.nio.charset.Charset)", //derived abstract class
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.Instant)", //class
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.util.Locale)", ///class
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.temporal.Temporal)", //derived interface
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.CharSequence)", //interface
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String,int)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String,java.lang.String)",
@@ -2146,6 +2261,11 @@ public class XmlConfigurationTest
     {
         public void foo()
         {
+        }
+
+        public int foo(CharSequence sequence)
+        {
+            return -99;
         }
 
         public int foo(String name)
@@ -2188,6 +2308,31 @@ public class XmlConfigurationTest
 
         public void foo(int id, String name, String description, Object value)
         {
+        }
+    }
+
+    public static class Example
+    {
+        public void foo()
+        {
+        }
+
+        public void foo(Integer i)
+        {
+        }
+
+        public void foo(int id)
+        {
+        }
+
+        public int foo(CharSequence sequence)
+        {
+            return 0;
+        }
+
+        public int foo(String string)
+        {
+            return -1;
         }
     }
 }

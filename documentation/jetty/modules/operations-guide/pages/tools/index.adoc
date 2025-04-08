@@ -38,10 +38,10 @@ MD5:5eBe2294EcD0E0F08eAb7690D2A6Ee69 <4>
 The `Password` tool produced an obfuscated string for the password `secret`, namely `OBF:1yta1t331v8w1v9q1t331ytc` (the prefix `OBF:` must be retained).
 The obfuscated string can be de-obfuscated to obtain the original password.
 
-Now you can use the obfuscated password in Jetty configuration files, for example to specify the KeyStore password in `ssl.ini` when configuring secure connectors, as explained xref:protocols/index.adoc#ssl-customize[here].
+Now you can use the obfuscated password in Jetty configuration files, for example to specify the KeyStore password in `ssl-context.ini` when configuring secure connectors, as explained xref:protocols/index.adoc#ssl-customize[here].
 For example:
 
-.ssl.ini
+.ssl-context.ini
 [,properties]
 ----
 jetty.sslContext.keyStorePassword=OBF:1yta1t331v8w1v9q1t331ytc

@@ -36,7 +36,7 @@ xref:modules/custom.adoc[Custom Jetty modules] should be put under `$JETTY_BASE/
 A Jetty module has a unique name.
 The module name is by default derived from the file name, so module file `acme.mod` identifies a module named `acme`.
 
-However, a module file may specify a <<directive-provides,+[provides>>+] directive for a _virtual_ module, so that many modules may provide a different implementation for the same feature.
+However, a module file may specify a <<directive-provides,+[provides]+>> directive for a _virtual_ module, so that many modules may provide a different implementation for the same feature.
 
 For example, among the standard modules provided by Jetty, the `server` module depends on the `logging` module, but there is no correspondent `logging.mod` file.
 
@@ -195,7 +195,7 @@ Enabling the `http` module also enables, transitively, the `server` module, sinc
 The `[depends]` directive establishes a https://en.wikipedia.org/wiki/Partially_ordered_set[_partial order_] relationship among modules so that enabled modules can be sorted and organized in a graph.
 Circular dependencies are not allowed.
 
-The order of the enabled modules is used to determine the processing of the configuration, for example the order of processing of the <<directive-files,+[files>>+] section, the order of processing of XML files defined in the <<directive-xml,+[xml>>+] section, etc.
+The order of the enabled modules is used to determine the processing of the configuration, for example the order of processing of the <<directive-files,+[files]+>> section, the order of processing of XML files defined in the <<directive-xml,+[xml]+>> section, etc.
 
 [[directive-after]]
 === [after]
@@ -213,8 +213,14 @@ In this way, you are guaranteed that the `https` module is processed after the `
 
 This directive indicates that this module is ordered before the listed module names, if they are enabled.
 
-One use of this directive is to create a prerequisite module without the need to modify the `depends` directive of an existing module.
-For example, to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, without modifying the existing `server.mod` file nor the `jetty.xml` file that it uses. This can be achieved by creating the `custom-server` xref:modules/custom.adoc[Jetty custom module]:
+For example, module `test-keystore` is `[before]` module `ssl-context`.
+Enabling the `test-keystore` module _does not_ enable the `ssl-context` module.
+
+This directive is used to create a prerequisite module without the need to modify the `depends` directive of an existing module.
+
+For example, you want to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, but without modifying the existing `server.mod` file nor the `jetty.xml` file that `server.mod` uses.
+
+This can be achieved by creating the following `custom-server` xref:modules/custom.adoc[Jetty custom module]:
 
 .custom-server.mod
 ----
@@ -379,7 +385,7 @@ See also the xref:start/start-jpms.adoc[JPMS section] for additional examples ab
 [[directive-ini-template]]
 === [ini-template]
 
-A list of properties to be copied in the `+*.ini+` file generated when xref:start/index.adoc#configure-enable[the module is enabled].
+A list of properties to be copied in the `+*.ini+` file generated when xref:start/index.adoc#configure-enable[the module is enabled], either explicitly or transitively.
 
 The list of properties is derived from the <<components,module XML file(s)>> that declare them.
 

@@ -15,8 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.ExtendedSSLSession;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 
@@ -213,7 +217,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         if (isSniRequired() || isSniHostCheck())
         {
-            String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
+            String sniHost = retrieveSni(request, session);
 
             X509 x509 = getX509(session);
             if (x509 == null)
@@ -227,6 +231,42 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             if (isSniHostCheck() && !x509.matches(serverName))
                 throw new BadMessageException(400, "Invalid SNI");
+        }
+    }
+
+    protected String retrieveSni(Request request, SSLSession session)
+    {
+        // Quick retrieval of the SNI from a SSLSession attribute put by SniX509ExtendedKeyManager.
+        String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
+        if (sniHost != null)
+            return sniHost;
+
+        // Some security providers (for example, Conscrypt) do not support
+        // SSLSession attributes, so perform a more expensive SNI retrieval.
+        if (session instanceof ExtendedSSLSession extended)
+        {
+            for (SNIServerName serverName : getRequestedServerNames(extended))
+            {
+                if (serverName instanceof SNIHostName hostName)
+                    return hostName.getAsciiName();
+            }
+        }
+
+        // Nothing more we can do.
+        return null;
+    }
+
+    private List<SNIServerName> getRequestedServerNames(ExtendedSSLSession session)
+    {
+        try
+        {
+            // Ignore exceptions thrown from this method.
+            // For example: https://github.com/bcgit/bc-java/issues/1773.
+            return session.getRequestedServerNames();
+        }
+        catch (Throwable x)
+        {
+            return List.of();
         }
     }
 

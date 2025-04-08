@@ -40,13 +40,13 @@ public class AsyncRequestContentTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEmptyAsyncContent(Transport transport) throws Exception
+    public void testEmptyAsyncContent(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -61,13 +61,13 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAsyncContent(Transport transport) throws Exception
+    public void testAsyncContent(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -83,14 +83,14 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEmptyInputStream(Transport transport) throws Exception
+    public void testEmptyInputStream(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         InputStreamRequestContent content =
             new InputStreamRequestContent(new ByteArrayInputStream(new byte[0]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -104,14 +104,14 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testInputStream(Transport transport) throws Exception
+    public void testInputStream(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         InputStreamRequestContent content =
             new InputStreamRequestContent(new ByteArrayInputStream(new byte[1]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -125,13 +125,13 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEmptyOutputStream(Transport transport) throws Exception
+    public void testEmptyOutputStream(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -146,13 +146,13 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testOutputStream(Transport transport) throws Exception
+    public void testOutputStream(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .body(content)
             .send(result ->
             {
@@ -170,15 +170,15 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBufferReuseAfterCallbackCompleted(Transport transport) throws Exception
+    public void testBufferReuseAfterCallbackCompleted(TransportType transportType) throws Exception
     {
-        start(transport, new ConsumeInputHandler());
+        start(transportType, new ConsumeInputHandler());
 
         AsyncRequestContent content = new AsyncRequestContent();
 
         CountDownLatch latch = new CountDownLatch(1);
         List<Byte> requestContent = new ArrayList<>();
-        client.POST(newURI(transport))
+        client.POST(newURI(transportType))
             .onRequestContent(((request, buffer) -> requestContent.add(buffer.get())))
             .body(content)
             .send(result ->

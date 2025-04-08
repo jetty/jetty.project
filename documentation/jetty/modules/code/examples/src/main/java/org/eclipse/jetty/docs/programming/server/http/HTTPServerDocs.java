@@ -29,15 +29,19 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.ResourceServlet;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.compression.server.CompressionConfig;
+import org.eclipse.jetty.compression.server.CompressionHandler;
+import org.eclipse.jetty.ee11.servlet.DefaultServlet;
+import org.eclipse.jetty.ee11.servlet.ResourceServlet;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -46,7 +50,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -83,7 +87,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -92,11 +98,13 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -603,9 +611,59 @@ public class HTTPServerDocs
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
-        // Configure Jetty's SslContextFactory to use Conscrypt.
+        // Configure Jetty's SslContextFactory to use the Conscrypt provider.
         sslContextFactory.setProvider("Conscrypt");
         // end::conscrypt[]
+    }
+
+    public void bouncyCastle()
+    {
+        // tag::bouncyCastle[]
+        // Configure the JDK with the Bouncy Castle providers, you need both.
+        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleJsseProvider());
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure Jetty's SslContextFactory to use the Bouncy Castle provider.
+        sslContextFactory.setProvider("BCJSSE");
+        // end::bouncyCastle[]
+    }
+
+    public void keyStoreScanner() throws Exception
+    {
+        // tag::keyStoreScanner[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Add the SecureRequestCustomizer because TLS is used.
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // Configure the SslContextFactory with the keyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        // The ConnectionFactory for TLS.
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+
+        // The ServerConnector instance.
+        ServerConnector connector = new ServerConnector(server, tls, http11);
+        connector.setPort(8443);
+
+        server.addConnector(connector);
+
+        KeyStoreScanner keyStoreScanner = new KeyStoreScanner(sslContextFactory);
+        keyStoreScanner.setScanInterval(60);
+        server.addBean(keyStoreScanner);
+
+        server.start();
+        // end::keyStoreScanner[]
     }
 
     public void handlerTree()
@@ -773,23 +831,29 @@ public class HTTPServerDocs
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType))
                 {
                     // Convert the request content into Fields.
-                    CompletableFuture<Fields> completableFields = FormFields.from(request); // <1>
-
-                    // When all the request content has arrived, process the fields.
-                    completableFields.whenComplete((fields, failure) -> // <2>
+                    FormFields.onFields(request, new Promise.Invocable<>() // <1>
                     {
-                        if (failure == null)
+                        @Override
+                        public void succeeded(Fields fields) // <2>
                         {
                             processFields(fields);
                             // Send a simple 200 response, completing the callback.
                             response.setStatus(HttpStatus.OK_200);
                             callback.succeeded();
                         }
-                        else
+
+                        @Override
+                        public void failed(Throwable failure)
                         {
                             // Reading the request content failed.
                             // Send an error response, completing the callback.
                             Response.writeError(request, response, callback, failure);
+                        }
+
+                        @Override
+                        public InvocationType getInvocationType() // <3>
+                        {
+                            return InvocationType.NON_BLOCKING;
                         }
                     });
 
@@ -822,21 +886,17 @@ public class HTTPServerDocs
                 String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
                 if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType))
                 {
-                    // Extract the multipart boundary.
-                    String boundary = MultiPart.extractBoundary(contentType);
-
-                    // Create and configure the multipart parser.
-                    MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
-                    // By default, uploaded files are stored in this directory, to
-                    // avoid to read the file content (which can be large) in memory.
-                    parser.setFilesDirectory(Path.of("/tmp"));
+                    // Configuration for the MultiPart parser.
+                    MultiPartConfig config = new MultiPartConfig.Builder()
+                        // By default, uploaded files are stored in this directory, to
+                        // avoid to read the file content (which can be large) in memory.
+                        .location(Path.of("/tmp"))
+                        .build();
                     // Convert the request content into parts.
-                    CompletableFuture<MultiPartFormData.Parts> completableParts = parser.parse(request); // <1>
-
-                    // When all the request content has arrived, process the parts.
-                    completableParts.whenComplete((parts, failure) -> // <2>
+                    MultiPartFormData.onParts(request, request, contentType, config, new Promise.Invocable<>() // <1>
                     {
-                        if (failure == null)
+                        @Override
+                        public void succeeded(MultiPartFormData.Parts parts) // <2>
                         {
                             // Use the Parts API to process the parts.
                             processParts(parts);
@@ -844,11 +904,19 @@ public class HTTPServerDocs
                             response.setStatus(HttpStatus.OK_200);
                             callback.succeeded();
                         }
-                        else
+
+                        @Override
+                        public void failed(Throwable failure)
                         {
                             // Reading the request content failed.
                             // Send an error response, completing the callback.
                             Response.writeError(request, response, callback, failure);
+                        }
+
+                        @Override
+                        public InvocationType getInvocationType() // <3>
+                        {
+                            return InvocationType.NON_BLOCKING;
                         }
                     });
 
@@ -1195,6 +1263,48 @@ public class HTTPServerDocs
         // end::webAppContextHandler[]
     }
 
+    public void webAppContextClassLoader() throws Exception
+    {
+        // tag::webAppContextClassLoader[]
+        Server server = new Server();
+        Connector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create a WebAppContext.
+        WebAppContext context = new WebAppContext();
+
+        // Keep Servlet specification behaviour
+        context.setParentLoaderPriority(false);
+
+        // Add hidden classes by package (with exclusion) and by location
+        context.addHiddenClassMatcher(new ClassMatcher(
+            "org.example.package.",
+            "-org.example.package.SpecificClass",
+            "file:/usr/local/server/lib/some.jar"
+        ));
+
+        // Add protected classes by class name and JPMS module
+        context.addProtectedClassMatcher(new ClassMatcher(
+            "org.example.package.SpecificClass",
+            "jrt:/modulename"
+        ));
+
+        // Add addition class path items to the context loader
+        context.setExtraClasspath("file:/usr/local/server/context/lib/context.jar;file:/usr/local/server/context/classes/");
+
+        // end::webAppContextClassLoader[]
+
+        // Link the context to the server.
+        server.setHandler(context);
+
+        // Configure the path of the packaged web application (file or directory).
+        context.setWar("/path/to/webapp.war");
+        // Configure the contextPath.
+        context.setContextPath("/app");
+
+        server.start();
+    }
+
     public void resourceHandler() throws Exception
     {
         // tag::resourceHandler[]
@@ -1345,6 +1455,85 @@ public class HTTPServerDocs
         // end::contextGzipHandler[]
     }
 
+    public void serverCompressionHandler() throws Exception
+    {
+        // tag::serverCompressionHandler[]
+        Server server = new Server();
+        Connector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure CompressionHandler.
+        CompressionHandler compressionHandler = new CompressionHandler();
+        server.setHandler(compressionHandler);
+
+        CompressionConfig compressionConfig = CompressionConfig.builder()
+            // Do not compress these URI paths.
+            .compressExcludePath("/uncompressed")
+            // Also compress POST responses.
+            .compressIncludeMethod("POST")
+            // Do not compress these mime types.
+            .compressExcludeMimeType("font/ttf")
+            .build();
+        // Map the request URI path spec '/*' with the compression configuration.
+        // You can map different path specs with different compression configurations.
+        compressionHandler.putConfiguration("/*", compressionConfig);
+
+        // Create a ContextHandlerCollection to manage contexts.
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        compressionHandler.setHandler(contexts);
+
+        server.start();
+        // end::serverCompressionHandler[]
+    }
+
+    public void contextCompressionHandler() throws Exception
+    {
+        class ShopHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the shop, remembering to complete the callback.
+                return true;
+            }
+        }
+
+        class RESTHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the REST APIs, remembering to complete the callback.
+                return true;
+            }
+        }
+
+        // tag::contextCompressionHandler[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the Server.
+        server.setHandler(contextCollection);
+
+        // Create the context for the shop web application wrapped with CompressionHandler so only the shop will do compression.
+        CompressionHandler shopCompressionHandler = new CompressionHandler(new ContextHandler(new ShopHandler(), "/shop"));
+
+        // Add it to ContextHandlerCollection.
+        contextCollection.addHandler(shopCompressionHandler);
+
+        // Create the context for the API web application.
+        ContextHandler apiContext = new ContextHandler(new RESTHandler(), "/api");
+
+        // Add it to ContextHandlerCollection.
+        contextCollection.addHandler(apiContext);
+
+        server.start();
+        // end::contextCompressionHandler[]
+    }
+
     public void rewriteHandler() throws Exception
     {
         // tag::rewriteHandler[]
@@ -1479,8 +1668,8 @@ public class HTTPServerDocs
         // Set the max number of concurrent requests,
         // for example in relation to the thread pool.
         qosHandler.setMaxRequestCount(maxThreads / 2);
-        // A suspended request may stay suspended for at most 15 seconds.
-        qosHandler.setMaxSuspend(Duration.ofSeconds(15));
+        // A suspended request may stay suspended for at most 5 seconds.
+        qosHandler.setMaxSuspend(Duration.ofSeconds(5));
         server.setHandler(qosHandler);
 
         // Provide quality of service to the shop
@@ -1627,6 +1816,38 @@ public class HTTPServerDocs
         // end::defaultHandler[]
     }
 
+    public void gracefulHandler() throws Exception
+    {
+        // tag::gracefulHandler[]
+        Server server = new Server();
+
+        // Install the GracefulHandler.
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        server.setHandler(gracefulHandler);
+
+        // Set the Server stopTimeout to wait at most
+        // 10 seconds for existing requests to complete.
+        server.setStopTimeout(10_000);
+
+        // Add one web application.
+        class MyWebApp extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Implement your web application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        ContextHandler contextHandler = new ContextHandler(new MyWebApp(), "/app");
+        gracefulHandler.setHandler(contextHandler);
+
+        server.start();
+        // end::gracefulHandler[]
+    }
+
     public void continue100()
     {
         // tag::continue100[]
@@ -1693,5 +1914,43 @@ public class HTTPServerDocs
 
         server.start();
         // end::requestCustomizer[]
+    }
+
+    public void dosHandler() throws Exception
+    {
+        // tag::dosHandler[]
+        class CatalogHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the catalog application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure DoSHandler.
+        DoSHandler dosHandler = new DoSHandler(
+            // Identify remote clients by IP address.
+            DoSHandler.ID_FROM_REMOTE_ADDRESS,
+            // Allow 50 requests/s per remote client.
+            new DoSHandler.LeakingBucketTrackerFactory(50),
+            // When the request rate is exceeded, delay for 10s and then respond with 429.
+            new DoSHandler.DelayedRejectHandler(10000, -1, new DoSHandler.StatusRejectHandler()),
+            // Limit the number of remote clients.
+            5000
+        );
+        server.setHandler(dosHandler);
+
+        // Protect the catalog application by wrapping CatalogHandler with DoSHandler.
+        dosHandler.setHandler(new CatalogHandler());
+
+        server.start();
+        // end::dosHandler[]
     }
 }

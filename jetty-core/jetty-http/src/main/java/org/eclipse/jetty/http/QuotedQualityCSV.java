@@ -126,7 +126,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         super.parsedValueAndParams(buffer);
 
         // Collect full value with parameters
-        _lastQuality = new QualityValue(_lastQuality._quality, buffer.toString(), _lastQuality._index);
+        _lastQuality = new QualityValue(buffer.toString(), _lastQuality._quality, _lastQuality._index);
         _qualities.set(_lastQuality._index, _lastQuality);
     }
 
@@ -139,7 +139,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
         // This is the just the value, without parameters.
         // Assume a quality of ONE
-        _lastQuality = new QualityValue(1.0D, buffer.toString(), _qualities.size());
+        _lastQuality = new QualityValue(buffer.toString(), 1.0D, _qualities.size());
         _qualities.add(_lastQuality);
     }
 
@@ -173,7 +173,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
             if (q != 1.0D)
             {
-                _lastQuality = new QualityValue(q, buffer.toString(), _lastQuality._index);
+                _lastQuality = new QualityValue(buffer.toString(), q, _lastQuality._index);
                 _qualities.set(_lastQuality._index, _lastQuality);
             }
         }
@@ -206,37 +206,69 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _sorted = true;
     }
 
-    private class QualityValue implements Comparable<QualityValue>
+    public List<QualityValue> getQualityValues()
     {
-        private final double _quality;
+        return _qualities.stream().sorted().toList();
+    }
+
+    /**
+     * <p>A <em>quality value</em>, that is a value with an associated weight parameter, as
+     * defined in <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.4.2">RFC 9110</a>.</p>
+     * <p>A quality value appears in HTTP headers such as {@code Accept}, {@code Accept-Encoding},
+     * etc. for example in this form:</p>
+     * <pre>{@code
+     * Accept-Encoding: gzip; q=1, br; q=0.5, zstd; q=0.1
+     * }</pre>
+     */
+    public class QualityValue implements Comparable<QualityValue>
+    {
         private final String _value;
+        private final double _quality;
         private final int _index;
 
-        private QualityValue(double quality, String value, int index)
+        private QualityValue(String value, double quality, int index)
         {
-            _quality = quality;
             _value = value;
+            _quality = quality;
             _index = index;
+        }
+
+        /**
+         * @return the value
+         */
+        public String getValue()
+        {
+            return _value;
+        }
+
+        /**
+         * @return the weight
+         */
+        public double getWeight()
+        {
+            return _quality;
+        }
+
+        /**
+         * @return whether the weight is greater than zero
+         */
+        public boolean isAcceptable()
+        {
+            return getWeight() > 0.0D;
         }
 
         @Override
         public int hashCode()
         {
-            return Double.hashCode(_quality) ^ Objects.hash(_value, _index);
+            return Objects.hash(_quality, _value, _index);
         }
 
         @Override
         public boolean equals(Object obj)
         {
-            if (!(obj instanceof QualityValue))
+            if (!(obj instanceof QualityValue that))
                 return false;
-            QualityValue qv = (QualityValue)obj;
-            return _quality == qv._quality && Objects.equals(_value, qv._value) && Objects.equals(_index, qv._index);
-        }
-
-        private String getValue()
-        {
-            return _value;
+            return _quality == that._quality && Objects.equals(_value, that._value) && _index == that._index;
         }
 
         @Override
@@ -258,11 +290,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,q=%f,i=%d]",
+            return String.format("%s@%x[%s,q=%.3f,i=%d]",
                 getClass().getSimpleName(),
                 hashCode(),
-                _value,
-                _quality,
+                getValue(),
+                getWeight(),
                 _index);
         }
     }

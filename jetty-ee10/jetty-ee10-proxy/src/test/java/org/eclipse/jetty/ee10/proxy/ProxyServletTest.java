@@ -60,7 +60,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
@@ -72,6 +71,7 @@ import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
@@ -84,6 +84,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -127,32 +128,32 @@ public class ProxyServletTest
         ).map(Arguments::of);
     }
 
-    private HttpClient client;
-    private Proxy clientProxy;
+    private HttpConfiguration httpConfig = new HttpConfiguration();
+    private Server server;
+    private ServerConnector serverConnector;
+    private ServerConnector tlsServerConnector;
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
     private AbstractProxyServlet proxyServlet;
-    private Server server;
-    private ServerConnector serverConnector;
-    private ServerConnector tlsServerConnector;
+    private HttpClient client;
+    private Proxy clientProxy;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
         QueuedThreadPool serverPool = new QueuedThreadPool();
         serverPool.setName("server");
         server = new Server(serverPool);
-        serverConnector = new ServerConnector(server);
+        HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfig);
+        serverConnector = new ServerConnector(server, 1, 1, h1);
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         String keyStorePath = MavenTestingUtils.getTestResourcePathFile("server_keystore.p12").toString();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
-            sslContextFactory,
-            HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        tlsServerConnector = new ServerConnector(server, 1, 1, ssl, h1);
         server.addConnector(tlsServerConnector);
 
         ServletContextHandler appCtx = new ServletContextHandler("/", true, false);
@@ -458,16 +459,16 @@ public class ProxyServletTest
 
         Request request = client.newRequest("localhost", serverConnector.getLocalPort()).path("/proxy/test");
         final CountDownLatch latch = new CountDownLatch(1);
-        request.send(new BufferingResponseListener(2 * length * 1024)
+        request.send(new RetainingResponseListener(2 * length * 1024)
         {
             @Override
-            public void onContent(Response response, ByteBuffer content)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
             {
                 try
                 {
                     // Slow down the reader
                     TimeUnit.MILLISECONDS.sleep(5);
-                    super.onContent(response, content);
+                    super.onContent(response, chunk, demander);
                 }
                 catch (InterruptedException x)
                 {
@@ -572,7 +573,7 @@ public class ProxyServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 PrintWriter writer = resp.getWriter();
-                writer.write(req.getHeader("X-Forwarded-Host"));
+                writer.write(req.getHeader(HttpHeader.FORWARDED.asString()));
                 writer.flush();
             }
         });
@@ -580,9 +581,9 @@ public class ProxyServletTest
         startClient();
 
         ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
-        assertThat("Response expected to contain content of X-Forwarded-Host Header from the request",
+        assertThat("Response expected to contain content of Forwarded header from the request",
             response.getContentAsString(),
-            equalTo("localhost:" + serverConnector.getLocalPort()));
+            containsString("localhost:" + serverConnector.getLocalPort()));
     }
 
     @ParameterizedTest
@@ -1272,34 +1273,36 @@ public class ProxyServletTest
         startProxy(proxyServletClass, proxyParams);
         startClient();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        int port = serverConnector.getLocalPort();
-        Request request = client.newRequest("localhost", port);
-        request.send(listener);
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
+        {
+            int port = serverConnector.getLocalPort();
+            Request request = client.newRequest("localhost", port);
+            request.send(listener);
 
-        // Make the proxy request fail; given the small content, the
-        // proxy-to-client response is not committed yet so it will be reset.
-        TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
+            // Make the proxy request fail; given the small content, the
+            // proxy-to-client response is not committed yet so it will be reset.
+            TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(504, response.getStatus());
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(504, response.getStatus());
 
-        // Make sure there is error page content, as the proxy-to-client response has been reset.
-        InputStream input = listener.getInputStream();
-        String body = IO.toString(input);
-        assertThat(body, containsString("HTTP ERROR 504"));
-        chunk1Latch.countDown();
+            // Make sure there is error page content, as the proxy-to-client response has been reset.
+            InputStream input = listener.getInputStream();
+            String body = IO.toString(input);
+            assertThat(body, containsString("HTTP ERROR 504"));
+            chunk1Latch.countDown();
 
-        // Result succeeds because a 504 is a valid HTTP response.
-        Result result = listener.await(5, TimeUnit.SECONDS);
-        assertTrue(result.isSucceeded());
+            // Result succeeds because a 504 is a valid HTTP response.
+            Result result = listener.await(5, TimeUnit.SECONDS);
+            assertTrue(result.isSucceeded());
 
-        // Make sure the proxy does not receive chunk2.
-        assertEquals(-1, input.read());
+            // Make sure the proxy does not receive chunk2.
+            assertEquals(-1, input.read());
 
-        Destination destination = client.resolveDestination(request);
-        ConnectionPool connectionPool = destination.getConnectionPool();
-        assertTrue(connectionPool.isEmpty());
+            Destination destination = client.resolveDestination(request);
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            assertTrue(connectionPool.isEmpty());
+        }
     }
 
     @ParameterizedTest
@@ -1346,33 +1349,35 @@ public class ProxyServletTest
         startProxy(proxyServletClass, proxyParams);
         startClient();
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        int port = serverConnector.getLocalPort();
-        Request request = client.newRequest("localhost", port);
-        request.send(listener);
-
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
-
-        InputStream input = listener.getInputStream();
-        for (byte b : chunk1)
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            assertEquals(b & 0xFF, input.read());
+            int port = serverConnector.getLocalPort();
+            Request request = client.newRequest("localhost", port);
+            request.send(listener);
+
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
+
+            InputStream input = listener.getInputStream();
+            for (byte b : chunk1)
+            {
+                assertEquals(b & 0xFF, input.read());
+            }
+
+            TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
+
+            chunk1Latch.countDown();
+
+            assertThrows(IOException.class, () ->
+            {
+                // Make sure the proxy does not receive chunk2.
+                input.read();
+            });
+
+            Destination destination = client.resolveDestination(request);
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            assertTrue(connectionPool.isEmpty());
         }
-
-        TimeUnit.MILLISECONDS.sleep(2 * proxyTimeout);
-
-        chunk1Latch.countDown();
-
-        assertThrows(IOException.class, () ->
-        {
-            // Make sure the proxy does not receive chunk2.
-            input.read();
-        });
-
-        Destination destination = client.resolveDestination(request);
-        ConnectionPool connectionPool = destination.getConnectionPool();
-        assertTrue(connectionPool.isEmpty());
     }
 
     @ParameterizedTest
@@ -1488,7 +1493,7 @@ public class ProxyServletTest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1544,7 +1549,7 @@ public class ProxyServletTest
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(requestContent)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1745,23 +1750,23 @@ public class ProxyServletTest
                 if (chunked)
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Transfer-Encoding: chunked
-
-                        0
-
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Transfer-Encoding: chunked\r
+                        \r
+                        0\r
+                        \r
                         """;
                 }
                 else
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Content-Length: 0
-                        
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Content-Length: 0\r
+                        \r
                         """;
                 }
                 request = request.replace("$A", authority);
@@ -1781,5 +1786,60 @@ public class ProxyServletTest
                 }
             }
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testServerResponseHeadersTooLargeForServerConfiguration(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        int maxResponseHeadersSize = 256;
+        httpConfig.setResponseHeaderSize(maxResponseHeadersSize);
+        httpConfig.setMaxResponseHeaderSize(maxResponseHeadersSize);
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", "A".repeat(maxResponseHeadersSize));
+            }
+        });
+        Map<String, String> initParams = Map.of(
+            "proxyTo", "http://localhost:" + serverConnector.getLocalPort()
+        );
+        startProxy(proxyServletClass, initParams);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testServerResponseHeadersTooLargeForProxyConfiguration(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        int maxResponseHeadersSize = 256;
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", "A".repeat(maxResponseHeadersSize));
+            }
+        });
+        Map<String, String> initParams = Map.of(
+            "proxyTo", "http://localhost:" + serverConnector.getLocalPort(),
+            "maxResponseHeadersSize", String.valueOf(maxResponseHeadersSize)
+        );
+        startProxy(proxyServletClass, initParams);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 }

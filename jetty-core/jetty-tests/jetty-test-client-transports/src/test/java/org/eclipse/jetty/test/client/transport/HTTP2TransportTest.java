@@ -96,7 +96,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Destination destination = destinations.get(0);
         assertThat(destination.getOrigin().getTransport(), sameInstance(Transport.TCP_IP));
 
-        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getTransport();
+        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getHTTP2Client().getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(1));
     }
@@ -132,7 +132,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
-        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getTransport();
+        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getHttpClientTransport();
         int networkConnections = httpClientTransport.getHTTP2Client().getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(0));
     }
@@ -201,7 +201,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         httpClient.setSslContextFactory(sslClient);
-        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getTransport();
+        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getHttpClientTransport();
         // ALPN is negotiated by QUIC.
         httpClientTransport.setUseALPN(false);
         ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslClient, null);

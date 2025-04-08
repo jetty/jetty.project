@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.tests.distribution.siwe;
+package org.eclipse.jetty.tests.distribution.siwe;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

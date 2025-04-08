@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -115,29 +114,32 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             .forEach(alias -> aliasMap.put(getAliasMapper().apply(alias), alias));
 
         String host = null;
-        if (session instanceof ExtendedSSLSession)
+        if (session instanceof ExtendedSSLSession extended)
         {
-            List<SNIServerName> serverNames = ((ExtendedSSLSession)session).getRequestedServerNames();
-            if (serverNames != null)
+            for (SNIServerName serverName : extended.getRequestedServerNames())
             {
-                host = serverNames.stream()
-                    .findAny()
-                    .filter(SNIHostName.class::isInstance)
-                    .map(SNIHostName.class::cast)
-                    .map(SNIHostName::getAsciiName)
-                    .orElse(null);
+                if (serverName instanceof SNIHostName hostName)
+                {
+                    host = hostName.getAsciiName();
+                    break;
+                }
             }
         }
         if (host == null)
         {
             // Find our SNIMatcher.  There should only be one and it always matches (always returns true
             // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
-            host = matchers == null ? null : matchers.stream()
-                .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
-                .map(SslContextFactory.AliasSNIMatcher.class::cast)
-                .findFirst()
-                .map(SslContextFactory.AliasSNIMatcher::getHost)
-                .orElse(null);
+            if (matchers != null)
+            {
+                for (SNIMatcher matcher : matchers)
+                {
+                    if (matcher instanceof SslContextFactory.AliasSNIMatcher aliasMatcher)
+                    {
+                        host = aliasMatcher.getHost();
+                        break;
+                    }
+                }
+            }
         }
         if (session != null && host != null)
             session.putValue(SslContextFactory.Server.SNI_HOST, host);

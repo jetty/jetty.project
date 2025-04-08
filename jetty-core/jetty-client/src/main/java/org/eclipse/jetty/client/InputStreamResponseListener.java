@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.Response.Listener;
@@ -42,31 +41,33 @@ import org.slf4j.LoggerFactory;
  * that allows applications to read the response content.
  * <p>
  * Typical usage is:
- * <pre>
- * InputStreamResponseListener listener = new InputStreamResponseListener();
- * client.newRequest(...).send(listener);
- *
- * // Wait for the response headers to arrive
- * Response response = listener.get(5, TimeUnit.SECONDS);
- * if (response.getStatus() == 200)
+ * <pre>{@code
+ * try (InputStreamResponseListener listener = new InputStreamResponseListener())
  * {
- *     // Obtain the input stream on the response content
- *     try (InputStream input = listener.getInputStream())
+ *     client.newRequest(...).send(listener);
+ *
+ *     // Wait for the response headers to arrive.
+ *     Response response = listener.get(5, TimeUnit.SECONDS);
+ *     if (response.getStatus() == 200)
  *     {
- *         // Read the response content
+ *         // Obtain the input stream on the response content.
+ *         try (InputStream input = listener.getInputStream())
+ *         {
+ *             // Read the response content
+ *         }
  *     }
  * }
- * </pre>
+ * }</pre>
  * <p>
  * The {@link HttpClient} implementation (the producer) will feed the input stream
  * asynchronously while the application (the consumer) is reading from it.
  * <p>
  * If the consumer is faster than the producer, then the consumer will block
  * with the typical {@link InputStream#read()} semantic.
- * If the consumer is slower than the producer, then the producer will block
- * until the client consumes.
+ * If the consumer is slower than the producer, then the producer will await
+ * non-blocking until the client consumes, and then will resume production.
  */
-public class InputStreamResponseListener implements Listener
+public class InputStreamResponseListener implements Listener, AutoCloseable
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});
@@ -74,8 +75,8 @@ public class InputStreamResponseListener implements Listener
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
-    private final AtomicReference<InputStream> stream = new AtomicReference<>();
     private final Queue<ChunkCallback> chunkCallbacks = new ArrayDeque<>();
+    private InputStream stream;
     private Response response;
     private Result result;
     private Throwable failure;
@@ -98,17 +99,12 @@ public class InputStreamResponseListener implements Listener
     @Override
     public void onContent(Response response, Content.Chunk chunk, Runnable demander)
     {
-        if (!chunk.hasRemaining())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Skipped empty chunk {}", chunk);
-            demander.run();
-            return;
-        }
-
+        boolean closed;
+        boolean hasContent = chunk.hasRemaining();
         try (AutoLock.WithCondition l = lock.lock())
         {
-            if (!closed)
+            closed = this.closed;
+            if (!closed && hasContent)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing chunk {}", chunk);
@@ -119,9 +115,18 @@ public class InputStreamResponseListener implements Listener
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("InputStream closed, ignored chunk {}", chunk);
-        response.abort(new AsynchronousCloseException());
+        if (closed)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("InputStream closed, dropped chunk {}", chunk);
+            response.abort(new AsynchronousCloseException());
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Skipped empty chunk {}", chunk);
+            demander.run();
+        }
     }
 
     @Override
@@ -245,12 +250,14 @@ public class InputStreamResponseListener implements Listener
      */
     public InputStream getInputStream()
     {
-        InputStream result = new Input();
-        if (stream.compareAndSet(null, result))
+        try (AutoLock ignored = lock.lock())
+        {
+            if (stream == null && !closed)
+                return stream = new Input();
+            InputStream result = InputStream.nullInputStream();
+            IO.close(result);
             return result;
-        result = InputStream.nullInputStream();
-        IO.close(result);
-        return result;
+        }
     }
 
     private List<ChunkCallback> drain()
@@ -268,6 +275,29 @@ public class InputStreamResponseListener implements Listener
             }
         }
         return failures;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closing {}", this);
+
+        List<ChunkCallback> chunkCallbacks;
+        try (AutoLock.WithCondition l = lock.lock())
+        {
+            if (closed)
+                return;
+            closed = true;
+            chunkCallbacks = drain();
+            l.signalAll();
+        }
+
+        if (!chunkCallbacks.isEmpty())
+        {
+            Throwable failure = new AsynchronousCloseException();
+            chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
+        }
     }
 
     private class Input extends InputStream
@@ -301,7 +331,7 @@ public class InputStreamResponseListener implements Listener
                             break;
 
                         if (failure != null)
-                            throw new IOException(failure);
+                            throw IO.rethrow(failure);
 
                         if (closed)
                             throw new AsynchronousCloseException();
@@ -330,25 +360,9 @@ public class InputStreamResponseListener implements Listener
         @Override
         public void close() throws IOException
         {
-            List<ChunkCallback> chunkCallbacks;
-            try (AutoLock.WithCondition l = lock.lock())
-            {
-                if (closed)
-                    return;
-                closed = true;
-                chunkCallbacks = drain();
-                l.signalAll();
-            }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("InputStream close");
-
-            if (!chunkCallbacks.isEmpty())
-            {
-                Throwable failure = new AsynchronousCloseException();
-                chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
-            }
-
+                LOG.debug("Closing {}", this);
+            InputStreamResponseListener.this.close();
             super.close();
         }
     }

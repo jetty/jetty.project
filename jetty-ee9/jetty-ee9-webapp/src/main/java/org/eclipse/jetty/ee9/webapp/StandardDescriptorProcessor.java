@@ -1271,10 +1271,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         }
                         case DESCRIPTOR ->
                         {
-                            //if the descriptor of the original mapping and the new mapping are the same, that is an error
-                            if (originalMapping.getSource().getResource().equals(descriptor.getResource()))
-                                throw new IllegalStateException("Duplicate mappings for " + path);
-
                             //if the original mapping came from the defaults descriptor it can be overridden by any other descriptor
                             if (originalMapping.isFromDefaultDescriptor())
                             {

@@ -95,9 +95,23 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         installBean(sessionContainer);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         installBean(httpConfiguration);
-        setInputBufferSize(Frame.DEFAULT_MAX_SIZE + Frame.HEADER_LENGTH);
+        setInputBufferSize(Frame.DEFAULT_MAX_SIZE);
         setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
+        setInputBufferSize(httpConfiguration.getInputBufferSize());
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        super.setInputBufferSize(size);
+        httpConfiguration.setInputBufferSize(size);
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return httpConfiguration.getInputBufferSize();
     }
 
     @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
@@ -286,10 +300,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         int maxTableSize = getMaxDecoderTableCapacity();
         if (maxTableSize != HpackContext.DEFAULT_MAX_TABLE_CAPACITY)
             settings.put(SettingsFrame.HEADER_TABLE_SIZE, maxTableSize);
+        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
         int initialStreamRecvWindow = getInitialStreamRecvWindow();
         if (initialStreamRecvWindow != FlowControlStrategy.DEFAULT_WINDOW_SIZE)
             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, initialStreamRecvWindow);
-        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
+        int maxFrameSize = getMaxFrameSize();
+        if (maxFrameSize > Frame.DEFAULT_MAX_SIZE)
+            settings.put(SettingsFrame.MAX_FRAME_SIZE, maxFrameSize);
         int maxHeadersSize = getHttpConfiguration().getRequestHeaderSize();
         if (maxHeadersSize > 0)
             settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
@@ -303,10 +320,14 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
+        int maxResponseHeaderSize = getHttpConfiguration().getMaxResponseHeaderSize();
+        if (maxResponseHeaderSize < 0)
+            maxResponseHeaderSize = getHttpConfiguration().getResponseHeaderSize();
+        generator.getHpackEncoder().setMaxHeaderListSize(maxResponseHeaderSize);
+
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
 
         ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
-        parser.setMaxFrameSize(getMaxFrameSize());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);
@@ -326,7 +347,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector,
-            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, session, listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);

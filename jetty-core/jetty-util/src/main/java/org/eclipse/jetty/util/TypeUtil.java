@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
@@ -440,10 +441,15 @@ public class TypeUtil
      */
     public static int convertHexDigit(char c)
     {
-        int d = ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
-        if (d < 0 || d > 15)
-            throw new NumberFormatException("!hex " + c);
-        return d;
+        int val = c - '0';
+        if (val >= 0 && val <= 9)
+            return val;
+
+        val = (c & ~0x20) - 'A';
+        if (val >= 0 && val <= 5)
+            return val + 10;
+
+        throw new NumberFormatException("!hex " + c);
     }
 
     /**
@@ -832,19 +838,6 @@ public class TypeUtil
     }
 
     /**
-     * Get the next highest power of two
-     * @param value An integer
-     * @return a power of two that is greater than or equal to {@code value}
-     */
-    public static int ceilToNextPowerOfTwo(int value)
-    {
-        if (value < 0)
-            throw new IllegalArgumentException("value must not be negative");
-        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
-        return result > 0 ? result : Integer.MAX_VALUE;
-    }
-
-    /**
      * Test is a method has been declared on the class of an instance
      * @param object The object to check
      * @param methodName The method name
@@ -864,4 +857,39 @@ public class TypeUtil
             return false;
         }
     }
+
+    /**
+     * Pretty print a map. Specifically expanding Array values.
+     * @param map The map to render as a String
+     * @return A String representation of the map
+     */
+    public static String toString(Map<?, ?> map)
+    {
+        if (map.isEmpty())
+            return "{}";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('{');
+        for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext();)
+        {
+            Map.Entry<?, ?> e = i.next();
+            Object key = e.getKey();
+            sb.append(key);
+            sb.append('=');
+
+            Object value = e.getValue();
+
+            if (value == null)
+                sb.append("null");
+            else if (value.getClass().isArray())
+                sb.append(Arrays.asList((Object[])value));
+            else
+                sb.append(value);
+            if (i.hasNext())
+                sb.append(',');
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

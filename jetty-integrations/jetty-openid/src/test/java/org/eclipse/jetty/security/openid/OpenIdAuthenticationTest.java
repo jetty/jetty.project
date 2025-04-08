@@ -19,7 +19,6 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -71,10 +70,10 @@ public class OpenIdAuthenticationTest
 
     public void setup(LoginService loginService) throws Exception
     {
-        setup(loginService, null);
+        setup(loginService, false);
     }
 
-    public void setup(LoginService loginService, Consumer<OpenIdConfiguration> configure) throws Exception
+    public void setup(LoginService loginService, boolean logoutWhenIdTokenIsExpired) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -84,9 +83,9 @@ public class OpenIdAuthenticationTest
         openIdProvider = new OpenIdProvider(CLIENT_ID, CLIENT_SECRET);
         openIdProvider.start();
 
-        OpenIdConfiguration openIdConfiguration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
-        if (configure != null)
-            configure.accept(openIdConfiguration);
+        OpenIdConfiguration openIdConfiguration = new OpenIdConfiguration.Builder(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET)
+            .logoutWhenIdTokenIsExpired(logoutWhenIdTokenIsExpired)
+            .build();
         server.addBean(openIdConfiguration);
 
         // Configure SecurityHandler.
@@ -274,7 +273,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testExpiredIdToken() throws Exception
     {
-        setup(null, config -> config.setLogoutWhenIdTokenIsExpired(true));
+        setup(null, true);
         long idTokenExpiryTime = 2000;
         openIdProvider.setIdTokenDuration(idTokenExpiryTime);
         openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));

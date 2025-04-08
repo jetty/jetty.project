@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -271,7 +272,7 @@ public class ServerDocs
     {
         // tag::httpCompliance[]
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setHttpCompliance(HttpCompliance.RFC7230);
+        httpConfiguration.setHttpCompliance(HttpCompliance.RFC9110);
         // end::httpCompliance[]
     }
 
@@ -280,8 +281,8 @@ public class ServerDocs
         // tag::httpComplianceCustom[]
         HttpConfiguration httpConfiguration = new HttpConfiguration();
 
-        // RFC7230 compliance, but allow Violation.MULTIPLE_CONTENT_LENGTHS.
-        HttpCompliance customHttpCompliance = HttpCompliance.from("RFC7230,MULTIPLE_CONTENT_LENGTHS");
+        // RFC9110 compliance, but allow Violation.MULTIPLE_CONTENT_LENGTHS.
+        HttpCompliance customHttpCompliance = HttpCompliance.from("RFC9110,MULTIPLE_CONTENT_LENGTHS");
 
         httpConfiguration.setHttpCompliance(customHttpCompliance);
         // end::httpComplianceCustom[]
@@ -326,7 +327,15 @@ public class ServerDocs
         httpConfiguration.setRequestCookieCompliance(customUriCompliance);
 
         httpConfiguration.setResponseCookieCompliance(CookieCompliance.RFC6265);
-
         // end::cookieComplianceCustom[]
+    }
+
+    public void multiPartCompliance()
+    {
+        // tag::multiPartCompliance[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        MultiPartCompliance custom = MultiPartCompliance.from("RFC7578,-CONTENT_TRANSFER_ENCODING");
+        httpConfiguration.setMultiPartCompliance(custom);
+        // end::multiPartCompliance[]
     }
 }

@@ -292,19 +292,20 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         // OTHER contexts that expired a very long time ago (ie not being actively
         // managed by any node). As these sessions are not for our context, we 
         // can't load them, so they must just be forcibly deleted.
-        try
+
+        if (now > (_lastOrphanSweepTime + TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec)))
         {
-            if (now > (_lastOrphanSweepTime + TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec)))
+            try
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Cleaning orphans at {}, last sweep at {}", now, _lastOrphanSweepTime);
-                
+
                 cleanOrphans(now - TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec));
             }
-        }
-        finally
-        {
-            _lastOrphanSweepTime = now;
+            finally
+            {
+                _lastOrphanSweepTime = now;
+            }
         }
 
         return expired;

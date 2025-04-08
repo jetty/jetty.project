@@ -462,12 +462,12 @@ public class MultiMapTest
         MultiMap<String> mm = new MultiMap<>();
         mm.put("color", "red");
 
-        assertEquals("{color=red}", mm.toString());
+        assertEquals("{color=[red]}", mm.toString());
 
         mm.putValues("food", "apple", "cherry", "raspberry");
 
-        String expected1 = "{color=red, food=[apple, cherry, raspberry]}";
-        String expected2 = "{food=[apple, cherry, raspberry], color=red}";
+        String expected1 = "{color=[red],food=[apple, cherry, raspberry]}";
+        String expected2 = "{food=[apple, cherry, raspberry],color=[red]}";
         String actual = mm.toString();
         assertTrue(actual.equals(expected1) || actual.equals(expected2));
     }

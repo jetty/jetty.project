@@ -31,15 +31,15 @@ import org.slf4j.LoggerFactory;
  * will schedule a callback to {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
  * as appropriate.</p>
  */
-public abstract class AbstractConnection implements Connection, Invocable
+public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnection.class);
 
     private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
+    private final Callback _fillableCallback = new FillableCallback();
     private final long _created = System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
-    private final Callback _readCallback;
     private int _inputBufferSize = 2048;
 
     protected AbstractConnection(EndPoint endPoint, Executor executor)
@@ -48,16 +48,6 @@ public abstract class AbstractConnection implements Connection, Invocable
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endPoint;
         _executor = executor;
-        _readCallback = new ReadCallback();
-    }
-
-    @Deprecated
-    @Override
-    public InvocationType getInvocationType()
-    {
-        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
-        //      so a connection need not be Invocable
-        return Invocable.super.getInvocationType();
     }
 
     @Override
@@ -90,25 +80,27 @@ public abstract class AbstractConnection implements Connection, Invocable
     }
 
     /**
-     * <p>Utility method to be called to register read interest.</p>
-     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
-     * will be called back as appropriate.</p>
+     * <p>Registers read interest using the default {@link Callback} with {@link Invocable.InvocationType#BLOCKING}.</p>
+     * <p>When read readiness is signaled, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+     * will be invoked.</p>
+     * <p>This method should be used sparingly, mainly from {@link #onOpen()}, and {@link #fillInterested(Callback)}
+     * should be preferred instead, passing a {@link Callback} that specifies the {@link Invocable.InvocationType}
+     * for each specific case where read interest needs to be registered.</p>
      *
+     * @see #fillInterested(Callback)
      * @see #onFillable()
+     * @see #onFillInterestedFailed(Throwable)
      */
     public void fillInterested()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("fillInterested {}", this);
-        getEndPoint().fillInterested(_readCallback);
+        fillInterested(_fillableCallback);
     }
 
     /**
-     * <p>Utility method to be called to register read interest.</p>
-     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
-     * will be called back as appropriate.</p>
+     * <p>Registers read interest with the given callback.</p>
+     * <p>When read readiness is signaled, the callback will be completed.</p>
      *
-     * @see #onFillable()
+     * @param callback the callback to complete when read readiness is signaled
      */
     public void fillInterested(Callback callback)
     {
@@ -130,7 +122,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     /**
      * <p>Callback method invoked when the endpoint is ready to be read.</p>
      *
-     * @see #fillInterested()
+     * @see #fillInterested(Callback)
      */
     public abstract void onFillable();
 
@@ -139,10 +131,10 @@ public abstract class AbstractConnection implements Connection, Invocable
      *
      * @param cause the exception that caused the failure
      */
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillInterestedFailed {}", this, cause);
+            LOG.debug("onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;
@@ -286,7 +278,39 @@ public abstract class AbstractConnection implements Connection, Invocable
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
-    private class ReadCallback implements Callback, Invocable
+    public abstract static class NonBlocking extends AbstractConnection
+    {
+        private final Callback _nonBlockingFillableCallback = new NonBlockingFillableCallback();
+
+        public NonBlocking(EndPoint endPoint, Executor executor)
+        {
+            super(endPoint, executor);
+        }
+
+        /**
+         * <p>Registers read interest using the default {@link Callback} with {@link Invocable.InvocationType#NON_BLOCKING}.</p>
+         * <p>When read readiness is signaled, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+         * will be invoked.</p>
+         * <p>This method should be used sparingly, and {@link #fillInterested(Callback)}
+         * should be preferred instead, passing a {@link Callback} that specifies the {@link Invocable.InvocationType}
+         * for each specific case where read interest needs to be registered.</p>         */
+        @Override
+        public void fillInterested()
+        {
+            fillInterested(_nonBlockingFillableCallback);
+        }
+
+        private class NonBlockingFillableCallback extends FillableCallback
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+        }
+    }
+
+    private class FillableCallback implements Callback
     {
         @Override
         public void succeeded()
@@ -304,12 +328,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return AbstractConnection.this.getInvocationType();
         }
     }
 }

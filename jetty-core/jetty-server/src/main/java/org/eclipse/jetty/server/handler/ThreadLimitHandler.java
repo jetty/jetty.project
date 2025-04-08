@@ -41,12 +41,13 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Handler to limit the threads per IP address for DOS protection</p>
- * <p>The ThreadLimitHandler applies a limit to the number of Threads
+ * <p>Handler to limit the number of concurrent threads per remote IP address, for DOS protection.</p>
+ * <p>ThreadLimitHandler applies a limit to the number of threads
  * that can be used simultaneously per remote IP address.</p>
  * <p>The handler makes a determination of the remote IP separately to
  * any that may be made by the {@link ForwardedRequestCustomizer} or similar:</p>
@@ -102,7 +103,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d", _enabled, _threadLimit));
     }
 
-    @ManagedAttribute("true if this handler is enabled")
+    @ManagedAttribute("Whether this handler is enabled")
     public boolean isEnabled()
     {
         return _enabled;
@@ -341,7 +342,8 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         {
             if (!_onContent.compareAndSet(null, Objects.requireNonNull(onContent)))
                 throw new IllegalStateException("Pending demand");
-            super.demand(this::onContent);
+            // Inner class used instead of lambda for clarity in stack traces.
+            super.demand(new DemandTask(Invocable.getInvocationType(onContent)));
         }
 
         private void onContent()
@@ -363,6 +365,20 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             finally
             {
                 permit.release();
+            }
+        }
+
+        private class DemandTask extends Task.Abstract
+        {
+            private DemandTask(InvocationType invocationType)
+            {
+                super(invocationType);
+            }
+
+            @Override
+            public void run()
+            {
+                onContent();
             }
         }
     }

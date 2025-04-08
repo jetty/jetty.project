@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +62,6 @@ public class SecuredRedirectHandlerCodeTest
     }
 
     @Test
-    @Disabled // TODO
     public void testRedirectUnsecuredRootMovedTemporarily() throws Exception
     {
         try
@@ -84,7 +82,6 @@ public class SecuredRedirectHandlerCodeTest
     }
 
     @Test
-    @Disabled // TODO
     public void testRedirectUnsecuredRootMovedPermanently() throws Exception
     {
         try

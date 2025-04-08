@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -32,31 +33,31 @@ public interface ThreadPool extends Executor
      *
      * @throws InterruptedException if thread was interrupted
      */
-    public void join() throws InterruptedException;
+    void join() throws InterruptedException;
 
     /**
      * @return The total number of threads currently in the pool
      */
     @ManagedAttribute("number of threads in pool")
-    public int getThreads();
+    int getThreads();
 
     /**
      * @return The number of idle threads in the pool
      */
     @ManagedAttribute("number of idle threads in pool")
-    public int getIdleThreads();
+    int getIdleThreads();
 
     /**
      * @return True if the pool is low on threads
      */
     @ManagedAttribute("indicates the pool is low on available threads")
-    public boolean isLowOnThreads();
+    boolean isLowOnThreads();
 
     /**
      * <p>Specialized sub-interface of ThreadPool that allows to get/set
      * the minimum and maximum number of threads of the pool.</p>
      */
-    public interface SizedThreadPool extends ThreadPool
+    interface SizedThreadPool extends ThreadPool
     {
         /**
          * @return the minimum number of threads
@@ -85,6 +86,51 @@ public interface ThreadPool extends Executor
         default ThreadPoolBudget getThreadPoolBudget()
         {
             return null;
+        }
+    }
+
+    /**
+     * <p>Execute a task immediately without queueing.   This may use a
+     * {@code ReservedThread}, a {@code Virtual Thread}, a call to {@link Invocable#invokeNonBlocking(Runnable)},
+     * a newly spawned thread, or direct execution.
+     *
+     * @param executor An executor that may be used
+     * @param task The task that must be executed.
+     */
+    static void executeImmediately(Executor executor, Runnable task)
+    {
+        if (task == null)
+            return;
+
+        Invocable.InvocationType invocationType = Invocable.getInvocationType(task);
+        if (invocationType == Invocable.InvocationType.NON_BLOCKING)
+        {
+            task.run();
+            return;
+        }
+        if (invocationType == Invocable.InvocationType.EITHER)
+        {
+            Invocable.invokeNonBlocking(task);
+            return;
+        }
+
+        if (executor instanceof TryExecutor tryExecutor && tryExecutor.tryExecute(task))
+            return;
+
+        Executor virtual = VirtualThreads.getVirtualThreadsExecutor(executor);
+        if (virtual != null)
+        {
+            virtual.execute(task);
+            return;
+        }
+
+        try
+        {
+            new Thread(task, "jetty-immediate-executor").start();
+        }
+        catch (Throwable ignored)
+        {
+            task.run();
         }
     }
 }

@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -102,53 +101,53 @@ public abstract class AbstractUseCase
         Path modules = homeDir.resolve("modules");
         FS.ensureDirExists(modules);
 
-        Files.write(modules.resolve("base.mod"),
-            Arrays.asList(
-                "[optional]",
-                "optional",
-                "[lib]",
-                "lib/base.jar",
-                "[xml]",
-                "etc/base.xml"),
-            StandardCharsets.UTF_8);
-        Files.write(modules.resolve("extra.mod"),
-            Arrays.asList(
-                "[depend]",
-                "main",
-                "[lib]",
-                "lib/extra/*.jar",
-                "[xml]",
-                "etc/extra.xml",
-                "[ini]",
-                "extra.prop=value0"),
-            StandardCharsets.UTF_8);
-        Files.write(modules.resolve("main.mod"),
-            Arrays.asList(
-                "[depend]",
-                "base",
-                "[optional]",
-                "optional",
-                "[lib]",
-                "lib/main.jar",
-                "lib/other.jar",
-                "[xml]",
-                "etc/main.xml",
-                "[files]",
-                "maindir/",
-                "[ini]",
-                "main.prop=value0",
-                "[ini-template]",
-                "main.prop=valueT"),
-            StandardCharsets.UTF_8);
-        Files.write(modules.resolve("optional.mod"),
-            Arrays.asList(
-                "[lib]",
-                "lib/optional.jar",
-                "[xml]",
-                "etc/optional.xml",
-                "[ini]",
-                "optional.prop=value0"),
-            StandardCharsets.UTF_8);
+        Files.writeString(modules.resolve("base.mod"),
+            """
+                [optional]
+                optional
+                [lib]
+                lib/base.jar
+                [xml]
+                etc/base.xml
+                """, StandardCharsets.UTF_8);
+        Files.writeString(modules.resolve("extra.mod"),
+            """
+                [depend]
+                main
+                [lib]
+                lib/extra/*.jar
+                [xml]
+                etc/extra.xml
+                [ini]
+                extra.prop=value0
+                """, StandardCharsets.UTF_8);
+        Files.writeString(modules.resolve("main.mod"),
+            """
+                [depend]
+                base
+                [optional]
+                optional
+                [lib]
+                lib/main.jar
+                lib/other.jar
+                [xml]
+                etc/main.xml
+                [files]
+                maindir/
+                [ini]
+                main.prop=value0
+                [ini-template]
+                # main.prop=valueT
+                """, StandardCharsets.UTF_8);
+        Files.writeString(modules.resolve("optional.mod"),
+            """
+                [lib]
+                lib/optional.jar
+                [xml]
+                etc/optional.xml
+                [ini]
+                optional.prop=value0
+                """, StandardCharsets.UTF_8);
     }
 
     public static class ExecResults

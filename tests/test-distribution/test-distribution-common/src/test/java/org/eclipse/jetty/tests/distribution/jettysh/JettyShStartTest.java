@@ -76,7 +76,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                     builder
                         .from(userImage.getDockerImageName())
                         // Create a basic configuration of jetty-base
-                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,ee10-deploy")
                         .build()));
 
                 // Complex JETTY_BASE with spaces
@@ -86,7 +86,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                     builder
                         .from(userImage.getDockerImageName())
                         // Create a basic configuration of jetty-base
-                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,ee10-deploy")
                         .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
                     if (userImage instanceof ImageUserChange)
                     {

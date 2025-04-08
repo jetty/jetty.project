@@ -19,6 +19,8 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
@@ -35,6 +37,13 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     public ClientHTTP2StreamEndPoint(HTTP2Stream stream)
     {
         super(stream);
+    }
+
+    @Override
+    public Runnable onHeaders(Stream stream, HeadersFrame frame, Callback callback)
+    {
+        callback.succeeded();
+        return null;
     }
 
     @Override
@@ -63,7 +72,7 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
             promise.succeeded(true);
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return () ->
         {
             boolean expire = connection.onIdleExpired(timeout);
             if (expire)
@@ -72,17 +81,17 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
                 close(timeout);
             }
             promise.succeeded(expire);
-        });
+        };
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return () ->
         {
             processFailure(failure);
             close(failure);
             callback.failed(failure);
-        });
+        };
     }
 }

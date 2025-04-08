@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -90,6 +91,7 @@ public class CustomRequestLogTest
     {
         _server = new Server();
         _httpConfig = new HttpConfiguration();
+        _httpConfig.setUriCompliance(UriCompliance.DEFAULT.with("fragments", UriCompliance.Violation.FRAGMENT));
         _serverConnector = new ServerConnector(_server, 1, 1, new HttpConnectionFactory(_httpConfig));
         _server.addConnector(_serverConnector);
         TestRequestLogWriter writer = new TestRequestLogWriter();
@@ -165,10 +167,7 @@ public class CustomRequestLogTest
     public void testIgnorePaths(String testPath, boolean existsInLog) throws Exception
     {
         start("RequestPath: %U",
-            customRequestLog ->
-            {
-                customRequestLog.setIgnorePaths(new String[]{"/zed/*", "/zee/*"});
-            });
+            customRequestLog -> customRequestLog.setIgnorePaths(new String[]{"/zed/*", "/zee/*"}));
 
         HttpTester.Response response = getResponse("GET @PATH@ HTTP/1.0\n\n".replace("@PATH@", testPath));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -245,8 +244,7 @@ public class CustomRequestLogTest
     @Test
     public void testLogAddress() throws Exception
     {
-        start("" +
-              "%{local}a|%{local}p|" +
+        start("%{local}a|%{local}p|" +
               "%{remote}a|%{remote}p|" +
               "%{server}a|%{server}p|" +
               "%{client}a|%{client}p");
@@ -337,7 +335,7 @@ public class CustomRequestLogTest
         HttpTester.Response response = getResponse("""
             GET / HTTP/1.0
             Content-Length: %d
-                                
+            
             %s""".formatted(content.length(), content));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
@@ -449,9 +447,9 @@ public class CustomRequestLogTest
 
             GET /a HTTP/1.1
             Host: localhost
-                        
+            
             GET /a HTTP/1.0
-                        
+            
             """, 3);
 
         assertThat(_logs.poll(5, TimeUnit.SECONDS), is("KeepAliveRequests: 1"));
@@ -500,6 +498,17 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("QueryString: ?queryString"));
+    }
+
+    @Test
+    public void testLogEmptyQueryString() throws Exception
+    {
+        start("QueryString: %q");
+
+        HttpTester.Response response = getResponse("GET /path HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("QueryString: -"));
     }
 
     @Test
@@ -583,7 +592,7 @@ public class CustomRequestLogTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t"})
+    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|America/New_York|ja}t"})
     public void testLogRequestTimeCustomFormats(String format) throws Exception
     {
         AtomicLong requestTimeRef = new AtomicLong();
@@ -744,7 +753,7 @@ public class CustomRequestLogTest
             output.write("""
                 GET /abort HTTP/1.1
                 Host: localhost
-                    
+                
                 """.getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
@@ -753,7 +762,7 @@ public class CustomRequestLogTest
 
             String line = in.readLine();
             assertThat(line, is("HTTP/1.1 200 OK"));
-            while (line != null && line.length() > 0)
+            while (line != null && !line.isEmpty())
                 line = in.readLine();
 
             line = in.readLine();
@@ -782,13 +791,13 @@ public class CustomRequestLogTest
         });
 
         HttpTester.Response response = getResponse("""
-            GET / HTTP/1.1
-            Host: localhost
-            Transfer-Encoding: chunked
-            
-            0
-            trailerName: 42
-            
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Transfer-Encoding: chunked\r
+            \r
+            0\r
+            trailerName: 42\r
+            \r
             """);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
@@ -816,6 +825,252 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("42"));
+    }
+
+    @Test
+    public void testLogRequestHttpUri() throws Exception
+    {
+        start("%uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("http://127.0.0.1:" + _serverConnector.getLocalPort() + "/path?hello=world#fragment"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriWithoutQuery() throws Exception
+    {
+        start("%{-query}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("http://127.0.0.1:" + _serverConnector.getLocalPort() + "/path"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriWithoutQueryAndPath() throws Exception
+    {
+        start("%{-path,-query}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("http://127.0.0.1:" + _serverConnector.getLocalPort()));
+    }
+
+    @Test
+    public void testLogRequestHttpUriHost() throws Exception
+    {
+        start("%{host}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("127.0.0.1"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriPort() throws Exception
+    {
+        start("%{port}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is(Integer.toString(_serverConnector.getLocalPort())));
+    }
+
+    @Test
+    public void testLogRequestHttpUriScheme() throws Exception
+    {
+        start("%{scheme}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("http"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriAuthority() throws Exception
+    {
+        start("%{authority}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("127.0.0.1:" + _serverConnector.getLocalPort()));
+    }
+
+    @Test
+    public void testLogRequestHttpUriPath() throws Exception
+    {
+        start("%{path}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("/path"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriQuery() throws Exception
+    {
+        start("%{query}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("?hello=world"));
+    }
+
+    @Test
+    public void testLogRequestAttribute() throws Exception
+    {
+        start("%{myAttribute}attr", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.setAttribute("myAttribute", "value1234");
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /?hello=world HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("value1234"));
+    }
+
+    @Test
+    public void testLogBadUserAgent() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i, \"%{User-Agent}i\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: bad"value
+
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: \"bad\\\"value\", \"bad\\\"value\""));
+    }
+
+    @Test
+    public void testLogEscapedUserAgent() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i, \"%{User-Agent}i\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: bad\\"value
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: \"bad\\\\\\\"value\", \"bad\\\\\\\"value\""));
+    }
+
+    @Test
+    public void testLogWithSloshSeparator() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i\\\"%m\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: jetty
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: jetty\\\"GET\""));
     }
 
     class TestRequestLogWriter implements RequestLog.Writer

@@ -2,11 +2,14 @@
 
 [description]
 Enables GzipHandler for dynamic gzip compression for the entire server.
-If MSIE prior to version 7 are to be handled, also enable the msie module.
 
 [tags]
 server
 handler
+deprecated
+
+[deprecated]
+Use module compression-gzip instead.
 
 [depend]
 server

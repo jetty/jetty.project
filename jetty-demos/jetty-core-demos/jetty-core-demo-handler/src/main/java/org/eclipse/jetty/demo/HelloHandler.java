@@ -14,20 +14,41 @@
 package org.eclipse.jetty.demo;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class HelloHandler extends Handler.Abstract
 {
-    @Override
-    public boolean handle(Request request, Response response, Callback callback)
+    final String greeting;
+    final String body;
+
+    public HelloHandler()
     {
-        response.setStatus(200);
-        response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-        response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
+        this("Hello World");
+    }
+
+    public HelloHandler(String greeting)
+    {
+        this(greeting, null);
+    }
+
+    public HelloHandler(String greeting, String body)
+    {
+        this.greeting = greeting;
+        this.body = body == null ? "" : body;
+    }
+
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    {
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+        response.setStatus(HttpStatus.OK_200);
+
+        Content.Sink.write(response, true, "<h1>" + greeting + "</h1>\n" + body, callback);
         return true;
     }
 }

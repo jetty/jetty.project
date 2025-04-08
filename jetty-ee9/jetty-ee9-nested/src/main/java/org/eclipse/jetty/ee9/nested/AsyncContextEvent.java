@@ -35,7 +35,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public AsyncContextEvent(ContextHandler.APIContext context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
     {
-        this (context, asyncContext, state, baseRequest, request, response, null);
+        this(context, asyncContext, state, baseRequest, request, response, null);
     }
 
     public AsyncContextEvent(ContextHandler.APIContext context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)

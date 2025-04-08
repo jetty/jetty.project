@@ -15,29 +15,35 @@ package org.eclipse.jetty.docs.programming.migration;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -118,7 +124,16 @@ public class ServletToHandlerDocs
             // Gets the request Content-Type.
             // Replaces:
             //   - servletRequest.getContentType()
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            HttpField contentTypeField = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+            String contentType = contentTypeField.getValue();
+            MimeTypes.Type knownType = MimeTypes.getMimeTypeFromContentType(contentTypeField);
+
+            // Gets the request Character Encoding.
+            // Replaces:
+            //   - servletRequest.getCharacterEncoding()
+            Charset charset = knownType == null
+                ? MimeTypes.getCharsetFromContentType(contentTypeField)
+                : knownType.getCharset();
 
             // Gets the request Content-Length.
             // Replaces:
@@ -197,7 +212,7 @@ public class ServletToHandlerDocs
             Session session = request.getSession(create);
 
             callback.succeeded();
-            return false;
+            return true;
         }
     }
     // end::request[]
@@ -211,18 +226,19 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a String.
             // Use with caution as the request content may be large.
-            CompletableFuture<String> completable = Content.Source.asStringAsync(request, UTF_8);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asString(request, UTF_8, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(String result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable failure)
                 {
                     // Implicitly respond with status code 500.
                     callback.failed(failure);
@@ -243,18 +259,19 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a ByteBuffer.
             // Use with caution as the request content may be large.
-            CompletableFuture<ByteBuffer> completable = Content.Source.asByteBufferAsync(request);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asByteBuffer(request, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(ByteBuffer result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable failure)
                 {
                     // Implicitly respond with status code 500.
                     callback.failed(failure);
@@ -303,7 +320,8 @@ public class ServletToHandlerDocs
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            CompletableTask<Void> reader = new CompletableTask<>()
+            // When the read is complete, complete the Handler callback.
+            Promise.Task<Void> reader = new Promise.Task<>(callback::succeeded, callback::failed)
             {
                 @Override
                 public void run()
@@ -326,7 +344,7 @@ public class ServletToHandlerDocs
                         if (Content.Chunk.isFailure(chunk))
                         {
                             Throwable failure = chunk.getFailure();
-                            completeExceptionally(failure);
+                            failed(failure);
                             return;
                         }
 
@@ -343,7 +361,7 @@ public class ServletToHandlerDocs
                         // If the last chunk is read, complete normally.
                         if (chunk.isLast())
                         {
-                            complete(null);
+                            succeeded(null);
                             return;
                         }
 
@@ -353,14 +371,80 @@ public class ServletToHandlerDocs
             };
 
             // Initiate the read of the request content.
-            reader.start();
-
-            // When the read is complete, complete the Handler callback.
-            callback.completeWith(reader);
+            reader.run();
 
             return true;
         }
         // end::requestContent-source[]
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class RequestContentAPIsFormFields extends Handler.Abstract
+    {
+        // tag::requestContent-formFields[]
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            FormFields.onFields(request, new Promise.Invocable<>()
+            {
+                @Override
+                public void succeeded(Fields fields)
+                {
+                    // Process the form fields here.
+
+                    // Implicitly respond with status code 200 and no content.
+                    callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable failure)
+                {
+                    // Implicitly respond with status code 500.
+                    callback.failed(failure);
+                }
+            });
+
+            return true;
+        }
+        // end::requestContent-formFields[]
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class RequestContentAPIsMultiPart extends Handler.Abstract
+    {
+        // tag::requestContent-multiPart[]
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+
+            MultiPartConfig multiPartConfig = new MultiPartConfig.Builder()
+                // The directory where the parts content are saved.
+                .location(Path.of("/tmp"))
+                .build();
+
+            MultiPartFormData.onParts(request, request, contentType, multiPartConfig, new Promise.Invocable<>()
+            {
+                @Override
+                public void succeeded(MultiPartFormData.Parts parts)
+                {
+                    // Process the parts here.
+
+                    // Implicitly respond with status code 200 and no content.
+                    callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable failure)
+                {
+                    // Implicitly respond with status code 500.
+                    callback.failed(failure);
+                }
+            });
+
+            return true;
+        }
+        // end::requestContent-multiPart[]
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")
@@ -440,7 +524,7 @@ public class ServletToHandlerDocs
             // Replaces:
             //   - servletResponse.encodeRedirectURL(location)
             //   - servletResponse.sendRedirect(location)
-            String location = Request.toRedirectURI(request, "/redirect");
+            String location = Response.toRedirectURI(request, "/redirect");
             Response.sendRedirect(request, response, callback, location);
 
             // Sends an error response.

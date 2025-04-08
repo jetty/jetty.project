@@ -60,7 +60,7 @@ public class TestJettyOSGiBootHTTP2JDK9
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
         
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2-jdk9.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
             "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -108,39 +108,29 @@ public class TestJettyOSGiBootHTTP2JDK9
             assertNotNull(server);
         }
 
-        HttpClient httpClient = null;
-        HTTP2Client http2Client = null;
-        try
+        //get the port chosen for https
+        String port = System.getProperty("boot.https.port");
+        assertNotNull(port);
+
+        Path path = Paths.get("src", "test", "config");
+        File keys = path.resolve("etc").resolve("keystore.p12").toFile();
+
+        ClientConnector clientConnector = new ClientConnector();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        clientConnector.setSslContextFactory(sslContextFactory);
+        try (HTTP2Client http2Client = new HTTP2Client(clientConnector);
+             HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
         {
-            //get the port chosen for https
-            String port = System.getProperty("boot.https.port");
-            assertNotNull(port);
-
-            Path path = Paths.get("src", "test", "config");
-            File keys = path.resolve("etc").resolve("keystore.p12").toFile();
-
-            ClientConnector clientConnector = new ClientConnector();
-            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-            sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            clientConnector.setSslContextFactory(sslContextFactory);
-            http2Client = new HTTP2Client(clientConnector);
-            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:" + port + "/demo-jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/servlet5-demo-jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
-        }
-        finally
-        {
-            if (httpClient != null)
-                httpClient.stop();
-            if (http2Client != null)
-                http2Client.stop();
         }
     }
 }

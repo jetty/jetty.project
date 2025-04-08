@@ -139,10 +139,13 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
         {
             if (!_wrapped && !_baseResponse.isWritingOrStreaming())
             {
+                // We can bypass the HttpOutput stream, but we need to update its bytes written
+                _baseResponse.getHttpOutput().addBytesWritten(byteBuffer.remaining());
                 _coreResponse.write(last, byteBuffer, callback);
             }
             else
             {
+                // Write the byteBuffer via the HttpOutput stream or writer wrapping the stream
                 if (BufferUtil.hasContent(byteBuffer))
                 {
                     if (isWriting())
@@ -333,7 +336,10 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
         @Override
         public Mutable add(HttpField field)
         {
-            _response.addHeader(field.getName(), field.getValue());
+            if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
+                _response.setContentLengthLong(field.getLongValue());
+            else
+                _response.addHeader(field.getName(), field.getValue());
             return this;
         }
 

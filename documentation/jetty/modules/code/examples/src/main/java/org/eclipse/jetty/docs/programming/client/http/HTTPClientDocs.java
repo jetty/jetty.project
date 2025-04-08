@@ -20,10 +20,13 @@ import java.io.OutputStream;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -32,7 +35,6 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
@@ -52,6 +54,7 @@ import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.Socks5;
 import org.eclipse.jetty.client.Socks5Proxy;
@@ -423,6 +426,20 @@ public class HTTPClientDocs
         // end::outputStreamRequestContent[]
     }
 
+    public void removeDecoders() throws Exception
+    {
+        // tag::removeDecoders[]
+        HttpClient httpClient = new HttpClient();
+
+        // Starting HttpClient will discover response content decoders
+        // implementations from the module-path or class-path via ServiceLoader.
+        httpClient.start();
+
+        // Remove all response content decoders.
+        httpClient.getContentDecoderFactories().clear();
+        // end::removeDecoders[]
+    }
+
     public void futureResponseListener() throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -443,15 +460,15 @@ public class HTTPClientDocs
         // end::completableResponseListener[]
     }
 
-    public void bufferingResponseListener() throws Exception
+    public void retainingResponseListener() throws Exception
     {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        // tag::bufferingResponseListener[]
+        // tag::retainingResponseListener[]
         httpClient.newRequest("http://domain.com/path")
-            // Buffer response content up to 8 MiB
-            .send(new BufferingResponseListener(8 * 1024 * 1024)
+            // Accumulate response content up to 8 MiB.
+            .send(new RetainingResponseListener(8 * 1024 * 1024)
             {
                 @Override
                 public void onComplete(Result result)
@@ -463,7 +480,7 @@ public class HTTPClientDocs
                     }
                 }
             });
-        // end::bufferingResponseListener[]
+        // end::retainingResponseListener[]
     }
 
     public void inputStreamResponseListener() throws Exception
@@ -472,25 +489,29 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::inputStreamResponseListener[]
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        httpClient.newRequest("http://domain.com/path")
-            .send(listener);
-
-        // Wait for the response headers to arrive.
-        Response response = listener.get(5, TimeUnit.SECONDS);
-
-        // Look at the response before streaming the content.
-        if (response.getStatus() == HttpStatus.OK_200)
+        // Use try-with-resources to make sure that resources
+        // are released even if the InputStream is not used.
+        try (InputStreamResponseListener listener = new InputStreamResponseListener())
         {
-            // Use try-with-resources to close input stream.
-            try (InputStream responseContent = listener.getInputStream())
+            httpClient.newRequest("http://domain.com/path")
+                .send(listener);
+
+            // Wait for the response headers to arrive.
+            Response response = listener.get(5, TimeUnit.SECONDS);
+
+            // Look at the response before streaming the content.
+            if (response.getStatus() == HttpStatus.OK_200)
             {
-                // Your logic here
+                // Use try-with-resources to close input stream.
+                try (InputStream responseContent = listener.getInputStream())
+                {
+                    // Your logic here
+                }
             }
-        }
-        else
-        {
-            response.abort(new IOException("Unexpected HTTP response"));
+            else
+            {
+                response.abort(new IOException("Unexpected HTTP response"));
+            }
         }
         // end::inputStreamResponseListener[]
     }
@@ -1067,7 +1088,7 @@ public class HTTPClientDocs
         // the transport supports multiplexing requests on the same connection.
         int maxRequestsPerConnection = 1;
 
-        HttpClientTransport transport = httpClient.getTransport();
+        HttpClientTransport transport = httpClient.getHttpClientTransport();
 
         // Set the ConnectionPool.Factory using a lambda.
         transport.setConnectionPoolFactory(destination ->
@@ -1084,7 +1105,7 @@ public class HTTPClientDocs
         httpClient.start();
 
         // For HTTP/1.1, you need to explicitly configure to initialize connections.
-        if (httpClient.getTransport() instanceof HttpClientTransportOverHTTP http1)
+        if (httpClient.getHttpClientTransport() instanceof HttpClientTransportOverHTTP http1)
             http1.setInitializeConnections(true);
 
         // Create a dummy request to the server you want to pre-create connections to.
@@ -1232,5 +1253,39 @@ public class HTTPClientDocs
             })
             .send();
         // end::connectionInformation[]
+    }
+
+    public void connectListener() throws Exception
+    {
+        // tag::connectListener[]
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.addEventListener(new ClientConnector.ConnectListener()
+        {
+            private final ConcurrentMap<SocketChannel, Long> times = new ConcurrentHashMap<>();
+
+            @Override
+            public void onConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)
+            {
+                times.put(socketChannel, System.nanoTime());
+            }
+
+            @Override
+            public void onConnectSuccess(SocketChannel socketChannel)
+            {
+                Long begin = times.remove(socketChannel);
+                System.getLogger("connection").log(INFO, "established in %d ns", System.nanoTime() - begin);
+            }
+
+            @Override
+            public void onConnectFailure(SocketChannel socketChannel, SocketAddress socketAddress, Throwable failure)
+            {
+                Long begin = times.remove(socketChannel);
+                System.getLogger("connection").log(INFO, "failed in %d ns", System.nanoTime() - begin);
+            }
+        });
+
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
+        httpClient.start();
+        // end::connectListener[]
     }
 }

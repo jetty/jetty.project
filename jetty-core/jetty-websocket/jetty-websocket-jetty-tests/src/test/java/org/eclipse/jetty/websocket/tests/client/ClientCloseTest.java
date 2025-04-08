@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -417,6 +418,7 @@ public class ClientCloseTest
         private static final Logger LOG = LoggerFactory.getLogger(ServerEndpoint.class);
         private Session session;
         CountDownLatch block = new CountDownLatch(1);
+        Utf8StringBuilder stringBuilder = new Utf8StringBuilder();
 
         @Override
         public void onWebSocketOpen(Session session)
@@ -424,8 +426,7 @@ public class ClientCloseTest
             this.session = session;
         }
 
-        @Override
-        public void onWebSocketText(String message)
+        public void onText(String message)
         {
             try
             {
@@ -510,7 +511,23 @@ public class ClientCloseTest
                         LOG.trace("IGNORED", x);
                     }
                 }
+                else
+                {
+                    session.close(closeInfo.getCode(), reason, callback);
+                    return;
+                }
             }
+            else if (frame.getEffectiveOpCode() == OpCode.TEXT)
+            {
+                stringBuilder.append(frame.getPayload());
+                if (frame.isFin())
+                {
+                    String completeString = stringBuilder.toCompleteString();
+                    stringBuilder.reset();
+                    onText(completeString);
+                }
+            }
+
             callback.succeed();
         }
     }

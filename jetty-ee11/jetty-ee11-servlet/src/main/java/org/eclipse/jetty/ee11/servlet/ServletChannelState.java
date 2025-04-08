@@ -34,9 +34,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
  * holder of the state of request-response cycle.
@@ -222,6 +221,11 @@ public class ServletChannelState
     AutoLock lock()
     {
         return _lock.lock();
+    }
+
+    AutoLock tryLock()
+    {
+        return _lock.tryLock();
     }
 
     boolean isLockHeldByCurrentThread()
@@ -420,6 +424,16 @@ public class ServletChannelState
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
                     _state = State.HANDLING;
+                    if (_servletChannel.getResponse().getStatus() != 0)
+                    {
+                        if (_servletChannel.getRequest().getAttribute(ERROR_STATUS) instanceof Integer errorCode)
+                        {
+                            _servletChannel.getServletRequestState().sendError(errorCode, null);
+                            _requestState = RequestState.BLOCKING;
+                            _sendError = false;
+                            return Action.SEND_ERROR;
+                        }
+                    }
                     return Action.DISPATCH;
 
                 case WOKEN:
@@ -871,14 +885,15 @@ public class ServletChannelState
         }
     }
 
-    protected void onError(Throwable th)
+    protected boolean onError(Throwable th)
     {
+        boolean committed = _servletChannel.isCommitted();
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("thrownException {}", getStatusStringLocked(), th);
+                LOG.debug("onError {}", getStatusStringLocked(), th);
 
             // This can only be called from within the handle loop
             if (_state != State.HANDLING)
@@ -887,34 +902,42 @@ public class ServletChannelState
             // If sendError has already been called, we can only handle one failure at a time!
             if (_sendError)
             {
-                LOG.warn("unhandled due to prior sendError", th);
-                return;
+                LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
+                return false;
             }
 
             // Check async state to determine type of handling
             switch (_requestState)
             {
                 case BLOCKING:
-                    // handle the exception with a sendError
+                {
+                    // Handle the exception with a sendError.
+                    if (committed)
+                        return true;
                     sendError(th);
-                    return;
-
+                    return false;
+                }
                 case DISPATCH: // Dispatch has already been called, but we ignore and handle exception below
                 case COMPLETE: // Complete has already been called, but we ignore and handle exception below
                 case ASYNC:
+                {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
+                        if (committed)
+                            return true;
                         sendError(th);
-                        return;
+                        return false;
                     }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;
                     break;
-
+                }
                 default:
-                    LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
-                    return;
+                {
+                    LOG.warn("onError not handled due to invalid requestState {}", getStatusStringLocked(), th);
+                    return false;
+                }
             }
         }
 
@@ -945,7 +968,10 @@ public class ServletChannelState
             {
                 // The listeners did not invoke API methods and the
                 // container must provide a default error dispatch.
+                if (committed)
+                    return true;
                 sendError(th);
+                return false;
             }
             else if (_requestState != RequestState.COMPLETE)
             {
@@ -954,12 +980,14 @@ public class ServletChannelState
                 else
                     LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }
+            return committed;
         }
     }
 
     private void sendError(Throwable th)
     {
         // No sync as this is always called with lock held
+        assert _lock.isHeldByCurrentThread();
 
         // Determine the actual details of the exception
         final Request request = _servletChannel.getServletContextRequest();
@@ -994,9 +1022,6 @@ public class ServletChannelState
 
         // No ISE, so good to modify request/state
         request.setAttribute(ERROR_EXCEPTION, th);
-        request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
-
-        // Set Jetty specific attributes.
         request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
@@ -1005,7 +1030,6 @@ public class ServletChannelState
 
     public void sendError(int code, String message)
     {
-        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
         //  + The response is reset and temporarily closed.
         //  + The details of the error are saved as request attributes
         //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
@@ -1041,10 +1065,7 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
-            // Additional servlet error attributes are provided in org.eclipse.jetty.ee11.servlet.Dispatcher.ErrorRequest
-
-            // Set Jetty Specific Attributes.
+            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
@@ -1052,7 +1073,7 @@ public class ServletChannelState
             _sendError = true;
             if (_event != null)
             {
-                Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+                Throwable cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
                 if (cause != null)
                     _event.addThrowable(cause);
             }

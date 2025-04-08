@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.AnnotatedElement;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,37 +94,38 @@ public class AbstractTest
     protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
     protected AbstractConnector connector;
+    protected ClientConnector clientConnector;
     protected HttpClient client;
     protected ArrayByteBufferPool.Tracking serverBufferPool;
     protected ArrayByteBufferPool.Tracking clientBufferPool;
 
-    public static Collection<Transport> transports()
+    public static Collection<TransportType> transports()
     {
-        EnumSet<Transport> transports = EnumSet.allOf(Transport.class);
+        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
         if ("ci".equals(System.getProperty("env")))
-            transports.remove(Transport.H3);
-        return transports;
+            transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsNoFCGI()
+    public static Collection<TransportType> transportsNoFCGI()
     {
-        Collection<Transport> transports = transports();
-        transports.remove(Transport.FCGI);
-        return transports;
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.remove(TransportType.FCGI);
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsTCP()
+    public static Collection<TransportType> transportsTCP()
     {
-        Collection<Transport> transports = transports();
-        transports.remove(Transport.H3);
-        return transports;
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
-    public static Collection<Transport> transportsTLS()
+    public static Collection<TransportType> transportsTLS()
     {
-        Collection<Transport> transports = transports();
-        transports.retainAll(EnumSet.of(Transport.HTTPS, Transport.H2));
-        return transports;
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.retainAll(EnumSet.of(TransportType.HTTPS, TransportType.H2));
+        return transportTypes;
     }
 
     @AfterEach
@@ -249,25 +253,25 @@ public class AbstractTest
         mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, dumpName, true);
     }
 
-    protected void start(Transport transport, Handler handler) throws Exception
+    protected void start(TransportType transportType, Handler handler) throws Exception
     {
-        startServer(transport, handler);
-        startClient(transport);
+        startServer(transportType, handler);
+        startClient(transportType);
     }
 
-    protected void startServer(Transport transport, Handler handler) throws Exception
+    protected void startServer(TransportType transportType, Handler handler) throws Exception
     {
-        prepareServer(transport, handler);
+        prepareServer(transportType, handler);
         server.start();
     }
 
-    protected void prepareServer(Transport transport, Handler handler) throws Exception
+    protected void prepareServer(TransportType transportType, Handler handler) throws Exception
     {
         sslContextFactoryServer = newSslContextFactoryServer();
         serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, workDir.getEmptyPathDir());
         if (server == null)
             server = newServer();
-        connector = newConnector(transport, server);
+        connector = newConnector(transportType, server);
         server.addConnector(connector);
         server.setHandler(handler);
     }
@@ -290,41 +294,41 @@ public class AbstractTest
         return ssl;
     }
 
-    protected void startClient(Transport transport) throws Exception
+    protected void startClient(TransportType transportType) throws Exception
     {
-        prepareClient(transport);
+        prepareClient(transportType);
         client.start();
     }
 
-    protected void prepareClient(Transport transport) throws Exception
+    protected void prepareClient(TransportType transportType) throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(newHttpClientTransport(transport));
+        client = new HttpClient(newHttpClientTransport(transportType));
         clientBufferPool = new ArrayByteBufferPool.Tracking();
         client.setByteBufferPool(clientBufferPool);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
     }
 
-    public AbstractConnector newConnector(Transport transport, Server server)
+    public AbstractConnector newConnector(TransportType transportType, Server server)
     {
-        return switch (transport)
+        return switch (transportType)
         {
             case HTTP:
             case HTTPS:
             case H2C:
             case H2:
             case FCGI:
-                yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-            case H3:
-                yield new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transport));
+                yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
+            case H3_QUICHE:
+                yield new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }
 
-    protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
+    protected ConnectionFactory[] newServerConnectionFactory(TransportType transportType)
     {
-        List<ConnectionFactory> list = switch (transport)
+        List<ConnectionFactory> list = switch (transportType)
         {
             case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
             case HTTPS ->
@@ -348,7 +352,7 @@ public class AbstractTest
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
                 yield List.of(ssl, alpn, h2);
             }
-            case H3 ->
+            case H3_QUICHE ->
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
@@ -364,40 +368,36 @@ public class AbstractTest
         return new SslContextFactory.Client(true);
     }
 
-    protected HttpClientTransport newHttpClientTransport(Transport transport) throws Exception
+    protected HttpClientTransport newHttpClientTransport(TransportType transportType) throws Exception
     {
-        return switch (transport)
+        clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        return switch (transportType)
         {
             case HTTP, HTTPS ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 yield new HttpClientTransportOverHTTP(clientConnector);
             }
             case H2C, H2 ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
-            case H3 ->
+            case H3_QUICHE ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 SslContextFactory.Client sslClient = newSslContextFactoryClient();
                 HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
-            case FCGI -> new HttpClientTransportOverFCGI(1, "");
+            case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };
     }
 
-    protected URI newURI(Transport transport)
+    protected URI newURI(TransportType transportType)
     {
-        String scheme = transport.isSecure() ? "https" : "http";
+        String scheme = transportType.isSecure() ? "https" : "http";
         String uri = scheme + "://localhost";
         if (connector instanceof NetworkConnector networkConnector)
             uri += ":" + networkConnector.getLocalPort();
@@ -435,16 +435,26 @@ public class AbstractTest
         }
     }
 
-    public enum Transport
+    public static int freePort() throws IOException
     {
-        HTTP, HTTPS, H2C, H2, H3, FCGI;
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            return server.getLocalPort();
+        }
+    }
+
+    public enum TransportType
+    {
+        HTTP, HTTPS, H2C, H2, H3_QUICHE, FCGI;
 
         public boolean isSecure()
         {
             return switch (this)
             {
                 case HTTP, H2C, FCGI -> false;
-                case HTTPS, H2, H3 -> true;
+                case HTTPS, H2, H3_QUICHE -> true;
             };
         }
 
@@ -453,7 +463,7 @@ public class AbstractTest
             return switch (this)
             {
                 case HTTP, HTTPS, FCGI -> false;
-                case H2C, H2, H3 -> true;
+                case H2C, H2, H3_QUICHE -> true;
             };
         }
     }

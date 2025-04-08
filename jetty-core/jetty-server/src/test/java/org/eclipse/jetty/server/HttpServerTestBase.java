@@ -111,7 +111,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static final String REQUEST2_HEADER =
         "POST / HTTP/1.0\n" +
             "Host: localhost\n" +
-            "Content-Type: text/xml; charset=ISO-8859-1\n" +
+            "Content-Type: text/xml; charset=iso-8859-1\n" +
             "Content-Length: ";
     protected static final String REQUEST2_CONTENT =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -127,7 +127,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
     protected static final String RESPONSE2 =
         "HTTP/1.1 200 OK\n" +
-            "Content-Type: text/xml; charset=ISO-8859-1\n" +
+            "Content-Type: text/xml; charset=iso-8859-1\n" +
             "Content-Length: " + REQUEST2_CONTENT.getBytes().length + "\n" +
             "\n" +
             REQUEST2_CONTENT;
@@ -169,15 +169,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             String request = """
-                POST / HTTP/1.1
-                Host: localhost
-                Transfer-Encoding: chunked
-                Connection: close
-                
-                0a
-                0123456789
-                0;
-                
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                Connection: close\r
+                \r
+                0a\r
+                0123456789\r
+                0;\r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -436,15 +436,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             String request = """
-                POST / HTTP/1.1
-                Host: localhost
-                Transfer-Encoding: chunked
-                
-                0a;
-                1234567890
-                xx;
-                
-                
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                0a;\r
+                1234567890\r
+                xx;\r
+                \r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -968,23 +968,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             ).getBytes());
             os.flush();
             Thread.sleep(10);
-            os.write((
-                "a\r\n" +
-                    "123456890\r\n"
+            os.write(("""
+                a\r
+                1234567890\r
+                """
             ).getBytes());
             os.flush();
 
             Thread.sleep(10);
-            os.write((
-                "4\r\n" +
-                    "abcd\r\n"
+            os.write(("""
+                4\r
+                abcd\r
+                """
             ).getBytes());
             os.flush();
 
             Thread.sleep(10);
-            os.write((
-                "X\r\n" +
-                    "abcd\r\n"
+            os.write(("""
+                X\r
+                abcd\r
+                """
             ).getBytes());
             os.flush();
 
@@ -1453,6 +1456,39 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 
                 123456789
                 """));
+        }
+    }
+
+    @Test
+    public void test304WithContentLength() throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(304);
+                response.getHeaders().add(HttpHeader.CONTENT_LENGTH, 10);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
+
+            os.write(("""
+                GET /R1 HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                
+                """).getBytes(StandardCharsets.ISO_8859_1));
+
+            String in = IO.toString(is);
+            assertThat(in, containsString("304 Not Modified"));
+            assertThat(in, containsString("Content-Length: 10"));
         }
     }
 
@@ -1980,13 +2016,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             else
             {
-                HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+                HttpTester.Input input = HttpTester.from(client.getInputStream());
+                HttpTester.Response response = HttpTester.parseResponse(input);
                 assertNotNull(response);
                 assertThat(response.getStatus(), is(200));
-
                 if (pipeline)
                 {
-                    response = HttpTester.parseResponse(client.getInputStream());
+                    response = HttpTester.parseResponse(input);
                     assertNotNull(response);
                     assertThat(response.getStatus(), is(200));
                 }

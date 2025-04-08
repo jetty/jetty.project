@@ -48,14 +48,17 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection, Attachable
+public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection, Attachable, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final ByteBufferPool networkByteBufferPool;
     private final AtomicInteger requests = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -65,6 +68,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final Delegate delegate;
     private final ClientParser parser;
     private final HttpChannelOverFCGI channel;
+    private final InvocationType invocationType;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
     private State state = State.STATUS;
@@ -82,11 +86,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.channel = newHttpChannel();
         HttpClient client = destination.getHttpClient();
         this.networkByteBufferPool = client.getByteBufferPool();
+        this.invocationType = client.getHttpClientTransport().getInvocationType();
     }
 
     public HttpDestination getHttpDestination()
     {
         return destination;
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return invocationType;
     }
 
     @Override
@@ -133,6 +144,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     }
 
     @Override
+    public void fillInterested()
+    {
+        fillInterested(fillableCallback);
+    }
+
+    @Override
     public void onFillable()
     {
         channel.receive();
@@ -168,6 +185,17 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.networkBuffer = null;
     }
 
+    private void disposeNetworkBuffer()
+    {
+        if (networkBuffer == null)
+            return;
+        networkBuffer.clear();
+        networkBuffer.release();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Disposed {}", networkBuffer);
+        networkBuffer = null;
+    }
+
     boolean parseAndFill(boolean notifyContentAvailable)
     {
         if (LOG.isDebugEnabled())
@@ -180,6 +208,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             while (true)
             {
                 if (parse(networkBuffer.getByteBuffer(), notifyContentAvailable))
+                    return false;
+
+                // Disposed by a parser callback.
+                if (networkBuffer == null)
                     return false;
 
                 if (networkBuffer.isRetained())
@@ -207,8 +239,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill from endpoint {}", endPoint, x);
-            networkBuffer.clear();
-            releaseNetworkBuffer();
             close(x);
             return false;
         }
@@ -217,6 +247,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private boolean parse(ByteBuffer buffer, boolean notifyContentAvailable)
     {
         boolean handle = parser.parse(buffer);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parse state={} result={} {} {} on {}", state, handle, BufferUtil.toDetailString(buffer), parser, this);
+
+        if (!handle)
+            return false;
 
         switch (state)
         {
@@ -230,19 +266,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 if (notifyContentAvailable)
                     channel.responseContentAvailable();
             }
-            case COMPLETE ->
-            {
-                // For the complete event, handle==false, and cannot
-                // differentiate between a complete event and a parse()
-                // with zero or not enough bytes, so the state is reset
-                // here to avoid calling responseSuccess() again.
-                state = State.STATUS;
-                channel.responseSuccess();
-            }
+            case COMPLETE -> channel.responseSuccess();
             default -> throw new IllegalStateException("Invalid state " + state);
         }
 
-        return handle;
+        return true;
     }
 
     private void shutdown()
@@ -291,13 +319,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             getHttpDestination().remove(this);
             abort(failure);
             channel.destroy();
+            delegate.destroy();
+            disposeNetworkBuffer();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
             getEndPoint().close();
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
-            delegate.destroy();
         }
     }
 
@@ -471,12 +500,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
-        public void onEnd(int request)
+        public boolean onEnd(int request)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onEnd r={}", request);
             channel.end();
             state = State.COMPLETE;
+            return true;
         }
 
         @Override
@@ -491,5 +521,26 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private enum State
     {
         STATUS, HEADERS, CONTENT, COMPLETE
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            onFillInterestedFailed(failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return HttpConnectionOverFCGI.this.getInvocationType();
+        }
     }
 }

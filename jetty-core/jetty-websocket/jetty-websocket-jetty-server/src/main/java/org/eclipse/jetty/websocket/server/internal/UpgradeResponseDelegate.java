@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -29,10 +27,12 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 class UpgradeResponseDelegate implements UpgradeResponse
 {
     private final ServerUpgradeResponse response;
+    private final Map<String, List<String>> headers;
 
     UpgradeResponseDelegate(ServerUpgradeResponse response)
     {
         this.response = response;
+        this.headers = HttpFields.asMap(response.getHeaders());
     }
 
     @Override
@@ -64,14 +64,7 @@ class UpgradeResponseDelegate implements UpgradeResponse
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        HttpFields.Mutable headers = response.getHeaders();
-        for (HttpField header : headers)
-        {
-            String name = header.getName();
-            result.put(name, headers.getValuesList(name));
-        }
-        return result;
+        return headers;
     }
 
     @Override

@@ -21,7 +21,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
@@ -36,12 +35,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.ContentDecoder;
-import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -51,8 +49,10 @@ import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,7 +196,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         return input.read(buffer);
     }
 
-    void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
+    protected void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
     {
         write(output, content);
     }
@@ -495,7 +495,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
                 if (committed)
                 {
-                    proxyWriter.onWritePossible();
+                    proxyWriter.iterate();
                 }
                 else
                 {
@@ -554,7 +554,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         if (_log.isDebugEnabled())
                             _log.debug("{} downstream content transformation to {} bytes", getRequestId(clientRequest), newContentBytes);
 
-                        proxyWriter.onWritePossible();
+                        proxyWriter.iterate();
                     }
                 }
                 else
@@ -592,12 +592,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    protected class ProxyWriter implements WriteListener
+    protected class ProxyWriter extends IteratingCallback implements WriteListener
     {
-        private final Queue<Chunk> chunks = new ArrayDeque<>();
+        private final AutoLock lock = new AutoLock();
+        private final Queue<BufferWithCallback> chunks = new ArrayDeque<>();
         private final HttpServletRequest clientRequest;
         private final Response serverResponse;
-        private Chunk chunk;
+        private BufferWithCallback chunk;
         private boolean writePending;
 
         protected ProxyWriter(HttpServletRequest clientRequest, Response serverResponse)
@@ -610,74 +611,89 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to downstream: {} bytes {}", getRequestId(clientRequest), content.remaining(), callback);
-            return chunks.offer(new Chunk(content, callback));
+            try (AutoLock ignored = lock.lock())
+            {
+                return chunks.offer(new BufferWithCallback(content, callback));
+            }
         }
 
         @Override
-        public void onWritePossible() throws IOException
+        protected Action process() throws Throwable
         {
             ServletOutputStream output = clientRequest.getAsyncContext().getResponse().getOutputStream();
 
-            // If we had a pending write, let's succeed it.
-            if (writePending)
+            BufferWithCallback chunk;
+            try (AutoLock ignored = lock.lock())
             {
-                if (_log.isDebugEnabled())
-                    _log.debug("{} pending async write complete of {} on {}", getRequestId(clientRequest), chunk, output);
-                writePending = false;
-                if (succeed(chunk.callback))
-                    return;
+                chunk = this.chunk = chunks.poll();
             }
+            if (chunk == null)
+                return Action.IDLE;
 
-            int length = 0;
-            Chunk chunk = null;
-            while (output.isReady())
-            {
-                if (chunk != null)
-                {
-                    if (_log.isDebugEnabled())
-                        _log.debug("{} async write complete of {} ({} bytes) on {}", getRequestId(clientRequest), chunk, length, output);
-                    if (succeed(chunk.callback))
-                        return;
-                }
-
-                this.chunk = chunk = chunks.poll();
-                if (chunk == null)
-                    return;
-
-                length = chunk.buffer.remaining();
-                if (length > 0)
-                    writeProxyResponseContent(output, chunk.buffer);
-            }
-
+            int length = chunk.buffer.remaining();
             if (_log.isDebugEnabled())
-                _log.debug("{} async write pending of {} ({} bytes) on {}", getRequestId(clientRequest), chunk, length, output);
-            writePending = true;
+                _log.debug("{} async write of {} ({} bytes) on {}", getRequestId(clientRequest), chunk, length, this);
+            if (length > 0)
+                writeProxyResponseContent(output, chunk.buffer);
+
+            boolean complete = output.isReady();
+            try (AutoLock ignored = lock.lock())
+            {
+                writePending = !complete;
+            }
+            if (complete)
+                succeeded();
+
+            return Action.SCHEDULED;
         }
 
-        private boolean succeed(Callback callback)
+        @Override
+        protected void onSuccess()
         {
-            // Succeeding the callback may cause to reenter in onWritePossible()
-            // because typically the callback is the one that controls whether the
-            // content received from the server has been consumed, so succeeding
-            // the callback causes more content to be received from the server,
-            // and hence more to be written to the client by onWritePossible().
-            // A reentrant call to onWritePossible() performs another write,
-            // which may remain pending, which means that the reentrant call
-            // to onWritePossible() returns all the way back to just after the
-            // succeed of the callback. There, we cannot just loop attempting
-            // write, but we need to check whether we are write pending.
-            callback.succeeded();
-            return writePending;
+            BufferWithCallback chunk;
+            try (AutoLock ignored = lock.lock())
+            {
+                chunk = this.chunk;
+                this.chunk = null;
+            }
+            if (_log.isDebugEnabled())
+                _log.debug("{} async write complete of {} on {}", getRequestId(clientRequest), chunk, this);
+            chunk.callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable failure)
+        {
+            BufferWithCallback chunk;
+            try (AutoLock ignored = lock.lock())
+            {
+                chunk = this.chunk;
+                this.chunk = null;
+            }
+            if (chunk != null)
+                chunk.callback.failed(failure);
+            else
+                serverResponse.abort(failure);
+        }
+
+        @Override
+        public void onWritePossible()
+        {
+            boolean pending;
+            try (AutoLock ignored = lock.lock())
+            {
+                pending = writePending;
+            }
+            if (pending)
+                succeeded();
+            else
+                iterate();
         }
 
         @Override
         public void onError(Throwable failure)
         {
-            Chunk chunk = this.chunk;
-            if (chunk != null)
-                chunk.callback.failed(failure);
-            else
-                serverResponse.abort(failure);
+            failed(failure);
         }
     }
 
@@ -761,7 +777,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private final List<ByteBuffer> buffers = new ArrayList<>(2);
         private final ContentTransformer transformer;
-        private final ContentDecoder decoder;
+        private final GZIPContentDecoder decoder;
         private final ByteArrayOutputStream out;
         private final GZIPOutputStream gzipOut;
 
@@ -776,7 +792,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             {
                 this.transformer = transformer;
                 ByteBufferPool bufferPool = httpClient == null ? null : httpClient.getByteBufferPool();
-                this.decoder = new GZIPContentDecoder(bufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
+                this.decoder = new GZIPDecoder(bufferPool);
                 this.out = new ByteArrayOutputStream();
                 this.gzipOut = new GZIPOutputStream(out);
             }
@@ -838,6 +854,21 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             out.reset();
             return ByteBuffer.wrap(gzipBytes);
         }
+
+        private static class GZIPDecoder extends GZIPContentDecoder
+        {
+            public GZIPDecoder(ByteBufferPool bufferPool)
+            {
+                super(bufferPool, IO.DEFAULT_BUFFER_SIZE);
+            }
+
+            @Override
+            protected boolean decodedChunk(RetainableByteBuffer chunk)
+            {
+                super.decodedChunk(chunk);
+                return true;
+            }
+        }
     }
 
     private class ProxyAsyncRequestContent extends AsyncRequestContent
@@ -858,15 +889,12 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    private static class Chunk
+    private record BufferWithCallback(ByteBuffer buffer, Callback callback)
     {
-        private final ByteBuffer buffer;
-        private final Callback callback;
-
-        private Chunk(ByteBuffer buffer, Callback callback)
+        @Override
+        public String toString()
         {
-            this.buffer = Objects.requireNonNull(buffer);
-            this.callback = Objects.requireNonNull(callback);
+            return "%s@%x[buffer=%s,callback=%s]".formatted(getClass().getSimpleName(), hashCode(), buffer, callback);
         }
     }
 }

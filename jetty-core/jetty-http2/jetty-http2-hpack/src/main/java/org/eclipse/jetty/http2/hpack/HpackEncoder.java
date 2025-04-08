@@ -107,6 +107,7 @@ public class HpackEncoder
         _debug = LOG.isDebugEnabled();
         setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         setTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+        setMaxHeaderListSize(HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE);
     }
 
     public int getMaxTableCapacity()
@@ -155,7 +156,7 @@ public class HpackEncoder
 
     public void setMaxHeaderListSize(int maxHeaderListSize)
     {
-        _maxHeaderListSize = maxHeaderListSize;
+        _maxHeaderListSize = maxHeaderListSize > 0 ? maxHeaderListSize : HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
     }
 
     public HpackContext getHpackContext()

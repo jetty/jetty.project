@@ -84,16 +84,6 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>javax.servlet.jsp.jstl</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet.jsp</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
@@ -279,21 +269,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.conscrypt</groupId>
-      <artifactId>conscrypt-openjdk-uber</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-client</artifactId>
       <scope>test</scope>
@@ -339,6 +314,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet4-demo-jsp-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jspc-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
@@ -414,11 +396,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>jetty-http2-client-transport</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -560,7 +537,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -593,12 +569,6 @@
               <transaction.groupId>${transaction.groupId}</transaction.groupId>
               <transaction.artifactId>${transaction.artifactId}</transaction.artifactId>
             </systemPropertyVariables>
-            <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
-            <!-- TODO -->
-            <excludes>
-              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
-              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
-            </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
           <dependencies>

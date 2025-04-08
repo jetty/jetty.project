@@ -31,6 +31,8 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,6 +177,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     private class Listener implements Stream.Listener
     {
+        private final SerializedInvoker invoker;
+
+        private Listener()
+        {
+            invoker = new SerializedInvoker(getClass().getName(), getHttpDestination().getHttpClient().getExecutor());
+        }
+
         @Override
         public void onNewStream(Stream stream)
         {
@@ -182,9 +191,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onHeaders(Stream stream, HeadersFrame frame)
+        public void onHeaders(Stream stream, HeadersFrame frame, Callback callback)
         {
-            receiver.onHeaders(stream, frame);
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
+            Runnable task = channel.onHeaders(stream, frame, callback);
+            connection.offerTask(invoker.offer(task), false);
         }
 
         @Override
@@ -197,28 +208,32 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onDataAvailable(Stream stream)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onDataAvailable(), false);
+            Runnable task = channel.onDataAvailable();
+            connection.offerTask(invoker.offer(task), false);
         }
 
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onReset(frame, callback), false);
+            Runnable task = channel.onReset(frame, callback);
+            ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
         }
 
         @Override
         public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onTimeout(x, promise), false);
+            Runnable task = channel.onTimeout(x, promise);
+            ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onFailure(failure, callback), false);
+            Runnable task = channel.onFailure(failure, callback);
+            ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
         }
     }
 }

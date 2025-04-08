@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,9 +37,9 @@ public class InformationalResponseTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void test102Processing(Transport transport) throws Exception
+    public void test102Processing(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -55,7 +55,7 @@ public class InformationalResponseTest extends AbstractTest
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)
@@ -64,7 +64,7 @@ public class InformationalResponseTest extends AbstractTest
                 completeLatch.countDown();
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method("GET")
             .timeout(10, TimeUnit.SECONDS)
             .send(listener);
@@ -76,9 +76,9 @@ public class InformationalResponseTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void test103EarlyHint(Transport transport) throws Exception
+    public void test103EarlyHint(TransportType transportType) throws Exception
     {
-        start(transport, new HttpServlet()
+        start(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -97,7 +97,7 @@ public class InformationalResponseTest extends AbstractTest
 
         CountDownLatch complete = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)
@@ -106,7 +106,7 @@ public class InformationalResponseTest extends AbstractTest
                 complete.countDown();
             }
         };
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .method("GET")
             .timeout(5, TimeUnit.SECONDS)
             .send(listener);

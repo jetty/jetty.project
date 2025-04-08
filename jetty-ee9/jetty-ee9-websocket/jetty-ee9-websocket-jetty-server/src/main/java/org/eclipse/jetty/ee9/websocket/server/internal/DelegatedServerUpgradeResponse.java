@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.server.internal;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -33,12 +32,14 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
 {
     private final ServerUpgradeResponse upgradeResponse;
     private final HttpServletResponse httpServletResponse;
+    private final Map<String, List<String>> headers;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
         this.upgradeResponse = response;
         this.httpServletResponse = (HttpServletResponse)response.getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+        this.headers = HttpFields.asMap(upgradeResponse.getHeaders());
     }
 
     @Override
@@ -88,9 +89,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> headers = getHeaderNames().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(getHeaders(name))));
-        return Collections.unmodifiableMap(headers);
+        return headers;
     }
 
     @Override

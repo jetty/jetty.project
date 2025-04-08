@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee11.test;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +25,10 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
-import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.deploy.Deployer;
+import org.eclipse.jetty.deploy.DeploymentScanner;
+import org.eclipse.jetty.deploy.StandardDeployer;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
@@ -51,9 +49,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +58,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
@@ -71,29 +69,25 @@ public class DeploymentErrorTest
 
     private StacklessLogging stacklessLogging;
     private Server server;
-    private DeploymentManager deploymentManager;
+    private StandardDeployer deployer;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
-        stacklessLogging = new StacklessLogging(WebAppContext.class, DeploymentManager.class, NoClassDefFoundError.class);
+        stacklessLogging = new StacklessLogging(WebAppContext.class, StandardDeployer.class, NoClassDefFoundError.class);
 
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
-        ResourceFactory resourceFactory = ResourceFactory.of(server);
-
         // Empty contexts collections
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         //Environment
-        Environment ee11 = Environment.ensure("ee11");
-        ee11.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee11.webapp.WebAppContext");
+        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee11.webapp.WebAppContext");
 
         // Deployment Manager
-        deploymentManager = new DeploymentManager();
-        deploymentManager.setContexts(contexts);
+        deployer = new StandardDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -106,32 +100,32 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        ContextProvider appProvider = new ContextProvider();
-        appProvider.setEnvironmentName("ee11");
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
+        DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
+        envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
+        deploymentScanner.setScanInterval(1);
+        deploymentScanner.addMonitoredDirectory(docroots);
+        server.addBean(deploymentScanner);
 
-        appProvider.setScanInterval(1);
-        appProvider.setMonitoredDirResource(resourceFactory.newResource(docroots));
-        deploymentManager.addAppProvider(appProvider);
-
-        server.addBean(deploymentManager);
+        server.addBean(deployer);
 
         // Server handlers
         server.setHandler(new Handler.Sequence(contexts, new DefaultHandler()));
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-                .add("org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration",
-                        "org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration",
-                        "org.eclipse.jetty.ee11.annotations.AnnotationConfiguration",
-                        TrackedConfiguration.class.getName()
-                );
+            .add("org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee11.annotations.AnnotationConfiguration",
+                TrackedConfiguration.class.getName()
+            );
 
         server.start();
         return docroots;
     }
 
     @AfterEach
-    public void tearDownServer() throws Exception
+    public void tearDownServer()
     {
         if (stacklessLogging != null)
             stacklessLogging.close();
@@ -156,7 +150,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has a webapp that will deploy with an error.
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
@@ -170,7 +164,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has a webapp that will deploy with an error.
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
@@ -179,11 +173,11 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
+        List<ContextHandler> contexts = getContextHandlers(deployer);
+        assertThat("Contexts tracked", contexts.size(), is(1));
         String contextPath = "/badapp-uaf";
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        ContextHandler context = findContext(contextPath, contexts);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -204,7 +198,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has no initial webapps that will deploy.
      * A webapp is added (by filesystem copies) into the monitored docroot.
      * The webapp will have a deployment error.
@@ -216,19 +210,19 @@ public class DeploymentErrorTest
         Path docroots = startServer(null);
 
         String contextPath = "/badapp";
-        AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-        deploymentManager.addLifeCycleBinding(startTracking);
+        AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
+        StandardDeployer deployer = server.getBean(StandardDeployer.class);
+        deployer.addEventListener(startTracking);
 
         copyBadApp("badapp.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        assertThat("AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
+        assertThat("ContextHandlerLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        List<ContextHandler> apps = getContextHandlers(deployer);
+        assertThat("Contexts tracked", apps.size(), is(1));
+        ContextHandler context = findContext(contextPath, apps);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -249,7 +243,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has no initial webapps that will deploy.
      * A webapp is added (by filesystem copies) into the monitored docroot.
      * The webapp will have a deployment error.
@@ -261,19 +255,19 @@ public class DeploymentErrorTest
         Path docroots = startServer(null);
 
         String contextPath = "/badapp-uaf";
-        AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-        deploymentManager.addLifeCycleBinding(startTracking);
+        AppLifeCycleTracking startTracking = new AppLifeCycleTracking(contextPath);
+        StandardDeployer deployer = server.getBean(StandardDeployer.class);
+        deployer.addEventListener(startTracking);
 
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        startTracking.startedLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        List<ContextHandler> apps = getContextHandlers(this.deployer);
+        assertThat("Contexts tracked", apps.size(), is(1));
+        ContextHandler context = findContext(contextPath, apps);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -296,25 +290,28 @@ public class DeploymentErrorTest
     private void assertHttpState(String contextPath, int expectedStatusCode) throws Exception
     {
         URI destURI = server.getURI().resolve(contextPath);
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
         }
-        finally
-        {
-            client.stop();
-        }
     }
 
-    private App findApp(String contextPath, List<App> apps)
+    private List<ContextHandler> getContextHandlers(StandardDeployer deployer)
     {
-        for (App app : apps)
+        return deployer.getContexts().getHandlers().stream()
+            .filter(h -> (h instanceof ContextHandler))
+            .map(ContextHandler.class::cast)
+            .toList();
+    }
+
+    private ContextHandler findContext(String contextPath, List<ContextHandler> apps)
+    {
+        for (ContextHandler contextHandler : apps)
         {
-            if (contextPath.equals(app.getContextPath()))
-                return app;
+            if (contextPath.equals(contextHandler.getContextPath()))
+                return contextHandler;
         }
         return null;
     }
@@ -360,42 +357,37 @@ public class DeploymentErrorTest
         }
     }
 
-    public static class AppLifeCycleTrackingBinding implements AppLifeCycle.Binding
+    public static class AppLifeCycleTracking implements Deployer.Listener
     {
         public final CountDownLatch startingLatch = new CountDownLatch(1);
         public final CountDownLatch startedLatch = new CountDownLatch(1);
         public final CountDownLatch failedLatch = new CountDownLatch(1);
         private final String expectedContextPath;
 
-        public AppLifeCycleTrackingBinding(String expectedContextPath)
+        public AppLifeCycleTracking(String expectedContextPath)
         {
             this.expectedContextPath = expectedContextPath;
         }
 
         @Override
-        public String[] getBindingTargets()
+        public void onStarting(ContextHandler contextHandler)
         {
-            return new String[]{AppLifeCycle.STARTING, AppLifeCycle.STARTED, AppLifeCycle.FAILED};
+            if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
+                startingLatch.countDown();
         }
 
         @Override
-        public void processBinding(Node node, App app)
+        public void onStarted(ContextHandler contextHandler)
         {
-            if (app.getContextPath().equalsIgnoreCase(expectedContextPath))
-            {
-                if (node.getName().equalsIgnoreCase(AppLifeCycle.STARTING))
-                {
-                    startingLatch.countDown();
-                }
-                else if (node.getName().equalsIgnoreCase(AppLifeCycle.STARTED))
-                {
-                    startedLatch.countDown();
-                }
-                else if (node.getName().equalsIgnoreCase(AppLifeCycle.FAILED))
-                {
-                    failedLatch.countDown();
-                }
-            }
+            if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
+                startedLatch.countDown();
+        }
+
+        @Override
+        public void onFailure(ContextHandler contextHandler, Throwable cause)
+        {
+            if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
+                failedLatch.countDown();
         }
     }
 }

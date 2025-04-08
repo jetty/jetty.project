@@ -58,10 +58,12 @@ public class HttpConfiguration implements Dumpable
         .mutable()
         .build();
     private final List<ComplianceViolation.Listener> _complianceViolationListeners = new ArrayList<>();
+    private int _inputBufferSize = 8 * 1024;
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
     private int _responseHeaderSize = 8 * 1024;
+    private int _maxResponseHeaderSize = 16 * 1024;
     private int _headerCacheSize = 1024;
     private boolean _headerCacheCaseSensitive = false;
     private int _securePort;
@@ -77,9 +79,9 @@ public class HttpConfiguration implements Dumpable
     private boolean _useOutputDirectByteBuffers = true;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
-    private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
+    private HttpCompliance _httpCompliance = HttpCompliance.RFC9110;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
-    private UriCompliance _redirectUriCompliance = null; // TODO default to UriCompliance.DEFAULT in 12.1 ?;
+    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
@@ -89,6 +91,7 @@ public class HttpConfiguration implements Dumpable
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
+    private int _minInputBufferSpace = 1500;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -134,10 +137,12 @@ public class HttpConfiguration implements Dumpable
         {
             _formEncodedMethods.put(s, Boolean.TRUE);
         }
+        _inputBufferSize = config._inputBufferSize;
         _outputBufferSize = config._outputBufferSize;
         _outputAggregationSize = config._outputAggregationSize;
         _requestHeaderSize = config._requestHeaderSize;
         _responseHeaderSize = config._responseHeaderSize;
+        _maxResponseHeaderSize = config._maxResponseHeaderSize;
         _headerCacheSize = config._headerCacheSize;
         _headerCacheCaseSensitive = config._headerCacheCaseSensitive;
         _secureScheme = config._secureScheme;
@@ -166,6 +171,7 @@ public class HttpConfiguration implements Dumpable
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
+        _minInputBufferSpace = config._minInputBufferSpace;
     }
 
     /**
@@ -201,6 +207,12 @@ public class HttpConfiguration implements Dumpable
         return _customizers.remove(customizer);
     }
 
+    @ManagedAttribute("The size in bytes of the input buffer used to read HTTP requests")
+    public int getInputBufferSize()
+    {
+        return _inputBufferSize;
+    }
+
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
     public int getOutputBufferSize()
     {
@@ -219,10 +231,16 @@ public class HttpConfiguration implements Dumpable
         return _requestHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP response header")
+    @ManagedAttribute("The default size in bytes for the HTTP response headers buffer")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
+    }
+
+    @ManagedAttribute("The maximum size in bytes for the HTTP response headers buffer")
+    public int getMaxResponseHeaderSize()
+    {
+        return _maxResponseHeaderSize;
     }
 
     @ManagedAttribute("The maximum allowed size in Trie nodes for an HTTP header field cache")
@@ -345,13 +363,15 @@ public class HttpConfiguration implements Dumpable
     /**
      * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
+     * @deprecated Use {@link org.eclipse.jetty.server.handler.EagerContentHandler} instead.
      */
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public void setDelayDispatchUntilContent(boolean delay)
     {
         _delayDispatchUntilContent = delay;
     }
 
-    @ManagedAttribute("Whether to delay the application dispatch until content is available")
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
@@ -402,6 +422,15 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set the size of the buffer into which HTTP request are read.
+     * @param inputBufferSize buffer size in bytes.
+     */
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        _inputBufferSize = inputBufferSize;
+    }
+
+    /**
      * Set the size of the buffer into which response content is aggregated
      * before being sent to the client.  A larger buffer can improve performance by allowing
      * a content producer to run without blocking, however larger buffers consume more memory and
@@ -441,14 +470,32 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection).
-     * However, larger headers will also consume more memory.</p>
+     * <p>Sets the default size in bytes for the HTTP response line and headers.</p>
+     * <p>Consider using a value that fits most responses, and use {@link #setMaxResponseHeaderSize(int)}
+     * for larger responses.</p>
+     * <p>Large values allow for more and/or larger cookies and longer HTTP headers (for example,
+     * very long redirect URIs). However, large values will also consume more memory.</p>
      *
-     * @param responseHeaderSize the maximum size in bytes of the response header
+     * @param responseHeaderSize the default size in bytes of the response headers buffer
+     * @see #setMaxResponseHeaderSize(int)
      */
     public void setResponseHeaderSize(int responseHeaderSize)
     {
         _responseHeaderSize = responseHeaderSize;
+    }
+
+    /**
+     * <p>Sets the maximum size in bytes for the HTTP response line and headers.</p>
+     * <p>When the value is negative, then the value of {@link #getResponseHeaderSize()} is used.</p>
+     * <p>Large values allow for more and/or larger cookies and longer HTTP headers (for example,
+     * very long redirect URIs). However, large values will also consume more memory.</p>
+     *
+     * @param maxResponseHeaderSize the maximum size in bytes of the response headers buffer
+     * @see #setResponseHeaderSize(int)
+     */
+    public void setMaxResponseHeaderSize(int maxResponseHeaderSize)
+    {
+        _maxResponseHeaderSize = maxResponseHeaderSize;
     }
 
     /**
@@ -548,6 +595,25 @@ public class HttpConfiguration implements Dumpable
     public void setMaxErrorDispatches(int max)
     {
         _maxErrorDispatches = max;
+    }
+
+    /**
+     * @return The minimum space available in a retained input buffer before allocating a new one.
+     */
+    @ManagedAttribute("The minimum space available in a retained input buffer before allocating a new one")
+    public int getMinInputBufferSpace()
+    {
+        return _minInputBufferSpace;
+    }
+
+    /**
+     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one;
+     *                            0 to always allocate a new buffer;
+     *                            -1 for a default value
+     */
+    public void setMinInputBufferSpace(int minInputBufferSpace)
+    {
+        _minInputBufferSpace = minInputBufferSpace;
     }
 
     /**
@@ -858,6 +924,7 @@ public class HttpConfiguration implements Dumpable
             "outputAggregationSize=" + _outputAggregationSize,
             "requestHeaderSize=" + _requestHeaderSize,
             "responseHeaderSize=" + _responseHeaderSize,
+            "maxResponseHeaderSize=" + _maxResponseHeaderSize,
             "headerCacheSize=" + _headerCacheSize,
             "headerCacheCaseSensitive=" + _headerCacheCaseSensitive,
             "secureScheme=" + _secureScheme,

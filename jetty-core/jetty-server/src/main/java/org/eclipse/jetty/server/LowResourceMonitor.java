@@ -97,11 +97,15 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public void setMonitorThreads(boolean monitorThreads)
     {
         if (monitorThreads)
+        {
             // already configured?
             if (!getMonitorThreads())
                 addLowResourceCheck(new ConnectorsThreadPoolLowResourceCheck());
-            else
-                getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
+        }
+        else
+        {
+            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
+        }
     }
 
     @ManagedAttribute("The reasons the monitored connectors are low on resources")

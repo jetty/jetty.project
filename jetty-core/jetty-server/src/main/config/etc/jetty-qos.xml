@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.QoSHandler">
+        <Set name="maxRequestCount" property="jetty.qos.maxRequestCount" />
+        <Set name="maxSuspendedRequestCount" property="jetty.qos.maxSuspendedRequestCount" />
+        <Set name="maxSuspend">
+          <Call class="java.time.Duration" name="ofMillis">
+            <Arg type="long">
+              <Property name="jetty.qos.maxSuspendDuration" default="0" />
+            </Arg>
+          </Call>
+        </Set>
+        <Call name="includeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.include.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.exclude.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.include.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.exclude.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.include.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.qos.exclude.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

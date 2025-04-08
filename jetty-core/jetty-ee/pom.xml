@@ -35,11 +35,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -54,6 +49,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee=org.eclipse.jetty.logging</argLine>
+          <excludes>
+            <!-- This class modifies internal JVM statics, and causes problems in parallel testing -->
+            <exclude>org.eclipse.jetty.ee.WebAppClassLoaderUrlStreamTest</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>

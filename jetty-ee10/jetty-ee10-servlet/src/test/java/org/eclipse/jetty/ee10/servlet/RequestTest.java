@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -35,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,6 +61,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +77,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -624,6 +628,163 @@ public class RequestTest
             assertTrue(StringUtil.isNotBlank(date));
             assertThat(date, containsString(","));
             assertThat(date, containsString(":"));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
+        textBlock = """
+        # query         | expectedName | expectedValue
+        a=bad_%e0%b     | a            | bad_�
+        a=bad_%e0%b&b=2 | a            | bad_�
+        a=bad_%e0%ba    | a            | bad_�
+        b=short%a       | b            | short%a
+        c=%%TOK%%       | c            | %%TOK%%
+        """)
+    public void testBadUtf8Query(String query, String expectedName, String expectedValue) throws Exception
+    {
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse resp)
+            {
+                String param = request.getParameter(expectedName);
+                assertThat(param, is(expectedValue));
+                resp.setStatus(200);
+            }
+        };
+
+        startServer((server) ->
+                _connector.getConnectionFactory(HttpConnectionFactory.class)
+                    .getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, UriCompliance.Violation.BAD_PERCENT_ENCODING)),
+            servlet
+        );
+
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request = """
+            GET /?@QUERY@ HTTP/1.1\r
+            Host: whatever\r
+            Connection: close
+            
+            """.replaceAll("@QUERY@", query);
+
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    public void testParameters() throws Exception
+    {
+        final AtomicReference<String> parameterMap = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                parameterMap.set(request.getParameterMap().toString());
+                PrintWriter out = resp.getWriter();
+                out.println(request.getParameter("a"));
+                out.println(request.getParameterValues("a")[1]);
+                out.println(request.getParameterValues("a")[2]);
+                out.println(Arrays.asList(request.getParameterValues("b")));
+                out.println(Arrays.asList(request.getParameterValues("c")));
+                out.println(Arrays.asList(request.getParameterValues("d")));
+
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test/parameters?a=1&a=2&b=one&c= HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: 23\r
+                \r
+                a=3&b=two&b=three&d=xyz\r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(parameterMap.get(), is("{a=[1, 2, 3],b=[one, two, three],c=[],d=[xyz]}"));
+        assertThat(response.getContent().replaceAll("\r\n", "\n"), is("""
+            1
+            2
+            3
+            [one, two, three]
+            []
+            [xyz]
+            """));
+    }
+
+    static Stream<Arguments> suspiciousCharactersLegacy()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "o", "o"),
+            Arguments.of(UriCompliance.DEFAULT, "%5C", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%0A", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%00", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%01", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%5F", "_"),
+            Arguments.of(UriCompliance.DEFAULT, "%2F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%252F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "//", "400"),
+
+            // these results are from jetty-11 DEFAULT
+            Arguments.of(UriCompliance.JETTY_11, "o", "o"),
+            Arguments.of(UriCompliance.JETTY_11, "%5C", "\\"),
+            Arguments.of(UriCompliance.JETTY_11, "%0A", "\n"),
+            Arguments.of(UriCompliance.JETTY_11, "%00", "400"),
+            Arguments.of(UriCompliance.JETTY_11, "%01", "\u0001"),
+            Arguments.of(UriCompliance.JETTY_11, "%5F", "_"),
+            Arguments.of(UriCompliance.JETTY_11, "%2F", "/"),
+            Arguments.of(UriCompliance.JETTY_11, "%252F", "%2F"),
+            Arguments.of(UriCompliance.JETTY_11, "//", "400"),
+
+            // these results are from jetty-11 LEGACY
+            Arguments.of(UriCompliance.LEGACY, "o", "o"),
+            Arguments.of(UriCompliance.LEGACY, "%5C", "\\"),
+            Arguments.of(UriCompliance.LEGACY, "%0A", "\n"),
+            Arguments.of(UriCompliance.LEGACY, "%00", "400"),
+            Arguments.of(UriCompliance.LEGACY, "%01", "\u0001"),
+            Arguments.of(UriCompliance.LEGACY, "%5F", "_"),
+            Arguments.of(UriCompliance.LEGACY, "%2F", "/"),
+            Arguments.of(UriCompliance.LEGACY, "%252F", "%2F"),
+            Arguments.of(UriCompliance.LEGACY, "//", "//")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousCharactersLegacy")
+    public void testSuspiciousCharactersLegacy(UriCompliance compliance, String suspect, String expected) throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                if (expected.length() != 3 || !Character.isDigit(expected.charAt(0)))
+                    assertThat(request.getPathInfo(), is("/test/fo" + expected + "bar"));
+            }
+        });
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
+        if (compliance != UriCompliance.DEFAULT)
+            _server.getBean(ServletContextHandler.class).getServletHandler().setDecodeAmbiguousURIs(true);
+        String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+        String response = _connector.getResponse(request);
+
+        if (expected.length() == 3 && Character.isDigit(expected.charAt(0)))
+        {
+            assertThat(response, startsWith("HTTP/1.1 " + expected + " "));
+        }
+        else
+        {
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
         }
     }
 }

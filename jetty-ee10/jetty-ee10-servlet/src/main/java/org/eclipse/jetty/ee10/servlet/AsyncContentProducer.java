@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ class AsyncContentProducer implements ContentProducer
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;
+    private final DemandTask _demandTask;
     private Content.Chunk _chunk;
     private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _bytesArrived;
@@ -49,6 +51,8 @@ class AsyncContentProducer implements ContentProducer
     {
         _servletChannel = servletChannel;
         _lock = lock;
+        // Inner class used instead of lambda for clarity in stack traces.
+        _demandTask = new DemandTask();
     }
 
     ServletChannel getServletChannel()
@@ -250,16 +254,7 @@ class AsyncContentProducer implements ContentProducer
         }
 
         state.onReadUnready();
-        _servletChannel.getRequest().demand(() ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("isReady() demand callback {}", this);
-            // We could call this.onContentProducible() directly but this
-            // would mean we would need to take the lock here while it
-            // is the responsibility of the HttpInput to take it.
-            if (_servletChannel.getHttpInput().onContentProducible())
-                _servletChannel.handle();
-        });
+        _servletChannel.getRequest().demand(_demandTask);
 
         if (LOG.isDebugEnabled())
             LOG.debug("isReady(), no chunk {}", this);
@@ -376,17 +371,31 @@ class AsyncContentProducer implements ContentProducer
             this._condition = _lock.newCondition();
         }
 
-        void assertLocked()
+        /**
+         * Checks that the {@link HttpInput} lock scope is correct.
+         * @throws IllegalStateException if the {@link HttpInput} lock is not held
+         */
+        void assertLocked() throws IllegalStateException
         {
             if (!_lock.isHeldByCurrentThread())
                 throw new IllegalStateException("LockedSemaphore must be called within lock scope");
         }
 
+        /**
+         * Resets the semaphore's permit count to 0.
+         */
         void drainPermits()
         {
             _permits = 0;
         }
 
+        /**
+         * Acquires a permit from the semaphore by decreasing the permit count by 1 without ever going negative.
+         * This method returns immediately when the permit count is >= 1 or it blocks until {@link #release} or {@link #fail()}
+         * is called to increase the permit count.
+         * @throws InterruptedException if this call was blocked waiting for the permit count to go above 0 and the thread
+         * got interrupted.
+         */
         void acquire() throws InterruptedException
         {
             while (_permits == 0)
@@ -394,16 +403,52 @@ class AsyncContentProducer implements ContentProducer
             _permits--;
         }
 
+        /**
+         * Releases a permit to the semaphore by increasing the permit count by 1, potentially unblocking one thread
+         * blocked in {@link #acquire()}.
+         */
         void release()
         {
             _permits++;
             _condition.signal();
         }
 
+        /**
+         * Unblock all threads blocked in {@link #acquire()} and prevent all further calls to {@link #acquire()}
+         * from blocking until {@link #drainPermits()} is called.
+         */
+        void fail()
+        {
+            _permits = Integer.MAX_VALUE;
+            _condition.signalAll();
+        }
+
         @Override
         public String toString()
         {
             return getClass().getSimpleName() + " permits=" + _permits;
+        }
+    }
+
+    private class DemandTask implements Invocable.Task
+    {
+        @Override
+        public void run()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady() demand callback {}", this);
+            // We could call this.onContentProducible() directly but this
+            // would mean we would need to take the lock here while it
+            // is the responsibility of the HttpInput to take it.
+            if (_servletChannel.getHttpInput().onContentProducible())
+                _servletChannel.handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
+            return _servletChannel.getHttpInput().getInvocationType();
         }
     }
 }

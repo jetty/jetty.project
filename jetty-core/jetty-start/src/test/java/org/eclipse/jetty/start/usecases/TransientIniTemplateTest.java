@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
@@ -102,7 +105,7 @@ public class TransientIniTemplateTest extends AbstractUseCase
     }
 
     @Test
-    public void testTransientWithIniTemplateTest() throws Exception
+    public void testTransientWithIniTemplateTestStart() throws Exception
     {
         setupStandardHomeDir();
 
@@ -175,5 +178,95 @@ public class TransientIniTemplateTest extends AbstractUseCase
         expectedProperties.add("direct.option=direct");
         List<String> actualProperties = results.getProperties();
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
+    }
+
+    @Test
+    public void testAddModuleTransientIniTemplate() throws Exception
+    {
+        setupStandardHomeDir();
+
+        FS.ensureDirExists(baseDir.resolve("modules"));
+        FS.ensureDirExists(baseDir.resolve("etc"));
+        FS.touch(baseDir.resolve("etc/d.xml"));
+        FS.touch(baseDir.resolve("etc/t.xml"));
+        Files.writeString(baseDir.resolve("modules/direct.mod"),
+            """
+                [xml]
+                etc/d.xml
+                [depend]
+                transient
+                [ini-template]
+                direct.option=direct
+                """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/transient.mod"),
+            """
+                [xml]
+                etc/t.xml
+                [depend]
+                main
+                [ini-template]
+                transient.option=transient
+                """, StandardCharsets.UTF_8);
+
+        // === Prepare Jetty Base using Main
+        List<String> prepareArgs = Arrays.asList(
+            "--testing-mode",
+            "--add-modules=direct"
+        );
+        exec(prepareArgs, true);
+
+        // === Execute Main
+        List<String> runArgs = Collections.emptyList();
+        ExecResults results = exec(runArgs, false);
+
+        // === Validate created INIs
+        String[] expectedInis = {
+            "direct.ini",
+            "main.ini",
+            "transient.ini"
+        };
+        List<String> actualInis = getIniFileNames(baseDir.resolve("start.d"));
+        assertThat("INI files", actualInis, contains(expectedInis));
+
+        // === Validate Resulting XMLs
+        List<String> expectedXmls = Arrays.asList(
+            "${jetty.home}/etc/base.xml",
+            "${jetty.home}/etc/main.xml",
+            "${jetty.base}/etc/t.xml",
+            "${jetty.base}/etc/d.xml"
+        );
+        List<String> actualXmls = results.getXmls();
+        assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
+
+        // === Validate Resulting LIBs
+        List<String> expectedLibs = Arrays.asList(
+            "${jetty.home}/lib/base.jar",
+            "${jetty.home}/lib/main.jar",
+            "${jetty.home}/lib/other.jar"
+        );
+        List<String> actualLibs = results.getLibs();
+        assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
+
+        // === Validate Resulting Properties
+        Set<String> expectedProperties = new HashSet<>();
+        expectedProperties.add("main.prop=value0");
+        expectedProperties.add("transient.option=transient");
+        expectedProperties.add("direct.option=direct");
+        List<String> actualProperties = results.getProperties();
+        assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
+    }
+
+    private List<String> getIniFileNames(Path dir) throws IOException
+    {
+        try (Stream<Path> listing = Files.list(dir))
+        {
+            return listing
+                .filter(Files::isRegularFile)
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .filter(filename -> filename.endsWith(".ini"))
+                .sorted()
+                .toList();
+        }
     }
 }

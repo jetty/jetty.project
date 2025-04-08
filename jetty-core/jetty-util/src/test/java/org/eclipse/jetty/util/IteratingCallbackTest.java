@@ -493,18 +493,18 @@ public class IteratingCallbackTest
 
         icb.iterate();
 
-        assertThat(icb.toString(), containsString("[PENDING, false,"));
+        assertThat(icb.toString(), containsString("PENDING,aborted=false,"));
 
         Throwable cause = new Throwable("test abort");
         new Thread(() -> icb.abort(cause)).start();
 
-        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("[PENDING, true,"));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("PENDING,aborted=true,"));
         Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> aborted.get() != null);
 
         icb.succeeded();
 
         // We are now complete, but callbacks have not yet been done
-        assertThat(icb.toString(), containsString("[COMPLETE, true,"));
+        assertThat(icb.toString(), containsString("COMPLETE,aborted=true,"));
         assertThat(failure.get(), nullValue());
         assertFalse(completed.isMarked());
 
@@ -591,7 +591,7 @@ public class IteratingCallbackTest
 
         new Thread(icb::iterate).start();
 
-        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("[PROCESSING, true,"));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("PROCESSING,aborted=true,"));
 
         // we have aborted, but onAborted not yet called
         assertThat(aborted.get(), nullValue());
@@ -831,7 +831,7 @@ public class IteratingCallbackTest
         }
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> callback.toString().contains(state));
-        assertThat(callback.toString(), containsString("[" + state + ","));
+        assertThat(callback.toString(), containsString("[:" + state + ","));
         onAbort.set(null);
 
         if (success == Boolean.FALSE && (state.equals("COMPLETE") || state.equals("CLOSED")))

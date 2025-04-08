@@ -433,12 +433,12 @@ public class Response implements HttpServletResponse
         if (suffix < 0)
         {
             return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isEmpty(uri.getPath()) ? "/" : "") + //if no path, insert the root path
                 sessionURLPrefix + id;
         }
 
         return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
+            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isEmpty(uri.getPath()) ? "/" : "") + //if no path so insert the root path
             sessionURLPrefix + id + url.substring(suffix);
     }
 
@@ -708,7 +708,7 @@ public class Response implements HttpServletResponse
         {
             boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
             boolean including = AtomicBiInteger.getLo(biInt) > 0;
-            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+            if (!errorSent && including && name != null && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
@@ -754,7 +754,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setStatus(int sc)
     {
-        if (sc <= 0)
+        if (sc < 100 || sc > 999)
             throw new IllegalArgumentException();
         if (isMutable())
         {
@@ -775,7 +775,7 @@ public class Response implements HttpServletResponse
 
     public void setStatusWithReason(int sc, String message)
     {
-        if (sc <= 0)
+        if (sc < 100 || sc > 999)
             throw new IllegalArgumentException();
         if (isMutable())
         {

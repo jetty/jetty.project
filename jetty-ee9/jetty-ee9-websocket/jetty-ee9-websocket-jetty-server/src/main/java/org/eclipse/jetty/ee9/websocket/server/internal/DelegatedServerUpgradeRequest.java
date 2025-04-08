@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -46,6 +46,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
     private final HttpServletRequest httpServletRequest;
+    private final Map<String, List<String>> headers;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
@@ -55,6 +56,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
         this.queryString = httpServletRequest.getQueryString();
+        this.headers = HttpFields.asMap(upgradeRequest.getHeaders());
 
         try
         {
@@ -114,9 +116,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> headers = upgradeRequest.getHeaders().getFieldNamesCollection().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(getHeaders(name))));
-        return Collections.unmodifiableMap(headers);
+        return headers;
     }
 
     @Override

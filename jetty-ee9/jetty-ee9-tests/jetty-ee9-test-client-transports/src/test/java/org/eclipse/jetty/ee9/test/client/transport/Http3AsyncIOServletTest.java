@@ -48,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,17 +58,18 @@ import static org.eclipse.jetty.http3.api.Session.Client;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class Http3AsyncIOServletTest
 {
     public WorkDir workDir;
-
+    private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server server;
     private QuicServerConnector connector;
     private HTTP3Client client;
 
-    private void start(HttpConfiguration httpConfig, HttpServlet httpServlet) throws Exception
+    private void start(HttpServlet httpServlet) throws Exception
     {
         server = new Server();
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
@@ -95,12 +97,10 @@ public class Http3AsyncIOServletTest
     @ValueSource(booleans = {true, false})
     public void testStartAsyncThenClientResetRemoteErrorNotification(boolean notify) throws Exception
     {
-        HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setNotifyRemoteAsyncErrors(notify);
-
         AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        start(httpConfig, new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -157,5 +157,15 @@ public class Http3AsyncIOServletTest
         else
             // Wait for the reset to NOT be notified to the failure listener.
             await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).until(errorAsyncEventRef::get, nullValue());
+    }
+
+    @Test
+    public void testClientResetNotifiesAsyncListener()
+    {
+        // See the equivalent test in Http2AsyncIOServletTest for HTTP/2.
+        // For HTTP/3 we do not have a "reset" event that we can relay to applications,
+        // because HTTP/3 does not have a "reset" frame; QUIC has RESET_STREAM, but we
+        // do not have an event from Quiche to reliably report it to applications.
+        assumeTrue(false);
     }
 }

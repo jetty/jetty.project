@@ -37,20 +37,20 @@ public class ConnectionPoolTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testPreCreateConnections(Transport transport) throws Exception
+    public void testPreCreateConnections(TransportType transportType) throws Exception
     {
         int maxConnectionsPerDestination = 8;
-        prepareServer(transport, new EmptyServerHandler());
+        prepareServer(transportType, new EmptyServerHandler());
         ConnectionListener serverConnections = new ConnectionListener();
         connector.addBean(serverConnections);
         server.start();
 
-        startClient(transport);
+        startClient(transportType);
         client.setMaxConnectionsPerDestination(maxConnectionsPerDestination);
-        if (transport == Transport.HTTPS)
-            ((HttpClientTransportOverHTTP)client.getTransport()).setInitializeConnections(true);
+        if (transportType == TransportType.HTTPS)
+            ((HttpClientTransportOverHTTP)client.getHttpClientTransport()).setInitializeConnections(true);
 
-        var request = client.newRequest(newURI(transport));
+        var request = client.newRequest(newURI(transportType));
         Destination destination = client.resolveDestination(request);
         destination.getConnectionPool().preCreateConnections(client.getMaxConnectionsPerDestination())
             .get(5, TimeUnit.SECONDS);
@@ -58,19 +58,19 @@ public class ConnectionPoolTest extends AbstractTest
         // Verify that server connections have been created.
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
         {
-            switch (transport)
+            switch (transportType)
             {
                 case HTTP, HTTPS -> assertThat(serverConnections.filter(HttpConnection.class).size(), is(maxConnectionsPerDestination));
                 case H2C, H2 -> assertThat(serverConnections.filter(HTTP2ServerConnection.class).size(), is(maxConnectionsPerDestination));
-                case H3 -> assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
+                case H3_QUICHE -> assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
                 case FCGI -> assertThat(serverConnections.filter(ServerFCGIConnection.class).size(), is(maxConnectionsPerDestination));
             }
         });
 
         // Verify that TLS was performed.
-        List<Connection> sslConnections = switch (transport)
+        List<Connection> sslConnections = switch (transportType)
         {
-            case HTTP, H2C, FCGI, H3 -> null;
+            case HTTP, H2C, FCGI, H3_QUICHE -> null;
             case HTTPS, H2 -> serverConnections.filter(SslConnection.class);
         };
         if (sslConnections != null)

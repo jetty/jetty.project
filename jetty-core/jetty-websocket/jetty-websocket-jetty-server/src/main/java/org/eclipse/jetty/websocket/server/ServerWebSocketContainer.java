@@ -359,13 +359,12 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
-                if (webSocket == null)
-                    cb.succeeded();
-                return webSocket;
+                return creator.createWebSocket(new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
             }
             catch (Throwable x)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create WebSocket endpoint", x);
                 cb.failed(x);
                 return null;
             }

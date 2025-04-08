@@ -285,8 +285,8 @@
             <phase>generate-resources</phase>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.wasp</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee11-glassfish-jstl</outputDirectory>
             </configuration>
@@ -299,8 +299,8 @@
             <phase>generate-resources</phase>
             <configuration>
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.wasp</includeGroupIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee11-glassfish-jstl</outputDirectory>

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
@@ -57,6 +60,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -125,17 +129,18 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
     private int requestBufferSize = 4096;
+    private int maxRequestHeadersSize = 8192;
     private int responseBufferSize = 16384;
+    private int maxResponseHeadersSize = -1;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
-    private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
+    private String name = "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+    private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
     /**
@@ -156,7 +161,19 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         installBean(decoderFactories);
     }
 
+    /**
+     * @deprecated use {@link #getHttpClientTransport()} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public HttpClientTransport getTransport()
+    {
+        return getHttpClientTransport();
+    }
+
+    /**
+     * @return the {@link HttpClientTransport} associated with this {@code HttpClient}
+     */
+    public HttpClientTransport getHttpClientTransport()
     {
         return transport;
     }
@@ -213,12 +230,17 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
 
-        decoderFactories.put(new GZIPContentDecoder.Factory(byteBufferPool));
+        if (decoderFactories.isEmpty())
+        {
+            TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
+                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
+                .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
+        }
 
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
 
-        transport.setHttpClient(this);
+        getContainedBeans(Aware.class).forEach(bean -> bean.setHttpClient(this));
 
         super.doStart();
 
@@ -450,7 +472,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
     public Destination resolveDestination(Request request)
     {
-        HttpClientTransport transport = getTransport();
+        HttpClientTransport transport = getHttpClientTransport();
         Origin origin = transport.newOrigin(request);
         Destination destination = resolveDestination(origin);
         if (LOG.isDebugEnabled())
@@ -487,7 +509,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         {
             if (v == null || v.stale())
             {
-                HttpDestination newDestination = (HttpDestination)getTransport().newDestination(k);
+                HttpDestination newDestination = (HttpDestination)getHttpClientTransport().newDestination(k);
                 // Start the destination before it's published to other threads.
                 addManaged(newDestination);
                 if (destinationSweeper != null)
@@ -569,7 +591,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
                                 connect(socketAddresses, nextIndex, context);
                         }
                     });
-                    HttpClient.this.transport.connect((SocketAddress)socketAddresses.get(index), context);
+                    HttpClient.this.transport.connect(socketAddresses.get(index), context);
                 }
             });
         }
@@ -916,7 +938,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
     /**
      * Gets the http compliance mode for parsing http responses.
-     * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
+     * The default http compliance level is {@link HttpCompliance#RFC9110} which is the latest HTTP specification
      *
      * @return the HttpCompliance instance
      */
@@ -1072,6 +1094,24 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
+     * @return the max size in bytes of the request headers
+     */
+    @ManagedAttribute("The max size in bytes of the request headers")
+    public int getMaxRequestHeadersSize()
+    {
+        return maxRequestHeadersSize;
+    }
+
+    /**
+     * Set the max size in bytes of the request headers.
+     * @param maxRequestHeadersSize the max size in bytes of the request headers
+     */
+    public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
+    {
+        this.maxRequestHeadersSize = maxRequestHeadersSize;
+    }
+
+    /**
      * @return whether to use direct ByteBuffers for writing
      */
     @ManagedAttribute("Whether to use direct ByteBuffers for writing")
@@ -1140,5 +1180,32 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public void close() throws Exception
     {
         stop();
+    }
+
+    /**
+     * <p>Descendant beans of {@code HttpClient} that implement this interface
+     * are made aware of the {@code HttpClient} instance while it is starting.</p>
+     */
+    public interface Aware
+    {
+        void setHttpClient(HttpClient httpClient);
+    }
+
+    private static class CompressionContentDecoderFactory extends ContentDecoder.Factory
+    {
+        private final Compression compression;
+
+        private CompressionContentDecoderFactory(Compression compression)
+        {
+            super(compression.getEncodingName());
+            this.compression = Objects.requireNonNull(compression);
+            installBean(compression);
+        }
+
+        @Override
+        public Content.Source newDecoderContentSource(Content.Source contentSource)
+        {
+            return compression.newDecoderSource(contentSource);
+        }
     }
 }

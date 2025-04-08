@@ -1,9 +1,14 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
 
-  <Set name="KeyStorePath"><Property name="jetty.sslContext.keyStorePath"/></Set>
-  <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword"/></Set>
+  <Set name="KeyStorePath">
+    <Property name="jetty.sslContext.keyStorePath" />
+  </Set>
+  <Set name="KeyStorePassword">
+    <Property name="jetty.sslContext.keyStorePassword" />
+  </Set>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
@@ -12,7 +17,9 @@
   <!-- session information                                         -->
   <!-- =========================================================== -->
   <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg><Ref refid="httpConfig"/></Arg>
+    <Arg>
+      <Ref refid="httpConfig" />
+    </Arg>
     <Call name="addCustomizer">
       <Arg>
         <New class="org.eclipse.jetty.server.SecureRequestCustomizer">

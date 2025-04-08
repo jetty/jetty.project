@@ -21,4 +21,13 @@
     <url-pattern>/hello/*</url-pattern>
   </servlet-mapping>
 
+  <servlet>
+    <servlet-name>echo</servlet-name>
+    <servlet-class>org.eclipse.jetty.demo.simple.EchoServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>echo</servlet-name>
+    <url-pattern>/echo/*</url-pattern>
+  </servlet-mapping>
+
 </web-app>

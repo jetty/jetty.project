@@ -321,6 +321,8 @@ public class Server extends Handler.Wrapper implements Attributes
 
     public void setErrorHandler(Request.Handler errorHandler)
     {
+        if (errorHandler instanceof Handler handler)
+            handler.setServer(this);
         updateBean(_errorHandler, errorHandler);
         _errorHandler = errorHandler;
     }
@@ -554,7 +556,7 @@ public class Server extends Handler.Wrapper implements Attributes
             if (!Jetty.STABLE)
             {
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
-                LOG.warn("Download a stable release from https://download.eclipse.org/jetty/");
+                LOG.warn("Download a stable release from https://jetty.org/download.html");
             }
 
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();

@@ -26,26 +26,30 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
- * <p>A {@link CompletableFuture} that is completed when a multipart/form-data content
- * has been parsed asynchronously from a {@link Content.Source}.</p>
- * <p>Once the parsing of the multipart/form-data content completes successfully,
- * objects of this class are completed with a {@link Parts} object.</p>
- * <p>Objects of this class may be configured to save multipart files in a configurable
- * directory, and configure the max size of such files, etc.</p>
+ * <p>A container class for {@code multipart/form-data} parsing and generation.</p>
+ * <p>Use {@link Parser} to parse {@code multipart/form-data}, and use
+ * {@link ContentSource} to generate {@code multipart/form-data} from parts.</p>
+ * <p>Once the parsing of the {@code multipart/form-data} content completes successfully,
+ * a {@link Parts} object is provided.</p>
+ * <p>{@link Parser} may be configured to save multipart files in a configurable
+ * directory, and configure the max size of such files, etc. via {@link MultiPartConfig}.</p>
  * <p>Typical usage:</p>
  * <pre>{@code
  * // Some headers that include Content-Type.
@@ -55,17 +59,51 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * // Some multipart/form-data content.
  * Content.Source content = ...;
  *
- * // Create and configure MultiPartFormData.
- * MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
+ * // Create and configure MultiPartFormData.Parser.
+ * MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
  * // Where to store the files.
- * formData.setFilesDirectory(Path.of("/tmp"));
+ * parser.setFilesDirectory(Path.of("/tmp"));
  * // Max 1 MiB files.
- * formData.setMaxFileSize(1024 * 1024);
+ * parser.setMaxFileSize(1024 * 1024);
  *
  * // Parse the content.
- * formData.parse(content)
- *     // When complete, use the parts.
- *     .thenAccept(parts -> ...);
+ * parser.parse(content, new Promise.Invocable<>()
+ * {
+ *     @Override
+ *     public void succeeded(MultiPartFormData.Parts parts)
+ *     {
+ *         // Use the parts.
+ *     }
+ *
+ *     @Override
+ *     public void failed(Throwable x)
+ *     {
+ *         // Handle failure.
+ *     }
+ * }
+ * }</pre>
+ * <p>For usage within a server environment, use:</p>
+ * <pre>{@code
+ * Request request = ...;
+ * String contentType = request.getHeaders().get("Content-Type");
+ * MultiPartConfig config = new MultiPartConfig.Builder()
+ *     .location(Path.of("/tmp"))
+ *     .maxPartSize(1024 * 1024)
+ *     .build();
+ * MultiPartFormData.onParts(request, request, contentType, config, new Promise.Invocable<>()
+ * {
+ *     @Override
+ *     public void succeeded(MultiPartFormData.Parts parts)
+ *     {
+ *         // Use the parts.
+ *     }
+ *
+ *     @Override
+ *     public void failed(Throwable x)
+ *     {
+ *         // Handle failure.
+ *     }
+ * });
  * }</pre>
  *
  * @see Parts
@@ -79,6 +117,58 @@ public class MultiPartFormData
     }
 
     /**
+     * Get {@code multipart/form-data} {@link Parts} from an {@link Attributes}, typically
+     * cached there by calls to {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
+     *
+     * @param attributes the attributes where the futureParts are cahced
+     * @return the parts or null
+     */
+    public static Parts getParts(Attributes attributes)
+    {
+        Object attribute = attributes.getAttribute(MultiPartFormData.class.getName());
+        if (attribute instanceof Parts parts)
+            return parts;
+        if (attribute instanceof CompletableFuture<?> futureParts && futureParts.isDone())
+            return (Parts)futureParts.join();
+        return null;
+    }
+
+    /**
+     * Get {@code multipart/form-data} {@link Parts} from a {@link Content.Source}, caching the results in an
+     * {@link Attributes}.  If not already available, the {@code Parts} are read and parsed, blocking if necessary.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the Parts are cached.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @return the parts
+     */
+    public static MultiPartFormData.Parts getParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
+    {
+        return from(content, InvocationType.NON_BLOCKING, attributes, contentType, config).join();
+    }
+
+    /**
+     * Asynchronously get {@code multipart/form-data} {@link Parts} from a {@link Content.Source}, caching the results in an
+     * {@link Attributes}.  If not already available, the {@code Parts} are read and parsed.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the futureParts are tracked.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @param promise The action to take when the {@link Parts} are available.
+     */
+    public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise.Invocable<Parts> promise)
+    {
+        from(content, promise.getInvocationType(), attributes, contentType, config).whenComplete(promise);
+    }
+
+    /**
      * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig}.
      *
      * @param content the source of the multipart content.
@@ -86,8 +176,28 @@ public class MultiPartFormData
      * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
      * @param config the multipart configuration.
      * @return the future parts
+     * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
+    {
+        return from(content, InvocationType.NON_BLOCKING, attributes, contentType, config);
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig}.
+     *
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the futureParts are tracked.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @return the future parts
+     * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
+     */
+    @Deprecated(forRemoval = true, since = "12.0.15")
+    private static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, InvocationType invocationType, Attributes attributes, String contentType, MultiPartConfig config)
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         CompletableFuture<MultiPartFormData.Parts> futureParts = MultiPartFormData.get(attributes);
@@ -106,7 +216,7 @@ public class MultiPartFormData
 
             Parser parser = new Parser(boundary);
             parser.configure(config);
-            futureParts = parser.parse(content);
+            futureParts = parser.parse(content, invocationType);
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
             return futureParts;
         }
@@ -115,9 +225,10 @@ public class MultiPartFormData
 
     /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
-     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
+     * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
@@ -132,9 +243,10 @@ public class MultiPartFormData
      * @param boundary the boundary for the {@code multipart/form-data} parts
      * @param parse the parser completable future
      * @return the future parts
-     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
+     * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         CompletableFuture<Parts> futureParts = get(attributes);
@@ -151,11 +263,18 @@ public class MultiPartFormData
      *
      * @param attributes the attributes where the futureParts are tracked
      * @return the future parts
+     * @deprecated use {@link #getParts(Attributes)} instead
      */
     @SuppressWarnings("unchecked")
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> get(Attributes attributes)
     {
-        return (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        Object value = attributes.getAttribute(MultiPartFormData.class.getName());
+        if (value instanceof CompletableFuture<?> cfp)
+            return (CompletableFuture<Parts>)cfp;
+        if (value instanceof Parts parts)
+            return CompletableFuture.completedFuture(parts);
+        return null;
     }
 
     /**
@@ -260,7 +379,8 @@ public class MultiPartFormData
                 value += "; name=" + QuotedCSV.quote(name);
             String fileName = part.getFileName();
             if (fileName != null)
-                value += "; filename=" + QuotedCSV.quote(fileName);
+                value += "; " + MultiPart.encodeContentDispositionFileName(fileName);
+
             return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
         }
     }
@@ -277,7 +397,6 @@ public class MultiPartFormData
         private long maxMemoryFileSize;
         private long maxLength = -1;
         private long length;
-        private Parts parts;
 
         public Parser(String boundary)
         {
@@ -295,23 +414,98 @@ public class MultiPartFormData
             parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
+        /**
+         * @deprecated use {@link #parse(Content.Source, Promise.Invocable)} or
+         * {@link MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)} instead.
+         */
+        @Deprecated(forRemoval = true, since = "12.0.16")
+        public void parse(Content.Source content, Promise<Parts> immediate, Promise.Invocable<Parts> future)
+        {
+            CompletableFuture<Parts> cf = parse(content, future.getInvocationType());
+            if (cf.isDone())
+            {
+                Parts parts = null;
+                Throwable failure = null;
+                try
+                {
+                    parts = cf.get();
+                }
+                catch (ExecutionException e)
+                {
+                    failure = e.getCause();
+                }
+                catch (Throwable t)
+                {
+                    failure = t;
+                }
+                if (failure == null)
+                    immediate.succeeded(parts);
+                else
+                    immediate.failed(failure);
+            }
+            else
+            {
+                cf.whenComplete(future);
+            }
+        }
+
+        /**
+         * @deprecated use {@link #parse(Content.Source, Promise.Invocable)} or
+         * {@link MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)} instead.
+         */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         public CompletableFuture<Parts> parse(Content.Source content)
         {
-            ContentSourceCompletableFuture<Parts> futureParts = new ContentSourceCompletableFuture<>(content)
+            return parse(content, InvocationType.NON_BLOCKING);
+        }
+
+        /**
+         * @deprecated use {@link #parse(Content.Source, Promise.Invocable)} or
+         * {@link MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)} instead.
+         */
+        @Deprecated(forRemoval = true, since = "12.0.15")
+        public CompletableFuture<Parts> parse(Content.Source content, InvocationType invocationType)
+        {
+            CompletableFuture<Parts> completable = new CompletableFuture<>();
+            Promise.Invocable<Parts> futureParts = new Promise.Invocable<>()
+            {
+                @Override
+                public void succeeded(Parts result)
+                {
+                    completable.complete(result);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    completable.completeExceptionally(x);
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return invocationType;
+                }
+            };
+            parse(content, futureParts);
+            return completable;
+        }
+
+        public void parse(Content.Source content, Promise.Invocable<Parts> promise)
+        {
+            ContentSourceCompletableFuture<Parts> futureParts = new ContentSourceCompletableFuture<>(content, promise.getInvocationType())
             {
                 @Override
                 protected Parts parse(Content.Chunk chunk) throws Throwable
                 {
-                    if (listener.isFailed())
-                        throw listener.failure;
+                    listener.rethrowIfFailed();
                     length += chunk.getByteBuffer().remaining();
                     long max = getMaxLength();
                     if (max >= 0 && length > max)
                         throw new IllegalStateException("max length exceeded: %d".formatted(max));
                     parser.parse(chunk);
-                    if (listener.isFailed())
-                        throw listener.failure;
-                    return parts;
+                    listener.rethrowIfFailed();
+                    return listener.getParts();
                 }
 
                 @Override
@@ -324,7 +518,7 @@ public class MultiPartFormData
                 }
             };
             futureParts.parse();
-            return futureParts;
+            futureParts.whenComplete(promise);
         }
 
         /**
@@ -509,12 +703,13 @@ public class MultiPartFormData
         private class PartsListener extends MultiPart.AbstractPartsListener
         {
             private final AutoLock lock = new AutoLock();
-            private final List<MultiPart.Part> parts = new ArrayList<>();
+            private final List<MultiPart.Part> partList = new ArrayList<>();
             private final List<Content.Chunk> partChunks = new ArrayList<>();
             private long size;
             private Path filePath;
             private SeekableByteChannel fileChannel;
             private Throwable failure;
+            private Parts parts;
 
             @Override
             public void onPartContent(Content.Chunk chunk)
@@ -670,7 +865,7 @@ public class MultiPartFormData
                     partChunks.forEach(Content.Chunk::release);
                     partChunks.clear();
                     // Store the new part.
-                    parts.add(part);
+                    partList.add(part);
                 }
             }
 
@@ -681,8 +876,8 @@ public class MultiPartFormData
                 List<MultiPart.Part> result;
                 try (AutoLock ignored = lock.lock())
                 {
-                    result = List.copyOf(parts);
-                    Parser.this.parts = new Parts(result);
+                    result = List.copyOf(partList);
+                    parts = new Parts(result);
                 }
             }
 
@@ -690,7 +885,7 @@ public class MultiPartFormData
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    return parts.stream()
+                    return partList.stream()
                         .filter(part -> "_charset_".equals(part.getName()))
                         .map(part -> part.getContentAsString(US_ASCII))
                         .map(Charset::forName)
@@ -703,7 +898,7 @@ public class MultiPartFormData
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    return parts.size();
+                    return partList.size();
                 }
             }
 
@@ -736,8 +931,8 @@ public class MultiPartFormData
                     if (failure != null)
                         return;
                     failure = cause;
-                    partsToFail = List.copyOf(parts);
-                    parts.clear();
+                    partsToFail = List.copyOf(partList);
+                    partList.clear();
                     partChunks.forEach(Content.Chunk::release);
                     partChunks.clear();
                 }
@@ -776,11 +971,12 @@ public class MultiPartFormData
                 }
             }
 
-            private boolean isFailed()
+            private void rethrowIfFailed() throws Throwable
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    return failure != null;
+                    if (failure != null)
+                        throw failure;
                 }
             }
 
@@ -808,6 +1004,14 @@ public class MultiPartFormData
                 catch (Throwable x)
                 {
                     onFailure(x);
+                }
+            }
+
+            private Parts getParts()
+            {
+                try (AutoLock ignored = lock.lock())
+                {
+                    return parts;
                 }
             }
         }

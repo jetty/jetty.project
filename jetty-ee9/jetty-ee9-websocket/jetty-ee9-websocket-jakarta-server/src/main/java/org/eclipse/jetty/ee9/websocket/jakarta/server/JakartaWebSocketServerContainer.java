@@ -323,9 +323,9 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
-            {
                 callback.block();
-            }
+            else
+                throw new IllegalStateException("Invalid WebSocket Upgrade Request");
         }
         finally
         {

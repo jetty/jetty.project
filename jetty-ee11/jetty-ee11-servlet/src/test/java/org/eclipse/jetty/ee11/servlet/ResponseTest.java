@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -140,7 +141,7 @@ public class ResponseTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(410));
-        assertThat(response.get("Content-Type"), is("text/html;charset=ISO-8859-1"));
+        assertThat(response.get("Content-Type"), equalToIgnoringCase("text/html;charset=iso-8859-1"));
         assertThat(response.getContent(), containsString("The content is gone."));
     }
 

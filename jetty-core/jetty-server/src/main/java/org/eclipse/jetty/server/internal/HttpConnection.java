@@ -19,13 +19,13 @@ import java.nio.channels.WritePendingException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -66,12 +66,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +90,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
     private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
+    private final Callback _fillableCallback = new FillableCallback();
     private final TunnelSupport _tunnelSupport = new TunnelSupportOverHTTP1();
     private final AtomicLong _streamIdGenerator = new AtomicLong();
     private final long _id;
@@ -100,17 +103,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private final LongAdder bytesIn = new LongAdder();
-    private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private final int _minBufferSpace;
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
-    private long _requests;
-    // TODO why is this not on HttpConfiguration?
-    private boolean _useInputDirectByteBuffers;
-    private boolean _useOutputDirectByteBuffers;
+    private final AtomicLong _requests = new AtomicLong();
+    private final AtomicLong _responses = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -132,15 +134,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         return last;
     }
 
-    /**
-     * @deprecated use {@link #HttpConnection(HttpConfiguration, Connector, EndPoint)} instead.  Will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
-    {
-        this(configuration, connector, endPoint);
-    }
-
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint)
     {
         super(connector, configuration, endPoint);
@@ -150,23 +143,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
+        _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
+
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
-    }
-
-    @Override
-    public InvocationType getInvocationType()
-    {
-        return getServer().getInvocationType();
-    }
-
-    /**
-     * @deprecated No replacement, no longer used within {@link HttpConnection}, will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public boolean isRecordHttpComplianceViolations()
-    {
-        return false;
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -285,35 +265,35 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public long getMessagesIn()
     {
-        return _requests;
+        return _requests.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _requests; // TODO not strictly correct
+        return _responses.get();
     }
 
     public boolean isUseInputDirectByteBuffers()
     {
-        return _useInputDirectByteBuffers;
+        return getHttpConfiguration().isUseInputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        // TODO why is this not on HttpConfiguration?
-        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+        getHttpConfiguration().setUseInputDirectByteBuffers(useInputDirectByteBuffers);
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return _useOutputDirectByteBuffers;
+        return getHttpConfiguration().isUseOutputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        // TODO why is this not on HttpConfiguration?
-        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        getHttpConfiguration().setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
     @Override
@@ -345,8 +325,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        _requestBuffer.release();
+        RetainableByteBuffer buffer = _requestBuffer;
         _requestBuffer = null;
+        if (buffer != null)
+            buffer.release();
     }
 
     private void ensureRequestBuffer()
@@ -379,12 +361,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // Note that the endpoint might already be closed in some special circumstances.
             while (true)
             {
-                int filled = fillRequestBuffer();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
+                int filled;
+                if (isRequestBufferEmpty())
+                {
+                    filled = fillRequestBuffer(true);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
 
-                if (filled < 0 && getEndPoint().isOutputShutdown())
-                    close();
+                    if (filled < 0 && getEndPoint().isOutputShutdown())
+                        close();
+                }
+                else
+                {
+                    filled = 0;
+                }
 
                 boolean handle = parseRequestBuffer();
 
@@ -448,7 +438,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     // If we have already released the request buffer, then use fill interest before allocating another
                     if (_requestBuffer == null)
                     {
-                        fillInterested();
+                        fillInterested(_fillableCallback);
                         break;
                     }
                 }
@@ -456,7 +446,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     assert isRequestBufferEmpty();
                     releaseRequestBuffer();
-                    fillInterested();
+                    fillInterested(_fillableCallback);
                     break;
                 }
                 else if (filled < 0)
@@ -523,31 +513,51 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             assert !_requestBuffer.hasRemaining();
 
+            int filled;
+            boolean compact = true;
+
+            // If the application has retained the content chunks then we must not overwrite content.
             if (_requestBuffer.isRetained())
             {
-                // The application has retained the content chunks,
-                // reacquire the buffer to avoid overwriting the content.
-                releaseRequestBuffer();
-                ensureRequestBuffer();
+                // If there is sufficient space available, we can top up the buffer rather than allocate a new one
+                ByteBuffer backing = _requestBuffer.getByteBuffer();
+                if (_minBufferSpace > 0 && BufferUtil.space(backing) >= _minBufferSpace)
+                {
+                    // do not compact the buffer
+                    compact = false;
+                }
+                else
+                {
+                    // otherwise reacquire the buffer and fill into the new buffer.
+                    releaseRequestBuffer();
+                    ensureRequestBuffer();
+                }
             }
 
-            int filled = fillRequestBuffer();
+            filled = fillRequestBuffer(compact);
+
             if (filled <= 0)
             {
-                releaseRequestBuffer();
+                // Keep the buffer if it is retained
+                if (filled < 0 || !_requestBuffer.isRetained())
+                    releaseRequestBuffer();
                 break;
             }
         }
     }
 
-    private int fillRequestBuffer()
+    private int fillRequestBuffer(boolean compact)
     {
-        if (!isRequestBufferEmpty())
-            return _requestBuffer.remaining();
-
+        int padding = 0;
+        ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
         try
         {
-            ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
+            if (!compact)
+            {
+                // Add padding content to avoid compaction
+                padding = requestBuffer.limit();
+                requestBuffer.position(0);
+            }
             int filled = getEndPoint().fill(requestBuffer);
             if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
                 filled = getEndPoint().fill(requestBuffer);
@@ -556,7 +566,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
 
             if (filled > 0)
-                bytesIn.add(filled);
+                _bytesIn.addAndGet(filled);
             else if (filled < 0)
                 _parser.atEOF();
 
@@ -568,6 +578,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             _parser.atEOF();
             return -1;
+        }
+        finally
+        {
+            if (!compact && padding > 0)
+                requestBuffer.position(padding);
         }
     }
 
@@ -603,7 +618,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         _parser.close();
         super.onFillInterestedFailed(cause);
@@ -614,19 +629,23 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-        if (task != null)
-            getExecutor().execute(task);
-        return false; // We've handle the exception
+        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        return false;
     }
 
     @Override
     public void close()
     {
-        Runnable task = _httpChannel.onClose();
-        if (task != null)
-            task.run();
-        super.close();
+        try
+        {
+            Runnable task = _httpChannel.onClose();
+            if (task != null)
+                task.run();
+        }
+        finally
+        {
+            super.close();
+        }
     }
 
     @Override
@@ -634,7 +653,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         super.onOpen();
         if (isRequestBufferEmpty())
-            fillInterested();
+            fillInterested(_fillableCallback);
         else
             getExecutor().execute(this);
     }
@@ -647,19 +666,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     public void asyncReadFillInterested()
     {
-        getEndPoint().tryFillInterested(_demandContentCallback);
+        tryFillInterested(_demandContentCallback);
     }
 
     @Override
     public long getBytesIn()
     {
-        return bytesIn.longValue();
+        return _bytesIn.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return bytesOut.longValue();
+        return _bytesOut.get();
     }
 
     @Override
@@ -691,9 +710,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            if (task != null)
-                // Execute error path as invocation type is probably wrong.
-                getConnector().getExecutor().execute(task);
+            ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -717,6 +734,59 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private SendCallback()
         {
             super(true);
+        }
+
+        /**
+         * Cancel any send in progress by aborting this {@link IteratingCallback} and take any send {@link Callback}.
+         * @param cause the cause of the cancellation
+         * @return A {@link Callback} passed to
+         *         {@link #reset(MetaData.Request, MetaData.Response, ByteBuffer, boolean, Callback)} if it has not yet
+         *         been invoked, else {@code null}
+         */
+        public Callback cancel(Throwable cause)
+        {
+            // wrap the cause in a CSE so that onAborted knows it is cancelling and can provide the reset callback.
+            CancelSendException cancelSendException = new CancelSendException(cause);
+
+            // Try to abort the IteratingCallback and if unable to, then return NOOP.
+            if (!abort(cancelSendException))
+                return Callback.NOOP;
+
+            // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
+            // in a serialized context and the callback will be set on the CSE.
+            // Whilst waiting for that to happen...
+
+            // If a write operation has been scheduled cancel it and take its callback
+            Callback senderCallback = getEndPoint().cancelWrite(cause);
+
+            if (senderCallback == null)
+                // There was no write in operation, so we must complete the CSE ourselves
+                cancelSendException.complete();
+            else
+                // The write was cancelled and we have the callback (probably to this ICB or another callback
+                // wrapping this ICB). So failing the taken callback will call onCompleted and allow onAborted to be called.
+                senderCallback.failed(cause);
+
+            // wait for the cancellation to be complete and the callback to be set by onAbort.
+            // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
+            return cancelSendException.join();
+        }
+
+        @Override
+        protected void onAborted(Throwable cause)
+        {
+            // If the cause is a CSE, then take the callback and give it to the CSE to be called once cancellation is complete.
+            if (cause instanceof CancelSendException cancelSend)
+                cancelSend.setCallback(takeCallbackAndReset());
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            // If the cause is a CSE, then signal to it that the ICB is complete and any join call can return.
+            if (causeOrNull instanceof CancelSendException cancelSendException)
+                cancelSendException.complete();
+            super.onCompleted(causeOrNull);
         }
 
         @Override
@@ -755,6 +825,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_callback == null)
                 throw new IllegalStateException();
 
+            int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
+            int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -773,20 +845,32 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 switch (result)
                 {
                     case NEED_INFO:
+                    {
                         throw new EofException("request lifecycle violation");
-
+                    }
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(getHttpConfiguration().getResponseHeaderSize(), getHttpConfiguration().getOutputBufferSize()), useDirectByteBuffers);
+                        int maxHeaderBytes = maxResponseHeadersSize;
+                        if (maxHeaderBytes < 0)
+                            maxHeaderBytes = getHttpConfiguration().getResponseHeaderSize();
+                        _generator.setMaxHeaderBytes(maxHeaderBytes);
+                        _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        if (_header.capacity() >= getHttpConfiguration().getResponseHeaderSize())
-                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
-                        releaseHeader();
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
-                        continue;
+                        if (maxResponseHeadersSize > 0 && maxResponseHeadersSize > responseHeadersSize)
+                        {
+                            _generator.reset();
+                            _header.release();
+                            _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers);
+                            responseHeadersSize = maxResponseHeadersSize;
+                            break;
+                        }
+                        else
+                        {
+                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
@@ -796,7 +880,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -826,7 +910,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             gatherWrite += 1;
                             bytes += _content.remaining();
                         }
-                        HttpConnection.this.bytesOut.add(bytes);
+                        _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
                             case 7:
@@ -883,17 +967,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
         }
 
-        private Callback resetCallback()
+        private Callback takeCallbackAndReset()
         {
-            Callback complete = _callback;
+            Callback callback = _callback;
             _callback = null;
             _info = null;
             _content = null;
-            return complete;
+            return callback;
         }
 
         private void release()
         {
+            if (_callback != null)
+                throw new IllegalStateException("callback not invoked");
             releaseHeader();
             releaseChunk();
         }
@@ -922,16 +1008,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 // cannot be delayed by any further server handling before the stream callback is completed.
                 getEndPoint().shutdownOutput();
             }
-            Callback callback = resetCallback();
+            Callback callback = takeCallbackAndReset();
             release();
-            callback.succeeded();
+            if (callback != null)
+                callback.succeeded();
         }
 
         @Override
         public void onFailure(final Throwable x)
         {
-            Callback callback = resetCallback();
-            callback.failed(x);
+            Callback callback = takeCallbackAndReset();
+            if (callback != null)
+                callback.failed(x);
         }
 
         @Override
@@ -944,6 +1032,44 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public String toString()
         {
             return String.format("%s[i=%s,cb=%s]", super.toString(), _info, _callback);
+        }
+
+        private static class CancelSendException extends IOException
+        {
+            private final CountDownLatch _complete = new CountDownLatch(2);
+            private Callback _callback;
+
+            public CancelSendException(Throwable cause)
+            {
+                super(cause);
+            }
+
+            public void complete()
+            {
+                _complete.countDown();
+            }
+
+            public Callback join()
+            {
+                try
+                {
+                    _complete.await();
+                }
+                catch (InterruptedException x)
+                {
+                    Throwable cause = getCause();
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                    throw new RuntimeIOException(cause);
+                }
+
+                return _callback;
+            }
+
+            public void setCallback(Callback callback)
+            {
+                _callback = callback;
+                _complete.countDown();
+            }
         }
     }
 
@@ -1044,7 +1170,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream == null)
             {
-                stream = newHttpStream("GET", "/badMessage", HttpVersion.HTTP_1_0);
+                stream = newHttpStream("BAD", "/badMessage", HttpVersion.HTTP_1_0);
                 _stream.set(stream);
                 _httpChannel.setHttpStream(stream);
             }
@@ -1053,16 +1179,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // This is also done by HttpChannel.onFailure(), but here we can build
             // a request with more information, such as the method, the URI, etc.
             if (_httpChannel.getRequest() == null)
-            {
-                HttpURI uri = stream._uri;
-                if (uri.hasViolations())
-                    uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
-            }
+                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, stream._uri, stream._version, HttpFields.EMPTY));
 
-            Runnable task = _httpChannel.onFailure(_failure);
-            if (task != null)
-                getServer().getThreadPool().execute(task);
+            ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override
@@ -1096,9 +1215,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     stream._chunk = Content.Chunk.from(bad);
                 }
 
-                Runnable todo = _httpChannel.onFailure(bad);
-                if (todo != null)
-                    getServer().getThreadPool().execute(todo);
+                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }
@@ -1128,7 +1245,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = Objects.requireNonNull(version);
 
-            if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
+            if (_uri != null && StringUtil.isEmpty(_uri.getPath()) && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
         }
 
@@ -1267,14 +1384,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             };
 
             Runnable handle = _httpChannel.onRequest(_request);
-            ++_requests;
+            _requests.incrementAndGet();
 
             Request request = _httpChannel.getRequest();
             getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 
@@ -1305,8 +1422,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (_unknownExpectation)
                     {
-                        _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                        return null;
+                        throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
                     }
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
@@ -1389,21 +1505,24 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             if (_chunk != null)
             {
-                Runnable onContentAvailable = _httpChannel.onContentAvailable();
-                if (onContentAvailable != null)
-                    onContentAvailable.run();
+                invokeDemandCallback();
                 return;
             }
             parseAndFillForContent();
             if (_chunk != null)
             {
-                Runnable onContentAvailable = _httpChannel.onContentAvailable();
-                if (onContentAvailable != null)
-                    onContentAvailable.run();
+                invokeDemandCallback();
                 return;
             }
 
-            tryFillInterested(_demandContentCallback);
+            asyncReadFillInterested();
+        }
+
+        private void invokeDemandCallback()
+        {
+            Runnable onContentAvailable = _httpChannel.onContentAvailable();
+            if (onContentAvailable != null)
+                onContentAvailable.run();
         }
 
         @Override
@@ -1427,23 +1546,38 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else if (_generator.isCommitted())
             {
                 callback.failed(new IllegalStateException("Committed"));
+                return;
             }
-            else if (_expects100Continue)
+            else
             {
-                if (response.getStatus() == HttpStatus.CONTINUE_100)
+                _responses.incrementAndGet();
+                if (_expects100Continue)
                 {
-                    _expects100Continue = false;
-                }
-                else
-                {
-                    // Expecting to send a 100 Continue response, but it's a different response,
-                    // then cannot be persistent because likely the client did not send the content.
-                    _generator.setPersistent(false);
+                    if (response.getStatus() == HttpStatus.CONTINUE_100)
+                    {
+                        _expects100Continue = false;
+                    }
+                    else
+                    {
+                        // Expecting to send a 100 Continue response, but it's a different response,
+                        // then cannot be persistent because likely the client did not send the content.
+                        _generator.setPersistent(false);
+                    }
                 }
             }
 
             if (_sendCallback.reset(_request, response, content, last, callback))
                 _sendCallback.iterate();
+        }
+
+        @Override
+        public Runnable cancelSend(Throwable cause, Callback appCallback)
+        {
+            // We know that the SendCallback#cancel call will never block on external events,
+            // so we can just return a Runnable that fails the combination of the cancellation of any
+            // send in progress with the passed in appCallback. At worst, we may be deferred whilst another thread finishes
+            // processing a send/write before it notices the cancel.  It never blocks on IO itself
+            return () -> Callback.combine(_sendCallback.cancel(cause), appCallback).failed(cause);
         }
 
         @Override
@@ -1598,9 +1732,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("aborting", x);
             abort(x);
-            _httpChannel.recycle();
-            _parser.reset();
-            _generator.reset();
+            _httpChannel.setHttpStream(null);
             if (!_handling.compareAndSet(true, false))
                 resume();
         }
@@ -1666,6 +1798,29 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public String getReason()
         {
             return getMessage();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        private final InvocationType _invocationType = getServer().getInvocationType();
+
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType;
         }
     }
 }

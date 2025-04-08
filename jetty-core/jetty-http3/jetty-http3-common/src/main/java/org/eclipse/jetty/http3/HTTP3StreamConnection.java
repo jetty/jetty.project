@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private final AtomicReference<Runnable> action = new AtomicReference<>();
     private final ByteBufferPool bufferPool;
+    private final int minInputBufferSpace;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
@@ -49,10 +51,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
     {
+        this(endPoint, executor, bufferPool, parser, -1);
+    }
+
+    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser, int minInputBufferSpace)
+    {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         parser.init(MessageListener::new);
+        this.minInputBufferSpace = minInputBufferSpace < 0 ? 1500 : minInputBufferSpace;
     }
 
     public void onFailure(Throwable failure)
@@ -88,6 +96,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         super.onOpen();
         fillInterested();
+    }
+
+    @Override
+    public void onClose(Throwable cause)
+    {
+        super.onClose(cause);
+        tryReleaseInputBuffer(true);
     }
 
     @Override
@@ -262,6 +277,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (inputBuffer != null)
         {
+            if (inputBuffer.isRetained() && !force)
+                return;
+
             if (inputBuffer.hasRemaining() && force)
                 inputBuffer.clear();
             if (inputBuffer.isEmpty())
@@ -290,17 +308,27 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (result != MessageParser.Result.NO_FRAME)
                     return result;
 
+                boolean compact = true;
                 if (inputBuffer.isRetained())
                 {
-                    inputBuffer.release();
-                    RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("reacquired {} for retained {}", newBuffer, inputBuffer);
-                    inputBuffer = newBuffer;
-                    byteBuffer = inputBuffer.getByteBuffer();
+                    // If there is sufficient space available, we can top up the buffer rather than allocate a new one
+                    if (minInputBufferSpace > 0 && BufferUtil.space(inputBuffer.getByteBuffer()) >= minInputBufferSpace)
+                    {
+                        // do not compact the buffer
+                        compact = false;
+                    }
+                    else
+                    {
+                        inputBuffer.release();
+                        RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("reacquired {} for retained {}", newBuffer, inputBuffer);
+                        inputBuffer = newBuffer;
+                        byteBuffer = inputBuffer.getByteBuffer();
+                    }
                 }
 
-                int filled = fill(byteBuffer);
+                int filled = fill(byteBuffer, compact);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {} with buffer {}", filled, this, inputBuffer);
 
@@ -335,9 +363,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    private int fill(ByteBuffer byteBuffer) throws IOException
+    private int fill(ByteBuffer buffer, boolean compact) throws IOException
     {
-        return getEndPoint().fill(byteBuffer);
+        int padding = 0;
+        try
+        {
+            if (!compact)
+            {
+                // Add padding content to avoid compaction
+                padding = buffer.limit();
+                buffer.position(0);
+            }
+            return getEndPoint().fill(buffer);
+        }
+        finally
+        {
+            if (!compact && padding > 0)
+                buffer.position(padding);
+        }
     }
 
     private void processHeaders(HeadersFrame frame, boolean wasBlocked, Runnable delegate)

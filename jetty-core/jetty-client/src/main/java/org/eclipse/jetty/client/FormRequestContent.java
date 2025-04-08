@@ -17,6 +17,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.Fields;
 
 /**
@@ -32,7 +33,10 @@ public class FormRequestContent extends StringRequestContent
 
     public FormRequestContent(Fields fields, Charset charset)
     {
-        super("application/x-www-form-urlencoded", convert(fields, charset), charset);
+        super(charset == StandardCharsets.UTF_8
+            ? MimeTypes.Type.FORM_ENCODED_UTF_8.asString()
+            : MimeTypes.Type.FORM_ENCODED.asString() + ";charset=" + charset.name().toLowerCase(),
+            convert(fields, charset), charset);
     }
 
     public static String convert(Fields fields)
@@ -48,7 +52,7 @@ public class FormRequestContent extends StringRequestContent
         {
             for (String value : field.getValues())
             {
-                if (builder.length() > 0)
+                if (!builder.isEmpty())
                     builder.append("&");
                 builder.append(encode(field.getName(), charset)).append("=").append(encode(value, charset));
             }

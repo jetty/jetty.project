@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -30,6 +31,7 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.GenericServlet;
+import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContext;
@@ -140,6 +142,33 @@ public class DispatcherTest
             Connection: close\r
             \r
             FORWARD""";
+
+        assertEquals(expected, rawResponse);
+    }
+    
+    @Test
+    public void testMultiPartForwardAttribute() throws Exception
+    {
+        ServletHolder forwardServlet = new ServletHolder(new ForwardServlet());
+        forwardServlet.getRegistration().setMultipartConfig(new MultipartConfigElement("/tmp"));
+        _contextHandler.addServlet(forwardServlet, "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertMultiPartForwardServlet.class, "/AssertMultiPartForwardServlet/*");
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/ForwardServlet?do=assertmultipart&do=more&test=1 HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Type: text/html\r
+            Content-Length: 42\r
+            Connection: close\r
+            \r
+            org.eclipse.jetty.multipartConfig = null\r
+            """;
 
         assertEquals(expected, rawResponse);
     }
@@ -993,6 +1022,8 @@ public class DispatcherTest
                 dispatcher = request.getRequestDispatcher(request.getParameter("uri"));
             else if (request.getParameter("do").equals("always"))
                 dispatcher = request.getRequestDispatcher("/AlwaysForwardServlet");
+            else if (request.getParameter("do").equals("assertmultipart"))
+                dispatcher = getServletContext().getRequestDispatcher("/AssertMultiPartForwardServlet?do=end&do=the");
             assert dispatcher != null;
             dispatcher.forward(request, response);
         }
@@ -1500,6 +1531,17 @@ public class DispatcherTest
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
             response.getOutputStream().print(request.getDispatcherType().toString());
+        }
+    }
+
+    public static class AssertMultiPartForwardServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/html");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().println("org.eclipse.jetty.multipartConfig = " + request.getAttribute("org.eclipse.jetty.multipartConfig"));
         }
     }
 

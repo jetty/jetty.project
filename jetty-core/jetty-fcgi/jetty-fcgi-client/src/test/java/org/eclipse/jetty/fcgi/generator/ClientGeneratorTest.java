@@ -175,10 +175,11 @@ public class ClientGeneratorTest
             }
 
             @Override
-            public void onEnd(int request)
+            public boolean onEnd(int request)
             {
                 assertEquals(id, request);
                 assertEquals(contentLength, totalLength.get());
+                return false;
             }
         });
 

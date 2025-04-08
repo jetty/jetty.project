@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.transport;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -26,8 +27,10 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,7 +234,7 @@ public class ResponseListeners
         if (chunk != null)
             chunk.release();
         if (chunk == null || !chunk.isLast())
-            contentSource.demand(() -> consume(contentSource));
+            contentSource.demand(Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> consume(contentSource)));
     }
 
     private static void notifyContentSource(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
@@ -390,15 +393,14 @@ public class ResponseListeners
                 iterator.remove();
         }
         notifyHeaders(headersListener, response);
+        ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         if (response instanceof ContentResponse contentResponse)
         {
-            byte[] content = contentResponse.getContent();
-            if (content != null && content.length > 0)
-            {
-                ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(content));
-                notifyContentSource(contentSourceListener, response, byteBufferContentSource);
-            }
+            byte[] bytes = contentResponse.getContent();
+            if (bytes != null && bytes.length > 0)
+                content = ByteBuffer.wrap(bytes);
         }
+        notifyContentSource(contentSourceListener, response, new ByteBufferContentSource(content));
     }
 
     public void emitSuccess(Response response)
@@ -490,7 +492,7 @@ public class ResponseListeners
             {
                 // Retry the demand on spurious wakeup to avoid passing
                 // a null chunk to the demultiplexer's ContentSources.
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(getInvocationType(), this::onDemandCallback));
                 return;
             }
             // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
@@ -500,6 +502,16 @@ public class ResponseListeners
                 demultiplexerContentSource.onChunk(chunk);
             }
             chunk.release();
+        }
+
+        private Invocable.InvocationType getInvocationType()
+        {
+            Invocable.InvocationType invocationType = Invocable.InvocationType.NON_BLOCKING;
+            for (ContentSource contentSource : contentSources)
+            {
+                invocationType = Invocable.combine(invocationType, contentSource.getInvocationType());
+            }
+            return invocationType;
         }
 
         private void registerFailure(ContentSource contentSource, Throwable failure)
@@ -524,7 +536,7 @@ public class ResponseListeners
             if (processFail)
                 originalContentSource.fail(failure);
             else if (processDemand)
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(getInvocationType(), this::onDemandCallback));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered failure on {}; {}", contentSource, counters);
@@ -547,13 +559,13 @@ public class ResponseListeners
                 }
             }
             if (processDemand)
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(getInvocationType(), this::onDemandCallback));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered demand on {}; {}", contentSource, counters);
         }
 
-        private class ContentSource implements Content.Source
+        private class ContentSource implements Content.Source, Invocable
         {
             private static final Content.Chunk ALREADY_READ_CHUNK = new Content.Chunk.Empty()
             {
@@ -642,6 +654,13 @@ public class ResponseListeners
             }
 
             @Override
+            public InvocationType getInvocationType()
+            {
+                Runnable demandCallback = demandCallbackRef.get();
+                return demandCallback == null ? InvocationType.NON_BLOCKING : Invocable.getInvocationType(demandCallback);
+            }
+
+            @Override
             public Content.Chunk read()
             {
                 if (chunk == ALREADY_READ_CHUNK)
@@ -663,7 +682,7 @@ public class ResponseListeners
             public void demand(Runnable demandCallback)
             {
                 if (!demandCallbackRef.compareAndSet(null, Objects.requireNonNull(demandCallback)))
-                    throw new IllegalStateException();
+                    throw new ReadPendingException();
                 Content.Chunk currentChunk = this.chunk;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} demand while current chunk is {}", index, currentChunk);

@@ -62,32 +62,32 @@ public class TLSHandshakeFailureTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsTLS")
-    public void testTLSWrapAbruptSSLEngineClose(Transport transport) throws Exception
+    public void testTLSWrapAbruptSSLEngineClose(TransportType transportType) throws Exception
     {
         TLSHandshakeAction action = SSLEngine::closeOutbound;
-        testTLSWrapFailure(transport, action, 1);
+        testTLSWrapFailure(transportType, action, 1);
         stop();
-        testTLSWrapFailure(transport, action, 2);
+        testTLSWrapFailure(transportType, action, 2);
     }
 
     @ParameterizedTest
     @MethodSource("transportsTLS")
-    public void testTLSWrapAbruptSSLEngineFailure(Transport transport) throws Exception
+    public void testTLSWrapAbruptSSLEngineFailure(TransportType transportType) throws Exception
     {
         TLSHandshakeAction action = sslEngine ->
         {
             throw new SSLException("test");
         };
-        testTLSWrapFailure(transport, action, 1);
+        testTLSWrapFailure(transportType, action, 1);
         stop();
-        testTLSWrapFailure(transport, action, 2);
+        testTLSWrapFailure(transportType, action, 2);
     }
 
-    private void testTLSWrapFailure(Transport transport, TLSHandshakeAction action, int wrapCount) throws Exception
+    private void testTLSWrapFailure(TransportType transportType, TLSHandshakeAction action, int wrapCount) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.stop();
-        client = new HttpClient(client.getTransport())
+        client = new HttpClient(client.getHttpClientTransport())
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -123,7 +123,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
         int count = 10;
         for (int i = 0; i < count; ++i)
         {
-            assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transport))
+            assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transportType))
                 .timeout(5, TimeUnit.SECONDS)
                 .send()
             );
@@ -138,32 +138,32 @@ public class TLSHandshakeFailureTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsTLS")
-    public void testTLSUnwrapAbruptSSLEngineClose(Transport transport) throws Exception
+    public void testTLSUnwrapAbruptSSLEngineClose(TransportType transportType) throws Exception
     {
         TLSHandshakeAction action = SSLEngine::closeInbound;
-        testTLSUnwrapFailure(transport, action, 1);
+        testTLSUnwrapFailure(transportType, action, 1);
         stop();
-        testTLSUnwrapFailure(transport, action, 2);
+        testTLSUnwrapFailure(transportType, action, 2);
     }
 
     @ParameterizedTest
     @MethodSource("transportsTLS")
-    public void testTLSUnwrapAbruptSSLEngineFailure(Transport transport) throws Exception
+    public void testTLSUnwrapAbruptSSLEngineFailure(TransportType transportType) throws Exception
     {
         TLSHandshakeAction action = sslEngine ->
         {
             throw new SSLException("test");
         };
-        testTLSUnwrapFailure(transport, action, 1);
+        testTLSUnwrapFailure(transportType, action, 1);
         stop();
-        testTLSUnwrapFailure(transport, action, 2);
+        testTLSUnwrapFailure(transportType, action, 2);
     }
 
-    private void testTLSUnwrapFailure(Transport transport, TLSHandshakeAction action, int unwrapCount) throws Exception
+    private void testTLSUnwrapFailure(TransportType transportType, TLSHandshakeAction action, int unwrapCount) throws Exception
     {
-        start(transport, new EmptyServerHandler());
+        start(transportType, new EmptyServerHandler());
         client.stop();
-        client = new HttpClient(client.getTransport())
+        client = new HttpClient(client.getHttpClientTransport())
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -199,7 +199,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
         int count = 10;
         for (int i = 0; i < count; ++i)
         {
-            assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transport))
+            assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transportType))
                 .timeout(5, TimeUnit.SECONDS)
                 .send()
             );

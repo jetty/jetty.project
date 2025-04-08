@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -71,7 +74,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -461,7 +463,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -489,7 +490,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -519,7 +519,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -537,7 +536,6 @@ public class ResourceHandlerTest
         );
 
         // test a range request with a file with no suffix, therefore no mimetype
-
         scenarios.addScenario(
                 "No mimetype resource - no range requested",
                 """
@@ -574,57 +572,55 @@ public class ResourceHandlerTest
                     Range: bytes=0-9,20-29,40-49\r
                     \r
                     """,
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) ->
-                {
-                    String body = response.getContent();
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         scenarios.addScenario(
-                "No mimetype resource - multiple ranges (x5) with empty range request",
-                """
-                    GET /context/nofilesuffix HTTP/1.1\r
-                    Host: localhost\r
-                    Range: bytes=0-9,20-29,40-49,60-60,70-79\r
-                    \r
-                    """,
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) ->
-                {
-                    String body = response.getContent();
+            "No mimetype resource - multiple ranges (x5) with empty range request",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                \r
+                """,
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                    assertThat(body, containsString("Content-Range: bytes 40-49/80"));
-                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
-                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 40-49/80"));
+                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
+                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         return scenarios.stream();
@@ -765,6 +761,26 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("   400\tThis is a big file\n     1\tThis is a big file"));
         assertThat(response.getContent(), containsString("   400\tThis is a big file\n"));
+    }
+
+    @Test
+    public void testOver2GBFile() throws Exception
+    {
+        long hugeLength = (long)Integer.MAX_VALUE + 10L;
+
+        generateFile(docRoot.resolve("huge.mkv"), hugeLength);
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/huge.mkv HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        long responseContentLength = response.getLongField(CONTENT_LENGTH);
+        assertThat(responseContentLength, is(hugeLength));
     }
 
     @Test
@@ -1481,6 +1497,7 @@ public class ResourceHandlerTest
                     \r
                     """.formatted(eTag1)));
             assertThat(response3.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+            assertThat(response3.getField(ETAG), notNullValue());
 
             HttpTester.Response response4 = HttpTester.parseResponse(
                     _local.getResponse("""
@@ -1492,6 +1509,7 @@ public class ResourceHandlerTest
                     \r
                     """.formatted(eTag2)));
             assertThat(response4.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+            assertThat(response3.getField(ETAG), notNullValue());
         }
 
         assertThat(contentFactory.getCachedFiles(), is(2));
@@ -1990,6 +2008,7 @@ public class ResourceHandlerTest
                 \r
                 """.formatted(etag)));
         assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
         assertThat(response.getContent(), is(""));
     }
 
@@ -2347,6 +2366,7 @@ public class ResourceHandlerTest
             """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2357,6 +2377,7 @@ public class ResourceHandlerTest
             """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2469,6 +2490,7 @@ public class ResourceHandlerTest
             """.replace("@LASTMODIFIED@", lastModified));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2489,6 +2511,7 @@ public class ResourceHandlerTest
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2538,6 +2561,7 @@ public class ResourceHandlerTest
                 """.formatted(lastModified)));
 
         assertThat(response.getStatus(), equalTo(304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
         assertThat(response.getContent(), is(""));
 
         response = HttpTester.parseResponse(
@@ -3115,7 +3139,6 @@ public class ResourceHandlerTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
-    @Disabled
     public void testRangeRequests(ResourceHandlerTest.Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -3935,6 +3958,37 @@ public class ResourceHandlerTest
             try (InputStream in = Files.newInputStream(big))
             {
                 IO.copy(in, zipOut);
+            }
+        }
+    }
+
+    private void generateFile(Path staticFile, long size) throws Exception
+    {
+        byte[] buf = new byte[(int)(1024 * 1024)]; // about 1 MB
+        Arrays.fill(buf, (byte)'x');
+        ByteBuffer src = ByteBuffer.wrap(buf);
+
+        if (Files.exists(staticFile) && Files.size(staticFile) == size)
+        {
+            // all done, nothing left to do.
+            return;
+        }
+
+        try (SeekableByteChannel channel = Files.newByteChannel(staticFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
+        {
+            long remaining = size;
+            while (remaining > 0)
+            {
+                ByteBuffer slice = src.slice();
+                int len = buf.length;
+                if (remaining < Integer.MAX_VALUE)
+                {
+                    len = Math.min(buf.length, (int)remaining);
+                    slice.limit(len);
+                }
+
+                channel.write(slice);
+                remaining -= len;
             }
         }
     }

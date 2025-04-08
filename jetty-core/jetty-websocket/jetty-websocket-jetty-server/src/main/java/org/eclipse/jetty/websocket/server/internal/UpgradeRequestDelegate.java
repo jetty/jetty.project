@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -36,10 +35,12 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 class UpgradeRequestDelegate implements UpgradeRequest
 {
     private final ServerUpgradeRequest request;
+    private final Map<String, List<String>> headers;
 
     UpgradeRequestDelegate(ServerUpgradeRequest request)
     {
         this.request = request;
+        this.headers = HttpFields.asMap(request.getHeaders());
     }
 
     @Override
@@ -73,14 +74,7 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        HttpFields headers = request.getHeaders();
-        for (HttpField header : headers)
-        {
-            String name = header.getName();
-            result.put(name, headers.getValuesList(name));
-        }
-        return result;
+        return headers;
     }
 
     @Override

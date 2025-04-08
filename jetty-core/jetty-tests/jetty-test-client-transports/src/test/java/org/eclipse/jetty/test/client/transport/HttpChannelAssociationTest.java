@@ -55,18 +55,18 @@ public class HttpChannelAssociationTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAssociationFailedAbortsRequest(Transport transport) throws Exception
+    public void testAssociationFailedAbortsRequest(TransportType transportType) throws Exception
     {
-        startServer(transport, new EmptyServerHandler());
+        startServer(transportType, new EmptyServerHandler());
 
-        client = new HttpClient(newHttpClientTransport(transport, exchange -> false));
+        client = new HttpClient(newHttpClientTransport(transportType, exchange -> false));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client.setExecutor(clientThreads);
         client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .send(result ->
             {
                 if (result.isFailed())
@@ -78,12 +78,12 @@ public class HttpChannelAssociationTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIdleTimeoutJustBeforeAssociation(Transport transport) throws Exception
+    public void testIdleTimeoutJustBeforeAssociation(TransportType transportType) throws Exception
     {
-        startServer(transport, new EmptyServerHandler());
+        startServer(transportType, new EmptyServerHandler());
 
         long idleTimeout = 1000;
-        client = new HttpClient(newHttpClientTransport(transport, exchange ->
+        client = new HttpClient(newHttpClientTransport(transportType, exchange ->
         {
             // We idle timeout just before the association,
             // we must be able to send the request successfully.
@@ -97,7 +97,7 @@ public class HttpChannelAssociationTest extends AbstractTest
         client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
+        client.newRequest(newURI(transportType))
             .send(result ->
             {
                 if (result.isSucceeded())
@@ -107,9 +107,9 @@ public class HttpChannelAssociationTest extends AbstractTest
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code) throws Exception
+    private HttpClientTransport newHttpClientTransport(TransportType transportType, Predicate<HttpExchange> code) throws Exception
     {
-        return switch (transport)
+        return switch (transportType)
         {
             case HTTP:
             case HTTPS:
@@ -170,7 +170,7 @@ public class HttpChannelAssociationTest extends AbstractTest
                     }
                 };
             }
-            case H3:
+            case H3_QUICHE:
             {
                 SslContextFactory.Client sslClient = newSslContextFactoryClient();
                 HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null));

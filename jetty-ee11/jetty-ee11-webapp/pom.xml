@@ -52,11 +52,6 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -96,9 +91,6 @@
           <additionalClasspathElements>
             <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>
           </additionalClasspathElements>
-          <excludes>
-            <exclude>org.eclipse.jetty.ee11.webapp.WebAppClassLoaderUrlStreamTest</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>

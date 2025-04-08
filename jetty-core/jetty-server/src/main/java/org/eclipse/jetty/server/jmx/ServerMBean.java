@@ -39,6 +39,13 @@ public class ServerMBean extends Handler.AbstractMBean
         return (Server)super.getManagedObject();
     }
 
+    @Override
+    public String getObjectContextBasis()
+    {
+        Server server = getManagedObject();
+        return "%s@%x".formatted(server.getClass().getSimpleName(), server.hashCode());
+    }
+
     @ManagedAttribute("The contexts on this server")
     public List<ContextHandler> getContexts()
     {

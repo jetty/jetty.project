@@ -22,7 +22,9 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
  * Context#run(Runnable)} to setup classloaders etc. </p>
  */
-public class HttpInput extends ServletInputStream implements Runnable
+public class HttpInput extends ServletInputStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
 
@@ -159,6 +161,18 @@ public class HttpInput extends ServletInputStream implements Runnable
         return _readListener != null;
     }
 
+    public Invocable.InvocationType getInvocationType()
+    {
+        // This is the invocation type used for demand callbacks.
+        // If we are blocking mode, then we implement the callbacks, which just wake up the blocked application thread
+        // If we are async mode, then we need to ask the read listener (which will probably be seen as blocking as
+        // the InvocationType API is normally hidden from a web application.
+        // TODO is there another way for an app to promise its callbacks are not blocking?
+        return _readListener == null
+            ? Invocable.InvocationType.NON_BLOCKING // blocking reads have non blocking callbacks
+            : Invocable.getInvocationType(_readListener);
+    }
+
     /* ServletInputStream */
 
     @Override
@@ -263,9 +277,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 Throwable failure = chunk.getFailure();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read failure={} {}", failure, this);
-                if (failure instanceof IOException)
-                    throw (IOException)failure;
-                throw new IOException(failure);
+                throw IO.rethrow(failure);
             }
 
             // Empty and not a failure; can only be EOF as per ContentProducer.nextChunk() contract.
@@ -316,14 +328,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    /* Runnable */
-
-    /*
-     * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
-     * ContextHandler#handle(Runnable)} to setup classloaders etc. </p>
-     */
-    @Override
-    public void run()
+    public void readCallback()
     {
         Content.Chunk chunk;
         try (AutoLock ignored = _lock.lock())

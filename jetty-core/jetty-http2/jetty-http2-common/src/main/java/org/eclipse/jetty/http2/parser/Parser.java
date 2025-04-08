@@ -120,8 +120,8 @@ public class Parser
     {
         if (!nanoTimeStored)
         {
-            beginNanoTime = NanoTime.now();
             nanoTimeStored = true;
+            beginNanoTime = NanoTime.now();
         }
     }
 
@@ -146,7 +146,8 @@ public class Parser
                 {
                     case HEADER:
                     {
-                        storeBeginNanoTime();
+                        if (buffer.hasRemaining())
+                            storeBeginNanoTime();
                         if (!parseHeader(buffer))
                             return;
                         break;

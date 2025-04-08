@@ -51,6 +51,9 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -69,6 +72,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -106,6 +110,32 @@ public class XmlConfiguration
         .toList();
     private static final Pool<ConfigurationParser> __parsers =
         new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+
+    /**
+     * Order two classes to prefer a non Object type as the highest ranking, followed by
+     * an interface type. Where both are the Object type, or both are an interface they
+     * are considered equal.
+     *
+     * @param t1 the first class to compare
+     * @param t2 the second class to compare
+     * @return 1 if t1 is a non Object class or an interface type, return 0 if both are
+     * interfaces or the Object class, return -1 if only t2 is the Object class or an
+     * interface.
+     */
+    private static int compare(Class<?> t1, Class<?> t2)
+    {
+        if (t1 == Object.class)
+        {
+            if (t2 == Object.class)
+                return 0;
+            return 1;
+        }
+        if (t2 == Object.class)
+            return -1;
+
+        return Boolean.compare(t1.isInterface(), t2.isInterface());
+    }
+
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -131,8 +161,8 @@ public class XmlConfiguration
                         compare = Boolean.compare(t2.isPrimitive(), t1.isPrimitive());
                         if (compare == 0)
                         {
-                            // prefer interfaces
-                            compare = Boolean.compare(t2.isInterface(), t1.isInterface());
+                            // prefer (non Object.class) classes over interfaces
+                            compare = compare(t1, t2);
 
                             if (compare == 0)
                             {
@@ -406,10 +436,26 @@ public class XmlConfiguration
      */
     public static String resolvePath(String dir, String destPath)
     {
+        Path resolved = resolvedPath(dir, destPath);
+        if (resolved == null)
+            return null;
+        return resolved.toString();
+    }
+
+    /**
+     * Utility method to resolve a provided path against a directory.
+     *
+     * @param dir the directory (should be a directory reference, does not have to exist)
+     * @param destPath the destination path (can be relative or absolute, syntax depends on OS + FileSystem in use,
+     * and does not need to exist)
+     * @return String to resolved and normalized path, or null if dir or destPath is empty.
+     */
+    public static Path resolvedPath(String dir, String destPath)
+    {
         if (StringUtil.isEmpty(dir) || StringUtil.isEmpty(destPath))
             return null;
 
-        return Paths.get(dir).resolve(destPath).normalize().toString();
+        return Paths.get(dir).resolve(destPath).normalize();
     }
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
@@ -584,7 +630,7 @@ public class XmlConfiguration
             String setter = "set" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
             String id = node.getAttribute("id");
             String property = node.getAttribute("property");
-            String propertyValue = null;
+            Object propertyValue = null;
 
             Class<?> oClass = nodeClass(node);
             if (oClass == null)
@@ -600,6 +646,7 @@ public class XmlConfiguration
                 {
                     // check that there is at least one setter or field that could have matched
                     if (Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(setter)) &&
+                        Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(name)) &&
                         Arrays.stream(oClass.getFields()).filter(f -> Modifier.isPublic(f.getModifiers())).noneMatch(f -> f.getName().equals(name)))
                     {
                         NoSuchMethodException e = new NoSuchMethodException(String.format("No method '%s' on %s", setter, oClass.getName()));
@@ -609,6 +656,8 @@ public class XmlConfiguration
                     // otherwise it is a noop
                     return;
                 }
+
+                propertyValue = toType(propertyValue, node.getAttribute("type"));
             }
 
             Object value = value(obj, node);
@@ -646,10 +695,44 @@ public class XmlConfiguration
                 try
                 {
                     Field type = vClass.getField("TYPE");
-                    vClass = (Class<?>)type.get(null);
-                    Method set = oClass.getMethod(setter, vClass);
+                    Class<?> nClass = (Class<?>)type.get(null);
+                    Method set = oClass.getMethod(setter, nClass);
                     invokeMethod(set, obj, arg);
                     return;
+                }
+                catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                {
+                    LOG.trace("IGNORED", e);
+                    errors.add(e);
+                }
+
+                // Try a builder
+                try
+                {
+                    Method builder = oClass.getMethod(name, vClass);
+                    if (builder.getReturnType() == oClass)
+                    {
+                        invokeMethod(builder, obj, arg);
+                        return;
+                    }
+                }
+                catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                {
+                    LOG.trace("IGNORED", e);
+                    errors.add(e);
+                }
+
+                // Try for native builder
+                try
+                {
+                    Field type = vClass.getField("TYPE");
+                    Class<?> nClass = (Class<?>)type.get(null);
+                    Method builder = oClass.getMethod(name, nClass);
+                    if (builder.getReturnType() == oClass)
+                    {
+                        invokeMethod(builder, obj, arg);
+                        return;
+                    }
                 }
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
@@ -1011,7 +1094,7 @@ public class XmlConfiguration
                 }
             }
 
-            throw new NoSuchMethodException(methodName);
+            throw new NoSuchMethodException(obj + " . " + methodName + "(" + args + ")");
         }
 
         /**
@@ -1479,6 +1562,11 @@ public class XmlConfiguration
                 }
             }
 
+            return toType(value, type);
+        }
+
+        private Object toType(Object value, String type) throws Exception
+        {
             // No value
             if (value == null)
             {
@@ -1882,175 +1970,157 @@ public class XmlConfiguration
      */
     public static void main(final String... args) throws Exception
     {
-        try
+        if (LOG.isDebugEnabled())
+            LOG.debug("args={}", Arrays.asList(args));
+
+        EnvironmentBuilder envBuilder = null;
+        Environment environment = null;
+        Properties coreProperties = new Properties();
+        Properties envProperties = new Properties();
+        coreProperties.putAll(System.getProperties());
+        XmlConfiguration lastEnvConfiguration = null;
+        XmlConfiguration lastCoreConfiguration = null;
+        List<Object> objects = new ArrayList<>();
+        ContainerLifeCycle mountContainer = new ContainerLifeCycle();
+        objects.add(mountContainer);
+
+        for (int i = 0; i < args.length; i++)
         {
-            // For all arguments, load properties
-            if (LOG.isDebugEnabled())
-                LOG.debug("args={}", Arrays.asList(args));
-
-            EnvironmentBuilder envBuilder = null;
-            Environment environment = null;
-            Properties coreProperties = new Properties();
-            Properties envProperties = new Properties();
-            coreProperties.putAll(System.getProperties());
-            XmlConfiguration lastEnvConfiguration = null;
-            XmlConfiguration lastCoreConfiguration = null;
-            List<Object> objects = new ArrayList<>();
-            ContainerLifeCycle mountContainer = new ContainerLifeCycle();
-            objects.add(mountContainer);
-
-            for (int i = 0; i < args.length; i++)
+            String arg = args[i];
+            switch (arg)
             {
-                String arg = args[i];
-
-                // check env status
-                switch (arg)
+                case "--env" ->
                 {
-                    case "--class-path", "-cp", "--module-path", "-p" ->
+                    if (envBuilder != null)
+                        envBuilder.build();
+                    String envName = args[++i];
+                    environment = Environment.get(envName);
+                    if (environment != null && environment != Environment.CORE)
+                        throw new IllegalArgumentException("Duplicated --env " + envName + " command line arguments");
+                    if (environment == null)
+                        envBuilder = new EnvironmentBuilder(envName);
+                    envProperties.clear();
+                    lastEnvConfiguration = null;
+                }
+                case "--class-path", "-cp" -> envBuilder.addClassPath(args[++i]);
+                case "--module-path", "-p" -> envBuilder.addModulePath(args[++i]);
+                case "--add-modules" -> envBuilder.addModules(args[++i]);
+                case "--patch-module" -> envBuilder.patchModule(args[++i]);
+                case "--add-opens" -> envBuilder.addOpens(args[++i]);
+                case "--add-exports" -> envBuilder.addExports(args[++i]);
+                case "--add-reads" -> envBuilder.addReads(args[++i]);
+                default ->
+                {
+                    if (envBuilder != null)
                     {
-                        // must be building an environment
-                        if (envBuilder == null)
-                            throw new IllegalStateException("Not building an environment");
+                        environment = envBuilder.build();
+                        envBuilder = null;
                     }
-                    default ->
+
+                    // Process any other argument.
+
+                    if (arg.startsWith("-"))
+                        throw new IllegalArgumentException("unknown arg " + arg);
+
+                    if (arg.indexOf('=') >= 0)
                     {
-                        // finish building any environment
-                        if (envBuilder != null)
+                        int equals = arg.indexOf('=');
+                        String name = arg.substring(0, equals);
+                        String value = arg.substring(equals + 1);
+                        (environment == null ? coreProperties : envProperties).put(name, value);
+                    }
+                    else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                    {
+                        Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
+                        try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                         {
-                            environment = envBuilder.build();
-                            Environment.set(environment);
-                            envBuilder = null;
+                            (environment == null ? coreProperties : envProperties).load(inputStream);
                         }
                     }
-                }
-
-                // process args
-                switch (arg)
-                {
-                    case "--env" ->
+                    else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                     {
-                        String envName = args[++i];
-                        environment = Environment.get(envName);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Parsing xml file {}", arg);
+                        // Create an XmlConfiguration
+                        XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
+
+                        // Copy Id map
+                        if (lastCoreConfiguration != null)
+                            configuration.getIdMap().putAll(lastCoreConfiguration.getIdMap());
+                        if (lastEnvConfiguration != null)
+                            configuration.getIdMap().putAll(lastEnvConfiguration.getIdMap());
+                        if (environment != null)
+                            configuration.getIdMap().put("Environment", environment);
+
+                        // copy properties
+                        for (Object name : coreProperties.keySet())
+                            configuration.getProperties().put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
+                        for (Object name : envProperties.keySet())
+                            configuration.getProperties().put(String.valueOf(name), String.valueOf(envProperties.get(name)));
+
+                        // remember the last configuration
                         if (environment == null)
-                            envBuilder = new EnvironmentBuilder(envName);
-                        lastEnvConfiguration = null;
-                        envProperties.clear();
-                    }
-                    case "--class-path", "-cp" -> envBuilder.addClassPath(args[++i]);
-                    case "--module-path", "-p" -> envBuilder.addModulePath(args[++i]);
-                    default ->
-                    {
-                        if (arg.startsWith("-"))
-                            throw new IllegalArgumentException("unknown arg " + arg);
-
-                        if (arg.indexOf('=') >= 0)
-                        {
-                            int equals = arg.indexOf('=');
-                            String name = arg.substring(0, equals);
-                            String value = arg.substring(equals + 1);
-                            (environment == null ? coreProperties : envProperties).put(name, value);
-                        }
-                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                        {
-                            Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
-                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
-                            {
-                                (envBuilder == null ? coreProperties : envProperties).load(inputStream);
-                            }
-                        }
-                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsing xml file {}", arg);
-                            // Create an XmlConfiguration
-                            XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
-
-                            // Copy Id map
-                            if (lastCoreConfiguration != null)
-                                configuration.getIdMap().putAll(lastCoreConfiguration.getIdMap());
-                            if (lastEnvConfiguration != null)
-                                configuration.getIdMap().putAll(lastEnvConfiguration.getIdMap());
-                            if (environment != null)
-                                configuration.getIdMap().put("Environment", environment);
-
-                            // copy properties
-                            for (Object name : coreProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
-                            for (Object name : envProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(envProperties.get(name)));
-
-                            // remember the last configuration
-                            if (environment == null)
-                                lastCoreConfiguration = configuration;
-                            else
-                                lastEnvConfiguration = configuration;
-
-                            // do the configuration
-                            Runnable configure = () ->
-                            {
-                                try
-                                {
-                                    Object obj = configuration.configure();
-
-                                    if (obj != null && !objects.contains(obj))
-                                        objects.add(obj);
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new RuntimeException(e);
-                                }
-                            };
-
-                            if (environment == null)
-                                configure.run();
-                            else
-                                environment.run(configure);
-                        }
+                            lastCoreConfiguration = configuration;
                         else
-                        {
-                            throw new IllegalArgumentException(arg);
-                        }
-                    }
-                }
-            }
-            if (envBuilder != null)
-            {
-                environment = envBuilder.build();
-                Environment.set(environment);
-            }
+                            lastEnvConfiguration = configuration;
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("objects={}", objects);
-
-            // For all objects created by XmlConfigurations, start them if they are lifecycles.
-            List<LifeCycle> started = new ArrayList<>(objects.size());
-            for (Object obj : objects)
-            {
-                if (obj instanceof LifeCycle lifeCycle)
-                {
-                    if (!lifeCycle.isRunning())
-                    {
-                        lifeCycle.start();
-                        if (lifeCycle.isStarted())
-                            started.add(lifeCycle);
-                        else
+                        // do the configuration
+                        Runnable configure = () ->
                         {
-                            // Failed to start a component, so stop all started components
-                            Collections.reverse(started);
-                            for (LifeCycle slc : started)
+                            try
                             {
-                                slc.stop();
+                                Object obj = configuration.configure();
+
+                                if (obj != null && !objects.contains(obj))
+                                    objects.add(obj);
                             }
-                            break;
-                        }
+                            catch (Exception e)
+                            {
+                                throw new RuntimeException(e);
+                            }
+                        };
+
+                        if (environment == null)
+                            configure.run();
+                        else
+                            environment.run(configure);
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException(arg);
                     }
                 }
             }
         }
-        catch (Error | Exception e)
+        if (envBuilder != null)
+            envBuilder.build();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("objects={}", objects);
+
+        // For all objects created by XmlConfigurations, start them if they are lifecycles.
+        List<LifeCycle> started = new ArrayList<>(objects.size());
+        for (Object obj : objects)
         {
-            LOG.warn("Unable to execute XmlConfiguration", e);
-            throw e;
+            if (obj instanceof LifeCycle lifeCycle)
+            {
+                if (!lifeCycle.isRunning())
+                {
+                    lifeCycle.start();
+                    if (lifeCycle.isStarted())
+                        started.add(lifeCycle);
+                    else
+                    {
+                        // Failed to start a component, so stop all started components
+                        Collections.reverse(started);
+                        for (LifeCycle slc : started)
+                        {
+                            slc.stop();
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -2066,6 +2136,46 @@ public class XmlConfiguration
             if (catalogUrl == null)
                 throw new IllegalStateException("Catalog not found: catalog-configure.xml");
             addCatalog(URI.create(catalogUrl.toExternalForm()));
+        }
+
+        protected SAXParserFactory newSAXParserFactory()
+        {
+            // Use JVM default implementation (not the one found in the classloader from non-JVM sources)
+            SAXParserFactory factory = SAXParserFactory.newDefaultInstance();
+            // Use secure processing factory level defaults (to allow
+            // newly created SAXParsers from this factory to be initialized properly
+            // for external entity handling)
+            setFeature(factory, XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            // Don't allow use of XInclude to reference external entities.
+            factory.setXIncludeAware(false);
+            return factory;
+        }
+
+        @Override
+        protected void configure(SAXParser saxParser)
+        {
+            try
+            {
+                XMLReader xmlReader = getSAXParser().getXMLReader();
+
+                // disable all external entity references with Jetty's Configuration XML.
+
+                // These features configure the XMLEntityManager that the SAXParser
+                // (and Xerces) uses.   These features are applied to the current
+                // entity (the document being parsed) and how the referenced entities
+                // are to be looked up.  The resulting XMLEntityManager is configured
+                // per document being parsed.
+
+                // Configure SAX
+                setFeature(xmlReader, "http://xml.org/sax/features/external-general-entities", false);
+                setFeature(xmlReader, "http://xml.org/sax/features/external-parameter-entities", false);
+                // Configure Xerces
+                setFeature(xmlReader, "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            }
+            catch (SAXException e)
+            {
+                LOG.warn(e.getMessage());
+            }
         }
 
         @Override

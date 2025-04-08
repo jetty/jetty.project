@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -334,13 +333,6 @@ public class ResourceHandlerByteRangesTest
     public void testTwoRanges() throws Exception
     {
         testTwoRanges(HttpHeader.RANGE, "multipart/byteranges");
-    }
-
-    @Test
-    @Disabled
-    public void testTwoRangesObsolete() throws Exception
-    {
-        testTwoRanges(HttpHeader.REQUEST_RANGE, "multipart/x-byteranges");
     }
 
     private void testTwoRanges(HttpHeader requestRangeHeader, String responseContentType) throws Exception

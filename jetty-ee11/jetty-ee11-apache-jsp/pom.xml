@@ -47,12 +47,6 @@
       <artifactId>jetty-ee11-servlet</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>

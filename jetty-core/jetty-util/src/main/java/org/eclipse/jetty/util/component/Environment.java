@@ -13,41 +13,99 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A named runtime environment containing a {@link ClassLoader} and {@link Attributes}.
  */
 public interface Environment extends Attributes
 {
-    // Ensure there is a core environment for possible later deployments to it
-    Environment CORE = ensure("core");
+    Logger LOG = LoggerFactory.getLogger(Environment.class);
 
+    // Ensure there is a core environment for possible later deployments to it
+    Environment CORE = ensure("core", Environment.class);
+
+    /**
+     * Gets all existing environments.
+     * @return the environments
+     */
     static Collection<Environment> getAll()
     {
-        return Collections.unmodifiableCollection(Named.__environments.values());
+        return Collections.unmodifiableCollection(NamedEnvironment.ENVIRONMENTS.values());
     }
-    
+
+    /**
+     * Gets the environment with the given name.
+     * @param name the environment name
+     * @return the environment, or null if no environment with such name exists
+     */
     static Environment get(String name)
     {
-        return Named.__environments.get(name);
+        return NamedEnvironment.ENVIRONMENTS.get(name);
     }
 
-    static Environment ensure(String name)
+    /**
+     * Gets the environment with the given name, creating it with the default classloader if necessary.
+     *
+     * @param name the environment name
+     * @param classToLoad A class to either: use to create the environment with its classloader;
+     *                    or to check the environments can load the passed class.
+     * @return the environment
+     * @throws IllegalArgumentException if an environment with the given name but a different classloader already exists
+     */
+    static Environment ensure(String name, Class<?> classToLoad) throws IllegalStateException
     {
-        return Named.__environments.computeIfAbsent(name, Named::new);
+        ClassLoader loader = Objects.requireNonNull(classToLoad).getClassLoader() == null ? Environment.class.getClassLoader() : classToLoad.getClassLoader();
+        Environment environment = NamedEnvironment.ENVIRONMENTS.computeIfAbsent(name, n -> new NamedEnvironment(n, loader));
+        if (LOG.isDebugEnabled())
+            LOG.debug("Environment.ensure: {} {} {}", name, classToLoad, environment);
+
+        if (environment.getClassLoader() == loader)
+            return environment;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Environment.ensure: {} not same loader {} != {}", name, environment.getClassLoader(), loader);
+
+        // TODO This is to work around a JPMS environment bug.
+        try
+        {
+            Class<?> loadClass = environment.getClassLoader().loadClass(classToLoad.getName());
+            if (loadClass == classToLoad)
+                return environment;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Environment.ensure: {} cannot load same class instance {} != {}", name, loadClass.getClassLoader(), classToLoad.getClassLoader());
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new IllegalArgumentException("%s has different classloader".formatted(name), e);
+        }
+
+        throw new IllegalArgumentException("%s has different classloader".formatted(name));
     }
 
-    static Environment set(Environment environment)
+    /**
+     * Creates an environment with the given name and classloader.
+     * @param name the environment name
+     * @param classLoader the environment classloader
+     * @return the environment
+     * @throws IllegalStateException if an environment with the given name already exists
+     */
+    static Environment create(String name, ClassLoader classLoader) throws IllegalStateException
     {
-        return Named.__environments.put(environment.getName(), environment);
+        return NamedEnvironment.ENVIRONMENTS.compute(name, (n, environment) ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Environment.create: {} {} {}", name, classLoader, environment);
+            if (environment != null)
+                throw new IllegalStateException("Environment already exists: " + n);
+            return new NamedEnvironment(n, classLoader);
+        });
     }
 
     /**
@@ -56,7 +114,7 @@ public interface Environment extends Attributes
     String getName();
 
     /**
-     * @return The {@link ClassLoader} for the environment or if non set, then the {@link ClassLoader} that
+     * @return The {@link ClassLoader} for the environment or if none set, then the {@link ClassLoader} that
      * loaded the environment implementation.
      */
     ClassLoader getClassLoader();
@@ -79,56 +137,4 @@ public interface Environment extends Attributes
             Thread.currentThread().setContextClassLoader(old);
         }
     }
-
-    class Named extends Attributes.Mapped implements Environment, Dumpable
-    {
-        private static final Map<String, Environment> __environments = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        private final String _name;
-        private final ClassLoader _classLoader;
-
-        public Named(String name)
-        {
-            this (name, null);
-        }
-
-        public Named(String name, ClassLoader classLoader)
-        {
-            _name = name;
-            _classLoader = classLoader == null ? this.getClass().getClassLoader() : classLoader;
-        }
-
-        @Override
-        public String getName()
-        {
-            return _name;
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return _classLoader;
-        }
-
-        @Override
-        public String dump()
-        {
-            return Dumpable.dump(this);
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            Dumpable.dumpObjects(out, indent,
-                this,
-                new ClassLoaderDump(getClassLoader()),
-                new DumpableCollection("Attributes " + _name, asAttributeMap().entrySet()));
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
-        }
-    }
-
 }

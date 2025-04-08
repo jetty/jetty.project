@@ -39,7 +39,9 @@ public class RewritePatternRuleTest extends AbstractRuleTest
             Arguments.of("/foo/bar", "/replace", "/foo/bar", "/replace"),
             Arguments.of("*.txt", "/replace", "/foo/bar.txt", "/replace"),
             Arguments.of("/foo/*", "/replace", "/foo/bar/%20x", "/replace/bar/%20x"),
-            Arguments.of("/old/context", "/replace?given=param", "/old/context", "/replace?given=param")
+            Arguments.of("/old/context", "/replace?given=param", "/old/context?mode=orig", "/replace?mode=orig&given=param"),
+            // no match, as input uri.path is not decoded to match
+            Arguments.of("/old/context", "/replace?given=param", "/old/c%6Fntext", "/old/c%6Fntext")
         );
     }
 

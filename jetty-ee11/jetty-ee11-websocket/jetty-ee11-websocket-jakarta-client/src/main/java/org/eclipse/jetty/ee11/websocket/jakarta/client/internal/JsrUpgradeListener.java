@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee11.websocket.jakarta.client.internal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,23 +38,11 @@ public class JsrUpgradeListener implements UpgradeListener
         if (configurator == null)
             return;
 
-        HttpFields fields = request.getHeaders();
-        Map<String, List<String>> originalHeaders = new HashMap<>();
-        fields.forEach(field ->
-        {
-            originalHeaders.putIfAbsent(field.getName(), new ArrayList<>());
-            List<String> values = originalHeaders.get(field.getName());
-            Collections.addAll(values, field.getValues());
-        });
-
-        // Give headers to configurator
-        configurator.beforeRequest(originalHeaders);
-
-        // Reset headers on HttpRequest per configurator
         request.headers(headers ->
         {
-            headers.clear();
-            originalHeaders.forEach(headers::put);
+            // Give headers to configurator
+            Map<String, List<String>> headersMap = HttpFields.asMap(headers);
+            configurator.beforeRequest(headersMap);
         });
     }
 
@@ -67,18 +52,7 @@ public class JsrUpgradeListener implements UpgradeListener
         if (configurator == null)
             return;
 
-        HandshakeResponse handshakeResponse = () ->
-        {
-            Map<String, List<String>> ret = new HashMap<>();
-            response.getHeaders().forEach(field ->
-            {
-                ret.putIfAbsent(field.getName(), new ArrayList<>());
-                List<String> values = ret.get(field.getName());
-                Collections.addAll(values, field.getValues());
-            });
-            return ret;
-        };
-
+        HandshakeResponse handshakeResponse = () -> HttpFields.asMap(response.getHeaders());
         configurator.afterResponse(handshakeResponse);
     }
 }

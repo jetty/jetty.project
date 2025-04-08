@@ -16,6 +16,7 @@
     <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-apache-jsp</module>
     <module>jetty-ee8-bom</module>
+    <module>jetty-ee8-cdi</module>
     <module>jetty-ee8-demos</module>
     <module>jetty-ee8-glassfish-jstl</module>
     <module>jetty-ee8-home</module>
@@ -117,6 +118,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee8</groupId>
         <artifactId>jetty-ee8-apache-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-cdi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -248,6 +254,24 @@
         <groupId>org.glassfish.web</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
         <version>${javax.servlet.jsp.jstl.impl.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet.jsp.jstl</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>xalan</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
@@ -258,11 +282,6 @@
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
         <version>${jsp.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>xalan</groupId>
-        <artifactId>xalan</artifactId>
-        <version>2.7.3</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

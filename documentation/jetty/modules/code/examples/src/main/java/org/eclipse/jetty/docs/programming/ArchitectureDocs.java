@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
 @SuppressWarnings("unused")
@@ -74,5 +78,86 @@ public class ArchitectureDocs
         clientConnector.setExecutor(threadPool);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         // end::virtualVirtual[]
+    }
+
+    public static class EitherTask implements Invocable.Task
+    {
+        private final TryExecutor executor;
+        private final Deque<Invocable.Task> subTasks = new ConcurrentLinkedDeque<>();
+
+        public EitherTask(TryExecutor executor)
+        {
+            this.executor = executor;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
+        }
+
+        public void offer(Task task)
+        {
+            subTasks.add(task);
+        }
+
+        @Override
+        public void run()
+        {
+            if (Invocable.isNonBlockingInvocation())
+            {
+                for (Task subTask = subTasks.pollFirst(); subTask != null; subTask = subTasks.pollFirst())
+                {
+                    switch (Invocable.getInvocationType(subTask))
+                    {
+                        case NON_BLOCKING, EITHER ->
+                            // Do not defer a NON-BLOCKING or EITHER task.
+                            // No need to use invokeNonBlocking(), as this task is already invoked via that method.
+                            subTask.run();
+
+                        case BLOCKING ->
+                            // Defer the BLOCKING task as this thread must not block.
+                            executor.execute(subTask);
+                    }
+                }
+            }
+            else
+            {
+                for (Task subTask = subTasks.pollFirst(); subTask != null; subTask = subTasks.pollFirst())
+                {
+                    switch (Invocable.getInvocationType(subTask))
+                    {
+                        case NON_BLOCKING ->
+                            // Do not defer a NON-BLOCKING task.
+                            subTask.run();
+
+                        case EITHER ->
+                        {
+                            // Do not defer an EITHER task.
+                            if (executor.tryExecute(this))
+                                // A reserved thread is consuming any remaining subtasks; call the subtask directly,
+                                // and it may block without causing head-of-line blocking.
+                                subTask.run();
+                            else
+                                // There is no reserved thread to consume remaining subtasks; invoke this
+                                // subtask as non-blocking to avoid head-of-line blocking.
+                                Invocable.invokeNonBlocking(subTask);
+                        }
+                        case BLOCKING ->
+                        {
+                            // A blocking task may be deferred, but it is preferable to run it directly with hot CPU cache.
+                            if (executor.tryExecute(this))
+                                // A reserved thread is consuming any remaining subtasks; call the subtask directly,
+                                // and it may block without causing head-of-line blocking.
+                                subTask.run();
+                            else
+                                // There is no reserved thread to consume remaining subtasks; defer the execution
+                                // of this subtask by executing it and avoiding head-of-line blocking of other subtasks.
+                                executor.execute(subTask);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

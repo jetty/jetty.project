@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -452,12 +452,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (o instanceof Container.Listener || !_listeners.isEmpty())
             throw new IllegalArgumentException("Cannot call Container.Listeners from constructor");
 
-        if (o instanceof EventListener eventListener)
-            addEventListener(eventListener);
-
         Bean newBean = new Bean(o);
         newBean._managed = managed;
         _beans.add(newBean);
+
+        if (o instanceof EventListener eventListener)
+            addEventListener(eventListener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{}@{} added {}", getClass().getSimpleName(), hashCode(), newBean);
@@ -499,8 +499,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         {
             // If it is not yet a bean,
             if (!contains(listener))
-                // add it as a bean, we will be called back to add it as an event listener, but it will have
-                // already been added, so we will not enter this branch.
+                // add it as a bean, we will be called back to add it as an event listener,
+                // but it will have already been added, so we will not enter this branch.
                 addBean(listener);
 
             if (listener instanceof Container.Listener cl)
@@ -813,6 +813,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             return _managed == Managed.MANAGED;
         }
 
+        /**
+         * @return {@code true} if this bean {@link #isManaged() is managed};
+         * {@code true} if this bean will be managed if it were to be started;
+         * {@code false} otherwise
+         */
         public boolean isManageable()
         {
             return switch (_managed)
@@ -882,7 +887,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public <T> Collection<T> getContainedBeans(Class<T> clazz)
     {
-        Set<T> beans = new HashSet<>();
+        Set<T> beans = new LinkedHashSet<>();
         getContainedBeans(clazz, beans);
         return beans;
     }

@@ -18,7 +18,9 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http2.HTTP2Connection;
@@ -73,10 +75,15 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
 
     private void onServerPreface(Session session)
     {
+        Destination destination = destination();
         HTTP2Connection http2Connection = (HTTP2Connection)context.get(HTTP2Connection.class.getName());
-        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session, http2Connection);
+        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination, session, http2Connection);
         if (this.connection.compareAndSet(null, connection, false, true))
         {
+            ConnectionPool connectionPool = destination.getConnectionPool();
+            if (connectionPool instanceof AbstractConnectionPool pool)
+                connection.setMaxUsage(pool.getMaxUsage());
+
             // The connection promise must be called synchronously
             // so that the HTTP/1 to HTTP/2 upgrade can create the
             // HTTP/2 stream that represents the HTTP/1 request.

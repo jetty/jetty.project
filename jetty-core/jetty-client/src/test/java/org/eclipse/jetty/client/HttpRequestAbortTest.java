@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -498,20 +499,19 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             @Override
             public void onComplete(Result result)
             {
-                // Fake the fact that the redirect failed.
+                // Fake the fact that the redirect failed,
+                // but the redirect should still be followed.
                 Result newResult = new Result(result, cause);
                 super.onComplete(newResult);
             }
         });
 
-        ExecutionException e = assertThrows(ExecutionException.class, () ->
-        {
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path("/redirect")
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
-        assertSame(cause, e.getCause());
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/redirect")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

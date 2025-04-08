@@ -44,6 +44,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,12 +73,36 @@ public class ExplicitDemandTest
     public static class ListenerSocket implements Session.Listener
     {
         final List<Frame> frames = new CopyOnWriteArrayList<>();
+        final List<Callback> callbacks = new CopyOnWriteArrayList<>();
+        Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            session.demand();
+        }
 
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
             frames.add(frame);
-            callback.succeed();
+            callbacks.add(callback);
+
+            // Because no pingListener is registered, the frameListener is responsible for handling pings.
+            if (frame.getOpCode() == OpCode.PING)
+            {
+                session.sendPong(frame.getPayload(), Callback.from(session::demand, callback::fail));
+                return;
+            }
+            else if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                Frame.CloseStatus closeStatus = frame.getCloseStatus();
+                session.close(closeStatus.statusCode(), closeStatus.reason(), Callback.NOOP);
+                return;
+            }
+
+            session.demand();
         }
     }
 
@@ -109,27 +134,19 @@ public class ExplicitDemandTest
             if (frame.getOpCode() == OpCode.TEXT)
                 textMessages.add(BufferUtil.toString(frame.getPayload()));
             callback.succeed();
+            session.demand();
         }
     }
 
     @WebSocket(autoDemand = false)
     public static class PingSocket extends ListenerSocket
     {
-        Session session;
-
-        @Override
-        public void onWebSocketOpen(Session session)
-        {
-            this.session = session;
-            session.demand();
-        }
-
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            super.onWebSocketFrame(frame, callback);
             if (frame.getType() == Frame.Type.TEXT)
                 session.sendPing(ByteBuffer.wrap("server-ping".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+            super.onWebSocketFrame(frame, callback);
         }
     }
 
@@ -217,13 +234,23 @@ public class ExplicitDemandTest
         Frame frame0 = listenerSocket.frames.get(0);
         assertThat(frame0.getType(), is(Frame.Type.PONG));
         assertThat(StandardCharsets.UTF_8.decode(frame0.getPayload()).toString(), is("ping-0"));
+        Callback callback0 = listenerSocket.callbacks.get(0);
+        assertNotNull(callback0);
+        callback0.succeed();
+
         Frame frame1 = listenerSocket.frames.get(1);
         assertThat(frame1.getType(), is(Frame.Type.PONG));
         assertThat(StandardCharsets.UTF_8.decode(frame1.getPayload()).toString(), is("ping-1"));
+        Callback callback1 = listenerSocket.callbacks.get(1);
+        assertNotNull(callback1);
+        callback1.succeed();
 
         session.close();
         await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(3));
         assertThat(listenerSocket.frames.get(2).getType(), is(Frame.Type.CLOSE));
+        Callback closeCallback = listenerSocket.callbacks.get(2);
+        assertNotNull(closeCallback);
+        closeCallback.succeed();
     }
 
     @Test

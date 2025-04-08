@@ -299,18 +299,22 @@ public abstract class JettyWebSocketServlet extends HttpServlet
 
     private record WrappedJettyCreator(JettyWebSocketCreator creator) implements WebSocketCreator
     {
+
         private JettyWebSocketCreator getJettyWebSocketCreator()
         {
             return creator;
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+        public Object createWebSocket(ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
         {
+            DelegatedServerUpgradeRequest request = new DelegatedServerUpgradeRequest(upgradeRequest);
+            DelegatedServerUpgradeResponse response = new DelegatedServerUpgradeResponse(upgradeResponse);
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(request), new DelegatedServerUpgradeResponse(response));
-                callback.succeeded();
+                Object webSocket = creator.createWebSocket(request, response);
+                if (webSocket == null)
+                    callback.succeeded();
                 return webSocket;
             }
             catch (Throwable t)

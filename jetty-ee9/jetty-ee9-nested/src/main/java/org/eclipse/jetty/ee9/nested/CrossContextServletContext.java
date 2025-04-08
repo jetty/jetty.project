@@ -169,7 +169,7 @@ class CrossContextServletContext implements ServletContext
             if (StringUtil.isEmpty(encodedPathInContext))
                 return null;
 
-            if (!StringUtil.isEmpty(contextPath))
+            if (!StringUtil.isEmpty(contextPath) && !contextPath.equals("/"))
             {
                 uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
                 encodedPathInContext = uri.getCanonicalPath().substring(contextPath.length());

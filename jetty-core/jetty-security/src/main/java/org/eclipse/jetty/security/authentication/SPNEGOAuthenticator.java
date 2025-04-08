@@ -185,6 +185,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     private void sendChallenge(Request req, Response res, Callback callback, String token)
     {
         setSpnegoToken(res, token);
+        // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
         Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
     }
 

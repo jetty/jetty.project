@@ -215,11 +215,11 @@ To configure access to `javax.mail.Session` from within a webapp, declare an `or
 [,xml,subs=attributes+]
 ----
 <Configure id='wac' class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
-  <New class="org.eclipse.jetty.{ee-current}.jndi.Resource">
+  <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>mail/Session</Arg>
     <Arg>
-      <New class="org.eclipse.jetty.{ee-current}.factories.MailSessionReference"> <!--1-->
+      <New class="org.eclipse.jetty.{ee-current}.jndi.factories.MailSessionReference"> <!--1-->
         <Set name="user">fred</Set> <!--2-->
         <Set name="password">OBF:1xmk1w261z0f1w1c1xmq</Set> <!--3-->
         <Set name="properties"> <!--4-->

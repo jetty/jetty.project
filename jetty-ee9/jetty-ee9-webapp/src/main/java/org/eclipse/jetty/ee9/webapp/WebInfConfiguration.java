@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
@@ -62,17 +63,17 @@ public class WebInfConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
 
         // Add WEB-INF classes and lib classpaths
-        if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof WebAppClassLoader)
+        if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof WebAppClassLoader webAppClassLoader)
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
             if (Resources.isReadableDirectory(classes))
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
+                webAppClassLoader.addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
             if (Resources.isReadableDirectory(lib))
-                ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
+                webAppClassLoader.addJars(lib);
         }
     }
 
@@ -204,18 +205,24 @@ public class WebInfConfiguration extends AbstractConfiguration
                     !webApp.isDirectory())
             )
             {
-                // Look for sibling directory.
                 Path extractedWebAppDir = null;
 
+                // If this is a war file, we should look for a sibling
+                // directory of the same name
                 if (war != null)
                 {
-                    Path warPath = Path.of(war);
-                    // look for a sibling like "foo/" to a "foo.war"
-                    if (FileID.isWebArchive(warPath) && Files.exists(warPath))
+                    // We have obtained the webApp from the war string, so it
+                    // cannot be a CombinedResource, therefore safe to use it's Path
+                    Path warPath = webApp.getPath();
+                    if (warPath != null)
                     {
-                        Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
-                        if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))
-                            extractedWebAppDir = sibling;
+                        // look for a sibling like "foo/" to a "foo.war"
+                        if (FileID.isWebArchive(warPath) && Files.exists(warPath))
+                        {
+                            Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
+                            if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))
+                                extractedWebAppDir = sibling;
+                        }
                     }
                 }
 

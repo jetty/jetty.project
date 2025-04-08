@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -33,6 +34,7 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -1443,7 +1445,6 @@ public class DefaultServletTest
             defholder.setInitParameter("useFileMappedBuffer", "true");
             defholder.setInitParameter("welcomeServlets", "exact");
             defholder.setInitParameter("gzip", "false");
-            defholder.setInitParameter("resourceCache", "resourceCache");
         });
 
         String rawResponse;
@@ -2780,6 +2781,39 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
         assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("3"));
         assertThat(response.getContent(), is("too"));
+    }
+
+    @Test
+    public void testServeResourceAsyncWhileStartAsyncAlreadyCalled() throws Exception
+    {
+        AtomicBoolean filterCalled = new AtomicBoolean();
+        startServer((context) ->
+        {
+            Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+            ResourceService resourceService = new ResourceService();
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
+            DefaultServlet defaultServlet = new DefaultServlet(resourceService);
+            context.addServlet(new ServletHolder(defaultServlet), "/*");
+            context.addFilter(new FilterHolder((request, response, chain) ->
+                {
+                    filterCalled.set(true);
+                    AsyncContext asyncContext = request.startAsync();
+                    chain.doFilter(request, response);
+                    asyncContext.complete();
+                }), "/*", EnumSet.of(DispatcherType.REQUEST));
+        });
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("17"));
+        assertThat(response.getContent(), is("Test 2 to too two"));
+        assertThat(filterCalled.get(), is(true));
     }
 
     @Test

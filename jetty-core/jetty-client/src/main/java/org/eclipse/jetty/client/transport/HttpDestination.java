@@ -92,7 +92,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
-        ClientConnectionFactory connectionFactory = client.getTransport();
+        ClientConnectionFactory connectionFactory = client.getHttpClientTransport();
         boolean intrinsicallySecure = origin.getTransport().isIntrinsicallySecure();
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
@@ -186,7 +186,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
     protected ConnectionPool newConnectionPool(HttpClient client)
     {
-        return client.getTransport().getConnectionPoolFactory().newConnectionPool(this);
+        return client.getHttpClientTransport().getConnectionPoolFactory().newConnectionPool(this);
     }
 
     protected Queue<HttpExchange> newExchangeQueue(HttpClient client)

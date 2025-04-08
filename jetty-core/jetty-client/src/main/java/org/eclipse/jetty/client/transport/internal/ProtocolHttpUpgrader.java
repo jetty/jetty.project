@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.client.transport.internal;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -65,16 +66,16 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
         if (response.getHeaders().contains(HttpHeader.UPGRADE, protocol))
         {
             HttpClient httpClient = destination.getHttpClient();
-            HttpClientTransport transport = httpClient.getTransport();
-            if (transport instanceof HttpClientTransportDynamic)
+            HttpClientTransport transport = httpClient.getHttpClientTransport();
+            if (transport instanceof HttpClientTransportDynamic dynamicTransport)
             {
-                HttpClientTransportDynamic dynamicTransport = (HttpClientTransportDynamic)transport;
-
                 Origin origin = destination.getOrigin();
                 Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false));
                 Destination newDestination = httpClient.resolveDestination(newOrigin);
 
-                Map<String, Object> context = new HashMap<>();
+                // Multiple threads may access the map, especially with DEBUG logging enabled.
+                Map<String, Object> context = new ConcurrentHashMap<>();
+                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, httpClient);
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, newDestination);
                 context.put(HttpResponse.class.getName(), response);
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));

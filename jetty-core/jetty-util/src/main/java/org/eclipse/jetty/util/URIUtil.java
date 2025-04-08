@@ -471,11 +471,14 @@ public final class URIUtil
     /**
      * Decodes a percent-encoded URI path (assuming UTF-8 characters) and strips path parameters.
      * @param path The URI path to decode
+     * @return the decoded path (or null if input path is null)
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path)
     {
+        if (path == null)
+            return null;
         return decodePath(path, 0, path.length());
     }
 
@@ -484,11 +487,14 @@ public final class URIUtil
      * @param path A String holding the URI path to decode
      * @param offset The start of the URI within the path string
      * @param length The length of the URI within the path string
+     * @return the decoded path (or null if input path is null)
      * @see #canonicalPath(String)
      * @see #normalizePath(String)
      */
     public static String decodePath(String path, int offset, int length)
     {
+        if (path == null)
+            return null;
         try
         {
             Utf8StringBuilder builder = null;
@@ -1772,6 +1778,9 @@ public final class URIUtil
         int colon = rawURI.indexOf(":/");
         if (colon < 0)
             return uri; // path portion not found
+
+        if ((colon + 2) == rawURI.length())
+            return URI.create("file:///");
 
         int end = -1;
         if (rawURI.charAt(colon + 2) != '/')

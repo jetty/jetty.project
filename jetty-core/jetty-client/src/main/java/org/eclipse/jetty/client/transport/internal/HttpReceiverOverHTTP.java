@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP.class);
 
+    private final Callback demandContentCallback = new DemandContentCallback();
     private final Runnable receiveNext = this::receiveNext;
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
@@ -61,7 +63,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
         parser = new HttpParser(this, httpClient.getMaxResponseHeadersSize(), httpClient.getHttpCompliance());
-        HttpClientTransport transport = httpClient.getTransport();
+        HttpClientTransport transport = httpClient.getHttpClientTransport();
         if (transport instanceof HttpClientTransportOverHTTP httpTransport)
         {
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
@@ -72,17 +74,17 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     void receive()
     {
-        if (!hasContent())
-        {
-            boolean setFillInterest = parseAndFill(true);
-            if (!hasContent() && setFillInterest)
-                fillInterested();
-        }
-        else
+        if (hasContent())
         {
             HttpExchange exchange = getHttpExchange();
             if (exchange != null)
                 responseContentAvailable(exchange);
+        }
+        else
+        {
+            boolean setFillInterest = parseAndFill(true);
+            if (!hasContent() && setFillInterest)
+                getHttpConnection().fillInterested();
         }
     }
 
@@ -359,12 +361,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Discarding unexpected content after response {}: {} in {}", status, BufferUtil.toDetailString(byteBuffer), this);
                             BufferUtil.clear(byteBuffer);
-                            return false;
+                            return true;
                         }
                     }
 
-                    // Continue to read from the network.
-                    return false;
+                    // Reading the next response will
+                    // be performed by receivedNext().
+                    return true;
                 }
                 default -> throw new IllegalStateException("Invalid state " + state);
             }
@@ -386,7 +389,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Registering as fill interested in {}", this);
-        getHttpConnection().fillInterested();
+        getHttpConnection().fillInterested(demandContentCallback);
     }
 
     private void shutdown()
@@ -524,10 +527,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             throw new IllegalStateException();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Receiving next request in {}", this);
+            LOG.debug("Receiving next response in {}", this);
         boolean setFillInterest = parseAndFill(true);
         if (!hasContent() && setFillInterest)
-            fillInterested();
+            getHttpConnection().fillInterested();
     }
 
     @Override
@@ -571,5 +574,26 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private enum State
     {
         STATUS, HEADERS, CONTENT, COMPLETE
+    }
+
+    private class DemandContentCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            getHttpConnection().onFillable();
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            getHttpConnection().onFillInterestedFailed(failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return HttpReceiverOverHTTP.this.getInvocationType();
+        }
     }
 }

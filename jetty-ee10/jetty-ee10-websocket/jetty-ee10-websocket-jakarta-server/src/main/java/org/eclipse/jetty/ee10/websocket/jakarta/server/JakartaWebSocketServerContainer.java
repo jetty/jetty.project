@@ -322,9 +322,9 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
             if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, defaultCustomizer))
-            {
                 callback.block();
-            }
+            else
+                throw new IllegalStateException("Invalid WebSocket Upgrade Request");
         }
         finally
         {

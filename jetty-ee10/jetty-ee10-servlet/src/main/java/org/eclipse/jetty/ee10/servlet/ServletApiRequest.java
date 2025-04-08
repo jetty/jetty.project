@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
@@ -72,6 +73,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -644,9 +646,7 @@ public class ServletApiRequest implements HttpServletRequest
         {
             try
             {
-                CompletableFuture<ServletMultiPartFormData.Parts> futureServletMultiPartFormData = ServletMultiPartFormData.from(this);
-
-                _parts = futureServletMultiPartFormData.get();
+                _parts = ServletMultiPartFormData.getParts(this);
 
                 Collection<Part> parts = _parts.getParts();
 
@@ -1183,7 +1183,15 @@ public class ServletApiRequest implements HttpServletRequest
     public String getContentType()
     {
         if (_contentType == null)
-            _contentType = getFields().get(HttpHeader.CONTENT_TYPE);
+        {
+            HttpField contentType = getFields().getField(HttpHeader.CONTENT_TYPE);
+            if (contentType != null)
+            {
+                _contentType = contentType.getValue();
+                if (_charset == null)
+                    _charset = MimeTypes.getCharsetFromContentType(contentType);
+            }
+        }
         return _contentType;
     }
 
@@ -1192,9 +1200,12 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
+
+        // Try to write a 100 continue if it is necessary
+        if (_inputState == ServletContextRequest.INPUT_NONE && _servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+
         _inputState = ServletContextRequest.INPUT_STREAM;
-        // Try to write a 100 continue, ignoring failure result if it was not necessary.
-        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
@@ -1261,7 +1272,7 @@ public class ServletApiRequest implements HttpServletRequest
             try
             {
                 int contentLength = getContentLength();
-                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                if (contentLength != 0)
                 {
                     String baseType = HttpField.getValueParameters(getContentType(), null);
                     if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
@@ -1272,12 +1283,10 @@ public class ServletApiRequest implements HttpServletRequest
                             ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
                             int maxKeys = contextHandler.getMaxFormKeys();
                             int maxContentSize = contextHandler.getMaxFormContentSize();
-                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
+                            _contentParameters = FormFields.getFields(getRequest(), maxKeys, maxContentSize);
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1311,12 +1320,10 @@ public class ServletApiRequest implements HttpServletRequest
                     {
                         try
                         {
-                            _contentParameters = FormFields.get(getRequest()).get();
+                            _contentParameters = FormFields.getFields(getRequest());
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1327,7 +1334,6 @@ public class ServletApiRequest implements HttpServletRequest
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
-                LOG.warn(e.toString());
                 throw new BadMessageException("Unable to parse form content", e);
             }
         }

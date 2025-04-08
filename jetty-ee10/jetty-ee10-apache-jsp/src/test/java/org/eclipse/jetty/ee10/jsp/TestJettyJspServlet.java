@@ -36,7 +36,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -104,7 +103,6 @@ public class TestJettyJspServlet
         assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
     }
 
-    @Disabled //TODO
     @Test
     public void testWithDirectory() throws Exception
     {

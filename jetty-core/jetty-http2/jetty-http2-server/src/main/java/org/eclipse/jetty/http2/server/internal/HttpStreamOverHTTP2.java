@@ -184,6 +184,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 trailer = _trailer;
                 if (trailer != null)
                 {
+                    data.release();
                     _chunk = Content.Chunk.next(trailer);
                     return trailer;
                 }
@@ -436,6 +437,24 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
+    @Override
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
+    {
+        // Append a ResetFrame into the H2 flusher and complete the appCallback once all the frames
+        // up to and including the reset one have been flushed; it is needed to wait to make sure
+        // the completion listeners aren't called while a write is still pending.
+        return () ->
+        {
+            _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            _stream.getSession().flush(Callback.from(() ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("cancelSend reset and flushed");
+                appCallback.failed(cause);
+            }));
+        };
+    }
+
     private HttpFields retrieveTrailers()
     {
         Supplier<HttpFields> supplier = _responseMetaData.getTrailersSupplier();
@@ -591,12 +610,32 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean remote = failure instanceof EOFException;
         Runnable runnable = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
-        return () ->
+
+        class FailureTask implements Runnable
         {
-            if (runnable != null)
-                runnable.run();
-            callback.succeeded();
-        };
+            @Override
+            public void run()
+            {
+                try
+                {
+                    if (runnable != null)
+                        runnable.run();
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s[%s]".formatted(getClass().getSimpleName(), runnable);
+            }
+        }
+
+        return new FailureTask();
     }
 
     @Override

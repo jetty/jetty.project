@@ -43,6 +43,7 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -132,8 +133,12 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     /**
-     * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by {@link ServletApiRequest#getServletPath()}
-     *                            and {@link ServletApiRequest#getPathInfo()}.
+     * <p>Allow or disallow ambiguous URIs to be returned by {@link ServletApiRequest#getServletPath()}
+     * and {@link ServletApiRequest#getPathInfo()}.</p>
+     * <p>Note that the {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)} 
+     * must also be set to allow ambiguous URIs to be accepted by the {@link org.eclipse.jetty.server.Connector}.</p>
+     *
+     * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by all servlet API methods.
      */
     public void setDecodeAmbiguousURIs(boolean decodeAmbiguousURIs)
     {
@@ -176,10 +181,10 @@ public class ServletHandler extends Handler.Wrapper
         try (AutoLock ignored = lock())
         {
             Context context = ContextHandler.getCurrentContext();
-            if (!(context instanceof ServletContextHandler.ServletScopedContext))
+            if (!(context instanceof ServletContextHandler.ServletScopedContext servletScopedContext))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
-            _servletContext = ((ServletContextHandler.ServletScopedContext)context).getServletContext();
-            _servletContextHandler = ((ServletContextHandler.ServletScopedContext)context).getServletContextHandler();
+            _servletContext = servletScopedContext.getServletContext();
+            _servletContextHandler = servletScopedContext.getServletContextHandler();
 
             if (_servletContextHandler != null)
             {
@@ -1390,6 +1395,8 @@ public class ServletHandler extends Handler.Wrapper
             if (isRunning())
                 updateMappings();
             invalidateChainsCache();
+            _matchBeforeIndex = -1;
+            _matchAfterIndex = -1;
         }
     }
 

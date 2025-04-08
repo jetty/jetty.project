@@ -73,7 +73,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -1364,7 +1363,6 @@ public class HttpClientTLSTest
     }
 
     @Test
-    @Disabled("fix this test: investigate the difference between client and server bytes")
     public void testBytesInBytesOut() throws Exception
     {
         // Two connections will be closed: SslConnection and HttpConnection.
@@ -1403,9 +1401,12 @@ public class HttpClientTLSTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
+        // Client sent and server received (and viceversa) bytes may not be equal
+        // because upon closing the connection the TLS alert may not be read due
+        // to the fact that the EndPoint is closed.
         assertThat(clientStats.getSentBytes(), Matchers.greaterThan(0L));
-        assertEquals(clientStats.getSentBytes(), serverStats.getReceivedBytes());
+        assertThat(serverStats.getReceivedBytes(), Matchers.greaterThan(0L));
         assertThat(clientStats.getReceivedBytes(), Matchers.greaterThan(0L));
-        assertEquals(clientStats.getReceivedBytes(), serverStats.getSentBytes());
+        assertThat(serverStats.getSentBytes(), Matchers.greaterThan(0L));
     }
 }

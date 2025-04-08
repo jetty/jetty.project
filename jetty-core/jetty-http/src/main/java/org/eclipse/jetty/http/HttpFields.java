@@ -928,6 +928,21 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
+     * <p>Wraps an instance of {@link HttpFields} as a {@link Map}.</p>
+     * <p>If the provided {@link HttpFields} is an instance of {@link HttpFields.Mutable} then changes to the
+     * {@link Map} will be reflected in the underlying {@link HttpFields}.
+     * Otherwise, any modification to the {@link Map} will throw {@link UnsupportedOperationException}.</p>
+     * @param fields the {@link HttpFields} to convert to a {@link Map}.
+     * @return an {@link Map} representing the contents of the {@link HttpFields}.
+     */
+    static Map<String, List<String>> asMap(HttpFields fields)
+    {
+        return (fields instanceof HttpFields.Mutable mutable)
+            ? new HttpFieldsMap.Mutable(mutable)
+            : new HttpFieldsMap.Immutable(fields);
+    }
+
+    /**
      * @return a sequential stream of the {@link HttpField}s in this instance
      */
     default Stream<HttpField> stream()
@@ -946,15 +961,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          * <p>Adds a new {@link HttpField} with the given name and string value.</p>
          * <p>The new {@link HttpField} is added even if a field with the
          * same name is already present.</p>
+         * <p>This method has no effect if null is passed for either the name or value parameters.</p>
          *
-         * @param name the non-{@code null} name of the field
-         * @param value the non-{@code null} value of the field
+         * @param name the name of the field
+         * @param value the value of the field
          * @return this instance
          */
         default Mutable add(String name, String value)
         {
             Objects.requireNonNull(name);
-            Objects.requireNonNull(value);
+            if (value == null)
+                return this;
             return add(new HttpField(name, value));
         }
 
@@ -985,7 +1002,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable add(HttpHeader header, HttpHeaderValue value)
         {
             Objects.requireNonNull(header);
-            Objects.requireNonNull(value);
+            if (value == null)
+                return this;
             return add(header, value.toString());
         }
 
@@ -1001,7 +1019,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable add(HttpHeader header, String value)
         {
             Objects.requireNonNull(header);
-            Objects.requireNonNull(value);
+            if (value == null)
+                return this;
             return add(new HttpField(header, value));
         }
 
@@ -1043,6 +1062,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpFields fields)
         {
+            Objects.requireNonNull(fields);
             for (HttpField field : fields)
             {
                 add(field);
@@ -1060,8 +1080,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable add(String name, List<String> list)
         {
             Objects.requireNonNull(name);
-            Objects.requireNonNull(list);
-            if (list.isEmpty())
+            if (list == null || list.isEmpty())
                 return this;
             if (list.size() == 1)
             {
@@ -1679,6 +1698,11 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 _fields = fields;
             }
 
+            public Mutable getWrapped()
+            {
+                return _fields;
+            }
+
             /**
              * Called when a field is added (including as part of a put).
              *
@@ -1762,7 +1786,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                     i = _fields.listIterator(put);
                     HttpField old = i.next();
                     field = onReplaceField(old, field);
-                    if (field != null)
+                    if (field == null)
+                        i.remove();
+                    else if (field != old)
                         i.set(field);
                 }
 
@@ -1846,7 +1872,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                             if (last != null)
                             {
                                 field = onReplaceField(last, field);
-                                if (field != null)
+                                if (field == null)
+                                {
+                                    last = null;
+                                    i.remove();
+                                }
+                                else if (field != last)
                                 {
                                     last = null;
                                     i.set(field);

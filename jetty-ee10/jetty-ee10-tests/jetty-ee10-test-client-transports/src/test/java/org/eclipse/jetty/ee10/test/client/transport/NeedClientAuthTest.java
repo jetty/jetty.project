@@ -30,9 +30,9 @@ public class NeedClientAuthTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsSecure")
-    public void testNeedClientAuth(Transport transport) throws Exception
+    public void testNeedClientAuth(TransportType transportType) throws Exception
     {
-        prepareServer(transport, new HttpServlet()
+        prepareServer(transportType, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -44,7 +44,7 @@ public class NeedClientAuthTest extends AbstractTest
         sslContextFactoryServer.setNeedClientAuth(true);
         server.start();
 
-        startClient(transport, httpClient ->
+        startClient(transportType, httpClient ->
         {
             // Configure the SslContextFactory to send a certificate to the server.
             SslContextFactory.Client clientSSL = httpClient.getSslContextFactory();
@@ -53,7 +53,7 @@ public class NeedClientAuthTest extends AbstractTest
             clientSSL.setCertAlias("mykey");
         });
 
-        ContentResponse response = client.newRequest(newURI(transport)).send();
+        ContentResponse response = client.newRequest(newURI(transportType)).send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

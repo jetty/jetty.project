@@ -396,7 +396,9 @@ public class HttpURITest
                 {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
                 {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                 {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+                // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
 
                 // nfc encoded unicode path
                 {"/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
@@ -497,21 +499,29 @@ public class HttpURITest
                 {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
                 {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
                 // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+
+                // An empty (null) authority
+                {"http://", null, null, null},
+
+                // Fragments
+                {"http://host/path/info#fragment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)},
+                {"//host/path/info#frag/ment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)},
+                {"/path/info#fragment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)}
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("decodePathTests")
-    public void testDecodedPath(String input, String canonicalPath, String decodedPath, EnumSet<Violation> expected)
+    public void testDecodedPath(String input, String expectedCanonicalPath, String expectedDecodedPath, EnumSet<Violation> expected)
     {
         try
         {
             HttpURI uri = HttpURI.from(input);
-            assertThat("Canonical Path", uri.getCanonicalPath(), is(canonicalPath));
-            assertThat("Decoded Path", uri.getDecodedPath(), is(decodedPath));
+            assertThat("Canonical Path", uri.getCanonicalPath(), is(expectedCanonicalPath));
+            assertThat("Decoded Path", uri.getDecodedPath(), is(expectedDecodedPath));
 
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
-            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS, Violation.BAD_UTF8_ENCODING)));
+            ambiguous.retainAll(UriCompliance.AMBIGUOUS_VIOLATIONS);
 
             assertThat(uri.isAmbiguous(), is(!ambiguous.isEmpty()));
             assertThat(uri.hasAmbiguousSegment(), is(ambiguous.contains(Violation.AMBIGUOUS_PATH_SEGMENT)));
@@ -523,9 +533,9 @@ public class HttpURITest
         }
         catch (Exception e)
         {
-            if (decodedPath != null)
+            if (expectedDecodedPath != null)
                 e.printStackTrace();
-            assertThat(decodedPath, nullValue());
+            assertThat(expectedDecodedPath, nullValue());
         }
     }
 
@@ -820,6 +830,15 @@ public class HttpURITest
             Arguments.of("http://localhost:8080/", "http", "localhost", "8080", "/", null, null, null),
             Arguments.of("http://localhost/?x=y", "http", "localhost", null, "/", null, "x=y", null),
 
+            // Empty Paths
+            Arguments.of("//localhost", null, "localhost", null, "", null, null, null),
+            Arguments.of("http://localhost", "http", "localhost", null, "", null, null, null),
+            Arguments.of("http://localhost?x=y", "http", "localhost", null, "", null, "x=y", null),
+            Arguments.of("http://localhost#frag", "http", "localhost", null, "", null, null, "frag"),
+            Arguments.of("http://localhost:8080", "http", "localhost", "8080", "", null, null, null),
+            Arguments.of("http://localhost:8080?x=y", "http", "localhost", "8080", "", null, "x=y", null),
+            Arguments.of("http://localhost:8080#frag", "http", "localhost", "8080", "", null, null, "frag"),
+
             // Simple path with parameter
             Arguments.of("/;param", null, null, null, "/;param", "param", null, null),
             Arguments.of(";param", null, null, null, ";param", "param", null, null),
@@ -904,9 +923,9 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testParseURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testParseURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment)
     {
-        URI javaUri = null;
+        URI javaUri;
         try
         {
             javaUri = new URI(input);
@@ -931,7 +950,7 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testCompareToJavaNetURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testCompareToJavaNetURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment)
     {
         URI javaUri = null;
         try
@@ -1204,7 +1223,6 @@ public class HttpURITest
     public static Stream<String> badAuthorities()
     {
         return Stream.of(
-            "http://#host/path",
             "https:// host/path",
             "https://h st/path",
             "https://h\000st/path",
@@ -1220,9 +1238,22 @@ public class HttpURITest
             "https://user@host:notport/path",
             "https://user:password@host:notport/path",
             "https://user @host.com/",
-            "https://user#@host.com/",
+            // "https://user#@host.com/", TODO this might cause WhatWG compatibility issues
             "https://[notIpv6]/",
-            "https://bad[0::1::2::3::4]/"
+            "https://bad[0::1::2::3::4]/",
+
+            "http://[fe80::1%25eth0]/",
+            "http://[fe80::1%251]/",
+
+            "http://[vulndetector.com]",
+            "http://hostone.com@[vulndetector.com]#hosttwo.com/",
+            "http://hostone.com:80@[vulndetector.com]/",
+            "http://[vulndetector.com]#@normal.com",
+            "http://hostone.com\\\\[vulndetector.com]/",
+
+            // Ambiguous empty path
+            "http://localhost;param",
+            "http://localhost:8080;param"
         );
     }
 

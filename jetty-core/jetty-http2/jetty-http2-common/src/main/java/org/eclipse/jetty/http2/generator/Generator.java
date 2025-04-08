@@ -72,6 +72,11 @@ public class Generator
         return hpackEncoder;
     }
 
+    public int getMaxFrameSize()
+    {
+        return headerGenerator.getMaxFrameSize();
+    }
+
     public void setMaxFrameSize(int maxFrameSize)
     {
         headerGenerator.setMaxFrameSize(maxFrameSize);

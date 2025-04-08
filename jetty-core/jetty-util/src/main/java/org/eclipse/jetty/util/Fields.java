@@ -329,7 +329,14 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Map<String, String[]> toStringArrayMap()
     {
-        Map<String, String[]> result = new LinkedHashMap<>();
+        Map<String, String[]> result = new LinkedHashMap<>()
+        {
+            @Override
+            public String toString()
+            {
+                return TypeUtil.toString(this);
+            }
+        };
         fields.forEach((k, f) -> result.put(f.getName(), f.getValues().toArray(new String[0])));
         return result;
     }

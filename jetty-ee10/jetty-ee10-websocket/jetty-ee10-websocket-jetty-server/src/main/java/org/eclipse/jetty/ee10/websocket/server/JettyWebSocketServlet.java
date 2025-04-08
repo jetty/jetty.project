@@ -303,7 +303,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             try
             {
                 Object webSocket = creator.createWebSocket(request, response);
-                callback.succeeded();
+                if (webSocket == null)
+                    callback.succeeded();
                 return webSocket;
             }
             catch (Throwable t)

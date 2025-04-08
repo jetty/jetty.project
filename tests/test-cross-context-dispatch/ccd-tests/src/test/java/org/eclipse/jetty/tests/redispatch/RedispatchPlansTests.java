@@ -31,6 +31,7 @@ import org.eclipse.jetty.tests.ccd.common.HttpRequest;
 import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.resource.PathCollators;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -76,6 +77,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         List<Arguments> plans = new ArrayList<>();
 
         List<String> disabledTests = new ArrayList<>();
+        disabledTests.add("disabled");
 
         Path testPlansDir = MavenPaths.findTestResourceDir("plans");
         try (Stream<Path> plansStream = Files.list(testPlansDir))
@@ -84,6 +86,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
                 .filter(Files::isRegularFile)
                 .filter((file) -> file.getFileName().toString().endsWith(".txt"))
                 .filter((file) -> !disabledTests.contains(file.getFileName().toString()))
+                .sorted(PathCollators.byName(true))
                 .toList();
 
             for (Path plansText : testPlans)

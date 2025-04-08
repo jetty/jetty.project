@@ -19,6 +19,8 @@ import java.io.Reader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -48,8 +50,10 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
 public abstract class DispatchedMessageSink extends AbstractMessageSink
 {
     private final Executor executor;
+    private final AtomicBoolean wasCallbackFailed = new AtomicBoolean(false);
     private volatile CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
+    private Consumer<Throwable> onError;
 
     public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
@@ -57,6 +61,15 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
         if (!autoDemand)
             throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
         executor = session.getWebSocketComponents().getExecutor();
+    }
+
+    public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand, Consumer<Throwable> onError)
+    {
+        super(session, methodHolder, autoDemand);
+        if (!autoDemand)
+            throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
+        this.executor = session.getWebSocketComponents().getExecutor();
+        this.onError = onError;
     }
 
     public abstract MessageSink newMessageSink();
@@ -105,17 +118,31 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 {
                     autoDemand();
                 }
-                else
+                // We only need to handle the error here if none of the callbacks were ever failed.
+                else if (!wasCallbackFailed.get())
                 {
                     if (failure instanceof CompletionException completionException)
                         failure = completionException.getCause();
 
-                    CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, failure);
-                    getCoreSession().close(closeStatus, Callback.NOOP);
+                    if (onError == null)
+                    {
+                        CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, failure);
+                        getCoreSession().close(closeStatus, Callback.NOOP);
+                    }
+                    else
+                    {
+                        onError.accept(failure);
+                    }
                 }
             });
         }
 
+        frameCallback = Callback.from(frameCallback::succeeded, throwable ->
+        {
+            if (throwable != null)
+                wasCallbackFailed.set(true);
+            callback.failed(throwable);
+        });
         typeSink.accept(frame, frameCallback);
     }
 

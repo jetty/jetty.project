@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -32,16 +33,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.Dispatcher;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -84,6 +96,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -151,6 +164,52 @@ public class WebAppContextTest
         }
 
         return warFile;
+    }
+
+    @Test
+    public void testProtectedTargetErrorPage() throws Exception
+    {
+        WebAppContext contextHandler = new WebAppContext();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setBaseResourceAsPath(Path.of("/tmp"));
+        ServletHolder defaultHolder = new ServletHolder(new DefaultServlet());
+        defaultHolder.setDisplayName("default");
+
+        contextHandler.addServlet(defaultHolder, "/");
+        contextHandler.addServlet(new OkServlet(), "/*");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+        contextHandler.addServlet(GlobalErrorDumpServlet.class, "/global/*");
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(404, "/error/TestException");
+        errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/global/TestException");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+        Server server = new Server();
+        server.setHandler(contextHandler);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        server.start();
+
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
+        {
+            String rawRequest = """
+                GET /foo/WEB-INF/classes/this/does/not/exist HTTP/1.1\r
+                Host: test\r
+                Connection: close\r
+                \r
+                """;
+
+            String rawResponse = connector.getResponse(rawRequest);
+
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(404));
+            assertThat(response.getValuesList("ERRORDUMPSERVLET"), contains("ERRORDUMPSERVLET"));
+            String content = response.getContent();
+            assertThat(content, containsString("ERROR_REQUEST_URI: /foo/WEB-INF/classes/this/does/not/exist"));
+            assertThat(content, containsString("getRequestURI()=[/foo/error/TestException]"));
+            assertThat(content, containsString("DISPATCH: ERROR"));
+            assertThat(content, not(containsString("GLOBALERRORDUMPSERVLET")));
+        }
     }
 
     @Test
@@ -515,6 +574,93 @@ public class WebAppContextTest
         public void service(ServletRequest req, ServletResponse res)
         {
             this.getServletContext().getContext("/B/s");
+        }
+    }
+
+ public static class ErrorDumpServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
+            response.setHeader("ERRORDUMPSERVLET", "ERRORDUMPSERVLET");
+            PrintWriter writer = response.getWriter();
+            writer.println("DISPATCH: " + request.getDispatcherType().name());
+            writer.println("ERROR_PAGE: " + request.getPathInfo());
+            writer.println("ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
+            writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
+            writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+
+            writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
+            writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
+            writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
+            Map<String, String[]> params = request.getParameterMap();
+            writer.printf("getParameterMap().size=%d%n", params.size());
+            for (Map.Entry<String, String[]> entry : params.entrySet())
+            {
+                String value = null;
+                if (entry.getValue() != null)
+                {
+                    value = String.join(", ", entry.getValue());
+                }
+                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
+        }
+
+        protected String valueOf(Object obj)
+        {
+            if (obj == null)
+                return "null";
+            return valueOf(obj.toString());
+        }
+
+        protected String valueOf(String str)
+        {
+            if (str == null)
+                return "null";
+            return String.format("[%s]", str);
+        }
+    }
+
+    public static class GlobalErrorDumpServlet extends ErrorDumpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
+            response.setHeader("GLOBALERRORDUMPSERVLET", "GLOBALERRORDUMPSERVLET");
+
+            PrintWriter writer = response.getWriter();
+            writer.println("GLOBAL DISPATCH: " + request.getDispatcherType().name());
+            writer.println("GLOBAL ERROR_PAGE: " + request.getPathInfo());
+            writer.println("GLOBAL ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("GLOBAL ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println("GLOBAL ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
+            writer.println("GLOBAL ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
+            writer.println("GLOBAL ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("GLOBAL ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+
+            writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
+            writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
+            writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
+            Map<String, String[]> params = request.getParameterMap();
+            writer.printf("getParameterMap().size=%d%n", params.size());
+            for (Map.Entry<String, String[]> entry : params.entrySet())
+            {
+                String value = null;
+                if (entry.getValue() != null)
+                {
+                    value = String.join(", ", entry.getValue());
+                }
+                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
         }
     }
 
@@ -1013,5 +1159,14 @@ public class WebAppContextTest
 
         assertThat("context API", protectedClasses, hasItem("org.context.specific."));
         assertThat("deprecated API", protectedClasses, hasItem("org.deprecated.api."));
+    }
+
+    public static class OkServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        {
+            resp.setStatus(200);
+        }
     }
 }

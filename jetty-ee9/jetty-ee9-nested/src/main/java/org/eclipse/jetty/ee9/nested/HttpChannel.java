@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,14 +87,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Listener _combinedListener;
     private final Dispatchable _requestDispatcher;
     private final Dispatchable _asyncDispatcher;
+    private final DemandTask _needContentTask;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
     private long _oldIdleTimeout;
-
-    /**
-     * Bytes written after interception (eg after compression)
-     */
+    // Bytes written after interception (eg after compression)
     private long _written;
     private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
@@ -113,6 +112,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
         _requestDispatcher = new RequestDispatchable();
         _asyncDispatcher = new AsyncDispatchable();
+        // Inner class used instead of lambda for clarity in stack traces.
+        _needContentTask = new DemandTask();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -154,12 +155,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public boolean needContent()
     {
+        ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
+        // When coreContextRequest is null, produceContent() always immediately returns an error content.
+        if (coreContextRequest == null)
+            return true;
         // TODO: optimize by attempting a read?
-        getCoreRequest().demand(() ->
-        {
-            if (getRequest().getHttpInput().onContentProducible())
-                handle();
-        });
+        coreContextRequest.demand(_needContentTask);
         return false;
     }
 
@@ -174,7 +175,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public HttpInput.Content produceContent()
     {
-        Content.Chunk chunk = getCoreRequest().read();
+        ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
+        if (coreContextRequest == null)
+            return new HttpInput.ErrorContent(new IOException("Channel has been recycled"));
+        Content.Chunk chunk = coreContextRequest.read();
         if (chunk == null)
             return null;
 
@@ -462,6 +466,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData = null;
         _written = 0;
         _transientListeners.clear();
+        _coreRequest = null;
+        _coreResponse = null;
+        _coreCallback = null;
     }
 
     @Override
@@ -560,22 +567,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            if (_state.isResponseCommitted())
-                                abort(x);
-                            else
-                            {
-                                try
-                                {
-                                    _response.resetContent();
-                                    sendResponseAndComplete();
-                                }
-                                catch (Throwable t)
-                                {
-                                    if (x != t)
-                                        x.addSuppressed(t);
-                                    abort(x);
-                                }
-                            }
+                            abort(x);
                         }
                         finally
                         {
@@ -631,8 +623,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.getStatus() != HttpStatus.NOT_MODIFIED_304 &&
                             !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                         {
-                            if (sendErrorOrAbort("Insufficient content written"))
-                                break;
+                            sendErrorOrAbort("Insufficient content written");
+                            break;
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
@@ -782,20 +774,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.warn(_request.getRequestURI(), failure);
         }
 
-        if (isCommitted())
+        try
+        {
+            boolean abort = _state.onError(failure);
+            if (abort)
+                abort(failure);
+        }
+        catch (Throwable x)
         {
             abort(failure);
-        }
-        else
-        {
-            try
-            {
-                _state.onError(failure);
-            }
-            catch (IllegalStateException e)
-            {
-                abort(failure);
-            }
         }
     }
 
@@ -856,7 +843,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreRequest.addIdleTimeoutListener(_state::onIdleTimeout);
         _requests.incrementAndGet();
         _request.onRequest(coreRequest);
+
+        long idleTO = _configuration.getIdleTimeout();
+        _oldIdleTimeout = getIdleTimeout();
+        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
+            setIdleTimeout(idleTO);
+
         _combinedListener.onRequestBegin(_request);
+
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
@@ -932,9 +926,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.onCompleted();
         _combinedListener.onComplete(_request);
         Callback callback = _coreCallback;
-        _coreCallback = null;
-        if (callback != null)
+        Throwable failure = _state.completeResponse();
+        if (failure == null)
             callback.succeeded();
+        else
+            callback.failed(failure);
     }
 
     public void onBadMessage(BadMessageException failure)
@@ -1036,12 +1032,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void send(MetaData.Request ignored, MetaData.Response response, ByteBuffer content, boolean complete, Callback callback)
     {
+        org.eclipse.jetty.server.Response coreResponse = _coreResponse;
+        if (coreResponse == null)
+        {
+            callback.failed(new IOException());
+            return;
+        }
+
         if (response != null)
         {
-            _coreResponse.setStatus(response.getStatus());
-            _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
+            coreResponse.setStatus(response.getStatus());
+            coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        _coreResponse.write(complete, content, callback);
+        coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
@@ -1146,14 +1149,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public void abort(Throwable failure)
     {
-        if (_state.abortResponse())
-        {
-            _combinedListener.onResponseFailure(_request, failure);
-            Callback callback = _coreCallback;
-            _coreCallback = null;
-            if (callback != null)
-                callback.failed(failure);
-        }
+        Boolean handle = _state.abort(failure);
+        // Not aborted, just return.
+        if (handle == null)
+            return;
+
+        _combinedListener.onResponseFailure(_request, failure);
+        if (handle)
+            _state.scheduleDispatch();
     }
 
     public boolean isTunnellingSupported()
@@ -1414,7 +1417,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _combinedListener.onResponseCommit(_request);
             if (_length > 0)
                 _combinedListener.onResponseContent(_request, _content);
-            if (_complete && _state.completeResponse())
+            if (_complete)
                 _combinedListener.onResponseEnd(_request);
             super.succeeded();
         }
@@ -1447,7 +1450,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             else
             {
-                abort(x);
                 super.failed(x);
             }
         }
@@ -1600,6 +1602,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _errorHandler.handle(null, _request, _request, _response);
             _request.setHandled(true);
+        }
+    }
+
+    private class DemandTask implements Invocable.Task
+    {
+        @Override
+        public void run()
+        {
+            if (getRequest().getHttpInput().onContentProducible())
+                handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getRequest().getHttpInput().getInvocationType();
         }
     }
 }

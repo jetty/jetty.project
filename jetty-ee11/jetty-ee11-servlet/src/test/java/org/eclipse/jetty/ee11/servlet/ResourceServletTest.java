@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -56,7 +58,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -555,7 +556,7 @@ public class ResourceServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
+        assertThat(response.getField("content-type").getValue(), is("text/html;charset=utf-8"));
         String body = response.getContent();
         assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
     }
@@ -2031,47 +2032,6 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
         if (scenario.extraAsserts != null)
             scenario.extraAsserts.accept(response);
-    }
-
-    @Test
-    public void testDirectFromResourceHttpContent() throws Exception
-    {
-        FS.ensureDirExists(docRoot);
-        Path index = docRoot.resolve("index.html");
-        Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
-
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("useFileMappedBuffer", "true");
-        holder.setInitParameter("welcomeServlets", "exact");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("resourceCache", "resourceCache");
-
-        String rawResponse;
-        HttpTester.Response response;
-
-        rawResponse = connector.getResponse("""
-            GET /context/index.html HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
-
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-
-        /*
-        TODO: fix after HttpContent changes.
-        HttpContent content = factory.getContent("/index.html", 200);
-        ByteBuffer buffer = content.getDirectBuffer();
-        assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
-        buffer = content.getDirectBuffer();
-        assertThat("Direct buffer", buffer, is(nullValue()));
-         */
     }
 
     @SuppressWarnings("Duplicates")
@@ -3749,6 +3709,39 @@ public class ResourceServletTest
         assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("18"));
         assertThat(response.get(HttpHeader.ACCEPT_RANGES), is("none"));
         assertThat(response.getContent(), is("Test 2 to too two\n"));
+    }
+
+    @Test
+    public void testServeResourceAsyncWhileStartAsyncAlreadyCalled() throws Exception
+    {
+        // The OutputBufferSize must be smaller than the content length otherwise the request is not served async.
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setOutputBufferSize(0);
+
+        AtomicBoolean filterCalled = new AtomicBoolean();
+        context.addFilter((request, response, chain) ->
+        {
+            filterCalled.set(true);
+            AsyncContext asyncContext = request.startAsync();
+            chain.doFilter(request, response);
+            asyncContext.complete();
+        }, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+        ResourceServlet resourceServlet = new ResourceServlet();
+        context.addServlet(resourceServlet, "/*");
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("18"));
+        assertThat(response.getContent(), is("Test 2 to too two\n"));
+        assertThat(filterCalled.get(), is(true));
     }
 
     public static class WriterFilter implements Filter

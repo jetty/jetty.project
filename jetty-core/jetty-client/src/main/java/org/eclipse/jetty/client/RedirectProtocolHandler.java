@@ -70,9 +70,6 @@ public class RedirectProtocolHandler implements ProtocolHandler, Response.Listen
     {
         Request request = result.getRequest();
         Response response = result.getResponse();
-        if (result.getResponseFailure() == null)
-            redirector.redirect(request, response, null);
-        else
-            redirector.fail(request, response, result.getFailure());
+        redirector.redirect(request, response, null);
     }
 }

@@ -87,6 +87,8 @@ public class BasicAuthenticator extends LoginAuthenticator
         if (charset != null)
             value += ", charset=\"" + charset.name() + "\"";
         res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+
+        // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
         Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
         return AuthenticationState.CHALLENGE;
     }

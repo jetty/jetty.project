@@ -6,7 +6,6 @@
     <format>jar</format>
   </formats>
   <includeBaseDirectory>false</includeBaseDirectory>
-  <!-- baseDirectory>${basedir}/${project.build.directory}/${project.build.finalName}</baseDirectory -->
   <fileSets>
     <fileSet>
       <directory>${basedir}/${project.build.directory}/${project.build.finalName}/</directory>

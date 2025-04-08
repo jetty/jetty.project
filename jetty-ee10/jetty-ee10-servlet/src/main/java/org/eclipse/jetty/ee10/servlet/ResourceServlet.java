@@ -47,6 +47,8 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -103,6 +105,12 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     Use {@code true} to generate ETags in responses.
  *     Defaults to {@code false}.
+ *   </dd>
+ *   <dt>installAllowedResourceAliasChecker</dt>
+ *   <dd>
+ *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
+ *     does not already exist for this baseResource.
+ *     Defaults to {@code true}.
  *   </dd>
  *   <dt>maxCachedFiles</dt>
  *   <dd>
@@ -217,6 +225,23 @@ public class ResourceServlet extends HttpServlet
         }
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
+
+        if (getInitBoolean("installAllowedResourceAliasChecker", true))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker &&
+                    Objects.equals(baseResource, allowedResourceAliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                contextHandler.addAliasCheck(new AllowedResourceAliasChecker(contextHandler, baseResource));
+        }
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
@@ -478,7 +503,8 @@ public class ResourceServlet extends HttpServlet
                 // If the servlet response has been wrapped and has been written to,
                 // then the servlet response must be wrapped as a core response
                 // otherwise we can use the core response directly.
-                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || servletContextResponse.isWritingOrStreaming();
+                boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
+                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
                 Response coreResponse = useServletResponse
                     ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
                     : servletChannel.getResponse();
@@ -494,8 +520,8 @@ public class ResourceServlet extends HttpServlet
                 // Get the content length before we may wrap the content
                 long contentLength = content.getContentLengthValue();
 
-                // Servlet Filters could be interacting with the Response already.
-                if (useServletResponse)
+                // If the response is already written, then don't set the content-length.
+                if (writingOrStreaming)
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
@@ -508,7 +534,7 @@ public class ResourceServlet extends HttpServlet
                     (contentLength < 0 || contentLength > coreRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize()))
                 {
                     // send the content asynchronously
-                    AsyncContext asyncContext = httpServletRequest.startAsync();
+                    AsyncContext asyncContext = httpServletRequest.isAsyncStarted() ? httpServletRequest.getAsyncContext() : httpServletRequest.startAsync();
                     Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse);
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
                 }
@@ -755,7 +781,7 @@ public class ResourceServlet extends HttpServlet
                 if (isIncluded(request))
                     return;
                 if (cause != null)
-                    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
+                    request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION, cause);
                 response.sendError(statusCode, reason);
             }
             catch (IOException e)

@@ -16,8 +16,10 @@ package org.eclipse.jetty.websocket.api;
 import java.io.Closeable;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 
 /**
  * <p>{@link Session} represents an active link of
@@ -202,6 +204,19 @@ public interface Session extends Configurable, Closeable
     boolean isSecure();
 
     /**
+     * <p>Adds a listener for websocket idle timeouts.</p>
+     * <p>The listener is a predicate function that should return {@code true} to indicate
+     * that the timeout should be handled as a fatal failure or {@code false} to ignore
+     * that specific timeout and for another timeout to occur after another idle period.</p>
+     * <p>Listeners are processed in the same order they are added, and the first that
+     * returns {@code true} stops the processing of subsequent listeners, which are
+     * therefore not invoked.</p>
+     *
+     * @param onIdleTimeout the idle timeout listener as a predicate function
+     */
+    void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout);
+
+    /**
      * <p>The passive link of communication with a remote WebSocket endpoint.</p>
      * <p>Applications provide WebSocket endpoints that implement this interface
      * to receive WebSocket events from the remote peer, and can use
@@ -227,6 +242,7 @@ public interface Session extends Configurable, Closeable
          * or data frames either BINARY or TEXT.</p>
          *
          * @param frame the received frame
+         * @param callback the callback to complete once the frame has been processed.
          */
         default void onWebSocketFrame(Frame frame, Callback callback)
         {
@@ -284,6 +300,7 @@ public interface Session extends Configurable, Closeable
          * <p>A WebSocket BINARY message has been received.</p>
          *
          * @param payload the raw payload array received
+         * @param callback the callback to complete when the payload has been processed
          */
         default void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {

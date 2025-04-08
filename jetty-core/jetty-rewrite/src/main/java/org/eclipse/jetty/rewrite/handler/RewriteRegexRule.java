@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -26,6 +27,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public class RewriteRegexRule extends RegexRule
 {
     private String replacement;
+    private boolean addQueries = false;
 
     public RewriteRegexRule()
     {
@@ -35,6 +37,31 @@ public class RewriteRegexRule extends RegexRule
     {
         super(regex);
         setReplacement(replacement);
+    }
+
+    /**
+     * <p>Is the input URI query added with replacement URI query</p>
+     *
+     * @return true to add input query with replacement query.
+     */
+    public boolean isAddQueries()
+    {
+        return addQueries;
+    }
+
+    /**
+     * <p>Set if input query should be preserved, and added together with replacement query</p>
+     *
+     * <p>
+     *     This is especially useful when used in combination with a disabled {@link #setMatchQuery(boolean)}
+     * </p>
+     *
+     * @param flag true to have input query added with replacement query, false (default) to have query
+     *    from input or output just be treated as a string, and not merged.
+     */
+    public void setAddQueries(boolean flag)
+    {
+        this.addQueries = flag;
     }
 
     /**
@@ -54,6 +81,13 @@ public class RewriteRegexRule extends RegexRule
         String replacedPath = matcher.replaceAll(replacement);
 
         HttpURI newURI = HttpURI.build(httpURI, replacedPath);
+        if (isAddQueries())
+        {
+            String inputQuery = input.getHttpURI().getQuery();
+            String targetQuery = newURI.getQuery();
+            String resultingQuery = URIUtil.addQueries(inputQuery, targetQuery);
+            newURI = HttpURI.build(newURI).query(resultingQuery);
+        }
         return new HttpURIHandler(input, newURI);
     }
 

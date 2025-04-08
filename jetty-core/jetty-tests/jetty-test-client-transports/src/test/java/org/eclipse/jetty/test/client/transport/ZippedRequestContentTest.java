@@ -44,9 +44,9 @@ public class ZippedRequestContentTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testZippedRequestContent(Transport transport) throws Exception
+    public void testZippedRequestContent(TransportType transportType) throws Exception
     {
-        start(transport, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -74,7 +74,7 @@ public class ZippedRequestContentTest extends AbstractTest
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
-            client.newRequest(newURI(transport))
+            client.newRequest(newURI(transportType))
                 .method(HttpMethod.POST)
                 .body(content)
         ).send();

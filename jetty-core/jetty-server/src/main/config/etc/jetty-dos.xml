@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="DosHandler" class="org.eclipse.jetty.server.handler.DoSHandler">
+        <Arg name="getId">
+          <Get>
+            <Name><Property name="jetty.dos.id.type" default="ID_FROM_REMOTE_ADDRESS"/></Name>
+            <Class><Property name="jetty.dos.id.class" default="org.eclipse.jetty.server.handler.DoSHandler"/></Class>
+          </Get>
+        </Arg>
+        <Arg name="trackerFactory">
+          <New>
+            <Class><Property name="jetty.dos.trackerFactory" default="org.eclipse.jetty.server.handler.DoSHandler.LeakingBucketTrackerFactory"/></Class>
+            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.leakingBucketTracker.maxRequestsPerSecond" default="100"/></Arg>
+            <Arg name="bucketSize" type="int"><Property name="jetty.dos.leakingBucketTracker.bucketSize" default="100"/></Arg>
+            <Arg name="idleTimeout">
+              <Call class="java.time.Duration" name="ofSeconds">
+                <Arg type="long">
+                  <Property name="jetty.dos.leakingBucketTracker.idleTimeout" default="1" />
+                </Arg>
+              </Call>
+            </Arg>
+
+          </New>
+        </Arg>
+        <Arg name="rejectHandler">
+          <New>
+            <Class><Property name="jetty.dos.rejectHandler" default="org.eclipse.jetty.server.handler.DoSHandler$DelayedRejectHandler"/></Class>
+            <Arg name="delayMs" type="long"><Property name="jetty.dos.rejectHandler.delayed.delayMs" default="1000"/></Arg>
+            <Arg name="maxDelayQueue" type="int"><Property name="jetty.dos.rejectHandler.delayed.maxDelayQueue" default="1000"/></Arg>
+            <Arg name="reject">
+              <New class="org.eclipse.jetty.server.handler.DoSHandler$StatusRejectHandler">
+                <Arg name="status"><Property name="jetty.dos.rejectStatus" default="429"/></Arg>
+              </New>
+            </Arg>
+          </New>
+        </Arg>
+        <Arg name="maxTrackers" type="int"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
+        <Arg name="rejectUntracked" type="boolean"><Property name="jetty.dos.rejectUntracked" default="false"/></Arg>
+        <Call name="includeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

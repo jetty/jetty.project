@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -156,6 +157,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     private DBObject _version1;
 
+    private static final Pattern _workerNamePattern = Pattern.compile("[_0-9a-zA-Z]*");
+
     /**
      * Access to MongoDB
      */
@@ -170,6 +173,22 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public MongoCollection<Document> getDBCollection()
     {
         return _dbSessions;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        checkWorkerName();
+        super.doStart();
+    }
+
+    private void checkWorkerName() throws IllegalStateException
+    {
+        if (_context == null || StringUtil.isEmpty(_context.getWorkerName()))
+            return;
+
+        if (!_workerNamePattern.matcher(_context.getWorkerName()).matches())
+            throw new IllegalStateException("Worker name " + _context.getWorkerName() + " does not match pattern " + _workerNamePattern.pattern());
     }
 
     @Override

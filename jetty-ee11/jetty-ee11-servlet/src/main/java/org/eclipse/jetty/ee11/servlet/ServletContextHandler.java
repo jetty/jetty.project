@@ -73,6 +73,7 @@ import org.eclipse.jetty.ee11.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.IOResources;
@@ -131,7 +132,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee11");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee11", ServletContextHandler.class);
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */
@@ -662,6 +663,9 @@ public class ServletContextHandler extends ContextHandler
         return _welcomeFiles;
     }
 
+    /**
+     * @return the maximum size of the form content (in bytes).
+     */
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
@@ -671,13 +675,19 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
      *
-     * @param maxSize the maximum size of the form content (in bytes)
+     * @param maxSize the maximum size of the form content (in bytes) or -1 for a default value.
      */
     public void setMaxFormContentSize(int maxSize)
     {
+        if (maxSize < 0)
+            maxSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
         _maxFormContentSize = maxSize;
     }
 
+    /**
+     * @return the maximum number of form Keys.
+     */
+    @ManagedAttribute("The maximum number of form keys")
     public int getMaxFormKeys()
     {
         return _maxFormKeys;
@@ -686,10 +696,12 @@ public class ServletContextHandler extends ContextHandler
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
      *
-     * @param max the maximum number of form keys
+     * @param max the maximum number of form keys or -1 for a default value.
      */
     public void setMaxFormKeys(int max)
     {
+        if (max < 0)
+            max = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
         _maxFormKeys = max;
     }
 
@@ -764,7 +776,15 @@ public class ServletContextHandler extends ContextHandler
         if (baseResource == null)
             return null;
 
-        return baseResource.resolve(pathInContext);
+        try
+        {
+            return baseResource.resolve(pathInContext);
+        }
+        catch (Exception e)
+        {
+            LOG.trace("IGNORE", e);
+        }
+        return null;
     }
 
     /**
@@ -1137,7 +1157,6 @@ public class ServletContextHandler extends ContextHandler
         decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
         matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -1160,7 +1179,7 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
-        Request.addCompletionListener(request, servletChannel::recycle);
+        Request.addCompletionListener(servletContextRequest, servletChannel::recycle);
         return servletContextRequest;
     }
 
@@ -1187,7 +1206,16 @@ public class ServletContextHandler extends ContextHandler
         if (!initialDispatch)
             return false;
 
-        return super.handleByContextHandler(pathInContext, request, response, callback);
+        if (isProtectedTarget(pathInContext))
+        {
+            // If we have a Servlet ErrorHandler, then writeError will return false, and it will signal
+            // the ServletChannel to trigger a sendError() when it is started.
+            if (request.getContext().getErrorHandler() instanceof org.eclipse.jetty.server.handler.ErrorHandler errorHandler)
+                return errorHandler.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            return true;
+        }
+        return false;
     }
 
     @Override
