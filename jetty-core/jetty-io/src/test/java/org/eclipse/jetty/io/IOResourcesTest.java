@@ -51,7 +51,7 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    // This Resource impl has getPath() and newInputStream() return null so the only way for IOResources
+    // This Resource impl has getPath() and newInputStream() throw so the only way for IOResources
     // to read its contents is to call newContentSource().
     private static class TestContentSourceFactoryResource extends Resource implements Content.Source.Factory
     {
@@ -79,13 +79,13 @@ public class IOResourcesTest
         @Override
         public Path getPath()
         {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public InputStream newInputStream()
         {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
