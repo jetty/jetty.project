@@ -47,6 +47,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private Content.Chunk quicChunk;
     private boolean remotelyClosed;
     private boolean drivesFillInterest = true;
+    private boolean trailerBlocked;
 
     public HTTP3StreamConnection(StreamEndPoint endPoint, Executor executor, MessageParser parser)
     {
@@ -131,8 +132,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             }
                             case BLOCKED_FRAME ->
                             {
-                                // Return immediately because another thread may
-                                // resume the processing as the stream is unblocked.
+                                // A QPACK-blocked request/response HEADERS frame.
+                                // Return immediately, processing will
+                                // resume when the stream is QPACK-unblocked.
                                 yield false;
                             }
                             case FRAME ->
@@ -147,15 +149,15 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                         interim = HttpStatus.isInterim(response.getStatus());
                                 }
 
-                                // Now the application drives fill interest via Stream.demand().
+                                // Now the listener drives fill interest via Stream.demand().
                                 drivesFillInterest = interim;
 
                                 tryReleaseData(false);
 
-                                // Notify the application via onRequest()/onResponse().
+                                // Notify the listener via onRequest()/onResponse().
                                 action.task().run();
 
-                                // Notify onDataAvailable() if the application
+                                // Notify onDataAvailable() if the listener
                                 // demanded in onRequest()/onResponse().
                                 if (!interim)
                                     stream.processData(false);
@@ -177,7 +179,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 else
                 {
                     if (result != null)
-                        read(result);
+                    {
+                        // This is the case of a QPACK-blocked trailer HEADERS frame.
+                        // Call read() to notify onTrailer(), then notify
+                        // onDataAvailable() so the listener can read EOF.
+                        Content.Chunk eof = read(result);
+                        assert eof == Content.Chunk.EOF;
+                    }
                     stream.processData(true);
                 }
             }
@@ -214,13 +222,25 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("reading, resuming from blocked: {} on {}", result != null, this);
+
+            if (result == null && trailerBlocked)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("reading null, trailer frame blocked on {}", this);
+                return null;
+            }
+
+            trailerBlocked = false;
+
             if (remotelyClosed)
                 return Content.Chunk.EOF;
 
             if (result == null)
                 result = parseAndFill();
 
-            return switch (result)
+            Content.Chunk chunk = switch (result)
             {
                 case NO_FRAME ->
                 {
@@ -228,9 +248,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 }
                 case BLOCKED_FRAME ->
                 {
-                    // A blocked trailer HEADERS frame.
-                    // Return null immediately because another thread may
-                    // resume the processing as the stream is unblocked.
+                    // A QPACK-blocked trailer HEADERS frame.
+                    // Return null until the stream is QPACK-unblocked.
+                    trailerBlocked = true;
                     yield null;
                 }
                 case FRAME ->
@@ -266,6 +286,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     yield Content.Chunk.EOF;
                 }
             };
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("read {} on {}", chunk, this);
+
+            return chunk;
         }
         catch (Throwable x)
         {
