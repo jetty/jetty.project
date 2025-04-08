@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -50,6 +51,8 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
+    // This Resource impl has getPath() and newInputStream() return null so the only way for IOResources
+    // to read its contents is to call newContentSource().
     private static class TestContentSourceFactoryResource extends Resource implements Content.Source.Factory
     {
         private final URI uri;
@@ -76,7 +79,13 @@ public class IOResourcesTest
         @Override
         public Path getPath()
         {
-            throw new UnsupportedOperationException();
+            return null;
+        }
+
+        @Override
+        public InputStream newInputStream()
+        {
+            return null;
         }
 
         @Override
