@@ -24,23 +24,26 @@ import org.eclipse.jetty.quic.quiche.QuicheConnection;
 
 public class JnaQuicheBinding implements QuicheBinding
 {
+    private Throwable failure;
+
     @Override
-    public Throwable checkUsable()
+    public Throwable initialize()
     {
         try
         {
             LibQuiche.initialize();
-            return null;
+            failure = null;
         }
         catch (ExceptionInInitializerError e)
         {
             Throwable cause = e.getCause();
-            return cause != null ? cause : e;
+            failure = cause != null ? cause : e;
         }
         catch (Throwable x)
         {
-            return x;
+            failure = x;
         }
+        return failure;
     }
 
     @Override
@@ -76,6 +79,6 @@ public class JnaQuicheBinding implements QuicheBinding
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{p=" + priority() + " f=" + checkUsable() + "}";
+        return getClass().getSimpleName() + "{p=" + priority() + " f=" + failure + "}";
     }
 }

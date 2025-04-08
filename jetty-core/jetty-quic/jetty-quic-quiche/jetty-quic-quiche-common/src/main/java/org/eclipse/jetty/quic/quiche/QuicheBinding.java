@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 
 public interface QuicheBinding
 {
-    Throwable checkUsable();
+    Throwable initialize();
     int priority();
 
     byte[] fromPacket(ByteBuffer packet);

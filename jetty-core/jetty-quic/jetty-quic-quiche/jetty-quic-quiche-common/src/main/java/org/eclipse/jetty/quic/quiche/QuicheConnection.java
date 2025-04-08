@@ -48,7 +48,7 @@ public abstract class QuicheConnection
         QUICHE_BINDING = bindings.stream()
             .filter(quicheBinding ->
             {
-                Throwable failure = quicheBinding.checkUsable();
+                Throwable failure = quicheBinding.initialize();
                 failures.add(failure);
                 return failure == null;
             })
