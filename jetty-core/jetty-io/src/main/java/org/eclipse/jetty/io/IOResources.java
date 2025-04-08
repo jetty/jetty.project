@@ -277,7 +277,7 @@ public class IOResources
         // Directly write the byte array if the resource is a MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
         {
-            sink.write(false, ByteBuffer.wrap(memoryResource.getBytes()), callback);
+            sink.write(true, ByteBuffer.wrap(memoryResource.getBytes()), callback);
             return;
         }
 
@@ -326,7 +326,7 @@ public class IOResources
         // Directly write the byte array if the resource is a MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
         {
-            sink.write(false, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
+            sink.write(true, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
             return;
         }
 
@@ -394,7 +394,7 @@ public class IOResources
             }
             BufferUtil.flipToFlush(byteBuffer, 0);
             terminated = eof || remainingLength == 0;
-            sink.write(false, byteBuffer, this);
+            sink.write(terminated, byteBuffer, this);
             return Action.SCHEDULED;
         }
 
