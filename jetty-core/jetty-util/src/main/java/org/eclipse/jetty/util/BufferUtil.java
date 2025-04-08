@@ -295,6 +295,8 @@ public class BufferUtil
      */
     public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
     {
+        if (offset < 0)
+            throw new IllegalArgumentException("Invalid offset: " + offset);
         ByteBuffer slice = buffer.slice();
         if (offset > 0)
         {

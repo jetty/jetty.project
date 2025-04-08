@@ -42,7 +42,7 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to be read.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param direct the directness of the buffers.
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
@@ -51,6 +51,20 @@ public class IOResources
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+        // Optimize for Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+        {
+            try
+            {
+                ByteBuffer buffer = Content.Source.asByteBuffer(factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, 0), 0L, -1L));
+                return RetainableByteBuffer.wrap(buffer);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
 
         // Optimize for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
@@ -90,20 +104,6 @@ public class IOResources
             }
         }
 
-        // Optimize for Content.Source.Factory.
-        if (resource instanceof Content.Source.Factory factory)
-        {
-            try
-            {
-                ByteBuffer buffer = Content.Source.asByteBuffer(factory.newContentSource(bufferPool, 4096, direct, 0L, -1L));
-                return RetainableByteBuffer.wrap(buffer);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException(e);
-            }
-        }
-
         // Fallback to InputStream.
         try (InputStream inputStream = resource.newInputStream())
         {
@@ -135,7 +135,7 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return the {@link Content.Source}.
@@ -147,13 +147,13 @@ public class IOResources
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
         // Try to find an optimized content source.
+        if (resource instanceof Content.Source.Factory factory)
+            return factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
         Path path = resource.getPath();
         if (path != null)
             return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
         if (resource instanceof MemoryResource memoryResource)
             return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
-        if (resource instanceof Content.Source.Factory factory)
-            return factory.newContentSource(bufferPool, bufferSize, direct, 0, -1);
 
         // Fallback to wrapping InputStream.
         try
@@ -174,11 +174,11 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte from which to read from.
-     * @param length the length of the content to read.
+     * @param length the length of the content to read, -1 for the full length.
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
@@ -186,6 +186,10 @@ public class IOResources
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+        // Try Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+            return factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
 
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
         Path path = resource.getPath();
@@ -195,10 +199,6 @@ public class IOResources
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
             return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)));
-
-        // Try Content.Source.Factory.
-        if (resource instanceof Content.Source.Factory factory)
-            return factory.newContentSource(bufferPool, bufferSize, direct, first, length);
 
         // Fallback to InputStream.
         try
@@ -248,7 +248,7 @@ public class IOResources
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param callback the callback to notify when the copy is done.
@@ -258,6 +258,14 @@ public class IOResources
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+        // Check if the resource is a Content.Source.Factory as the first step.
+        if (resource instanceof Content.Source.Factory factory)
+        {
+            Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
+            Content.copy(source, sink, callback);
+            return;
+        }
 
         // Save a Content.Source allocation for resources with a Path.
         Path path = resource.getPath();
@@ -281,9 +289,16 @@ public class IOResources
             return;
         }
 
-        // Fallback to Content.Source.
-        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct);
-        Content.copy(source, sink, callback);
+        // Fallback to InputStreamContentSource.
+        try
+        {
+            InputStreamContentSource source = new InputStreamContentSource(resource.newInputStream(), new ByteBufferPool.Sized(bufferPool, false, bufferSize));
+            Content.copy(source, sink, callback);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -295,7 +310,7 @@ public class IOResources
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte of the resource to start from.

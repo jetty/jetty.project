@@ -163,14 +163,12 @@ public class Content
             /**
              * Creates a new {@link Content.Source}.
              *
-             * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-             * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
-             * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+             * @param sizedBufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
              * @param first the first byte of the resource to start from.
-             * @param length the length of the resource's contents to copy.
+             * @param length the length of the content to make available, -1 for the full length.
              * @return a {@link Content.Source}.
              */
-            Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length);
+            Content.Source newContentSource(ByteBufferPool.Sized sizedBufferPool, long first, long length);
         }
 
         /**

@@ -116,7 +116,7 @@ public class IOResourcesTest
         }
 
         @Override
-        public Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException
+        public Content.Source newContentSource(ByteBufferPool.Sized sizedBufferPool, long first, long length) throws IllegalArgumentException
         {
             return Content.Source.from(BufferUtil.slice(buffer, Math.toIntExact(first), Math.toIntExact(length)));
         }
