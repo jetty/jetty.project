@@ -110,7 +110,7 @@ public abstract class AbstractEEActivator implements BundleActivator
      * ServerTracker
      * <p>
      * Tracks appearance of Server instances as OSGi services, and then configures them
-     * for deployment of EE11 contexts and webapps.
+     * for deployment of EE contexts and webapps.
      */
     public class ServerTracker implements ServiceTrackerCustomizer<Server, Object>
     {
