@@ -149,18 +149,11 @@ public class IOResources
         // Try to find an optimized content source.
         Path path = resource.getPath();
         if (path != null)
-        {
             return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
-        }
         if (resource instanceof MemoryResource memoryResource)
-        {
-            byte[] bytes = memoryResource.getBytes();
-            return new ByteBufferContentSource(ByteBuffer.wrap(bytes));
-        }
+            return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
         if (resource instanceof Content.Source.Factory factory)
-        {
             return factory.newContentSource(bufferPool, bufferSize, direct, 0, -1);
-        }
 
         // Fallback to wrapping InputStream.
         try
@@ -197,13 +190,11 @@ public class IOResources
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
         Path path = resource.getPath();
         if (path != null)
-        {
             return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
-        }
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), (int)first, (int)length));
+            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)));
 
         // Try Content.Source.Factory.
         if (resource instanceof Content.Source.Factory factory)
@@ -286,8 +277,7 @@ public class IOResources
         // Directly write the byte array if the resource is a MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
         {
-            byte[] bytes = memoryResource.getBytes();
-            sink.write(true, ByteBuffer.wrap(bytes), callback);
+            sink.write(false, ByteBuffer.wrap(memoryResource.getBytes()), callback);
             return;
         }
 
@@ -336,13 +326,7 @@ public class IOResources
         // Directly write the byte array if the resource is a MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
         {
-            byte[] bytes = memoryResource.getBytes();
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            if (first >= 0)
-                byteBuffer.position((int)first);
-            if (length >= 0)
-                byteBuffer.limit((int)(byteBuffer.position() + length));
-            sink.write(true, byteBuffer, callback);
+            sink.write(false, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
             return;
         }
 
@@ -410,7 +394,7 @@ public class IOResources
             }
             BufferUtil.flipToFlush(byteBuffer, 0);
             terminated = eof || remainingLength == 0;
-            sink.write(terminated, byteBuffer, this);
+            sink.write(false, byteBuffer, this);
             return Action.SCHEDULED;
         }
 

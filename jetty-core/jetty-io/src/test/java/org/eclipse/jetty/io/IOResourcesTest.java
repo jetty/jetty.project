@@ -215,7 +215,6 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length()));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
     @ParameterizedTest
@@ -229,7 +228,6 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length() - 100L));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
     @ParameterizedTest
@@ -243,7 +241,6 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(500L));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
     @ParameterizedTest
@@ -257,6 +254,5 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(500L));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 }
