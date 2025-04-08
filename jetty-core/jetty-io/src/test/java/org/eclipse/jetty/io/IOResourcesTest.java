@@ -118,20 +118,19 @@ public class IOResourcesTest
         @Override
         public Content.Source newContentSource(ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException
         {
-            return Content.Source.from(BufferUtil.slice(buffer, (int)first, (int)length));
+            return Content.Source.from(BufferUtil.slice(buffer, Math.toIntExact(first), Math.toIntExact(length)));
         }
     }
 
     public static Stream<Resource> all() throws Exception
     {
         Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        byte[] bytes = Files.readAllBytes(testResourcePath);
         URI resourceUri = testResourcePath.toUri();
         return Stream.of(
             ResourceFactory.root().newResource(resourceUri),
             ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
             new URLResourceFactory().newResource(resourceUri),
-            new TestContentSourceFactoryResource(resourceUri, bytes)
+            new TestContentSourceFactoryResource(resourceUri, Files.readAllBytes(testResourcePath))
         );
     }
 
