@@ -289,10 +289,13 @@ public class IOResources
             return;
         }
 
-        // Fallback to InputStreamContentSource.
+        // Fallback to Content.Source.
         try
         {
-            InputStreamContentSource source = new InputStreamContentSource(resource.newInputStream(), new ByteBufferPool.Sized(bufferPool, false, bufferSize));
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, 0, -1);
             Content.copy(source, sink, callback);
         }
         catch (IOException e)
@@ -323,6 +326,14 @@ public class IOResources
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
+        // Check if the resource is a Content.Source.Factory as the first step.
+        if (resource instanceof Content.Source.Factory factory)
+        {
+            Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
+            Content.copy(source, sink, callback);
+            return;
+        }
+
         // Save a Content.Source allocation for resources with a Path.
         Path path = resource.getPath();
         if (path != null)
@@ -346,8 +357,18 @@ public class IOResources
         }
 
         // Fallback to Content.Source.
-        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct, first, length);
-        Content.copy(source, sink, callback);
+        try
+        {
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
+            Content.copy(source, sink, callback);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
     }
 
     private static class PathToSinkCopier extends IteratingNestedCallback

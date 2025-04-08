@@ -76,7 +76,7 @@ public class IOResourcesTest
         @Override
         public Path getPath()
         {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -179,7 +179,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, -1, 500);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 0, 500);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
@@ -237,7 +237,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, -1, 500, callback);
+        IOResources.copy(resource, sink, bufferPool, 1, false, 0, 500, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
