@@ -295,7 +295,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, 0, -1);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, 0, -1);
             Content.copy(source, sink, callback);
         }
         catch (IOException e)
@@ -362,7 +362,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, first, length);
             Content.copy(source, sink, callback);
         }
         catch (IOException e)
