@@ -48,7 +48,7 @@ public abstract class AbstractEEActivator implements BundleActivator
     private ServiceTracker<Server, Object> _tracker;
 
     /**
-     * Track jetty Server instances and add ability to deploy EE11 contexts/webapps
+     * Track jetty Server instances and add ability to deploy EE contexts/webapps
      *
      * @param context the bundle context
      */
