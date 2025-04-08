@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and do a fake "activate" on them.
  * <p>
- * See particularly the jetty-ee9-osgi-boot-jsp fragment bundle that uses this facility.
+ * See particularly the jetty-eeX-osgi-boot-jsp fragment bundles that uses this facility.
  */
 @SuppressWarnings("deprecation")
 public class PackageAdminServiceTracker implements ServiceListener
