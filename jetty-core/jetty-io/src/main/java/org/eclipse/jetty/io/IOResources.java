@@ -287,6 +287,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            // TODO set the directness coming from the parameter once InputStreamContentSource is fixed (#12972)
             Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, 0, -1);
             Content.copy(source, sink, callback);
         }
@@ -346,6 +347,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            // TODO set the directness coming from the parameter once InputStreamContentSource is fixed (#12972)
             Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, first, length);
             Content.copy(source, sink, callback);
         }

@@ -226,7 +226,7 @@ public class MultiPart
             try (AutoLock ignored = lock.lock())
             {
                 if (contentSource == null)
-                    contentSource = newContentSource();
+                    contentSource = newContentSource(bufferPool, first, length);
                 return contentSource;
             }
         }
@@ -243,18 +243,18 @@ public class MultiPart
          *
          * @return the content of this part as a new {@link Content.Source} or null if the content cannot be consumed multiple times.
          * @see #getContentSource()
+         * @deprecated override {@link #newContentSource(ByteBufferPool.Sized, long, long)} instead.
          */
+        @Deprecated
         public Content.Source newContentSource()
         {
-            return newContentSource(bufferPool, first, length);
+            return null;
         }
 
-        // This method is implemented for backward compatibility reasons: if a pre-existing subclass only
-        // overrides newContentSource(), then it won't fail to compile.
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
-            return null;
+            return newContentSource();
         }
 
         public long getLength()
@@ -287,7 +287,7 @@ public class MultiPart
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
                     charset = Charset.forName(charsetName);
-                return Content.Source.asString(newContentSource(), charset);
+                return Content.Source.asString(newContentSource(bufferPool, first, length), charset);
             }
             catch (IOException x)
             {
@@ -317,7 +317,7 @@ public class MultiPart
             {
                 try (OutputStream out = Files.newOutputStream(path))
                 {
-                    IO.copy(Content.Source.asInputStream(newContentSource()), out);
+                    IO.copy(Content.Source.asInputStream(newContentSource(bufferPool, first, length)), out);
                 }
                 newPath = path;
             }
@@ -400,7 +400,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
             return new ByteBufferContentSource(content);
         }
@@ -436,7 +436,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
             try (AutoLock ignored = lock.lock())
             {
@@ -546,7 +546,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
             Content.Source c = content;
             content = null;
