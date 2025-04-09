@@ -37,6 +37,7 @@ import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
@@ -179,11 +180,14 @@ public class MultiPart
      * <p>A part has an optional name, an optional fileName,
      * optional headers and an optional content.</p>
      */
-    public abstract static class Part implements Closeable
+    public abstract static class Part implements Content.Source.Factory, Closeable
     {
         static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
 
         private final AutoLock lock = new AutoLock();
+        private final ByteBufferPool.Sized bufferPool;
+        private final long offset;
+        private final long length;
         private final String name;
         private final String fileName;
         private final HttpFields fields;
@@ -191,13 +195,30 @@ public class MultiPart
         private Content.Source contentSource;
         private boolean temporary;
 
+        /**
+         * @deprecated use {@link #Part(ByteBufferPool.Sized, String, String, HttpFields)} instead.
+         */
+        @Deprecated
         public Part(String name, String fileName, HttpFields fields)
         {
-            this(name, fileName, fields, null);
+            this(null, name, fileName, fields);
         }
 
-        private Part(String name, String fileName, HttpFields fields, Path path)
+        public Part(ByteBufferPool.Sized bufferPool, String name, String fileName, HttpFields fields)
         {
+            this(bufferPool, 0L, -1L, name, fileName, fields);
+        }
+
+        public Part(ByteBufferPool.Sized bufferPool, long offset, long length, String name, String fileName, HttpFields fields)
+        {
+            this(bufferPool, offset, length, name, fileName, fields, null);
+        }
+
+        private Part(ByteBufferPool.Sized bufferPool, long offset, long length, String name, String fileName, HttpFields fields, Path path)
+        {
+            this.bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+            this.offset = offset;
+            this.length = length;
             this.name = name;
             this.fileName = fileName;
             this.fields = fields != null ? fields : HttpFields.EMPTY;
@@ -275,14 +296,21 @@ public class MultiPart
          * @return the content of this part as a new {@link Content.Source} or null if the content cannot be consumed multiple times.
          * @see #getContentSource()
          */
-        public abstract Content.Source newContentSource();
+        public final Content.Source newContentSource()
+        {
+            return newContentSource(bufferPool, offset, length);
+        }
 
         public long getLength()
         {
-            Content.Source source = getContentSource();
-            if (source != null)
-                return source.getLength();
-            return -1;
+            if (length == -1L)
+            {
+                Content.Source source = getContentSource();
+                if (source != null)
+                    return source.getLength();
+                return -1L;
+            }
+            return length;
         }
 
         /**
@@ -415,12 +443,12 @@ public class MultiPart
 
         public ByteBufferPart(String name, String fileName, HttpFields fields, List<ByteBuffer> content)
         {
-            super(name, fileName, fields);
+            super(null, name, fileName, fields);
             this.content = content;
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
             return new ByteBufferContentSource(content);
         }
@@ -450,13 +478,13 @@ public class MultiPart
 
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
-            super(name, fileName, fields);
+            super(null, name, fileName, fields);
             this.content.addAll(content);
             content.forEach(Content.Chunk::retain);
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
             try (AutoLock ignored = lock.lock())
             {
@@ -514,9 +542,18 @@ public class MultiPart
      */
     public static class PathPart extends Part
     {
+        /**
+         * @deprecated use {@link #PathPart(ByteBufferPool.Sized, String, String, HttpFields, Path)} instead.
+         */
+        @Deprecated
         public PathPart(String name, String fileName, HttpFields fields, Path path)
         {
-            super(name, fileName, fields, path);
+            super(null, 0L, -1L, name, fileName, fields, path);
+        }
+
+        public PathPart(ByteBufferPool.Sized bufferPool, String name, String fileName, HttpFields fields, Path path)
+        {
+            super(bufferPool, 0L, -1L, name, fileName, fields, path);
         }
 
         public Path getPath()
@@ -525,10 +562,9 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            // TODO: use a ByteBuffer pool and direct ByteBuffers?
-            return Content.Source.from(getPath());
+            return Content.Source.from(bufferPool, getPath(), offset, length);
         }
 
         @Override
@@ -553,12 +589,12 @@ public class MultiPart
 
         public ContentSourcePart(String name, String fileName, HttpFields fields, Content.Source content)
         {
-            super(name, fileName, fields);
+            super(null, name, fileName, fields);
             this.content = Objects.requireNonNull(content);
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
             Content.Source c = content;
             content = null;

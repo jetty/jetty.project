@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -230,8 +231,6 @@ public class MultiPartByteRanges
     public static class Part extends MultiPart.Part
     {
         private final Resource resource;
-        private final ByteRange byteRange;
-        private final ByteBufferPool.Sized bufferPool;
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
@@ -252,16 +251,14 @@ public class MultiPartByteRanges
 
         public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool.Sized bufferPool)
         {
-            super(null, null, headers);
+            super(Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING), byteRange.first(), byteRange.getLength(), null, null, headers);
             this.resource = resource;
-            this.byteRange = byteRange;
-            this.bufferPool = bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool;
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            return IOResources.asContentSource(resource, bufferPool, byteRange.first(), byteRange.getLength());
+            return IOResources.asContentSource(resource, bufferPool, offset, length);
         }
     }
 
