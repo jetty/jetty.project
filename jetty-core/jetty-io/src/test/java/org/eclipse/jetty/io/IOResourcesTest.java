@@ -35,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -276,19 +277,23 @@ public class IOResourcesTest
     public void testCopyDirectory()
     {
         Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, (last, byteBuffer, cb) -> {}, null, 4096, false, callback);
+        IOResources.copy(resource, sink, bufferPool, 1, false, callback);
         Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
         assertThat(cause, instanceOf(IllegalArgumentException.class));
+        assertThat(sink.takeAccumulatedChunks(), empty());
     }
 
     @Test
     public void testCopyWithRangeDirectory()
     {
         Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, (last, byteBuffer, cb) -> {}, null, 4096, false, 0, -1, callback);
+        IOResources.copy(resource, sink, bufferPool, 1, false, 0, -1, callback);
         Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
         assertThat(cause, instanceOf(IllegalArgumentException.class));
+        assertThat(sink.takeAccumulatedChunks(), empty());
     }
 }
