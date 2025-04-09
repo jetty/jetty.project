@@ -465,7 +465,7 @@ The Jetty start mechanism performs these steps:
 In this way, a Jetty module graph can be built in memory, where the module dependencies form the edges of the graph and each node contains the metadata information declared by each module (for example, the libraries that it needs, the XML files to process, and so on), in preparation for the next step.
 . Reads the Jetty module configuration files (that have extension `+*.ini+`) from the `start.d/` subdirectory of each configuration source directory and from the command line.
 This step produces a list of _enabled_ modules; for each enabled module all its dependencies are transitively resolved by navigating the graph built in the previous steps.
-. Processes the list of enabled (explicitly and transitively) modules, gathering the list of libraries to add to the class-path, the JPMS directives to add to the command line, the properties and XML files to add as program arguments, etc., so that a full JVM command line can be generated.
+. Processes the list of enabled (explicitly and transitively) modules, gathering the list of libraries to add to the class-path or module-path, the JPMS directives to add to the command line if necessary, the properties and XML files to add as program arguments, etc., so that a full JVM command line can be generated.
 . Executes the command line, either in-JVM or by forking a second JVM (if the `--exec` option is present or implied by other options such as `--jpms`), and waits for the JVM, or the forked JVM, to exit.
 
 [[start-class-path]]
@@ -487,7 +487,7 @@ rectangle "Jetty Start JVM" {
   note right of system: start.jar
   note right of start: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
 
-  system <-- start
+  system <.. start
 }
 ----
 
@@ -523,7 +523,7 @@ It is worth mentioning that there are two standard Jetty modules that allow you 
 * The xref:modules/standard.adoc#resources[`resources` module], which adds the `$JETTY_BASE/resources` directory to the server class-path.
 This is useful if you have third party libraries that lookup resources from the class-path: just put those resources in the `$JETTY_BASE/resources/` directory. +
 Logging libraries often perform class-path lookup of their configuration files (for example, `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so `$JETTY_BASE/resources/` is the ideal place to add those files. +
-* The the `ext` module, that adds all the `+*.jar+` files under the `$JETTY_BASE/lib/ext/` directory, and subdirectories recursively, to the server class-path. +
+* The `ext` module, that adds all the `+*.jar+` files under the `$JETTY_BASE/lib/ext/` directory, and subdirectories recursively, to the server class-path. +
 +
 [CAUTION]
 ====
@@ -531,6 +531,61 @@ On one hand, the `ext` module provides a handy place to put third party librarie
 
 Prefer to group third party libraries and their dependencies into their own directories using xref:modules/custom.adoc[custom modules], or at least group them into `$JETTY_BASE/lib/ext/` subdirectories such as `$JETTY_BASE/lib/ext/util/` or `$JETTY_BASE/lib/ext/acme/`.
 ====
+
+[[start-class-path-environments]]
+==== Server Jakarta EE Environment Class-Path
+
+When a Jakarta EE Jetty module is enabled, for example the `{ee-current}-webapp` and/or the `{ee-current}-deploy` module, the server ClassLoader hierarchy is modified as follows:
+
+[plantuml,subs=+attributes]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Jetty Start JVM" {
+  rectangle "System ClassLoader" as system
+  rectangle "Jetty Start ClassLoader" as start
+  rectangle "Jetty {ee-current-caps} ClassLoader" as env
+
+  note right of system: start.jar
+  note right of start: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+  note right of env: jakarta.servlet-api.jar\njetty-{ee-current}-servlet.jar\njetty-{ee-current}-deploy.jar\netc.
+
+  system <.. start
+  start <.. env
+}
+----
+
+When different versions of the Jakarta EE Jetty deploy or webapp modules are enabled, the server ClassLoader hierarchy is the following:
+
+[plantuml,subs=+attributes]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Jetty Start JVM" {
+  rectangle "System ClassLoader" as system
+  rectangle "Jetty Start ClassLoader" as start
+  rectangle "Jetty {ee-prev-caps} ClassLoader" as env1
+  rectangle "Jetty {ee-current-caps} ClassLoader" as env2
+
+  note right of system: start.jar
+  note right of start: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+  note left of env1: jakarta.servlet-api.jar ({ee-prev})\njetty-{ee-prev}-servlet.jar\njetty-{ee-prev}-deploy.jar\netc.
+  note right of env2: jakarta.servlet-api.jar ({ee-current})\njetty-{ee-current}-servlet.jar\njetty-{ee-current}-deploy.jar\netc.
+
+  system <.. start
+  start <.. env1
+  start <.. env2
+}
+----
+
+Note how the Jetty {ee-prev-caps} ClassLoader and the Jetty {ee-current-caps} ClassLoader are siblings.
+In this way, they can load independently their own version of the Jakarta EE APIs `+*.jar+` files, and the Jetty implementation of the Jakarta EE APIs, without conflicts.
 
 [[start-xml]]
 === Assembling Jetty Components
@@ -544,7 +599,7 @@ The components are then assembled together to provide the configured Jetty featu
 
 The Jetty XML files are parametrized using properties, and a property is just a name/value pair.
 
-This parametrization of the XML files allows an XML file that resides in `$JETTY_HOME/etc/` to _declare_ a property such as `jetty.http.port`, and allow this property to be set in a `$JETTY_BASE/start.d/http.ini` file, so that you don't need to change the XML files in `$JETTY_HOME`, but only change files in your `$JETTY_BASE`.
+This parametrization of the XML files allows an XML file that resides in `$JETTY_HOME/etc/` to _declare_ a property such as `jetty.http.port`, and allow this property to be set in a `$JETTY_BASE/start.d/http.ini` file, so that you don't need to change the XML files in `$JETTY_HOME`, but only change `+*.ini+` files in your `$JETTY_BASE`.
 
 You can write your own xref:modules/custom.adoc[custom modules] with your own Jetty XML files, and your own properties, to further customize Jetty.
 

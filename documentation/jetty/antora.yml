@@ -11,6 +11,8 @@ asciidoc:
     ee-all: ee{8,9,10}
     ee-current: ee10
     ee-current-caps: EE 10
+    ee-prev: ee9
+    ee-prev-caps: EE 9
     run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-testers/${project.version}/jetty-testers-${project.version}.jar${path.separator}${run.jetty.classpath}
 nav:
 - modules/operations-guide/nav.adoc
