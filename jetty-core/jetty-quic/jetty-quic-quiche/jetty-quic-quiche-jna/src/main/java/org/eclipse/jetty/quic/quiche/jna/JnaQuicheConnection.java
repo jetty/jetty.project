@@ -40,11 +40,6 @@ public class JnaQuicheConnection extends QuicheConnection
     private static final Logger LOG = LoggerFactory.getLogger(JnaQuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    static
-    {
-        LibQuiche.Logging.enable();
-    }
-
     // Quiche does not allow concurrent calls with the same connection.
     private final AutoLock lock = new AutoLock();
     private LibQuiche.quiche_conn quicheConn;

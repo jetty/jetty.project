@@ -212,7 +212,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.1.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.23.4</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.23.5</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>

@@ -147,7 +147,7 @@ public class IOResources
         // Fallback to wrapping InputStream.
         try
         {
-            return new InputStreamContentSource(resource.newInputStream());
+            return new InputStreamContentSource(resource.newInputStream(), new ByteBufferPool.Sized(bufferPool, false, bufferSize));
         }
         catch (IOException e)
         {

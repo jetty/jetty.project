@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -36,17 +37,28 @@ public abstract class QuicheConnection
     {
         // This code is safe even if trying to load a QuicheBinding instance throws an error,
         // as in that case a warning would be logged and the binding ignored.
+        List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
+            .sorted(Comparator.comparingInt(QuicheBinding::priority))
+            .collect(Collectors.toList());
+
         if (LOG.isDebugEnabled())
-        {
-            List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
-                .sorted(Comparator.comparingInt(QuicheBinding::priority))
-                .collect(Collectors.toList());
             LOG.debug("found quiche binding implementations: {}", bindings);
-        }
-        QUICHE_BINDING = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
-            .filter(QuicheBinding::isUsable)
+
+        List<Throwable> failures = new ArrayList<>();
+        QUICHE_BINDING = bindings.stream()
+            .filter(quicheBinding ->
+            {
+                Throwable failure = quicheBinding.initialize();
+                failures.add(failure);
+                return failure == null;
+            })
             .min(Comparator.comparingInt(QuicheBinding::priority))
-            .orElseThrow(() -> new IllegalStateException("no quiche binding implementation found"));
+            .orElseThrow(() ->
+            {
+                IllegalStateException ise = new IllegalStateException("no quiche binding implementation found");
+                failures.forEach(ise::addSuppressed);
+                return ise;
+            });
         if (LOG.isDebugEnabled())
             LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
     }
