@@ -64,11 +64,7 @@ public class InputStreamContentSource implements Content.Source
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, long offset, long length)
     {
         this.inputStream = Objects.requireNonNull(inputStream);
-        bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
-        // Make sure direct is always false as the implementation requires heap buffers to be able to call array().
-        if (bufferPool.isDirect())
-            bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), false, bufferPool.getSize());
-        this.bufferPool = bufferPool;
+        this.bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
         skipToOffset(inputStream, offset, length);
         this.toRead = length;
     }
@@ -101,7 +97,7 @@ public class InputStreamContentSource implements Content.Source
                 return Content.Chunk.EOF;
         }
 
-        RetainableByteBuffer streamBuffer = bufferPool.acquire();
+        RetainableByteBuffer streamBuffer = bufferPool.acquire(false);
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();

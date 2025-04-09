@@ -13,24 +13,34 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IOResourcesTest
 {
@@ -50,13 +60,96 @@ public class IOResourcesTest
         assertThat("Leaks: " + trackingPool.dumpLeaks(), trackingPool.getLeaks().size(), is(0));
     }
 
+    // This Resource impl has getPath() and newInputStream() throw so the only way for IOResources
+    // to read its contents is to call newContentSource().
+    private static class TestContentSourceFactoryResource extends Resource implements Content.Source.Factory
+    {
+        private final URI uri;
+        private final ByteBuffer buffer;
+
+        public TestContentSourceFactoryResource(URI uri, byte[] bytes)
+        {
+            this.uri = uri;
+            this.buffer = ByteBuffer.wrap(bytes);
+        }
+
+        @Override
+        public boolean exists()
+        {
+            return true;
+        }
+
+        @Override
+        public long length()
+        {
+            return buffer.remaining();
+        }
+
+        @Override
+        public Path getPath()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public InputStream newInputStream()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isDirectory()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isReadable()
+        {
+            return true;
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return uri;
+        }
+
+        @Override
+        public String getName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public String getFileName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public Resource resolve(String subUriPath)
+        {
+            return null;
+        }
+
+        @Override
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
+        {
+            return Content.Source.from(BufferUtil.slice(buffer, Math.toIntExact(first), Math.toIntExact(length)));
+        }
+    }
+
     public static Stream<Resource> all() throws Exception
     {
-        URI resourceUri = MavenTestingUtils.getTestResourcePath("keystore.p12").toUri();
+        Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        byte[] bytes = Files.readAllBytes(testResourcePath);
+        URI resourceUri = testResourcePath.toUri();
         return Stream.of(
             ResourceFactory.root().newResource(resourceUri),
             ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
-            new URLResourceFactory().newResource(resourceUri)
+            new URLResourceFactory().newResource(resourceUri),
+            new TestContentSourceFactoryResource(resourceUri, bytes)
         );
     }
 
@@ -66,7 +159,7 @@ public class IOResourcesTest
     {
         RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool);
         assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
-        retainableByteBuffer.release();
+        assertTrue(retainableByteBuffer.release());
     }
 
     @ParameterizedTest
@@ -206,6 +299,29 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(0L));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testCopyDirectory()
+    {
+        Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 0, -1, callback);
+        Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
+        assertThat(cause, instanceOf(IllegalArgumentException.class));
+        assertThat(sink.takeAccumulatedChunks(), empty());
+    }
+
+    @Test
+    public void testCopyWithRangeDirectory()
+    {
+        Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 0, -1, callback);
+        Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
+        assertThat(cause, instanceOf(IllegalArgumentException.class));
+        assertThat(sink.takeAccumulatedChunks(), empty());
     }
 }

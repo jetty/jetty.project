@@ -20,6 +20,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import java.util.Objects;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -49,13 +51,27 @@ public class IOResources
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
+        // Optimize for Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+        {
+            try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(Retainable::retain))
+            {
+                Content.Source.asRetainableByteBuffer(factory.newContentSource(bufferPool, 0L, -1L), bufferPool, bufferPool.isDirect(), Integer.MAX_VALUE, promise);
+                return promise.block();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
+
         // Optimize for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
             return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
         long longLength = resource.length();
 
-        bufferPool = bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool;
+        bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
 
         // Optimize for PathResource.
         Path path = resource.getPath();
@@ -140,6 +156,10 @@ public class IOResources
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
+        // Try Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+            return factory.newContentSource(bufferPool, offset, length);
+
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
         Path path = resource.getPath();
         if (path != null)
@@ -147,7 +167,7 @@ public class IOResources
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), (int)offset, (int)length));
+            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(offset), Math.toIntExact(length)));
 
         // Fallback to InputStream.
         try
@@ -201,14 +221,21 @@ public class IOResources
      * @param offset the offset byte of the resource to start from.
      * @param length the length of the resource's contents to copy, -1 for the full length.
      * @param callback the callback to notify when the copy is done.
-     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback) throws IllegalArgumentException
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
     {
         try
         {
             if (resource.isDirectory() || !resource.exists())
                 throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+            // Check if the resource is a Content.Source.Factory as the first step.
+            if (resource instanceof Content.Source.Factory factory)
+            {
+                Content.Source source = factory.newContentSource(bufferPool, offset, length);
+                Content.copy(source, sink, callback);
+                return;
+            }
 
             // Save a Content.Source allocation for resources with a Path.
             Path path = resource.getPath();
@@ -227,7 +254,10 @@ public class IOResources
             }
 
             // Fallback to Content.Source.
-            Content.Source source = asContentSource(resource, bufferPool, offset, length);
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            Content.Source source = Content.Source.from(bufferPool, inputStream, offset, length);
             Content.copy(source, sink, callback);
         }
         catch (Throwable x)

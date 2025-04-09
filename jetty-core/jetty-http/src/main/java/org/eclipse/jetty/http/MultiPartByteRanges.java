@@ -142,9 +142,18 @@ public class MultiPartByteRanges
     {
         private long toRead;
 
+        /**
+         * @deprecated Use {@link #InputStreamContentSource(InputStream, ByteBufferPool.Sized, ByteRange)} instead.
+         */
+        @Deprecated
         public InputStreamContentSource(InputStream inputStream, ByteRange byteRange) throws IOException
         {
-            super(inputStream);
+            this(inputStream, ByteBufferPool.SIZED_NON_POOLING, byteRange);
+        }
+
+        public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, ByteRange byteRange) throws IOException
+        {
+            super(inputStream, bufferPool);
             inputStream.skipNBytes(byteRange.first());
             this.toRead = byteRange.getLength();
         }
