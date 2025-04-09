@@ -30,8 +30,27 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.23.4";
+    private static final String EXPECTED_QUICHE_VERSION = "0.23.5";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
+
+    static void initialize()
+    {
+        String quicheVersion = quiche_version().getString(0L, StandardCharsets.UTF_8);
+        if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
+            throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
+
+        if (LOG.isDebugEnabled())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Quiche version {}", quicheVersion);
+
+            MemorySegment cb = NativeHelper.upcallMemorySegment(LoggingCallback.class, "log", LoggingCallback.INSTANCE,
+                FunctionDescriptor.ofVoid(C_POINTER, C_POINTER), LoggingCallback.SCOPE);
+
+            if (quiche_enable_debug_logging(cb, MemorySegment.NULL) != 0)
+                throw new AssertionError("Cannot enable quiche debug logging");
+        }
+    }
 
     private static class LoggingCallback
     {
@@ -41,25 +60,6 @@ public class quiche_h
         public void log(MemorySegment msg, MemorySegment argp)
         {
             LOG.debug(msg.getString(0L, StandardCharsets.UTF_8));
-        }
-    }
-
-    static
-    {
-        String quicheVersion = quiche_version().getString(0L, StandardCharsets.US_ASCII);
-
-        if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
-            throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Quiche version {}", quicheVersion);
-
-            MemorySegment cb = NativeHelper.upcallMemorySegment(LoggingCallback.class, "log", LoggingCallback.INSTANCE,
-                FunctionDescriptor.ofVoid(C_POINTER, C_POINTER), LoggingCallback.SCOPE);
-
-            if (quiche_enable_debug_logging(cb, MemorySegment.NULL) != 0)
-                throw new AssertionError("Cannot enable quiche debug logging");
         }
     }
 

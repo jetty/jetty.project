@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
@@ -31,7 +30,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.23.4";
+    String EXPECTED_QUICHE_VERSION = "0.23.5";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -39,23 +38,17 @@ public interface LibQuiche extends Library
     // Load the native lib.
     LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class, Map.of(Library.OPTION_STRING_ENCODING, CHARSET.name()));
 
-    class Logging
+    static void initialize()
     {
-        private static final Logger LIB_QUICHE_LOG = LoggerFactory.getLogger(LibQuiche.class);
-        private static final LoggingCallback LIB_QUICHE_LOGGING_CALLBACK = (msg, argp) -> LIB_QUICHE_LOG.debug(msg);
-        private static final AtomicBoolean LOGGING_ENABLED = new AtomicBoolean();
+        String quicheVersion = INSTANCE.quiche_version();
+        if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
+            throw new IllegalStateException("native quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
 
-        public static void enable()
+        Logger logger = LoggerFactory.getLogger(LibQuiche.class);
+        if (logger.isDebugEnabled())
         {
-            String quicheVersion = INSTANCE.quiche_version();
-            if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
-                throw new IllegalStateException("native quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
-
-            if (LIB_QUICHE_LOG.isDebugEnabled() && LOGGING_ENABLED.compareAndSet(false, true))
-            {
-                INSTANCE.quiche_enable_debug_logging(LIB_QUICHE_LOGGING_CALLBACK, null);
-                LIB_QUICHE_LOG.debug("quiche version {}", quicheVersion);
-            }
+            INSTANCE.quiche_enable_debug_logging((msg, argp) -> logger.debug(msg), null);
+            logger.debug("quiche version {}", quicheVersion);
         }
     }
 
