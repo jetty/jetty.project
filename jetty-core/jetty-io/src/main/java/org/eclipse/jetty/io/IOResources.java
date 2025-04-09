@@ -255,45 +255,35 @@ public class IOResources
      */
     public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
     {
-        if (resource.isDirectory() || !resource.exists())
-        {
-            callback.failed(new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource));
-            return;
-        }
-
-        // Check if the resource is a Content.Source.Factory as the first step.
-        if (resource instanceof Content.Source.Factory factory)
-        {
-            Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
-            Content.copy(source, sink, callback);
-            return;
-        }
-
-        // Save a Content.Source allocation for resources with a Path.
-        Path path = resource.getPath();
-        if (path != null)
-        {
-            try
-            {
-                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, callback).iterate();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-            return;
-        }
-
-        // Directly write the byte array if the resource is a MemoryResource.
-        if (resource instanceof MemoryResource memoryResource)
-        {
-            sink.write(true, ByteBuffer.wrap(memoryResource.getBytes()), callback);
-            return;
-        }
-
-        // Fallback to Content.Source.
         try
         {
+            if (resource.isDirectory() || !resource.exists())
+                throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+            // Check if the resource is a Content.Source.Factory as the first step.
+            if (resource instanceof Content.Source.Factory factory)
+            {
+                Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
+                Content.copy(source, sink, callback);
+                return;
+            }
+
+            // Save a Content.Source allocation for resources with a Path.
+            Path path = resource.getPath();
+            if (path != null)
+            {
+                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, callback).iterate();
+                return;
+            }
+
+            // Directly write the byte array if the resource is a MemoryResource.
+            if (resource instanceof MemoryResource memoryResource)
+            {
+                sink.write(true, ByteBuffer.wrap(memoryResource.getBytes()), callback);
+                return;
+            }
+
+            // Fallback to Content.Source.
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
@@ -324,45 +314,35 @@ public class IOResources
      */
     public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
     {
-        if (resource.isDirectory() || !resource.exists())
-        {
-            callback.failed(new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource));
-            return;
-        }
-
-        // Check if the resource is a Content.Source.Factory as the first step.
-        if (resource instanceof Content.Source.Factory factory)
-        {
-            Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
-            Content.copy(source, sink, callback);
-            return;
-        }
-
-        // Save a Content.Source allocation for resources with a Path.
-        Path path = resource.getPath();
-        if (path != null)
-        {
-            try
-            {
-                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, first, length, callback).iterate();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-            return;
-        }
-
-        // Directly write the byte array if the resource is a MemoryResource.
-        if (resource instanceof MemoryResource memoryResource)
-        {
-            sink.write(true, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
-            return;
-        }
-
-        // Fallback to Content.Source.
         try
         {
+            if (resource.isDirectory() || !resource.exists())
+                throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+            // Check if the resource is a Content.Source.Factory as the first step.
+            if (resource instanceof Content.Source.Factory factory)
+            {
+                Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
+                Content.copy(source, sink, callback);
+                return;
+            }
+
+            // Save a Content.Source allocation for resources with a Path.
+            Path path = resource.getPath();
+            if (path != null)
+            {
+                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, first, length, callback).iterate();
+                return;
+            }
+
+            // Directly write the byte array if the resource is a MemoryResource.
+            if (resource instanceof MemoryResource memoryResource)
+            {
+                sink.write(true, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
+                return;
+            }
+
+            // Fallback to Content.Source.
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);

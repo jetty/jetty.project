@@ -163,12 +163,12 @@ public class Content
             /**
              * Creates a new {@link Content.Source}.
              *
-             * @param sizedBufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
+             * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
              * @param first the first byte of the resource to start from.
              * @param length the length of the content to make available, -1 for the full length.
              * @return a {@link Content.Source}.
              */
-            Content.Source newContentSource(ByteBufferPool.Sized sizedBufferPool, long first, long length);
+            Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length);
         }
 
         /**
