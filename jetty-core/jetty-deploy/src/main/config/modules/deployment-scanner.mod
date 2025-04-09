@@ -19,7 +19,7 @@ environments/
 etc/jetty-deployment-scanner.xml
 
 [ini-template]
-## Monitored directory name (relative to $jetty.base)
+## Monitored directory name (relative to $JETTY_BASE)
 # jetty.deploy.monitoredDir=webapps
 
 # Defer Initial Scan
@@ -33,6 +33,6 @@ etc/jetty-deployment-scanner.xml
 # value of 1 or more will enable hot-redeploy
 # jetty.deploy.scanInterval=0
 
-## Environments directory name (relative to $jetty.base)
+## Environments directory name (relative to $JETTY_BASE)
 # This is where environment specific configurations are stored.
 # jetty.deploy.environmentsDir=environments
