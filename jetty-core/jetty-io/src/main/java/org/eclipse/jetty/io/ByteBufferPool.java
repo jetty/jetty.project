@@ -156,6 +156,24 @@ public interface ByteBufferPool
         {
             return getWrapped().acquire(_size, _direct);
         }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured type.
+         * @param size The specified size in bytes of the buffer
+         */
+        public RetainableByteBuffer acquire(int size)
+        {
+            return getWrapped().acquire(size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size.
+         * @param direct true for a direct byte buffer, false otherwise
+         */
+        public RetainableByteBuffer acquire(boolean direct)
+        {
+            return getWrapped().acquire(_size, direct);
+        }
     }
 
     /**
