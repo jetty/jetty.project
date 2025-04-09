@@ -855,7 +855,7 @@ public class MultiPartFormData
 
                     MultiPart.Part part;
                     if (fileChannel != null)
-                        part = new MultiPart.PathPart(name, fileName, headers, filePath);
+                        part = new MultiPart.PathPart(null, name, fileName, headers, filePath); // TODO use a pool
                     else
                         part = new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks));
                     // Reset part-related state.

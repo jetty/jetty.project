@@ -444,7 +444,7 @@ public class HugeResourceTest
         MultiPartRequestContent multipart = new MultiPartRequestContent();
         Path inputFile = staticBase.resolve(filename);
         String name = String.format("file-%d", expectedSize);
-        multipart.addPart(new MultiPart.PathPart(name, filename, HttpFields.EMPTY, inputFile));
+        multipart.addPart(new MultiPart.PathPart(null, name, filename, HttpFields.EMPTY, inputFile));
         multipart.close();
 
         URI destUri = server.getURI().resolve("/multipart");
@@ -487,7 +487,7 @@ public class HugeResourceTest
         };
         Path inputFile = staticBase.resolve(filename);
         String name = String.format("file-%d", expectedSize);
-        multipart.addPart(new MultiPart.PathPart(name, filename, HttpFields.EMPTY, inputFile));
+        multipart.addPart(new MultiPart.PathPart(null, name, filename, HttpFields.EMPTY, inputFile));
         multipart.close();
 
         URI destUri = server.getURI().resolve("/multipart");
