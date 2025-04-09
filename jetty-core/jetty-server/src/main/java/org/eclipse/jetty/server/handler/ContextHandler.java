@@ -743,10 +743,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 URI realUri = baseResource.getRealURI();
                 if (realUri == null)
-                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", baseResource);
+                {
+                    LOG.warn("{} Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", getDisplayName(), baseResource);
+                }
                 else
-                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {} points to {}",
-                        baseResource, realUri.toASCIIString());
+                {
+                    LOG.info("{} Base Resource is an alias: {} -> {}", getDisplayName(), baseResource, realUri.toASCIIString());
+                    setAttribute("_baseResource", _baseResource);
+                    _baseResource = ResourceFactory.of(this).newResource(realUri);
+                }
             }
         }
 
@@ -795,7 +800,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
             // is it usable
             if (!tempDirectory.canWrite() || !tempDirectory.isDirectory())
-                throw new IllegalArgumentException("Temp dir " + tempDirectory + " not useable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
+                throw new IllegalArgumentException("Temp dir " + tempDirectory + " not usable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
         }
     }
 
@@ -805,6 +810,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _context.call(super::doStop, null);
         cleanupAfterStop();
         _tempDirectoryCreated = false;
+        if (removeAttribute("_baseResource") instanceof Resource baseResource)
+            _baseResource = baseResource;
     }
 
     protected void cleanupAfterStop() throws Exception
@@ -1040,7 +1047,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return true;
         }
 
-        if (pathInContext.length() == 0 && !getAllowNullPathInContext())
+        if (pathInContext.isEmpty() && !getAllowNullPathInContext())
         {
             handleMovedPermanently(request, response, callback);
             return true;
