@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -29,11 +30,14 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IOResourcesTest
 {
@@ -266,5 +270,25 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(500L));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testCopyDirectory()
+    {
+        Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, (last, byteBuffer, cb) -> {}, null, 4096, false, callback);
+        Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
+        assertThat(cause, instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    public void testCopyWithRangeDirectory()
+    {
+        Resource resource = ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcesPath());
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, (last, byteBuffer, cb) -> {}, null, 4096, false, 0, -1, callback);
+        Throwable cause = assertThrows(ExecutionException.class, callback::get).getCause();
+        assertThat(cause, instanceOf(IllegalArgumentException.class));
     }
 }

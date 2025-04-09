@@ -136,7 +136,7 @@ public class IOResources
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
@@ -175,7 +175,7 @@ public class IOResources
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte from which to read from.
      * @param length the length of the content to read, -1 for the full length.
@@ -249,15 +249,17 @@ public class IOResources
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param callback the callback to notify when the copy is done.
-     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback) throws IllegalArgumentException
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
     {
         if (resource.isDirectory() || !resource.exists())
-            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+        {
+            callback.failed(new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource));
+            return;
+        }
 
         // Check if the resource is a Content.Source.Factory as the first step.
         if (resource instanceof Content.Source.Factory factory)
@@ -298,9 +300,9 @@ public class IOResources
             Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, 0, -1);
             Content.copy(source, sink, callback);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            throw new RuntimeIOException(e);
+            callback.failed(x);
         }
     }
 
@@ -314,17 +316,19 @@ public class IOResources
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte of the resource to start from.
      * @param length the length of the resource's contents to copy.
      * @param callback the callback to notify when the copy is done.
-     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IllegalArgumentException
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
     {
         if (resource.isDirectory() || !resource.exists())
-            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+        {
+            callback.failed(new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource));
+            return;
+        }
 
         // Check if the resource is a Content.Source.Factory as the first step.
         if (resource instanceof Content.Source.Factory factory)
@@ -365,9 +369,9 @@ public class IOResources
             Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, first, length);
             Content.copy(source, sink, callback);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            throw new RuntimeIOException(e);
+            callback.failed(x);
         }
     }
 
