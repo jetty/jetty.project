@@ -110,7 +110,7 @@ public class InputStreamContentSource implements Content.Source
                 return Content.Chunk.EOF;
         }
 
-        RetainableByteBuffer streamBuffer = bufferPool.acquire();
+        RetainableByteBuffer streamBuffer = bufferPool.acquire(false);
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();

@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -151,14 +150,17 @@ public class IOResources
             return factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
         Path path = resource.getPath();
         if (path != null)
-            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path);
         if (resource instanceof MemoryResource memoryResource)
             return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
 
         // Fallback to wrapping InputStream.
         try
         {
-            return new InputStreamContentSource(resource.newInputStream(), new ByteBufferPool.Sized(bufferPool, false, bufferSize));
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream);
         }
         catch (IOException e)
         {
@@ -287,8 +289,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            // TODO set the directness coming from the parameter once InputStreamContentSource is fixed (#12972)
-            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, 0, -1);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, 0, -1);
             Content.copy(source, sink, callback);
         }
         catch (Throwable x)
@@ -347,8 +348,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            // TODO set the directness coming from the parameter once InputStreamContentSource is fixed (#12972)
-            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, false, bufferSize), inputStream, first, length);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
             Content.copy(source, sink, callback);
         }
         catch (Throwable x)
