@@ -113,11 +113,10 @@
  *  maxCachedFileSize The maximum size of a file to cache
  *  maxCachedFiles    The maximum number of files to cache
  *
- *  useFileMappedBuffer
- *                    If set to true, it will use mapped file buffers to serve static content
- *                    when using an NIO connector. Setting this value to false means that
- *                    a direct buffer will be used instead of a mapped file buffer.
- *                    This file sets the value to true.
+ *  minMappedFileSize The minimum size in bytes of a file that will be used with file mapping;
+ *                    or 0 for no file mapping; or not set for a default size.
+ *  maxMappedFileSize The maximum size in bytes of a file that will be used with file mapping;
+ *                    or not set for a default size.
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
@@ -166,8 +165,12 @@
       <param-value>false</param-value>
     </init-param>
     <init-param>
-      <param-name>useFileMappedBuffer</param-name>
-      <param-value>true</param-value>
+      <param-name>minMappedFileSize</param-name>
+      <param-value>-1</param-value>
+    </init-param>
+    <init-param>
+      <param-name>maxMappedFileSize</param-name>
+      <param-value>-1</param-value>
     </init-param>
     <load-on-startup>0</load-on-startup>
   </servlet>

@@ -167,11 +167,14 @@ import org.slf4j.LoggerFactory;
  *     Use {@code true} to use direct byte buffers to serve static resources.
  *     Defaults to {@code true}.
  *   </dd>
- *   <dt>useFileMappedBuffer</dt>
+ *   <dt>minMappedFileSize</dt>
  *   <dd>
- *     Use {@code true} to use file mapping to serve static resources instead of
- *     buffers configured with the above two settings.
- *     Defaults to {@code false}.
+ *     The minimum size in bytes of a file that will used with file mapping, or {@code 0} for
+ *     no file mapping or {@code null} for a default size.
+ *   </dd>
+ *   <dt>maxMappedFileSize</dt>
+ *   <dd>
+ *     The maximum size in bytes of a file that will used with file mapping, or {@code null} for a default size.
  *   </dd>
  *   <dt>welcomeServlets</dt>
  *   <dd>
@@ -277,8 +280,15 @@ public class ResourceServlet extends HttpServlet
                 }
             }
 
-            if (getInitBoolean("useFileMappedBuffer", false))
-                contentFactory = new FileMappingHttpContentFactory(contentFactory);
+            int minMappedFileSize = getInitInt("minMappedFileSize", -1);
+            String useFileMappedBuffer = getInitParameter("useFileMappedBuffer");
+            if (useFileMappedBuffer != null)
+                LOG.warn("{} Deprecated useFileMappedBuffer used. Use minMappedFileSize instead", this);
+            
+            if (minMappedFileSize > 0)
+                contentFactory = new FileMappingHttpContentFactory(contentFactory, minMappedFileSize, getInitInt("maxMappedFileSize", Integer.MAX_VALUE));
+            else if (minMappedFileSize == -1 || getInitBoolean("useFileMappedBuffer", true))
+                contentFactory = new FileMappingHttpContentFactory(contentFactory, -1, -1);
 
             contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", bufferPool);
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
