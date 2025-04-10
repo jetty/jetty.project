@@ -46,7 +46,7 @@ public abstract class AbstractEEActivator implements BundleActivator, ServerClas
 {
     private BundleContext _bootBundleContext;
     private ServiceTracker<Server, Object> _serverTracker;
-    private PackageAdminServiceTracker _packageAdminServiceTracker;
+    private PackageAdminServiceListener _packageAdminServiceListener;
     private final Collection<ServerClasspathContributor> _serverClasspathContributors = new ArrayList<>();
 
 
@@ -61,7 +61,7 @@ public abstract class AbstractEEActivator implements BundleActivator, ServerClas
         _bootBundleContext = context;
 
         // track other bundles and fragments attached to this bundle that we should activate.
-        _packageAdminServiceTracker = new PackageAdminServiceTracker(this, _bootBundleContext);
+        _packageAdminServiceListener = new PackageAdminServiceListener(this, _bootBundleContext);
 
         //track jetty Server instances
         _serverTracker = new ServiceTracker<>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(_bootBundleContext.getBundle()));
@@ -104,11 +104,12 @@ public abstract class AbstractEEActivator implements BundleActivator, ServerClas
             _serverTracker.close();
             _serverTracker = null;
         }
-    }
 
-    protected PackageAdminServiceTracker getPackageAdminServiceTracker()
-    {
-        return _packageAdminServiceTracker;
+        if (_packageAdminServiceListener != null)
+        {
+            _packageAdminServiceListener.stop();
+            _packageAdminServiceListener = null;
+        }
     }
 
     public abstract String getEnvironment();

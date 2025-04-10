@@ -71,9 +71,7 @@ public class JettyServerFactory
             List<URL> sharedURLs = getManagedJettySharedLibFolderUrls(props);
 
             // Ensure we have a classloader that will have access to all jetty classes
-            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl/*JettyServerFactory.class.getClassLoader()*/);
-
-            ClassLoader serverClassLoader = libExtClassLoader;
+            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
@@ -107,12 +105,12 @@ public class JettyServerFactory
                 }
             }
 
-            if (jettyConfigurations != null)
+            if (!jettyConfigs.isEmpty())
             {
                 try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                 {
                     //create the server via config files
-                    for (URL jettyConfiguration : jettyConfigurations)
+                    for (URL jettyConfiguration : jettyConfigs)
                     {
                         try
                         {
@@ -153,7 +151,7 @@ public class JettyServerFactory
                 if (server == null)
                 {
                     LOG.warn("No Server was configured by the XML files {}",
-                        jettyConfigurations.stream()
+                        jettyConfigs.stream()
                             .map(URL::toString)
                             .collect(Collectors.joining(", ", "[", "]"))
                     );
@@ -177,7 +175,7 @@ public class JettyServerFactory
 
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
-            server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
+            server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, libExtClassLoader);
             server.setAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, name);
 
             return server;
@@ -234,7 +232,7 @@ public class JettyServerFactory
 
     private static ContextHandlerCollection getContextHandlerCollection(Server server)
     {
-        return (ContextHandlerCollection)server.getDescendant(ContextHandlerCollection.class);
+        return server.getDescendant(ContextHandlerCollection.class);
     }
 
     /**

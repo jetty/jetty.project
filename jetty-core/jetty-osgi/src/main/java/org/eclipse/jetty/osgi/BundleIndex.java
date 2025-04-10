@@ -28,9 +28,9 @@ import org.osgi.framework.Bundle;
 public class BundleIndex
 {
     private final ConcurrentHashMap<URI, Bundle> _uriToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle, Resource> _bundleToResource = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle, URI> _bundleToUri = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Bundle, Resource> _bundleToResource = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Bundle, URI> _bundleToUri = new ConcurrentHashMap<>();
 
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.

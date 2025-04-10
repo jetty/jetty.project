@@ -31,7 +31,6 @@ import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.PackageAdminServiceTracker;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.util.FileID;

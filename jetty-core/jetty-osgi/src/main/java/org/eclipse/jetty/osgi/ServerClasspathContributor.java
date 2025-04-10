@@ -36,9 +36,9 @@ public interface ServerClasspathContributor
      */
     interface Source
     {
-        public void registerServerClasspathContributors(Registry registry);
+        void registerServerClasspathContributors(Registry registry);
 
-        public void unregisterServerClasspathContributors(Registry registry);
+        void unregisterServerClasspathContributors(Registry registry);
     }
 
     /**
@@ -46,8 +46,8 @@ public interface ServerClasspathContributor
      */
     interface Registry
     {
-        public void registerServerClasspathContributor(ServerClasspathContributor contributor);
+        void registerServerClasspathContributor(ServerClasspathContributor contributor);
 
-        public void unregisterServerClasspathContributor(ServerClasspathContributor contributor);
+        void unregisterServerClasspathContributor(ServerClasspathContributor contributor);
     }
 }

@@ -35,9 +35,9 @@ import org.slf4j.LoggerFactory;
  * See particularly the jetty-eeX-osgi-boot-jsp fragment bundles that uses this facility.
  */
 @SuppressWarnings("deprecation")
-public class PackageAdminServiceTracker implements ServiceListener
+public class PackageAdminServiceListener implements ServiceListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PackageAdminServiceListener.class);
 
     private final BundleContext _bootBundleContext;
     private final Map<String, BundleActivator> _activatedFragments = new HashMap<>();
@@ -45,7 +45,7 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     private PackageAdmin _packageAdmin;
 
-    public PackageAdminServiceTracker(BundleActivator activator, BundleContext context)
+    public PackageAdminServiceListener(BundleActivator activator, BundleContext context)
         throws Exception
     {
         _bootBundleActivator = activator;
@@ -139,6 +139,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             }
         }
         _activatedFragments.clear();
+        _bootBundleContext.removeServiceListener(this);
     }
 }
 

@@ -32,7 +32,6 @@ import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.PackageAdminServiceTracker;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
