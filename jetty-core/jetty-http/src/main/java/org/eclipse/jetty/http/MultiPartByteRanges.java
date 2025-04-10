@@ -232,7 +232,7 @@ public class MultiPartByteRanges
         /**
          * @deprecated use {@link #Part(String, Resource, ByteRange, long, ByteBufferPool.Sized)} instead.
          */
-        @Deprecated
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
@@ -253,7 +253,7 @@ public class MultiPartByteRanges
         /**
          * @deprecated use {@link #Part(HttpFields, Resource, ByteRange, ByteBufferPool.Sized)} instead.
          */
-        @Deprecated
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool bufferPool)
         {
             this(headers, resource, byteRange, new ByteBufferPool.Sized(bufferPool));

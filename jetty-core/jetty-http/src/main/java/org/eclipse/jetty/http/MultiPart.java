@@ -146,7 +146,7 @@ public class MultiPart
         /**
          * @deprecated use {@link #Part(ByteBufferPool.Sized, String, String, HttpFields)} instead.
          */
-        @Deprecated
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Part(String name, String fileName, HttpFields fields)
         {
             this(null, 0L, -1L, name, fileName, fields, null);
@@ -245,12 +245,26 @@ public class MultiPart
          * @see #getContentSource()
          * @deprecated override {@link #newContentSource(ByteBufferPool.Sized, long, long)} instead.
          */
-        @Deprecated
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Content.Source newContentSource()
         {
             return null;
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * <p>Returns the content of this part as a new {@link Content.Source}</p>
+         * <p>If the content is reproducible, invoking this method multiple times will return
+         * a different independent instance for every invocation.</p>
+         * <p>If the content is not reproducible, subsequent calls to this method will return null.</p>
+         * <p>The content type and content encoding are specified in this part's {@link #getHeaders() headers}.</p>
+         * <p>The content encoding may be specified by the part named {@code _charset_},
+         * as specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
+         *
+         * @see #getContentSource()
+         */
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
@@ -497,7 +511,7 @@ public class MultiPart
         /**
          * @deprecated use {@link #PathPart(ByteBufferPool.Sized, String, String, HttpFields, Path)} instead.
          */
-        @Deprecated
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public PathPart(String name, String fileName, HttpFields fields, Path path)
         {
             super(null, 0L, -1L, name, fileName, fields, path);
