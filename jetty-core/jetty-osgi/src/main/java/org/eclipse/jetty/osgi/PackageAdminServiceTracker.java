@@ -13,12 +13,8 @@
 
 package org.eclipse.jetty.osgi;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -27,7 +23,6 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.startlevel.StartLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,69 +39,23 @@ public class PackageAdminServiceTracker implements ServiceListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
 
-    private final String _environment;
-    private final BundleContext _context;
-    private final List<BundleActivator> _activatedFragments = new ArrayList<>();
+    private final BundleContext _bootBundleContext;
+    private final Map<String, BundleActivator> _activatedFragments = new HashMap<>();
+    private final BundleActivator _bootBundleActivator;
 
-    // Use the deprecated StartLevel to stay compatible with older versions of OSGi.
-    private StartLevel _startLevel;
-    private int _maxStartLevel = 6;
+    private PackageAdmin _packageAdmin;
 
-    private static final Map<String, PackageAdminServiceTracker> INSTANCES = new ConcurrentHashMap<>();
-
-    public static PackageAdminServiceTracker getInstance(String environment)
-    {
-        return INSTANCES.get(environment);
-    }
-
-    public static void setInstance(String environment, PackageAdminServiceTracker packageAdminServiceTracker)
-    {
-        INSTANCES.put(environment, packageAdminServiceTracker);
-    }
-
-    private static void clearInstance(String environment)
-    {
-        INSTANCES.remove(environment);
-    }
-
-    public PackageAdminServiceTracker(String environment, BundleContext context)
+    public PackageAdminServiceTracker(BundleActivator activator, BundleContext context)
         throws Exception
     {
-        _environment = environment;
-        _context = context;
-        setInstance(environment, this);
-        if (!setup())
-        {
-            _context.addServiceListener(this, "(objectclass=" + PackageAdmin.class.getName() + ")");
-        }
-    }
-
-    /**
-     * @return true if the fragments were activated by this method.
-     */
-    private boolean setup()
-    throws Exception
-    {
-        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
-        boolean fragmentsWereActivated = (sr != null);
-        if (fragmentsWereActivated)
-            invokeFragmentActivators(sr);
-
-        sr = _context.getServiceReference(StartLevel.class.getName());
+        _bootBundleActivator = activator;
+        _bootBundleContext = context;
+        ServiceReference<?> sr = _bootBundleContext.getServiceReference(PackageAdmin.class.getName());
         if (sr != null)
-        {
-            _startLevel = (StartLevel)_context.getService(sr);
-            try
-            {
-                _maxStartLevel = Integer.parseInt(System.getProperty("osgi.startLevel", "6"));
-            }
-            catch (Exception e)
-            {
-                // nevermind default on the usual.
-                _maxStartLevel = 6;
-            }
-        }
-        return fragmentsWereActivated;
+            _packageAdmin = (PackageAdmin)_bootBundleContext.getService(sr);
+
+        invokeFragmentActivators();
+        _bootBundleContext.addServiceListener(this, "(objectclass=" + PackageAdmin.class.getName() + ")");
     }
 
     /**
@@ -124,7 +73,7 @@ public class PackageAdminServiceTracker implements ServiceListener
         {
             try
             {
-                invokeFragmentActivators(event.getServiceReference());
+                invokeFragmentActivators();
             }
             catch (Exception e)
             {
@@ -134,274 +83,62 @@ public class PackageAdminServiceTracker implements ServiceListener
     }
 
     /**
-     * Helper to access the PackageAdmin and return the fragments hosted by a
-     * bundle. when we drop the support for the older versions of OSGi, we will
-     * stop using the PackageAdmin service.
-     *
-     * @param bundle the bundle
-     * @return the bundle fragment list
+     * Invoke a fake Activator for a fragment bundle that is associated with this bundle.
      */
-    public Bundle[] getFragments(Bundle bundle)
+    private void invokeFragmentActivators()
     {
-        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
-        if (sr == null)
-        {
-            // we should never be here really.
-            return null;
-        }
-        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
-        return admin.getFragments(bundle);
-    }
-
-    /**
-     * Returns the fragments and the required-bundles of a bundle. Recursively
-     * collect the required-bundles and fragment when the directive
-     * visibility:=reexport is added to a required-bundle.
-     *
-     * @param bundle the bundle
-     * @return the bundle fragment and required list
-     */
-    public Bundle[] getFragmentsAndRequiredBundles(Bundle bundle)
-    {
-        ServiceReference<?> sr = _context.getServiceReference(PackageAdmin.class.getName());
-        if (sr == null)
-        {
-            // we should never be here really.
-            return null;
-        }
-        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
-        LinkedHashMap<String, Bundle> deps = new LinkedHashMap<>();
-        collectFragmentsAndRequiredBundles(bundle, admin, deps, false);
-        return deps.values().toArray(new Bundle[0]);
-    }
-
-    /**
-     * Returns the fragments and the required-bundles. Collects them
-     * transitively when the directive 'visibility:=reexport' is added to a
-     * required-bundle.
-     *
-     * @param bundle the bundle
-     * @param admin the admin package
-     * @param deps The map of fragment and required bundles associated to the value of the
-     * jetty-web attribute.
-     * @param onlyReexport true to collect resources and web-fragments
-     * transitively if and only if the directive visibility is
-     * reexport.
-     */
-    protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
-    {
-        Bundle[] fragments = admin.getFragments(bundle);
-        if (fragments != null)
-        {
-            // Also add the bundles required by the fragments.
-            // this way we can inject onto an existing web-bundle a set of
-            // bundles that extend it
-            for (Bundle f : fragments)
-            {
-                if (!deps.containsKey(f.getSymbolicName()))
-                {
-                    deps.put(f.getSymbolicName(), f);
-                    collectRequiredBundles(f, admin, deps, onlyReexport);
-                }
-            }
-        }
-        collectRequiredBundles(bundle, admin, deps, onlyReexport);
-    }
-
-    /**
-     * A simplistic but good enough parser for the Require-Bundle header. Parses
-     * the version range attribute and the visibility directive.
-     *
-     * @param bundle the bundle
-     * @param admin the admin package
-     * @param deps The map of required bundles associated to the value of the
-     * jetty-web attribute.
-     * @param onlyReexport true to collect resources and web-fragments
-     * transitively if and only if the directive visibility is
-     * reexport.
-     */
-    protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
-    {
-        String requiredBundleHeader = bundle.getHeaders().get("Require-Bundle");
-        if (requiredBundleHeader == null)
-        {
-            return;
-        }
-        StringTokenizer tokenizer = new ManifestTokenizer(requiredBundleHeader);
-        while (tokenizer.hasMoreTokens())
-        {
-            String tok = tokenizer.nextToken().trim();
-            StringTokenizer tokenizer2 = new StringTokenizer(tok, ";");
-            String symbolicName = tokenizer2.nextToken().trim();
-            if (deps.containsKey(symbolicName))
-            {
-                // was already added. 2 dependencies pointing at the same
-                // bundle.
-                continue;
-            }
-            String versionRange = null;
-            boolean reexport = false;
-            while (tokenizer2.hasMoreTokens())
-            {
-                String next = tokenizer2.nextToken().trim();
-                if (next.startsWith("bundle-version="))
-                {
-                    if (next.startsWith("bundle-version=\"") || next.startsWith("bundle-version='"))
-                    {
-                        versionRange = next.substring("bundle-version=\"".length(), next.length() - 1);
-                    }
-                    else
-                    {
-                        versionRange = next.substring("bundle-version=".length());
-                    }
-                }
-                else if (next.equals("visibility:=reexport"))
-                {
-                    reexport = true;
-                }
-            }
-            if (!reexport && onlyReexport)
-            {
-                return;
-            }
-            Bundle[] reqBundles = admin.getBundles(symbolicName, versionRange);
-            if (reqBundles != null && reqBundles.length != 0)
-            {
-                Bundle reqBundle = null;
-                for (Bundle b : reqBundles)
-                {
-                    if (b.getState() == Bundle.ACTIVE || b.getState() == Bundle.STARTING)
-                    {
-                        reqBundle = b;
-                        break;
-                    }
-                }
-                if (reqBundle == null)
-                {
-                    // strange? in OSGi with Require-Bundle,
-                    // the dependent bundle is supposed to be active already
-                    reqBundle = reqBundles[0];
-                }
-                deps.put(reqBundle.getSymbolicName(), reqBundle);
-                collectFragmentsAndRequiredBundles(reqBundle, admin, deps, true);
-            }
-        }
-    }
-
-    private void invokeFragmentActivators(ServiceReference<?> sr)
-    throws Exception
-    {
-        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
-        Bundle[] fragments = admin.getFragments(_context.getBundle());
+        Bundle[] fragments = _packageAdmin.getFragments(_bootBundleContext.getBundle());
         if (fragments == null)
         {
             return;
         }
+        // for each fragment, call a fake activator. The fake activator will have
+        // a classname that matches the pattern symbolicname.FragmentActivator
         for (Bundle frag : fragments)
         {
-            // find a convention to look for a class inside the fragment.
             try
             {
-                String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
-                Class<?> c = Class.forName(fragmentActivator);
-                BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
-                bActivator.start(_context);
-                _activatedFragments.add(bActivator);
+                if (!_activatedFragments.containsKey(frag.getSymbolicName()))
+                {
+                    String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
+                    Class<?> c = Class.forName(fragmentActivator);
+                    BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
+                    _activatedFragments.put(frag.getSymbolicName(), bActivator);
+                    bActivator.start(_bootBundleContext);
+
+                    // if the activator has bundles to contribute to the server classpath register them
+                    if (bActivator instanceof ServerClasspathContributor.Source source && _bootBundleActivator instanceof ServerClasspathContributor.Registry registry)
+                        source.registerServerClasspathContributors(registry);
+                }
+            }
+            catch (ClassNotFoundException e)
+            {
+                //Fragments do not necessarily have FragmentActivators
+                e.printStackTrace();
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to invoke fragment: {}", frag, e);
+                LOG.info("Unable to start fragment: {}", frag, e);
             }
         }
     }
 
     public void stop()
     {
-        clearInstance(_environment);
-        for (BundleActivator fragAct : _activatedFragments)
+        for (Map.Entry<String, BundleActivator> fragmentActivator : _activatedFragments.entrySet())
         {
             try
             {
-                fragAct.stop(_context);
+                if (fragmentActivator instanceof ServerClasspathContributor.Source source && _bootBundleActivator instanceof ServerClasspathContributor.Registry registry)
+                    source.unregisterServerClasspathContributors(registry);
+                fragmentActivator.getValue().stop(_bootBundleContext);
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to stop context {}", _context, e);
+                LOG.warn("Unable to stop fragment {}", fragmentActivator.getKey(), e);
             }
         }
-    }
-
-    /**
-     * @return true if the framework has completed all the start levels.
-     */
-    public boolean frameworkHasCompletedAutostarts()
-    {
-        return _startLevel == null || _startLevel.getStartLevel() >= _maxStartLevel;
-    }
-
-    private static class ManifestTokenizer extends StringTokenizer
-    {
-
-        public ManifestTokenizer(String header)
-        {
-            super(header, ",");
-        }
-
-        @Override
-        public String nextToken()
-        {
-            String token = super.nextToken();
-
-            while (hasOpenQuote(token) && hasMoreTokens())
-            {
-                token += "," + super.nextToken();
-            }
-            return token;
-        }
-
-        private boolean hasOpenQuote(String token)
-        {
-            int i = -1;
-            do
-            {
-                int quote = getQuote(token, i + 1);
-                if (quote < 0)
-                {
-                    return false;
-                }
-
-                i = token.indexOf(quote, i + 1);
-                i = token.indexOf(quote, i + 1);
-            }
-            while (i >= 0);
-            return true;
-        }
-
-        private int getQuote(String token, int offset)
-        {
-            int i = token.indexOf('"', offset);
-            int j = token.indexOf('\'', offset);
-            if (i < 0)
-            {
-                if (j < 0)
-                {
-                    return -1;
-                }
-                else
-                {
-                    return '\'';
-                }
-            }
-            if (j < 0)
-            {
-                return '"';
-            }
-            if (i < j)
-            {
-                return '"';
-            }
-            return '\'';
-        }
+        _activatedFragments.clear();
     }
 }
 

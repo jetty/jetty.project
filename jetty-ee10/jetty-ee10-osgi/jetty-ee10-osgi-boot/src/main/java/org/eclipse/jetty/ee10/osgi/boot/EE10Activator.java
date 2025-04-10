@@ -32,6 +32,7 @@ import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.PackageAdminServiceTracker;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -57,7 +58,7 @@ public class EE10Activator extends AbstractEEActivator
     public static final String ENVIRONMENT = "ee10";
 
     @Override
-    public ContextFactory getContextFactory(Bundle bundle)
+    public ContextFactory newContextFactory(Bundle bundle)
     {
         return new EE10ContextFactory(bundle);
     }
@@ -75,12 +76,12 @@ public class EE10Activator extends AbstractEEActivator
     }
 
     @Override
-    public ContextFactory getWebAppFactory(Bundle bundle)
+    public ContextFactory newWebAppFactory(Bundle bundle)
     {
         return new EE10WebAppFactory(bundle);
     }
 
-    public static class EE10ContextFactory implements ContextFactory
+    public class EE10ContextFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
@@ -98,6 +99,7 @@ public class EE10Activator extends AbstractEEActivator
 
             ContextHandler contextHandler = new ContextHandler();
             contextHandler.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
+            contextHandler.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
 
             ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
 
@@ -176,7 +178,7 @@ public class EE10Activator extends AbstractEEActivator
         }
     }
 
-    public static class EE10WebAppFactory implements ContextFactory
+    public class EE10WebAppFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
@@ -194,6 +196,7 @@ public class EE10Activator extends AbstractEEActivator
 
             WebAppContext webApp = new WebAppContext();
             webApp.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
+            webApp.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
             ResourceFactory resourceFactory = ResourceFactory.of(webApp);
 
             //Apply defaults from the deployer providers

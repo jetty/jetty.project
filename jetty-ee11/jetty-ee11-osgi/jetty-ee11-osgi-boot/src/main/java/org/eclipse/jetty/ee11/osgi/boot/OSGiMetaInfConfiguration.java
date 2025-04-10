@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,7 +169,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
             mergedResources.addAll(webInfJars);
 
         //add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
-        Bundle[] bundles = PackageAdminServiceTracker.getInstance(EE11Activator.ENVIRONMENT).getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
+        Bundle[] bundles = Util.getFragmentsAndRequiredBundles((BundleContext)context.getAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT), (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
             @SuppressWarnings("unchecked")

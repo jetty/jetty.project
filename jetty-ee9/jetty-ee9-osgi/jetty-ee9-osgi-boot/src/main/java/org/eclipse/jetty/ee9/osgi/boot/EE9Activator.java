@@ -57,7 +57,7 @@ public class EE9Activator extends AbstractEEActivator
     public static final String ENVIRONMENT = "ee9";
 
     @Override
-    public ContextFactory getContextFactory(Bundle bundle)
+    public ContextFactory newContextFactory(Bundle bundle)
     {
         return new EE9ContextFactory(bundle);
     }
@@ -75,12 +75,12 @@ public class EE9Activator extends AbstractEEActivator
     }
 
     @Override
-    public ContextFactory getWebAppFactory(Bundle bundle)
+    public ContextFactory newWebAppFactory(Bundle bundle)
     {
         return new EE9WebAppFactory(bundle);
     }
 
-    public static class EE9ContextFactory implements ContextFactory
+    public class EE9ContextFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
@@ -98,6 +98,7 @@ public class EE9Activator extends AbstractEEActivator
 
             ContextHandler contextHandler = new ContextHandler();
             contextHandler.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
+            contextHandler.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
             ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
 
             //Make base resource that of the bundle
@@ -175,7 +176,7 @@ public class EE9Activator extends AbstractEEActivator
         }
     }
 
-    public static class EE9WebAppFactory implements ContextFactory
+    public class EE9WebAppFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
@@ -193,6 +194,7 @@ public class EE9Activator extends AbstractEEActivator
 
             WebAppContext webApp = new WebAppContext();
             webApp.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
+            webApp.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
             ResourceFactory resourceFactory = ResourceFactory.of(webApp);
 
             //Apply defaults from the deployer providers

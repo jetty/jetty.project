@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.ee11.osgi.boot.jsp;
 
-import org.eclipse.jetty.ee11.osgi.boot.EE11Activator;
-import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
+import org.eclipse.jetty.osgi.ServerClasspathContributor;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -33,23 +32,33 @@ import org.osgi.framework.BundleContext;
  * in order for the PackageAdminTracker to find it.
  * </p>
  */
-public class FragmentActivator implements BundleActivator
+public class FragmentActivator implements BundleActivator, ServerClasspathContributor.Source
 {
     ServerClasspathContributor _tldClasspathContributor;
-    
+
     @Override
     public void start(BundleContext context) throws Exception
     {
         //Register a class that will provide the identity of bundles that 
         //contain TLDs and therefore need to be scanned.
         _tldClasspathContributor = new TLDServerClasspathContributor();
-        EE11Activator.registerServerClasspathContributor(_tldClasspathContributor);
     }
 
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        EE11Activator.unregisterServerClasspathContributor(_tldClasspathContributor);
         _tldClasspathContributor = null;
+    }
+
+    @Override
+    public void registerServerClasspathContributors(ServerClasspathContributor.Registry registry)
+    {
+        registry.registerServerClasspathContributor(_tldClasspathContributor);
+    }
+
+    @Override
+    public void unregisterServerClasspathContributors(ServerClasspathContributor.Registry registry)
+    {
+        registry.unregisterServerClasspathContributor(_tldClasspathContributor);
     }
 }

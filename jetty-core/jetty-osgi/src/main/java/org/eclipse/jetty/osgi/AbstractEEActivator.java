@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
-import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
@@ -43,9 +42,13 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractEEActivator implements BundleActivator
+public abstract class AbstractEEActivator implements BundleActivator, ServerClasspathContributor.Registry
 {
-    private ServiceTracker<Server, Object> _tracker;
+    private BundleContext _bootBundleContext;
+    private ServiceTracker<Server, Object> _serverTracker;
+    private PackageAdminServiceTracker _packageAdminServiceTracker;
+    private final Collection<ServerClasspathContributor> _serverClasspathContributors = new ArrayList<>();
+
 
     /**
      * Track jetty Server instances and add ability to deploy EE contexts/webapps
@@ -55,15 +58,37 @@ public abstract class AbstractEEActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
+        _bootBundleContext = context;
+
         // track other bundles and fragments attached to this bundle that we should activate.
-        new PackageAdminServiceTracker(getEnvironment(), context);
+        _packageAdminServiceTracker = new PackageAdminServiceTracker(this, _bootBundleContext);
 
         //track jetty Server instances
-        _tracker = new ServiceTracker<>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
-        _tracker.open();
+        _serverTracker = new ServiceTracker<>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(_bootBundleContext.getBundle()));
+        _serverTracker.open();
 
         //register for bundleresource: url resource handling
         ResourceFactory.registerResourceFactory("bundleresource", new URLResourceFactory());
+    }
+
+    public BundleContext getBootBundleContext()
+    {
+        return _bootBundleContext;
+    }
+
+    public void registerServerClasspathContributor(ServerClasspathContributor contributor)
+    {
+        _serverClasspathContributors.add(contributor);
+    }
+
+    public void unregisterServerClasspathContributor(ServerClasspathContributor contributor)
+    {
+        _serverClasspathContributors.remove(contributor);
+    }
+
+    public Collection<ServerClasspathContributor> getServerClasspathContributors()
+    {
+        return _serverClasspathContributors;
     }
 
     /**
@@ -74,37 +99,25 @@ public abstract class AbstractEEActivator implements BundleActivator
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        if (_tracker != null)
+        if (_serverTracker != null)
         {
-            _tracker.close();
-            _tracker = null;
+            _serverTracker.close();
+            _serverTracker = null;
         }
+    }
+
+    protected PackageAdminServiceTracker getPackageAdminServiceTracker()
+    {
+        return _packageAdminServiceTracker;
     }
 
     public abstract String getEnvironment();
 
-    public abstract ContextFactory getContextFactory(Bundle bundle);
+    public abstract ContextFactory newContextFactory(Bundle bundle);
 
-    public abstract ContextFactory getWebAppFactory(Bundle bundle);
+    public abstract ContextFactory newWebAppFactory(Bundle bundle);
 
     public abstract String getMetaInfContainerBundlePatternAttributeName();
-
-    private static final Collection<ServerClasspathContributor> __serverClasspathContributors = new ArrayList<>();
-
-    public static void registerServerClasspathContributor(ServerClasspathContributor contributor)
-    {
-        __serverClasspathContributors.add(contributor);
-    }
-
-    public static void unregisterServerClasspathContributor(ServerClasspathContributor contributor)
-    {
-        __serverClasspathContributors.remove(contributor);
-    }
-
-    public static Collection<ServerClasspathContributor> getServerClasspathContributors()
-    {
-        return __serverClasspathContributors;
-    }
 
     /**
      * ServerTracker
@@ -183,13 +196,13 @@ public abstract class AbstractEEActivator implements BundleActivator
 
                 if (contextProvider == null)
                 {
-                    contextProvider = new BundleContextProvider(server, deployer, getEnvironment(), getContextFactory(_myBundle));
+                    contextProvider = new BundleContextProvider(server, deployer, getEnvironment(), newContextFactory(_myBundle));
                     deployer.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
-                    webAppProvider = new BundleWebAppProvider(server, deployer, getEnvironment(), getWebAppFactory(_myBundle));
+                    webAppProvider = new BundleWebAppProvider(server, deployer, getEnvironment(), newWebAppFactory(_myBundle));
                     deployer.addBean(webAppProvider);
                 }
 

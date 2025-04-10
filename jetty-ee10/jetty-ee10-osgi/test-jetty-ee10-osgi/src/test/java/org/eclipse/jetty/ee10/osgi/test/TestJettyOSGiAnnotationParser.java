@@ -87,7 +87,7 @@ public class TestJettyOSGiAnnotationParser
         //Get a reference to the deployed fake bundle
         Bundle b = TestOSGiUtil.getBundle(bundleContext, "bundle.with.module.info");
         AnnotationParser parser = new AnnotationParser();
-        parser.indexBundle(ResourceFactory.root(), b);
+        parser.getBundleIndex().indexBundle(ResourceFactory.root(), b);
         ClassInheritanceHandler handler = new ClassInheritanceHandler(new ConcurrentHashMap<>());
         parser.parse(Collections.singleton(handler), b);
     }
