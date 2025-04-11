@@ -302,7 +302,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return A mutable MimeTypes that wraps the {@link Server#getMimeTypes()}
      *         once {@link ContextHandler#setServer(Server)} has been called.
-     * @see MimeTypes.Wrapper
      */
     public MimeTypes.Mutable getMimeTypes()
     {
