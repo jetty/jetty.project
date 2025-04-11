@@ -130,7 +130,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     private final ScopedContext _context;
     private final Attributes _persistentAttributes = new Mapped();
-    private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -207,7 +207,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     public void setServer(Server server)
     {
         super.setServer(server);
-        _mimeTypes.setWrapped(server.getMimeTypes());
+
+        MimeTypes.Mutable serverMimeTypes = server.getMimeTypes();
+        if (serverMimeTypes != null && !serverMimeTypes.isDefault())
+        {
+            if (_mimeTypes.isDefault())
+                _mimeTypes.setFrom(serverMimeTypes);
+            else
+                _mimeTypes.mergeFrom(serverMimeTypes);
+        }
     }
     
     protected ScopedContext newContext()

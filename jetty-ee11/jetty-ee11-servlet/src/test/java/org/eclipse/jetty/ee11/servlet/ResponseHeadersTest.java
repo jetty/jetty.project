@@ -735,6 +735,58 @@ public class ResponseHeadersTest
     }
 
     @Test
+    public void testAssumedContentType() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/json");
+                assertThat(response.getCharacterEncoding(), is("utf-8"));
+
+                response.setContentType("unknown/type");
+                assertThat(response.getCharacterEncoding(), is("iso-8859-1"));
+
+                response.setContentType("text/html;charset=Shift_Jis");
+                assertThat(response.getCharacterEncoding(), is("Shift_Jis"));
+
+                response.setContentType("unknown/type");
+                assertThat(response.getContentType(), is("unknown/type;charset=Shift_Jis"));
+                assertThat(response.getCharacterEncoding(), is("Shift_Jis"));
+
+                response.setContentType("image/unknown");
+                assertThat(response.getCharacterEncoding(), nullValue());
+
+                response.setContentType("text/json");
+                assertThat(response.getCharacterEncoding(), is("utf-8"));
+
+                PrintWriter pw = response.getWriter();
+                pw.println("{Hello:\"world\"}");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type").getValue(), is("text/json"));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
     public void testCommittedNoop() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();

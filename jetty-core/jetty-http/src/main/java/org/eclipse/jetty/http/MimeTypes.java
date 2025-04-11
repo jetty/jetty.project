@@ -24,6 +24,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +56,13 @@ public class MimeTypes
         .with("utf16", UTF16)
         .with("iso-8859-1", ISO_8859_1)
         .with("iso_8859_1", ISO_8859_1)
+        .build();
+    private static final Index<String> WILDS = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("text/", "text/*")
+        .with("image/", "image/*")
+        .with("application/xml", "application/*")
+        .with("multipart/", "multipart/*")
         .build();
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
@@ -340,6 +348,7 @@ public class MimeTypes
     protected final Map<String, String> _mimeMap = new HashMap<>();
     protected final Map<String, Charset> _inferredEncodings = new HashMap<>();
     protected final Map<String, Charset> _assumedEncodings = new HashMap<>();
+    protected final Set<String> _assumedNoEncodings = new HashSet<>();
 
     public MimeTypes()
     {
@@ -353,7 +362,14 @@ public class MimeTypes
             _mimeMap.putAll(defaults.getMimeMap());
             _assumedEncodings.putAll(defaults._assumedEncodings);
             _inferredEncodings.putAll(defaults._inferredEncodings);
+            _assumedNoEncodings.addAll(defaults._assumedNoEncodings);
         }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return super.hashCode();
     }
 
     /**
@@ -424,12 +440,33 @@ public class MimeTypes
 
     public Charset getInferredCharset(String contentType)
     {
-        return _inferredEncodings.get(contentType);
+        Charset charset = _inferredEncodings.get(contentType);
+        if (charset == null)
+            charset = _inferredEncodings.get(wild(contentType));
+        return charset;
+    }
+
+    public boolean isCharsetAssumed(String contentType)
+    {
+        Charset charset = _assumedEncodings.get(contentType);
+        if (charset == null)
+        {
+            if (_assumedNoEncodings.contains(contentType))
+                return true;
+
+            String wild = wild(contentType);
+            charset = _assumedEncodings.get(wild);
+            return charset != null || _assumedNoEncodings.contains(wild);
+        }
+        return false;
     }
 
     public Charset getAssumedCharset(String contentType)
     {
-        return _assumedEncodings.get(contentType);
+        Charset charset = _assumedEncodings.get(contentType);
+        if (charset == null)
+            charset = _assumedEncodings.get(wild(contentType));
+        return charset;
     }
 
     public String getCharsetInferredFromContentType(String contentType)
@@ -459,6 +496,8 @@ public class MimeTypes
 
     public static class Mutable extends MimeTypes
     {
+        boolean isDefault;
+
         public Mutable()
         {
             this(DEFAULTS);
@@ -467,6 +506,12 @@ public class MimeTypes
         public Mutable(MimeTypes defaults)
         {
             super(defaults);
+            isDefault = defaults == DEFAULTS;
+        }
+
+        public boolean isDefault()
+        {
+            return isDefault;
         }
 
         /**
@@ -480,17 +525,78 @@ public class MimeTypes
         {
             if (extension.contains("."))
                 throw new IllegalArgumentException("extensions cannot contain '.'");
+            isDefault = false;
             return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
         }
 
         public String addInferred(String contentType, String encoding)
         {
+            isDefault = false;
             return nameOf(_inferredEncodings.put(contentType, Charset.forName(encoding)));
         }
 
         public String addAssumed(String contentType, String encoding)
         {
+            isDefault = false;
             return nameOf(_assumedEncodings.put(contentType, Charset.forName(encoding)));
+        }
+
+        public void setFrom(MimeTypes other)
+        {
+            _mimeMap.clear();
+            _mimeMap.putAll(other.getMimeMap());
+            _assumedEncodings.clear();
+            _assumedEncodings.putAll(other._assumedEncodings);
+            _inferredEncodings.clear();
+            _inferredEncodings.putAll(other._inferredEncodings);
+            _assumedNoEncodings.clear();
+            _assumedNoEncodings.addAll(other._assumedNoEncodings);
+        }
+
+        public void mergeFrom(MimeTypes other)
+        {
+            mergeMap(_mimeMap, other._mimeMap, DEFAULTS._mimeMap);
+            mergeMap(_assumedEncodings, other._assumedEncodings, DEFAULTS._assumedEncodings);
+            mergeMap(_inferredEncodings, other._inferredEncodings, DEFAULTS._inferredEncodings);
+
+            _assumedEncodings.clear();
+            _assumedEncodings.putAll(other._assumedEncodings);
+            _inferredEncodings.clear();
+            _inferredEncodings.putAll(other._inferredEncodings);
+            _assumedNoEncodings.clear();
+            _assumedNoEncodings.addAll(other._assumedNoEncodings);
+
+            for (String encoding : other._assumedNoEncodings)
+            {
+                if (!DEFAULTS._assumedNoEncodings.contains(encoding))
+                    _assumedNoEncodings.add(encoding);
+            }
+        }
+
+        private <V> void mergeMap(Map<String, V> target, Map<String, V> other, Map<String, V> reference)
+        {
+            // handle all reference entries
+            for (Map.Entry<String, V> entry : reference.entrySet())
+            {
+                String key = entry.getKey();
+                V value = entry.getValue();
+                if (Objects.equals(target.get(key), value))
+                {
+                    // The target value is default, so replace with any non default value from the other
+                    V otherValue = other.get(entry.getKey());
+                    if (otherValue == null)
+                        target.remove(key);
+                    else if (!Objects.equals(value, otherValue))
+                        entry.setValue(otherValue);
+                }
+            }
+
+            // handle non-reference entries
+            for (Map.Entry<String, V> entry : other.entrySet())
+            {
+                if (!reference.containsKey(entry.getKey()))
+                    target.put(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -639,13 +745,15 @@ public class MimeTypes
                         props.load(reader);
                         props.stringPropertyNames().stream()
                             .filter(Objects::nonNull)
-                            .forEach(t ->
+                            .forEach(type ->
                             {
-                                String charset = props.getProperty(t);
-                                if (charset.startsWith("-"))
-                                    _assumedEncodings.put(t, Charset.forName(charset.substring(1)));
+                                String charset = props.getProperty(type);
+                                if ("-".equals(charset))
+                                    _assumedNoEncodings.add(type);
+                                else if (charset.startsWith("-"))
+                                    _assumedEncodings.put(type, Charset.forName(charset.substring(1)));
                                 else
-                                    _inferredEncodings.put(t, Charset.forName(props.getProperty(t)));
+                                    _inferredEncodings.put(type, Charset.forName(props.getProperty(type)));
                             });
 
                         if (_inferredEncodings.isEmpty())
@@ -985,6 +1093,17 @@ public class MimeTypes
         if (builder == null)
             return value;
         return builder.toString();
+    }
+
+    private String wild(String contentType)
+    {
+        String wild = WILDS.getBest(contentType);
+        if (wild != null)
+            return wild;
+        int slash = contentType.indexOf('/');
+        if (slash > 0)
+            return contentType.substring(0, slash) + "/*";
+        return "*/*";
     }
 
     /**
