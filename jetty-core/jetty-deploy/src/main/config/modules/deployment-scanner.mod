@@ -29,6 +29,8 @@ etc/jetty-deployment-scanner.xml
 # jetty.deploy.deferInitialScan=false
 
 ## Monitored directory scan period (seconds)
+# value of 0 is hot-redeploy disabled
+# value of 1 or more will enable hot-redeploy
 # jetty.deploy.scanInterval=0
 
 ## Environments directory name (relative to $jetty.base)

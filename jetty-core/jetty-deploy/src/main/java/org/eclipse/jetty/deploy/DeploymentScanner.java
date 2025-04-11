@@ -137,7 +137,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
-    private int scanInterval = 10;
+    private int scanInterval = 0;
     private Scanner scanner;
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
@@ -654,7 +654,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 
-        LOG.info("Deployment monitor in {} at intervals {}s", monitoredDirs, getScanInterval());
+        LOG.info("Deployment monitoring {} at intervals {}s {}", monitoredDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
