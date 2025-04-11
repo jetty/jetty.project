@@ -69,15 +69,17 @@
  *  dirAllowed        If true, directory listings are returned if no
  *                    welcome file is found. Else 403 Forbidden.
  *
- *  welcomeServlets   If true, attempt to dispatch to welcome files
- *                    that are servlets, but only after no matching static
- *                    resources could be found. If false, then a welcome
- *                    file must exist on disk. If "exact", then exact
- *                    servlet matches are supported without an existing file.
- *                    Default is false.
- *
- *                    This must be false if you want directory listings,
- *                    but have index.jsp in your welcome file list.
+ *  welcomeServlets   If false, then only serve welcome resources when they exist
+ *                    on the file system.  If they also map to a Servlet, then the
+ *                    servlet will be used to generate the response.
+ *                    If true, then dispatch welcome resources to a matching Servlet
+ *                    (for example mapped to {@code *.welcome}), even if the welcome
+ *                    resource does not exist on file system.
+ *                    If exact, then dispatch welcome resource to a Servlet when
+ *                    the resource does not exist on the file system, but only if the
+ *                    mapping is exactly the same as the welcome resource
+ *                    (for example /index.welcome})
+ *                    Defaults to false.
  *
  *  redirectWelcome   If true, welcome files are redirected rather than
  *                    forwarded to.

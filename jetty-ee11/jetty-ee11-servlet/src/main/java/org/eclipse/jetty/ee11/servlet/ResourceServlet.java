@@ -175,13 +175,14 @@ import org.slf4j.LoggerFactory;
  *   </dd>
  *   <dt>welcomeServlets</dt>
  *   <dd>
- *     Use {@code false} to only serve welcome resources from the file system.
+ *     Use {@code false} to only serve welcome resources when they exist on the file system.
+ *     If they also map to a Servlet, then the servlet will be used to generate the response.
  *     Use {@code true} to dispatch welcome resources to a matching Servlet
- *     (for example mapped to {@code *.welcome}), when the welcome resources
+ *     (for example mapped to {@code *.welcome}), even if the welcome resources
  *     does not exist on file system.
- *     Use {@code exact} to dispatch welcome resource to a Servlet whose mapping
- *     is exactly the same as the welcome resource (for example {@code /index.welcome}),
- *     when the welcome resources does not exist on file system.
+ *     Use {@code exact} to dispatch welcome resource to a Servlet when the resource does not
+ *     exist on the file system, but only if the its mapping is exactly the same as the welcome
+ *     resource (for example {@code /index.welcome})
  *     Defaults to {@code false}.
  *   </dd>
  * </dl>
