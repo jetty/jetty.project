@@ -22,7 +22,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
@@ -92,6 +93,8 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         try
         {
+            boolean nominatedDirDefined = false;
+
             // This CoreContextHandler is arriving via a Deployer
             for (String keyName : attributes.getAttributeNameSet())
             {
@@ -106,24 +109,64 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
                         //noinspection unchecked
                         java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
-                        Optional<Path> optionalDir = deployablePaths.stream()
-                            .sorted(PathCollators.byName(true))
+                        List<Path> nominatedDirs = deployablePaths.stream()
                             .filter(Files::isDirectory)
                             .filter(p -> FileID.isExtension(p.getFileName().toString(), "d"))
-                            .findFirst();
+                            .sorted(PathCollators.byName(true))
+                            .toList();
 
-                        if (optionalDir.isPresent())
+                        if (nominatedDirs.size() == 1)
                         {
                             ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource resourceDir = resourceFactory.newResource(optionalDir.get());
+                            Resource resourceDir = resourceFactory.newResource(nominatedDirs.get(0));
                             setBaseResource(resourceDir);
+                            nominatedDirDefined = true;
+                        }
+                        else if (nominatedDirs.size() > 1)
+                        {
+                            /* this is possible on filesystems that allow things like:
+                             *
+                             * webapps/foo.d
+                             * webapps/FOO.D
+                             * webapps/FOO.d
+                             *
+                             * We want to only support 1 directory in this case.
+                             */
+                            throw new IllegalArgumentException("More than one nominated directory is not supported: " +
+                                nominatedDirs.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
+                        }
+
+                        // Normal directories.
+                        List<Path> dirs = deployablePaths.stream()
+                            .filter(Files::isDirectory)
+                            .filter(p -> !FileID.isExtension(p.getFileName().toString(), "d"))
+                            .sorted(PathCollators.byName(true))
+                            .toList();
+                        if (!nominatedDirs.isEmpty() && !dirs.isEmpty())
+                        {
+                            throw new IllegalArgumentException("Unsupported multiple deployment directories: " +
+                                Stream.concat(nominatedDirs.stream(), dirs.stream()).map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
+                        }
+                        else if (dirs.size() == 1)
+                        {
+                            ResourceFactory resourceFactory = ResourceFactory.of(this);
+                            Resource resourceDir = resourceFactory.newResource(dirs.get(0));
+                            setBaseResource(resourceDir);
+                        }
+                        else if (dirs.size() > 1)
+                        {
+                            throw new IllegalArgumentException("More than one deployment directory is not supported: " +
+                                dirs.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
                         }
                     }
                 }
             }
 
             // Init the webapp, unpack if necessary, create the classloader, etc.
-            initWebApp();
+            if (nominatedDirDefined)
+                initWebApp();
+            else
+                initStaticWebApp();
         }
         catch (IOException e)
         {
@@ -262,6 +305,36 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         {
             _builtClassLoader = true;
             setClassLoader(newClassLoader(getBaseResource()));
+        }
+    }
+
+    protected void initStaticWebApp() throws IOException
+    {
+        if (_initialized)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Already initialized, not initializing again");
+            return;
+        }
+
+        if (getBaseResource() == null)
+        {
+            // Nothing to do.
+            return;
+        }
+
+        Resource staticDir = getBaseResource();
+
+        _initialized = true;
+
+        if (Resources.isDirectory(staticDir))
+        {
+            if (!isResourceHandlerAlreadyPresent(staticDir))
+            {
+                ResourceHandler resourceHandler = new ResourceHandler();
+                resourceHandler.setBaseResource(staticDir);
+                setHandler(resourceHandler);
+            }
         }
     }
 
