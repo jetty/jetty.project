@@ -71,6 +71,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         context.put(HTTP2Connection.class.getName(), connection);
         connection.addEventListener(connectionListener);
+        client.getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
         return customize(connection, context);
