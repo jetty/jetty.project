@@ -169,12 +169,13 @@ import org.slf4j.LoggerFactory;
  *   </dd>
  *   <dt>minMappedFileSize</dt>
  *   <dd>
- *     The minimum size in bytes of a file that will used with file mapping, or {@code 0} for
- *     no file mapping or {@code null} for a default size.
+ *     The minimum size in bytes of a file that will used with file mapping; or {@code 0} for
+ *     no file mapping; or {@code -1} (or net set) for a default size of 1MB.
  *   </dd>
  *   <dt>maxMappedFileSize</dt>
  *   <dd>
- *     The maximum size in bytes of a file that will used with file mapping, or {@code null} for a default size.
+ *     The maximum size in bytes of a file that will used with file mapping;
+ *     or {@code -1} (or not set) for a default size of {@link Integer#MAX_VALUE}.
  *   </dd>
  *   <dt>welcomeServlets</dt>
  *   <dd>

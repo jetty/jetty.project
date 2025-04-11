@@ -664,7 +664,7 @@ public class ResourceHandlerTest
             protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
-                contentFactory = new FileMappingHttpContentFactory(contentFactory, -1, -1);
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
                 contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, byteBufferPool);

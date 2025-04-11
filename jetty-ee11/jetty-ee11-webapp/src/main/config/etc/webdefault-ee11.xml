@@ -114,9 +114,9 @@
  *  maxCachedFiles    The maximum number of files to cache
  *
  *  minMappedFileSize The minimum size in bytes of a file that will be used with file mapping;
- *                    or 0 for no file mapping; or not set for a default size.
+ *                    or 0 for no file mapping; or -1 (or not set) for a default size of 1MB.
  *  maxMappedFileSize The maximum size in bytes of a file that will be used with file mapping;
- *                    or not set for a default size.
+ *                    or -1 (or not set) for a default size of MAX_VALUE.
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
