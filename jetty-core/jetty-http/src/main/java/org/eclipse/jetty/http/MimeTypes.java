@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -438,14 +437,50 @@ public class MimeTypes
         return _mimeMap.get(extension);
     }
 
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return A Charset is returned if it can be inferred from content-type.  This is essentially a default charset
+     *         determined for the contentType.  For example, the content-type "text/html" may be configured to have 
+     *         an inferred charset of "utf-8", in which case setting that content-type should result in a value
+     *         of "text/html;charset=utf8".
+     * @see #getAssumedCharset(String) 
+     */
     public Charset getInferredCharset(String contentType)
     {
+        if (contentType == null)
+            return null;
         Charset charset = _inferredEncodings.get(contentType);
         if (charset == null)
             charset = _inferredEncodings.get(wild(contentType));
         return charset;
     }
 
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return A Charset is returned if it can be assumed from content-type.  This is essentially a known charset
+     *         for the specific contentType.  For example, the content-type "text/json" is specified to use utf-8, 
+     *         so it has an assumed charset of "utf-8". As this is universally known, there is no need to modify the 
+     *         the content-type which will just have a value of "text/json".   Note that some content-types may be
+     *         assumed to have no charset, in which case {@link #isCharsetAssumed(String)} must be used.
+     * @see #isCharsetAssumed(String) 
+     * @see #getAssumedCharset(String)
+     */
+    public Charset getAssumedCharset(String contentType)
+    {
+        if (contentType == null)
+            return null;
+        Charset charset = _assumedEncodings.get(contentType);
+        if (charset == null)
+            charset = _assumedEncodings.get(wild(contentType));
+        return charset;
+    }
+
+    /**
+     * @param contentType The content-type to obtain a charset for
+     * @return {@code True} if the content-type is assumed to have a specific charset (include assumed to 
+     *         have no charset.  For example "text/json" is assumed as it has a specified charset of "utf-8".
+     *         Another example is "image/jpeg", which is assumed to have no charset, so it would also return true.
+     */
     public boolean isCharsetAssumed(String contentType)
     {
         Charset charset = _assumedEncodings.get(contentType);
@@ -461,37 +496,36 @@ public class MimeTypes
         return false;
     }
 
-    public Charset getAssumedCharset(String contentType)
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return The string value of {@link #getInferredCharset(String)}
+     * @see #getInferredCharset(String)
+     */
+    public String getInferredCharsetName(String contentType)
     {
-        Charset charset = _assumedEncodings.get(contentType);
+        return nameOf(getInferredCharset(contentType));
+    }
+
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return The string value of {@link #getAssumedCharset(String)};
+     *         or the empty string if the type is assumed to not have a charset;
+     *         or {@code null} of the type has no assumed charset.
+     * @see #getAssumedCharset(String)
+     */
+    public String getAssumedCharsetName(String contentType)
+    {
+        if (contentType == null)
+            return null;
+        Charset charset = getAssumedCharset(contentType);
         if (charset == null)
-            charset = _assumedEncodings.get(wild(contentType));
-        return charset;
-    }
-
-    public String getCharsetInferredFromContentType(String contentType)
-    {
-        return nameOf(_inferredEncodings.get(contentType));
-    }
-
-    public String getCharsetAssumedFromContentType(String contentType)
-    {
-        return nameOf(_assumedEncodings.get(contentType));
+            return isCharsetAssumed(contentType) ? "" : null;
+        return charset.name();
     }
 
     public Map<String, String> getMimeMap()
     {
         return Collections.unmodifiableMap(_mimeMap);
-    }
-
-    public Map<String, String> getInferredMap()
-    {
-        return _inferredEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
-    }
-
-    public Map<String, String> getAssumedMap()
-    {
-        return _assumedEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
     }
 
     public static class Mutable extends MimeTypes
@@ -535,12 +569,40 @@ public class MimeTypes
             return nameOf(_inferredEncodings.put(contentType, Charset.forName(encoding)));
         }
 
-        public String addAssumed(String contentType, String encoding)
+        /**
+         * Add an assumed charset encoding for a content-type. Default values for this
+         * mapping are set by the "encoding.properties" class path resource.
+         * @param mimeType The mimeType to map to an encoding,
+         *                 either in absolute form (e.g. "text/html")
+         *                 or wildcard form (e.g. "image/*").
+         * @param encoding The assumed encoding;
+         *                 or the empty string if it is assumed to have no charset;
+         *                 or {@code null} if there is no assumed charset.
+         * @return The old value.
+         */
+        public String addAssumed(String mimeType, String encoding)
         {
             isDefault = false;
-            return nameOf(_assumedEncodings.put(contentType, Charset.forName(encoding)));
+            if (encoding == null)
+            {
+                _assumedNoEncodings.remove(mimeType);
+                return nameOf(_assumedEncodings.remove(mimeType));
+            }
+
+            if (encoding.isEmpty())
+            {
+                _assumedNoEncodings.add(mimeType);
+                return nameOf(_assumedEncodings.remove(mimeType));
+            }
+
+            _assumedNoEncodings.remove(mimeType);
+            return nameOf(_assumedEncodings.put(mimeType, Charset.forName(encoding)));
         }
 
+        /**
+         * Set the {@code MimeTypes} mappings and encodings from another {@code MimeTypes}
+         * @param other The other {@code MimeTypes}.
+         */
         public void setFrom(MimeTypes other)
         {
             _mimeMap.clear();
@@ -553,6 +615,11 @@ public class MimeTypes
             _assumedNoEncodings.addAll(other._assumedNoEncodings);
         }
 
+        /**
+         * Merge the {@code MimeTypes} mappings and encodings from another {@code MimeTypes}.
+         * Any non default values in this instance are kept in preference to the values from the other.
+         * @param other The other {@code MimeTypes}.
+         */
         public void mergeFrom(MimeTypes other)
         {
             mergeMap(_mimeMap, other._mimeMap, DEFAULTS._mimeMap);
@@ -597,80 +664,6 @@ public class MimeTypes
                 if (!reference.containsKey(entry.getKey()))
                     target.put(entry.getKey(), entry.getValue());
             }
-        }
-    }
-
-    public static class Wrapper extends Mutable
-    {
-        private MimeTypes _wrapped;
-
-        public Wrapper()
-        {
-            super(null);
-        }
-
-        public MimeTypes getWrapped()
-        {
-            return _wrapped;
-        }
-
-        public void setWrapped(MimeTypes wrapped)
-        {
-            _wrapped = wrapped;
-        }
-
-        @Override
-        public String getMimeForExtension(String extension)
-        {
-            String mime = super.getMimeForExtension(extension);
-            return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
-        }
-
-        @Override
-        public String getCharsetInferredFromContentType(String contentType)
-        {
-            String charset = super.getCharsetInferredFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
-        }
-
-        @Override
-        public String getCharsetAssumedFromContentType(String contentType)
-        {
-            String charset = super.getCharsetAssumedFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetAssumedFromContentType(contentType) : charset;
-        }
-
-        @Override
-        public Map<String, String> getMimeMap()
-        {
-            Map<String, String> map = super.getMimeMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getMimeMap());
-            return Collections.unmodifiableMap(map);
-        }
-
-        @Override
-        public Map<String, String> getInferredMap()
-        {
-            Map<String, String> map = super.getInferredMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getInferredMap());
-            return Collections.unmodifiableMap(map);
-        }
-
-        @Override
-        public Map<String, String> getAssumedMap()
-        {
-            Map<String, String> map = super.getAssumedMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getAssumedMap());
-            return Collections.unmodifiableMap(map);
         }
     }
 

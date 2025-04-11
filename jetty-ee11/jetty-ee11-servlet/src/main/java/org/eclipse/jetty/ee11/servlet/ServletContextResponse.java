@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A core response wrapper that carries the servlet related response state,
@@ -327,8 +327,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.
-        if (_characterEncoding != null || _encodingFrom == EncodingFrom.ASSUMED)
-            return _characterEncoding;
+        if (StringUtil.isNotBlank(_characterEncoding) || _encodingFrom == EncodingFrom.ASSUMED)
+            return _characterEncoding.isEmpty() ? null : _characterEncoding;
 
         String encoding;
 
@@ -338,12 +338,12 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         
         // Try charset assumed from content type (assumed charsets are not added to content type header).
         MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
-        encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
-        if (encoding != null)
+        encoding = mimeTypes.getAssumedCharsetName(_contentType);
+        if (encoding != null && !encoding.isEmpty())
             return encoding;
 
         // Try char set inferred from content type.
-        encoding = mimeTypes.getCharsetInferredFromContentType(_contentType);
+        encoding = mimeTypes.getInferredCharsetName(_contentType);
         if (encoding != null)
         {
             if (setContentType)
@@ -552,7 +552,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             {
                 if (mimeTypes.isCharsetAssumed(mimeType))
                 {
-                    Charset assumed = mimeTypes.getAssumedCharset(mimeType);
+                    String assumed = mimeTypes.getAssumedCharsetName(mimeType);
                     if (assumed == null)
                     {
                         charset = null;
@@ -560,7 +560,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                     }
                     else
                     {
-                        charset = assumed.name();
+                        charset = assumed;
                         charsetFrom = EncodingFrom.ASSUMED;
                     }
                 }
@@ -590,17 +590,14 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                     case ASSUMED:
                     {
                         // Look for an inferred encoding
-                        Charset inferred = mimeTypes.getInferredCharset(_mimeType == null ? mimeType : _mimeType.getBaseType().asString());
+                        String inferred = mimeTypes.getInferredCharsetName(_mimeType == null ? mimeType : _mimeType.getBaseType().asString());
                         if (inferred != null)
                         {
-                            charset = inferred.name();
+                            charset = inferred;
                             charsetFrom = EncodingFrom.INFERRED;
-                            if (false) // TODO should we set an inferred charset, or only use it for a writer silently?
-                            {
-                                _contentType = _contentType + ";charset=" + charset;
-                                _mimeType = MimeTypes.CACHE.get(_contentType);
-                                field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
-                            }
+                            _contentType = _contentType + ";charset=" + charset;
+                            _mimeType = MimeTypes.CACHE.get(_contentType);
+                            field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
                             break;
                         }
                         charsetFrom = EncodingFrom.NOT_SET;

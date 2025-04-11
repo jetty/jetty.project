@@ -20,6 +20,7 @@ import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -762,6 +763,9 @@ public class ResponseHeadersTest
 
                 response.setContentType("text/json");
                 assertThat(response.getCharacterEncoding(), is("utf-8"));
+                response.setLocale(Locale.JAPAN);
+                assertThat(response.getCharacterEncoding(), is("utf-8"));
+                assertThat(response.getContentType(), is("text/json"));
 
                 PrintWriter pw = response.getWriter();
                 pw.println("{Hello:\"world\"}");
@@ -809,7 +813,7 @@ public class ResponseHeadersTest
                 response.setHeader("Content-Type", "text/xml");
 
                 assertThat(response.getHeader("Test"), is("Before"));
-                assertThat(response.getContentType(), is("text/html"));
+                assertThat(response.getContentType(), is("text/html;charset=utf-8"));
                 assertThat(response.getHeader("Content-Length"), is("2"));
             }
         };
@@ -829,7 +833,7 @@ public class ResponseHeadersTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField("Test").getValue(), is("Before"));
-        assertThat(response.getField("Content-Type").getValue(), is("text/html"));
+        assertThat(response.getField("Content-Type").getValue(), is("text/html;charset=utf-8"));
         assertThat(response.getContent(), is("OK"));
     }
 }
