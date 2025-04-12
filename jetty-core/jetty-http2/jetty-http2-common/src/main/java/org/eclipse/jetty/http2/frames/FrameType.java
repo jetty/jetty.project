@@ -40,11 +40,6 @@ public enum FrameType
         return Types.types.get(type);
     }
 
-    public static int maxType()
-    {
-        return FAILURE.getType();
-    }
-
     private final int type;
 
     FrameType(int type)
@@ -60,11 +55,7 @@ public enum FrameType
 
     public boolean isSynthetic()
     {
-        return switch (this)
-        {
-            case PREFACE, DISCONNECT, FAILURE -> true;
-            default -> false;
-        };
+        return getType() >= PREFACE.getType();
     }
 
     private static class Types
