@@ -40,6 +40,11 @@ public enum FrameType
         return Types.types.get(type);
     }
 
+    public static int maxType()
+    {
+        return FAILURE.getType();
+    }
+
     private final int type;
 
     FrameType(int type)

@@ -45,7 +45,7 @@ public class Generator
         headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
         hpackEncoder = new HpackEncoder();
 
-        this.generators = new FrameGenerator[FrameType.values().length];
+        this.generators = new FrameGenerator[FrameType.maxType()];
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder, maxHeaderBlockFragment);
         this.generators[FrameType.PRIORITY.getType()] = new PriorityGenerator(headerGenerator);
         this.generators[FrameType.RST_STREAM.getType()] = new ResetGenerator(headerGenerator);
