@@ -142,10 +142,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public boolean addEventListener(EventListener listener)
     {
-        if (super.addEventListener(listener))
+        if (listener instanceof FrameListener frameListener)
         {
-            if (listener instanceof FrameListener frameListener)
-                frameListeners.add(frameListener);
+            frameListeners.add(frameListener);
+            super.addEventListener(listener);
             return true;
         }
         return false;
@@ -154,10 +154,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public boolean removeEventListener(EventListener listener)
     {
-        if (super.removeEventListener(listener))
+        if (listener instanceof FrameListener frameListener)
         {
-            if (listener instanceof FrameListener frameListener)
-                frameListeners.add(frameListener);
+            frameListeners.remove(frameListener);
+            super.removeEventListener(listener);
             return true;
         }
         return false;
