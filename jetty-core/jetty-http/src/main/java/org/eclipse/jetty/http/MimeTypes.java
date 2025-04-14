@@ -365,12 +365,6 @@ public class MimeTypes
         }
     }
 
-    @Override
-    public int hashCode()
-    {
-        return super.hashCode();
-    }
-
     /**
      * Get the explicit, assumed, or inferred Charset for a HttpField containing a mime type value
      * @param field HttpField with a mime type value (e.g. Content-Type)
@@ -451,16 +445,16 @@ public class MimeTypes
             return null;
         Charset charset = _inferredEncodings.get(contentType);
         if (charset == null)
-            charset = _inferredEncodings.get(wild(contentType));
+            charset = _inferredEncodings.get(toWild(contentType));
         return charset;
     }
 
     /**
      * @param contentType The content type to obtain a charset for.
      * @return A Charset is returned if it can be assumed from content-type.  This is essentially a known charset
-     *         for the specific contentType.  For example, the content-type "text/json" is specified to use utf-8, 
+     *         for the specific contentType.  For example, the content-type "application/json" is specified to use utf-8, 
      *         so it has an assumed charset of "utf-8". As this is universally known, there is no need to modify the 
-     *         the content-type which will just have a value of "text/json".   Note that some content-types may be
+     *         the content-type which will just have a value of "application/json".   Note that some content-types may be
      *         assumed to have no charset, in which case {@link #isCharsetAssumed(String)} must be used.
      * @see #isCharsetAssumed(String) 
      * @see #getAssumedCharset(String)
@@ -471,14 +465,14 @@ public class MimeTypes
             return null;
         Charset charset = _assumedEncodings.get(contentType);
         if (charset == null)
-            charset = _assumedEncodings.get(wild(contentType));
+            charset = _assumedEncodings.get(toWild(contentType));
         return charset;
     }
 
     /**
      * @param contentType The content-type to obtain a charset for
      * @return {@code True} if the content-type is assumed to have a specific charset (include assumed to 
-     *         have no charset.  For example "text/json" is assumed as it has a specified charset of "utf-8".
+     *         have no charset.  For example "application/json" is assumed as it has a specified charset of "utf-8".
      *         Another example is "image/jpeg", which is assumed to have no charset, so it would also return true.
      */
     public boolean isCharsetAssumed(String contentType)
@@ -489,7 +483,7 @@ public class MimeTypes
             if (_assumedNoEncodings.contains(contentType))
                 return true;
 
-            String wild = wild(contentType);
+            String wild = toWild(contentType);
             charset = _assumedEncodings.get(wild);
             return charset != null || _assumedNoEncodings.contains(wild);
         }
@@ -1088,7 +1082,7 @@ public class MimeTypes
         return builder.toString();
     }
 
-    private String wild(String contentType)
+    private String toWild(String contentType)
     {
         String wild = WILDS.getBest(contentType);
         if (wild != null)

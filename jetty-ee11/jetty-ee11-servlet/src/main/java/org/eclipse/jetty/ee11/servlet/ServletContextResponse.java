@@ -339,8 +339,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         // Try charset assumed from content type (assumed charsets are not added to content type header).
         MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
         encoding = mimeTypes.getAssumedCharsetName(_contentType);
-        if (encoding != null && !encoding.isEmpty())
-            return encoding;
+        if (encoding != null)
+            return encoding.isEmpty() ? null : encoding;
 
         // Try char set inferred from content type.
         encoding = mimeTypes.getInferredCharsetName(_contentType);
