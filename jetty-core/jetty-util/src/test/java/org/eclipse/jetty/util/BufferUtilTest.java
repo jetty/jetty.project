@@ -75,6 +75,7 @@ public class BufferUtilTest
         assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 0, 11));
         assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 11, -1));
         assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 1, 10));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, -1, 1));
     }
 
     @Test
