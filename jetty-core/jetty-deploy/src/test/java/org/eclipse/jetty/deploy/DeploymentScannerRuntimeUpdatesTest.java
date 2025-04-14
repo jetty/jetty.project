@@ -159,6 +159,34 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         assertNotSame(contextHandler2, contextHandler3);
     }
 
+    /**
+     * Test that if a existing deployment (of a directory) is updated via
+     * the introduction of a new (empty) properties file.
+     */
+    @Test
+    public void testRedeployViaNewEmptyProperties(WorkDir workDir) throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+        createJettyBase(baseDir);
+        startJetty();
+
+        Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
+        Files.createDirectory(webappsDir.resolve("simple"));
+        Files.writeString(webappsDir.resolve("simple/simple.txt"), "Simple Contents");
+        waitForDirectoryScan();
+        jetty.assertContextHandlerExists("/simple");
+        ContextHandler contextHandler = jetty.getContextHandler("/simple");
+        assertNotNull(contextHandler);
+
+        // create a new (empty) properties file
+        Files.writeString(webappsDir.resolve("simple.properties"), "");
+        waitForDirectoryScan();
+
+        ContextHandler contextHandler2 = jetty.getContextHandler("/simple");
+        assertNotNull(contextHandler2);
+        assertNotSame(contextHandler, contextHandler2);
+    }
+
     @Test
     public void testWebAppsWithAddedEnvConfig(WorkDir workDir) throws Exception
     {

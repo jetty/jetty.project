@@ -132,8 +132,7 @@ public class StandardDeployer extends ContainerLifeCycle implements Deployer
     {
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("redeploy: {} {}", this, newContextHandler);
+            LOG.info("Redeploy {}", newContextHandler);
 
             requireNonNull(newContextHandler).setServer(requireNonNull(oldHandler.getServer()));
 
