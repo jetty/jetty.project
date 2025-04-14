@@ -749,7 +749,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (environmentsDir == null)
             return false;
 
-        return isSameDir(environmentsDir, path.getParent());
+        if (!isSameDir(environmentsDir, path.getParent()))
+            return false;
+
+        return FileID.isExtension(path, "xml", "properties");
     }
 
     protected boolean isMonitoredPath(Path path)
