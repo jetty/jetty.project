@@ -107,6 +107,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public void onOpen()
     {
         HTTP2Session session = getSession();
+        session.notifyLifeCycleOpen();
         notifyAccept(session);
         for (Frame frame : upgradeFrames)
         {

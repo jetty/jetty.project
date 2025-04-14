@@ -96,7 +96,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void onOpen()
         {
-            Map<Integer, Integer> settings = listener.onPreface(getSession());
+            HTTP2Session session = getSession();
+            session.notifyLifeCycleOpen();
+
+            Map<Integer, Integer> settings = listener.onPreface(session);
             settings = settings == null ? new HashMap<>() : new HashMap<>(settings);
 
             // Below we want to populate any settings to send to the server
@@ -147,8 +150,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
-
-            HTTP2Session session = getSession();
 
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             session.updateRecvWindow(windowDelta);
