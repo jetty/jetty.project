@@ -1328,6 +1328,11 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>io.github.olamy.maven.plugins</groupId>
+          <artifactId>jacoco-aggregator-maven-plugin</artifactId>
+          <version>1.0.2</version>
+        </plugin>
+        <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>${license.maven.plugin.version}</version>
