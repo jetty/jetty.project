@@ -29,11 +29,11 @@ public enum FrameType
     WINDOW_UPDATE(8),
     CONTINUATION(9),
     // Synthetic frames only needed by the implementation.
-    // Use high numbers to avoid clashes with newly defined
-    // RFC frames such as ALT-SVC, ORIGIN, etc.
-    PREFACE(125),
-    DISCONNECT(126),
-    FAILURE(127);
+    // Use negative numbers to avoid clashes with newly
+    // defined RFC frames such as ALT-SVC, ORIGIN, etc.
+    PREFACE(-1),
+    DISCONNECT(-2),
+    FAILURE(-3);
 
     public static FrameType from(int type)
     {
@@ -55,7 +55,7 @@ public enum FrameType
 
     public boolean isSynthetic()
     {
-        return getType() >= PREFACE.getType();
+        return getType() < 0;
     }
 
     private static class Types

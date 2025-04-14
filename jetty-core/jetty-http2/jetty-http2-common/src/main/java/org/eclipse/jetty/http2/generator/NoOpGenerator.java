@@ -19,7 +19,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 /**
  * @deprecated No replacement, never used.
  */
-@Deprecated(since = "12.0.20")
+@Deprecated(since = "12.0.20", forRemoval = true)
 public class NoOpGenerator extends FrameGenerator
 {
     public NoOpGenerator()
