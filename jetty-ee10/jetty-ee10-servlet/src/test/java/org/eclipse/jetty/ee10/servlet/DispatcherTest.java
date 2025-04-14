@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -316,13 +315,14 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 98\r
+            Content-Length: 145\r
             Connection: close\r
             \r
             /context\r
             /include\r
             /info\r
             /context/include/info;param=value\r
+            http://local/context/include/info;param=value\r
             null\r
             null\r
             null\r
@@ -1468,6 +1468,7 @@ public class DispatcherTest
             response.getOutputStream().println(request.getServletPath());
             response.getOutputStream().println(request.getPathInfo());
             response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println(request.getRequestURL().toString());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
             HttpServletMapping mapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.INCLUDE_MAPPING);
             response.getOutputStream().println(mapping == null ? null : mapping.getMatchValue());
@@ -1620,6 +1621,7 @@ public class DispatcherTest
             assertNull(request.getPathTranslated());
             assertThat(request.getQueryString(), containsString("do=assertinclude&do=more&test=1"));
             assertEquals("/context/IncludeServlet", request.getRequestURI());
+            assertEquals("http://local/context/IncludeServlet", request.getRequestURL().toString());
             assertEquals("/context", request.getContextPath());
             assertEquals("/IncludeServlet", request.getServletPath());
 
