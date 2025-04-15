@@ -35,7 +35,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.Test;
 
@@ -237,7 +236,7 @@ public class HTTP2ListenersTest extends AbstractTest
                 private void ping(Session session)
                 {
                     task = httpClient.getScheduler().schedule(() -> close(session), pingTimeout, TimeUnit.MILLISECONDS);
-                    session.ping(new PingFrame(NanoTime.now(), false), Callback.NOOP);
+                    session.ping(new PingFrame(0L, false), Callback.NOOP);
                 }
 
                 private void close(Session session)

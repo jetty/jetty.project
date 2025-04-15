@@ -1222,8 +1222,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private void notifyLifeCycle(BiConsumer<LifeCycleListener, Session> method)
     {
-        if (lifeCycleListeners.isEmpty())
-            return;
         for (LifeCycleListener listener : lifeCycleListeners)
         {
             try
@@ -1254,8 +1252,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private void notifyFrame(Consumer<FrameListener> method)
     {
-        if (frameListeners.isEmpty())
-            return;
         for (FrameListener listener : frameListeners)
         {
             try
