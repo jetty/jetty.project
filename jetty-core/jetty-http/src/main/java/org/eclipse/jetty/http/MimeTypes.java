@@ -31,9 +31,11 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -365,6 +367,49 @@ public class MimeTypes
         }
     }
 
+    protected void loadMimeProperties(InputStream stream, String resourceName) throws IOException
+    {
+        if (stream == null)
+            throw new IOException("Missing mime-type resource: " + resourceName);
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+        {
+            Properties props = new Properties();
+            props.load(reader);
+            props.stringPropertyNames().stream()
+                .filter(Objects::nonNull)
+                .forEach(x ->
+                {
+                    if (x.contains("."))
+                        LOG.warn("ignoring invalid extension {} from mime.properties {}", x, resourceName);
+                    else
+                        _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
+                });
+        }
+    }
+
+    protected void loadEncodings(InputStream stream, String resourceName) throws IOException
+    {
+        if (stream == null)
+            throw new IOException("Missing encoding resource: " + resourceName);
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+        {
+            Properties props = new Properties();
+            props.load(reader);
+            props.stringPropertyNames().stream()
+                .filter(Objects::nonNull)
+                .forEach(type ->
+                {
+                    String charset = props.getProperty(type);
+                    if ("-".equals(charset))
+                        _assumedNoEncodings.add(type);
+                    else if (charset.startsWith("-"))
+                        _assumedEncodings.put(type, Charset.forName(charset.substring(1)));
+                    else
+                        _inferredEncodings.put(type, Charset.forName(props.getProperty(type)));
+                });
+        }
+    }
+
     /**
      * Get the explicit, assumed, or inferred Charset for a HttpField containing a mime type value
      * @param field HttpField with a mime type value (e.g. Content-Type)
@@ -546,7 +591,7 @@ public class MimeTypes
          * Set a mime mapping
          *
          * @param extension the extension
-         * @param type the mime type
+         * @param type the mime type or {@code null} to remove a mapping
          * @return previous value
          */
         public String addMimeMapping(String extension, String type)
@@ -554,13 +599,23 @@ public class MimeTypes
             if (extension.contains("."))
                 throw new IllegalArgumentException("extensions cannot contain '.'");
             isDefault = false;
+            if (type == null)
+                return _mimeMap.remove(StringUtil.asciiToLowerCase(extension));
             return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
         }
 
-        public String addInferred(String contentType, String encoding)
+        /**
+         * Add an inferred encoding for a mimeType
+         * @param mimeType The mimeType to infer an encoding for
+         * @param encoding The encoding or {@code null} to remove
+         * @return {@code true} if the encoding was added
+         */
+        public String addInferred(String mimeType, String encoding)
         {
             isDefault = false;
-            return nameOf(_inferredEncodings.put(contentType, Charset.forName(encoding)));
+            if (encoding == null)
+                return nameOf(_inferredEncodings.remove(normalizeMimeType(mimeType)));
+            return nameOf(_inferredEncodings.put(normalizeMimeType(mimeType), Charset.forName(encoding)));
         }
 
         /**
@@ -591,6 +646,87 @@ public class MimeTypes
 
             _assumedNoEncodings.remove(mimeType);
             return nameOf(_assumedEncodings.put(mimeType, Charset.forName(encoding)));
+        }
+
+        /**
+         * Set the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+         * @param mimeProperties The property file to use.
+         * @see #addMimeTypes(Resource)
+         * @see #addMimeMapping(String, String)
+         * @throws RuntimeIOException if there is an {@link IOException}
+         */
+        public void setMimeTypes(Resource mimeProperties) throws RuntimeIOException
+        {
+            _mimeMap.clear();
+            addMimeTypes(mimeProperties);
+        }
+
+        /**
+         * Add the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+         * @param mimeProperties The property file to use.
+         * @see #addMimeMapping(String, String)
+         * @throws RuntimeIOException if there is an {@link IOException}
+         */
+        public void addMimeTypes(Resource mimeProperties) throws RuntimeIOException
+        {
+            isDefault = false;
+            try
+            {
+                loadMimeProperties(mimeProperties.newInputStream(), mimeProperties.toString());
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
+
+        /**
+         * Set the inferred and assumed encodings from a property file in the format of:
+         * <dl>
+         *     <dt>mimeType=encoding</dt><dd>An inferred encoding for the mimeType</dd>
+         *     <dt>mimeType=-encoding</dt><dd>An assumed encoding for the mimeType</dd>
+         *     <dt>mimeType=-</dt><dd>An assumed no encoding for the mimeType</dd>
+         * </dl>
+         * The mimeType may be a wildcard like "image/*"
+         * @param encodingProperties The property file to use.
+         * @see #addInferred(String, String)
+         * @see #addAssumed(String, String)
+         * @see #addEncodings(Resource)
+         * @throws RuntimeIOException if there is an {@link IOException}
+         */
+        public void setEncodings(Resource encodingProperties) throws RuntimeIOException
+        {
+            _assumedNoEncodings.clear();
+            _assumedEncodings.clear();
+            _inferredEncodings.clear();
+            addEncodings(encodingProperties);
+        }
+
+        /**
+         * Add the inferred and assumed encodings from a property file in the format of:
+         * <dl>
+         *     <dt>mimeType=encoding</dt><dd>An inferred encoding for the mimeType</dd>
+         *     <dt>mimeType=-encoding</dt><dd>An assumed encoding for the mimeType</dd>
+         *     <dt>mimeType=-</dt><dd>An assumed no encoding for the mimeType</dd>
+         * </dl>
+         * The mimeType may be a wildcard like "image/*"
+         * @param encodingProperties The property file to use.
+         * @see #addInferred(String, String)
+         * @see #addAssumed(String, String)
+         * @see #addEncodings(Resource)
+         * @throws RuntimeIOException if there is an {@link IOException}
+         */
+        public void addEncodings(Resource encodingProperties) throws RuntimeIOException
+        {
+            isDefault = false;
+            try
+            {
+                loadEncodings(encodingProperties.newInputStream(), encodingProperties.toString());
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
         }
 
         /**
@@ -673,43 +809,7 @@ public class MimeTypes
             String resourceName = "mime.properties";
             try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
             {
-                if (stream == null)
-                {
-                    LOG.warn("Missing mime-type resource: {}", resourceName);
-                }
-                else
-                {
-                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
-                    {
-                        Properties props = new Properties();
-                        props.load(reader);
-                        props.stringPropertyNames().stream()
-                            .filter(Objects::nonNull)
-                            .forEach(x ->
-                            {
-                                if (x.contains("."))
-                                    LOG.warn("ignoring invalid extension {} from mime.properties", x);
-                                else
-                                    _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
-                            });
-
-                        if (_mimeMap.isEmpty())
-                        {
-                            LOG.warn("Empty mime types at {}", resourceName);
-                        }
-                        else if (_mimeMap.size() < props.keySet().size())
-                        {
-                            LOG.warn("Duplicate or null mime-type extension in resource: {}", resourceName);
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
-                        else
-                            LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
-                    }
-                }
+                loadMimeProperties(stream, resourceName);
             }
             catch (IOException e)
             {
@@ -722,44 +822,7 @@ public class MimeTypes
             resourceName = "encoding.properties";
             try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
             {
-                if (stream == null)
-                    LOG.warn("Missing encoding resource: {}", resourceName);
-                else
-                {
-                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
-                    {
-                        Properties props = new Properties();
-                        props.load(reader);
-                        props.stringPropertyNames().stream()
-                            .filter(Objects::nonNull)
-                            .forEach(type ->
-                            {
-                                String charset = props.getProperty(type);
-                                if ("-".equals(charset))
-                                    _assumedNoEncodings.add(type);
-                                else if (charset.startsWith("-"))
-                                    _assumedEncodings.put(type, Charset.forName(charset.substring(1)));
-                                else
-                                    _inferredEncodings.put(type, Charset.forName(props.getProperty(type)));
-                            });
-
-                        if (_inferredEncodings.isEmpty())
-                        {
-                            LOG.warn("Empty encodings at {}", resourceName);
-                        }
-                        else if ((_inferredEncodings.size() + _assumedEncodings.size()) < props.keySet().size())
-                        {
-                            LOG.warn("Null or duplicate encodings in resource: {}", resourceName);
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn("Unable to read encoding resource: {}", resourceName, e);
-                        else
-                            LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
-                    }
-                }
+                loadEncodings(stream, resourceName);
             }
             catch (IOException e)
             {
