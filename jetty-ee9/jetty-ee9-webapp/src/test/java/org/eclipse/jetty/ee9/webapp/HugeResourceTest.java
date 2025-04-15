@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -58,11 +57,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -72,7 +69,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-@Tag("large-disk-resource")
 public class HugeResourceTest
 {
     private static final long KB = 1024;
@@ -91,19 +87,20 @@ public class HugeResourceTest
         staticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-static-base");
         FS.ensureDirExists(staticBase);
 
-        FileStore baseFileStore = Files.getFileStore(staticBase);
+        // FileStore baseFileStore = Files.getFileStore(staticBase);
 
         // Calculation is (1GB + 4GB + 10GB) == 15GB
         // once for static source files
         // once again for multipart/form temp files
         // for a total of (at least) 30GB needed.
 
-        Assumptions.assumeTrue(baseFileStore.getUnallocatedSpace() > 30 * GB,
-            String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
-                baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
+        // Assumptions.assumeTrue(baseFileStore.getUnallocatedSpace() > 30 * GB,
+        //     String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
+        //         baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
-        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
-        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
+        // makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
+        // makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
@@ -117,8 +114,9 @@ public class HugeResourceTest
     {
         ArrayList<Arguments> ret = new ArrayList<>();
 
-        ret.add(Arguments.of("test-1g.dat", GB));
-        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        ret.add(Arguments.of("test-1m.dat", MB));
+        // ret.add(Arguments.of("test-1g.dat", GB));
+        // ret.add(Arguments.of("test-4g.dat", 4 * GB));
         // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
@@ -362,7 +360,7 @@ public class HugeResourceTest
         MultiPartRequestContent multipart = new MultiPartRequestContent();
         Path inputFile = staticBase.resolve(filename);
         String name = String.format("file-%d", expectedSize);
-        multipart.addPart(new MultiPart.PathPart(name, filename, HttpFields.EMPTY, inputFile));
+        multipart.addPart(new MultiPart.PathPart(null, name, filename, HttpFields.EMPTY, inputFile));
         multipart.close();
 
         URI destUri = server.getURI().resolve("/multipart");

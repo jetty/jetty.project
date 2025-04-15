@@ -75,6 +75,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -1105,102 +1106,6 @@ public class ResourceServletTest
             scenario.extraAsserts.accept(response);
     }
 
-    private static void addBasicWelcomeScenarios(Scenarios scenarios)
-    {
-        scenarios.addScenario(
-            "GET /context/one/ (index.htm match)",
-            """
-                GET /context/one/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
-        );
-
-        scenarios.addScenario(
-            "GET /context/two/ (index.html match)",
-            """
-                GET /context/two/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
-        );
-
-        scenarios.addScenario(
-            "GET /context/three/ (index.html wins over index.htm)",
-            """
-                GET /context/three/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.OK_200,
-            (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
-        );
-    }
-
-    public static Stream<Arguments> welcomeScenarios()
-    {
-        Scenarios scenarios = new Scenarios();
-
-        scenarios.addScenario(
-            "GET /context/ - (no match)",
-            """
-                GET /context/ HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """,
-            HttpStatus.FORBIDDEN_403
-        );
-
-        addBasicWelcomeScenarios(scenarios);
-
-        return scenarios.stream();
-    }
-
-    @ParameterizedTest
-    @MethodSource("welcomeScenarios")
-    public void testWelcome(Scenario scenario) throws Exception
-    {
-        Path one = docRoot.resolve("one");
-        Path two = docRoot.resolve("two");
-        Path three = docRoot.resolve("three");
-        FS.ensureDirExists(one);
-        FS.ensureDirExists(two);
-        FS.ensureDirExists(three);
-
-        Files.writeString(one.resolve("index.htm"), "<h1>Hello Inde</h1>", UTF_8);
-        Files.writeString(two.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
-
-        Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
-        Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
-
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
-
-        holder.setInitParameter("maxCacheSize", "1024000");
-        holder.setInitParameter("maxCachedFileSize", "512000");
-        holder.setInitParameter("maxCachedFiles", "100");
-
-        ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
-        context.addServlet(jspholder, "/index.jsp");
-
-        String rawResponse = connector.getResponse(scenario.rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
-        if (scenario.extraAsserts != null)
-            scenario.extraAsserts.accept(response);
-    }
-
     @Test
     public void testWelcomeMultipleResourceServletsDifferentBases() throws Exception
     {
@@ -1978,54 +1883,179 @@ public class ResourceServletTest
         }
     }
 
-    public static Stream<Arguments> welcomeServletScenarios()
+    public static Stream<Arguments> welcomeScenarios()
     {
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-            "GET /context/ - (/index.jsp servlet match, but JSP not supported)",
+            "No welcome file or servlet in root",
             """
                 GET /context/ HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """,
-            HttpStatus.INTERNAL_SERVER_ERROR_500,
-            (response) -> assertThat(response.getContent(), containsString("JSP support not configured")) // test of SendError response
+            HttpStatus.FORBIDDEN_403,
+            (response) -> assertThat(response.getContent(), containsString("Forbidden")),
+            "false", null, null
         );
 
-        addBasicWelcomeScenarios(scenarios);
+        scenarios.addScenario(
+            "No welcome file or servlet in dir",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.FORBIDDEN_403,
+            (response) -> assertThat(response.getContent(), containsString("Forbidden")),
+            "false", null, null
+        );
+
+        scenarios.addScenario(
+            "No welcome file in dir false *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.FORBIDDEN_403,
+            (response) -> assertThat(response.getContent(), containsString("403 Forbidden")),
+            "false", "*.html", null
+        );
+
+        scenarios.addScenario(
+            "No welcome file in dir true *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("DUMP:/context/dir/index.html")),
+            "true", "*.html", null
+        );
+
+        scenarios.addScenario(
+            "No welcome file in dir exact *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.FORBIDDEN_403,
+            (response) -> assertThat(response.getContent(), containsString("403 Forbidden")),
+            "exact", "*.html", null
+        );
+
+        scenarios.addScenario(
+            "No welcome file in dir exact /dir/index.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("DUMP:/context/dir/index.html")),
+            "exact", "/dir/index.html", null
+        );
+
+
+        scenarios.addScenario(
+            "Welcome file in root",
+            """
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("Contents of index.html")),
+            "false", null, "index.html"
+        );
+
+        scenarios.addScenario(
+            "Welcome file in dir",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("Contents of dir/index.html")),
+            "false", null, "dir/index.html"
+        );
+
+        scenarios.addScenario(
+            "Welcome file in dir false *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("DUMP:/context/dir/index.html")),
+            "false", "*.html", "dir/index.html"
+        );
+
+        scenarios.addScenario(
+            "Welcome file in dir true *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("DUMP:/context/dir/index.html")),
+            "true", "*.html", "dir/index.html"
+        );
+
+        scenarios.addScenario(
+            "Welcome file in dir exact *.html servlet",
+            """
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("DUMP:/context/dir/index.html")),
+            "exact", "*.html", "dir/index.html"
+        );
 
         return scenarios.stream();
     }
 
     @ParameterizedTest
-    @MethodSource("welcomeServletScenarios")
-    public void testWelcomeExactServlet(Scenario scenario) throws Exception
+    @MethodSource("welcomeScenarios")
+    public void testWelcome(Scenario scenario, String welcomeServlets, String mapping, String file) throws Exception
     {
         FS.ensureDirExists(docRoot);
 
-        Path one = docRoot.resolve("one");
-        Path two = docRoot.resolve("two");
-        Path three = docRoot.resolve("three");
-        FS.ensureDirExists(one);
-        FS.ensureDirExists(two);
-        FS.ensureDirExists(three);
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
 
-        Files.writeString(one.resolve("index.htm"), "<h1>Hello Inde</h1>", UTF_8);
-        Files.writeString(two.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
-
-        Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
-        Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
+        if (file != null)
+            Files.writeString(docRoot.resolve(file), "Contents of " + file, UTF_8);
 
         ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
         holder.setInitParameter("dirAllowed", "false");
         holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "exact");
+        holder.setInitParameter("welcomeServlets", welcomeServlets);
         holder.setInitParameter("gzip", "false");
 
-        ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
-        context.addServlet(jspholder, "/index.jsp");
+        context.setWelcomeFiles(new String[] {"index.html"});
+
+        if (mapping != null)
+            context.addServlet(DumpServlet.class, mapping);
 
         String rawResponse = connector.getResponse(scenario.rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -3850,9 +3880,13 @@ public class ResourceServletTest
             add(Arguments.of(new Scenario(rawRequest, expectedStatus, extraAsserts)));
         }
 
-        public void addScenario(String description, String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts)
+        public void addScenario(String description, String rawRequest, int expectedStatus, Consumer<HttpTester.Response> extraAsserts, Object... extraArgs)
         {
-            add(Arguments.of(new Scenario(description, rawRequest, expectedStatus, extraAsserts)));
+            Object[] args = new Object[1 + (extraArgs == null ? 0 : extraArgs.length)];
+            args[0] = new Scenario(description, rawRequest, expectedStatus, extraAsserts);
+            if (args.length > 1)
+               System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
+            add(Arguments.of(args));
         }
     }
 
@@ -3898,6 +3932,16 @@ public class ResourceServletTest
         public String toString()
         {
             return description;
+        }
+    }
+
+    public static class DumpServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            response.getOutputStream().print("DUMP:" + URIUtil.addPaths(request.getContextPath(), URIUtil.addPaths(request.getServletPath(), request.getPathInfo())));
         }
     }
 }

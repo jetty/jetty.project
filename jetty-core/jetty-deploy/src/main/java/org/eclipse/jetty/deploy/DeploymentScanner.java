@@ -137,7 +137,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
-    private int scanInterval = 10;
+    private int scanInterval = 0;
     private Scanner scanner;
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
@@ -654,7 +654,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 
-        LOG.info("Deployment monitor in {} at intervals {}s", monitoredDirs, getScanInterval());
+        LOG.info("Deployment monitoring {} at intervals {}s {}", monitoredDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
@@ -749,7 +749,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (environmentsDir == null)
             return false;
 
-        return isSameDir(environmentsDir, path.getParent());
+        if (!isSameDir(environmentsDir, path.getParent()))
+            return false;
+
+        return FileID.isExtension(path, "xml", "properties");
     }
 
     protected boolean isMonitoredPath(Path path)
@@ -1356,6 +1359,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         private final String name;
         private final Map<Path, PathsApp.State> paths = new HashMap<>();
         private final Attributes attributes = new Attributes.Mapped();
+        private Path mainPath;
         private PathsApp.State state;
         private ContextHandler contextHandler;
 
@@ -1427,6 +1431,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          */
         public Path getMainPath()
         {
+            return mainPath;
+        }
+
+        /**
+         * Arbitrarily set the Main Path for the PathApp.
+         *
+         * <p>
+         * Note: this value can be overridden by calls to {@link #putPath(Path, State)}, and
+         * subsequent recalculation of the Main Path.
+         * </p>
+         *
+         * @param mainPath the main path.
+         */
+        public void setMainPath(Path mainPath)
+        {
+            this.mainPath = mainPath;
+        }
+
+        private Path calcMainPath()
+        {
             List<Path> livePaths = paths
                 .entrySet()
                 .stream()
@@ -1466,6 +1490,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 throw new IllegalStateException("More than 1 Directory for deployable " + asStringList(dirs));
 
             LOG.warn("Unable to determine main deployable for {}", this);
+
             return null;
         }
 
@@ -1543,11 +1568,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 }
             }
 
-            // Look for simple old school environment name.
-            String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-            if (StringUtil.isNotBlank(environmentName))
+            // Look for environment attribute.
+            Object envObj = getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+            if (envObj instanceof Environment environment)
             {
-                setEnvironment(Environment.get(environmentName));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Using defaulted environment of {} to {}", name, environment);
+            }
+            else if (envObj instanceof String environmentName)
+            {
+                if (StringUtil.isNotBlank(environmentName))
+                {
+                    Environment env = Environment.get(environmentName);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Setting environment of {} to {}", name, env);
+                    setEnvironment(env);
+                }
             }
         }
 
@@ -1555,6 +1591,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         {
             this.paths.put(path, state);
             setState(calcState());
+            setMainPath(calcMainPath());
         }
 
         public void resetStates()
@@ -1634,8 +1671,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         if (ret == null)
                             ret = PathsApp.State.ADDED;
-                        else if (ret == PathsApp.State.UNCHANGED || ret == PathsApp.State.REMOVED)
-                            ret = PathsApp.State.ADDED;
+                        else if (ret != PathsApp.State.ADDED)
+                            ret = PathsApp.State.CHANGED;
                     }
                     case CHANGED ->
                     {

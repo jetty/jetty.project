@@ -17,6 +17,7 @@ NOTE: Make sure you have read the xref:arch/index.adoc[Jetty architecture sectio
 
 The Jetty start mechanism is invoked by executing `$JETTY_HOME/start.jar`, from within a `$JETTY_BASE` directory, with zero or more command line options:
 
+[source,bash]
 ----
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar ...
@@ -48,6 +49,7 @@ Within the Jetty start mechanism, the source of configurations is layered in thi
 
 You can enable Jetty modules persistently across restarts with the `--add-modules` command:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=https,http2
 ----
@@ -115,19 +117,21 @@ jetty.http.port=9876
 
 When Jetty is started (or re-started) this configuration is applied and Jetty will listen for clear-text HTTP/1.1 on port `9876`.
 
-[[configure-enable-command-line]]
+[[configure-module-command-line]]
 === Enabling Modules on Command Line
 
 You can also enable a module transiently, only for the current execution of the `java -jar $JETTY_HOME/start.jar` command.
 
 If you have an empty `$JETTY_BASE`, the following command enables the `http` module, but does not create any `+$JETTY_BASE/start.d/*.ini+` files.
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --module=http
 ----
 
 Since there are no `+$JETTY_BASE/start.d/*.ini+` files, you can only customize the properties via the command line, for example:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --module=http jetty.http.port=9876
 ----
@@ -137,6 +141,25 @@ Enabling modules on the command line is useful to verify that the modules work a
 NOTE: It is possible to enable some module persistently via `--add-modules` and some other module transiently via `--module`.
 
 Remember that once the current execution terminates, the modules enabled transiently on the command line via `--module` and their configuration are not saved and will not be enabled on the next execution (unless you specify them again on the command line).
+
+[[configure-properties-command-line]]
+=== Specifying Properties on Command Line
+
+You can also specify module properties transiently, only for the current execution of the `java -jar $JETTY_HOME/start.jar` command.
+
+Properties specified on the command line override the same properties specified in `+*.ini+` files.
+
+For example, you can enable the `server` module in `$JETTY_BASE` and the `http` module on the command line, and specify properties for both on the command line:
+
+[source,bash]
+----
+# Enable the server module in $JETTY_BASE.
+$ java -jar $JETTY_HOME/start.jar --add-modules=server
+
+# Start Jetty enabling the http module on the command line,
+# and specifying properties for both modules.
+$ java -jar $JETTY_HOME/start.jar --module=http jetty.server.dumpAfterStart=true jetty.http.port=9876
+----
 
 [[configure-custom-module]]
 === Adding Your Own Modules
@@ -156,6 +179,7 @@ include::code:example$jetty-modules/postgresql.mod[]
 
 Then enable it:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=postgresql
 ----
@@ -188,6 +212,7 @@ include::code:example$jetty-modules/jvm.mod[]
 
 Enable it:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=jvm
 ----
@@ -210,17 +235,18 @@ Once you have enabled and configured the `$JETTY_BASE`, you can display the conf
 
 Using the standard `server` and `http` Jetty modules, and the `postgresql` and `jvm` custom Jetty module defined above, you obtain:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --list-config
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod,code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=server,http,postgresql,jvm
 args=--list-config
-....
+----
 
 Note how the configuration displayed above includes:
 
@@ -233,6 +259,7 @@ Note how the configuration displayed above includes:
 
 The Jetty start mechanism can display a full JVM command line that will start Jetty with the configuration you specified, with the `--dry-run` option:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run
 ----
@@ -248,23 +275,25 @@ IMPORTANT: You can use the `--dry-run` option as explained below to avoid forkin
 
 For example, using the `--dry-run` option with the `jvm.mod` introduced in <<configure-custom-module-exec,this section>> produces the following command line:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run
 replace=( ),$1\\\n
-....
+----
 
 You can then run the generated command line.
 
 For example, in the Linux `bash` shell you can run it by wrapping it into `$(\...)`:
 
+[source,bash]
 ----
 $ $(java -jar $JETTY_HOME/start.jar --dry-run)
 ----
@@ -273,118 +302,118 @@ The `--dry-run` option is quite flexible and below you can find a few examples o
 
 To display the `java` executable used to start Jetty:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##java##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupArgs=--add-modules=http
 args=--dry-run=java
-....
+----
 
 To display the JVM options:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##opts##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run=opts
 replace=( ),$1\\\n
-....
+----
 
 To display the JVM class-path:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##path##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run=path
 replace=( |:),$1\\\n
-....
+----
 
 To display the JVM class-path and module-path, if you want to xref:start/start-jpms.adoc[start Jetty using JPMS] with the `--jpms` option:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar ##--jpms## --dry-run=##path##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http,jvm
 args=--jpms --dry-run=path
 replace=( |:),$1\\\n
-....
+----
 
 To display the JVM main class:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##main##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupArgs=--add-modules=http
 args=--dry-run=main
-....
+----
 
 To display the JVM main class when xref:start/start-jpms.adoc[starting Jetty using JPMS]:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --jpms --dry-run=##main##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupArgs=--add-modules=http
 args=--jpms --dry-run=main
-....
+----
 
 The main class is typically Jetty's `XmlConfiguration` class that accepts, as program arguments, a list of properties and a list of Jetty XML files to process.
 The Jetty XML files compose together the Jetty components that are then configured with the values from the command line properties.
 
 To display the program arguments passed to the main class:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##args##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http
 args=--dry-run=args
 replace=( ),$1\\\n
-....
+----
 
 Note how the program arguments are a list of properties in the form `<name>=<value>` and a list of Jetty XML files.
 
 The various parts of the full JVM command line can be combined to leverage the arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args## > /tmp/jvm_cmd_line.txt
 $ /some/other/java @/tmp/jvm_cmd_line.txt
@@ -392,13 +421,14 @@ $ /some/other/java @/tmp/jvm_cmd_line.txt
 
 Using `--dry-run=opts,path,main,args` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking:
 
+[source,bash]
 ----
 $ java $(java -jar $JETTY_HOME/start.jar --dry-run=opts,path,main,args)
 ----
 
 The output of different `--dry-run` executions can be creatively combined in a shell script:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ OPTS=$(java -jar start.jar --dry-run=##opts,path##)
 $ MAIN=$(java -jar start.jar --dry-run=##main##)
@@ -514,7 +544,7 @@ Similarly, from a different terminal, you can exit the Jetty JVM using `kill -IN
 In the three cases above, the JVM is exited, but by default Jetty components are not stopped.
 If you want to stop the Jetty components, to stop Jetty more gracefully, you can start Jetty with this property:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar ##jetty.server.stopAtShutdown=true##
 ----
@@ -548,18 +578,18 @@ You can start Jetty with the following properties:
 * `stop.port`, the port number Jetty will listen to for stop commands. Defaults to `-1`, which means that Jetty will not listen to any port.
 * `stop.key`, the password to verify when a stop command is received. Defaults to a password that is randomly generated and printed when Jetty starts.
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar ##stop.port=8181##
 ----
 
 [jetty%nowrap]
-....
+----
 [jetty]
 setupArgs=--add-modules=http
 args=stop.port=8181
 highlight=(?i)stop.key
-....
+----
 
 In the example above, Jetty is started with just the `stop.port` property, and the `stop.key` is printed on the terminal when Jetty starts.
 
@@ -567,7 +597,7 @@ CAUTION: You can choose your own `stop.key`, but make sure it's a strong passwor
 
 A remote client can now use the Jetty start mechanism to stop the remote Jetty server:
 
-[source,subs=+quotes]
+[source,bash,subs=+quotes]
 ----
 $ java -jar $JETTY_HOME/start.jar ##--stop## stop.port=8181 stop.key=<stop.key>
 ----
@@ -577,6 +607,7 @@ The `stop.key` must be the same as the one of remote Jetty server, either the on
 
 Remote clients can wait for the remote Jetty server to shut down by specifying the `stop.wait` property with the number of seconds to wait:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --stop stop.port=8181 stop.key=<stop.key> stop.wait=15
 ----
@@ -597,12 +628,14 @@ See the xref:server/index.adoc#logging[logging section] for information about lo
 
 You can enable DEBUG level logging with the `--debug` command line option, for both the _tool_ and _start_ modes:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --debug ...
 ----
 
 You can send the start log output to a file, by default relative to `$JETTY_BASE`, with the `--start-log-file=<file>` option:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --debug --start-log-file=start.log ...
 ----
@@ -613,7 +646,7 @@ This is useful for capturing startup issues where the Jetty-specific logger has 
 == Usage Reference
 
 [jetty]
-....
+----
 [jetty]
 args=--help
-....
+----

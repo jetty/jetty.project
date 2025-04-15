@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class FileMappingHttpContentFactory implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileMappingHttpContentFactory.class);
-    private static final int DEFAULT_MIN_FILE_SIZE = 16 * 1024;
+    private static final int DEFAULT_MIN_FILE_SIZE = 1024 * 1024;
     private static final int DEFAULT_MAX_BUFFER_SIZE = Integer.MAX_VALUE;
 
     private final HttpContent.Factory _factory;
@@ -47,21 +47,23 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
      */
     public FileMappingHttpContentFactory(HttpContent.Factory factory)
     {
-        this(factory, DEFAULT_MIN_FILE_SIZE, DEFAULT_MAX_BUFFER_SIZE);
+        this(factory, -1, -1);
     }
 
     /**
      * Construct a {@link FileMappingHttpContentFactory} which can use file mapped buffers.
      *
      * @param factory the wrapped {@link HttpContent.Factory} to use.
-     * @param minFileSize the minimum size of an {@link HttpContent} before trying to use a file mapped buffer.
-     * @param maxBufferSize the maximum size of the memory mapped buffers
+     * @param minFileSize the minimum size of an {@link HttpContent} before trying to use a file mapped buffer;
+     *                    or {@code -1} for a default.
+     * @param maxBufferSize the maximum size of the memory mapped buffers;
+     *                      or {@code -1} for a default.
      */
     public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize, int maxBufferSize)
     {
         _factory = Objects.requireNonNull(factory);
-        _minFileSize = minFileSize;
-        _maxBufferSize = maxBufferSize;
+        _minFileSize = minFileSize == -1 ? DEFAULT_MIN_FILE_SIZE : minFileSize;
+        _maxBufferSize = maxBufferSize == -1 ? DEFAULT_MAX_BUFFER_SIZE : maxBufferSize;
     }
 
     @Override

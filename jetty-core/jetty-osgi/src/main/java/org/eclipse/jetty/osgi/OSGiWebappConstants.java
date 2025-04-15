@@ -140,4 +140,9 @@ public class OSGiWebappConstants
      * Set of extra dirs that must not be served by osgi webapps
      */
     public static final String[] DEFAULT_PROTECTED_OSGI_TARGETS = {"/osgi-inf", "/osgi-opts"};
+
+    /**
+     * The name of the context attribute storing the BundleContext that refers to the jetty boot bundle
+     */
+    public static final String JETTY_BOOT_BUNDLE_CONTEXT = "Jetty-Boot-Bundle-Context";
 }

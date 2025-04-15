@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.osgi.annotations;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,7 +55,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
             if (_parser != null)
             {
                 org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser)_parser;
-                Bundle bundle = osgiAnnotationParser.getBundle(_resource);
+                Bundle bundle = osgiAnnotationParser.getBundleIndex().getBundle(_resource);
                 if (_stat != null)
                     _stat.start();
                 osgiAnnotationParser.parse(_handlers, bundle);
@@ -112,7 +110,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
     public void parseWebInfLib(WebAppContext context, org.eclipse.jetty.ee9.annotations.AnnotationParser parser)
         throws Exception
     {
-        AnnotationParser oparser = (AnnotationParser)parser;
+        AnnotationParser osgiParser = (AnnotationParser)parser;
 
         if (_webInfLibStats == null)
             _webInfLibStats = new CounterStatistic();
@@ -129,7 +127,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
                 if (bundle.getState() == Bundle.UNINSTALLED)
                     continue;
 
-                Resource bundleRes = oparser.indexBundle(ResourceFactory.of(context), bundle);
+                Resource bundleRes = osgiParser.getBundleIndex().indexBundle(ResourceFactory.of(context), bundle);
                 if (!context.getMetaData().getWebInfResources(false).contains(bundleRes))
                 {
                     context.getMetaData().addWebInfResource(bundleRes);
@@ -138,14 +136,14 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
                 if (bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
                 {
                     //a fragment indeed:
-                    parseFragmentBundle(context, oparser, webbundle, bundle);
+                    parseFragmentBundle(context, osgiParser, webbundle, bundle);
                     _webInfLibStats.increment();
                 }
             }
         }
         //scan ourselves
-        oparser.indexBundle(ResourceFactory.of(context), webbundle);
-        parseWebBundle(context, oparser, webbundle);
+        osgiParser.getBundleIndex().indexBundle(ResourceFactory.of(context), webbundle);
+        parseWebBundle(context, osgiParser, webbundle);
         _webInfLibStats.increment();
 
         //scan the WEB-INF/lib
@@ -162,7 +160,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
                 if (requiredBundle.getHeaders().get(Constants.FRAGMENT_HOST) == null)
                 {
                     //a bundle indeed:
-                    parseRequiredBundle(context, oparser, webbundle, requiredBundle);
+                    parseRequiredBundle(context, osgiParser, webbundle, requiredBundle);
                     _webInfLibStats.increment();
                 }
             }
@@ -228,9 +226,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
                                Bundle webbundle, Bundle bundle) throws Exception
     {
 
-        Resource bundleRes = parser.getResource(bundle);
-        Set<Handler> handlers = new HashSet<>();
-        handlers.addAll(_discoverableAnnotationHandlers);
+        Resource bundleRes = parser.getBundleIndex().getResource(bundle);
+        Set<Handler> handlers = new HashSet<>(_discoverableAnnotationHandlers);
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);
         handlers.addAll(_containerInitializerAnnotationHandlers);

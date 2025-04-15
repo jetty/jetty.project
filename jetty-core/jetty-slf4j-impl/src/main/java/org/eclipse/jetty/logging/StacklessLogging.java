@@ -51,9 +51,10 @@ public class StacklessLogging implements AutoCloseable
         }
         else
         {
-            LOG.warn("Unable to squelch stacktraces ({} is not a {})",
-                activeLoggerFactory.getClass().getName(),
-                JettyLoggerFactory.class.getName());
+            // dynamic configuration with slf4j didn't work (thread safe issue?)
+            JettyLoggingServiceProvider provider = new JettyLoggingServiceProvider();
+            provider.initialize();
+            jettyLoggerFactory = provider.getJettyLoggerFactory();
         }
         loggerFactory = jettyLoggerFactory;
     }

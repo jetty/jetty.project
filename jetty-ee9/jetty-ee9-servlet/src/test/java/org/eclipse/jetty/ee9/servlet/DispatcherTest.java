@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -98,8 +99,11 @@ public class DispatcherTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        HttpConfiguration httpConfiguration = _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration();
+        httpConfiguration.setSendServerVersion(false);
+        httpConfiguration.setSendDateHeader(false);
+        // set server authority to "local" for use of LocalConnector with HTTP/1.0 (otherwise it will be "0.0.0.0" when no Host header is used)
+        httpConfiguration.setServerAuthority(HostPort.unsafe("local"));
         _server.addConnector(_connector);
         _server.setHandler(handler);
     }
@@ -330,14 +334,17 @@ public class DispatcherTest
         _server.start();
 
         String expected =
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: 54\r\n" +
-                "\r\n" +
-                "/context\r\n" +
-                "/EchoURI\r\n" +
-                "/x x\r\n" +
-                "/context/EchoURI/x%20x;a=1\r\n";
+                """
+                HTTP/1.1 200 OK\r
+                Content-Type: text/plain\r
+                Content-Length: 94\r
+                \r
+                /context\r
+                /EchoURI\r
+                /x x\r
+                /context/EchoURI/x%20x;a=1\r
+                http://local/context/EchoURI/x%20x;a=1\r
+                """;
 
         String responses = _connector.getResponse("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.0\n\n");
 
@@ -354,14 +361,17 @@ public class DispatcherTest
         _server.start();
 
         String expected =
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: 62\r\n" +
-                "\r\n" +
-                "/context\r\n" +
-                "/forward\r\n" +
-                "/info\r\n" +
-                "/context/forward/info;param=value\r\n";
+                """
+                HTTP/1.1 200 OK\r
+                Content-Type: text/plain\r
+                Content-Length: 109\r
+                \r
+                /context\r
+                /forward\r
+                /info\r
+                /context/forward/info;param=value\r
+                http://local/context/forward/info;param=value\r
+                """;
         String responses = _connector.getResponse("GET /context/forward/info;param=value?name=" + echo + " HTTP/1.0\n\n");
         assertEquals(expected, responses);
     }
@@ -376,13 +386,16 @@ public class DispatcherTest
         _server.start();
 
         String expected =
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: 62\r\n" +
-                "\r\n" +
-                "/context\r\n" +
-                "/include\r\n" +
-                "/info\r\n" +
-                "/context/include/info;param=value\r\n";
+                """
+                HTTP/1.1 200 OK\r
+                Content-Length: 109\r
+                \r
+                /context\r
+                /include\r
+                /info\r
+                /context/include/info;param=value\r
+                http://local/context/include/info;param=value\r
+                """;
         String responses = _connector.getResponse("GET /context/include/info;param=value?name=" + echo + " HTTP/1.0\n\n");
         assertEquals(expected, responses);
     }
@@ -1269,6 +1282,7 @@ public class DispatcherTest
             response.getOutputStream().println(request.getServletPath());
             response.getOutputStream().println(request.getPathInfo());
             response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println(request.getRequestURL().toString());
         }
     }
 
@@ -1400,6 +1414,7 @@ public class DispatcherTest
             assertEquals(null, request.getPathTranslated());
             assertEquals("do=assertinclude&do=more&test=1", request.getQueryString());
             assertEquals("/context/IncludeServlet", request.getRequestURI());
+            assertEquals("http://local/context/IncludeServlet", request.getRequestURL().toString());
             assertEquals("/context", request.getContextPath());
             assertEquals("/IncludeServlet", request.getServletPath());
 
