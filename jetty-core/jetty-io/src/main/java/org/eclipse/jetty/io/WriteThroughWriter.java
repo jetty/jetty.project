@@ -71,7 +71,7 @@ public abstract class WriteThroughWriter extends Writer
             return new Iso88591Writer(outputStream);
         if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charset))
             return new Utf8Writer(outputStream);
-        return new EncodingWriter(outputStream, charset);
+        return new EncodingWriter(outputStream, charset == null ? StandardCharsets.ISO_8859_1 : Charset.forName(charset));
     }
 
     /**
