@@ -33,13 +33,13 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.openid.OpenIdAuthenticator;
 import org.eclipse.jetty.security.openid.OpenIdConfiguration;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.tests.OpenIdProvider;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -52,9 +52,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.security.MultiAuthenticator.AUTH_TYPE_ATTR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MultiAuthenticatorTest
 {
@@ -74,14 +76,16 @@ public class MultiAuthenticatorTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        OpenIdConfiguration config = new OpenIdConfiguration(_provider.getProvider(), _provider.getClientId(), _provider.getClientSecret());
+        OpenIdConfiguration config = new OpenIdConfiguration.Builder(_provider.getProvider(), _provider.getClientId(), _provider.getClientSecret()).build();
         _server.addBean(config);
 
+        ContextHandlerCollection handler = new ContextHandlerCollection();
+        handler.addHandler(new AuthTestHandler("/"));
+
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
-        securityHandler.put("", Constraint.ALLOWED);
         securityHandler.put("/logout", Constraint.ALLOWED);
         securityHandler.put("/", Constraint.ANY_USER);
-        securityHandler.setHandler(new AuthTestHandler());
+        securityHandler.setHandler(handler);
 
         MultiAuthenticator multiAuthenticator = new MultiAuthenticator();
         multiAuthenticator.setLoginPath("/login");
@@ -126,19 +130,21 @@ public class MultiAuthenticatorTest
     @Test
     public void testMultiAuthentication() throws Exception
     {
+        // Initial request gets the MultiAuthenticator login page because / is protected.
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
         assertThat(response.getContentAsString(), containsString("/login/openid"));
         assertThat(response.getContentAsString(), containsString("/login/form"));
+        assertThat(response.getContentAsString(), containsString("authType: null"));
 
-        // Try Form Login.
+        // Requesting a FORM protected page redirects to the login form.
         response = _client.GET(uri.resolve("/login/form"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("<form action=\"j_security_check\" method=\"POST\">"));
 
-        // Form login is successful.
+        // Submitting FORM login is successful.
         Fields fields = new Fields();
         fields.put("j_username", "user");
         fields.put("j_password", "password");
@@ -148,13 +154,15 @@ public class MultiAuthenticatorTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("userPrincipal: user"));
         assertThat(response.getContentAsString(), containsString("MultiAuthenticator$MultiSucceededAuthenticationState"));
+        assertThat(response.getContentAsString(), containsString("authType: FORM"));
 
-        // Logout is successful.
+        // After logout we are redirected to the MultiAuth login page as we cannot access protected resource.
         response = _client.GET(uri.resolve("/logout"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
         assertThat(response.getContentAsString(), containsString("/login/openid"));
         assertThat(response.getContentAsString(), containsString("/login/form"));
+        assertThat(response.getContentAsString(), containsString("authType: null"));
 
         // We can now log in with OpenID.
         _provider.setUser(new OpenIdProvider.User("UserId1234", "openIdUser"));
@@ -163,6 +171,8 @@ public class MultiAuthenticatorTest
         assertThat(response.getContentAsString(), containsString("userPrincipal: UserId1234"));
         assertThat(response.getContentAsString(), containsString("Authenticated with OpenID"));
         assertThat(response.getContentAsString(), containsString("name: openIdUser"));
+        assertThat(response.getContentAsString(), containsString("authType: OPENID"));
+
 
         // Logout is successful.
         response = _client.GET(uri.resolve("/logout"));
@@ -170,6 +180,7 @@ public class MultiAuthenticatorTest
         assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
         assertThat(response.getContentAsString(), containsString("/login/openid"));
         assertThat(response.getContentAsString(), containsString("/login/form"));
+        assertThat(response.getContentAsString(), containsString("authType: null"));
     }
 
     private static AuthenticationState.Succeeded getAuthentication(Request request)
@@ -183,8 +194,13 @@ public class MultiAuthenticatorTest
         return auth;
     }
 
-    private static class AuthTestHandler extends Handler.Abstract
+    private static class AuthTestHandler extends ContextHandler
     {
+        public AuthTestHandler(String contextPath)
+        {
+            super(contextPath);
+        }
+
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
@@ -198,17 +214,18 @@ public class MultiAuthenticatorTest
             else if (pathInContext.startsWith("/login/openid"))
                 return onOpenIdLogin(request, response, callback);
 
+            Session session = request.getSession(false);
             try (PrintWriter writer = new PrintWriter(Content.Sink.asOutputStream(response)))
             {
-
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
+                writer.println("<b>authType: " + session.getAttribute(AUTH_TYPE_ATTR) + "</b><br>");
                 AuthenticationState.Succeeded auth = getAuthentication(request);
                 if (auth != null)
                 {
+                    assertNotNull(session);
                     writer.println("<b>authState: " + auth + "</b><br>");
                     writer.println("<b>userPrincipal: " + auth.getUserPrincipal() + "</b><br>");
 
-                    Session session = request.getSession(true);
                     @SuppressWarnings("unchecked")
                     Map<String, Object> claims = (Map<String, Object>)session.getAttribute(OpenIdAuthenticator.CLAIMS);
                     if (claims != null)

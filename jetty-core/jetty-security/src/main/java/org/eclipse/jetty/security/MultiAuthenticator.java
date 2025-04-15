@@ -1,3 +1,16 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
 package org.eclipse.jetty.security;
 
 import java.io.Serial;
@@ -31,8 +44,9 @@ public class MultiAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiAuthenticator.class);
     public static final String LOGIN_PATH_PARAM = "org.eclipse.jetty.security.multi.login_path";
+    public static final String AUTH_TYPE_ATTR = MultiAuthState.class.getName() + ".AuthType";
 
-    private static final String AUTH_STATE_ATTR = MultiAuthState.class.getName();
+    private static final String AUTH_STATE_ATTR = MultiAuthState.class.getName() + ".AuthState";
     private final DefaultAuthenticator _defaultAuthenticator = new DefaultAuthenticator();
     private final PathMappings<Authenticator> _authenticatorsMappings = new PathMappings<>();
     private String _loginPath;
@@ -370,6 +384,7 @@ public class MultiAuthenticator extends LoginAuthenticator
             {
                 MultiAuthState authState = ensureAuthState(session);
                 authState.setLogin(true);
+                session.setAttribute(AUTH_TYPE_ATTR, authState.getAuthenticatorType());
             }
         }
     }
@@ -382,6 +397,7 @@ public class MultiAuthenticator extends LoginAuthenticator
             synchronized (session)
             {
                 session.removeAttribute(AUTH_STATE_ATTR);
+                session.removeAttribute(AUTH_TYPE_ATTR);
             }
         }
     }
@@ -395,6 +411,7 @@ public class MultiAuthenticator extends LoginAuthenticator
         {
             MultiAuthState authState = ensureAuthState(session);
             authState.setAuthenticatorName(authenticator.getClass().getName());
+            authState.setAuthenticatorType(authenticator.getAuthenticationType());
         }
     }
 
@@ -428,6 +445,7 @@ public class MultiAuthenticator extends LoginAuthenticator
         private static final long serialVersionUID = -4292431864385753482L;
 
         private String _authenticatorName;
+        private String _authenticatorType;
         private boolean _isLoggedIn;
 
         public MultiAuthState()
@@ -442,6 +460,16 @@ public class MultiAuthenticator extends LoginAuthenticator
         public String getAuthenticatorName()
         {
             return _authenticatorName;
+        }
+
+        public String getAuthenticatorType()
+        {
+            return _authenticatorType;
+        }
+
+        public void setAuthenticatorType(String authenticatorType)
+        {
+            _authenticatorType = authenticatorType;
         }
 
         public void setLogin(boolean isLoggedIn)
