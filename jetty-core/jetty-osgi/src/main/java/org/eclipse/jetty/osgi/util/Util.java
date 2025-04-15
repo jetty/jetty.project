@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 
@@ -411,6 +413,208 @@ public class Util
         if (value != null)
         {
             properties.put(key, value);
+        }
+    }
+
+    /**
+     * Returns the fragments and the required-bundles of a bundle. Recursively
+     * collect the required-bundles and fragment when the directive
+     * visibility:=reexport is added to a required-bundle.
+     *
+     * @param bootBundleContext BundleContext associated with the jetty boot bundle
+     * @param targetBundle the bundle whose fragments and required bundles should be collected
+     * @return the flattened tree of all fragments and required bundles associated with the target bundle
+     */
+    public static Bundle[] getFragmentsAndRequiredBundles(BundleContext bootBundleContext, Bundle targetBundle)
+    {
+        if (bootBundleContext == null)
+            return null;
+
+        ServiceReference<PackageAdmin> sr = bootBundleContext.getServiceReference(PackageAdmin.class);
+        if (sr == null)
+            return null;
+        
+        PackageAdmin packageAdmin = bootBundleContext.getService(sr);
+        LinkedHashMap<String, Bundle> deps = new LinkedHashMap<>();
+        collectFragmentsAndRequiredBundles(packageAdmin, targetBundle, deps, false);
+        return deps.values().toArray(new Bundle[0]);
+    }
+
+    /**
+     * Returns the fragments and the required-bundles. Collects them
+     * transitively when the directive 'visibility:=reexport' is added to a
+     * required-bundle.
+     *
+     * @param packageAdmin the PackageAdmin service to use
+     * @param bundle the bundle
+     * @param deps The map of fragment and required bundles associated to the value of the
+     * jetty-web attribute.
+     * @param onlyReexport true to collect resources and web-fragments
+     * transitively if and only if the directive visibility is
+     * reexport.
+     */
+    private static void collectFragmentsAndRequiredBundles(PackageAdmin packageAdmin, Bundle bundle, Map<String, Bundle> deps, boolean onlyReexport)
+    {
+        if (packageAdmin == null)
+            return;
+
+        Bundle[] fragments = packageAdmin.getFragments(bundle);
+        if (fragments != null)
+        {
+            // Also add the bundles required by the fragments.
+            // this way we can inject onto an existing web-bundle a set of
+            // bundles that extend it
+            for (Bundle f : fragments)
+            {
+                if (!deps.containsKey(f.getSymbolicName()))
+                {
+                    deps.put(f.getSymbolicName(), f);
+                    collectRequiredBundles(packageAdmin, f, deps, onlyReexport);
+                }
+            }
+        }
+        collectRequiredBundles(packageAdmin, bundle, deps, onlyReexport);
+    }
+
+    /**
+     * Parse the Require-Bundle header on the given bundle, and then collect
+     * the fragments and required bundles of those bundles.
+     *
+     * @param packageAdmin the PackageAdmin service to use
+     * @param bundle the bundle
+     * @param deps The map of required and fragment bundles
+     * @param onlyReexport true to collect resources and web-fragments transitively if and only if the directive visibility is
+     * reexport.
+     */
+    private static void collectRequiredBundles(PackageAdmin packageAdmin, Bundle bundle, Map<String, Bundle> deps, boolean onlyReexport)
+    {
+        String requiredBundleHeader = bundle.getHeaders().get("Require-Bundle");
+        if (requiredBundleHeader == null)
+        {
+            return;
+        }
+        StringTokenizer tokenizer = new ManifestHeaderTokenizer(requiredBundleHeader);
+        while (tokenizer.hasMoreTokens())
+        {
+            String tok = tokenizer.nextToken().trim();
+            StringTokenizer tokenizer2 = new StringTokenizer(tok, ";");
+            String symbolicName = tokenizer2.nextToken().trim();
+            if (deps.containsKey(symbolicName))
+            {
+                // was already added. 2 dependencies pointing at the same
+                // bundle.
+                continue;
+            }
+            String versionRange = null;
+            boolean reexport = false;
+            while (tokenizer2.hasMoreTokens())
+            {
+                String next = tokenizer2.nextToken().trim();
+                if (next.startsWith("bundle-version="))
+                {
+                    if (next.startsWith("bundle-version=\"") || next.startsWith("bundle-version='"))
+                    {
+                        versionRange = next.substring("bundle-version=\"".length(), next.length() - 1);
+                    }
+                    else
+                    {
+                        versionRange = next.substring("bundle-version=".length());
+                    }
+                }
+                else if (next.equals("visibility:=reexport"))
+                {
+                    reexport = true;
+                }
+            }
+            if (!reexport && onlyReexport)
+            {
+                return;
+            }
+            Bundle[] reqBundles = packageAdmin.getBundles(symbolicName, versionRange);
+            if (reqBundles != null && reqBundles.length != 0)
+            {
+                Bundle reqBundle = null;
+                for (Bundle b : reqBundles)
+                {
+                    if (b.getState() == Bundle.ACTIVE || b.getState() == Bundle.STARTING)
+                    {
+                        reqBundle = b;
+                        break;
+                    }
+                }
+                if (reqBundle == null)
+                {
+                    // strange? in OSGi with Require-Bundle,
+                    // the dependent bundle is supposed to be active already
+                    reqBundle = reqBundles[0];
+                }
+                deps.put(reqBundle.getSymbolicName(), reqBundle);
+                collectFragmentsAndRequiredBundles(packageAdmin, reqBundle, deps, true);
+            }
+        }
+    }
+
+    private static class ManifestHeaderTokenizer extends StringTokenizer
+    {
+        public ManifestHeaderTokenizer(String header)
+        {
+            super(header, ",");
+        }
+
+        @Override
+        public String nextToken()
+        {
+            String token = super.nextToken();
+
+            while (hasOpenQuote(token) && hasMoreTokens())
+            {
+                token += "," + super.nextToken();
+            }
+            return token;
+        }
+
+        private boolean hasOpenQuote(String token)
+        {
+            int i = -1;
+            do
+            {
+                int quote = getQuote(token, i + 1);
+                if (quote < 0)
+                {
+                    return false;
+                }
+
+                i = token.indexOf(quote, i + 1);
+                i = token.indexOf(quote, i + 1);
+            }
+            while (i >= 0);
+            return true;
+        }
+
+        private int getQuote(String token, int offset)
+        {
+            int i = token.indexOf('"', offset);
+            int j = token.indexOf('\'', offset);
+            if (i < 0)
+            {
+                if (j < 0)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return '\'';
+                }
+            }
+            if (j < 0)
+            {
+                return '"';
+            }
+            if (i < j)
+            {
+                return '"';
+            }
+            return '\'';
         }
     }
 }

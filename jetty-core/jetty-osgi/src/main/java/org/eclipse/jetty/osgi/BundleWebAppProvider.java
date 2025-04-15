@@ -42,14 +42,18 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     private static final Logger LOG = LoggerFactory.getLogger(BundleWebAppProvider.class);
 
     /**
-     * Map of Bundle to App. Used when a Bundle contains a webapp.
+     * Map of Bundles that this provider has deployed as web apps
      */
-    private Map<Bundle, ContextHandler> _bundleMap = new HashMap<>();
+    private final Map<Bundle, ContextHandler> _bundleMap = new HashMap<>();
 
     private ServiceRegistration<?> _serviceRegForBundles;
 
     private WebAppTracker _webappTracker;
 
+    /**
+     * Tracks bundles that are (un)/deployed in osgi and tries to
+     * deploy them as webapps into jetty.
+     */
     public class WebAppTracker extends BundleTracker<Object>
     {
         protected String _managedServerName;
@@ -131,6 +135,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             }
         }
 
+        _bundleMap.clear();
         super.doStop();
     }
 

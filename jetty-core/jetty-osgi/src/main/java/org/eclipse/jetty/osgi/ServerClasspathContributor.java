@@ -11,12 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.util;
+package org.eclipse.jetty.osgi;
 
 import java.util.List;
 
 import org.osgi.framework.Bundle;
 
+/**
+ * A ServerClasspathContributor provides a list of bundles that should be considered to be on
+ * the jetty server classpath.
+ */
 public interface ServerClasspathContributor
 {
     /**
@@ -26,4 +30,24 @@ public interface ServerClasspathContributor
      * @return list of Bundles to be scanned and put on server classpath
      */
     List<Bundle> getScannableBundles();
+
+    /**
+     * Marker interface for bundle activators that want to contribute to the jetty server classpath.
+     */
+    interface Source
+    {
+        void registerServerClasspathContributors(Registry registry);
+
+        void unregisterServerClasspathContributors(Registry registry);
+    }
+
+    /**
+     * Add and remove bundles from the jetty server classpath.
+     */
+    interface Registry
+    {
+        void registerServerClasspathContributor(ServerClasspathContributor contributor);
+
+        void unregisterServerClasspathContributor(ServerClasspathContributor contributor);
+    }
 }

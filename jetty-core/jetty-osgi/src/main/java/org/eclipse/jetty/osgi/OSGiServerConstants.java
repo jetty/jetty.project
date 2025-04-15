@@ -53,10 +53,6 @@ public class OSGiServerConstants
     public static final String JETTY_PORT_SSL = "jetty.ssl.port";
 
     //for managed jetty instances, name of the configuration parameters
-    /**
-     * PID of the jetty servers's ManagedFactory
-     */
-    public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.ee9.osgi.boot.managedserverfactory";
 
     /**
      * The associated value of that configuration parameter is the name under which this

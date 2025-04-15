@@ -47,8 +47,6 @@ public class JettyBootstrapActivator implements BundleActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyBootstrapActivator.class);
 
-    private static JettyBootstrapActivator INSTANCE = null;
-
     /**
      * contains a comma separated list of paths to the etc/jetty-*.xml files
      */
@@ -79,44 +77,38 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
-        ServiceReference[] references = context.getAllServiceReferences("org.eclipse.jetty.http.HttpFieldPreEncoder", null);
+        //Check that osgi has been properly configured for ServiceLoader use and warn if not
+        ServiceReference<?>[] references = context.getAllServiceReferences("org.eclipse.jetty.http.HttpFieldPreEncoder", null);
 
         if (references == null || references.length == 0)
             LOG.warn("OSGi support for java.util.ServiceLoader may not be present. You may experience runtime errors.");
 
-        // Create a default jetty instance right now.
-        startJettyAtJettyHome(context);
+        // Create a default jetty instance.
+        startDefaultJettyServer(context);
     }
 
     /**
-     * Stop the activator.
+     * Stop the default jetty Server.
      *
      * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        try
+        if (_registeredServer != null)
         {
-            if (_registeredServer != null)
+            try
             {
-                try
-                {
-                    _registeredServer.unregister();
-                }
-                catch (IllegalArgumentException ill)
-                {
-                    // already unregistered.
-                }
-                finally
-                {
-                    _registeredServer = null;
-                }
+                _registeredServer.unregister();
             }
-        }
-        finally
-        {
-            INSTANCE = null;
+            catch (IllegalArgumentException ill)
+            {
+                // already unregistered.
+            }
+            finally
+            {
+                _registeredServer = null;
+            }
         }
     }
 
@@ -142,7 +134,7 @@ public class JettyBootstrapActivator implements BundleActivator
      * @param bundleContext the bundle context
      * @throws Exception if unable to create / configure / or start the server
      */
-    private void startJettyAtJettyHome(BundleContext bundleContext) throws Exception
+    private void startDefaultJettyServer(BundleContext bundleContext) throws Exception
     {
         String jettyHomeSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME);
         String jettyHomeBundleSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME_BUNDLE);
@@ -259,7 +251,7 @@ public class JettyBootstrapActivator implements BundleActivator
         }
         catch (Exception e)
         {
-            LOG.warn("Failed to start Jetty at Jetty Home", e);
+            LOG.warn("Failed to start default jetty server", e);
             throw e;
         }
         finally
@@ -310,10 +302,11 @@ public class JettyBootstrapActivator implements BundleActivator
             String etcFile = tokenizer.nextToken().trim();
 
             //file path is absolute
-            if (etcFile.startsWith("/") || etcFile.indexOf(":") != -1)
+            if (etcFile.startsWith("/") || etcFile.contains(":"))
                 configURLs.add(new URL(etcFile));
-            else //relative file path
+            else
             {
+                //relative file path
                 Enumeration<URL> enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, etcFile);
 
                 String home = null;

@@ -36,8 +36,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
     private final Server _server;
     private final Deployer _deployer;
-    private ContextFactory _contextFactory;
-    private String _environment;
+    private final ContextFactory _contextFactory;
+    private final String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
 
     public AbstractContextProvider(Server server, Deployer deployer, String environment, ContextFactory contextFactory)
@@ -104,22 +104,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
         if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(OSGiWebappConstants.JETTY_ENVIRONMENT)))
             return true;
         
-        return false;
-    }
-
-    public boolean isDeployable(ServiceReference<?> service)
-    {
-        if (service == null)
-            return false;
-        
-        //has it been deployed before?
-        if (!StringUtil.isBlank((String)service.getProperty(OSGiWebappConstants.WATERMARK)))
-            return false;
-        
-        //destined for our environment?
-        if (getEnvironmentName().equalsIgnoreCase((String)service.getProperty(OSGiWebappConstants.JETTY_ENVIRONMENT)))
-            return true;
-
         return false;
     }
 }
