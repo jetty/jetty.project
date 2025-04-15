@@ -97,6 +97,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-test-core-example-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>

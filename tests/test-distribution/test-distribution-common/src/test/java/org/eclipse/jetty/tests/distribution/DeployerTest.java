@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -24,11 +30,16 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -125,7 +136,7 @@ public class DeployerTest extends AbstractJettyHomeTest
     }
 
     @Test
-    public void testCoreDeployStaticOnly() throws Exception
+    public void testCoreDeployNormalDirectoryStaticOnly() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -135,6 +146,95 @@ public class DeployerTest extends AbstractJettyHomeTest
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path nominatedDir = jettyBase.resolve("webapps").resolve("test");
+            FS.ensureDirExists(nominatedDir);
+
+            Path staticDir = nominatedDir.resolve("static");
+            FS.ensureDirExists(staticDir);
+
+            String testFileContent = "hello";
+            Files.writeString(staticDir.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @Test
+    public void testCoreDeployCustomHandlerInClasses() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path testDir = jettyBase.resolve("webapps").resolve("test");
+            FS.ensureEmpty(testDir);
+
+            Path testWebAppPath = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-core-example-webapp:zip:core-webapp:" + jettyVersion);
+            unpack(testWebAppPath, testDir);
+
+            String testXmlStr = """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                  <Set name="contextPath">/demo</Set>
+                  <Set name="handler">
+                    <New class="org.example.ExampleHandler" />
+                  </Set>
+                </Configure>
+                """;
+            Files.writeString(jettyBase.resolve("webapps/test.xml"), testXmlStr);
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                String uri = "http://localhost:" + httpPort + "/demo/test.txt";
+                ContentResponse response = client.GET(uri);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(),
+                    allOf(
+                        containsString("Server.info=jetty/" + Jetty.VERSION),
+                        containsString("request.uri=" + uri),
+                        containsString("message=On the other side of the screen, it all looks so easy.")
+                    ));
+            }
+        }
+    }
+
+    @Test
+    public void testStaticDeployOnly() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,static-deploy")))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -155,6 +255,18 @@ public class DeployerTest extends AbstractJettyHomeTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(response.getContentAsString(), is(testFileContent));
             }
+        }
+    }
+
+    private void unpack(Path srcPath, Path destPath) throws IOException
+    {
+        Map<String, String> env = new HashMap<>();
+
+        URI jarUri = URIUtil.uriJarPrefix(srcPath.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(root, destPath);
         }
     }
 }

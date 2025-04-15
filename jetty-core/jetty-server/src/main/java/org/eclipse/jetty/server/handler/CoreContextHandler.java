@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -64,6 +62,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
     private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.webapp.originalBaseResource";
+    private static final String[] SUPPORTED_ARCHIVE_EXTENSIONS = new String[]{"war", "jar", "zip"};
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
     private boolean _builtClassLoader = false;
@@ -93,8 +92,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         try
         {
-            boolean nominatedDirDefined = false;
-
             // This CoreContextHandler is arriving via a Deployer
             for (String keyName : attributes.getAttributeNameSet())
             {
@@ -103,70 +100,53 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                 switch (keyName)
                 {
                     case Deployable.CONTEXT_PATH, Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
+                    case Deployable.MAIN_PATH ->
+                    {
+                        // The Base Resource
+                        Path mainPath = (Path)value;
+                        if (FileID.isExtension(mainPath, SUPPORTED_ARCHIVE_EXTENSIONS) || Files.isDirectory(mainPath))
+                        {
+                            ResourceFactory resourceFactory = ResourceFactory.of(this);
+                            Resource baseResource = resourceFactory.newResource((Path)value);
+                            setBaseResource(baseResource);
+                        }
+                    }
                     case Deployable.OTHER_PATHS ->
                     {
-                        // The Base Resource (before init) is a nominated directory ("/<name>.d/")
-
                         //noinspection unchecked
                         java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
-                        List<Path> nominatedDirs = deployablePaths.stream()
-                            .filter(Files::isDirectory)
-                            .filter(p -> FileID.isExtension(p.getFileName().toString(), "d"))
-                            .sorted(PathCollators.byName(true))
-                            .toList();
+                        Path mainDir = null;
 
-                        if (nominatedDirs.size() == 1)
+                        for (Path path : deployablePaths)
                         {
-                            ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource resourceDir = resourceFactory.newResource(nominatedDirs.get(0));
-                            setBaseResource(resourceDir);
-                            nominatedDirDefined = true;
-                        }
-                        else if (nominatedDirs.size() > 1)
-                        {
-                            /* this is possible on filesystems that allow things like:
-                             *
-                             * webapps/foo.d
-                             * webapps/FOO.D
-                             * webapps/FOO.d
-                             *
-                             * We want to only support 1 directory in this case.
-                             */
-                            throw new IllegalArgumentException("More than one nominated directory is not supported: " +
-                                nominatedDirs.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
+                            if (Files.isDirectory(path))
+                            {
+                                if (mainDir == null)
+                                {
+                                    mainDir = path;
+                                }
+                                else
+                                {
+                                    throw new IllegalArgumentException("More than one directory is not supported: " +
+                                        deployablePaths.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
+                                }
+                            }
                         }
 
-                        // Normal directories.
-                        List<Path> dirs = deployablePaths.stream()
-                            .filter(Files::isDirectory)
-                            .filter(p -> !FileID.isExtension(p.getFileName().toString(), "d"))
-                            .sorted(PathCollators.byName(true))
-                            .toList();
-                        if (!nominatedDirs.isEmpty() && !dirs.isEmpty())
+                        if (mainDir != null)
                         {
-                            throw new IllegalArgumentException("Unsupported multiple deployment directories: " +
-                                Stream.concat(nominatedDirs.stream(), dirs.stream()).map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
-                        }
-                        else if (dirs.size() == 1)
-                        {
+                            // A single directory is the only form supported.
+                            // The breakdown of this directory (classes/, lib/*.jar, static/) is done by initWebApp();
                             ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource resourceDir = resourceFactory.newResource(dirs.get(0));
+                            Resource resourceDir = resourceFactory.newResource(mainDir);
                             setBaseResource(resourceDir);
-                        }
-                        else if (dirs.size() > 1)
-                        {
-                            throw new IllegalArgumentException("More than one deployment directory is not supported: " +
-                                dirs.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
                         }
                     }
                 }
             }
 
             // Init the webapp, unpack if necessary, create the classloader, etc.
-            if (nominatedDirDefined)
-                initWebApp();
-            else
-                initStaticWebApp();
+            initWebApp();
         }
         catch (IOException e)
         {
@@ -269,7 +249,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         if (!Resources.isDirectory(base))
         {
             // see if we can unpack this reference.
-            if (FileID.isExtension(base.getURI(), "zip", "jar", "war"))
+            if (FileID.isExtension(base.getURI(), SUPPORTED_ARCHIVE_EXTENSIONS))
             {
                 // We have an archive that needs to be unpacked
                 setAttribute(ORIGINAL_BASE_RESOURCE, base.getURI());
@@ -305,36 +285,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         {
             _builtClassLoader = true;
             setClassLoader(newClassLoader(getBaseResource()));
-        }
-    }
-
-    protected void initStaticWebApp() throws IOException
-    {
-        if (_initialized)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Already initialized, not initializing again");
-            return;
-        }
-
-        if (getBaseResource() == null)
-        {
-            // Nothing to do.
-            return;
-        }
-
-        Resource staticDir = getBaseResource();
-
-        _initialized = true;
-
-        if (Resources.isDirectory(staticDir))
-        {
-            if (!isResourceHandlerAlreadyPresent(staticDir))
-            {
-                ResourceHandler resourceHandler = new ResourceHandler();
-                resourceHandler.setBaseResource(staticDir);
-                setHandler(resourceHandler);
-            }
         }
     }
 
