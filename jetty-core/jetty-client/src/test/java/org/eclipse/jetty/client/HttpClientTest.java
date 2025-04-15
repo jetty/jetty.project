@@ -1117,6 +1117,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 responseNanoTime = NanoTime.since(queuedNanoTime);
             }
         }
+
         MetricsListener metricsListener = new MetricsListener();
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
