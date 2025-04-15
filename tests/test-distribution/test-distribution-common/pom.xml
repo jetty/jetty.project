@@ -99,6 +99,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-test-core-example-webapp</artifactId>
       <version>${project.version}</version>
+      <classifier>core-webapp</classifier>
       <type>zip</type>
     </dependency>
     <dependency>
