@@ -80,7 +80,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onQueued(Request request)
@@ -126,7 +126,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onBegin(Request request)
@@ -171,7 +171,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onHeaders(Request request)

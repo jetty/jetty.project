@@ -355,8 +355,22 @@ public interface Request
     /**
      * @param listener a listener for request events
      * @return this request object
+     * @deprecated use {@link #onRequestListener} instead.
      */
-    Request listener(Listener listener);
+    @Deprecated(since = "12.0.20", forRemoval = true)
+    default Request listener(Listener listener)
+    {
+        return onRequestListener(listener);
+    }
+
+    /**
+     * @param listener a listener for all request events
+     * @return this request object
+     */
+    default Request onRequestListener(Request.Listener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request queued event
@@ -399,6 +413,15 @@ public interface Request
      * @return this request object
      */
     Request onRequestFailure(FailureListener listener);
+
+    /**
+     * @param listener a listener for all response events
+     * @return this request object
+     */
+    default Request onResponseListener(Response.Listener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for response begin event
