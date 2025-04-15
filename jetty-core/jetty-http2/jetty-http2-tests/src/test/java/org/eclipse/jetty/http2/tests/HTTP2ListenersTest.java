@@ -262,19 +262,18 @@ public class HTTP2ListenersTest extends AbstractTest
 
         assertThat(clientFrameListener.incoming, not(empty()));
 
-        Collection<EndPoint> serverEndPoints = connector.getConnectedEndPoints();
-        assertThat(serverEndPoints, hasSize(1));
-        EndPoint serverEndPoint1 = serverEndPoints.iterator().next();
+        Collection<EndPoint> serverEndPoints1 = connector.getConnectedEndPoints();
+        assertThat(serverEndPoints1, hasSize(1));
+        EndPoint serverEndPoint1 = serverEndPoints1.iterator().next();
 
         // Sleep for more than the idle timeout.
         // The PINGS should keep the connection alive.
-        Thread.sleep(httpClient.getIdleTimeout() * 3 / 2);
-
-        serverEndPoints = connector.getConnectedEndPoints();
-        assertThat(serverEndPoints, hasSize(1));
-        EndPoint serverEndPoint2 = serverEndPoints.iterator().next();
-
-        assertThat(serverEndPoint1, sameInstance(serverEndPoint2));
+        await().during(httpClient.getIdleTimeout() * 3 / 2, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Collection<EndPoint> serverEndPoints2 = connector.getConnectedEndPoints();
+            assertThat(serverEndPoints2, hasSize(1));
+            return serverEndPoints2.iterator().next();
+        }, sameInstance(serverEndPoint1));
 
         List<FrameType> clientOutgoingFrameTypes = ListFrameListener.toFrameTypes(clientFrameListener.outgoing);
         // At least 2 PINGs have been sent.
