@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>An alternate to {@link java.io.OutputStreamWriter} that supports
@@ -71,7 +72,7 @@ public abstract class WriteThroughWriter extends Writer
             return new Iso88591Writer(outputStream);
         if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charset))
             return new Utf8Writer(outputStream);
-        return new EncodingWriter(outputStream, charset == null ? StandardCharsets.ISO_8859_1 : Charset.forName(charset));
+        return new EncodingWriter(outputStream, StringUtil.isBlank(charset) ? StandardCharsets.ISO_8859_1 : Charset.forName(charset));
     }
 
     /**
