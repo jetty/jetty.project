@@ -40,6 +40,13 @@ public class StaticContextHandler extends ContextHandler implements Deployable
         setContextPath(contextPath);
     }
 
+    public StaticContextHandler(String contextPath, ResourceHandler resourceHandler)
+    {
+        super();
+        setContextPath(contextPath);
+        setHandler(resourceHandler);
+    }
+
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
     {
         boolean alreadyExists = false;
@@ -71,7 +78,7 @@ public class StaticContextHandler extends ContextHandler implements Deployable
     {
         Resource baseResource = getBaseResource();
         if (baseResource == null)
-            throw new IllegalStateException("Bse Resource is required.");
+            throw new IllegalStateException("Base Resource is required.");
 
         if (!Resources.isDirectory(baseResource))
             throw new IllegalStateException("Base Resource is not a directory: " + baseResource);
