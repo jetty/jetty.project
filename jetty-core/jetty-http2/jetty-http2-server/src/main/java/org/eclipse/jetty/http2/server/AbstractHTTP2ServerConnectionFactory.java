@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -351,6 +352,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
+        getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
         return configure(connection, connector, endPoint);
@@ -364,7 +366,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     @ManagedObject("The container of HTTP/2 sessions")
-    public static class HTTP2SessionContainer implements Connection.Listener, Graceful, Dumpable
+    public static class HTTP2SessionContainer extends AbstractLifeCycle implements Connection.Listener, Graceful, Dumpable
     {
         private final Set<HTTP2Session> sessions = ConcurrentHashMap.newKeySet();
         private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();

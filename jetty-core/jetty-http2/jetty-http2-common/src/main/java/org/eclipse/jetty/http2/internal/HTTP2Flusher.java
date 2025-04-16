@@ -318,6 +318,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             return Action.IDLE;
         }
 
+        session.notifyOutgoingFrames(processedEntries);
+
         if (LOG.isDebugEnabled())
             LOG.debug("Writing {} bytes - entries processed/pending {}/{}: {}/{}",
                 accumulator.size(),
