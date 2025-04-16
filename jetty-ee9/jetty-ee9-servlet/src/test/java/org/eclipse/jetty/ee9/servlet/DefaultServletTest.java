@@ -1399,7 +1399,7 @@ public class DefaultServletTest
             defholder.setInitParameter("baseResource", docBase.toUri().toASCIIString());
             defholder.setInitParameter("pathInfoOnly", "true");
             defholder.setInitParameter("gzip", "false");
-            defholder.setInitParameter("installSymlinkAllowedResourceAliasChecker", "true");
+            defholder.setInitParameter("allowSymlinks", "true");
         });
 
         String rawResponse;

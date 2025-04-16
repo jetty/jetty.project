@@ -111,14 +111,17 @@ import org.slf4j.LoggerFactory;
  *
  *  etags             If True, weak etags will be generated and handled.
  *
- *  installAllowedResourceAliasChecker
- *                    Whether to add an {@link AllowedResourceAliasChecker} to the context if one
- *                    does not already exist for this baseResource.
- *                    Defaults to {@code false}.
+ *  allowAliases
+ *                    Allow resource aliases via the {@link AllowedResourceAliasChecker}
+ *                    on the context (if one does not already exist) for this baseResource.
+ *                    This is especially useful if you have a FileSystem that is not
+ *                    case sensitive. (Such as on Windows with FAT or NTFS)
+ *                    Defaults to {@code true}.
  *
- *  installSymlinkAllowedResourceAliasChecker
- *                    Whether to add an {@link SymlinkAllowedResourceAliasChecker} to the context if one
- *                    does not already exist for this baseResource.
+ *  allowSymlinks
+ *                    Allow resources that are symlinks pointing to other locations via
+ *                    the {@link SymlinkAllowedResourceAliasChecker} on the context (if one
+ *                    does not already exist) for this baseResource.
  *                    Defaults to {@code false}.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
@@ -229,7 +232,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             }
         }
 
-        if (getInitBoolean("installAllowedResourceAliasChecker", false))
+        if (getInitBoolean("allowAliases", true))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
@@ -246,7 +249,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler.getCoreContextHandler(), _baseResource));
         }
 
-        if (getInitBoolean("installSymlinkAllowedResourceAliasChecker", false))
+        if (getInitBoolean("allowSymlinks", false))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;

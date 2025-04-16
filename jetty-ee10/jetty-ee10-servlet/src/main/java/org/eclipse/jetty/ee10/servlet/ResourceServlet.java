@@ -107,16 +107,19 @@ import org.slf4j.LoggerFactory;
  *     Use {@code true} to generate ETags in responses.
  *     Defaults to {@code false}.
  *   </dd>
- *   <dt>installAllowedResourceAliasChecker</dt>
+ *   <dt>allowAliases</dt>
  *   <dd>
- *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
- *     does not already exist for this baseResource.
+ *     Allow resource aliases via the {@link AllowedResourceAliasChecker}
+ *     on the context (if one does not already exist) for this baseResource.
+ *     This is especially useful if you have a FileSystem that is not
+ *     case sensitive. (Such as on Windows with FAT or NTFS)
  *     Defaults to {@code true}.
  *   </dd>
- *   <dt>installSymlinkAllowedResourceAliasChecker</dt>
+ *   <dt>allowSymlinks</dt>
  *   <dd>
- *     Whether to add an {@link SymlinkAllowedResourceAliasChecker} to the context if one
- *     does not already exist for this baseResource.
+ *     Allow resources that are symlinks pointing to other locations via
+ *     the {@link SymlinkAllowedResourceAliasChecker} on the context (if one
+ *     does not already exist) for this baseResource.
  *     Defaults to {@code false}.
  *   </dd>
  *   <dt>maxCachedFiles</dt>
@@ -221,7 +224,7 @@ public class ResourceServlet extends HttpServlet
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
 
-        if (getInitBoolean("installAllowedResourceAliasChecker", true))
+        if (getInitBoolean("allowAliases", true, "installAllowedResourceAliasChecker"))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
@@ -238,7 +241,7 @@ public class ResourceServlet extends HttpServlet
                 contextHandler.addAliasCheck(new AllowedResourceAliasChecker(contextHandler, baseResource));
         }
 
-        if (getInitBoolean("installSymlinkAllowedResourceAliasChecker", false))
+        if (getInitBoolean("allowSymlinks", false))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
@@ -443,6 +446,18 @@ public class ResourceServlet extends HttpServlet
         String value = getInitParameter(name);
         if (value == null || value.isEmpty())
             return null;
+        return (value.startsWith("t") ||
+            value.startsWith("T") ||
+            value.startsWith("y") ||
+            value.startsWith("Y") ||
+            value.startsWith("1"));
+    }
+
+    private Boolean getInitBoolean(String name, boolean dft, String... deprecated)
+    {
+        String value = getInitParameter(name, deprecated);
+        if (value == null || value.isEmpty())
+            return dft;
         return (value.startsWith("t") ||
             value.startsWith("T") ||
             value.startsWith("y") ||
