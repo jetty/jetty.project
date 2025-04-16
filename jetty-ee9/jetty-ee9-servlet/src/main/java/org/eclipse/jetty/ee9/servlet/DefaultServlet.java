@@ -57,11 +57,11 @@ import org.slf4j.LoggerFactory;
 /**
  * The default servlet.
  * <p>
- * This servlet, normally mapped to /, provides the handling for static
- * content, OPTION and TRACE methods for the context.
- * The following initParameters are supported, these can be set either
- * on the servlet itself or as ServletContext initParameters with a prefix
- * of org.eclipse.jetty.servlet.Default. :
+ * This servlet, normally mapped to {@code /}, provides the handling for static
+ * content, {@code OPTION} and {@code TRACE} methods for the context.
+ * The following {@code initParameters} are supported, these can be set either
+ * on the servlet itself or as {@link ServletContext} {@code initParameters} with a prefix
+ * of {@code org.eclipse.jetty.servlet.Default}. :
  * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
