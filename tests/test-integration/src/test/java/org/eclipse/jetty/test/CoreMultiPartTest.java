@@ -537,7 +537,7 @@ public class CoreMultiPartTest
                     writer.println("Part: name=" + part.getName() + ", size=" + part.getLength() + ", content=" + partContent);
 
                     // We can only consume the getContentSource() once so we must use newContentSource().
-                    partContent = IO.toString(Content.Source.asInputStream(part.newContentSource()));
+                    partContent = IO.toString(Content.Source.asInputStream(part.newContentSource(null, 0, -1)));
                     writer.println("Part: name=" + part.getName() + ", size=" + part.getLength() + ", content=" + partContent);
                 }
 

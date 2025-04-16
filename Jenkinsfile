@@ -66,7 +66,9 @@ pipeline {
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
-              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED',
+              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
+                             tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
+                             sourceCodeRetention: 'MODIFIED',
                              sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
             }
           }
@@ -147,7 +149,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
-          sh "mvn $extraArgs $dashProfile -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
@@ -156,7 +158,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
   }
 }

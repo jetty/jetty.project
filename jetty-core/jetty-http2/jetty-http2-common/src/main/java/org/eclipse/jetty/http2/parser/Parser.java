@@ -67,7 +67,7 @@ public class Parser
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
         this.hpackDecoder = new HpackDecoder(maxHeaderSize, this::getBeginNanoTime);
-        this.bodyParsers = new BodyParser[FrameType.values().length];
+        this.bodyParsers = new BodyParser[FrameType.CONTINUATION.ordinal() + 1];
     }
 
     public void init(Listener listener)

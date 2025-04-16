@@ -259,7 +259,10 @@ public class ContextHandlerCollection extends Handler.Sequence
             public void run()
             {
                 if (replaceHandler(oldHandler, newHandler))
+                {
+                    stopHandler(oldHandler);
                     callback.succeeded();
+                }
                 else
                     callback.failed(new IllegalStateException("No such handler: " + oldHandler));
             }
@@ -292,6 +295,7 @@ public class ContextHandlerCollection extends Handler.Sequence
             public void run()
             {
                 removeHandler(handler);
+                stopHandler(handler);
                 callback.succeeded();
             }
 
@@ -301,6 +305,21 @@ public class ContextHandlerCollection extends Handler.Sequence
                 callback.failed(throwable);
             }
         });
+    }
+
+    private void stopHandler(Handler contextHandler)
+    {
+        if (contextHandler == null)
+            return;
+
+        try
+        {
+            contextHandler.stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to stop {}", contextHandler, e);
+        }
     }
 
     private static final class Branch

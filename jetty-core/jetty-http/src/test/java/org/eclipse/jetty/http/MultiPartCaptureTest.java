@@ -139,16 +139,16 @@ public class MultiPartCaptureTest
         @Override
         public ByteBuffer asByteBuffer() throws IOException
         {
-            return Content.Source.asByteBuffer(namedPart.newContentSource());
+            return Content.Source.asByteBuffer(namedPart.newContentSource(null, 0, -1));
         }
 
         @Override
         public String asString(Charset charset) throws IOException
         {
             if (charset == null)
-                return Content.Source.asString(namedPart.newContentSource());
+                return Content.Source.asString(namedPart.newContentSource(null, 0, -1));
             else
-                return Content.Source.asString(namedPart.newContentSource(), charset);
+                return Content.Source.asString(namedPart.newContentSource(null, 0, -1), charset);
         }
 
         @Override
@@ -160,7 +160,7 @@ public class MultiPartCaptureTest
         @Override
         public InputStream asInputStream()
         {
-            return Content.Source.asInputStream(namedPart.newContentSource());
+            return Content.Source.asInputStream(namedPart.newContentSource(null, 0, -1));
         }
     }
 

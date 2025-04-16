@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -66,7 +67,7 @@ public class FrameFlusher extends IteratingCallback
     private final int maxGather;
     private final Deque<Entry> queue = new ArrayDeque<>();
     private final List<ByteBuffer> buffers;
-    private final Scheduler timeoutScheduler;
+    private final CyclicTimeout cyclicTimeout;
     private final List<Entry> entries;
     private final List<Entry> previousEntries;
     private final List<Entry> failedEntries;
@@ -90,7 +91,14 @@ public class FrameFlusher extends IteratingCallback
         this.previousEntries = new ArrayList<>(maxGather);
         this.failedEntries = new ArrayList<>(maxGather);
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
-        this.timeoutScheduler = scheduler;
+        this.cyclicTimeout = new CyclicTimeout(scheduler)
+        {
+            @Override
+            public void onTimeoutExpired()
+            {
+                timeoutExpired();
+            }
+        };
     }
 
     public boolean isUseDirectByteBuffers()
@@ -157,7 +165,7 @@ public class FrameFlusher extends IteratingCallback
                     entries list to see if any of them have expired, it will then reset the timeout for the frame
                     with the soonest expiry time. */
                     if ((idleTimeout > 0) && (queue.size() == 1) && entries.isEmpty())
-                        timeoutScheduler.schedule(this::timeoutExpired, idleTimeout, TimeUnit.MILLISECONDS);
+                        cyclicTimeout.schedule(idleTimeout, TimeUnit.MILLISECONDS);
                 }
             }
             else
@@ -355,7 +363,7 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    public void timeoutExpired()
+    private void timeoutExpired()
     {
         boolean failed = false;
         try (AutoLock l = lock.lock())
@@ -396,7 +404,7 @@ public class FrameFlusher extends IteratingCallback
             if (!failed && idleTimeout > 0 && !(entries.isEmpty() && queue.isEmpty()))
             {
                 long nextTimeout = earliestEntry + idleTimeout - currentTime;
-                timeoutScheduler.schedule(this::timeoutExpired, nextTimeout, TimeUnit.MILLISECONDS);
+                cyclicTimeout.schedule(nextTimeout, TimeUnit.MILLISECONDS);
             }
         }
 

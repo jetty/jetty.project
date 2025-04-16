@@ -289,14 +289,16 @@ public class BufferUtil
     }
 
     /**
-     * Slice a buffer given an offset and a length.
+     * Slice a buffer given an offset and a length, similar to RFC 7233 ranges.
      * @param buffer the buffer to slice
-     * @param offset the offset
+     * @param offset the offset, relative to the current position of the buffer, must be positive
      * @param length the length, -1 meaning use the current limit
      * @return the sliced buffer
      */
     public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
     {
+        if (offset < 0)
+            throw new IllegalArgumentException("Invalid offset: " + offset);
         ByteBuffer slice = buffer.slice();
         if (offset > 0)
         {

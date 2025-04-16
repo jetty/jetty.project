@@ -23,6 +23,7 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
@@ -350,7 +351,10 @@ public class AsyncContextTest
                 protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
                 {
                     DispatcherType dispatcherType = request.getDispatcherType();
-                    response.getOutputStream().print("doGet." + dispatcherType.name() + ".requestURI:" + request.getRequestURI() + "\n");
+
+                    ServletOutputStream out = response.getOutputStream();
+                    out.print("doGet.%s.requestURI:%s\n".formatted(dispatcherType.name(), request.getRequestURI()));
+                    out.print("doGet.%s.requestURL:%s\n".formatted(dispatcherType.name(), request.getRequestURL()));
 
                     if (dispatcherType == DispatcherType.ASYNC)
                     {
@@ -377,8 +381,10 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%20there"));
-        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there"));
+        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%20there\n"));
+        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURL:http://localhost/ctx/self/hello%20there\n"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there\n"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURL:http://localhost/ctx/self/hello%20there\n"));
     }
 
     @Test

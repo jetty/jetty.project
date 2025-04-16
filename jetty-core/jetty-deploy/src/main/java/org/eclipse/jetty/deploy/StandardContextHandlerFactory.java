@@ -72,17 +72,6 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         return Objects.toString(obj);
     }
 
-    public static List<Path> getEnvironmentXmlPaths(Attributes attributes)
-    {
-        //noinspection unchecked
-        return (List<Path>)attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE);
-    }
-
-    public static void setEnvironmentXmlPaths(Attributes attributes, List<Path> paths)
-    {
-        attributes.setAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE, paths);
-    }
-
     @Override
     public ContextHandler newContextHandler(Server server, Environment environment, Path mainPath, Set<Path> otherPaths, Attributes deployAttributes) throws Exception
     {
@@ -301,7 +290,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
     {
         // Collect the optional environment context xml files.
         // Order them according to the name of their property key names.
-        List<Path> sortedEnvXmlPaths = getEnvironmentXmlPaths(attributes);
+        @SuppressWarnings("unchecked")
+        List<Path> sortedEnvXmlPaths = (List<Path>)attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE);
 
         if (sortedEnvXmlPaths == null || sortedEnvXmlPaths.isEmpty())
             // nothing to do here

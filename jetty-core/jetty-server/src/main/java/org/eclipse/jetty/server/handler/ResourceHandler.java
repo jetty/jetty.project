@@ -63,7 +63,8 @@ public class ResourceHandler extends Handler.Wrapper
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
-    private boolean _useFileMapping = true;
+    private int _minMappedFileSize = -1;
+    private int _maxMappedFileSize = -1;
 
     public ResourceHandler()
     {
@@ -134,8 +135,8 @@ public class ResourceHandler extends Handler.Wrapper
     protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
-        if (isUseFileMapping())
-            contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        if (getMinMappedFileSize() != 0)
+            contentFactory = new FileMappingHttpContentFactory(contentFactory, getMinMappedFileSize(), getMaxMappedFileSize());
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), byteBufferPool);
@@ -248,9 +249,10 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.isEtags();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public boolean isUseFileMapping()
     {
-        return _useFileMapping;
+        return _minMappedFileSize != 0;
     }
 
     /**
@@ -363,11 +365,51 @@ public class ResourceHandler extends Handler.Wrapper
         _mimeTypes = mimeTypes;
     }
 
+    /**
+     * @param useFileMapping True if mapped files should be used
+     * @deprecated use {@link #setMinMappedFileSize(int)}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseFileMapping(boolean useFileMapping)
     {
+        setMinMappedFileSize(useFileMapping ? -1 : 0);
+    }
+
+    /**
+     * @return The maximum size in bytes for a mapped file.
+     */
+    public int getMaxMappedFileSize()
+    {
+        return _maxMappedFileSize;
+    }
+
+    /**
+     * @param maxMappedFileSize The maximum size in bytes for a mapped file
+     */
+    public void setMaxMappedFileSize(int maxMappedFileSize)
+    {
         if (isRunning())
-            throw new IllegalStateException("Unable to set useFileMapping on started " + this);
-        _useFileMapping = useFileMapping;
+            throw new IllegalStateException("Unable to set when started " + this);
+        _maxMappedFileSize = maxMappedFileSize;
+    }
+
+    /**
+     * @return the minimum size in bytes for a mapped file; or {@code 0} for no mapping; or {@code -1} for a default.
+     */
+    public int getMinMappedFileSize()
+    {
+        return _minMappedFileSize;
+    }
+
+    /**
+     * @param minMappedFileSize the minimum size in bytes for a mapped file; or {@code 0} for no mapping;
+     *                          or {@code -1} for a default.
+     */
+    public void setMinMappedFileSize(int minMappedFileSize)
+    {
+        if (isRunning())
+            throw new IllegalStateException("Unable to set when started " + this);
+        _minMappedFileSize = minMappedFileSize;
     }
 
     public void setWelcomeMode(ResourceService.WelcomeMode welcomeMode)

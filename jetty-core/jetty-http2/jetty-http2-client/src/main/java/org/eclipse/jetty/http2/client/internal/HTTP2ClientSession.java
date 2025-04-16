@@ -45,8 +45,7 @@ public class HTTP2ClientSession extends HTTP2Session
     @Override
     public void onHeaders(HeadersFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+        super.onHeaders(frame);
 
         // HEADERS can be received for normal and pushed responses.
         int streamId = frame.getStreamId();
@@ -97,8 +96,7 @@ public class HTTP2ClientSession extends HTTP2Session
     @Override
     public void onPushPromise(PushPromiseFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+        super.onPushPromise(frame);
 
         if (!isPushEnabled())
         {

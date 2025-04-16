@@ -166,7 +166,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
-    private int scanInterval = 10;
+    private int scanInterval = 0;
     private Scanner scanner;
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
@@ -683,7 +683,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 
-        LOG.info("Deployment monitor in {} at intervals {}s", monitoredDirs, getScanInterval());
+        LOG.info("Deployment monitoring {} at intervals {}s {}", monitoredDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
@@ -778,7 +778,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (environmentsDir == null)
             return false;
 
-        return isSameDir(environmentsDir, path.getParent());
+        if (!isSameDir(environmentsDir, path.getParent()))
+            return false;
+
+        return FileID.isExtension(path, "xml", "properties");
     }
 
     protected boolean isMonitoredPath(Path path)
@@ -848,11 +851,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
-                        // Ensure that Environment configuration XMLs are listed in deployAttributes
-                        List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
-                        envXmlPaths.sort(PathCollators.byName(true));
-                        StandardContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
-
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
                         if (mainPath == null)
@@ -883,11 +881,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // combination of layered Environment Attributes with app Attributes overlaying them.
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
-
-                        // Ensure that Environment configuration XMLs are listed in deployAttributes
-                        List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
-                        envXmlPaths.sort(PathCollators.byName(true));
-                        StandardContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
@@ -928,68 +921,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         return actions;
     }
 
-    private List<Path> findEnvironmentXmlPaths(Attributes deployAttributes)
-    {
-        List<Path> rawEnvXmlPaths = deployAttributes.getAttributeNameSet()
-            .stream()
-            .filter(k -> k.startsWith(ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE))
-            .map(k -> Path.of((String)deployAttributes.getAttribute(k)))
-            .toList();
-
-        List<Path> ret = new ArrayList<>();
-        for (Path rawPath : rawEnvXmlPaths)
-        {
-            if (Files.exists(rawPath))
-            {
-                if (Files.isRegularFile(rawPath))
-                {
-                    // just add it, nothing else to do.
-                    if (rawPath.isAbsolute())
-                        ret.add(rawPath);
-                    else
-                        ret.add(rawPath.toAbsolutePath());
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Ignoring non-file reference to environment xml: {}", rawPath);
-                }
-            }
-            else if (!rawPath.isAbsolute())
-            {
-                // we have a relative defined path, try to resolve it from known locations
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Resolving environment xml path relative reference: {}", rawPath);
-                boolean found = false;
-                for (Path monitoredDir : getMonitoredDirectories())
-                {
-                    Path resolved = monitoredDir.resolve(rawPath);
-                    if (Files.isRegularFile(resolved))
-                    {
-                        found = true;
-                        // add resolved path
-                        ret.add(resolved);
-                    }
-                    else
-                    {
-                        // try resolve from parent (this is backward compatible with 12.0.0)
-                        resolved = monitoredDir.getParent().resolve(rawPath);
-                        if (Files.isRegularFile(resolved))
-                        {
-                            found = true;
-                            // add resolved path
-                            ret.add(resolved);
-                        }
-                    }
-                }
-                if (!found && LOG.isDebugEnabled())
-                    LOG.debug("Ignoring relative environment xml path that doesn't exist: {}", rawPath);
-            }
-        }
-
-        return ret;
-    }
-
     /**
      * Load all of the {@link Environment} specific {@code <env-name>[-<name>].properties} files
      * found in the directory provided.
@@ -1023,27 +954,40 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             return envAttributes;
         }
 
-        List<Path> envPropertyFiles;
+        List<Path> envPropertyFiles = new ArrayList<>();
+        List<Path> envXmlFiles = new ArrayList<>();
 
-        // Get all environment specific properties files for this environment,
+        // Get all environment specific xml and properties files for this environment,
         // order them according to the lexical ordering of the filenames
         try (Stream<Path> paths = Files.list(dir))
         {
-            envPropertyFiles = paths.filter(Files::isRegularFile)
-                .filter(p -> FileID.isExtension(p, "properties"))
+            paths.filter(Files::isRegularFile)
+                .filter(p -> FileID.isExtension(p, "properties", "xml"))
                 .filter(p ->
                 {
                     String name = p.getFileName().toString();
                     return name.startsWith(env);
                 })
                 .sorted(PathCollators.byName(true))
-                .toList();
+                .forEach(file ->
+                {
+                    if (FileID.isExtension(file, "properties"))
+                        envPropertyFiles.add(file);
+                    else if (FileID.isExtension(file, "xml"))
+                        envXmlFiles.add(file);
+                });
         }
 
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("Environment property files {}", envPropertyFiles);
+            LOG.debug("Environment XML files {}", envXmlFiles);
+        }
 
-        Attributes attributesLayer = envAttributes;
+        Attributes envLayer = new Attributes.Layer(envAttributes);
+
+        // Add the XML to the env layer
+        envLayer.setAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS_ATTRIBUTE, envXmlFiles);
 
         // Load each *.properties file
         for (Path file : envPropertyFiles)
@@ -1053,19 +997,17 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 Properties tmp = new Properties();
                 tmp.load(stream);
 
-                Attributes.Layer layer = new Attributes.Layer(attributesLayer);
                 //put each property into our substitution pool
                 tmp.stringPropertyNames().forEach(name ->
                 {
                     String value = tmp.getProperty(name);
                     String key = stripOldAttributePrefix(name);
-                    layer.setAttribute(key, value);
+                    envLayer.setAttribute(key, value);
                 });
-                attributesLayer = layer;
             }
         }
 
-        return attributesLayer;
+        return envLayer;
     }
 
     private void startTracking(PathsApp app)
@@ -1385,6 +1327,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         private final String name;
         private final Map<Path, PathsApp.State> paths = new HashMap<>();
         private final Attributes attributes = new Attributes.Mapped();
+        private Path mainPath;
         private PathsApp.State state;
         private ContextHandler contextHandler;
 
@@ -1456,6 +1399,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          */
         public Path getMainPath()
         {
+            return mainPath;
+        }
+
+        /**
+         * Arbitrarily set the Main Path for the PathApp.
+         *
+         * <p>
+         * Note: this value can be overridden by calls to {@link #putPath(Path, State)}, and
+         * subsequent recalculation of the Main Path.
+         * </p>
+         *
+         * @param mainPath the main path.
+         */
+        public void setMainPath(Path mainPath)
+        {
+            this.mainPath = mainPath;
+        }
+
+        private Path calcMainPath()
+        {
             List<Path> livePaths = paths
                 .entrySet()
                 .stream()
@@ -1495,6 +1458,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 throw new IllegalStateException("More than 1 Directory for deployable " + asStringList(dirs));
 
             LOG.warn("Unable to determine main deployable for {}", this);
+
             return null;
         }
 
@@ -1572,11 +1536,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 }
             }
 
-            // Look for simple old school environment name.
-            String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-            if (StringUtil.isNotBlank(environmentName))
+            // Look for environment attribute.
+            Object envObj = getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+            if (envObj instanceof Environment environment)
             {
-                setEnvironment(Environment.get(environmentName));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Using defaulted environment of {} to {}", name, environment);
+            }
+            else if (envObj instanceof String environmentName)
+            {
+                if (StringUtil.isNotBlank(environmentName))
+                {
+                    Environment env = Environment.get(environmentName);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Setting environment of {} to {}", name, env);
+                    setEnvironment(env);
+                }
             }
         }
 
@@ -1584,6 +1559,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         {
             this.paths.put(path, state);
             setState(calcState());
+            setMainPath(calcMainPath());
         }
 
         public void resetStates()
@@ -1663,8 +1639,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         if (ret == null)
                             ret = PathsApp.State.ADDED;
-                        else if (ret == PathsApp.State.UNCHANGED || ret == PathsApp.State.REMOVED)
-                            ret = PathsApp.State.ADDED;
+                        else if (ret != PathsApp.State.ADDED)
+                            ret = PathsApp.State.CHANGED;
                     }
                     case CHANGED ->
                     {

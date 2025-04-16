@@ -78,8 +78,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     @Override
     public void onHeaders(HeadersFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+        super.onHeaders(frame);
 
         int streamId = frame.getStreamId();
         if (!isClientStream(streamId))
@@ -152,6 +151,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     @Override
     public void onPushPromise(PushPromiseFrame frame)
     {
+        super.onPushPromise(frame);
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "push_promise");
     }
 
