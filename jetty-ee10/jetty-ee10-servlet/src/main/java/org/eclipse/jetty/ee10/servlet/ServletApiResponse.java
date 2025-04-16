@@ -318,6 +318,7 @@ public class ServletApiResponse implements HttpServletResponse
         if (getServletResponseInfo().getOutputType() == ServletContextResponse.OutputType.NONE)
         {
             String encoding = getServletResponseInfo().getCharacterEncoding(true);
+
             Locale locale = getLocale();
             if (writer != null && writer.isFor(locale, encoding))
                 writer.reopen();

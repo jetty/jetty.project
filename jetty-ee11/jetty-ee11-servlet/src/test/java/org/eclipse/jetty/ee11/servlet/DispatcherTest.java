@@ -136,7 +136,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 7\r
             Connection: close\r
             \r
@@ -162,7 +162,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 42\r
             Connection: close\r
             \r
@@ -192,7 +192,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 146\r
             Connection: close\r
             \r
@@ -227,7 +227,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 7\r
             Connection: close\r
             \r
@@ -250,7 +250,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 54\r
             Connection: close\r
             \r
@@ -280,7 +280,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 119\r
             Connection: close\r
             \r
@@ -628,7 +628,7 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Last-Modified: xxx\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Accept-Ranges: bytes\r
             Content-Length: 18\r
             Connection: close\r

@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
@@ -130,7 +131,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     private final ScopedContext _context;
     private final Attributes _persistentAttributes = new Mapped();
-    private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -207,7 +208,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     public void setServer(Server server)
     {
         super.setServer(server);
-        _mimeTypes.setWrapped(server.getMimeTypes());
+
+        MimeTypes.Mutable serverMimeTypes = server.getMimeTypes();
+        if (serverMimeTypes != null && !serverMimeTypes.isDefault())
+        {
+            if (_mimeTypes.isDefault())
+                _mimeTypes.setFrom(serverMimeTypes);
+            else
+                _mimeTypes.mergeFrom(serverMimeTypes);
+        }
     }
     
     protected ScopedContext newContext()
@@ -294,11 +303,54 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return A mutable MimeTypes that wraps the {@link Server#getMimeTypes()}
      *         once {@link ContextHandler#setServer(Server)} has been called.
-     * @see MimeTypes.Wrapper
      */
     public MimeTypes.Mutable getMimeTypes()
     {
         return _mimeTypes;
+    }
+
+    /**
+     * Set the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+     * @param mimeProperties The property file to use as a string representation of a {@link Resource}
+     * @throws RuntimeIOException if there is an {@link IOException}
+     * @see MimeTypes.Mutable#setMimeTypes(Resource)
+     */
+    public void setMimeTypes(String mimeProperties) throws RuntimeIOException
+    {
+        getMimeTypes().setMimeTypes(ResourceFactory.of(this).newResource(mimeProperties));
+    }
+
+    /**
+     * Add the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+     * @param mimeProperties The property file to use as a string representation of a {@link Resource}
+     * @throws RuntimeIOException if there is an {@link IOException}
+     * @see MimeTypes.Mutable#addMimeTypes(Resource)
+     */
+    public void addMimeTypes(String mimeProperties) throws RuntimeIOException
+    {
+        getMimeTypes().addMimeTypes(ResourceFactory.of(this).newResource(mimeProperties));
+    }
+
+    /**
+     * Set the inferred and assumed encodings from a property
+     * @param encodingProperties The property file to use as a string representation of a {@link Resource}
+     * @throws RuntimeIOException if there is an {@link IOException}
+     * @see MimeTypes.Mutable#setEncodings(Resource)
+     */
+    public void setEncodings(String encodingProperties) throws RuntimeIOException
+    {
+        getMimeTypes().setEncodings(ResourceFactory.of(this).newResource(encodingProperties));
+    }
+
+    /**
+     * Add the inferred and assumed encodings from a property file.
+     * @param encodingProperties The property file to use as a string representation of a {@link Resource}
+     * @throws RuntimeIOException if there is an {@link IOException}
+     * @see MimeTypes.Mutable#addEncodings(Resource)
+     */
+    public void addEncodings(String encodingProperties) throws RuntimeIOException
+    {
+        getMimeTypes().addEncodings(ResourceFactory.of(this).newResource(encodingProperties));
     }
 
     @Override
