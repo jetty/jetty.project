@@ -257,7 +257,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     public static String stripOldAttributePrefix(String key)
     {
         if (key.startsWith(ATTRIBUTE_PREFIX))
+        {
+            LOG.warn("Deprecated Attribute Key prefix in use: {} (will be stripped, future support not certain)", key);
             return key.substring(ATTRIBUTE_PREFIX.length());
+        }
         else
             return key;
     }
@@ -977,6 +980,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 });
             }
         }
+
+        // Add deprecation warnings
+        envLayer.getAttributeNameSet().stream()
+            .filter((name) -> name.startsWith("jetty.deploy.environmentXml.") ||
+                name.equals("jetty.deploy.environmentXml"))
+            .forEach((name) ->
+                LOG.warn("Deprecated attribute key prefix detected {} (use ${jetty.base}/environments/*.xml instead)", name));
 
         return envLayer;
     }
