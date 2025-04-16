@@ -17,7 +17,6 @@ import java.net.URI;
 
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 
@@ -41,21 +40,6 @@ public class StaticContextHandler extends ContextHandler implements Deployable
         setContextPath(contextPath);
     }
 
-    @Override
-    public void initializeDefaults(Attributes attributes)
-    {
-        // This StaticContextHandler is arriving via a Deployer
-        for (String keyName : attributes.getAttributeNameSet())
-        {
-            Object value = attributes.getAttribute(keyName);
-            switch (keyName)
-            {
-                case Deployable.CONTEXT_PATH,
-                     DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
-            }
-        }
-    }
-
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
     {
         boolean alreadyExists = false;
@@ -77,11 +61,9 @@ public class StaticContextHandler extends ContextHandler implements Deployable
         return alreadyExists;
     }
 
-    protected ResourceHandler newResourceHandler(Resource baseResource)
+    protected ResourceHandler newResourceHandler()
     {
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(baseResource);
-        return resourceHandler;
+        return new ResourceHandler();
     }
 
     @Override
@@ -95,7 +77,7 @@ public class StaticContextHandler extends ContextHandler implements Deployable
             throw new IllegalStateException("Base Resource is not a directory: " + baseResource);
 
         if (!isResourceHandlerAlreadyPresent(getBaseResource()))
-            setHandler(newResourceHandler(baseResource));
+            setHandler(newResourceHandler());
 
         super.doStart();
     }

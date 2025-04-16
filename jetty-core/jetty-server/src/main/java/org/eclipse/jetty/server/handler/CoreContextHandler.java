@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -88,64 +87,61 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     }
 
     @Override
-    public void initializeDefaults(Attributes attributes)
+    protected void initializeDefault(String keyName, Object value)
     {
-        try
+        switch (keyName)
         {
-            // This CoreContextHandler is arriving via a Deployer
-            for (String keyName : attributes.getAttributeNameSet())
+            case Deployable.MAIN_PATH ->
             {
-                Object value = attributes.getAttribute(keyName);
-
-                switch (keyName)
+                // The Base Resource
+                Path mainPath = (Path)value;
+                if (FileID.isExtension(mainPath, SUPPORTED_ARCHIVE_EXTENSIONS) || Files.isDirectory(mainPath))
                 {
-                    case Deployable.CONTEXT_PATH, Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
-                    case Deployable.MAIN_PATH ->
-                    {
-                        // The Base Resource
-                        Path mainPath = (Path)value;
-                        if (FileID.isExtension(mainPath, SUPPORTED_ARCHIVE_EXTENSIONS) || Files.isDirectory(mainPath))
-                        {
-                            ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource baseResource = resourceFactory.newResource((Path)value);
-                            setBaseResource(baseResource);
-                        }
-                    }
-                    case Deployable.OTHER_PATHS ->
-                    {
-                        //noinspection unchecked
-                        java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
-                        Path mainDir = null;
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource baseResource = resourceFactory.newResource((Path)value);
+                    setBaseResource(baseResource);
+                }
+            }
+            case Deployable.OTHER_PATHS ->
+            {
+                //noinspection unchecked
+                java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
+                Path mainDir = null;
 
-                        for (Path path : deployablePaths)
+                for (Path path : deployablePaths)
+                {
+                    if (Files.isDirectory(path))
+                    {
+                        if (mainDir == null)
                         {
-                            if (Files.isDirectory(path))
-                            {
-                                if (mainDir == null)
-                                {
-                                    mainDir = path;
-                                }
-                                else
-                                {
-                                    throw new IllegalArgumentException("More than one directory is not supported: " +
-                                        deployablePaths.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
-                                }
-                            }
+                            mainDir = path;
                         }
-
-                        if (mainDir != null)
+                        else
                         {
-                            // A single directory is the only form supported.
-                            // The breakdown of this directory (classes/, lib/*.jar, static/) is done by initWebApp();
-                            ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource resourceDir = resourceFactory.newResource(mainDir);
-                            setBaseResource(resourceDir);
+                            throw new IllegalArgumentException("More than one directory is not supported: " +
+                                deployablePaths.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
                         }
                     }
                 }
-            }
 
-            // Init the webapp, unpack if necessary, create the classloader, etc.
+                if (mainDir != null)
+                {
+                    // A single directory is the only form supported.
+                    // The breakdown of this directory (classes/, lib/*.jar, static/) is done by initWebApp();
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource resourceDir = resourceFactory.newResource(mainDir);
+                    setBaseResource(resourceDir);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void initializeDefaultComplete()
+    {
+        // Init the webapp, unpack if necessary, create the classloader, etc.
+        try
+        {
             initWebApp();
         }
         catch (IOException e)

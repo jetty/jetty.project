@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -71,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * A {@link Handler} that scopes a request to a specific {@link Context}.
  */
 @ManagedObject
-public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
+public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck, Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
@@ -614,6 +615,45 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void initializeDefaults(Attributes attributes)
+    {
+        for (String keyName : attributes.getAttributeNameSet())
+        {
+            Object value = attributes.getAttribute(keyName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("init {}: {}", keyName, value);
+
+            switch (keyName)
+            {
+                case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
+                case Deployable.CONTEXT_PATH -> setContextPath((String)value);
+                default -> initializeDefault(keyName, value);
+            }
+        }
+        initializeDefaultComplete();
+    }
+
+    /**
+     * Called for each attribute key encountered during the
+     * {@link Deployable#initializeDefaults(Attributes)} processing.
+     *
+     * @param keyName the key name
+     * @param value the value
+     */
+    protected void initializeDefault(String keyName, Object value)
+    {
+    }
+
+    /**
+     * Called after all attributes are processed via
+     * {@link Deployable#initializeDefaults(Attributes)}, to allow
+     * any kind of extra processing of the configuration.
+     */
+    protected void initializeDefaultComplete()
+    {
     }
 
     protected ClassLoader enterScope(Request contextRequest)
