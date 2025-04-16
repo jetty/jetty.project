@@ -130,7 +130,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
 
     public void listener(Request.Listener listener)
     {
-        request.listener(listener);
+        request.onRequestListener(listener);
     }
 
     public void headers(Consumer<HttpFields.Mutable> consumer)

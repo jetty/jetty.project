@@ -453,7 +453,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request listener(Request.Listener listener)
+    public Request onRequestListener(Listener listener)
     {
         requestListeners().addListener(listener);
         return this;
@@ -555,6 +555,13 @@ public class HttpRequest implements Request
         if (requestListeners != null)
             requestListeners.notifyFailure(this, failure);
         getHttpClientRequestListeners().notifyFailure(this, failure);
+    }
+
+    @Override
+    public Request onResponseListener(Response.Listener listener)
+    {
+        responseListeners.addCompleteListener(listener, true);
+        return this;
     }
 
     @Override
