@@ -14,9 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.File;
-import java.util.Comparator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -28,33 +25,6 @@ import org.eclipse.jetty.util.Attributes;
  */
 public interface Deployable
 {
-    Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
-
-    /**
-     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
-     * EE names are compared by EE number, otherwise simple name comparison is used.
-     */
-    Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
-    {
-        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
-        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
-
-        if (m1.matches())
-        {
-            if (m2.matches())
-            {
-                int n1 = Integer.parseInt(m1.group(1));
-                int n2 = Integer.parseInt(m2.group(1));
-                return Integer.compare(n1, n2);
-            }
-            return 1;
-        }
-        if (m2.matches())
-            return -1;
-
-        return e1.compareTo(e2);
-    };
-
     /**
      * <p>Attribute key name: Temp Directory for context.</p>
      *

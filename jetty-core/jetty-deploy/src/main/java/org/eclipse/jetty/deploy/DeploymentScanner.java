@@ -33,6 +33,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,6 +128,33 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentScanner.class);
     // old attributes prefix, now stripped.
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
+
+    private static final Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
+
+    /**
+     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
+     * EE names are compared by EE number, otherwise simple name comparison is used.
+     */
+    protected static final Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
+    {
+        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
+        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
+
+        if (m1.matches())
+        {
+            if (m2.matches())
+            {
+                int n1 = Integer.parseInt(m1.group(1));
+                int n2 = Integer.parseInt(m2.group(1));
+                return Integer.compare(n2, n1);
+            }
+            return -1;
+        }
+        if (m2.matches())
+            return 1;
+
+        return e1.compareTo(e2);
+    };
 
     private final Server server;
     private final FilenameFilter filenameFilter;
@@ -314,7 +343,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      *
      * <p>
      * Falls back to {@link Environment#getAll()} list, and returns
-     * the first name returned after sorting with {@link Deployable#ENVIRONMENT_COMPARATOR}
+     * the first name returned after sorting.
      * </p>
      *
      * @return the default environment name.
@@ -325,7 +354,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         {
             return Environment.getAll().stream()
                 .map(Environment::getName)
-                .max(Deployable.ENVIRONMENT_COMPARATOR)
+                .max(ENVIRONMENT_COMPARATOR)
                 .orElse(null);
         }
         return defaultEnvironmentName;
