@@ -236,3 +236,28 @@ If a client application does not want to handle a particular HTTP/2 push, it can
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=pushReset]
 ----
+
+[[listeners]]
+== Listening to HTTP/2 Events
+
+The HTTP/2 low-level APIs allow you to listen and react to semantic events such as HTTP requests and HTTP responses.
+
+You can use `HTTP2Session.LifeCycleListener` to be notified of lifecycle events of a `Session` (when it is opened and when it is closed), and `HTTP2Session.FrameListener` to be notified of what HTTP/2 frames have been sent and received.
+
+These listeners are useful to implement cross-cutting concerns that are not related to the handling of HTTP requests and responses.
+
+For example, you can use a `HTTP2Session.LifeCycleListener` to record and log how long sessions remain open:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=listenerLifeCycle]
+----
+
+Another example is to use a `HTTP2Session.FrameListener` to log HTTP/2 frames for HTTP/2 protocol troubleshooting:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=listenerLogging]
+----
+
+In limited cases, you can use these listeners to access the low-level HTTP/2 APIs even if your application uses the xref:client/http.adoc[high-level APIs] with the xref:client/http.adoc#transport-http2[HTTP/2 transport].

@@ -983,6 +983,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 `HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests into the HTTP/2 specific format.
 
+See also xref:client/http2.adoc#listeners[this section] to be able to interact with the low-level HTTP/2 APIs while using the high-level APIs.
+
 [[transport-http3]]
 === HTTP/3 Transport
 
