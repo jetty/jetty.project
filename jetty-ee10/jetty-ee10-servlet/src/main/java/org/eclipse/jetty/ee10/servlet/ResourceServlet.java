@@ -107,6 +107,10 @@ import org.slf4j.LoggerFactory;
  *     Use {@code true} to generate ETags in responses.
  *     Defaults to {@code false}.
  *   </dd>
+ *   <dt>installAllowedResourceAliasChecker</dt>
+ *   <dd>
+ *     <em>Deprecated</em> use {@code allowAliases} instead.
+ *   </dd>
  *   <dt>allowAliases</dt>
  *   <dd>
  *     Allow resource aliases via the {@link AllowedResourceAliasChecker}
@@ -161,6 +165,10 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     Use {@code true} to redirect welcome files, otherwise they are forwarded.
  *     Defaults to {@code false}.
+ *   </dd>
+ *   <dt>resourceBase</dt>
+ *   <dd>
+ *     <em>Deprecated</em> use {@code baseResource} instead.
  *   </dd>
  *   <dt>stylesheet</dt>
  *   <dd>
