@@ -91,6 +91,9 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         switch (keyName)
         {
+            // The "Default Context Path" can be considered the calculated path from the deployer.
+            // This is the name that exists before the XML is processed (and possibly changes the contextPath)
+            case Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
             case Deployable.MAIN_PATH ->
             {
                 // The Base Resource

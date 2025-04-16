@@ -47,6 +47,17 @@ public class StaticContextHandler extends ContextHandler implements Deployable
         setHandler(resourceHandler);
     }
 
+    @Override
+    protected void initializeDefault(String keyName, Object value)
+    {
+        switch (keyName)
+        {
+            // The "Default Context Path" can be considered the calculated path from the deployer.
+            // This is the name that exists before the XML is processed (and possibly changes the contextPath)
+            case Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
+        }
+    }
+
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
     {
         boolean alreadyExists = false;
