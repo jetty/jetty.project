@@ -116,7 +116,7 @@ import org.slf4j.LoggerFactory;
  *                    on the context (if one does not already exist) for this baseResource.
  *                    This is especially useful if you have a FileSystem that is not
  *                    case sensitive. (Such as on Windows with FAT or NTFS)
- *                    Defaults to {@code true}.
+ *                    Defaults to {@code false}.
  *
  *  allowSymlinks
  *                    Allow resources that are symlinks pointing to other locations via
@@ -232,7 +232,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             }
         }
 
-        if (getInitBoolean("allowAliases", true))
+        if (getInitBoolean("allowAliases", false))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
