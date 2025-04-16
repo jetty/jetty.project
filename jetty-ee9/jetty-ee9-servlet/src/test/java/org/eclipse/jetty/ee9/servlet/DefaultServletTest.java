@@ -1399,9 +1399,7 @@ public class DefaultServletTest
             defholder.setInitParameter("baseResource", docBase.toUri().toASCIIString());
             defholder.setInitParameter("pathInfoOnly", "true");
             defholder.setInitParameter("gzip", "false");
-
-            // FIXME: The baseResource from the DefaultServlet should be used by this AliasChecker.
-            context.addAliasCheck(new SymlinkAllowedResourceAliasChecker(context.getCoreContextHandler()));
+            defholder.setInitParameter("installSymlinkAllowedResourceAliasChecker", "true");
         });
 
         String rawResponse;

@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
@@ -111,6 +112,12 @@ import org.slf4j.LoggerFactory;
  *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
  *     does not already exist for this baseResource.
  *     Defaults to {@code true}.
+ *   </dd>
+ *   <dt>installSymlinkAllowedResourceAliasChecker</dt>
+ *   <dd>
+ *     Whether to add an {@link SymlinkAllowedResourceAliasChecker} to the context if one
+ *     does not already exist for this baseResource.
+ *     Defaults to {@code false}.
  *   </dd>
  *   <dt>maxCachedFiles</dt>
  *   <dd>
@@ -229,6 +236,23 @@ public class ResourceServlet extends HttpServlet
             }
             if (addAliasCheck)
                 contextHandler.addAliasCheck(new AllowedResourceAliasChecker(contextHandler, baseResource));
+        }
+
+        if (getInitBoolean("installSymlinkAllowedResourceAliasChecker", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof SymlinkAllowedResourceAliasChecker aliasChecker &&
+                    Objects.equals(baseResource, aliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                contextHandler.addAliasCheck(new SymlinkAllowedResourceAliasChecker(contextHandler, baseResource));
         }
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),

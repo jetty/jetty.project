@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.StringTokenizer;
 
@@ -41,7 +42,10 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -106,6 +110,16 @@ import org.slf4j.LoggerFactory;
  *                    to decorate the directory listing html.
  *
  *  etags             If True, weak etags will be generated and handled.
+ *
+ *  installAllowedResourceAliasChecker
+ *                    Whether to add an {@link AllowedResourceAliasChecker} to the context if one
+ *                    does not already exist for this baseResource.
+ *                    Defaults to {@code false}.
+ *
+ *  installSymlinkAllowedResourceAliasChecker
+ *                    Whether to add an {@link SymlinkAllowedResourceAliasChecker} to the context if one
+ *                    does not already exist for this baseResource.
+ *                    Defaults to {@code false}.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
  *  maxCachedFileSize The maximum size of a file to cache
@@ -213,6 +227,40 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 LOG.warn("Unable to create baseResource from {}", br, e);
                 throw new UnavailableException(e.toString());
             }
+        }
+
+        if (getInitBoolean("installAllowedResourceAliasChecker", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : _contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker &&
+                    Objects.equals(_baseResource, allowedResourceAliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler.getCoreContextHandler(), _baseResource));
+        }
+
+        if (getInitBoolean("installSymlinkAllowedResourceAliasChecker", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : _contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof SymlinkAllowedResourceAliasChecker aliasChecker &&
+                    Objects.equals(_baseResource, aliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                _contextHandler.addAliasCheck(new SymlinkAllowedResourceAliasChecker(_contextHandler.getCoreContextHandler(), _baseResource));
         }
 
         String stylesheet = getInitParameter("stylesheet");
