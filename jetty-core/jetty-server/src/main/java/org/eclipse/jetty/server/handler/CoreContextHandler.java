@@ -68,7 +68,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
     public CoreContextHandler()
     {
-        this("/");
+        super();
     }
 
     public CoreContextHandler(String contextPath)

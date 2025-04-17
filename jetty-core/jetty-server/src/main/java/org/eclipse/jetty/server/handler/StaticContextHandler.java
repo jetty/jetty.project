@@ -29,22 +29,36 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class StaticContextHandler extends ContextHandler implements Deployable
 {
+    /**
+     * Create a StaticContextHandler.
+     */
     public StaticContextHandler()
     {
-        this("/");
+        super();
     }
 
+    /**
+     * Create a StaticContextHandler on a specific contextPath.
+     *
+     * @param contextPath the context path to serve static content from
+     */
     public StaticContextHandler(String contextPath)
     {
-        super();
-        setContextPath(contextPath);
+        this(contextPath, null);
     }
 
+    /**
+     * Create a StaticContextHandler on a specific contextPath using a configured ResourceHandler.
+     *
+     * @param contextPath the context path
+     * @param resourceHandler the resource handler
+     */
     public StaticContextHandler(String contextPath, ResourceHandler resourceHandler)
     {
         super();
         setContextPath(contextPath);
-        setHandler(resourceHandler);
+        if (resourceHandler != null)
+            setHandler(resourceHandler);
     }
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
