@@ -19,17 +19,16 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
-import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
+import org.eclipse.jetty.osgi.ServerClasspathContributor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 /**
- * @author janb
- *
+ * Represents the set of bundles that contain jstl tag libs that must be on the
+ * equivalent of jetty's classpath.
  */
 public class TLDServerClasspathContributor implements ServerClasspathContributor
 {
-    
     /**
      * Name of a class that belongs to the jstl bundle. From that class
      * we locate the corresponding bundle.

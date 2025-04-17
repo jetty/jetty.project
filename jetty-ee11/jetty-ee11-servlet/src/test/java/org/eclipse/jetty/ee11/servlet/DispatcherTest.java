@@ -136,7 +136,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 7\r
             Connection: close\r
             \r
@@ -162,7 +162,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 42\r
             Connection: close\r
             \r
@@ -192,7 +192,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 146\r
             Connection: close\r
             \r
@@ -227,7 +227,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/html\r
+            Content-Type: text/html;charset=utf-8\r
             Content-Length: 7\r
             Connection: close\r
             \r
@@ -250,7 +250,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 54\r
             Connection: close\r
             \r
@@ -280,7 +280,7 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Content-Length: 119\r
             Connection: close\r
             \r
@@ -315,13 +315,14 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 98\r
+            Content-Length: 145\r
             Connection: close\r
             \r
             /context\r
             /include\r
             /info\r
             /context/include/info;param=value\r
+            http://local/context/include/info;param=value\r
             null\r
             null\r
             null\r
@@ -627,7 +628,7 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Last-Modified: xxx\r
-            Content-Type: text/plain\r
+            Content-Type: text/plain;charset=iso-8859-1\r
             Accept-Ranges: bytes\r
             Content-Length: 18\r
             Connection: close\r
@@ -1467,6 +1468,7 @@ public class DispatcherTest
             response.getOutputStream().println(request.getServletPath());
             response.getOutputStream().println(request.getPathInfo());
             response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println(request.getRequestURL().toString());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
             HttpServletMapping mapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.INCLUDE_MAPPING);
             response.getOutputStream().println(mapping == null ? null : mapping.getMatchValue());
@@ -1619,6 +1621,7 @@ public class DispatcherTest
             assertNull(request.getPathTranslated());
             assertThat(request.getQueryString(), containsString("do=assertinclude&do=more&test=1"));
             assertEquals("/context/IncludeServlet", request.getRequestURI());
+            assertEquals("http://local/context/IncludeServlet", request.getRequestURL().toString());
             assertEquals("/context", request.getContextPath());
             assertEquals("/IncludeServlet", request.getServletPath());
 

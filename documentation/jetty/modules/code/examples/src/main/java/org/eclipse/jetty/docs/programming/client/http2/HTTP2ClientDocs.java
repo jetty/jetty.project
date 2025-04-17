@@ -19,7 +19,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,16 +29,19 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -412,5 +417,59 @@ public class HTTP2ClientDocs
             }
         });
         // end::pushReset[]
+    }
+
+    public void listenerLifeCycle()
+    {
+        // tag::listenerLifeCycle[]
+        class SessionLifeTime implements HTTP2Session.LifeCycleListener
+        {
+            private final Map<Session, SessionNanoTime> opens = new ConcurrentHashMap<>();
+            private final Set<SessionNanoTime> closes = ConcurrentHashMap.newKeySet();
+
+            @Override
+            public void onOpen(Session session)
+            {
+                opens.put(session, new SessionNanoTime(session.getRemoteSocketAddress(), NanoTime.now()));
+            }
+
+            @Override
+            public void onClose(Session session)
+            {
+                SessionNanoTime openNanoTime = opens.remove(session);
+                closes.add(new SessionNanoTime(openNanoTime.address(), NanoTime.since(openNanoTime.nanoTime())));
+            }
+
+            record SessionNanoTime(SocketAddress address, long nanoTime)
+            {
+            }
+        }
+
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.addBean(new SessionLifeTime());
+        // end::listenerLifeCycle[]
+    }
+
+    public void listenerLogging()
+    {
+        // tag::listenerLogging[]
+        class LoggingFrameListener implements HTTP2Session.FrameListener
+        {
+            @Override
+            public void onIncomingFrame(Session session, Frame frame)
+            {
+                System.getLogger("http2").log(INFO, "incoming %s on %s", frame, session);
+            }
+
+            @Override
+            public void onOutgoingFrame(Session session, Frame frame)
+            {
+                System.getLogger("http2").log(INFO, "outgoing %s on %s", frame, session);
+            }
+        }
+
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.addBean(new LoggingFrameListener());
+        // end::listenerLogging[]
     }
 }

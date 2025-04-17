@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.osgi.BundleIndex;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
@@ -27,18 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Extension of AnnotationParser to parse classes inside bundles.
  */
 public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
     
-    private Set<URI> _parsed = ConcurrentHashMap.newKeySet();
-
-    private ConcurrentHashMap<URI, Bundle> _uriToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle, Resource> _bundleToResource = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle, URI> _bundleToUri = new ConcurrentHashMap<>();
+    private final Set<URI> _parsed = ConcurrentHashMap.newKeySet();
+    private final BundleIndex _bundleIndex = new BundleIndex();
 
     public AnnotationParser()
     {
@@ -50,51 +47,21 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
         super(platform);
     }
 
-    /**
-     * Keep track of a jetty URI Resource and its associated OSGi bundle.
-     *
-     *@param resourceFactory the ResourceFactory to convert bundle location
-     * @param bundle the bundle to index
-     * @return the resource for the bundle
-     * @throws Exception if unable to create the resource reference
-     */
-    public Resource indexBundle(ResourceFactory resourceFactory, Bundle bundle) throws Exception
+    public BundleIndex getBundleIndex()
     {
-        File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-        Resource resource = resourceFactory.newResource(bundleFile.toURI());
-        URI uri = resource.getURI();
-        _uriToBundle.putIfAbsent(uri, bundle);
-        _bundleToUri.putIfAbsent(bundle, uri);
-        _bundleToResource.putIfAbsent(bundle, resource);
-        _resourceToBundle.putIfAbsent(resource, bundle);
-        return resource;
-    }
-
-    protected URI getURI(Bundle bundle)
-    {
-        return _bundleToUri.get(bundle);
-    }
-
-    protected Resource getResource(Bundle bundle)
-    {
-        return _bundleToResource.get(bundle);
-    }
-
-    protected Bundle getBundle(Resource resource)
-    {
-        return _resourceToBundle.get(resource);
+        return _bundleIndex;
     }
 
     public void parse(Set<? extends Handler> handlers, Bundle bundle)
         throws Exception
     {
 
-        Resource bundleResource = _bundleToResource.get(bundle);
+        Resource bundleResource = _bundleIndex.getResource(bundle);
         if (bundleResource == null)
             return;
 
         //if already added, it is already parsed
-        if (!_parsed.add(_bundleToUri.get(bundle)))
+        if (!_parsed.add(_bundleIndex.getURI(bundle)))
             return;
 
         parse(handlers, bundleResource);

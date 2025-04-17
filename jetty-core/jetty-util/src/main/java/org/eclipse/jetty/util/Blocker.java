@@ -274,6 +274,11 @@ public class Blocker
 
     public static <C> Promise<C> promise()
     {
+        return promise(null);
+    }
+
+    public static <C> Promise<C> promise(Consumer<C> consumer)
+    {
         return new Promise<>()
         {
             private final CompletableFuture<C> _future = new CompletableFuture<>();
@@ -329,6 +334,8 @@ public class Blocker
             @Override
             public void succeeded(C result)
             {
+                if (consumer != null)
+                    consumer.accept(result);
                 _future.complete(result);
             }
 

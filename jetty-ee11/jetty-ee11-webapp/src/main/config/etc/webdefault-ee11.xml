@@ -69,15 +69,17 @@
  *  dirAllowed        If true, directory listings are returned if no
  *                    welcome file is found. Else 403 Forbidden.
  *
- *  welcomeServlets   If true, attempt to dispatch to welcome files
- *                    that are servlets, but only after no matching static
- *                    resources could be found. If false, then a welcome
- *                    file must exist on disk. If "exact", then exact
- *                    servlet matches are supported without an existing file.
- *                    Default is false.
- *
- *                    This must be false if you want directory listings,
- *                    but have index.jsp in your welcome file list.
+ *  welcomeServlets   If false, then only serve welcome resources when they exist
+ *                    on the file system.  If they also map to a Servlet, then the
+ *                    servlet will be used to generate the response.
+ *                    If true, then dispatch welcome resources to a matching Servlet
+ *                    (for example mapped to {@code *.welcome}), even if the welcome
+ *                    resource does not exist on file system.
+ *                    If exact, then dispatch welcome resource to a Servlet when
+ *                    the resource does not exist on the file system, but only if the
+ *                    mapping is exactly the same as the welcome resource
+ *                    (for example /index.welcome})
+ *                    Defaults to false.
  *
  *  redirectWelcome   If true, welcome files are redirected rather than
  *                    forwarded to.
@@ -113,11 +115,10 @@
  *  maxCachedFileSize The maximum size of a file to cache
  *  maxCachedFiles    The maximum number of files to cache
  *
- *  useFileMappedBuffer
- *                    If set to true, it will use mapped file buffers to serve static content
- *                    when using an NIO connector. Setting this value to false means that
- *                    a direct buffer will be used instead of a mapped file buffer.
- *                    This file sets the value to true.
+ *  minMappedFileSize The minimum size in bytes of a file that will be used with file mapping;
+ *                    or 0 for no file mapping; or -1 (or not set) for a default size of 1MB.
+ *  maxMappedFileSize The maximum size in bytes of a file that will be used with file mapping;
+ *                    or -1 (or not set) for a default size of MAX_VALUE.
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
@@ -166,8 +167,12 @@
       <param-value>false</param-value>
     </init-param>
     <init-param>
-      <param-name>useFileMappedBuffer</param-name>
-      <param-value>true</param-value>
+      <param-name>minMappedFileSize</param-name>
+      <param-value>-1</param-value>
+    </init-param>
+    <init-param>
+      <param-name>maxMappedFileSize</param-name>
+      <param-value>-1</param-value>
     </init-param>
     <load-on-startup>0</load-on-startup>
   </servlet>

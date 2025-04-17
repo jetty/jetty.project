@@ -249,8 +249,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
             if (LOG.isDebugEnabled())
                 LOG.debug("STARTED @{}ms {}", Uptime.getUptime(), this);
             for (EventListener listener : _eventListener)
+            {
                 if (listener instanceof Listener)
                     ((Listener)listener).lifeCycleStarted(this);
+            }
         }
     }
 
@@ -260,8 +262,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
             LOG.debug("STARTING {}", this);
         _state = State.STARTING;
         for (EventListener listener : _eventListener)
+        {
             if (listener instanceof Listener)
                 ((Listener)listener).lifeCycleStarting(this);
+        }
     }
 
     private void setStopping()
@@ -270,8 +274,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
             LOG.debug("STOPPING {}", this);
         _state = State.STOPPING;
         for (EventListener listener : _eventListener)
+        {
             if (listener instanceof Listener)
                 ((Listener)listener).lifeCycleStopping(this);
+        }
     }
 
     private void setStopped()
@@ -282,8 +288,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
             if (LOG.isDebugEnabled())
                 LOG.debug("STOPPED {}", this);
             for (EventListener listener : _eventListener)
+            {
                 if (listener instanceof Listener)
                     ((Listener)listener).lifeCycleStopped(this);
+            }
         }
     }
 

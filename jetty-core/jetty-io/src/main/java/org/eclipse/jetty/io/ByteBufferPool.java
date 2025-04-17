@@ -117,7 +117,7 @@ public interface ByteBufferPool
          * Create a sized pool for a give directness and size from a wrapped pool.
          * @param wrapped The actual {@link ByteBufferPool}
          * @param direct {@code true} for direct buffers.
-         * @param size The specified size in bytes of the buffer, or -1 for a default
+         * @param size The specified size in bytes of the buffer, any value less than 1 means use a default value.
          */
         public Sized(ByteBufferPool wrapped, boolean direct, int size)
         {

@@ -57,7 +57,6 @@
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
             <Bundle-Classpath></Bundle-Classpath>
             <Fragment-Host>org.eclipse.jetty.ee8.osgi.boot</Fragment-Host>
-            <Export-Package>!org.eclipse.jetty.ee8.osgi.boot.*</Export-Package>
             <Import-Package>${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,
               org.eclipse.jdt.core.compiler.*;resolution:=optional,

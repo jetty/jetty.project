@@ -53,77 +53,6 @@ import org.eclipse.jetty.util.FileID;
 public class LibExtClassLoaderHelper
 {
     /**
-     * IFilesInJettyHomeResourcesProcessor
-     *
-     * Interface for callback impls
-     */
-    public interface IFilesInJettyHomeResourcesProcessor
-    {
-        void processFilesInResourcesFolder(File jettyHome, Map<String, File> filesInResourcesFolder);
-    }
-
-    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<>();
-
-    /**
-     * @param jettyHome the jetty home
-     * @param parentClassLoader the parent classloader
-     * @return a url classloader with the jars of resources, lib/ext and the
-     * jars passed in the other argument. The parent classloader usually
-     * is the JettyBootStrapper (an osgi classloader.
-     * @throws MalformedURLException if the jetty home reference is invalid
-     */
-    public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader) throws MalformedURLException
-    {
-        if (jettyHome == null)
-        {
-            return parentClassLoader;
-        }
-        ArrayList<URL> urls = new ArrayList<>();
-        File jettyResources = new File(jettyHome, "resources");
-        if (jettyResources.exists())
-        {
-            // make sure it contains something else than README:
-            Map<String, File> jettyResFiles = new HashMap<>();
-            for (File f : jettyResources.listFiles())
-            {
-                jettyResFiles.put(f.getName(), f);
-                if (f.getName().toLowerCase(Locale.ENGLISH).startsWith("readme"))
-                {
-                    continue;
-                }
-                else
-                {
-                    if (urls.isEmpty())
-                    {
-                        urls.add(jettyResources.toURI().toURL());
-                    }
-                }
-            }
-            processFilesInResourcesFolder(jettyHome, jettyResFiles);
-        }
-        File libExt = new File(jettyHome, "lib/ext");
-        if (libExt.exists())
-        {
-            for (File f : libExt.listFiles())
-            {
-                if (FileID.isJavaArchive(f.getName()))
-                {
-                    // cheap to tolerate folders so let's do it.
-                    URL url = f.toURI().toURL();
-                    if (f.isFile())
-                    {
-                        // is this necessary anyways?
-                        url = new URL("jar:" + url.toString() + "!/");
-                    }
-                    urls.add(url);
-                }
-            }
-        }
-
-        return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
-    }
-
-    /**
      * @param jarsContainerOrJars the jars via file references
      * @param otherJarsOrFolder more jars via url references
      * @param parentClassLoader the parent classloader
@@ -169,29 +98,5 @@ public class LibExtClassLoaderHelper
             }
         }
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
-    }
-
-    /**
-     * When we find files typically used for central logging configuration we do
-     * what it takes in this method to do what the user expects. Without
-     * depending too much directly on a particular logging framework.
-     * <p>
-     * We can afford to do some implementation specific code for a logging
-     * framework only in a fragment.
-     * <p>
-     * Trying to configure log4j and logback in here.
-     * <p>
-     * We recommend that slf4j jars are all placed in the osgi framework. And a
-     * single implementation if possible packaged as an osgi bundle is there.
-     *
-     * @param jettyHome the jetty home reference
-     * @param childrenFiles the map of child files
-     */
-    protected static void processFilesInResourcesFolder(File jettyHome, Map<String, File> childrenFiles)
-    {
-        for (IFilesInJettyHomeResourcesProcessor processor : registeredFilesInJettyHomeResourcesProcessors)
-        {
-            processor.processFilesInResourcesFolder(jettyHome, childrenFiles);
-        }
     }
 }

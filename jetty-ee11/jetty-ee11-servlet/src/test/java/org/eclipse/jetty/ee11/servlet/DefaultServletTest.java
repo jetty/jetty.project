@@ -2262,8 +2262,7 @@ public class DefaultServletTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=iso-8859-1")); // inferred charset
 
         String body = response.getContent();
         assertThat(body, not(containsString("Extra Info")));

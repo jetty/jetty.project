@@ -111,7 +111,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertEquals(0, connectionPool.getIdleConnections().size());
         assertEquals(0, connectionPool.getActiveConnections().size());
 
-        request.listener(new Request.Listener()
+        request.onRequestListener(new Request.Listener()
         {
             @Override
             public void onBegin(Request request)
@@ -163,7 +163,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         assertEquals(0, activeConnections.size());
 
-        request.listener(new Request.Listener()
+        request.onRequestListener(new Request.Listener()
         {
             @Override
             public void onBegin(Request request)
@@ -223,7 +223,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertEquals(0, activeConnections.size());
 
         long delay = 1000;
-        request.listener(new Request.Listener()
+        request.onRequestListener(new Request.Listener()
         {
             @Override
             public void onBegin(Request request)

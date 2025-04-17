@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
@@ -37,7 +38,7 @@ public class ContentSourceInputStream extends InputStream
 
     public ContentSourceInputStream(Content.Source content)
     {
-        this.content = content;
+        this.content = Objects.requireNonNull(content);
     }
 
     @Override

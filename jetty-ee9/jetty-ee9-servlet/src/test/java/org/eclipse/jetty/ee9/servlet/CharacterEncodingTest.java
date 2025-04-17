@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.servlet;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.UnsupportedCharsetException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -47,7 +48,7 @@ public class CharacterEncodingTest
             {
                 response.getWriter();
             }
-            catch (UnsupportedEncodingException e)
+            catch (UnsupportedEncodingException | UnsupportedCharsetException e)
             {
                 // nothing we only test we throw this exception
             }
