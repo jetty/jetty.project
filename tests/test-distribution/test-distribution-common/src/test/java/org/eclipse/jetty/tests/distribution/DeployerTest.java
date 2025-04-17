@@ -15,6 +15,7 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -239,8 +240,9 @@ public class DeployerTest extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path staticDir = jettyBase.resolve("webapps").resolve("test");
+            Path staticDir = jettyBase.resolve("webapps/test");
             FS.ensureDirExists(staticDir);
+            Files.writeString(jettyBase.resolve("webapps/test.properties"), "environment=static", StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 
             String testFileContent = "hello";
             Files.writeString(staticDir.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
