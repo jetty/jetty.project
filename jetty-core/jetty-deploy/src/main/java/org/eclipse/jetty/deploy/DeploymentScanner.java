@@ -321,7 +321,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      */
     public EnvironmentConfig configureEnvironment(String name)
     {
-        return new EnvironmentConfig(Environment.get(name));
+        Environment environment = Environment.get(name);
+        // Check to make sure that the Environment was created before jetty-deploy is involved.
+        // This is to ensure that the Environment ClassLoader is setup properly.
+        if (environment == null)
+            throw new IllegalStateException("Environment [" + name + "] does not exist.");
+        return new EnvironmentConfig(environment);
     }
 
     /**
@@ -354,7 +359,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         {
             return Environment.getAll().stream()
                 .map(Environment::getName)
-                .max(ENVIRONMENT_COMPARATOR)
+                .min(ENVIRONMENT_COMPARATOR)
                 .orElse(null);
         }
         return defaultEnvironmentName;
