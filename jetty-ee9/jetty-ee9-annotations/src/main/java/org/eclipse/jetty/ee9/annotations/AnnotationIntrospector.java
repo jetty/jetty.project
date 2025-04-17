@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public class AnnotationIntrospector
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationIntrospector.class);
+    private static final String FORCE_METADATA_NOT_COMPLETE = AnnotationIntrospector.class.getName() + ".ForceMetadataNotComplete";
 
     private final AutoLock _lock = new AutoLock();
     private final Set<Class<?>> _introspectedClasses = new HashSet<>();
@@ -161,8 +162,10 @@ public class AnnotationIntrospector
             }
             default:
             {
-                //must be from a descriptor. Only introspect if the descriptor with which it was associated
-                //is not metadata-complete
+                if (Boolean.parseBoolean((String)_context.getAttribute(FORCE_METADATA_NOT_COMPLETE)))
+                    return true;
+
+                // Must be from a descriptor. Only introspect if the descriptor with which it was associated is not metadata-complete.
                 if (_context.getMetaData().isMetaDataComplete())
                     return false;
 
