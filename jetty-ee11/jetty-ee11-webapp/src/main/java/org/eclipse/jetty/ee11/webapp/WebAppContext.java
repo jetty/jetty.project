@@ -113,7 +113,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _logUrlOnStart = false;
     private boolean _parentLoaderPriority = Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
-    private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
 
@@ -205,12 +204,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
             case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
-            case Deployable.DEFAULT_CONTEXT_PATH ->
-            {
-                // Don't set default context path, if context-path is set before init (like from XML)
-                if (isContextPathDefault())
-                    setDefaultContextPath((String)value);
-            }
             case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
             case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
             case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
@@ -224,24 +217,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     LOG.debug("skipped init property {}={}", keyName, value);
             }
         }
-    }
-
-    public boolean isContextPathDefault()
-    {
-        return _defaultContextPath;
-    }
-
-    @Override
-    public void setContextPath(String contextPath)
-    {
-        super.setContextPath(contextPath);
-        _defaultContextPath = false;
-    }
-
-    public void setDefaultContextPath(String contextPath)
-    {
-        super.setContextPath(contextPath);
-        _defaultContextPath = true;
     }
 
     /**

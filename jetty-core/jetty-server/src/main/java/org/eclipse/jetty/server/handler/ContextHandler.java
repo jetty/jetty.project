@@ -137,6 +137,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     private String _displayName;
     private String _contextPath = "/";
+    private String _defaultContextPath;
     private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
@@ -630,6 +631,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
+                case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
                 default -> initializeDefault(keyName, value);
             }
         }
@@ -772,7 +774,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStart() throws Exception
     {
         if (getContextPath() == null)
-            throw new IllegalStateException("Null contextPath");
+        {
+            if (isContextPathDefault())
+                setContextPath(_defaultContextPath);
+            else
+                throw new IllegalStateException("Null contextPath");
+        }
 
         Resource baseResource = getBaseResource();
         if (baseResource != null)
@@ -1162,6 +1169,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             throw new IllegalStateException(getState());
         _contextPath = URIUtil.canonicalPath(Objects.requireNonNull(contextPath));
         _rootContext = "/".equals(contextPath);
+    }
+
+    public void setDefaultContextPath(String contextPath)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        _defaultContextPath = URIUtil.canonicalPath(Objects.requireNonNull(contextPath));
+    }
+
+    public boolean isContextPathDefault()
+    {
+        return _defaultContextPath != null;
     }
 
     /**
