@@ -28,12 +28,14 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -46,8 +48,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -746,25 +746,41 @@ public class IO
         if (fileObject instanceof String str)
         {
             // attempt to support absolute, relative, partial, and URI syntaxes.
-            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+            if (URIUtil.hasScheme(str))
             {
-                Resource resource = resourceFactory.newResource(str.trim());
-                URI uri = resource.getURI();
-                if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
+                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Not a local file system: {}", str);
-                    return null;
+                    URI uri = new URI(str);
+                    if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Not a local file system: {}", str);
+                        return null;
+                    }
+                    return Path.of(uri).toFile();
                 }
+                catch (URISyntaxException e)
+                {
+                    // A few reasons for arriving here.
+                    // 1) The input string has a segment that looks like a scheme, but isn't a URI.
+                    //    Eg: "C:\path\to\dir"
+                    // 2) The input string has unencoded characters that are not allowed in a url (like spaces)
+                    //    Eg: "C:\path\to dir with spaces\"
+                    // We ignore this and continue with normal path processing instead.
+                    LOG.trace("ignored", e);
+                }
+            }
 
-                Path path = resource.getPath();
-                if (path == null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("String has no local file system path: {}", str);
-                    return null;
-                }
+            try
+            {
+                Path path = Path.of(str);
                 return path.toFile();
+            }
+            catch (InvalidPathException x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("String is not on local file system: {}", str);
+                return null;
             }
         }
 
