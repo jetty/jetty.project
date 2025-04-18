@@ -66,6 +66,11 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     private List<Resource> _extraClasspath;
     private boolean _builtClassLoader = false;
 
+    public CoreContextHandler()
+    {
+        super();
+    }
+
     public CoreContextHandler(String contextPath)
     {
         super();

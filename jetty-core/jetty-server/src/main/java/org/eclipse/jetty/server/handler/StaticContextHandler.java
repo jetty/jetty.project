@@ -30,6 +30,14 @@ import org.eclipse.jetty.util.resource.Resources;
 public class StaticContextHandler extends ContextHandler implements Deployable
 {
     /**
+     * Create a StaticContextHandler.
+     */
+    public StaticContextHandler()
+    {
+        super();
+    }
+
+    /**
      * Create a StaticContextHandler on a specific contextPath.
      *
      * @param contextPath the context path to serve static content from
