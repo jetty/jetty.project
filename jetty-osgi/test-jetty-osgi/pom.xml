@@ -16,12 +16,24 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <maven.javadoc.skip>true</maven.javadoc.skip>
+    <osgi.bundle.debug>false</osgi.bundle.debug>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>2.6.16</pax.url.version>
     <swissbox.version>1.9.0</swissbox.version>
-    <tinybundles.version>3.0.0</tinybundles.version>
+    <tinybundles.version>4.0.1</tinybundles.version>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>biz.aQute.bnd</groupId>
+      <artifactId>biz.aQute.bnd.util</artifactId>
+      <version>6.4.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.osgi</groupId>
+          <artifactId>org.osgi.core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
@@ -474,6 +486,18 @@
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.http.whiteboard</artifactId>
+      <version>1.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.repository</artifactId>
+      <version>1.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
       <artifactId>org.osgi.util.function</artifactId>
       <version>${osgi-util-function-version}</version>
       <scope>test</scope>
@@ -549,6 +573,7 @@
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <bundle.debug>${osgi.bundle.debug}</bundle.debug>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
           </configuration>
