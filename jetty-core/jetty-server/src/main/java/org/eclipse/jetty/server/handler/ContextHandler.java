@@ -635,7 +635,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 default -> initializeDefault(keyName, value);
             }
         }
-        initializeDefaultComplete();
+        initializeDefaultsComplete();
     }
 
     /**
@@ -654,7 +654,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      * {@link Deployable#initializeDefaults(Attributes)}, to allow
      * any kind of extra processing of the configuration.
      */
-    protected void initializeDefaultComplete()
+    protected void initializeDefaultsComplete()
     {
     }
 

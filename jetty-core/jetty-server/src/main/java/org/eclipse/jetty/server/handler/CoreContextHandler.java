@@ -137,7 +137,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     }
 
     @Override
-    protected void initializeDefaultComplete()
+    protected void initializeDefaultsComplete()
     {
         // Init the webapp, unpack if necessary, create the classloader, etc.
         try
