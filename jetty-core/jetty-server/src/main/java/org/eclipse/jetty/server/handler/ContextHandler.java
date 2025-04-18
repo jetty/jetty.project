@@ -631,12 +631,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
-                case Deployable.DEFAULT_CONTEXT_PATH ->
-                {
-                    // Don't set default context path, if context-path is set before init (like from XML)
-                    if (isContextPathDefault())
-                        setDefaultContextPath((String)value);
-                }
+                case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
                 default -> initializeDefault(keyName, value);
             }
         }
@@ -1174,8 +1169,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public void setDefaultContextPath(String contextPath)
     {
-        setContextPath(contextPath);
-        _defaultContextPath = true;
+        // Don't set default context path, if context-path is set before init (like from XML)
+        if (isContextPathDefault())
+        {
+            setContextPath(contextPath);
+            _defaultContextPath = true;
+        }
     }
 
     public boolean isContextPathDefault()

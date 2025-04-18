@@ -195,7 +195,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public void setTempDirectory(String temp)
     {
-        setTempDirectory(new File(temp));
+        setTempDirectory(IO.asFile(temp));
     }
 
     /**

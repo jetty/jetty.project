@@ -27,6 +27,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
@@ -45,6 +46,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -736,13 +739,37 @@ public class IO
     {
         if (fileObject == null)
             return null;
-        if (fileObject instanceof File)
-            return (File)fileObject;
-        if (fileObject instanceof String)
-            return new File((String)fileObject);
-        if (fileObject instanceof Path)
-            return ((Path)fileObject).toFile();
+        if (fileObject instanceof File file)
+            return file;
+        if (fileObject instanceof Path path)
+            return path.toFile();
+        if (fileObject instanceof String str)
+        {
+            // attempt to support absolute, relative, partial, and URI syntaxes.
+            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+            {
+                Resource resource = resourceFactory.newResource(str);
+                URI uri = resource.getURI();
+                if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Not a local file system: {}", str);
+                    return null;
+                }
 
+                Path path = resource.getPath();
+                if (path == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("String has no local file system path: {}", str);
+                    return null;
+                }
+                return path.toFile();
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Not able to be converted to a File object: ({}) {}", fileObject.getClass().getName(), fileObject);
         return null;
     }
 
