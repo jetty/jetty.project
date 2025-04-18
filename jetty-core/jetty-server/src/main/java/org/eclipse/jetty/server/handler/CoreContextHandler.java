@@ -286,7 +286,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
     {
-        boolean alreadyExists = false;
         for (Handler handler : getHandlers())
         {
             if (handler instanceof ResourceHandler resourceHandler)
@@ -297,12 +296,12 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                     URI baseResourceURI = baseResource.getURI();
                     if (baseResourceURI.equals(staticDir.getURI()))
                     {
-                        alreadyExists = true;
+                        return true;
                     }
                 }
             }
         }
-        return alreadyExists;
+        return false;
     }
 
     @Override
