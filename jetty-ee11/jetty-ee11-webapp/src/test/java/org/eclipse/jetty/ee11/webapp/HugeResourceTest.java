@@ -219,11 +219,7 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        EagerContentHandler eagerContentHandler = new EagerContentHandler(
-            new EagerContentHandler.FormContentLoaderFactory(),
-            new EagerContentHandler.MultiPartContentLoaderFactory(),
-            new EagerContentHandler.RetainedContentLoaderFactory(-1, -1, false)
-        );
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
         server.setHandler(eagerContentHandler);
         httpConfig.setDelayDispatchUntilContent(false);
 

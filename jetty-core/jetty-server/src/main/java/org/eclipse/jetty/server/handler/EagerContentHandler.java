@@ -437,18 +437,25 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
         private final int _framingOverhead;
         private final boolean _reject;
 
+        /**
+         * Creates a {@code RetainedContentLoaderFactory} with heuristically determined values for the maximum number
+         * bytes to retain and the number of bytes to include in the estimated size per {@link Content.Chunk} to allow
+         * for framing overheads in the transport and no rejection of the request when the maximum number bytes to
+         * retain is exceeded.
+         */
         public RetainedContentLoaderFactory()
         {
-            this(-1, -1, true);
+            this(-1, -1, false);
         }
 
         /**
+         * Creates a {@code RetainedContentLoaderFactory}.
          * @param maxRetainedBytes the maximum number bytes to retain whilst eagerly loading, which
          *                         includes the content bytes and any {@code framingOverhead} per chunk;
          *                         or -1 for a heuristically determined value that will not increase memory commitment.
          * @param framingOverhead the number of bytes to include in the estimated size per {@link Content.Chunk} to allow
          *                      for framing overheads in the transport. Since the content is retained rather than copied, any
-         *                      framing data is also retained in the IO buffer.
+         *                      framing data is also retained in the IO buffer; or -1 for a heuristically determined value.
          * @param reject if {@code true}, then if {@code maxRetainBytes} is exceeded, the request is rejected with a
          *               {@link HttpStatus#PAYLOAD_TOO_LARGE_413} response.
          */
