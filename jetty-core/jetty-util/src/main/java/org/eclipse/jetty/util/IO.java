@@ -748,7 +748,7 @@ public class IO
             // attempt to support absolute, relative, partial, and URI syntaxes.
             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
             {
-                Resource resource = resourceFactory.newResource(str);
+                Resource resource = resourceFactory.newResource(str.trim());
                 URI uri = resource.getURI();
                 if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
                 {
