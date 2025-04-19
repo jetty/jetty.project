@@ -164,8 +164,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
@@ -304,8 +304,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 

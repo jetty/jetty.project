@@ -149,8 +149,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HttpConnectionFactory());
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 

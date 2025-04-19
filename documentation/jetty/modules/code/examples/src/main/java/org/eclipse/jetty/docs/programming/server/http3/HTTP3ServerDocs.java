@@ -58,16 +58,16 @@ public class HTTP3ServerDocs
         // The listener for session events.
         Session.Server.Listener sessionListener = new Session.Server.Listener() {};
 
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
         // Configure the max number of requests per QUIC connection.
-        quicConfiguration.setBidirectionalMaxStreams(1024 * 1024);
+        serverQuicConfig.setBidirectionalMaxStreams(1024 * 1024);
 
         // Create and configure the RawHTTP3ServerConnectionFactory.
         RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(sessionListener);
         http3.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
         // Create and configure the QuicheServerConnector.
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, quicConfiguration, http3);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, http3);
 
         // Add the Connector to the Server.
         server.addConnector(connector);

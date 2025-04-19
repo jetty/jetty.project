@@ -34,6 +34,7 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
@@ -86,7 +87,8 @@ public class Http3AsyncIOServletTest
         servletContextHandler.addServlet(new ServletHolder(httpServlet), "/*");
         server.start();
 
-        client = new HTTP3Client(new QuicheClientQuicConfiguration());
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        client = new HTTP3Client(clientQuicConfig);
         client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
         client.start();
     }

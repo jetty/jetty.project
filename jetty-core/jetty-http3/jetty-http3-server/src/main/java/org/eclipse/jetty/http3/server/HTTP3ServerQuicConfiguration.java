@@ -15,8 +15,22 @@ package org.eclipse.jetty.http3.server;
 
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 
+/**
+ * <p>Helper class to configure QUIC in a suitable way for an HTTP/3 server.</p>
+ */
 public class HTTP3ServerQuicConfiguration
 {
+    /**
+     * <p>Configures the given {@link ServerQuicConfiguration}
+     * with default values that are suitable for an HTTP/3 server.</p>
+     * <p>Applications can further customize the returned
+     * {@link ServerQuicConfiguration}, or change the default
+     * values set by this method.</p>
+     *
+     * @param quicConfiguration the {@link ServerQuicConfiguration} to configure for HTTP/3.
+     * @return the configured {@link ServerQuicConfiguration}
+     * @param <T> the {@link ServerQuicConfiguration} subtype
+     */
     public static <T extends ServerQuicConfiguration> T configure(T quicConfiguration)
     {
         // Max number of streams that a client can open.

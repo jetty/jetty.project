@@ -15,13 +15,27 @@ package org.eclipse.jetty.http3.client;
 
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 
+/**
+ * <p>Helper class to configure QUIC in a suitable way for an HTTP/3 client.</p>
+ */
 public class HTTP3ClientQuicConfiguration
 {
+    /**
+     * <p>Configures the given {@link ClientQuicConfiguration}
+     * with default values that are suitable for an HTTP/3 client.</p>
+     * <p>Applications can further customize the returned
+     * {@link ClientQuicConfiguration}, or change the default
+     * values set by this method.</p>
+     *
+     * @param quicConfiguration the {@link ClientQuicConfiguration} to configure for HTTP/3.
+     * @return the configured {@link ClientQuicConfiguration}
+     * @param <T> the {@link ClientQuicConfiguration} subtype
+     */
     public static <T extends ClientQuicConfiguration> T configure(T quicConfiguration)
     {
         // Allow the mandatory unidirectional streams, no pushed streams.
         quicConfiguration.setUnidirectionalMaxStreams(8);
-        quicConfiguration.setUnidirectionalStreamMaxData(4 * 1024 * 1024);
+        quicConfiguration.setUnidirectionalStreamMaxData(1024 * 1024);
         return quicConfiguration;
     }
 

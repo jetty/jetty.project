@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -111,8 +112,8 @@ public class AbstractClientServerTest
         {
             case H3_QUICHE ->
             {
-                QuicheServerQuicConfiguration quicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-                yield new QuicheServerConnector(server, serverSslContextFactory, quicConfiguration, serverConnectionFactory);
+                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+                yield new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfig, serverConnectionFactory);
             }
         };
         server.addConnector(connector);
@@ -135,12 +136,12 @@ public class AbstractClientServerTest
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
 
-        ClientQuicConfiguration quicConfiguration = switch (transportType)
+        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(switch (transportType)
         {
             case H3_QUICHE -> new QuicheClientQuicConfiguration();
-        };
+        });
 
-        http3Client = new HTTP3Client(quicConfiguration, clientConnector);
+        http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
 
         transport = switch (transportType)
         {

@@ -327,8 +327,8 @@ public class AbstractTest
             case FCGI:
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
             case H3_QUICHE:
-                QuicheServerQuicConfiguration quicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-                yield new QuicheServerConnector(server, sslContextFactoryServer, quicConfig, newServerConnectionFactory(transportType));
+                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+                yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }
 

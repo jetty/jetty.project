@@ -89,8 +89,8 @@ public class End2EndClientTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(null);
-        connector = new QuicheServerConnector(server, sslContextFactory, quicConfiguration, http1, http2);
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(null);
+        connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, http1, http2);
         connector.getServerQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
         server.addConnector(connector);
 

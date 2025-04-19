@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -260,7 +261,7 @@ public class AbstractTest
             case H3_QUICHE ->
             {
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
-                QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration(clientPemDirectory);
+                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration(clientPemDirectory));
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }

@@ -60,8 +60,8 @@ public class ManyConnectorsTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
-        QuicheServerQuicConfiguration quicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
-        QuicheServerConnector connector2 = new QuicheServerConnector(server, sslContextFactory, quicConfig, new HTTP3ServerConnectionFactory(httpConfig));
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+        QuicheServerConnector connector2 = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector2);
 
         connector1.addEventListener(new NetworkConnector.Listener()

@@ -77,8 +77,8 @@ public class HTTP1OverQuicTest extends AbstractTest
         {
             case QUICHE ->
             {
-                QuicheServerQuicConfiguration quicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
-                yield new QuicheServerConnector(server, sslContextFactory, quicConfig, h1);
+                QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+                yield new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h1);
             }
         };
         server.addConnector(connector);

@@ -97,8 +97,8 @@ public class End2EndClientWithClientCertAuthTest
         httpConfiguration.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(null);
-        connector = new QuicheServerConnector(server, serverSslContextFactory, quicConfiguration, http1, http2);
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(null);
+        connector = new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfig, http1, http2);
         connector.getServerQuicConfiguration().setPemWorkDirectory(serverWorkPath);
         server.addConnector(connector);
 

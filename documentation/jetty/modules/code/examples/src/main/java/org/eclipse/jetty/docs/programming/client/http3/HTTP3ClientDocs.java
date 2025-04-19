@@ -30,9 +30,11 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
@@ -46,8 +48,10 @@ public class HTTP3ClientDocs
     public void start() throws Exception
     {
         // tag::start[]
+        // Create a QUIC configuration suitable for HTTP/3.
+        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         // Instantiate HTTP3Client.
-        HTTP3Client http3Client = new HTTP3Client(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
 
         // Configure HTTP/3 features, for example:
         http3Client.getHTTP3Configuration().setStreamIdleTimeout(15000);
@@ -59,7 +63,8 @@ public class HTTP3ClientDocs
 
     public void stop() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client(new QuicheClientQuicConfiguration());
+        ClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration);
         http3Client.start();
         // tag::stop[]
         // Stop HTTP3Client.
@@ -69,7 +74,7 @@ public class HTTP3ClientDocs
 
     public void connect() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::connect[]
@@ -97,7 +102,7 @@ public class HTTP3ClientDocs
 
     public void configure() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
 
@@ -120,7 +125,7 @@ public class HTTP3ClientDocs
 
     public void newStream() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStream[]
@@ -145,7 +150,7 @@ public class HTTP3ClientDocs
 
     public void newStreamWithData() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStreamWithData[]
@@ -190,7 +195,7 @@ public class HTTP3ClientDocs
 
     public void responseListener() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
@@ -255,7 +260,7 @@ public class HTTP3ClientDocs
 
     public void terminate() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);

@@ -36,6 +36,7 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpChannelOverHTTP3;
@@ -175,7 +176,7 @@ public class HttpChannelAssociationTest extends AbstractTest
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig))
                 {

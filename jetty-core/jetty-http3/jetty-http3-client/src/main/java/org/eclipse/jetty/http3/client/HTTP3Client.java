@@ -43,10 +43,10 @@ import org.slf4j.LoggerFactory;
  * <p>Typical usage:</p>
  * <pre> {@code
  * // Client-side QUIC configuration to configure QUIC properties.
- * QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+ * QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
  *
  * // Create the HTTP3Client instance.
- * HTTP3Client http3Client = new HTTP3Client(quicConfig);
+ * HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
  *
  * // To configure HTTP/3 properties.
  * HTTP3Configuration h3Config = http3Client.getHTTP3Configuration();
@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * String host = "jetty.org";
  * int port = 443;
  * Session.Client session = Blocker.blockWithPromise(p -> http3Client
- *     .connect(new QuicheTransport(quicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
+ *     .connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
  *
  * // Prepare the HTTP request headers.
  * HttpFields.Mutable requestFields = HttpFields.build();
@@ -159,7 +159,7 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
 
     public HTTP3Client(ClientQuicConfiguration quicConfiguration, ClientConnector connector)
     {
-        this.quicConfiguration = HTTP3ClientQuicConfiguration.configure(quicConfiguration);
+        this.quicConfiguration = quicConfiguration;
         this.connector = connector;
         installBean(connector);
     }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
@@ -54,7 +55,7 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         HTTP3Client client = new HTTP3Client(clientQuicConfig);
         try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(clientQuicConfig))))
         {
@@ -72,7 +73,7 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHTTP3Client() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         try (HTTP3Client client = new HTTP3Client(clientQuicConfig))
         {
             client.start();

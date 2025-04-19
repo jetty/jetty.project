@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
@@ -141,7 +142,7 @@ public class IdleTimeoutTest
         server.addConnector(connector);
         server.start();
 
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         try (HTTP3Client http3Client = new HTTP3Client(clientQuicConfig))
         {
             http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));

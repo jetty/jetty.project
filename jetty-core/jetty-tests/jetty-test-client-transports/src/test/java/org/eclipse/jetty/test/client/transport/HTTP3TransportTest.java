@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -76,13 +77,13 @@ public class HTTP3TransportTest extends AbstractTransportTest
         Files.createDirectories(pemServerDir);
 
 
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
         ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSelectors(1);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
         httpClient = new HttpClient(new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig)));
         server.addBean(httpClient);
@@ -136,8 +137,8 @@ public class HTTP3TransportTest extends AbstractTransportTest
     @Test
     public void testMemoryTransport() throws Exception
     {
-        QuicheServerQuicConfiguration quicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
-        QuicheServerConnectionFactory quic = new QuicheServerConnectionFactory(sslServer, quicConfiguration);
+        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
+        QuicheServerConnectionFactory quic = new QuicheServerConnectionFactory(sslServer, serverQuicConfig);
         HTTP3ServerConnectionFactory h3 = new HTTP3ServerConnectionFactory();
         MemoryConnector connector = new MemoryConnector(server, quic, h3);
         server.addConnector(connector);
