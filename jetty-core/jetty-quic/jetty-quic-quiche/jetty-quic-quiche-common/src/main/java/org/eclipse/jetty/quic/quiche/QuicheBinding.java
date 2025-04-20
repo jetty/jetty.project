@@ -18,13 +18,20 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * <p>Provides different bindings, loaded via {@link java.util.ServiceLoader}, that access the native Quiche library.</p>
+ */
 public interface QuicheBinding
 {
     Throwable initialize();
+
     int priority();
 
     byte[] fromPacket(ByteBuffer packet);
-    QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException;
-    boolean negotiate(QuicheConnection.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException;
-    QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException;
+
+    Quiche connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException;
+
+    boolean negotiate(Quiche.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException;
+
+    Quiche tryAccept(QuicheConfig quicheConfig, Quiche.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException;
 }

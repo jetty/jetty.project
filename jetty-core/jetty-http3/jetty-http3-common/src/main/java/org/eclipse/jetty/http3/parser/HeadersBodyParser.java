@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.parser;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
@@ -32,16 +31,14 @@ public class HeadersBodyParser extends BodyParser
 
     private final List<ByteBuffer> byteBuffers = new ArrayList<>();
     private final long streamId;
-    private final BooleanSupplier isLast;
     private final QpackDecoder decoder;
     private State state = State.INIT;
     private long length;
 
-    public HeadersBodyParser(HeaderParser headerParser, ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
+    public HeadersBodyParser(HeaderParser headerParser, ParserListener listener, QpackDecoder decoder, long streamId)
     {
         super(headerParser, listener);
         this.streamId = streamId;
-        this.isLast = isLast;
         this.decoder = decoder;
     }
 
@@ -52,7 +49,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         while (buffer.hasRemaining())
         {
@@ -103,9 +100,8 @@ public class HeadersBodyParser extends BodyParser
 
                         // If the buffer contains another frame that
                         // needs to be parsed, then it's not the last frame.
-                        boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
-
-                        return decode(encoded, last) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
+                        boolean lastFrame = last && !buffer.hasRemaining();
+                        return decode(encoded, lastFrame) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
                     }
                 }
                 default:

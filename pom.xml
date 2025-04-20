@@ -1065,12 +1065,22 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1086,6 +1096,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-quiche-jna</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -96,7 +96,7 @@ public class ControlParser
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
-                            BodyParser.Result result = unknownBodyParser.parse(buffer);
+                            BodyParser.Result result = unknownBodyParser.parse(buffer, false);
                             if (result == BodyParser.Result.NO_FRAME)
                                 return;
                             if (result == BodyParser.Result.WHOLE_FRAME)
@@ -106,14 +106,14 @@ public class ControlParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
-                                bodyParser.emptyBody(buffer);
+                                bodyParser.emptyBody(buffer, false);
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), buffer);
                                 reset();
                             }
                             else
                             {
-                                BodyParser.Result result = bodyParser.parse(buffer);
+                                BodyParser.Result result = bodyParser.parse(buffer, false);
                                 if (result == BodyParser.Result.NO_FRAME)
                                     return;
                                 if (LOG.isDebugEnabled())

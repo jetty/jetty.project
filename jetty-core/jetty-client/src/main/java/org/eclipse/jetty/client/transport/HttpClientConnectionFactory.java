@@ -19,7 +19,6 @@ import java.util.Map;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.Transport;
 
 public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
@@ -61,28 +60,23 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
      */
     public static class HTTP11 extends Info
     {
-        private static final List<String> protocols = List.of("http/1.1");
+        private final List<String> protocols;
 
         public HTTP11()
         {
-            this(new HttpClientConnectionFactory());
+            this(List.of("http/1.1"));
         }
 
-        public HTTP11(ClientConnectionFactory factory)
+        public HTTP11(List<String> protocols)
         {
-            super(factory);
+            super(new HttpClientConnectionFactory());
+            this.protocols = protocols;
         }
 
         @Override
         public List<String> getProtocols(boolean secure)
         {
             return protocols;
-        }
-
-        @Override
-        public Transport newTransport()
-        {
-            return Transport.TCP_IP;
         }
 
         @Override

@@ -25,7 +25,7 @@ public class UnknownBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         if (length < 0)
             length = getBodyLength();

@@ -12,8 +12,10 @@
   <name>Core :: QUIC :: Quiche</name>
 
   <modules>
+    <module>jetty-quic-quiche-client</module>
     <module>jetty-quic-quiche-common</module>
     <module>jetty-quic-quiche-jna</module>
+    <module>jetty-quic-quiche-server</module>
   </modules>
 
   <profiles>

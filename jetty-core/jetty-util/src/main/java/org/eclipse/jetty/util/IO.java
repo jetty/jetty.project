@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
@@ -433,6 +434,8 @@ public class IO
         if (cause instanceof ExecutionException xx)
             cause = xx.getCause();
         if (cause instanceof CompletionException xx)
+            cause = xx.getCause();
+        if (cause instanceof UncheckedIOException xx)
             cause = xx.getCause();
         if (cause instanceof IOException)
             return (IOException)cause;

@@ -166,7 +166,7 @@ public class FlowControlStalledTest
         CountDownLatch latch = new CountDownLatch(1);
         Queue<Stream.Data> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
-        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        client.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -188,7 +188,7 @@ public class FlowControlStalledTest
         stallLatch.set(new CountDownLatch(1));
 
         request = newRequest("GET", "/", HttpFields.EMPTY);
-        client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), null);
+        client.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, null);
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 
@@ -271,7 +271,7 @@ public class FlowControlStalledTest
         CountDownLatch latch = new CountDownLatch(1);
         Queue<Stream.Data> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -293,7 +293,7 @@ public class FlowControlStalledTest
         stallLatch.set(new CountDownLatch(1));
 
         request = newRequest("GET", "/", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), null);
+        session.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, null);
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 

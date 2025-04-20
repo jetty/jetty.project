@@ -39,7 +39,7 @@ public class SetCapacityInstruction implements Instruction
     public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _capacity);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, true);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
         buffer.put((byte)0x20);

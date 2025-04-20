@@ -516,7 +516,7 @@ public class FlowControlStrategyTest
         // First request is just to consume most of the session window.
         AtomicReference<Stream> streamRef1 = new AtomicReference<>();
         MetaData.Request request1 = newRequest("POST", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request1, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -530,7 +530,7 @@ public class FlowControlStrategyTest
         // Second request will consume half of the remaining the session window.
         AtomicReference<Stream> streamRef2 = new AtomicReference<>();
         MetaData.Request request2 = newRequest("GET", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request2, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -545,7 +545,7 @@ public class FlowControlStrategyTest
         // A fourth request will not be able to receive data because the server is stalled.
         AtomicReference<Stream> streamRef3 = new AtomicReference<>();
         MetaData.Request request3 = newRequest("GET", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request3, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request3, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -559,7 +559,7 @@ public class FlowControlStrategyTest
         // Fourth request is now stalled.
         AtomicReference<Stream> streamRef4 = new AtomicReference<>();
         MetaData.Request request4 = newRequest("GET", HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request4, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -617,7 +617,7 @@ public class FlowControlStrategyTest
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         byte[] bytes = new byte[data.length];
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(requestFrame, new Promise<>() {}, new Stream.Listener()
         {
             private int received;
 

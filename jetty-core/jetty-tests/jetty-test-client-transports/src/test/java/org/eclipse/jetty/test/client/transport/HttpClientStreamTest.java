@@ -121,7 +121,6 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:H3_QUICHE")
     public void testListenerCloseDuringResponseContent(TransportType transportType) throws Exception
     {
         start(transportType, new Handler.Abstract()
@@ -528,12 +527,11 @@ public class HttpClientStreamTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsTCP")
     public void testInputStreamResponseListenerFailedBeforeResponse(TransportType transportType) throws Exception
     {
         // Failure to connect is based on TCP connection refused
         // (as the server is stopped), which does not work for UDP.
-        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
 
         start(transportType, new EmptyServerHandler());
         URI uri = newURI(transportType);
@@ -587,7 +585,6 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:H3_QUICHE")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testDownloadWithCloseBeforeContent(TransportType transportType) throws Exception
     {
@@ -957,7 +954,7 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data = new byte[512];
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
-        String uri = "http://0.0.0.1";
+        String uri = "https://0.0.0.1";
         client.newRequest(uri)
             .body(content)
             .send(result ->
@@ -1221,7 +1218,6 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3_QUICHE")
     public void testInputStreamResponseListenerBufferedRead(TransportType transportType) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();

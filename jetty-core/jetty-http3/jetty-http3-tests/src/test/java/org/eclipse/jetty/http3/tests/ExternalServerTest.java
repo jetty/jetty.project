@@ -28,11 +28,15 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -51,14 +55,16 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
     {
-        SslContextFactory.Client sslClient = new SslContextFactory.Client();
-        ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
-        HTTP3Client client = new HTTP3Client(quicConfig);
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client)))
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client client = new HTTP3Client(clientQuicConfig);
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(clientQuicConfig))))
         {
             httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
-            ContentResponse response = httpClient.newRequest(uri).send();
+            ContentResponse response = httpClient.newRequest(uri)
+                .transport(new QuicheTransport(clientQuicConfig))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
         }
     }
@@ -67,9 +73,8 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHTTP3Client() throws Exception
     {
-        SslContextFactory.Client sslClient = new SslContextFactory.Client();
-        ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
-        try (HTTP3Client client = new HTTP3Client(quicConfig))
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        try (HTTP3Client client = new HTTP3Client(clientQuicConfig))
         {
             client.start();
             // Well-known HTTP/3 servers to try.
@@ -80,8 +85,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = client.connect(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
-                .get(5, TimeUnit.SECONDS);
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));
@@ -104,13 +108,13 @@ public class ExternalServerTest
                 @Override
                 public void onDataAvailable(Stream.Client stream)
                 {
-                    Stream.Data data = stream.readData();
+                    Content.Chunk chunk = stream.read();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("RESPONSE DATA = {}", data);
-                    if (data != null)
+                        LOG.debug("RESPONSE DATA = {}", chunk);
+                    if (chunk != null)
                     {
-                        data.release();
-                        if (data.isLast())
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             requestLatch.countDown();
                             return;
@@ -126,7 +130,7 @@ public class ExternalServerTest
                         LOG.debug("RESPONSE TRAILER = {}", frame);
                     requestLatch.countDown();
                 }
-            });
+            }, Promise.Invocable.noop());
 
             assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
         }

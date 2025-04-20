@@ -45,7 +45,7 @@ public class ConnectTimeoutTest extends AbstractTest
 
         InetSocketAddress address = new InetSocketAddress(host, port);
         final CountDownLatch latch = new CountDownLatch(1);
-        http2Client.connect(address, new Session.Listener() {}, new Promise.Adapter<>()
+        http2Client.connect(address, new Session.Listener() {}, new Promise<>()
         {
             @Override
             public void failed(Throwable x)

@@ -17,10 +17,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
@@ -30,9 +31,6 @@ import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerProm
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -57,9 +55,9 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HTTPSessionListenerPromise listenerPromise = new HTTPSessionListenerPromise(context);
-        context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, http2Client);
-        context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listenerPromise);
-        context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, listenerPromise);
+        context.put(HTTP2Client.CONTEXT_KEY, http2Client);
+        context.put(HTTP2Client.SESSION_LISTENER_CONTEXT_KEY, listenerPromise);
+        context.put(HTTP2Client.SESSION_PROMISE_CONTEXT_KEY, listenerPromise);
         return factory.newConnection(endPoint, context);
     }
 
@@ -70,38 +68,36 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
      */
     public static class HTTP2 extends Info
     {
-        private static final List<String> protocols = List.of("h2", "h2c");
-        private static final List<String> h2c = List.of("h2c");
+        private final List<String> protocols;
 
         public HTTP2(HTTP2Client http2Client)
         {
-            this(new ClientConnectionFactoryOverHTTP2(http2Client));
+            this(http2Client, List.of("h2", "h2c"));
         }
 
-        public HTTP2(ClientConnectionFactoryOverHTTP2 connectionFactory)
+        public HTTP2(HTTP2Client http2Client, List<String> protocols)
         {
-            super(connectionFactory);
+            super(new ClientConnectionFactoryOverHTTP2(http2Client));
+            this.protocols = protocols;
         }
 
         @Override
         public List<String> getProtocols(boolean secure)
         {
-            return secure ? protocols : h2c;
-        }
-
-        @Override
-        public Transport newTransport()
-        {
-            return Transport.TCP_IP;
+            if (secure)
+                return protocols;
+            return protocols.stream()
+                .filter(Predicate.not("h2"::equals))
+                .toList();
         }
 
         @Override
         public void upgrade(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
+            Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
+            context.put(Connection.PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
             {
                 @Override
                 public void succeeded(HttpConnectionOverHTTP2 connection)
@@ -123,18 +119,17 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                     promise.failed(x);
                 }
             });
-            upgrade(destination.getClientConnectionFactory(), endPoint, context);
+            // The EndPoint is the one below the protocol Connection,
+            // so in case of secure communication is the SslEndPoint.
+            // Keep the existing SslConnection that has already performed
+            // the TLS handshake, and just upgrade the nested connection.
+            upgrade(destination.resolveClientConnectionFactory(), endPoint, context);
         }
 
         private void upgrade(ClientConnectionFactory factory, EndPoint endPoint, Map<String, Object> context)
         {
             try
             {
-                // Avoid double TLS wrapping. We want to keep the existing
-                // SslConnection that has already performed the TLS handshake,
-                // and just upgrade the nested connection.
-                if (factory instanceof SslClientConnectionFactory sslFactory && endPoint instanceof SslConnection.SslEndPoint)
-                    factory = sslFactory.getClientConnectionFactory();
                 var newConnection = factory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);
             }

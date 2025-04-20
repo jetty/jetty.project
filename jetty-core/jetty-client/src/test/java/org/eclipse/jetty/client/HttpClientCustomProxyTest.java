@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -117,21 +116,19 @@ public class HttpClientCustomProxyTest
         }
     }
 
-    private static class CAFEBABEClientConnectionFactory implements ClientConnectionFactory
+    private static class CAFEBABEClientConnectionFactory extends ClientConnectionFactory.Wrapper
     {
-        private final ClientConnectionFactory connectionFactory;
-
         private CAFEBABEClientConnectionFactory(ClientConnectionFactory connectionFactory)
         {
-            this.connectionFactory = connectionFactory;
+            super(connectionFactory);
         }
 
         @Override
-        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            CAFEBABEConnection connection = new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
+            CAFEBABEConnection connection = new CAFEBABEConnection(endPoint, executor, getWrapped(), context);
             return customize(connection, context);
         }
     }
@@ -184,7 +181,7 @@ public class HttpClientCustomProxyTest
             {
                 close();
                 @SuppressWarnings("unchecked")
-                Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+                Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
                 promise.failed(x);
             }
         }

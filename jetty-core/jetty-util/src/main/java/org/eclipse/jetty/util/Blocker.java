@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -107,6 +109,8 @@ public class Blocker
     {
         void block() throws IOException;
 
+        void block(long time, TimeUnit unit) throws IOException, TimeoutException;
+
         @Override
         void close();
     }
@@ -143,6 +147,24 @@ public class Blocker
             }
 
             @Override
+            public void block(long time, TimeUnit unit) throws IOException, TimeoutException
+            {
+                try
+                {
+                    if (!_complete.await(time, unit))
+                        throw new TimeoutException();
+                }
+                catch (TimeoutException x)
+                {
+                    throw x;
+                }
+                catch (Throwable t)
+                {
+                    throw IO.rethrow(t);
+                }
+            }
+
+            @Override
             public void close()
             {
                 if (_complete.getCount() != 0)
@@ -159,6 +181,8 @@ public class Blocker
     public interface Callback extends org.eclipse.jetty.util.Callback, AutoCloseable, Invocable
     {
         void block() throws IOException;
+
+        void block(long time, TimeUnit unit) throws IOException, TimeoutException;
 
         @Override
         void close();
@@ -200,9 +224,28 @@ public class Blocker
                 {
                     result = t;
                 }
-                if (result == SUCCEEDED)
-                    return;
-                throw IO.rethrow(result);
+                if (result != SUCCEEDED)
+                    throw IO.rethrow(result);
+            }
+
+            @Override
+            public void block(long time, TimeUnit unit) throws IOException, TimeoutException
+            {
+                Throwable result;
+                try
+                {
+                    result = _future.get(time, unit);
+                }
+                catch (TimeoutException x)
+                {
+                    throw x;
+                }
+                catch (Throwable t)
+                {
+                    result = t;
+                }
+                if (result != SUCCEEDED)
+                    throw IO.rethrow(result);
             }
 
             @Override
@@ -222,6 +265,8 @@ public class Blocker
     public interface Promise<C> extends org.eclipse.jetty.util.Promise.Invocable<C>, AutoCloseable
     {
         C block() throws IOException;
+
+        C block(long time, TimeUnit unit) throws IOException, TimeoutException;
 
         @Override
         void close();
@@ -258,6 +303,23 @@ public class Blocker
             }
 
             @Override
+            public C block(long time, TimeUnit unit) throws IOException, TimeoutException
+            {
+                try
+                {
+                    return _future.get(time, unit);
+                }
+                catch (TimeoutException x)
+                {
+                    throw x;
+                }
+                catch (Throwable t)
+                {
+                    throw IO.rethrow(t);
+                }
+            }
+
+            @Override
             public void close()
             {
                 if (!_future.isDone())
@@ -283,6 +345,24 @@ public class Blocker
                 _future.completeExceptionally(x);
             }
         };
+    }
+
+    public static <R> R blockWithPromise(Consumer<Promise<R>> consumer) throws IOException
+    {
+        try (Promise<R> promise = Blocker.promise())
+        {
+            consumer.accept(promise);
+            return promise.block();
+        }
+    }
+
+    public static <R> R blockWithPromise(long time, TimeUnit unit, Consumer<Promise<R>> consumer) throws IOException, TimeoutException
+    {
+        try (Promise<R> promise = Blocker.promise())
+        {
+            consumer.accept(promise);
+            return promise.block(time, unit);
+        }
     }
 
     /**
@@ -364,6 +444,32 @@ public class Blocker
             }
 
             @Override
+            public void block(long time, TimeUnit unit) throws IOException, TimeoutException
+            {
+                _lock.lock();
+                Throwable result;
+                try
+                {
+                    while (_completed == ACQUIRED)
+                    {
+                        if (!_complete.await(time, unit))
+                            throw new TimeoutException();
+                    }
+                    result = _completed;
+                }
+                catch (Throwable t)
+                {
+                    result = t;
+                }
+                finally
+                {
+                    _lock.unlock();
+                }
+                if (result != SUCCEEDED)
+                    throw IO.rethrow(result);
+            }
+
+            @Override
             public void close()
             {
                 boolean completed;
@@ -406,6 +512,12 @@ public class Blocker
             public void block() throws IOException
             {
                 _callback.block();
+            }
+
+            @Override
+            public void block(long time, TimeUnit unit) throws IOException, TimeoutException
+            {
+                _callback.block(time, unit);
             }
 
             @Override

@@ -62,7 +62,7 @@ public class AsyncServletTest extends AbstractTest
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 //        CountDownLatch latch = new CountDownLatch(1);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+//        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
 //        {
 //            @Override
 //            public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -240,7 +240,7 @@ public class AsyncServletTest extends AbstractTest
 //        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 //        HeadersFrame frame = new HeadersFrame(metaData, null, true);
 //        CountDownLatch clientLatch = new CountDownLatch(1);
-//        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+//        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
 //        {
 //            @Override
 //            public void onHeaders(Stream stream, HeadersFrame frame)

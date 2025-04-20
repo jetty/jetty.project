@@ -23,8 +23,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -85,9 +85,8 @@ public class TLSHandshakeFailureTest extends AbstractTest
 
     private void testTLSWrapFailure(TransportType transportType, TLSHandshakeAction action, int wrapCount) throws Exception
     {
-        start(transportType, new EmptyServerHandler());
-        client.stop();
-        client = new HttpClient(client.getHttpClientTransport())
+        startServer(transportType, new EmptyServerHandler());
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -117,7 +116,8 @@ public class TLSHandshakeFailureTest extends AbstractTest
         };
         ScheduledThreadPoolExecutor schedulerService = new ScheduledThreadPoolExecutor(1);
         schedulerService.setRemoveOnCancelPolicy(true);
-        client.setScheduler(new ScheduledExecutorScheduler(schedulerService));
+        clientConnector.setScheduler(new ScheduledExecutorScheduler(schedulerService));
+        prepareClient(transportType, clientConnector);
         client.start();
 
         int count = 10;
@@ -161,9 +161,8 @@ public class TLSHandshakeFailureTest extends AbstractTest
 
     private void testTLSUnwrapFailure(TransportType transportType, TLSHandshakeAction action, int unwrapCount) throws Exception
     {
-        start(transportType, new EmptyServerHandler());
-        client.stop();
-        client = new HttpClient(client.getHttpClientTransport())
+        startServer(transportType, new EmptyServerHandler());
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -193,7 +192,8 @@ public class TLSHandshakeFailureTest extends AbstractTest
         };
         ScheduledThreadPoolExecutor schedulerService = new ScheduledThreadPoolExecutor(1);
         schedulerService.setRemoveOnCancelPolicy(true);
-        client.setScheduler(new ScheduledExecutorScheduler(schedulerService));
+        clientConnector.setScheduler(new ScheduledExecutorScheduler(schedulerService));
+        prepareClient(transportType, clientConnector);
         client.start();
 
         int count = 10;

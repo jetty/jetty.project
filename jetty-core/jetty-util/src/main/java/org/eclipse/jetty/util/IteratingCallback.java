@@ -921,7 +921,7 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.tryLock())
         {
             String held = _lock.isHeldByCurrentThread() ? "" : "?";
-            return String.format("%s@%x[%s:%s,aborted=%b,failure=%s]", getClass().getSimpleName(), hashCode(), held, _state, _aborted, _failure);
+            return String.format("%s@%x[%s:%s,aborted=%b,failure=%s]", TypeUtil.toShortName(getClass()), hashCode(), held, _state, _aborted, _failure);
         }
     }
 

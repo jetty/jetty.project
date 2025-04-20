@@ -28,18 +28,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.quic.quiche.Quiche;
-import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
-import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.quic.quiche.QuicheConstants;
+import org.eclipse.jetty.quic.quiche.QuicheConstants.quic_error;
+import org.eclipse.jetty.quic.quiche.QuicheConstants.quiche_error;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MAX_CONN_ID_LEN;
+import static org.eclipse.jetty.quic.quiche.QuicheConstants.QUICHE_MAX_CONN_ID_LEN;
 
-public class ForeignQuicheConnection extends QuicheConnection
+public class ForeignQuicheConnection extends Quiche
 {
     private static final Logger LOG = LoggerFactory.getLogger(ForeignQuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -82,7 +82,7 @@ public class ForeignQuicheConnection extends QuicheConnection
             MemorySegment dcid_len = scope.allocate(NativeHelper.C_LONG);
             dcid_len.set(NativeHelper.C_LONG, 0L, dcid.byteSize());
 
-            MemorySegment token = scope.allocate(QuicheConnection.TokenMinter.MAX_TOKEN_LENGTH);
+            MemorySegment token = scope.allocate(Quiche.TokenMinter.MAX_TOKEN_LENGTH);
             MemorySegment token_len = scope.allocate(NativeHelper.C_LONG);
             token_len.set(NativeHelper.C_LONG, 0L, token.byteSize());
 
@@ -177,7 +177,7 @@ public class ForeignQuicheConnection extends QuicheConnection
         {
             int rc = quiche_h.quiche_config_load_verify_locations_from_file(quicheConfig, allocator.allocateFrom(trustedCertsPemPath));
             if (rc < 0)
-                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String certChainPemPath = config.getCertChainPemPath();
@@ -186,7 +186,7 @@ public class ForeignQuicheConnection extends QuicheConnection
 
             int rc = quiche_h.quiche_config_load_cert_chain_from_pem_file(quicheConfig, allocator.allocateFrom(certChainPemPath));
             if (rc < 0)
-                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
@@ -194,7 +194,7 @@ public class ForeignQuicheConnection extends QuicheConnection
         {
             int rc = quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, allocator.allocateFrom(privKeyPemPath));
             if (rc < 0)
-                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String[] applicationProtos = config.getApplicationProtos();
@@ -895,7 +895,7 @@ public class ForeignQuicheConnection extends QuicheConnection
     }
 
     @Override
-    public int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -905,24 +905,28 @@ public class ForeignQuicheConnection extends QuicheConnection
             long read;
             try (Arena scope = Arena.ofConfined())
             {
-                MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
+                MemorySegment fin = scope.allocate(NativeHelper.C_BOOL);
                 MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
+                    if (read >= 0)
+                    {
+                        buffer.position(buffer.position() + (int)read);
+                        last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
+                    }
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
-                    if (read > 0)
+                    if (read >= 0)
                     {
-                        int prevPosition = buffer.position();
                         buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                        buffer.position(prevPosition);
+                        last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
                     }
                 }
             }
@@ -933,7 +937,6 @@ public class ForeignQuicheConnection extends QuicheConnection
                 throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            buffer.position((int)(buffer.position() + read));
             return (int)read;
         }
     }

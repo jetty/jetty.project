@@ -63,7 +63,7 @@ public class ConcurrentStreamCreationTest extends AbstractTest
         CyclicBarrier barrier = new CyclicBarrier(threads);
         CountDownLatch clientLatch = new CountDownLatch(total);
         CountDownLatch responseLatch = new CountDownLatch(runs);
-        Promise<Stream> promise = new Promise.Adapter<>()
+        Promise<Stream> promise = new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)

@@ -69,11 +69,11 @@ public class DataGenerateParseTest
             {
                 frames.add(frame);
             }
-        }, decoder, 13, () -> true);
+        }, decoder, 13);
         parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
-            parser.parse(buffer);
+            parser.parse(buffer, false);
             assertFalse(buffer.hasRemaining());
         }
 

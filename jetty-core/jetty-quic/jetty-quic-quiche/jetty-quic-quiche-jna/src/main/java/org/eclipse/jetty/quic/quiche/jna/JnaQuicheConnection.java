@@ -24,18 +24,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.quic.quiche.Quiche;
-import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
-import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.quic.quiche.QuicheConstants;
+import org.eclipse.jetty.quic.quiche.QuicheConstants.quic_error;
+import org.eclipse.jetty.quic.quiche.QuicheConstants.quiche_error;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MAX_CONN_ID_LEN;
+import static org.eclipse.jetty.quic.quiche.QuicheConstants.QUICHE_MAX_CONN_ID_LEN;
 
-public class JnaQuicheConnection extends QuicheConnection
+public class JnaQuicheConnection extends Quiche
 {
     private static final Logger LOG = LoggerFactory.getLogger(JnaQuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -64,7 +64,7 @@ public class JnaQuicheConnection extends QuicheConnection
         byte[] dcid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcidLen = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[QuicheConnection.TokenMinter.MAX_TOKEN_LENGTH];
+        byte[] token = new byte[Quiche.TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer tokenLen = new size_t_pointer(token.length);
 
         LOG.debug("getting header info (fromPacket)...");
@@ -131,7 +131,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             int rc = LibQuiche.INSTANCE.quiche_config_load_verify_locations_from_file(quicheConfig, trustedCertsPemPath);
             if (rc != 0)
-                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String certChainPemPath = config.getCertChainPemPath();
@@ -139,7 +139,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             int rc = LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
             if (rc < 0)
-                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
@@ -147,7 +147,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             int rc = LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
             if (rc < 0)
-                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
         String[] applicationProtos = config.getApplicationProtos();
@@ -734,7 +734,7 @@ public class JnaQuicheConnection extends QuicheConnection
     }
 
     @Override
-    public int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -742,15 +742,19 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
             bool_pointer fin = new bool_pointer();
             uint64_t_pointer outErrorCode = new uint64_t_pointer();
-            int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin, outErrorCode).intValue();
+            long read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin, outErrorCode).longValue();
+            if (read >= 0)
+            {
+                buffer.position(buffer.position() + (int)read);
+                last[0] = fin.getValue();
+            }
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
                 throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            buffer.position(buffer.position() + read);
-            return read;
+            return (int)read;
         }
     }
 

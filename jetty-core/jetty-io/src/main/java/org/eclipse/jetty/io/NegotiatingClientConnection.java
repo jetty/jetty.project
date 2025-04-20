@@ -45,6 +45,11 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         return engine;
     }
 
+    protected Map<String, Object> getContext()
+    {
+        return context;
+    }
+
     public String getProtocol()
     {
         return protocol;

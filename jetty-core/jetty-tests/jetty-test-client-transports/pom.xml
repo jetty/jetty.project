@@ -92,6 +92,16 @@
       <artifactId>jetty-http3-server</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-quiche-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-quiche-server</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -121,7 +131,9 @@
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>@{argLine} ${jetty.surefire.argLine} --enable-native-access=ALL-UNNAMED</argLine>
+              <argLine>@{argLine}
+                ${jetty.surefire.argLine}
+                --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
             </configuration>
           </plugin>
         </plugins>

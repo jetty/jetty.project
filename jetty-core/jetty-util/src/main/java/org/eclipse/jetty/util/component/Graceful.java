@@ -134,7 +134,7 @@ public interface Graceful
      * @return A {@link CompletableFuture } that is complete once all returns from {@link Graceful#shutdown()}
      * of the contained {@link Graceful}s are complete.
      */
-    static CompletableFuture<Void> shutdown(Container component)
+    static CompletableFuture<Void> shutdown(org.eclipse.jetty.util.component.Container component)
     {
         Logger log = LoggerFactory.getLogger(component.getClass());
 
@@ -142,8 +142,8 @@ public interface Graceful
 
         // tell the graceful handlers that we are shutting down
         List<Graceful> gracefuls = new ArrayList<>();
-        if (component instanceof Graceful)
-            gracefuls.add((Graceful)component);
+        if (component instanceof Graceful graceful)
+            gracefuls.add(graceful);
         gracefuls.addAll(component.getContainedBeans(Graceful.class));
 
         if (log.isDebugEnabled())

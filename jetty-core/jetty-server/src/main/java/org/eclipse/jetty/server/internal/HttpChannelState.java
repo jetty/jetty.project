@@ -343,16 +343,12 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Invocable.InvocationType getInvocationType()
     {
-        // TODO Can this actually be done, as we may need to invoke other Runnables after onContent?
-        //      Could we at least avoid the lock???
-        Runnable onContent;
         try (AutoLock ignored = _lock.lock())
         {
             if (_request == null)
-                return null;
-            onContent = _onContentAvailable;
+                return HttpChannel.super.getInvocationType();
+            return Invocable.getInvocationType(_onContentAvailable);
         }
-        return Invocable.getInvocationType(onContent);
     }
 
     @Override
@@ -478,7 +474,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
+                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)

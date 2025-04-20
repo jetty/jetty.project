@@ -519,13 +519,7 @@ public class HttpClientTLSTest
         serverTLSFactory.start();
         try (ServerSocket server = new ServerSocket(0))
         {
-            ClientConnector clientConnector = new ClientConnector();
-            clientConnector.setSelectors(1);
-            QueuedThreadPool clientThreads = new QueuedThreadPool();
-            clientThreads.setName("client");
-            clientConnector.setExecutor(clientThreads);
-            clientConnector.setSslContextFactory(createClientSslContextFactory());
-            client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+            ClientConnector clientConnector = new ClientConnector()
             {
                 @Override
                 public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -535,6 +529,11 @@ public class HttpClientTLSTest
                     return ssl;
                 }
             };
+            QueuedThreadPool clientThreads = new QueuedThreadPool();
+            clientThreads.setName("client");
+            clientConnector.setExecutor(clientThreads);
+            clientConnector.setSslContextFactory(createClientSslContextFactory());
+            client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
             client.start();
 
             CountDownLatch latch = new CountDownLatch(1);
@@ -649,15 +648,9 @@ public class HttpClientTLSTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(clientTLSFactory);
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        clientConnector.setExecutor(clientThreads);
         AtomicLong clientBytes = new AtomicLong();
-        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -684,7 +677,11 @@ public class HttpClientTLSTest
                 };
             }
         };
-        client.setExecutor(clientThreads);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.start();
 
         // Create a connection but don't use it.
@@ -1037,15 +1034,9 @@ public class HttpClientTLSTest
 
         long idleTimeout = 2000;
 
-        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(clientTLSFactory);
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        clientConnector.setExecutor(clientThreads);
         AtomicLong clientBytes = new AtomicLong();
-        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -1072,8 +1063,12 @@ public class HttpClientTLSTest
                 };
             }
         };
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.setIdleTimeout(idleTimeout);
-        client.setExecutor(clientThreads);
         client.start();
 
         // Create a connection but don't use it.
@@ -1101,13 +1096,7 @@ public class HttpClientTLSTest
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(clientTLSFactory);
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        clientConnector.setExecutor(clientThreads);
-        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -1132,7 +1121,11 @@ public class HttpClientTLSTest
                 };
             }
         };
-        client.setExecutor(clientThreads);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.start();
 
         ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
@@ -1181,13 +1174,7 @@ public class HttpClientTLSTest
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(clientTLSFactory);
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        clientConnector.setExecutor(clientThreads);
-        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -1220,8 +1207,12 @@ public class HttpClientTLSTest
                 };
             }
         };
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.setIdleTimeout(idleTimeout);
-        client.setExecutor(clientThreads);
         client.start();
 
         String host = "localhost";

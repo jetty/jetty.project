@@ -19,11 +19,11 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends FrameGenerator
@@ -39,13 +39,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private int generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private long generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         RetainableByteBuffer buffer;
         // Reserve initial bytes for the frame header bytes.
@@ -64,7 +64,7 @@ public class HeadersGenerator extends FrameGenerator
             encoder.encode(byteBuffer, streamId, frame.getMetaData());
             byteBuffer.flip();
             byteBuffer.position(maxHeaderLength);
-            int dataLength = buffer.remaining();
+            long dataLength = buffer.remaining();
             int headerLength = frameTypeLength + VarLenInt.length(dataLength);
             int position = byteBuffer.position() - headerLength;
             byteBuffer.position(position);

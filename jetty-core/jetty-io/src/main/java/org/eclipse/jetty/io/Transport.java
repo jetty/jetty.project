@@ -49,6 +49,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public interface Transport
 {
+    String CONTEXT_KEY = Transport.class.getName();
+
     /**
      * <p>The TCP/IP {@code Transport}.</p>
      */
@@ -141,6 +143,11 @@ public interface Transport
         return null;
     }
 
+    default ClientConnectionFactory newClientConnectionFactory(ClientConnector connector, ClientConnectionFactory factory)
+    {
+        return factory;
+    }
+
     /**
      * <p>Creates a new {@link Connection} to be associated with the given low-level {@link EndPoint}.</p>
      * <p>For non-layered {@code Transport}s such as TCP/IP, the {@link Connection} is typically
@@ -155,7 +162,7 @@ public interface Transport
      */
     default Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnectionFactory.CONTEXT_KEY);
         return factory.newConnection(endPoint, context);
     }
 
@@ -171,7 +178,7 @@ public interface Transport
         @Override
         public void connect(SocketAddress socketAddress, Map<String, Object> context)
         {
-            ClientConnector connector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
+            ClientConnector connector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
             connector.connect(socketAddress, context);
         }
 
@@ -372,7 +379,7 @@ public interface Transport
         @Override
         public void connect(SocketAddress socketAddress, Map<String, Object> context)
         {
-            wrapped.connect(socketAddress, context);
+            getWrapped().connect(socketAddress, context);
         }
 
         @Override
@@ -384,19 +391,25 @@ public interface Transport
         @Override
         public SelectableChannel newSelectableChannel() throws IOException
         {
-            return wrapped.newSelectableChannel();
+            return getWrapped().newSelectableChannel();
         }
 
         @Override
         public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
         {
-            return wrapped.newEndPoint(scheduler, selector, selectable, selectionKey);
+            return getWrapped().newEndPoint(scheduler, selector, selectable, selectionKey);
+        }
+
+        @Override
+        public ClientConnectionFactory newClientConnectionFactory(ClientConnector connector, ClientConnectionFactory factory)
+        {
+            return getWrapped().newClientConnectionFactory(connector, factory);
         }
 
         @Override
         public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
-            return wrapped.newConnection(endPoint, context);
+            return getWrapped().newConnection(endPoint, context);
         }
 
         @Override

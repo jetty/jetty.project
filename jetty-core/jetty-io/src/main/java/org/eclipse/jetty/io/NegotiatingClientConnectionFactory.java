@@ -13,17 +13,10 @@
 
 package org.eclipse.jetty.io;
 
-public abstract class NegotiatingClientConnectionFactory implements ClientConnectionFactory
+public abstract class NegotiatingClientConnectionFactory extends ClientConnectionFactory.Wrapper
 {
-    private final ClientConnectionFactory connectionFactory;
-
     protected NegotiatingClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
-        this.connectionFactory = connectionFactory;
-    }
-
-    public ClientConnectionFactory getClientConnectionFactory()
-    {
-        return connectionFactory;
+        super(connectionFactory);
     }
 }

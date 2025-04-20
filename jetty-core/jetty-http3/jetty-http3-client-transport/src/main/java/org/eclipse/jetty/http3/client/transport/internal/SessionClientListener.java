@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
@@ -45,7 +44,7 @@ public class SessionClientListener implements Session.Client.Listener
 
     private Destination destination()
     {
-        return (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+        return (Destination)context.get(Destination.CONTEXT_KEY);
     }
 
     @Override
@@ -98,7 +97,7 @@ public class SessionClientListener implements Session.Client.Listener
     @SuppressWarnings("unchecked")
     private Promise<Connection> httpConnectionPromise()
     {
-        return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        return (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
     }
 
     private boolean failConnectionPromise(Throwable failure)

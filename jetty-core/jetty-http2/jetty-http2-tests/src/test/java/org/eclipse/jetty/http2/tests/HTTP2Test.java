@@ -94,7 +94,7 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -140,7 +140,7 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -184,7 +184,7 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(2);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -283,7 +283,7 @@ public class HTTP2Test extends AbstractTest
         CountDownLatch latch = new CountDownLatch(requests);
         for (int i = 0; i < requests; ++i)
         {
-            session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+            session.newStream(frame, new Promise<>() {}, new Stream.Listener()
             {
                 @Override
                 public void onDataAvailable(Stream stream)
@@ -320,7 +320,7 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -358,7 +358,7 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -484,7 +484,7 @@ public class HTTP2Test extends AbstractTest
         // The third stream must not be created.
         MetaData.Request request3 = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch maxStreamsLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(request3, null, false), new Promise.Adapter<>()
+        session.newStream(new HeadersFrame(request3, null, false), new Promise<>()
         {
             @Override
             public void failed(Throwable x)
@@ -512,7 +512,7 @@ public class HTTP2Test extends AbstractTest
         // Create a fourth stream.
         MetaData.Request request4 = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch exchangeLatch4 = new CountDownLatch(2);
-        session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<>()
+        session.newStream(new HeadersFrame(request4, null, true), new Promise<>()
         {
             @Override
             public void succeeded(Stream result)
@@ -694,7 +694,7 @@ public class HTTP2Test extends AbstractTest
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -746,7 +746,7 @@ public class HTTP2Test extends AbstractTest
         });
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
-        session.newStream(request, new Promise.Adapter<>(), null);
+        session.newStream(request, new Promise<>() {}, null);
 
         // Make sure onClose() is called.
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));

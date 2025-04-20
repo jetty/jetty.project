@@ -13,11 +13,20 @@
 
 package org.eclipse.jetty.quic.client;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.QuicErrorCode;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.quic.common.StreamType;
-import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.quic.common.ProtocolStreamListener;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,81 +37,38 @@ public class ClientProtocolSession extends ProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientProtocolSession.class);
 
-    private final Runnable producer = Invocable.from(Invocable.InvocationType.NON_BLOCKING, this::produce);
-    private QuicStreamEndPoint endPoint;
+    private final ClientConnectionFactory connectionFactory;
+    private final Map<String, Object> context;
 
-    public ClientProtocolSession(ClientQuicSession session)
+    public ClientProtocolSession(ClientConnector clientConnector, Session session, ClientConnectionFactory connectionFactory, Map<String, Object> context)
     {
-        super(session);
-    }
-
-    @Override
-    public ClientQuicSession getQuicSession()
-    {
-        return (ClientQuicSession)super.getQuicSession();
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        onStart();
+        super(clientConnector.getExecutor(), clientConnector.getByteBufferPool(), session);
+        this.connectionFactory = connectionFactory;
+        this.context = context;
     }
 
     protected void onStart()
     {
-        // Create a single bidirectional, client-initiated,
-        // QUIC stream that plays the role of the TCP stream.
-        long streamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
-        endPoint = getOrCreateStreamEndPoint(streamId, this::openProtocolEndPoint);
+        try
+        {
+            // Create a single bidirectional, client-initiated,
+            // QUIC stream that plays the role of the TCP stream.
+            long streamId = getSession().newStreamId(true);
+            Stream stream = getSession().newStream(streamId, new ProtocolStreamListener(() -> getStreamEndPoint(streamId)));
+            createStreamEndPoint(stream, this::openStreamEndPoint);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not create stream", x);
+            ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "start_failure");
+            disconnect(disconnect, x, Promise.Invocable.noop());
+        }
     }
 
     @Override
-    protected void doStop() throws Exception
+    protected Connection newConnection(StreamEndPoint endPoint) throws IOException
     {
-        onStop();
-        super.doStop();
-    }
-
-    protected void onStop()
-    {
-        QuicStreamEndPoint endPoint = this.endPoint;
-        if (endPoint != null)
-            endPoint.closed(null);
-        this.endPoint = null;
-    }
-
-    @Override
-    public Runnable getProducerTask()
-    {
-        // On the client, the contract is that applications should not block inside API callback methods,
-        // so a call to produce() should never block, and we can return a NON_BLOCKING producer task.
-        return producer;
-    }
-
-    @Override
-    protected boolean onReadable(long readableStreamId)
-    {
-        // On the client, we need a get-only semantic in case of reads.
-        QuicStreamEndPoint streamEndPoint = getStreamEndPoint(readableStreamId);
-        if (LOG.isDebugEnabled())
-            LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-        if (streamEndPoint != null)
-            return streamEndPoint.onReadable();
-        return false;
-    }
-
-    @Override
-    protected void onFailure(long error, String reason, Throwable failure)
-    {
-        outwardClose(QuicErrorCode.NO_ERROR.code(), "failure");
-    }
-
-    @Override
-    protected void onClose(long error, String reason)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("session closed remotely 0x{}/{} {}", Long.toHexString(error), reason, this);
-        // TODO: should probably close the stream.
+        return connectionFactory.newConnection(endPoint, context);
     }
 }

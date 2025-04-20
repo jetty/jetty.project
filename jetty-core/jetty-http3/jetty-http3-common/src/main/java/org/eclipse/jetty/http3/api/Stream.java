@@ -14,15 +14,13 @@
 package org.eclipse.jetty.http3.api;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
 
 /**
@@ -47,26 +45,26 @@ public interface Stream
      * Get the stream id.
      * @return the stream id
      */
-    public long getId();
+    long getId();
 
     /**
      * Get the session this stream is associated to.
      * @return the session this stream is associated to
      */
-    public Session getSession();
+    Session getSession();
 
     /**
      * <p>Sends the given DATA frame containing some or all the bytes
      * of the request content or of the response content.</p>
      *
      * @param frame the DATA frame containing some or all the bytes of the request or of the response.
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
      */
-    public CompletableFuture<Stream> data(DataFrame frame);
+    void data(DataFrame frame, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Reads request content bytes or response content bytes.</p>
-     * <p>The returned {@link Stream.Data} object may be {@code null}, indicating
+     * <p>The returned {@link Content.Chunk} object may be {@code null}, indicating
      * that the end of the read side of the stream has not yet been reached, which
      * may happen in these cases:</p>
      * <ul>
@@ -76,20 +74,20 @@ public interface Stream
      *   frame to be received to indicate the end of the read side of the
      *   stream</li>
      * </ul>
-     * <p>When the returned {@link Stream.Data} object is not {@code null},
+     * <p>When the returned {@link Content.Chunk} object is not {@code null},
      * applications <em>must</em> call, either immediately or later (possibly
-     * asynchronously) {@link Stream.Data#release()} to notify the
+     * asynchronously) {@link Content.Chunk#release()} to notify the
      * implementation that the bytes have been processed.</p>
-     * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
+     * <p>{@link Content.Chunk} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
      *
-     * @return a {@link Stream.Data} object containing the request bytes or
-     * the response bytes, or null if no bytes are available
+     * @return a {@link Content.Chunk} object containing the request bytes or
+     * the response bytes or a failure, or null if no bytes are available
      * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
      * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
-    public Stream.Data readData();
+    Content.Chunk read();
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
@@ -108,32 +106,36 @@ public interface Stream
      * {@code onDataAvailable(Stream)} will not cause a
      * {@link StackOverflowError}.</p>
      *
-     * @see #readData()
+     * @see #read()
      * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
      * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
-    public void demand();
+    void demand();
 
     /**
      * <p>Sends the given HEADERS frame containing the trailer headers.</p>
      *
      * @param frame the HEADERS frame containing the trailer headers
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
      */
-    public CompletableFuture<Stream> trailer(HeadersFrame frame);
+    void trailer(HeadersFrame frame, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Abruptly terminates this stream with the given error.</p>
+     * <p>This method removes this stream from its session and
+     * then terminates the QUIC stream, via {@code STOP_SENDING}
+     * and {@code RESET} frames, if necessary.</p>
      *
-     * @param error the error code
-     * @param failure the failure that caused the reset of the stream
+     * @param appErrorCode the error code
+     * @param failure the failure that caused the close of the stream, if any
+     * @param promise the {@link Promise.Invocable} that gets notified when the disconnect is complete
      */
-    public void reset(long error, Throwable failure);
+    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise);
 
     /**
      * <p>The client side version of {@link Stream}.</p>
      */
-    public interface Client extends Stream
+    interface Client extends Stream
     {
         /**
          * <p>A {@link Stream.Client.Listener} is the passive counterpart of a {@link Stream.Client}
@@ -141,15 +143,15 @@ public interface Stream
          *
          * @see Stream.Client
          */
-        public interface Listener
+        interface Listener
         {
             /**
              * <p>Callback method invoked when a stream is created locally by
-             * {@link Session.Client#newRequest(HeadersFrame, Listener)}.</p>
+             * {@link Session.Client#newRequest(HeadersFrame, Listener, Promise.Invocable)}.</p>
              *
              * @param stream the newly created stream
              */
-            public default void onNewStream(Stream.Client stream)
+            default void onNewStream(Stream.Client stream)
             {
             }
 
@@ -163,7 +165,7 @@ public interface Stream
              * @param frame the HEADERS frame containing the response headers
              * @see Stream.Client.Listener#onDataAvailable(Client)
              */
-            public default void onResponse(Stream.Client stream, HeadersFrame frame)
+            default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 stream.demand();
             }
@@ -180,7 +182,7 @@ public interface Stream
              * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>
              * <p>Just prior calling this method, the outstanding demand is
              * cancelled; applications that implement this method should read
-             * content calling {@link Stream#readData()}, and call
+             * content calling {@link Stream#read()}, and call
              * {@link Stream#demand()} to signal to the implementation to call
              * again this method when there may be more content available.</p>
              * <p>Only one thread at a time invokes this method, although it
@@ -188,26 +190,26 @@ public interface Stream
              * <p>It is always guaranteed that invoking {@link Stream#demand()}
              * from within this method will not cause a {@link StackOverflowError}.</p>
              * <p>Typical usage:</p>
-             * <pre>
+             * <pre>{@code
              * class MyStreamListener implements Stream.Client.Listener
              * {
-             *     &#64;Override
+             *     @Override
              *     public void onDataAvailable(Stream.Client stream)
              *     {
              *         // Read a chunk of the content.
-             *         Stream.Data data = stream.readData();
-             *         if (data == null)
+             *         Content.Chunk chunk = stream.read();
+             *         if (chunk == null)
              *         {
              *             // No data available now, demand to be called back.
              *             stream.demand();
              *         }
              *         else
              *         {
-             *             // Process the content.
-             *             process(data.getByteBuffer());
+             *             // Process the content chunk.
+             *             process(chunk);
              *             // Notify that the content has been consumed.
-             *             data.release();
-             *             if (!data.isLast())
+             *             chunk.release();
+             *             if (!chunk.isLast())
              *             {
              *                 // Demand to be called back.
              *                 stream.demand();
@@ -215,12 +217,31 @@ public interface Stream
              *         }
              *     }
              * }
-             * </pre>
+             * }</pre>
              *
              * @param stream the stream
              */
-            public default void onDataAvailable(Stream.Client stream)
+            default void onDataAvailable(Stream.Client stream)
             {
+                try
+                {
+                    while (true)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.release();
+                        if (chunk.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -229,7 +250,7 @@ public interface Stream
              * @param stream the stream
              * @param frame the HEADERS frame containing the trailer headers
              */
-            public default void onTrailer(Stream.Client stream, HeadersFrame frame)
+            default void onTrailer(Stream.Client stream, HeadersFrame frame)
             {
             }
 
@@ -241,7 +262,7 @@ public interface Stream
              * @param promise the promise to complete with true to reset the stream,
              *                false to ignore the idle timeout
              */
-            public default void onIdleTimeout(Client stream, Throwable failure, Promise<Boolean> promise)
+            default void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
             {
                 promise.succeeded(true);
             }
@@ -256,7 +277,7 @@ public interface Stream
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Stream.Client stream, long error, Throwable failure)
+            default void onFailure(Stream.Client stream, long error, Throwable failure)
             {
             }
         }
@@ -265,16 +286,16 @@ public interface Stream
     /**
      * <p>The server side version of {@link Stream}.</p>
      */
-    public interface Server extends Stream
+    interface Server extends Stream
     {
         /**
-         * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener)},
+         * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener, Promise.Invocable)},
          * sending the given HEADERS frame containing the response status code and response headers.</p>
          *
          * @param frame the HEADERS frame containing the response headers
-         * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+         * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
          */
-        public CompletableFuture<Stream> respond(HeadersFrame frame);
+        void respond(HeadersFrame frame, Promise.Invocable<Stream> promise);
 
         /**
          * <p>A {@link Stream.Server.Listener} is the passive counterpart of a {@link Stream.Server}
@@ -282,7 +303,7 @@ public interface Stream
          *
          * @see Stream.Server
          */
-        public interface Listener
+        interface Listener
         {
             /**
              * <p>Callback method invoked if the application has expressed
@@ -296,7 +317,7 @@ public interface Stream
              * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>
              * <p>Just prior calling this method, the outstanding demand is
              * cancelled; applications that implement this method should read
-             * content calling {@link Stream#readData()}, and call
+             * content calling {@link Stream#read()}, and call
              * {@link Stream#demand()} to signal to the implementation to call
              * again this method when there may be more content available.</p>
              * <p>Only one thread at a time invokes this method, although it
@@ -304,26 +325,26 @@ public interface Stream
              * <p>It is always guaranteed that invoking {@link Stream#demand()}
              * from within this method will not cause a {@link StackOverflowError}.</p>
              * <p>Typical usage:</p>
-             * <pre>
+             * <pre>{@code
              * class MyStreamListener implements Stream.Server.Listener
              * {
-             *     &#64;Override
+             *     @Override
              *     public void onDataAvailable(Stream.Server stream)
              *     {
              *         // Read a chunk of the content.
-             *         Stream.Data data = stream.readData();
-             *         if (data == null)
+             *         Content.Chunk chunk = stream.read();
+             *         if (chunk == null)
              *         {
              *             // No data available now, demand to be called back.
              *             stream.demand();
              *         }
              *         else
              *         {
-             *             // Process the content.
-             *             process(data.getByteBuffer());
+             *             // Process the content chunk.
+             *             process(chunk);
              *             // Notify that the content has been consumed.
-             *             data.release();
-             *             if (!data.isLast())
+             *             chunk.release();
+             *             if (!chunk.isLast())
              *             {
              *                 // Demand to be called back.
              *                 stream.demand();
@@ -331,12 +352,31 @@ public interface Stream
              *         }
              *     }
              * }
-             * </pre>
+             * }</pre>
              *
              * @param stream the stream
              */
-            public default void onDataAvailable(Stream.Server stream)
+            default void onDataAvailable(Stream.Server stream)
             {
+                try
+                {
+                    while (true)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.release();
+                        if (chunk.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -345,7 +385,7 @@ public interface Stream
              * @param stream the stream
              * @param frame the HEADERS frame containing the trailer headers
              */
-            public default void onTrailer(Stream.Server stream, HeadersFrame frame)
+            default void onTrailer(Stream.Server stream, HeadersFrame frame)
             {
             }
 
@@ -357,7 +397,7 @@ public interface Stream
              * @param promise the promise to complete with true to reset the stream,
              *                false to ignore the idle timeout
              */
-            public default void onIdleTimeout(Server stream, TimeoutException failure, Promise<Boolean> promise)
+            default void onIdleTimeout(Stream.Server stream, TimeoutException failure, Promise<Boolean> promise)
             {
                 promise.succeeded(true);
             }
@@ -372,57 +412,8 @@ public interface Stream
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Stream.Server stream, long error, Throwable failure)
+            default void onFailure(Stream.Server stream, long error, Throwable failure)
             {
-            }
-        }
-    }
-
-    /**
-     * <p>A {@link Stream.Data} instance associates a {@link ByteBuffer}
-     * containing request bytes or response bytes.</p>
-     *
-     * @see Stream#readData()
-     */
-    abstract class Data implements Retainable
-    {
-        public static final Data EOF = new EOFData();
-
-        private final DataFrame frame;
-
-        public Data(DataFrame frame)
-        {
-            this.frame = Objects.requireNonNull(frame);
-        }
-
-        /**
-         * @return the {@link ByteBuffer} containing the data bytes
-         */
-        public ByteBuffer getByteBuffer()
-        {
-            return frame.getByteBuffer();
-        }
-
-        /**
-         * @return whether this is the instance that ends
-         * the stream of bytes received from the remote peer
-         */
-        public boolean isLast()
-        {
-            return frame.isLast();
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s[%s]", getClass().getSimpleName(), frame);
-        }
-
-        private static class EOFData extends Data
-        {
-            private EOFData()
-            {
-                super(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
             }
         }
     }
