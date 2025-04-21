@@ -170,12 +170,11 @@
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.20.1</checkstyle.version>
-    <commons-codec.version>1.17.1</commons-codec.version>
-    <commons-io.version>2.16.1</commons-io.version>
-    <commons-lang3.version>3.14.0</commons-lang3.version>
-    <commons.compress.version>1.26.2</commons.compress.version>
-    <commons.io.version>2.16.1</commons.io.version>
+    <checkstyle.version>10.23.0</checkstyle.version>
+    <commons-codec.version>1.18.0</commons-codec.version>
+    <commons-io.version>2.19.0</commons-io.version>
+    <commons-lang3.version>3.17.0</commons-lang3.version>
+    <commons.compress.version>1.27.1</commons.compress.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
@@ -186,12 +185,12 @@
     <eclipse.jdt.ecj.version>3.38.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.35.1</google.errorprone.version>
+    <flatten.maven.plugin.version>1.7.0</flatten.maven.plugin.version>
+    <google.errorprone.version>2.38.0</google.errorprone.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.68.1</grpc.version>
-    <gson.version>2.11.0</gson.version>
-    <guava.version>33.3.1-jre</guava.version>
+    <grpc.version>1.72.0</grpc.version>
+    <gson.version>2.13.0</gson.version>
+    <guava.version>33.4.8-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.5.0</hazelcast.version>
@@ -203,10 +202,10 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.18.1</jackson.version>
+    <jackson.version>2.18.3</jackson.version>
     <jacoco.maven.plugin.version>0.8.13</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
-    <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.6.1.Final</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -319,9 +318,9 @@
     <testcontainers.version>1.20.4</testcontainers.version>
     <testng.version>7.10.2</testng.version>
     <tinybundles.version>3.0.0</tinybundles.version>
-    <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
-    <wildfly.common.version>1.7.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.6.0.Final</wildfly.elytron.version>
+    <versions.maven.plugin.version>2.18.0</versions.maven.plugin.version>
+    <wildfly.common.version>2.0.1</wildfly.common.version>
+    <wildfly.elytron.version>2.6.3.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
@@ -1701,7 +1700,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.41.1</version>
+        <version>2.44.4</version>
         <configuration>
           <pom>
             <includes>
