@@ -332,7 +332,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
-    <plexus-xml.version>4.1.0</plexus-xml.version>
+    <plexus-xml.version>4.0.4</plexus-xml.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
     <slf4j.version>2.0.13</slf4j.version>
