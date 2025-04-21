@@ -487,7 +487,7 @@
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.service.http.whiteboard</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

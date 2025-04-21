@@ -204,11 +204,11 @@
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.22.0</checkstyle.version>
+    <checkstyle.version>10.23.0</checkstyle.version>
     <commons-codec.version>1.18.0</commons-codec.version>
     <commons-lang3.version>3.17.0</commons-lang3.version>
     <commons.compress.version>1.27.1</commons.compress.version>
-    <commons.io.version>2.18.0</commons.io.version>
+    <commons.io.version>2.19.0</commons.io.version>
     <compiler.release>11</compiler.release>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
@@ -218,11 +218,11 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.37.0</google.errorprone.version>
+    <google.errorprone.version>2.38.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.71.0</grpc.version>
-    <gson.version>2.12.1</gson.version>
-    <guava.version>33.4.6-jre</guava.version>
+    <grpc.version>1.72.0</grpc.version>
+    <gson.version>2.13.0</gson.version>
+    <guava.version>33.4.8-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <hamcrest.version>3.0</hamcrest.version>
@@ -285,7 +285,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.2</json-smart.version>
     <jsp.impl.version>9.0.90</jsp.impl.version>
-    <junit.version>5.12.1</junit.version>
+    <junit.version>5.12.2</junit.version>
     <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
@@ -332,7 +332,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
-    <plexus-xml.version>4.0.4</plexus-xml.version>
+    <plexus-xml.version>4.1.0</plexus-xml.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
     <slf4j.version>2.0.13</slf4j.version>
