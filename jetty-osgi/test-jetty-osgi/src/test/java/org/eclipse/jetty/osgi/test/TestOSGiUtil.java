@@ -280,6 +280,8 @@ public class TestOSGiUtil
             {
                 LOGGER.atWarn().log(err);
             }
+            // we can't fail for this anymore as inject is adding automatically by pax exam framework
+            // but with lower version
             //assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
