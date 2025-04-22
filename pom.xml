@@ -1271,7 +1271,7 @@
       <dependency>
         <groupId>org.wildfly.common</groupId>
         <artifactId>wildfly-common</artifactId>
-        <version>1.7.0.Final</version>
+        <version>2.0.1</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
