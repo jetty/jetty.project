@@ -625,6 +625,12 @@ public class ErrorHandler implements Request.Handler
         this._bufferSize = bufferSize;
     }
 
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+    }
+
     public static class ErrorRequest extends Request.AttributesWrapper
     {
         private static final Set<String> ATTRIBUTES = Set.of(ERROR_MESSAGE, ERROR_EXCEPTION, ERROR_STATUS);

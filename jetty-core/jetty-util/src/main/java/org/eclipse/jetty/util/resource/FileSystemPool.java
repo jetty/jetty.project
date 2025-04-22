@@ -350,6 +350,11 @@ public class FileSystemPool implements Dumpable
         }
     }
 
+    public String toString()
+    {
+        return "%s@%x{%d}".formatted(TypeUtil.toShortName(getClass()), hashCode(), pool.size());
+    }
+
     /**
      * Show a StackTrace
      */

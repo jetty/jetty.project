@@ -534,8 +534,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s{min=%d,max=%d,buckets=%d,heap=%d/%d,direct=%d/%d}",
-            super.toString(),
+        return String.format("%s@%x{min=%d,max=%d,buckets=%d,heap=%d/%d,direct=%d/%d}",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
             _minCapacity, _maxCapacity,
             _direct.length,
             getHeapMemory(), _maxHeapMemory,
