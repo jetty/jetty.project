@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -1208,15 +1209,49 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
         }
     }
-    
+
+    private final AtomicInteger inFlightRequestCounter = new AtomicInteger();
+
     protected void addSessionStreamWrapper(Request request)
     {
-        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
+        inFlightRequestCounter.incrementAndGet();
+        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request)
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    super.failed(x);
+                }
+                finally
+                {
+                    inFlightRequestCounter.decrementAndGet();
+                }
+            }
+
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    super.succeeded();
+                }
+                finally
+                {
+                    inFlightRequestCounter.decrementAndGet();
+                }
+            }
+        });
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        // SUPER HACKY!!
+        while (inFlightRequestCounter.get() != 0)
+            Thread.onSpinWait();
+
         // Destroy sessions before destroying servlets/filters see JETTY-1266
         shutdownSessions();
         _sessionCache.stop();
