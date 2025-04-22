@@ -42,7 +42,6 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ManifestUtils;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * The Arguments required to start Jetty.
@@ -1376,6 +1375,6 @@ public class StartArgs
     public String toString()
     {
         return String.format("%s[enabledModules=%s, xml=%s, properties=%s, jvmArgs=%s]",
-            TypeUtil.toShortName(getClass()), modules, getJettyEnvironment().getXmlFiles(), getJettyEnvironment().getProperties(), jvmArgSources.keySet());
+            getClass().getSimpleName(), modules, getJettyEnvironment().getXmlFiles(), getJettyEnvironment().getProperties(), jvmArgSources.keySet());
     }
 }
