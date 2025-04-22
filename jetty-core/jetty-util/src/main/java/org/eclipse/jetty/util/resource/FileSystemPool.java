@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -452,7 +453,7 @@ public class FileSystemPool implements Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s[uri=%s,root=%s]", getClass().getSimpleName(), fsUri, root);
+            return String.format("%s[uri=%s,root=%s]", TypeUtil.toShortName(getClass()), fsUri, root);
         }
     }
 }

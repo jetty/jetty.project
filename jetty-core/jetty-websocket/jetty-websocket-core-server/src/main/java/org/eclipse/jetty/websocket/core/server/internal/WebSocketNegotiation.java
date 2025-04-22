@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
@@ -184,7 +185,7 @@ public abstract class WebSocketNegotiation
     public String toString()
     {
         return String.format("%s@%x{uri=%s,oe=%s,op=%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getRequest().getHttpURI(),
             getOfferedExtensions(),

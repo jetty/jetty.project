@@ -1104,7 +1104,7 @@ public class NamingContext implements Context, Dumpable
         buf.append(",parent=");
         if (this._parent != null)
         {
-            buf.append(this._parent.getClass().getName()).append('@').append(Integer.toHexString(this._parent.hashCode()));
+            buf.append(TypeUtil.toShortName(_parent.getClass())).append('@').append(Integer.toHexString(this._parent.hashCode()));
         }
         buf.append(",bindings");
         if (this._bindings == null)

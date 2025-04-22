@@ -20,6 +20,7 @@ import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class SetCapacityInstruction implements Instruction
 {
@@ -51,6 +52,6 @@ public class SetCapacityInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x[capacity=%d]", getClass().getSimpleName(), hashCode(), getCapacity());
+        return String.format("%s@%x[capacity=%d]", TypeUtil.toShortName(getClass()), hashCode(), getCapacity());
     }
 }

@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -278,7 +279,7 @@ public class UnixDomainServerConnector extends AbstractConnector
     @Override
     public String toString()
     {
-        return String.format("%s@%h[%s]", getClass().getSimpleName(), hashCode(), getUnixDomainPath());
+        return String.format("%s@%h[%s]", TypeUtil.toShortName(getClass()), hashCode(), getUnixDomainPath());
     }
 
     protected class UnixDomainSelectorManager extends SelectorManager

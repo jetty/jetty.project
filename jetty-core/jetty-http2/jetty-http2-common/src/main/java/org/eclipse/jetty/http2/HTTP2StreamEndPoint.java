@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -513,8 +514,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     {
         // Do not call Stream.toString() because it stringifies the attachment,
         // which could be this instance, therefore causing a StackOverflowError.
-        return String.format("%s@%x[%s@%x#%d][w=%s]", getClass().getSimpleName(), hashCode(),
-            stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
+        return String.format("%s@%x[%s@%x#%d][w=%s]", TypeUtil.toShortName(getClass()), hashCode(),
+            TypeUtil.toShortName(stream.getClass()), stream.hashCode(), stream.getId(),
             writeState);
     }
 

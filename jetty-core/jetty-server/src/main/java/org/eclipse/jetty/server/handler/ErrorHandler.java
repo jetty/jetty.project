@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -667,7 +668,7 @@ public class ErrorHandler implements Request.Handler
         @Override
         public String toString()
         {
-            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+            return "%s@%x:%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
     }
 

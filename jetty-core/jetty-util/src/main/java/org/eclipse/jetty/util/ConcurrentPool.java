@@ -366,7 +366,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     public String toString()
     {
         return String.format("%s@%x[strategy=%s,inUse=%d,size=%d,max=%d,leaked=%d,terminated=%b]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             strategyType,
             getInUseCount(),
@@ -651,7 +651,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             long encoded = state.get();
             return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s}",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded) < 0,
                 AtomicBiInteger.getLo(encoded),

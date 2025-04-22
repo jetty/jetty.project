@@ -1801,7 +1801,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public String toString()
         {
-            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 

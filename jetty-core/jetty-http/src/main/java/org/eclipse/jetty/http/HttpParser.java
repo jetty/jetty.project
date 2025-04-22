@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2171,7 +2172,7 @@ public class HttpParser
     public String toString()
     {
         return String.format("%s{s=%s,%d of %d}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             _state,
             getContentRead(),
             getContentLength());

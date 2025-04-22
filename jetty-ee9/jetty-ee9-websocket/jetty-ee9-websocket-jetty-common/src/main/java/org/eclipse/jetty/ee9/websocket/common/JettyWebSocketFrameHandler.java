@@ -315,7 +315,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public String toString()
     {
-        return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), this.hashCode(), endpointInstance.getClass().getName());
+        return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), this.hashCode(), TypeUtil.toShortName(endpointInstance.getClass()));
     }
 
     private void acceptMessage(Frame frame, Callback callback)

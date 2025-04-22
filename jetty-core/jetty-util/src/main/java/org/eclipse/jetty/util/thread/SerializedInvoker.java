@@ -193,7 +193,7 @@ public class SerializedInvoker
     @Override
     public String toString()
     {
-        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", getClass().getSimpleName(), hashCode(), _name, _tail, _invokerThread);
+        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", TypeUtil.toShortName(getClass()), hashCode(), _name, _tail, _invokerThread);
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -295,7 +295,7 @@ public class SerializedInvoker
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s[%s] -> %s}", getClass().getSimpleName(), hashCode(), getTask(), getInvocationType(), _next);
+            return String.format("%s@%x{%s[%s] -> %s}", TypeUtil.toShortName(getClass()), hashCode(), getTask(), getInvocationType(), _next);
         }
     }
 

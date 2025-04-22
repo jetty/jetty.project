@@ -137,7 +137,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+    private String name = "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;

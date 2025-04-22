@@ -446,7 +446,7 @@ public class RegexPathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" +
+            return TypeUtil.toShortName(getClass()) + "[" +
                 "pathSpec=" + pathSpec +
                 ", path=\"" + path + "\"" +
                 ']';
