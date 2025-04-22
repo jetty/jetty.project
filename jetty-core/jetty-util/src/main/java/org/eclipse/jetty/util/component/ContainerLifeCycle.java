@@ -82,25 +82,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     private static final Logger LOG = LoggerFactory.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
-    private final String _name;
     private boolean _doStarted;
     private boolean _destroyed;
-
-    public ContainerLifeCycle()
-    {
-        this(null);
-    }
-
-    public ContainerLifeCycle(String name)
-    {
-        _name = Objects.requireNonNullElseGet(name, () -> "%s@%x".formatted(ContainerLifeCycle.this.getClass(), ContainerLifeCycle.this.hashCode()));
-    }
-
-    @Override
-    public String toString()
-    {
-        return super.toString() + ":" + _name;
-    }
 
     /**
      * Starts the managed lifecycle beans in the order they were added.
