@@ -182,7 +182,7 @@
     <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.38.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.41.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.0</flatten.maven.plugin.version>
@@ -196,9 +196,9 @@
     <hazelcast.version>5.5.0</hazelcast.version>
     <hibernate.search.version>7.2.3.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
-    <infinispan.docker.image.version>15.0.14.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
-    <infinispan.version>15.0.14.Final</infinispan.version>
+    <infinispan.version>15.2.1.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -299,8 +299,8 @@
     <osgi-version>3.23.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
-    <plexus-classworlds.version>2.8.0</plexus-classworlds.version>
+    <pax.url.version>2.6.16</pax.url.version>
+    <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
