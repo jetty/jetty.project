@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpMethod;
@@ -105,6 +106,11 @@ public class ResourceHandler extends Handler.Wrapper
         {
             LOG.warn("Base Resource should not be an alias");
         }
+
+        Objects.requireNonNull(_baseResource);
+
+        if (!Resources.isDirectory(_baseResource))
+            throw new IllegalStateException("Base Resource is not a directory: " + _baseResource);
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 

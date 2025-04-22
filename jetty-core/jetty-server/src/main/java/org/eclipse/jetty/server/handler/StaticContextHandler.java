@@ -13,28 +13,32 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.URI;
+import java.nio.file.Path;
 
-import org.eclipse.jetty.server.Deployable;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.Resources;
 
 /**
- * A ContextHandler that serves Static Content only.
+ * A {@link ContextHandler} that serves static content only.
  *
  * <p>
- * The Base Resource represents the static directory root.
+ * To set the directory to serve content from, set the base resource via the following methods.
  * </p>
+ * <ul>
+ *     <li>{@link #setBaseResource(Resource)}</li>
+ *     <li>{@link #setBaseResourceAsPath(Path)}</li>
+ *     <li>{@link #setBaseResourceAsString(String)}</li>
+ * </ul>
  */
-public class StaticContextHandler extends ContextHandler implements Deployable
+public class StaticContextHandler extends ContextHandler
 {
+    private final ResourceHandler resourceHandler;
+
     /**
      * Create a StaticContextHandler.
      */
     public StaticContextHandler()
     {
-        super();
+        this(null, null);
     }
 
     /**
@@ -56,49 +60,25 @@ public class StaticContextHandler extends ContextHandler implements Deployable
     public StaticContextHandler(String contextPath, ResourceHandler resourceHandler)
     {
         super();
-        setContextPath(contextPath);
-        if (resourceHandler != null)
-            setHandler(resourceHandler);
+        // don't set contextPath if not provided, leave it at "default" of "/" (to maintain default-context-path behaviors)
+        if (contextPath != null)
+            setContextPath(contextPath);
+        this.resourceHandler = resourceHandler != null ? resourceHandler : newResourceHandler();
+        setHandler(this.resourceHandler);
     }
 
-    private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
-    {
-        for (Handler handler : getHandlers())
-        {
-            if (handler instanceof ResourceHandler resourceHandler)
-            {
-                Resource baseResource = resourceHandler.getBaseResource();
-                if (baseResource != null)
-                {
-                    URI baseResourceURI = baseResource.getURI();
-                    if (baseResourceURI.equals(staticDir.getURI()))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
+    /**
+     * Override to customize a dynamically created ResourceHandler (such as from deploy).
+     *
+     * @return the customized ResourceHandler.
+     */
     protected ResourceHandler newResourceHandler()
     {
         return new ResourceHandler();
     }
 
-    @Override
-    protected void doStart() throws Exception
+    public ResourceHandler getResourceHandler()
     {
-        Resource baseResource = getBaseResource();
-        if (baseResource == null)
-            throw new IllegalStateException("Base Resource is required.");
-
-        if (!Resources.isDirectory(baseResource))
-            throw new IllegalStateException("Base Resource is not a directory: " + baseResource);
-
-        if (!isResourceHandlerAlreadyPresent(getBaseResource()))
-            setHandler(newResourceHandler());
-
-        super.doStart();
+        return resourceHandler;
     }
 }
