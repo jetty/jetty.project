@@ -28,6 +28,8 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
 import org.ops4j.pax.exam.options.extra.VMOption;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -150,10 +152,10 @@ public class TestOSGiUtil
         /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways) */
 
         TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
-        simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
-        simpleLoggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
-        simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
-        simpleLoggingPropertiesBundle.add(FragmentActivator.class);
+        simpleLoggingPropertiesBundle.addResource("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
+        simpleLoggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
+        simpleLoggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "slf4j-simple");
+        simpleLoggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); // .versionAsInProject()
 

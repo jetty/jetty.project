@@ -21,11 +21,11 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <pax.exam.version>4.13.5</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
-    <spifly.version>1.3.6</spifly.version>
-    <spifly.version>1.3.7</spifly.version>
-    <swissbox.version>1.8.3</swissbox.version>
-    <tinybundles.version>3.0.0</tinybundles.version>
+    <!--    <pax.url.version>2.6.14</pax.url.version>-->
+    <!--    <spifly.version>1.3.6</spifly.version>-->
+    <!--    <spifly.version>1.3.7</spifly.version>-->
+    <!--    <swissbox.version>1.8.3</swissbox.version>-->
+    <!--    <tinybundles.version>3.0.0</tinybundles.version>-->
   </properties>
   <dependencies>
     <dependency>

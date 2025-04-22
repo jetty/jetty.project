@@ -14,7 +14,6 @@
     <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <bundle.debug>true</bundle.debug>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
@@ -37,9 +36,9 @@
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
     <servlet.artifactId>jetty-servlet-api</servlet.artifactId>
-    <spifly.version>1.3.6</spifly.version>
-    <swissbox.version>1.8.3</swissbox.version>
-    <tinybundles.version>3.0.0</tinybundles.version>
+    <!--    <spifly.version>1.3.6</spifly.version>-->
+    <!--    <swissbox.version>1.8.3</swissbox.version>-->
+    <!--    <tinybundles.version>3.0.0</tinybundles.version>-->
     <transaction.artifactId>jakarta.transaction-api</transaction.artifactId>
     <transaction.groupId>jakarta.transaction</transaction.groupId>
   </properties>
@@ -551,7 +550,6 @@
             <systemPropertyVariables>
               <annotation.groupId>${annotation.groupId}</annotation.groupId>
               <annotation.artifactId>${annotation.artifactId}</annotation.artifactId>
-              <bundle.debug>${bundle.debug}</bundle.debug>
               <el.artifactId>${el.artifactId}</el.artifactId>
               <el.groupId>${el.groupId}</el.groupId>
               <enterprise.groupId>${enterprise.groupId}</enterprise.groupId>
