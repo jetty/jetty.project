@@ -182,6 +182,7 @@ public class JakartaClientShutdownWithServerWebAppTest
 
         // Collect the toString result of the ShutdownContainers from the dump.
         List<String> results = Arrays.stream(server.getServer().dump().split("\n"))
+            .map(line -> line.replace("@ ", " "))
             .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName())).toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.

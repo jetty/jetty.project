@@ -23,6 +23,7 @@ import javax.naming.NamingException;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -52,7 +53,7 @@ public class TestNamingEntryUtil
         @Override
         public String toString()
         {
-            return this.getClass().getName() + "@" + Long.toHexString(super.hashCode());
+            return TypeUtil.toShortName(this.getClass()) + "@" + Long.toHexString(super.hashCode());
         }
     }
 

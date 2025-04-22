@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -958,7 +959,7 @@ public class HttpConfiguration implements Dumpable
     public String toString()
     {
         return String.format("%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
-            this.getClass().getSimpleName(),
+            TypeUtil.toShortName(this.getClass()),
             hashCode(),
             _outputBufferSize,
             _outputAggregationSize,

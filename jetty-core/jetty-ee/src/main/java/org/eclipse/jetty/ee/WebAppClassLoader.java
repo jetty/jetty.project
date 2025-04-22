@@ -668,7 +668,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     @Override
     public String toString()
     {
-        return String.format("%s{%s}@%x", this.getClass().getSimpleName(), _name, hashCode());
+        return String.format("%s{%s}@%x", TypeUtil.toShortName(this.getClass()), _name, hashCode());
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
+import org.eclipse.jetty.util.TypeUtil;
 
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
@@ -132,7 +133,7 @@ public class ConfigSources implements Iterable<ConfigSource>
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append(this.getClass().getSimpleName());
+        str.append(TypeUtil.toShortName(this.getClass()));
         str.append('[');
         boolean delim = false;
         for (ConfigSource source : sources)

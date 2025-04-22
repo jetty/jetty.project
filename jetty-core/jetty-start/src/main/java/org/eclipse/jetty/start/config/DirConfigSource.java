@@ -34,6 +34,7 @@ import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.UsageException;
+import org.eclipse.jetty.util.TypeUtil;
 
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
@@ -277,6 +278,6 @@ public class DirConfigSource implements ConfigSource
     @Override
     public String toString()
     {
-        return String.format("%s[%s,%s,args.length=%d]", this.getClass().getSimpleName(), id, dir, getArgs().size());
+        return String.format("%s[%s,%s,args.length=%d]", TypeUtil.toShortName(this.getClass()), id, dir, getArgs().size());
     }
 }

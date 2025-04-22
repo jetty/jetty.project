@@ -686,7 +686,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     @Override
     public String toString()
     {
-        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(this.getClass()), hashCode());
     }
 
     public String getHostHeader()

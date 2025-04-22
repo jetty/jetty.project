@@ -20,6 +20,7 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.util.TypeUtil;
 
 @ClientEndpoint
 public class CloseEndpointConfigSocket extends WSEventTracker
@@ -40,6 +41,6 @@ public class CloseEndpointConfigSocket extends WSEventTracker
     @OnClose
     public void onClose(EndpointConfig config)
     {
-        throw new RuntimeException("Should not have worked. Invalid declaration: " + this.getClass().getName());
+        throw new RuntimeException("Should not have worked. Invalid declaration: " + TypeUtil.toShortName(this.getClass()));
     }
 }

@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * A start environment that contains the configurations that will be used to
  * build a runtime {@code org.eclipse.jetty.util.component.Environment} via
@@ -273,6 +275,6 @@ public class StartEnvironment
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s,%s,%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getName(), getClasspath(), getXmlFiles(), getProperties(), getPropertyFiles());
+        return "%s@%x{%s,%s,%s,%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), getName(), getClasspath(), getXmlFiles(), getProperties(), getPropertyFiles());
     }
 }

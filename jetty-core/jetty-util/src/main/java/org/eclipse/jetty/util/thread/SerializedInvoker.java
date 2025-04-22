@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
@@ -319,7 +320,7 @@ public class SerializedInvoker
             {
                 String className = stackTraceElement.getClassName();
                 if (!className.equals(SerializedInvoker.class.getName()) &&
-                    !className.equals(SerializedInvoker.this.getClass().getName()) &&
+                    !className.equals(TypeUtil.toShortName(this.getClass())) &&
                     !className.equals(getClass().getName()))
                     return "Queued by " + Thread.currentThread().getName() + " at " + stackTraceElement;
             }

@@ -199,9 +199,9 @@ public interface Dumpable
         {
             dumpContainer(out, indent, (Container)object, extras == 0);
         }
-        // Dump an Iterable Path because it may contain itself.
-        if (object instanceof Iterable && !(object instanceof Path))
+        else if (object instanceof Iterable && !(object instanceof Path))
         {
+            // Do not Dump a Path as an Iterable because it may contain itself.
             dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
         else if (object instanceof Map)
