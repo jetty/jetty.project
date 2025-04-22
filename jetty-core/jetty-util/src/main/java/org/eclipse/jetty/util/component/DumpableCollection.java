@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
+
+import org.eclipse.jetty.util.TypeUtil;
 
 public class DumpableCollection implements Dumpable
 {
@@ -26,7 +29,7 @@ public class DumpableCollection implements Dumpable
     public DumpableCollection(String name, Collection<?> collection)
     {
         _name = name;
-        _collection = collection;
+        _collection = Objects.requireNonNullElseGet(collection, Collections::emptyList);
     }
 
     public static DumpableCollection fromArray(String name, Object[] array)
@@ -47,8 +50,20 @@ public class DumpableCollection implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Object[] array = (_collection == null ? null : _collection.toArray());
-        Dumpable.dumpObjects(out, indent, _name + " size=" + (array == null ? 0 : array.length), array);
+        Object[] array = _collection.toArray();
+        Dumpable.dumpObjects(out, indent, this, array);
+    }
+
+    @Override
+    public String dumpSelf()
+    {
+        return _name + " size=" + _collection.size();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x[%s,%d]".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name, _collection.size());
     }
 }
 

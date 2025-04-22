@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.component;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -44,5 +45,33 @@ public class DumpableTest
         assertThat(dump, Matchers.containsString("one"));
         assertThat(dump, Matchers.containsString("two"));
         assertThat(dump, Matchers.containsString("three"));
+    }
+
+    @Test
+    public void testDumpableCollectionWithCycle() throws Exception
+    {
+        List<Object> listC = new ArrayList<>();
+        DumpableCollection c = new DumpableCollection("C", listC);
+        DumpableCollection b = new DumpableCollection("B", List.of("si", "see", "sea", c));
+        DumpableCollection a = new DumpableCollection("A", List.of(b, "be", "bee"));
+        listC.add("ay");
+        listC.add(a);
+        listC.add("ai");
+
+        String dump = a.dump();
+        assertThat(dump, Matchers.startsWith("""
+            A size=3
+            +> B size=4
+            |  +> si
+            |  +> see
+            |  +> sea
+            |  +> C size=3
+            |     +> ay
+            |     +>@ A size=3
+            |     +> ai
+            +> be
+            +> bee
+            key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited
+            JVM:"""));
     }
 }

@@ -203,17 +203,17 @@ public class ContainerLifeCycleTest
     @Test
     public void testDumpable() throws Exception
     {
-        ContainerLifeCycle a0 = new ContainerLifeCycle();
+        ContainerLifeCycle a0 = new ContainerLifeCycle("a0");
         String dump = trim(a0.dump());
         check(dump, "oejuc.ContainerLifeCycl");
 
-        ContainerLifeCycle aa0 = new ContainerLifeCycle();
+        ContainerLifeCycle aa0 = new ContainerLifeCycle("aa0");
         a0.addBean(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
         check(dump, "+? oejuc.ContainerLife");
 
-        ContainerLifeCycle aa1 = new ContainerLifeCycle();
+        ContainerLifeCycle aa1 = new ContainerLifeCycle("aa1");
         a0.addBean(aa1);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -221,7 +221,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+? oejuc.ContainerLife");
         check(dump, "");
 
-        ContainerLifeCycle aa2 = new ContainerLifeCycle();
+        ContainerLifeCycle aa2 = new ContainerLifeCycle("aa2");
         a0.addBean(aa2, false);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -247,7 +247,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= oejuc.ContainerLife");
         check(dump, "");
 
-        ContainerLifeCycle aaa0 = new ContainerLifeCycle();
+        ContainerLifeCycle aaa0 = new ContainerLifeCycle("aaa0");
         aa0.addBean(aaa0);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -256,7 +256,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= oejuc.ContainerLife");
         check(dump, "");
 
-        ContainerLifeCycle aa10 = new ContainerLifeCycle();
+        ContainerLifeCycle aa10 = new ContainerLifeCycle("aa10");
         aa1.addBean(aa10, true);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -266,12 +266,12 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   += oejuc.Container");
         check(dump, "");
 
-        final ContainerLifeCycle a1 = new ContainerLifeCycle();
-        final ContainerLifeCycle a2 = new ContainerLifeCycle();
-        final ContainerLifeCycle a3 = new ContainerLifeCycle();
-        final ContainerLifeCycle a4 = new ContainerLifeCycle();
+        final ContainerLifeCycle a1 = new ContainerLifeCycle("a1");
+        final ContainerLifeCycle a2 = new ContainerLifeCycle("a2");
+        final ContainerLifeCycle a3 = new ContainerLifeCycle("a3");
+        final ContainerLifeCycle a4 = new ContainerLifeCycle("a4");
 
-        ContainerLifeCycle aa = new ContainerLifeCycle()
+        ContainerLifeCycle aa = new ContainerLifeCycle("aa")
         {
             @Override
             public void dump(Appendable out, String indent) throws IOException
@@ -309,8 +309,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> ju.Arrays$ArrayList");
         dump = check(dump, "   |  +: oejuc.ContainerLifeCycle");
         dump = check(dump, "   |  +: oejuc.ContainerLifeCycle");
-        dump = check(dump, "   |     += oejuc.Conta");
-        dump = check(dump, "   |        +~ oejuc.C");
+        dump = check(dump, "   |     +=@ oejuc.Conta");
         dump = check(dump, "   +> ju.Arrays$ArrayList");
         dump = check(dump, "      +: oejuc.ContainerLifeCycle");
         dump = check(dump, "      +: oejuc.ContainerLifeCycle");
@@ -327,7 +326,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> ju.Arrays$ArrayList");
         dump = check(dump, "   |  +: oejuc.ContainerLifeCycle");
         dump = check(dump, "   |  +: oejuc.ContainerLifeCycle");
-        dump = check(dump, "   |     +~ oejuc.Conta");
+        dump = check(dump, "   |     +~@ oejuc.Conta");
         dump = check(dump, "   +> ju.Arrays$ArrayList");
         dump = check(dump, "      +: oejuc.ContainerLifeCycle");
         dump = check(dump, "      +: oejuc.ContainerLifeCycle");
