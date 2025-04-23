@@ -378,12 +378,12 @@
       </dependency>
       <dependency>
         <groupId>biz.aQute.bnd</groupId>
-        <artifactId>biz.aQute.bndlib</artifactId>
+        <artifactId>biz.aQute.bnd.util</artifactId>
         <version>${bndlib.version}</version>
       </dependency>
       <dependency>
         <groupId>biz.aQute.bnd</groupId>
-        <artifactId>biz.aQute.bnd.util</artifactId>
+        <artifactId>biz.aQute.bndlib</artifactId>
         <version>${bndlib.version}</version>
       </dependency>
       <dependency>
