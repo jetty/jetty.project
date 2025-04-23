@@ -59,7 +59,6 @@ public class StaticContextHandler extends ContextHandler
      */
     public StaticContextHandler(String contextPath, ResourceHandler resourceHandler)
     {
-        super();
         // don't set contextPath if not provided, leave it at "default" of "/" (to maintain default-context-path behaviors)
         if (contextPath != null)
             setContextPath(contextPath);

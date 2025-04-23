@@ -68,13 +68,14 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
     public CoreContextHandler()
     {
-        super();
+        this(null);
     }
 
     public CoreContextHandler(String contextPath)
     {
-        super();
-        setContextPath(contextPath);
+        // don't set contextPath if not provided, leave it at "default" of "/" (to maintain default-context-path behaviors)
+        if (contextPath != null)
+            setContextPath(contextPath);
     }
 
     /**
