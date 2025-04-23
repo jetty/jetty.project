@@ -759,7 +759,6 @@ public class GracefulHandlerTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            System.out.println("Xhandle");
             LOG.debug("process: request={}", request);
             request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
