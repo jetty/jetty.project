@@ -97,8 +97,9 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
             executor.shutdownNow();
             throw new IllegalArgumentException("max threads (" + maxThreads + ") cannot be less than min threads (" + minThreads + ")");
         }
-        if (executor.getQueue().remainingCapacity() != Integer.MAX_VALUE)
-            LOG.warn("A bounded thread pool queue may lead to unexpected behavior, use an unbounded queue instead.");
+        BlockingQueue<Runnable> queue = executor.getQueue();
+        if (queue.remainingCapacity() != Integer.MAX_VALUE)
+            LOG.warn("Detected thread pool queue {} bounded at {} entries, which may lead to unexpected behavior. Use an unbounded queue instead.", queue, queue.remainingCapacity());
         _executor = executor;
         _executor.setThreadFactory(this::newThread);
         _group = group;
