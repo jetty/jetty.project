@@ -99,7 +99,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         }
         BlockingQueue<Runnable> queue = executor.getQueue();
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
-            LOG.warn("Detected thread pool queue {} bounded at {} entries, which may lead to unexpected behavior. Use an unbounded queue instead.", queue, queue.remainingCapacity());
+            LOG.warn("Detected thread pool queue {} bounded at {} entries, which can lead to unexpected behavior. Use an unbounded queue instead.", queue, queue.remainingCapacity());
         _executor = executor;
         _executor.setThreadFactory(this::newThread);
         _group = group;

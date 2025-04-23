@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * <p>A thread pool with a queue of jobs to execute.</p>
  * <p>The queue of jobs should be unbounded, because critical jobs that have been submitted for
  * execution cannot be rejected due to the queue bound limit.
- * The queue may be only temporarily full due to a job submission spike.
+ * The queue might be temporarily full due to a job submission spike.
  * Furthermore, the same HTTP request may be handled by different jobs, and would be non-optimal
  * to reject a job of a request that is already being handled in favor of a job for a new
  * concurrent request that is not yet handled by the application.</p>
@@ -181,7 +181,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
-            LOG.warn("Detected thread pool queue {} bounded at {} entries, which may lead to unexpected behavior. Use an unbounded queue instead.", queue, queue.remainingCapacity());
+            LOG.warn("Detected thread pool queue {} bounded at {} entries, which can lead to unexpected behavior. Use an unbounded queue instead.", queue, queue.remainingCapacity());
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
