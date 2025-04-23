@@ -15,7 +15,6 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -254,7 +253,6 @@ public class DeployerTest extends AbstractJettyHomeTest
 
             Path staticDir = jettyBase.resolve("webapps/test");
             FS.ensureDirExists(staticDir);
-            Files.writeString(jettyBase.resolve("webapps/test.properties"), "environment=static", StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 
             String testFileContent = "hello";
             Files.writeString(staticDir.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
@@ -299,8 +297,6 @@ public class DeployerTest extends AbstractJettyHomeTest
                 Path root = zipfs.getPath("/");
                 Files.writeString(root.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
             }
-
-            // Files.writeString(jettyBase.resolve("webapps/test.properties"), "environment=static", StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))

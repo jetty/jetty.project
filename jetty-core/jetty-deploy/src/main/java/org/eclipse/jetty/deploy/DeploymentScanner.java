@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -162,6 +163,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
+    private Set<String> trackedEnvironments = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
@@ -326,6 +328,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         // This is to ensure that the Environment ClassLoader is setup properly.
         if (environment == null)
             throw new IllegalStateException("Environment [" + name + "] does not exist.");
+        trackedEnvironments.add(name);
         return new EnvironmentConfig(environment);
     }
 
@@ -347,8 +350,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * do not declare the {@link Environment} that they belong to.
      *
      * <p>
-     * Falls back to {@link Environment#getAll()} list, and returns
-     * the first name returned after sorting.
+     * Only uses environments that have been previously configured with {@link #configureEnvironment(String)}
      * </p>
      *
      * @return the default environment name.
@@ -357,8 +359,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         if (defaultEnvironmentName == null)
         {
-            return Environment.getAll().stream()
-                .map(Environment::getName)
+            return trackedEnvironments.stream()
                 .min(ENVIRONMENT_COMPARATOR)
                 .orElse(null);
         }

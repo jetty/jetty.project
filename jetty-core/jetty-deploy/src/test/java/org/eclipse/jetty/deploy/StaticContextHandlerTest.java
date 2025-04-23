@@ -81,7 +81,6 @@ public class StaticContextHandlerTest
 
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
-        Files.writeString(webapps.resolve("static.properties"), "environment=static");
 
         startServer(ds -> ds.addMonitoredDirectory(webapps));
 
@@ -108,7 +107,6 @@ public class StaticContextHandlerTest
 
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
-        Files.writeString(webapps.resolve("static.properties"), "environment=static");
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
         startServer(ds -> ds.addMonitoredDirectory(webapps));
@@ -197,7 +195,6 @@ public class StaticContextHandlerTest
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
         Files.writeString(webapps.resolve("static.properties"), """
-            environment=static
             jetty.static.dirAllowed=false
             """);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
