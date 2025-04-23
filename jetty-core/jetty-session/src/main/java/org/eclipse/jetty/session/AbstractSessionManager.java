@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -47,7 +45,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -60,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
  */
-public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager, SessionConfig.Mutable, Graceful
+public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager, SessionConfig.Mutable
 {
     static final Logger LOG = LoggerFactory.getLogger(AbstractSessionManager.class);
     private final Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
@@ -89,22 +86,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
     private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
-    private final AtomicLong _streamWrappers = new AtomicLong();
-    private final Shutdown _shutdown;
 
     public AbstractSessionManager()
     {
-        _shutdown = new Shutdown(this)
-        {
-            @Override
-            public boolean isShutdownDone()
-            {
-                long count = _streamWrappers.get();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("isShutdownDone: count {}", count);
-                return count == 0;
-            }
-        };
     }
     
     /**
@@ -1224,22 +1208,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
         }
     }
-
+    
     protected void addSessionStreamWrapper(Request request)
     {
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        return _shutdown.shutdown();
-    }
-
-    @Override
-    public boolean isShutdown()
-    {
-        return _shutdown.isShutdown();
     }
 
     @Override
@@ -1255,7 +1227,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _loader = null;
         removeBean(_sessionLifeCycleListeners);
         _sessionLifeCycleListeners = Collections.emptyList();
-        _shutdown.cancel();
     }
 
     /**
@@ -1499,22 +1470,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             _sessionManager = sessionManager;
             _request = request;
             _context = _request.getContext();
-            _streamWrappers.incrementAndGet();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            try
-            {
-                // Leave session
-                _context.run(this::doComplete, _request);
-                super.failed(x);
-            }
-            finally
-            {
-                onStreamWrapperComplete();
-            }
+            //Leave session
+            _context.run(this::doComplete, _request);
+            super.failed(x);
         }
 
         @Override
@@ -1531,23 +1494,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         @Override
         public void succeeded()
         {
-            try
-            {
-                // Leave session
-                _context.run(this::doComplete, _request);
-                super.succeeded();
-            }
-            finally
-            {
-                onStreamWrapperComplete();
-            }
-        }
-
-        private void onStreamWrapperComplete()
-        {
-            _streamWrappers.decrementAndGet();
-            if (isShutdown())
-                _shutdown.check();
+            // Leave session
+            _context.run(this::doComplete, _request);
+            super.succeeded();
         }
 
         private void doCommit()
