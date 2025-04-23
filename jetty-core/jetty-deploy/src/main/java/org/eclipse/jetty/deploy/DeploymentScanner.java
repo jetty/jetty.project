@@ -1422,6 +1422,19 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             this.mainPath = mainPath;
         }
 
+        private Path filterPath(List<Path> paths, String type, Predicate<Path> predicate)
+        {
+            List<Path> hits = paths.stream()
+                .filter(predicate)
+                .toList();
+            if (hits.size() == 1)
+                return hits.get(0);
+            else if (hits.size() > 1)
+                throw new IllegalStateException("More than 1 " + type + " for deployable " + asStringList(hits));
+
+            return null;
+        }
+
         private Path calcMainPath()
         {
             List<Path> livePaths = paths
@@ -1436,35 +1449,50 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return null;
 
             // XML always win.
-            List<Path> xmls = livePaths.stream()
-                .filter(FileID::isXml)
-                .toList();
-            if (xmls.size() == 1)
-                return xmls.get(0);
-            else if (xmls.size() > 1)
-                throw new IllegalStateException("More than 1 XML for deployable " + asStringList(xmls));
+            Path xml = filterPath(livePaths, "XML", FileID::isXml);
+            if (xml != null)
+                return xml;
 
             // WAR files are next.
-            List<Path> wars = livePaths.stream()
-                .filter(FileID::isWebArchive)
-                .toList();
-            if (wars.size() == 1)
-                return wars.get(0);
-            else if (wars.size() > 1)
-                throw new IllegalStateException("More than 1 WAR for deployable " + asStringList(wars));
+            Path war = filterPath(livePaths, "WAR", FileID::isWebArchive);
+            if (war != null)
+                return war;
+
+            // JAR files are next.
+            Path jar = filterPath(livePaths, "JAR", FileID::isJavaArchive);
+            if (jar != null)
+                return jar;
+
+            // ZIP files are next.
+            Path zip = filterPath(livePaths, "ZIP", (p -> FileID.isExtension(p, "zip")));
+            if (zip != null)
+                return zip;
 
             // Directories next.
-            List<Path> dirs = livePaths.stream()
-                .filter(Files::isDirectory)
-                .toList();
-            if (dirs.size() == 1)
-                return dirs.get(0);
-            if (dirs.size() > 1)
-                throw new IllegalStateException("More than 1 Directory for deployable " + asStringList(dirs));
+            Path dir = filterPath(livePaths, "Directory", PathsApp::isDeployableDirectory);
+            if (dir != null)
+                return dir;
 
-            LOG.warn("Unable to determine main deployable for {}", this);
+            // Finally properties files
+            Path propertyFile = filterPath(livePaths, "Property File", (p -> FileID.isExtension(p, "properties")));
+            if (propertyFile != null)
+                return propertyFile;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to determine main deployable for {}", this);
 
             return null;
+        }
+
+        private static boolean isDeployableDirectory(Path p)
+        {
+            if (p == null)
+                return false;
+            if (Files.isDirectory(p))
+            {
+                return !FileID.isExtension(p, "d"); // ignore nominated dirs
+            }
+            return false;
         }
 
         public String getName()

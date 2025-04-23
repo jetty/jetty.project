@@ -17,6 +17,7 @@ import java.io.File;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Interface that can be implemented by a {@link ContextHandler}
@@ -33,6 +34,14 @@ public interface Deployable
      * @see ContextHandler#setTempDirectory(File)
      */
     String TEMP_DIR = "jetty.deploy.tempDir";
+    /**
+     * <p>Attribute key name: Base Resource for context.</p>
+     *
+     * <p>Value can be a {@link java.net.URI}, {@code String}, {@link java.nio.file.Path}, or {@link org.eclipse.jetty.util.resource.Resource}</p>
+     *
+     * @see ContextHandler#setBaseResource(Resource)
+     */
+    String BASE_RESOURCE = "baseResource";
     /**
      * <p>Attribute key name: The Configuration Classes for EE based deployments.</p>
      *

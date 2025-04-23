@@ -225,8 +225,20 @@ public class DeployerTest extends AbstractJettyHomeTest
         }
     }
 
+    private void unpack(Path srcPath, Path destPath) throws IOException
+    {
+        Map<String, String> env = new HashMap<>();
+
+        URI jarUri = URIUtil.uriJarPrefix(srcPath.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(root, destPath);
+        }
+    }
+
     @Test
-    public void testStaticDeployOnly() throws Exception
+    public void testStaticDeployDirectory() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -260,15 +272,46 @@ public class DeployerTest extends AbstractJettyHomeTest
         }
     }
 
-    private void unpack(Path srcPath, Path destPath) throws IOException
+    @Test
+    public void testStaticDeployJar() throws Exception
     {
-        Map<String, String> env = new HashMap<>();
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
 
-        URI jarUri = URIUtil.uriJarPrefix(srcPath.toUri(), "!/");
-        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,static-deploy")))
         {
-            Path root = zipfs.getPath("/");
-            IO.copyDir(root, destPath);
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path outputJar = jettyBase.resolve("webapps/test.jar");
+            Map<String, String> env = new HashMap<>();
+            env.put("create", "true");
+
+            String testFileContent = "hello";
+            URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+            // Use ZipFS so that we can create paths that are just "/"
+            try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+            {
+                Path root = zipfs.getPath("/");
+                Files.writeString(root.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
+            }
+
+            // Files.writeString(jettyBase.resolve("webapps/test.properties"), "environment=static", StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(), is(testFileContent));
+            }
         }
     }
 }

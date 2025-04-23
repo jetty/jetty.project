@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.net.URI;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.server.Deployable;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 
 /**
  * A {@link ContextHandler} that serves static content only.
@@ -31,6 +36,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class StaticContextHandler extends ContextHandler
 {
+    public static final String DIR_ALLOWED_ATTRIBUTE = "jetty.static.dirAllowed";
     private final ResourceHandler resourceHandler;
 
     /**
@@ -79,5 +85,52 @@ public class StaticContextHandler extends ContextHandler
     public ResourceHandler getResourceHandler()
     {
         return resourceHandler;
+    }
+
+    @Override
+    protected void initializeDefault(String keyName, Object value)
+    {
+        switch (keyName)
+        {
+            case DIR_ALLOWED_ATTRIBUTE ->
+            {
+                if (value instanceof String str)
+                    getResourceHandler().setDirAllowed(Boolean.parseBoolean(str));
+                else if (value instanceof Boolean bool)
+                    getResourceHandler().setDirAllowed(bool);
+            }
+            case Deployable.BASE_RESOURCE ->
+            {
+                ResourceFactory resourceFactory = ResourceFactory.of(this);
+                Resource resource = null;
+                if (value instanceof Path path)
+                    resource = resourceFactory.newResource(path);
+                if (value instanceof String str)
+                    resource = resourceFactory.newResource(str);
+                if (value instanceof URI uri)
+                    resource = resourceFactory.newResource(uri);
+                if (value instanceof Resource res)
+                    resource = res;
+
+                if (resource != null)
+                {
+                    if (!Resources.isDirectory(resource))
+                    {
+                        URI uri = resource.getURI();
+                        if (!"jar".equalsIgnoreCase(uri.getScheme()) && FileID.isArchive(uri))
+                        {
+                            // open archive as resource, to serve contents.
+                            setBaseResource(resourceFactory.newJarFileResource(uri));
+                        }
+                    }
+                    else
+                    {
+                        // directories are ok
+                        setBaseResource(resource);
+                    }
+                    // anything else isn't a base resource that this class cares about
+                }
+            }
+        }
     }
 }
