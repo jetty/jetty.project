@@ -170,7 +170,7 @@
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
-    <bundle.debug>true</bundle.debug>
+    <bundle.debug>false</bundle.debug>
     <checkstyle.version>10.23.0</checkstyle.version>
     <commons-codec.version>1.18.0</commons-codec.version>
     <commons-io.version>2.19.0</commons-io.version>

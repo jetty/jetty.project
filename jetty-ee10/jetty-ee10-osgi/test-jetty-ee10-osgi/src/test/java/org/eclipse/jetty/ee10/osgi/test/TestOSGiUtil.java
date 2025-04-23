@@ -269,7 +269,7 @@ public class TestOSGiUtil
                 prevBundle.getHeaders().get("Bundle-Version") : "";
             if (prevBundle != null)
             {
-                LOGGER.atWarn().log(err);
+                LOGGER.warn(err);
             }
             // we can't fail for this anymore as inject is adding automatically by pax exam framework
             // but with lower version

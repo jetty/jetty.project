@@ -33,8 +33,6 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <pax.exam.LEVEL>WARN</pax.exam.LEVEL>
     <pax.exam.debug.port>-1</pax.exam.debug.port>
-    <pax.exam.version>4.13.5</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
     <servlet.artifactId>jetty-servlet-api</servlet.artifactId>
     <!--    <spifly.version>1.3.6</spifly.version>-->
     <!--    <swissbox.version>1.8.3</swissbox.version>-->
@@ -43,6 +41,16 @@
     <transaction.groupId>jakarta.transaction</transaction.groupId>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>biz.aQute.bnd</groupId>
+      <artifactId>biz.aQute.bnd.util</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.osgi</groupId>
+          <artifactId>org.osgi.core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
