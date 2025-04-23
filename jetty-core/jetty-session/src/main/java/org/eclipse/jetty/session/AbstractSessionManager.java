@@ -89,7 +89,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
     private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
-    private final AtomicLong _requests = new AtomicLong();
+    private final AtomicLong _streamWrappers = new AtomicLong();
     private final Shutdown _shutdown;
 
     public AbstractSessionManager()
@@ -99,7 +99,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             @Override
             public boolean isShutdownDone()
             {
-                long count = _requests.get();
+                long count = _streamWrappers.get();
                 if (LOG.isDebugEnabled())
                     LOG.debug("isShutdownDone: count {}", count);
                 return count == 0;
@@ -1227,42 +1227,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     protected void addSessionStreamWrapper(Request request)
     {
-        _requests.incrementAndGet();
-        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request)
-        {
-            @Override
-            public void failed(Throwable x)
-            {
-                try
-                {
-                    super.failed(x);
-                }
-                finally
-                {
-                    complete();
-                }
-            }
-
-            @Override
-            public void succeeded()
-            {
-                try
-                {
-                    super.succeeded();
-                }
-                finally
-                {
-                    complete();
-                }
-            }
-
-            private void complete()
-            {
-                _requests.decrementAndGet();
-                if (isShutdown())
-                    _shutdown.check();
-            }
-        });
+        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
     }
 
     @Override
@@ -1534,14 +1499,22 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             _sessionManager = sessionManager;
             _request = request;
             _context = _request.getContext();
+            _streamWrappers.incrementAndGet();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            //Leave session
-            _context.run(this::doComplete, _request);
-            super.failed(x);
+            try
+            {
+                // Leave session
+                _context.run(this::doComplete, _request);
+                super.failed(x);
+            }
+            finally
+            {
+                onStreamWrapperComplete();
+            }
         }
 
         @Override
@@ -1558,9 +1531,23 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         @Override
         public void succeeded()
         {
-            // Leave session
-            _context.run(this::doComplete, _request);
-            super.succeeded();
+            try
+            {
+                // Leave session
+                _context.run(this::doComplete, _request);
+                super.succeeded();
+            }
+            finally
+            {
+                onStreamWrapperComplete();
+            }
+        }
+
+        private void onStreamWrapperComplete()
+        {
+            _streamWrappers.decrementAndGet();
+            if (isShutdown())
+                _shutdown.check();
         }
 
         private void doCommit()
