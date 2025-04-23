@@ -30,8 +30,8 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 
@@ -76,11 +76,11 @@ public class TestJettyOSGiBootWithBundle
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         TinyBundle bundle = TinyBundles.bundle();
-        bundle.add(SomeCustomBean.class);
-        bundle.set(Constants.BUNDLE_SYMBOLICNAME, TEST_JETTY_HOME_BUNDLE);
+        bundle.addClass(SomeCustomBean.class);
+        bundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, TEST_JETTY_HOME_BUNDLE);
         File etcFolder = new File("src/test/config/etc");
-        bundle.add("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
-        bundle.add("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
+        bundle.addResource("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
+        bundle.addResource("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
         options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);

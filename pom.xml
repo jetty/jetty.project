@@ -165,7 +165,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asm.version>9.8</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <bndlib.version>7.1.0</bndlib.version>
+    <bndlib.version>6.4.1</bndlib.version>
     <bouncycastle.version>1.80</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
