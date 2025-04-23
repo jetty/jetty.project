@@ -15,8 +15,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
-
 import java.util.function.Function;
+
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
