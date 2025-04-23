@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -288,7 +287,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     @Override
     public String toString()
     {
-        return String.format("%s@%x", TypeUtil.toShortName(this.getClass()), hashCode());
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
     protected static class SecureRequest extends Request.Wrapper

@@ -41,7 +41,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,7 +81,7 @@ public class ServletRequestLogTest
         @Override
         public String toString()
         {
-            return TypeUtil.toShortName(this.getClass());
+            return this.getClass().getSimpleName();
         }
     }
 

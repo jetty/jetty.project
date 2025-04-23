@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,7 +181,7 @@ public class RegexPathSpec extends AbstractPathSpec
                             if (forbiddenReason != null)
                             {
                                 throw new IllegalArgumentException(String.format("%s does not support \\%c (%s) for \"%s\"",
-                                    TypeUtil.toShortName(this.getClass()), c, forbiddenReason, declaration));
+                                    this.getClass().getSimpleName(), c, forbiddenReason, declaration));
                             }
                             switch (c)
                             {

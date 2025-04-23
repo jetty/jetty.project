@@ -259,7 +259,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         public String toString()
         {
               return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,comment=%s,attributes=%s]",
-                TypeUtil.toShortName(this.getClass()), this.hashCode(), getName(), getDomain(), getPath(),
+                this.getClass().getName(), this.hashCode(), getName(), getDomain(), getPath(),
                getMaxAge(), isSecure(), isHttpOnly(),  getComment(), getSessionCookieAttributes().toString());
         }
 

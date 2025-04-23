@@ -20,7 +20,6 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,7 +204,7 @@ public abstract class NamingEntry
     {
         String metadata = toStringMetaData();
         if (metadata == null)
-            return String.format("%s@%x{name=%s}", TypeUtil.toShortName(this.getClass()), hashCode(), getJndiName());
-        return String.format("%s@%x{name=%s,%s}", TypeUtil.toShortName(this.getClass()), hashCode(), getJndiName(), metadata);
+            return String.format("%s@%x{name=%s}", this.getClass().getName(), hashCode(), getJndiName());
+        return String.format("%s@%x{name=%s,%s}", this.getClass().getName(), hashCode(), getJndiName(), metadata);
     }
 }

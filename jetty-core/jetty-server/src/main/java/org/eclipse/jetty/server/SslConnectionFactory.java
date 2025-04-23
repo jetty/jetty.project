@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -184,6 +183,6 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s->%s}", TypeUtil.toShortName(this.getClass()), hashCode(), getProtocol(), _nextProtocol);
+        return String.format("%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
     }
 }

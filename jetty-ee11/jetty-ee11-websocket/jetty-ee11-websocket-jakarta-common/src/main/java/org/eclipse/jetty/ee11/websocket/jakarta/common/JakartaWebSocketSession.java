@@ -36,7 +36,6 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -572,7 +571,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s,%s]", TypeUtil.toShortName(this.getClass()), this.hashCode(),
+        return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
             coreSession.getBehavior(), frameHandler);
     }
 }

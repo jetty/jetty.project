@@ -22,7 +22,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,7 +94,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}", TypeUtil.toShortName(this.getClass()), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
+        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
     @Override

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee11.test.jmx;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -27,7 +26,7 @@ public class CommonComponent extends AbstractLifeCycle
 
     public CommonComponent()
     {
-        LOG.info("Created {}", TypeUtil.toShortName(this.getClass()));
+        LOG.info("Created {}", this.getClass().getName());
     }
 
     private String name = "i am common";

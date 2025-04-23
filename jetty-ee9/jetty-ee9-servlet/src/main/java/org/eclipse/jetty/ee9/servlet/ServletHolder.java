@@ -52,7 +52,6 @@ import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -1335,7 +1334,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         @Override
         public String toString()
         {
-            return String.format("%s:%s", TypeUtil.toShortName(this.getClass()), _wrappedServlet.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedServlet.toString());
         }
     }
 

@@ -17,7 +17,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
@@ -38,7 +37,7 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAut
 
     public AbstractCloseEndpoint()
     {
-        this.log = LoggerFactory.getLogger(TypeUtil.toShortName(this.getClass()));
+        this.log = LoggerFactory.getLogger(this.getClass().getName());
     }
 
     @Override

@@ -131,7 +131,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append(TypeUtil.toShortName(this.getClass())).append("[decorators=");
+        str.append(this.getClass().getName()).append("[decorators=");
         str.append(Integer.toString(decorators.size()));
         str.append("]");
         return str.toString();

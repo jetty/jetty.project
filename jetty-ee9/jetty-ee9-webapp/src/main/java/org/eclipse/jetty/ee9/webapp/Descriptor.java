@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.IOResources;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
@@ -77,6 +76,6 @@ public abstract class Descriptor
     @Override
     public String toString()
     {
-        return TypeUtil.toShortName(this.getClass()) + "(" + getURI() + ")";
+        return this.getClass().getSimpleName() + "(" + getURI() + ")";
     }
 }

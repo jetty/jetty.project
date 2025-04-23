@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +73,6 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return String.format("%s@%x(factory=%s, resource=%s, matchSuffix=%s, contentType=%s)", TypeUtil.toShortName(this.getClass()), this.hashCode(), _factory, _resource, _matchSuffix, _contentType);
+        return String.format("%s@%x(factory=%s, resource=%s, matchSuffix=%s, contentType=%s)", this.getClass().getName(), this.hashCode(), _factory, _resource, _matchSuffix, _contentType);
     }
 }

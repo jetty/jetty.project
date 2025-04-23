@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Pool;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -657,7 +656,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), hashCode(), getStatistics());
+            return String.format("%s[%s]", super.toString(), getStatistics());
         }
 
         private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,

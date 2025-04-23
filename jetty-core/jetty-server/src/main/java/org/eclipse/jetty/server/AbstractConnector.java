@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -778,7 +777,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public String toString()
     {
         return String.format("%s@%x{%s, %s}",
-            _name == null ? TypeUtil.toShortName(getClass()) : _name,
+            _name == null ? getClass().getSimpleName() : _name,
             hashCode(),
             getDefaultProtocol(), getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
     }

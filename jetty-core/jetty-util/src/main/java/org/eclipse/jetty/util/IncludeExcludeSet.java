@@ -259,7 +259,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}", TypeUtil.toShortName(this.getClass()), hashCode(),
+        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}", this.getClass().getSimpleName(), hashCode(),
             _includes,
             _includePredicate == _includes ? "SELF" : _includePredicate,
             _excludes,

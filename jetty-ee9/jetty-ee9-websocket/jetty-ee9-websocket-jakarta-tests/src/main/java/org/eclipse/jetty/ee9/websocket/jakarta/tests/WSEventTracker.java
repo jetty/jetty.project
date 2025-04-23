@@ -26,7 +26,6 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +85,7 @@ public abstract class WSEventTracker
 
     public WSEventTracker(String id)
     {
-        logger = LoggerFactory.getLogger(TypeUtil.toShortName(this.getClass()) + "." + id);
+        logger = LoggerFactory.getLogger(this.getClass().getName() + "." + id);
         logger.debug("init");
     }
 

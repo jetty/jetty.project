@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -316,7 +315,7 @@ public class ShutdownMonitor
     @Override
     public String toString()
     {
-        return String.format("%s[port=%d,alive=%b]", TypeUtil.toShortName(this.getClass()), getPort(), isAlive());
+        return String.format("%s[port=%d,alive=%b]", this.getClass().getName(), getPort(), isAlive());
     }
 
     /**

@@ -1911,7 +1911,7 @@ public class XmlConfiguration
             @Override
             public String toString()
             {
-                return "%s@%x%s%s".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _names, _arguments);
+                return "%s@%x%s%s".formatted(this.getClass().getName(), hashCode(), _names, _arguments);
             }
         }
     }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -184,6 +183,6 @@ public class AbstractExtension implements Extension
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", TypeUtil.toShortName(this.getClass()), config.getParameterizedName());
+        return String.format("%s[%s]", this.getClass().getSimpleName(), config.getParameterizedName());
     }
 }

@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.slf4j.Logger;
@@ -257,7 +256,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     public String dumpSelf()
     {
         return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
-            TypeUtil.toShortName(this.getClass()), hashCode(),
+            this.getClass().getSimpleName(), hashCode(),
             getPolicy().getBehavior(),
             getIdleTimeout().toMillis());
     }

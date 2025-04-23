@@ -18,7 +18,6 @@ import java.util.EventListener;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -181,7 +180,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
         @Override
         public String toString()
         {
-            return String.format("%s:%s", TypeUtil.toShortName(this.getClass()), _listener.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _listener.toString());
         }
     }
 }

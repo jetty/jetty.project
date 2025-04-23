@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
 
     public AbstractCloseEndpoint()
     {
-        this.log = LoggerFactory.getLogger(TypeUtil.toShortName(this.getClass()));
+        this.log = LoggerFactory.getLogger(this.getClass().getName());
     }
 
     @Override

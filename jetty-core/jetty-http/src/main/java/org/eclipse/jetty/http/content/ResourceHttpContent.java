@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -116,7 +115,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,ct=%s}", TypeUtil.toShortName(this.getClass()), hashCode(), _resource, _contentType);
+        return String.format("%s@%x{r=%s,ct=%s}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType);
     }
 
     @Override

@@ -21,7 +21,6 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -820,7 +819,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public String toString()
     {
         return String.format("%s@%x[evict=%d,removeUnloadable=%b,saveOnCreate=%b,saveOnInactiveEvict=%b]",
-            TypeUtil.toShortName(this.getClass()), this.hashCode(), _evictionPolicy,
+            this.getClass().getName(), this.hashCode(), _evictionPolicy,
             _removeUnloadableSessions, _saveOnCreate, _saveOnInactiveEviction);
     }
 }

@@ -37,7 +37,6 @@ import org.eclipse.jetty.ee11.websocket.jakarta.common.messages.DecodedTextStrea
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -575,7 +574,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     public String toString()
     {
         StringBuilder ret = new StringBuilder();
-        ret.append(TypeUtil.toShortName(this.getClass()));
+        ret.append(this.getClass().getSimpleName());
         ret.append('@').append(Integer.toHexString(this.hashCode()));
         ret.append("[endpoint=");
         if (endpointInstance == null)

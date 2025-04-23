@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * Debug Handler.
@@ -48,7 +47,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private OutputStream _out;
     private PrintStream _print;
     private boolean _showHeaders;
-    private final String _attr = String.format("__R%s@%x", TypeUtil.toShortName(this.getClass()), System.identityHashCode(this));
+    private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
 
     /**
      * Callback class used to manage possibly async handling by downstream handlers.

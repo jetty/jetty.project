@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ThreadIdPool;
@@ -1592,7 +1591,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock l = _channelState.lock())
         {
-            return String.format("%s@%x{%s}", TypeUtil.toShortName(this.getClass()), hashCode(), stateString());
+            return String.format("%s@%x{%s}", this.getClass().getSimpleName(), hashCode(), stateString());
         }
     }
 

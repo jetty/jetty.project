@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -600,7 +599,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             String held = lock.isHeldByCurrentThread() ? "" : "?";
             return String.format("%s@%x[%s:handling=%s,handled=%s,send=%s,completed=%s,request=%s]",
-                TypeUtil.toShortName(this.getClass()),
+                this.getClass().getSimpleName(),
                 hashCode(),
                 held,
                 _handling,
@@ -1491,7 +1490,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), getStatus(), getRequest());
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getStatus(), getRequest());
         }
     }
 

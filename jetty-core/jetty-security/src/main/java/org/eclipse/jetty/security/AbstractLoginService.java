@@ -20,7 +20,6 @@ import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
@@ -79,7 +78,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), hashCode(), _name);
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), _name);
     }
 
     @Override

@@ -84,13 +84,13 @@ public interface ContentDecoder
                 return true;
             if (!(obj instanceof Factory that))
                 return false;
-            return Objects.equals(encoding, that.encoding);
+            return encoding.equals(that.encoding);
         }
 
         @Override
         public int hashCode()
         {
-            return encoding == null ? 0 : encoding.hashCode();
+            return encoding.hashCode();
         }
 
         /**

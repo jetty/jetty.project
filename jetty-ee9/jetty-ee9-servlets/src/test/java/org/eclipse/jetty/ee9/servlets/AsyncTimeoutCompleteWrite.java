@@ -22,7 +22,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.util.TypeUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
@@ -70,7 +69,7 @@ public abstract class AsyncTimeoutCompleteWrite extends AbstractFileContentServl
     {
         assertThat("'filename' request attribute shouldn't be declared", request.getAttribute("filename"), nullValue());
 
-        AsyncContext ctx = (AsyncContext)request.getAttribute(TypeUtil.toShortName(this.getClass()));
+        AsyncContext ctx = (AsyncContext)request.getAttribute(this.getClass().getName());
         assertThat("AsyncContext (shouldn't be in request attribute)", ctx, nullValue());
 
         if (originalReqResp)
@@ -89,7 +88,7 @@ public abstract class AsyncTimeoutCompleteWrite extends AbstractFileContentServl
         ctx.setTimeout(20);
 
         // Setup indication of a redispatch (which this scenario shouldn't do)
-        request.setAttribute(TypeUtil.toShortName(this.getClass()), ctx);
+        request.setAttribute(this.getClass().getName(), ctx);
     }
 
     @Override

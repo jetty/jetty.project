@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -43,7 +42,7 @@ public class ClientDemo
         public void onWebSocketOpen(Session session)
         {
             if (verbose)
-                System.err.printf("%s#onWebSocketOpen %s %s\n", TypeUtil.toShortName(this.getClass()), session, session.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketOpen %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
         }
 
         public void send(byte op, byte[] data, int maxFragmentLength)

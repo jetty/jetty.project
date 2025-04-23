@@ -28,7 +28,6 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.start.Utils;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * Configuration Source representing the Command Line arguments.
@@ -224,6 +223,6 @@ public class CommandLineConfigSource implements ConfigSource
     @Override
     public String toString()
     {
-        return String.format("%s[%s,args.length=%d]", TypeUtil.toShortName(this.getClass()), getId(), getArgs().size());
+        return String.format("%s[%s,args.length=%d]", this.getClass().getSimpleName(), getId(), getArgs().size());
     }
 }

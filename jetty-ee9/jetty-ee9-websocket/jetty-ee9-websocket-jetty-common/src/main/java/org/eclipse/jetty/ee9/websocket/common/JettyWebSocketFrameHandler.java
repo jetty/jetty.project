@@ -25,7 +25,6 @@ import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -315,7 +314,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public String toString()
     {
-        return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), this.hashCode(), endpointInstance.getClass().getName());
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
     }
 
     private void acceptMessage(Frame frame, Callback callback)

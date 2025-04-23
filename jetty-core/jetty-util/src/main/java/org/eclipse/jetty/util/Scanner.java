@@ -697,7 +697,7 @@ public class Scanner extends ContainerLifeCycle
         _scanningStarted = true;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{}.startup()", TypeUtil.toShortName(this.getClass()));
+            LOG.debug("{}.startup()", this.getClass().getSimpleName());
 
         if (isReportExistingFilesOnStartup())
         {

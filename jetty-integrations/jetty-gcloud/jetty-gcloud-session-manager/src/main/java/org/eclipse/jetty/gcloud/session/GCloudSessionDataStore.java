@@ -39,7 +39,6 @@ import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.session.UnwriteableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -334,7 +333,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         @Override
         public String toString()
         {
-            return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", TypeUtil.toShortName(this.getClass()),
+            return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", this.getClass().getName(),
                 _kind, _accessed, _attributes, _contextPath, _cookieSetTime, _createTime, _expiry, _id, _lastAccessed, _lastNode, _maxInactive, _vhost);
         }
     }

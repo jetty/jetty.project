@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
@@ -4154,7 +4153,7 @@ public class HttpParserTest
 
         public String toString()
         {
-            return "%s[eol=%s, eolChunk=%s, c=%s".formatted(TypeUtil.toShortName(this.getClass()), isViolation() ? "LF" : "CRLF", isChunkViolation() ? "LF" : "CRLF", compliance.getName());
+            return "%s[eol=%s, eolChunk=%s, c=%s".formatted(this.getClass().getSimpleName(), isViolation() ? "LF" : "CRLF", isChunkViolation() ? "LF" : "CRLF", compliance.getName());
         }
     }
 }

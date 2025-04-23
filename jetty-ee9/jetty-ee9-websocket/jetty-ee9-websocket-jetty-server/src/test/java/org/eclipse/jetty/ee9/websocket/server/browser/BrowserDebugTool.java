@@ -35,7 +35,6 @@ import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContai
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -110,7 +109,7 @@ public class BrowserDebugTool
 
         server.setHandler(context.getCoreContextHandler());
 
-        LOG.info("{} setup on port {}", TypeUtil.toShortName(this.getClass()), port);
+        LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }
 
     private Resource findStaticResources()

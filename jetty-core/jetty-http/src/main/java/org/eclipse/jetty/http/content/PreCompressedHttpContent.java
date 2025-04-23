@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class PreCompressedHttpContent implements HttpContent
@@ -112,7 +111,7 @@ public class PreCompressedHttpContent implements HttpContent
     public String toString()
     {
         return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
-            TypeUtil.toShortName(this.getClass()), hashCode(),
+            this.getClass().getSimpleName(), hashCode(),
             _format,
             _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
             0L, 0L,

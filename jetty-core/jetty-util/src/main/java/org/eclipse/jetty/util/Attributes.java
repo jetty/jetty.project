@@ -454,7 +454,7 @@ public interface Attributes
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent, String.format("%s@%x", TypeUtil.toShortName(this.getClass()), hashCode()), map());
+            Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
         }
 
         @Override

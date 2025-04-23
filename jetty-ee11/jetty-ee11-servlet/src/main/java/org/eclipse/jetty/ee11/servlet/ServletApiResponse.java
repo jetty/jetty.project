@@ -45,7 +45,6 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * The Jetty implementation of the ee11 {@link HttpServletResponse} object.
@@ -570,7 +569,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), getResponse(), getServletResponseInfo());
+        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getResponse(), getServletResponseInfo());
     }
 
     static class HttpCookieFacade implements HttpCookie
