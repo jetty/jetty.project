@@ -27,16 +27,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A BlockingQueue backed by a circular array capable or growing.
+ * A BlockingQueue backed by a circular array capable of growing.
  * <p>
  * This queue is uses a variant of the two lock queue algorithm to provide an efficient queue or list backed by a growable circular array.
  * </p>
  * <p>
- * Unlike {@link java.util.concurrent.ArrayBlockingQueue}, this class is able to grow and provides a blocking put call.
+ * Unlike {@link java.util.concurrent.ArrayBlockingQueue}, this class is able to grow and provides a blocking {@link #put(Object)} call.
  * </p>
  * <p>
- * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated), which defaults to
- * {@link Integer#MAX_VALUE}.
+ * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated),
+ * which defaults to {@link Integer#MAX_VALUE}.
  * </p>
  *
  * @param <E> The element type
@@ -127,17 +127,14 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _maxCapacity = maxCapacity;
     }
 
-
     /* Collection methods */
 
     @Override
     public void clear()
     {
-
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -167,7 +164,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         return listIterator();
     }
-
 
     /* Queue methods */
 
@@ -205,8 +201,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     public E poll(long time, TimeUnit unit) throws InterruptedException
     {
         long nanos = unit.toNanos(time);
-        E e = null;
-
         _headLock.lockInterruptibly(); // Size cannot shrink
         try
         {
@@ -226,18 +220,19 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             }
 
             int head = _indexes[HEAD_OFFSET];
-            e = (E)_elements[head];
+            E e = (E)_elements[head];
             _elements[head] = null;
             _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
+
+            return e;
         }
         finally
         {
             _headLock.unlock();
         }
-        return e;
     }
 
     @SuppressWarnings("unchecked")
@@ -275,11 +270,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public E remove(int index)
     {
-
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -332,11 +325,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public boolean remove(Object o)
     {
-
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -382,7 +373,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return e;
     }
 
-
     /* BlockingQueue methods */
 
     @Override
@@ -390,7 +380,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         Objects.requireNonNull(e);
 
-        boolean notEmpty = false;
+        boolean notEmpty;
         _tailLock.lock(); // Size cannot grow... only shrink
         try
         {
@@ -465,7 +455,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -535,8 +524,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public E take() throws InterruptedException
     {
-        E e = null;
-
         _headLock.lockInterruptibly(); // Size cannot shrink
         try
         {
@@ -554,32 +541,34 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             }
 
             final int head = _indexes[HEAD_OFFSET];
-            e = (E)_elements[head];
+            E e = (E)_elements[head];
             _elements[head] = null;
             _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
+
+            return e;
         }
         finally
         {
             _headLock.unlock();
         }
-        return e;
     }
 
     @Override
     public int remainingCapacity()
     {
-
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
-                return getCapacity() - size();
+                int maxCapacity = getMaxCapacity();
+                if (maxCapacity == Integer.MAX_VALUE)
+                    return Integer.MAX_VALUE;
+                return maxCapacity - size();
             }
             finally
             {
@@ -652,14 +641,12 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return elements;
     }
 
-
     /* List methods */
 
     @SuppressWarnings("unchecked")
     @Override
     public E get(int index)
     {
-
         _tailLock.lock();
         try
         {
@@ -694,7 +681,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -723,11 +709,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public ListIterator<E> listIterator(int index)
     {
-
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {
@@ -794,7 +778,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {

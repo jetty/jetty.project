@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool} wrapper around {@link ThreadPoolExecutor}.
@@ -38,12 +40,14 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 @ManagedObject("A thread pool")
 public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor, VirtualThreads.Configurable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ExecutorThreadPool.class);
+
     private final ThreadPoolExecutor _executor;
     private final ThreadPoolBudget _budget;
     private final ThreadGroup _group;
     private String _name = "etp" + hashCode();
     private int _minThreads;
-    private int _reservedThreads = -1;
+    private int _reservedThreads;
     private TryExecutor _tryExecutor = TryExecutor.NO_TRY;
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon;
@@ -93,6 +97,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
             executor.shutdownNow();
             throw new IllegalArgumentException("max threads (" + maxThreads + ") cannot be less than min threads (" + minThreads + ")");
         }
+        if (executor.getQueue().remainingCapacity() != Integer.MAX_VALUE)
+            LOG.warn("A bounded thread pool queue may lead to unexpected behavior, use an unbounded queue instead.");
         _executor = executor;
         _executor.setThreadFactory(this::newThread);
         _group = group;
@@ -102,7 +108,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     }
 
     /**
-     * @return the name of the this thread pool
+     * @return the name of this thread pool
      */
     @ManagedAttribute("name of this thread pool")
     public String getName()
@@ -379,13 +385,13 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                     public void dump(Appendable out, String indent) throws IOException
                     {
                         StringBuilder b = new StringBuilder();
-                        b.append(String.valueOf(thread.getId()))
+                        b.append(thread.getId())
                             .append(" ")
                             .append(thread.getName())
-                            .append(" p=").append(String.valueOf(thread.getPriority()))
+                            .append(" p=").append(thread.getPriority())
                             .append(" ")
                             .append(known)
-                            .append(thread.getState().toString());
+                            .append(thread.getState());
 
                         if (isDetailedDump())
                         {
