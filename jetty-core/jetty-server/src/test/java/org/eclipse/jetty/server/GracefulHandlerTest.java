@@ -676,6 +676,25 @@ public class GracefulHandlerTest
         // The socket should have been closed
         assertThat(client0 + " not closed", in.read(), is(-1));
         assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+
+        // Restart the server to make sure handling resumes normally
+        server.start();
+
+        client0 = newSocketToServer("client0");
+        output0 = client0.getOutputStream();
+
+        // Send one normal request to server
+        output0.write(rawRequest.formatted(1).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Verify response
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        assertThat(response.getContent(), is("(Read:10) (Content-Length:10)"));
+
+        client0.close();
     }
 
     /**
