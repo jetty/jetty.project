@@ -14,7 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -34,7 +34,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulHandler.class);
 
-    private final LongAdder _requests = new LongAdder();
+    private final AtomicLong _requests = new AtomicLong();
     private final Shutdown _shutdown;
 
     public GracefulHandler()
@@ -61,7 +61,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     @ManagedAttribute("number of requests being currently handled")
     public long getCurrentRequestCount()
     {
-        return _requests.sum();
+        return _requests.longValue();
     }
 
     /**
@@ -116,6 +116,14 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     }
 
     @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        _shutdown.cancel();
+        _requests.set(0L);
+    }
+
+    @Override
     public CompletableFuture<Void> shutdown()
     {
         if (LOG.isDebugEnabled())
@@ -133,13 +141,13 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             super(callback, 1);
             this.request = request;
             this.response = response;
-            _requests.increment();
+            _requests.incrementAndGet();
         }
 
         @Override
         public void completed()
         {
-            _requests.decrement();
+            _requests.decrementAndGet();
             if (isShutdown())
                 _shutdown.check();
         }

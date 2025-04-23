@@ -23,9 +23,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -58,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
  */
-public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager, SessionConfig.Mutable
+public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager, SessionConfig.Mutable, Graceful
 {
     static final Logger LOG = LoggerFactory.getLogger(AbstractSessionManager.class);
     private final Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
@@ -87,9 +89,22 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
     private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
+    private final AtomicLong _inFlightRequestCounter = new AtomicLong();
+    private final Shutdown _shutdown;
 
     public AbstractSessionManager()
     {
+        _shutdown = new Shutdown(this)
+        {
+            @Override
+            public boolean isShutdownDone()
+            {
+                long count = _inFlightRequestCounter.get();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("isShutdownDone: count {}", count);
+                return count == 0;
+            }
+        };
     }
     
     /**
@@ -1210,11 +1225,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
     }
 
-    private final AtomicInteger inFlightRequestCounter = new AtomicInteger();
-
     protected void addSessionStreamWrapper(Request request)
     {
-        inFlightRequestCounter.incrementAndGet();
+        _inFlightRequestCounter.incrementAndGet();
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request)
         {
             @Override
@@ -1226,7 +1239,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 }
                 finally
                 {
-                    inFlightRequestCounter.decrementAndGet();
+                    complete();
                 }
             }
 
@@ -1239,19 +1252,34 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 }
                 finally
                 {
-                    inFlightRequestCounter.decrementAndGet();
+                    complete();
                 }
+            }
+
+            private void complete()
+            {
+                _inFlightRequestCounter.decrementAndGet();
+                if (isShutdown())
+                    _shutdown.check();
             }
         });
     }
 
     @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return _shutdown.shutdown();
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return _shutdown.isShutdown();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
-        // SUPER HACKY!!
-        while (inFlightRequestCounter.get() != 0)
-            Thread.onSpinWait();
-
         // Destroy sessions before destroying servlets/filters see JETTY-1266
         shutdownSessions();
         _sessionCache.stop();
@@ -1262,6 +1290,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _loader = null;
         removeBean(_sessionLifeCycleListeners);
         _sessionLifeCycleListeners = Collections.emptyList();
+        _shutdown.cancel();
     }
 
     /**
