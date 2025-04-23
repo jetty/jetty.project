@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
@@ -108,9 +109,22 @@ import org.slf4j.LoggerFactory;
  *   </dd>
  *   <dt>installAllowedResourceAliasChecker</dt>
  *   <dd>
- *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
- *     does not already exist for this baseResource.
+ *     <em>Deprecated</em> use {@code allowAliases} instead.
+ *   </dd>
+ *   <dt>allowAliases</dt>
+ *   <dd>
+ *     Allow resource aliases via the {@link AllowedResourceAliasChecker}
+ *     on the context (if one does not already exist) for this baseResource.
+ *     This is especially useful if you have a FileSystem that is not
+ *     case sensitive. (Such as on Windows with FAT or NTFS)
  *     Defaults to {@code true}.
+ *   </dd>
+ *   <dt>allowSymlinks</dt>
+ *   <dd>
+ *     Allow resources that are symlinks pointing to other locations via
+ *     the {@link SymlinkAllowedResourceAliasChecker} on the context (if one
+ *     does not already exist) for this baseResource.
+ *     Defaults to {@code false}.
  *   </dd>
  *   <dt>maxCachedFiles</dt>
  *   <dd>
@@ -151,6 +165,10 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     Use {@code true} to redirect welcome files, otherwise they are forwarded.
  *     Defaults to {@code false}.
+ *   </dd>
+ *   <dt>resourceBase</dt>
+ *   <dd>
+ *     <em>Deprecated</em> use {@code baseResource} instead.
  *   </dd>
  *   <dt>stylesheet</dt>
  *   <dd>
@@ -214,7 +232,7 @@ public class ResourceServlet extends HttpServlet
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
 
-        if (getInitBoolean("installAllowedResourceAliasChecker", true))
+        if (getInitBoolean("allowAliases", true, "installAllowedResourceAliasChecker"))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
@@ -229,6 +247,23 @@ public class ResourceServlet extends HttpServlet
             }
             if (addAliasCheck)
                 contextHandler.addAliasCheck(new AllowedResourceAliasChecker(contextHandler, baseResource));
+        }
+
+        if (getInitBoolean("allowSymlinks", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof SymlinkAllowedResourceAliasChecker aliasChecker &&
+                    Objects.equals(baseResource, aliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                contextHandler.addAliasCheck(new SymlinkAllowedResourceAliasChecker(contextHandler, baseResource));
         }
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
@@ -419,6 +454,18 @@ public class ResourceServlet extends HttpServlet
         String value = getInitParameter(name);
         if (value == null || value.isEmpty())
             return null;
+        return (value.startsWith("t") ||
+            value.startsWith("T") ||
+            value.startsWith("y") ||
+            value.startsWith("Y") ||
+            value.startsWith("1"));
+    }
+
+    private Boolean getInitBoolean(String name, boolean dft, String... deprecated)
+    {
+        String value = getInitParameter(name, deprecated);
+        if (value == null || value.isEmpty())
+            return dft;
         return (value.startsWith("t") ||
             value.startsWith("T") ||
             value.startsWith("y") ||

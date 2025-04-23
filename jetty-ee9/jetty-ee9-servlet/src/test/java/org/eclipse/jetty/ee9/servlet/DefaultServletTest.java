@@ -76,6 +76,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -1296,7 +1297,7 @@ public class DefaultServletTest
     }
 
     @Test
-    public void testSymlinkAllowedResourceAliasChecker() throws Exception
+    public void testSymlinkContextBaseAllowedResourceAliasChecker() throws Exception
     {
         Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
         FS.ensureDirExists(docRoot);
@@ -1366,6 +1367,53 @@ public class DefaultServletTest
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Foo Bar"));
         }
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    public void testSymlinkDefaultServletAllowedResourceAliasChecker() throws Exception
+    {
+        Path base = workDir.getEmptyPathDir();
+
+        // The default context base resource is empty.
+        Path docRoot = base.resolve("docroot");
+        FS.ensureDirExists(docRoot);
+
+        // A different base, unique to the DefaultServlet, is created.
+        Path docBase = base.resolve("docbase");
+        FS.ensureDirExists(docBase);
+        FS.ensureDirExists(docBase.resolve("lib"));
+        Path link = docBase.resolve("lib/ui-1.js");
+
+        Path other = base.resolve("other/lib");
+        FS.ensureEmpty(other);
+        Path uiJs = Files.writeString(base.resolve("other/lib/ui.js"), "THE UI.js", UTF_8);
+
+        Files.createSymbolicLink(link, uiJs);
+
+        startServer((context) ->
+        {
+            context.setBaseResource(ResourceFactory.of(context).newResource(docRoot));
+
+            ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+            defholder.setInitParameter("baseResource", docBase.toUri().toASCIIString());
+            defholder.setInitParameter("pathInfoOnly", "true");
+            defholder.setInitParameter("gzip", "false");
+            defholder.setInitParameter("allowSymlinks", "true");
+        });
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            GET /context/alt/lib/ui-1.js HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("THE UI.js"));
     }
 
     public static Stream<Arguments> welcomeServletScenarios()
