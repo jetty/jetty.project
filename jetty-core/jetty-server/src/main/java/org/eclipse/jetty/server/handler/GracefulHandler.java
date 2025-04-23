@@ -120,7 +120,6 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     {
         super.doStop();
         _shutdown.cancel();
-        _requests.set(0L);
     }
 
     @Override
