@@ -382,6 +382,11 @@
         <version>${bndlib.version}</version>
       </dependency>
       <dependency>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>biz.aQute.bnd.util</artifactId>
+        <version>${bndlib.version}</version>
+      </dependency>
+      <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
         <version>${logback.version}</version>
