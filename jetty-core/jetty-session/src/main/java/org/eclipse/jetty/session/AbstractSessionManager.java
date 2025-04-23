@@ -89,7 +89,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     private int _refreshCookieAge;
     private boolean _checkingRemoteSessionIdEncoding;
     private List<Session.LifeCycleListener> _sessionLifeCycleListeners = Collections.emptyList();
-    private final AtomicLong _inFlightRequestCounter = new AtomicLong();
+    private final AtomicLong _requests = new AtomicLong();
     private final Shutdown _shutdown;
 
     public AbstractSessionManager()
@@ -99,7 +99,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             @Override
             public boolean isShutdownDone()
             {
-                long count = _inFlightRequestCounter.get();
+                long count = _requests.get();
                 if (LOG.isDebugEnabled())
                     LOG.debug("isShutdownDone: count {}", count);
                 return count == 0;
@@ -1227,7 +1227,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     protected void addSessionStreamWrapper(Request request)
     {
-        _inFlightRequestCounter.incrementAndGet();
+        _requests.incrementAndGet();
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request)
         {
             @Override
@@ -1258,7 +1258,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
             private void complete()
             {
-                _inFlightRequestCounter.decrementAndGet();
+                _requests.decrementAndGet();
                 if (isShutdown())
                     _shutdown.check();
             }
