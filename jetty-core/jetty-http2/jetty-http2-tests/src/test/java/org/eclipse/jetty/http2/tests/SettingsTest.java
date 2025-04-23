@@ -432,7 +432,8 @@ public class SettingsTest extends AbstractTest
         });
 
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener() {
+        Session clientSession = newClientSession(new Session.Listener()
+        {
             @Override
             public void onSettings(Session session, SettingsFrame settingsFrame)
             {
@@ -477,7 +478,8 @@ public class SettingsTest extends AbstractTest
         http2Client.setMaxRequestHeadersSize(maxHeadersSize / 2);
 
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener() {
+        Session clientSession = newClientSession(new Session.Listener()
+        {
             @Override
             public void onSettings(Session session, SettingsFrame settingsFrame)
             {
