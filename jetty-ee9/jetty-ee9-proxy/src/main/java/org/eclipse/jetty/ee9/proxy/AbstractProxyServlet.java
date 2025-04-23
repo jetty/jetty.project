@@ -258,6 +258,16 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
      * </tr>
      * <tr>
+     * <td>maxRequestHeadersSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The maximum request headers size, see {@link HttpClient#setMaxRequestHeadersSize(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>maxResponseHeadersSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The maximum response headers size, see {@link HttpClient#setMaxResponseHeadersSize(int)}</td>
+     * </tr>
+     * <tr>
      * <td>selectors</td>
      * <td>cores / 2</td>
      * <td>The number of NIO selectors used by {@link HttpClient}</td>
@@ -324,6 +334,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         value = config.getInitParameter("responseBufferSize");
         if (value != null)
             client.setResponseBufferSize(Integer.parseInt(value));
+
+        value = getInitParameter("maxRequestHeadersSize");
+        if (value != null)
+            client.setMaxRequestHeadersSize(Integer.parseInt(value));
+
+        value = config.getInitParameter("maxResponseHeadersSize");
+        if (value != null)
+            client.setMaxResponseHeadersSize(Integer.parseInt(value));
 
         try
         {
