@@ -127,10 +127,11 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     }
 
     @Override
-    protected void doStop() throws Exception
+    protected void doStart() throws Exception
     {
-        super.doStop();
+        // Reset _shutdown in doStart instead of doStop so that the isShutdown() == true state is preserved while stopped.
         _shutdown.cancel();
+        super.doStart();
     }
 
     @Override
