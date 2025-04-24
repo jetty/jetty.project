@@ -44,6 +44,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A thread pool with a queue of jobs to execute.</p>
+ * <p>The queue of jobs should be unbounded, because critical jobs that have been submitted for
+ * execution cannot be rejected due to the queue bound limit.
+ * The queue might be temporarily full due to a job submission spike.
+ * Furthermore, the same HTTP request may be handled by different jobs, and would be non-optimal
+ * to reject a job of a request that is already being handled in favor of a job for a new
+ * concurrent request that is not yet handled by the application.</p>
  * <p>Jetty components that need threads (such as network acceptors and selector) may lease threads
  * from this thread pool using a {@link ThreadPoolBudget}; these threads are "active" from the point
  * of view of the thread pool, but not available to run <em>transient</em> jobs such as processing
@@ -174,6 +180,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             int capacity = Math.max(_minThreads, 8) * 1024;
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
+        if (queue.remainingCapacity() != Integer.MAX_VALUE)
+            LOG.warn("Detected thread pool queue {} bounded at {} entries, which can lead to unexpected behavior. Use an unbounded queue instead.", queue.getClass(), queue.remainingCapacity());
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
@@ -596,11 +604,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public int getMaxReservedThreads()
     {
         TryExecutor tryExecutor = _tryExecutor;
-        if (tryExecutor instanceof ReservedThreadExecutor)
-        {
-            ReservedThreadExecutor reservedThreadExecutor = (ReservedThreadExecutor)tryExecutor;
-            return reservedThreadExecutor.getCapacity();
-        }
+        if (tryExecutor instanceof ReservedThreadExecutor reserved)
+            return reserved.getCapacity();
         return 0;
     }
 
@@ -612,11 +617,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public int getAvailableReservedThreads()
     {
         TryExecutor tryExecutor = _tryExecutor;
-        if (tryExecutor instanceof ReservedThreadExecutor)
-        {
-            ReservedThreadExecutor reservedThreadExecutor = (ReservedThreadExecutor)tryExecutor;
-            return reservedThreadExecutor.getAvailable();
-        }
+        if (tryExecutor instanceof ReservedThreadExecutor reserved)
+            return reserved.getAvailable();
         return 0;
     }
 
@@ -1099,7 +1101,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 buf.append(thread.getState()).append(":").append(System.lineSeparator());
                 for (StackTraceElement element : thread.getStackTrace())
                 {
-                    buf.append("  at ").append(element.toString()).append(System.lineSeparator());
+                    buf.append("  at ").append(element).append(System.lineSeparator());
                 }
                 return buf.toString();
             }
