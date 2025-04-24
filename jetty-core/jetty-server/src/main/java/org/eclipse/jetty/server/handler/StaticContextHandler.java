@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 
 /**
- * A {@link ContextHandler} that serves static content only.
+ * A {@link ContextHandler} that only serves static content from any source supported by {@link ResourceHandler}.
  *
  * <p>
  * To set the directory to serve content from, set the base resource via the following methods.
@@ -33,6 +33,10 @@ import org.eclipse.jetty.util.resource.Resources;
  *     <li>{@link #setBaseResourceAsPath(Path)}</li>
  *     <li>{@link #setBaseResourceAsString(String)}</li>
  * </ul>
+ *
+ * <p>
+ *     This is basically just a {@link ResourceHandler} with a context-path.
+ * </p>
  */
 public class StaticContextHandler extends ContextHandler
 {

@@ -38,13 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A classloader isolated Core WebApp.
+ * A Core WebApp.
  *
  * <p>
  * The Base Resource represents the metadata base that defines this {@code CoreContextHandler}.
  * </p>
  * <p>
- * The metadata base can be a directory on disk, or a non-traditional {@code war} file with the following contents.
+ * The metadata base can be a directory on disk, or an archive file (supporting {@code jar}, {@code zip}, and {@code war}) with the following contents.
  * </p>
  * <ul>
  *     <li>{@code <metadata>/lib/*.jar} - the jar files for the classloader of this webapp</li>
@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  *     <li>{@code <metadata>/static/} - the static content to serve for this webapp</li>
  * </ul>
  * <p>
- *     Note: if using the non-traditional {@code war} as your metadata base, the
+ *     Note: if using the archive file as your metadata base, the
  *     existence of {@code <metadata>/lib/*.jar} files means the archive will be
  *     unpacked into the temp directory defined by this core webapp.
  * </p>
