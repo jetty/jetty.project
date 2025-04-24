@@ -19,8 +19,9 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +29,9 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionServer.class);
 
-    public HTTP3SessionServer(ServerHTTP3Session session, Session.Server.Listener listener)
+    public HTTP3SessionServer(Scheduler scheduler, ServerHTTP3Session session, Session.Server.Listener listener)
     {
-        super(session, listener);
+        super(scheduler, session, listener);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    protected HTTP3StreamServer newHTTP3Stream(QuicStreamEndPoint endPoint, boolean local)
+    protected HTTP3StreamServer newHTTP3Stream(StreamEndPoint endPoint, boolean local)
     {
         return new HTTP3StreamServer(this, endPoint, local);
     }
@@ -63,12 +64,11 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     {
         if (frame.getMetaData().isRequest())
         {
-            QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            HTTP3StreamServer stream = (HTTP3StreamServer)getOrCreateStream(endPoint);
+            StreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+            HTTP3StreamServer stream = (HTTP3StreamServer)createStream(endPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("received request {} on {}", frame, stream);
-            if (stream != null)
-                stream.onRequest(frame);
+            stream.onRequest(frame);
         }
         else
         {
@@ -92,9 +92,9 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    public void writeMessageFrame(long streamId, Frame frame, Callback callback)
+    public void writeMessageFrame(StreamEndPoint streamEndPoint, Frame frame, Callback callback)
     {
-        getProtocolSession().writeMessageFrame(streamId, frame, callback);
+        getProtocolSession().writeMessageFrame(streamEndPoint, frame, callback);
     }
 
     @Override

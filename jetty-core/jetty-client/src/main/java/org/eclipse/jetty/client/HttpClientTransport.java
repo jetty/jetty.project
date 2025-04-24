@@ -33,9 +33,6 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface HttpClientTransport extends ClientConnectionFactory, HttpClient.Aware, Invocable
 {
-    String HTTP_DESTINATION_CONTEXT_KEY = "org.eclipse.jetty.client.destination";
-    String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.connection.promise";
-
     /**
      * Sets the {@link HttpClient} instance on this transport.
      * <p>

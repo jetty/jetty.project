@@ -73,21 +73,19 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         return new Socks4ProxyClientConnectionFactory(connectionFactory);
     }
 
-    public static class Socks4ProxyClientConnectionFactory implements ClientConnectionFactory
+    public static class Socks4ProxyClientConnectionFactory extends ClientConnectionFactory.Wrapper
     {
-        private final ClientConnectionFactory connectionFactory;
-
         public Socks4ProxyClientConnectionFactory(ClientConnectionFactory connectionFactory)
         {
-            this.connectionFactory = connectionFactory;
+            super(connectionFactory);
         }
 
         @Override
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Destination destination = (Destination)context.get(Destination.CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            Socks4ProxyConnection connection = new Socks4ProxyConnection(endPoint, executor, connectionFactory, context);
+            Socks4ProxyConnection connection = new Socks4ProxyConnection(endPoint, executor, getWrapped(), context);
             return customize(connection, context);
         }
     }
@@ -121,7 +119,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
          */
         private void writeSocks4Connect()
         {
-            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Destination destination = (Destination)context.get(Destination.CONTEXT_KEY);
             Origin.Address address = destination.getOrigin().getAddress();
             String host = address.getHost();
             short port = (short)address.getPort();
@@ -167,7 +165,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 LOG.debug("SOCKS4 failure", x);
             getEndPoint().close(x);
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }
 
@@ -223,14 +221,14 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         {
             try
             {
-                Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                Destination destination = (Destination)context.get(Destination.CONTEXT_KEY);
                 Origin.Address address = destination.getOrigin().getAddress();
                 // Don't want to do DNS resolution here.
                 InetSocketAddress inet = InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
                 context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, inet);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = destination.getHttpClient().newSslClientConnectionFactory(null, connectionFactory);
+                    connectionFactory = destination.getHttpClient().getClientConnector().newSslClientConnectionFactory(null, connectionFactory);
                 org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())

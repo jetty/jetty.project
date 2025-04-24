@@ -150,7 +150,7 @@ public class LifeCycleListenerTest
         }
     }
 
-    private static class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
+    private static class TestListener implements LifeCycle.Listener
     {
         @SuppressWarnings("unused")
         private boolean failure = false;

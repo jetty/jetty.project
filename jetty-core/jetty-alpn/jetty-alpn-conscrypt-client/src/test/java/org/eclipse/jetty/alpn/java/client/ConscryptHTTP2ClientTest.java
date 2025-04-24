@@ -70,7 +70,7 @@ public class ConscryptHTTP2ClientTest
             MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);
-            session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()
+            session.newStream(headersFrame, new Promise<>() {}, new Stream.Listener()
             {
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)

@@ -34,17 +34,22 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -66,7 +71,7 @@ public class Http3AsyncIOServletTest
     public WorkDir workDir;
     private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server server;
-    private QuicServerConnector connector;
+    private QuicheServerConnector connector;
     private HTTP3Client client;
 
     private void start(HttpServlet httpServlet) throws Exception
@@ -75,14 +80,16 @@ public class Http3AsyncIOServletTest
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         serverSslContextFactory.setKeyStorePassword("storepwd");
-        ServerQuicConfiguration serverQuicConfiguration = new ServerQuicConfiguration(serverSslContextFactory, workDir.getEmptyPathDir());
-        connector = new QuicServerConnector(server, serverQuicConfiguration, new HTTP3ServerConnectionFactory(serverQuicConfiguration, httpConfig));
+        QuicheServerQuicConfiguration serverQuicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+        connector = new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfiguration, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector);
         ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/");
         servletContextHandler.addServlet(new ServletHolder(httpServlet), "/*");
         server.start();
 
-        client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(true), null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        client = new HTTP3Client(clientQuicConfig);
+        client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
         client.start();
     }
 
@@ -136,16 +143,16 @@ public class Http3AsyncIOServletTest
         });
 
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session.Client session = client.connect(address, new Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getClientQuicConfiguration()), address, new Client.Listener() {}, p));
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
-        Stream stream = session.newRequest(frame, null).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, null, p));
 
         // Wait for the server to be in ASYNC_WAIT.
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Thread.sleep(500);
 
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception());
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception(), Promise.Invocable.noop());
 
         if (notify)
             // Wait for the reset to be notified to the async context listener.

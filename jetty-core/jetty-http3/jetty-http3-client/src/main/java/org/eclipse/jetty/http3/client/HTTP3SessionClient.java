@@ -13,21 +13,24 @@
 
 package org.eclipse.jetty.http3.client;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
+import org.eclipse.jetty.http3.client.internal.HTTP3StreamClient;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.quic.common.ProtocolStreamListener;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +38,11 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionClient.class);
 
-    private final Promise<Client> promise;
+    private final Promise.Invocable<Client> promise;
 
-    public HTTP3SessionClient(ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
+    public HTTP3SessionClient(Scheduler scheduler, ClientHTTP3Session session, Client.Listener listener, Promise.Invocable<Client> promise)
     {
-        super(session, listener);
+        super(scheduler, session, listener);
         this.promise = promise;
     }
 
@@ -58,22 +61,24 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    protected HTTP3StreamClient newHTTP3Stream(QuicStreamEndPoint endPoint, boolean local)
+    protected HTTP3StreamClient newHTTP3Stream(StreamEndPoint endPoint, boolean local)
     {
         return new HTTP3StreamClient(this, endPoint, local);
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+    protected void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isResponse())
         {
-            QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            HTTP3StreamClient stream = (HTTP3StreamClient)getOrCreateStream(endPoint);
+            StreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+            HTTP3StreamClient stream = (HTTP3StreamClient)getStream(endPoint.getStream().getId());
             if (LOG.isDebugEnabled())
                 LOG.debug("received response {} on {}", frame, stream);
             if (stream != null)
                 stream.onResponse(frame);
+            else
+                throw new HTTP3Exception.StreamException(HTTP3ErrorCode.REQUEST_REJECTED_ERROR, "missing_http3_stream");
         }
         else
         {
@@ -91,49 +96,53 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Client.Listener listener)
+    public void newRequest(HeadersFrame frame, Stream.Client.Listener listener, Promise.Invocable<Stream> promise)
     {
-        long streamId = getProtocolSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
-        return newRequest(streamId, frame, listener);
-    }
+        var quicSession = getProtocolSession().getSession();
+        long streamId = quicSession.newStreamId(true);
+        var quicStream = quicSession.newStream(streamId, null);
 
-    private CompletableFuture<Stream> newRequest(long streamId, HeadersFrame frame, Stream.Client.Listener listener)
-    {
         if (LOG.isDebugEnabled())
-            LOG.debug("new request stream #{} with {} on {}", streamId, frame, this);
+            LOG.debug("new request {} with {} on {}", quicStream, frame, this);
 
         ProtocolSession session = getProtocolSession();
-        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::openProtocolEndPoint);
+        StreamEndPoint endPoint = session.createStreamEndPoint(quicStream, session::openStreamEndPoint);
+        ((AbstractStream)quicStream).setListener(new ProtocolStreamListener(() -> endPoint));
 
-        Promise.Completable<Stream> promise = new Promise.Completable<>();
-        promise.whenComplete((s, x) ->
+        HTTP3StreamClient stream;
+        try
         {
-            if (x != null)
-                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-        });
-        HTTP3StreamClient stream = (HTTP3StreamClient)createStream(endPoint, promise::failed);
-        if (stream == null)
-            return promise;
+            stream = (HTTP3StreamClient)createStream(endPoint);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not create stream for {} on {}", endPoint, this, x);
+            Promise.Invocable<StreamEndPoint> p = Promise.Invocable.from(promise.getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+            endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true, p);
+            return;
+        }
 
         stream.setListener(listener);
         stream.onOpen();
 
-        stream.writeFrame(frame)
-            .whenComplete((r, x) ->
+        stream.writeFrame(frame, new Promise.Invocable.Abstract<>(promise.getInvocationType())
+        {
+            @Override
+            public void succeeded(Stream result)
             {
-                if (x == null)
-                {
-                    stream.updateClose(frame.isLast(), true);
-                    promise.succeeded(stream);
-                }
-                else
-                {
-                    removeStream(stream, x);
-                    promise.failed(x);
-                }
-            });
+                stream.updateClose(frame.isLast(), true);
+                promise.succeeded(result);
+            }
 
-        return promise;
+            @Override
+            public void failed(Throwable x)
+            {
+                stream.updateClose(frame.isLast(), true);
+                Promise.Invocable<Stream> p = Promise.Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+                stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
+            }
+        });
     }
 
     @Override
@@ -143,9 +152,9 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public void writeMessageFrame(long streamId, Frame frame, Callback callback)
+    public void writeMessageFrame(StreamEndPoint streamEndPoint, Frame frame, Callback callback)
     {
-        getProtocolSession().writeMessageFrame(streamId, frame, callback);
+        getProtocolSession().writeMessageFrame(streamEndPoint, frame, callback);
     }
 
     @Override

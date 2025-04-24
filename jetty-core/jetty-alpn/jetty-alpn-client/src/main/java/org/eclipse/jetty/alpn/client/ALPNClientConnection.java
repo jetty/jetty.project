@@ -19,6 +19,7 @@ import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnection;
 
@@ -40,5 +41,12 @@ public class ALPNClientConnection extends NegotiatingClientConnection
     public void selected(String protocol)
     {
         completed(protocol);
+    }
+
+    @Override
+    protected void completed(String protocol)
+    {
+        getContext().compute(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY, (k, v) -> protocol);
+        super.completed(protocol);
     }
 }

@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
@@ -57,13 +56,13 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
 
     private Destination destination()
     {
-        return (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+        return (Destination)context.get(Destination.CONTEXT_KEY);
     }
 
     @SuppressWarnings("unchecked")
     private Promise<Connection> httpConnectionPromise()
     {
-        return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        return (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
     }
 
     @Override

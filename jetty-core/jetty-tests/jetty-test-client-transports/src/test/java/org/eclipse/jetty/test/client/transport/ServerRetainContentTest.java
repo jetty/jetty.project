@@ -46,7 +46,7 @@ public class ServerRetainContentTest extends AbstractTest
         start(transportType, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CompletableTask<Void> task = new CompletableTask<>()
                 {

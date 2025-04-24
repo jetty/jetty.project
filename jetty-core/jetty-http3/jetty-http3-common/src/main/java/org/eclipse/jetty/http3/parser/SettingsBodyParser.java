@@ -19,7 +19,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.VarLenInt;
+import org.eclipse.jetty.quic.util.VarLenInt;
 
 public class SettingsBodyParser extends BodyParser
 {
@@ -36,7 +36,6 @@ public class SettingsBodyParser extends BodyParser
 
     private void reset()
     {
-        varLenInt.reset();
         state = State.INIT;
         length = 0;
         key = 0;
@@ -44,13 +43,13 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer, boolean last)
     {
         onSettings(Map.of());
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         while (buffer.hasRemaining())
         {
@@ -65,10 +64,10 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case KEY:
                 {
-                    if (varLenInt.decode(buffer, v ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         key = v;
-                        length -= VarLenInt.length(v);
+                        length -= l;
                     }))
                     {
                         if (settings.containsKey(key))
@@ -96,10 +95,10 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case VALUE:
                 {
-                    if (varLenInt.decode(buffer, v ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         settings.put(key, v);
-                        length -= VarLenInt.length(v);
+                        length -= l;
                     }))
                     {
                         if (length > 0)

@@ -26,14 +26,13 @@ public class QuicheConnectionId
     private static final Logger LOG = LoggerFactory.getLogger(QuicheConnectionId.class);
     private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
 
-    private final byte[] dcid;
+    private final byte[] connectionId;
     private final int hashCode;
-    private String string;
 
-    private QuicheConnectionId(byte[] dcid)
+    private QuicheConnectionId(byte[] connectionId)
     {
-        this.dcid = Objects.requireNonNull(dcid);
-        this.hashCode = Arrays.hashCode(dcid);
+        this.connectionId = Objects.requireNonNull(connectionId);
+        this.hashCode = Arrays.hashCode(connectionId);
     }
 
     /**
@@ -41,7 +40,7 @@ public class QuicheConnectionId
      */
     public static QuicheConnectionId fromPacket(ByteBuffer packet)
     {
-        byte[] bytes = QuicheConnection.QUICHE_BINDING.fromPacket(packet);
+        byte[] bytes = Quiche.probeConnectionId(packet);
         if (bytes != null && bytes.length == 0)
             throw new IllegalStateException();
         QuicheConnectionId connectionId = bytes == null ? null : new QuicheConnectionId(bytes);
@@ -51,14 +50,14 @@ public class QuicheConnectionId
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(Object obj)
     {
-        if (this == o)
+        if (this == obj)
             return true;
-        if (o == null || getClass() != o.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
-        QuicheConnectionId that = (QuicheConnectionId)o;
-        return Arrays.equals(dcid, that.dcid);
+        QuicheConnectionId that = (QuicheConnectionId)obj;
+        return Arrays.equals(connectionId, that.connectionId);
     }
 
     @Override
@@ -70,11 +69,8 @@ public class QuicheConnectionId
     @Override
     public String toString()
     {
-        if (string == null)
-            string = bytesToHex(dcid);
-        return string;
+        return bytesToHex(connectionId);
     }
-
 
     private static String bytesToHex(byte[] bytes)
     {

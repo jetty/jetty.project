@@ -14,10 +14,12 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -34,7 +36,8 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulHandler.class);
 
-    private final LongAdder _requests = new LongAdder();
+    private final AtomicLong _requests = new AtomicLong();
+    private final AtomicLong _streamWrappers = new AtomicLong();
     private final Shutdown _shutdown;
 
     public GracefulHandler()
@@ -50,10 +53,11 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             @Override
             public boolean isShutdownDone()
             {
-                long count = getCurrentRequestCount();
+                long requestCount = getCurrentRequestCount();
+                long streamWrapperCount = getCurrentStreamWrapperCount();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("isShutdownDone: count {}", count);
-                return count == 0;
+                    LOG.debug("isShutdownDone: requestCount {} streamWrapperCount {}", requestCount, streamWrapperCount);
+                return requestCount == 0L && streamWrapperCount == 0L;
             }
         };
     }
@@ -61,7 +65,13 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     @ManagedAttribute("number of requests being currently handled")
     public long getCurrentRequestCount()
     {
-        return _requests.sum();
+        return _requests.longValue();
+    }
+
+    @ManagedAttribute("number of stream wrappers currently pending")
+    public long getCurrentStreamWrapperCount()
+    {
+        return _streamWrappers.longValue();
     }
 
     /**
@@ -79,6 +89,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
+        request = new ShutdownTrackingRequest(request);
         Handler handler = getHandler();
         if (handler == null || !isStarted())
         {
@@ -116,6 +127,14 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        // Reset _shutdown in doStart instead of doStop so that the isShutdown() == true state is preserved while stopped.
+        _shutdown.cancel();
+        super.doStart();
+    }
+
+    @Override
     public CompletableFuture<Void> shutdown()
     {
         if (LOG.isDebugEnabled())
@@ -133,15 +152,68 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             super(callback, 1);
             this.request = request;
             this.response = response;
-            _requests.increment();
+            _requests.incrementAndGet();
         }
 
         @Override
         public void completed()
         {
-            _requests.decrement();
+            _requests.decrementAndGet();
             if (isShutdown())
                 _shutdown.check();
+        }
+    }
+
+    private class ShutdownTrackingRequest extends Request.Wrapper
+    {
+        public ShutdownTrackingRequest(Request wrapped)
+        {
+            super(wrapped);
+        }
+
+        @Override
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
+        {
+            super.addHttpStreamWrapper(httpStream ->
+            {
+                HttpStream wrapped = wrapper.apply(httpStream);
+                _streamWrappers.incrementAndGet();
+                return new HttpStream.Wrapper(wrapped)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        try
+                        {
+                            super.succeeded();
+                        }
+                        finally
+                        {
+                            onCompletion(null);
+                        }
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        try
+                        {
+                            super.failed(x);
+                        }
+                        finally
+                        {
+                            onCompletion(x);
+                        }
+                    }
+
+                    private void onCompletion(Throwable x)
+                    {
+                        _streamWrappers.decrementAndGet();
+                        if (isShutdown())
+                            _shutdown.check();
+                    }
+                };
+            });
         }
     }
 }

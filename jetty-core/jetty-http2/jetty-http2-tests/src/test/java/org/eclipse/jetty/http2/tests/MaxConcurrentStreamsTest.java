@@ -57,9 +57,9 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
@@ -198,9 +199,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
         {
             @Override
-            protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            protected void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
             {
-                super.connect(address, factory, new Wrapper(listener)
+                super.connect(transport, sslContextFactory, address, new SessionListenerWrapper(listener)
                 {
                     @Override
                     public void onSettings(Session session, SettingsFrame frame)
@@ -697,11 +698,11 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         }
     }
 
-    private static class Wrapper implements Session.Listener
+    private static class SessionListenerWrapper implements Session.Listener
     {
         private final Session.Listener listener;
 
-        private Wrapper(Session.Listener listener)
+        private SessionListenerWrapper(Session.Listener listener)
         {
             this.listener = listener;
         }

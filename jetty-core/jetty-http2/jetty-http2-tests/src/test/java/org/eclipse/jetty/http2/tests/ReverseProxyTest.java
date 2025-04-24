@@ -137,7 +137,7 @@ public class ReverseProxyTest
         Session session = newClient(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -178,7 +178,7 @@ public class ReverseProxyTest
         Session session = newClient(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)

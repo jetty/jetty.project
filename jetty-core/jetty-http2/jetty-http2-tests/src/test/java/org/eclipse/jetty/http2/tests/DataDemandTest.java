@@ -230,7 +230,7 @@ public class DataDemandTest extends AbstractTest
         Session client = newClientSession(new Session.Listener() {});
         MetaData.Request post = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch latch = new CountDownLatch(1);
-        client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        client.newStream(new HeadersFrame(post, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -269,7 +269,7 @@ public class DataDemandTest extends AbstractTest
         Session client = newClientSession(new Session.Listener() {});
         MetaData.Request post = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch latch = new CountDownLatch(1);
-        client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        client.newStream(new HeadersFrame(post, null, true), new Promise<>() {}, new Stream.Listener()
         {
             private boolean inHeaders;
 

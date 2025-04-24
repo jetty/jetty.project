@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
@@ -42,6 +43,11 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler, Resource baseResource)
     {
         super(contextHandler, baseResource);
+    }
+
+    public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler, Supplier<Resource> resourceBaseSupplier)
+    {
+        super(contextHandler, resourceBaseSupplier);
     }
 
     @Override

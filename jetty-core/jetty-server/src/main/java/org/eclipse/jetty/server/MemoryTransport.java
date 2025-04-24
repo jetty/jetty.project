@@ -43,12 +43,12 @@ public class MemoryTransport implements Transport
         try
         {
             EndPoint endPoint = connector.connect().getLocalEndPoint();
-            ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
+            ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
             endPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
             // This instance may be nested inside other Transport instances.
             // Retrieve the outermost instance to call newConnection().
-            Transport transport = (Transport)context.get(Transport.class.getName());
+            Transport transport = (Transport)context.get(CONTEXT_KEY);
             Connection connection = transport.newConnection(endPoint, context);
             endPoint.setConnection(connection);
 

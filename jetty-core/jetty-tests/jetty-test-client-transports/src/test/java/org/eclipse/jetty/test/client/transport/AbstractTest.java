@@ -42,14 +42,17 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -91,7 +94,6 @@ public class AbstractTest
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
-    protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
     protected AbstractConnector connector;
     protected ClientConnector clientConnector;
@@ -101,10 +103,7 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
-        if ("ci".equals(System.getProperty("env")))
-            transportTypes.remove(TransportType.H3_QUICHE);
-        return transportTypes;
+        return EnumSet.allOf(TransportType.class);
     }
 
     public static Collection<TransportType> transportsNoFCGI()
@@ -268,7 +267,6 @@ public class AbstractTest
     protected void prepareServer(TransportType transportType, Handler handler) throws Exception
     {
         sslContextFactoryServer = newSslContextFactoryServer();
-        serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, workDir.getEmptyPathDir());
         if (server == null)
             server = newServer();
         connector = newConnector(transportType, server);
@@ -300,14 +298,21 @@ public class AbstractTest
         client.start();
     }
 
-    protected void prepareClient(TransportType transportType) throws Exception
+    protected void prepareClient(TransportType transportType)
     {
+        prepareClient(transportType, new ClientConnector());
+    }
+
+    protected void prepareClient(TransportType transportType, ClientConnector connector)
+    {
+        clientConnector = connector;
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(newHttpClientTransport(transportType));
+        clientConnector.setExecutor(clientThreads);
         clientBufferPool = new ArrayByteBufferPool.Tracking();
-        client.setByteBufferPool(clientBufferPool);
-        client.setExecutor(clientThreads);
+        clientConnector.setByteBufferPool(clientBufferPool);
+        clientConnector.setSslContextFactory(newSslContextFactoryClient());
+        client = new HttpClient(newHttpClientTransport(transportType));
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
     }
 
@@ -322,7 +327,8 @@ public class AbstractTest
             case FCGI:
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
             case H3_QUICHE:
-                yield new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transportType));
+                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+                yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }
 
@@ -356,7 +362,7 @@ public class AbstractTest
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
+                yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
             }
             case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
         };
@@ -368,28 +374,21 @@ public class AbstractTest
         return new SslContextFactory.Client(true);
     }
 
-    protected HttpClientTransport newHttpClientTransport(TransportType transportType) throws Exception
+    protected HttpClientTransport newHttpClientTransport(TransportType transportType)
     {
-        clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
         return switch (transportType)
         {
-            case HTTP, HTTPS ->
-            {
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                yield new HttpClientTransportOverHTTP(clientConnector);
-            }
+            case HTTP, HTTPS -> new HttpClientTransportOverHTTP(clientConnector);
             case H2C, H2 ->
             {
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3_QUICHE ->
             {
-                SslContextFactory.Client sslClient = newSslContextFactoryClient();
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client);
+                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
             case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };
@@ -397,10 +396,17 @@ public class AbstractTest
 
     protected URI newURI(TransportType transportType)
     {
+        return newURI(transportType, null);
+    }
+
+    protected URI newURI(TransportType transportType, String path)
+    {
         String scheme = transportType.isSecure() ? "https" : "http";
         String uri = scheme + "://localhost";
         if (connector instanceof NetworkConnector networkConnector)
             uri += ":" + networkConnector.getLocalPort();
+        if (path != null)
+            uri += path;
         return URI.create(uri);
     }
 
@@ -418,20 +424,6 @@ public class AbstractTest
                 h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
             else
                 connector.setIdleTimeout(idleTimeout);
-        }
-    }
-
-    protected void setMaxRequestsPerConnection(int maxRequestsPerConnection)
-    {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
-        if (h2 != null)
-        {
-            h2.setMaxConcurrentStreams(maxRequestsPerConnection);
-        }
-        else
-        {
-            if (connector instanceof QuicServerConnector)
-                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
         }
     }
 

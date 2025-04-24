@@ -95,7 +95,7 @@ public class GoAwayTest extends AbstractTest
             }
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -165,7 +165,7 @@ public class GoAwayTest extends AbstractTest
 
         MetaData.Request request1 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -176,7 +176,7 @@ public class GoAwayTest extends AbstractTest
                 // The client sends the second request and should eventually fail it
                 // locally since it has a larger streamId, and the server discarded it.
                 MetaData.Request request2 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
+                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise<>() {}, new Stream.Listener()
                 {
                     @Override
                     public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
@@ -254,7 +254,7 @@ public class GoAwayTest extends AbstractTest
         });
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -342,7 +342,7 @@ public class GoAwayTest extends AbstractTest
         });
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -471,7 +471,7 @@ public class GoAwayTest extends AbstractTest
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
         DataFrame dataFrame1 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), false);
-        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener()
+        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream clientStream1, HeadersFrame frame)
@@ -486,7 +486,7 @@ public class GoAwayTest extends AbstractTest
                 MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
                 HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
                 DataFrame dataFrame2 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), true);
-                ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise.Adapter<>()
+                ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise<>()
                 {
                     @Override
                     public void succeeded(Stream clientStream2)
@@ -560,7 +560,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -652,7 +652,7 @@ public class GoAwayTest extends AbstractTest
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        clientSession.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -967,7 +967,7 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch clientResetLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         // Send request headers but not data.
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onReset(Stream stream, ResetFrame frame, Callback callback)
@@ -1046,7 +1046,7 @@ public class GoAwayTest extends AbstractTest
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch streamResetLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onReset(Stream stream, ResetFrame frame, Callback callback)
@@ -1113,7 +1113,7 @@ public class GoAwayTest extends AbstractTest
 
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch clientResetLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request, null, false), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request, null, false), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onReset(Stream stream, ResetFrame frame, Callback callback)

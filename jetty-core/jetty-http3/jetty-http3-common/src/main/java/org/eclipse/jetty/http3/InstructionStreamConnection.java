@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class InstructionStreamConnection extends AbstractConnection implements Connection.UpgradeTo
+public abstract class InstructionStreamConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
     private final ByteBufferPool bufferPool;

@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -270,12 +271,12 @@ public abstract class AbstractConnection implements Connection
     @Override
     public final String toString()
     {
-        return String.format("%s@%x::%s", getClass().getSimpleName(), hashCode(), getEndPoint());
+        return String.format("%s@%x::%s", TypeUtil.toShortName(getClass()), hashCode(), getEndPoint());
     }
 
     public String toConnectionString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 
     public abstract static class NonBlocking extends AbstractConnection

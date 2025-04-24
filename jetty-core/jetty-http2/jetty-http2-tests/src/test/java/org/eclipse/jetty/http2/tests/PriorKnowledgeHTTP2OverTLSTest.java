@@ -88,8 +88,8 @@ public class PriorKnowledgeHTTP2OverTLSTest
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSslContextFactory(newClientSslContextFactory());
         http2Client = new HTTP2Client(clientConnector);
+        http2Client.setUseALPN(true);
         HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2Client);
-        transport.setUseALPN(false);
         httpClient = new HttpClient(transport);
         httpClient.start();
     }

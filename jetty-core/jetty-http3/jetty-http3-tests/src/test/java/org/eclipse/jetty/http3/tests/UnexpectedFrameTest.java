@@ -22,8 +22,12 @@ import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,12 +35,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UnexpectedFrameTest extends AbstractClientServerTest
 {
-    @Test
-    public void testDataBeforeHeaders() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDataBeforeHeaders(TransportType transportType) throws Exception
     {
+        CountDownLatch settingsLatch = new CountDownLatch(2);
         CountDownLatch serverFailureLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public void onFailure(Session session, long error, String reason, Throwable failure)
             {
@@ -49,6 +61,12 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         HTTP3Session clientSession = (HTTP3Session)newSession(new Session.Client.Listener()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
             {
@@ -63,7 +81,12 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
             }
         });
 
-        clientSession.writeMessageFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        ProtocolSession protocolSession = clientSession.getProtocolSession();
+        var quicStream = protocolSession.getSession().newStream(0, null);
+        StreamEndPoint streamEndPoint = protocolSession.createStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
+        clientSession.writeMessageFrame(streamEndPoint, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));

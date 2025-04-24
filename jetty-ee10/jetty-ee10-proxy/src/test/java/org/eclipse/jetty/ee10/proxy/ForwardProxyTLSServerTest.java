@@ -297,7 +297,7 @@ public class ForwardProxyTLSServerTest
                 .onRequestCommit(request ->
                 {
                     Destination destination = httpClient.resolveDestination(request);
-                    destination.newConnection(new Promise.Adapter<>()
+                    destination.newConnection(new Promise<>()
                     {
                         @Override
                         public void succeeded(Connection result)

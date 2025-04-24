@@ -19,18 +19,21 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.ClientQuicConnection;
-import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.client.QuicTransport;
-import org.eclipse.jetty.quic.common.QuicSessionContainer;
+import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +43,10 @@ import org.slf4j.LoggerFactory;
  * <p>Typical usage:</p>
  * <pre> {@code
  * // Client-side QUIC configuration to configure QUIC properties.
- * ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
+ * QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
  *
  * // Create the HTTP3Client instance.
- * HTTP3Client http3Client = new HTTP3Client(quicConfig);
+ * HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
  *
  * // To configure HTTP/3 properties.
  * HTTP3Configuration h3Config = http3Client.getHTTP3Configuration();
@@ -53,11 +56,10 @@ import org.slf4j.LoggerFactory;
  * // HTTP3Client request/response usage.
  *
  * // Connect to host.
- * String host = "webtide.com";
+ * String host = "jetty.org";
  * int port = 443;
- * Session.Client session = http3Client
- *     .connect(new InetSocketAddress(host, port), new Session.Client.Listener() {})
- *     .get(5, TimeUnit.SECONDS);
+ * Session.Client session = Blocker.blockWithPromise(p -> http3Client
+ *     .connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
  *
  * // Prepare the HTTP request headers.
  * HttpFields.Mutable requestFields = HttpFields.build();
@@ -70,10 +72,10 @@ import org.slf4j.LoggerFactory;
  * HeadersFrame headersFrame = new HeadersFrame(request, false);
  *
  * // Send the HEADERS frame to create a request stream.
- * Stream stream = session.newRequest(headersFrame, new Stream.Listener()
+ * Stream.Client stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
  * {
  *     @Override
- *     public void onResponse(Stream stream, HeadersFrame frame)
+ *     public void onResponse(Stream.Client stream, HeadersFrame frame)
  *     {
  *         // Inspect the response status and headers.
  *         MetaData.Response response = (MetaData.Response)frame.getMetaData();
@@ -83,43 +85,54 @@ import org.slf4j.LoggerFactory;
  *     }
  *
  *     @Override
- *     public void onDataAvailable(Stream stream)
+ *     public void onDataAvailable(Stream.Client stream)
  *     {
- *         Stream.Data data = stream.readData();
- *         if (data != null)
+ *         Content.Chunk chunk = stream.read();
+ *         if (chunk == null)
  *         {
- *             // Process the response content chunk.
+ *             stream.demand();
+ *             return;
  *         }
+ *         // Process the response content chunk.
+ *         process(chunk);
+ *         // Release the chunk.
+ *         chunk.release();
  *         // Demand for more response content.
- *         stream.demand();
+ *         if (!chunk.isLast())
+ *             stream.demand();
  *     }
- * }).get(5, TimeUnit.SECONDS);
+ * }, p));
  *
- * // Use the Stream object to send request content, if any, using a DATA frame.
+ * // Use the Stream.Client object to send request content, if any, using a DATA frame.
  * ByteBuffer requestChunk1 = UTF_8.encode("hello");
- * stream.data(new DataFrame(requestChunk1, false))
- *     // Subsequent sends must wait for previous sends to complete.
- *     .thenCompose(s ->
+ * stream.data(new DataFrame(requestChunk1, false), new Promise.Invocable.NonBlocking()
+ * {
+ *     @Override
+ *     public void succeeded(Stream s)
  *     {
+ *         // Subsequent sends must wait for previous sends to complete.
  *         ByteBuffer requestChunk2 = UTF_8.encode("world");
- *         s.data(new DataFrame(requestChunk2, true));
- *     });
+ *         return s.data(new DataFrame(requestChunk2, true), Promise.Invocable.noop());
+ *     }
+ * });
  * }</pre>
  *
  * <p>IMPLEMENTATION NOTES.</p>
- * <p>Each call to {@link #connect(SocketAddress, Session.Client.Listener)} creates a new
- * {@link DatagramChannelEndPoint} with the correspondent {@link ClientQuicConnection}.</p>
- * <p>Each {@link ClientQuicConnection} manages one {@link ClientQuicSession} with the
- * corresponding {@link ClientHTTP3Session}.</p>
- * <p>Each {@link ClientHTTP3Session} manages the mandatory encoder, decoder and control
- * streams, plus zero or more request/response streams.</p>
+ * <p>Each call to {@link #connect(Transport, SocketAddress, Session.Client.Listener, Promise.Invocable)}
+ * creates a new {@link DatagramChannelEndPoint} with the correspondent QUIC
+ * {@link Connection}.</p>
+ * <p>Each QUIC connection manages one QUIC {@link org.eclipse.jetty.quic.api.Session}
+ * with the corresponding {@link ClientHTTP3Session}.</p>
+ * <p>Each {@link ClientHTTP3Session} manages the mandatory QPACK encoder, QPACK decoder
+ * and control unidirectional streams, plus zero or more request/response bidirectional
+ * streams.</p>
  * <pre>{@code
  * GENERIC, TCP-LIKE, SETUP FOR HTTP/1.1 AND HTTP/2
- * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientProtocolSession - TCPLikeStream
+ * HTTP3Client - dgramEP - QUIC Connection - QUIC Session - ClientProtocolSession - TCPLikeStream
  *
  * SPECIFIC SETUP FOR HTTP/3
- *                                                                                      /- [Control|Decoder|Encoder]Stream
- * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
+ *                                                                             ,- [Control|Decoder|Encoder]Stream
+ * HTTP3Client - dgramEP - QUIC Connection - QUIC Session - ClientHTTP3Session -* HTTP3Streams
  * }</pre>
  *
  * <p>HTTP/3+QUIC support is experimental and not suited for production use.
@@ -127,15 +140,17 @@ import org.slf4j.LoggerFactory;
  */
 public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
 {
-    public static final String CLIENT_CONTEXT_KEY = HTTP3Client.class.getName();
-    public static final String SESSION_LISTENER_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".listener";
-    public static final String SESSION_PROMISE_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".promise";
+    public static final String CONTEXT_KEY = HTTP3Client.class.getName();
+    public static final String SESSION_PROMISE_CONTEXT_KEY = Session.Client.class.getName() + ".promise";
+    public static final String SESSION_LISTENER_CONTEXT_KEY = Session.Client.Listener.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Client.class);
 
-    private final QuicSessionContainer container = new QuicSessionContainer();
+    private final SessionContainer container = new SessionContainer();
     private final HTTP3Configuration http3Configuration = new HTTP3Configuration();
     private final ClientQuicConfiguration quicConfiguration;
     private final ClientConnector connector;
+    private List<String> protocols = List.of("h3");
+    private boolean useALPN = true;
 
     public HTTP3Client(ClientQuicConfiguration quicConfiguration)
     {
@@ -147,11 +162,16 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
         this.quicConfiguration = quicConfiguration;
         this.connector = connector;
         installBean(connector);
-        connector.setSslContextFactory(quicConfiguration.getSslContextFactory());
-        // Allow the mandatory unidirectional streams, plus pushed streams.
-        quicConfiguration.setMaxUnidirectionalRemoteStreams(48);
-        quicConfiguration.setUnidirectionalStreamRecvWindow(4 * 1024 * 1024);
-        quicConfiguration.setProtocols(List.of("h3"));
+    }
+
+    public HTTP3Configuration getHTTP3Configuration()
+    {
+        return http3Configuration;
+    }
+
+    public ClientQuicConfiguration getClientQuicConfiguration()
+    {
+        return quicConfiguration;
     }
 
     public ClientConnector getClientConnector()
@@ -159,14 +179,24 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
         return connector;
     }
 
-    public ClientQuicConfiguration getQuicConfiguration()
+    public List<String> getApplicationProtocols()
     {
-        return quicConfiguration;
+        return protocols;
     }
 
-    public HTTP3Configuration getHTTP3Configuration()
+    public void setApplicationProtocols(List<String> protocols)
     {
-        return http3Configuration;
+        this.protocols = List.copyOf(protocols);
+    }
+
+    public boolean isUseALPN()
+    {
+        return useALPN;
+    }
+
+    public void setUseALPN(boolean useALPN)
+    {
+        this.useALPN = useALPN;
     }
 
     @Override
@@ -180,47 +210,82 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
         super.doStart();
     }
 
-    public CompletableFuture<Session.Client> connect(SocketAddress socketAddress, Session.Client.Listener listener)
+    /**
+     * <p>Connect for HTTP/3, clear-text or intrinsically secure depending on the {@link Transport}.</p>
+     *
+     * @param transport the {@code Transport} to use
+     * @param socketAddress the address to connect to
+     * @param listener the listener to notify of session events
+     * @param promise a {@code Promise.Invocable} that is completed when the connect operation is complete
+     */
+    public void connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener, Promise.Invocable<Session.Client> promise)
     {
-        Map<String, Object> context = new ConcurrentHashMap<>();
-        return connect(socketAddress, listener, context);
+        connect(transport, getClientConnector().getSslContextFactory(), socketAddress, listener, promise);
     }
 
-    public CompletableFuture<Session.Client> connect(SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    /**
+     * <p>Connect for HTTP/3, clear-text, or secure, or intrinsically secure depending on the {@link Transport}.</p>
+     *
+     * @param transport the {@code Transport} to use
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/3
+     * @param socketAddress the address to connect to
+     * @param listener the listener to notify of session events
+     * @param promise a {@code Promise.Invocable} that is completed when the connect operation is complete
+     */
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener, Promise.Invocable<Session.Client> promise)
+    {
+        connect(transport, sslContextFactory, socketAddress, listener, null, promise);
+    }
+
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context, Promise.Invocable<Session.Client> promise)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
-        return connect(new QuicTransport(getQuicConfiguration()), socketAddress, listener, context);
-    }
-
-    public CompletableFuture<Session.Client> connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
-    {
-        if (context == null)
-            context = new ConcurrentHashMap<>();
-        Promise.Completable<Session.Client> completable = new Promise.Completable<>();
-        context.put(CLIENT_CONTEXT_KEY, this);
-        context.put(SESSION_LISTENER_CONTEXT_KEY, listener);
-        context.put(SESSION_PROMISE_CONTEXT_KEY, completable);
-        context.putIfAbsent(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
-        context.computeIfAbsent(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
-        context.put(Transport.class.getName(), transport);
+        context.put(HTTP3Client.CONTEXT_KEY, this);
+        context.put(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY, listener);
+        context.put(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY, promise);
+        context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
+        context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, key -> sslContextFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport, sslContextFactory, context));
+        context.put(Transport.CONTEXT_KEY, transport);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", socketAddress);
 
         transport.connect(socketAddress, context);
-        return completable;
     }
 
     public CompletableFuture<Void> shutdown()
     {
-        return container.shutdown();
+        return container.shutdown().whenComplete((r, x) -> LifeCycle.stop(this));
     }
 
     @Override
     public void close() throws Exception
     {
         stop();
+    }
+
+    private ClientConnectionFactory resolveClientConnectionFactory(Transport transport, SslContextFactory.Client sslContextFactory, Map<String, Object> context)
+    {
+        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnectionFactory.CONTEXT_KEY);
+        if (factory == null)
+            factory = new HTTP3ClientConnectionFactory();
+        ClientConnector clientConnector = getClientConnector();
+        factory = transport.newClientConnectionFactory(clientConnector, factory);
+        if (sslContextFactory != null && !transport.isIntrinsicallySecure())
+        {
+            @SuppressWarnings("unchecked")
+            List<String> applicationProtocols = (List<String>)context.get(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY);
+            if (isUseALPN() && !applicationProtocols.isEmpty())
+                factory = new ALPNClientConnectionFactory(clientConnector.getExecutor(), factory, applicationProtocols);
+            factory = clientConnector.newSslClientConnectionFactory(sslContextFactory, factory);
+        }
+        ClientConnectionFactory.Decorator decorator = (ClientConnectionFactory.Decorator)context.get(ClientConnectionFactory.Decorator.CONTEXT_KEY);
+        if (decorator != null)
+            factory = decorator.apply(factory);
+        return factory;
     }
 }

@@ -223,7 +223,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
             maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         if (maxLength < 0)
             maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        from(request, promise.getInvocationType(), request, charset, maxFields, maxLength).whenComplete(promise);
+        from(request, promise.getInvocationType(), request, charset, maxFields, maxLength).whenComplete(Promise.Invocable.toBiConsumer(promise));
     }
 
     /**

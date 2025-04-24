@@ -14,19 +14,16 @@
 package org.eclipse.jetty.http2.client.transport;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpScheme;
@@ -38,17 +35,19 @@ import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerProm
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 @ManagedObject("The HTTP/2 client transport")
 public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 {
     private final ClientConnectionFactory connectionFactory = new HTTP2ClientConnectionFactory();
     private final HTTP2Client http2Client;
-    private boolean useALPN = true;
 
     public HttpClientTransportOverHTTP2(HTTP2Client http2Client)
     {
@@ -70,17 +69,6 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     public int getSelectors()
     {
         return http2Client.getSelectors();
-    }
-
-    @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
-    public boolean isUseALPN()
-    {
-        return useALPN;
-    }
-
-    public void setUseALPN(boolean useALPN)
-    {
-        this.useALPN = useALPN;
     }
 
     @Override
@@ -110,6 +98,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public Origin newOrigin(Request request)
     {
+        if (request.getTransport() == null)
+            request.transport(Transport.TCP_IP);
         String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of(protocol), false));
     }
@@ -123,34 +113,21 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
+        SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
         SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        connect(address, destination.getClientConnectionFactory(), listenerPromise, listenerPromise, context);
+        connect(transport, sslContextFactory, address, listenerPromise, listenerPromise, context);
     }
 
-    protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    protected void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        getHTTP2Client().connect(destination.getOrigin().getTransport(), address, factory, listener, promise, context);
-    }
-
-    protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
-    {
-        connect((SocketAddress)address, factory, listener, promise, context);
+        getHTTP2Client().connect(transport, sslContextFactory, address, listener, promise, context);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        endPoint.setIdleTimeout(getHttpClient().getIdleTimeout());
-
-        ClientConnectionFactory factory = connectionFactory;
-        Destination destination = (Destination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
-        boolean ssl = proxy == null ? destination.isSecure() : proxy.isSecure();
-        if (ssl && isUseALPN())
-            factory = new ALPNClientConnectionFactory(http2Client.getExecutor(), factory, http2Client.getProtocols());
-        return factory.newConnection(endPoint, context);
+        return connectionFactory.newConnection(endPoint, context);
     }
 
     protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)

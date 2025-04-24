@@ -13,10 +13,11 @@
 
 module org.eclipse.jetty.quic.common
 {
+    requires org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.quic.api;
+    requires transitive org.eclipse.jetty.quic.util;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.io;
-    requires transitive org.eclipse.jetty.quic.quiche;
-
     exports org.eclipse.jetty.quic.common;
+    exports org.eclipse.jetty.quic.common.frames;
 }
