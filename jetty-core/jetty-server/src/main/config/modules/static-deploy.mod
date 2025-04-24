@@ -1,6 +1,6 @@
 [description]
 # tag::description[]
-Scans and deploys `static` contexts from `$JETTY_BASE/webapps/` directory.
+Scans and deploys `static` content from `$JETTY_BASE/webapps/` directory.
 # end::description[]
 
 [tags]
