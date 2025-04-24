@@ -344,7 +344,7 @@ public class RFC9110QuotedStringTokenizer implements QuotedStringTokenizer
     public String toString()
     {
         StringBuilder out = new StringBuilder();
-        out.append(getClass().getSimpleName()).append('@').append(Long.toHexString(hashCode()))
+        out.append(TypeUtil.toShortName(getClass())).append('@').append(Long.toHexString(hashCode()))
             .append("{'").append(_delim).append('\'');
 
         if (_optionalWhiteSpace)

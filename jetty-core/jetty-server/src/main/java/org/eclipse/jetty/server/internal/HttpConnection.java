@@ -685,7 +685,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public String toConnectionString()
     {
         return String.format("%s@%x[p=%s,g=%s]=>%s",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _parser,
             _generator,

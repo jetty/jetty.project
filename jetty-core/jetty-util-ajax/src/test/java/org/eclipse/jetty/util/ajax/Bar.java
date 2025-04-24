@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public class Bar
 {
     private String _title;
@@ -106,7 +108,7 @@ public class Bar
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
+        return "\n=== " + TypeUtil.toShortName(getClass()) + " ===" +
             "\ntitle: " + getTitle() +
             "\nboolean1: " + isBoolean1() +
             "\nnullTest: " + getNullTest() +

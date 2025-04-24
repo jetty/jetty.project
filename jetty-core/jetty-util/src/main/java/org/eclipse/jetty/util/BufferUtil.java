@@ -1302,7 +1302,7 @@ public class BufferUtil
      */
     private static void idString(ByteBuffer buffer, StringBuilder out)
     {
-        out.append(buffer.getClass().getSimpleName());
+        out.append(TypeUtil.toShortName(buffer.getClass()));
         out.append("@");
         if (buffer.hasArray() && buffer.arrayOffset() == 4)
         {

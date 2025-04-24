@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,7 +292,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         public String toString()
         {
             return String.format("%s@%x[%s,q=%.3f,i=%d]",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getValue(),
                 getWeight(),

@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -964,7 +965,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     public String toString()
     {
         return String.format("%s#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,request=%s,attachment=%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             getId(),
             session.hashCode(),
             sendWindow,

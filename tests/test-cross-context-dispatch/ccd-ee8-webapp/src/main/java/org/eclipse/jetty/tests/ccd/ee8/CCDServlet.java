@@ -26,6 +26,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
 import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.ccd.common.Step;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class CCDServlet extends HttpServlet
 {
@@ -38,7 +39,7 @@ public class CCDServlet extends HttpServlet
             throw new ServletException("Unable to find DispatchPlan");
 
         dispatchPlan.addEvent("%s.service() dispatcherType=%s method=%s requestUri=%s",
-            this.getClass().getName(),
+            TypeUtil.toShortName(this.getClass()),
             req.getDispatcherType(), req.getMethod(), req.getRequestURI());
 
         Step step;
@@ -78,14 +79,14 @@ public class CCDServlet extends HttpServlet
                 if (session == null)
                 {
                     dispatchPlan.addEvent("%s.service() HttpSession is null",
-                        this.getClass().getName());
+                        TypeUtil.toShortName(this.getClass()));
                 }
                 else
                 {
                     String name = getHttpSessionTask.getName();
                     Object value = session.getAttribute(name);
                     dispatchPlan.addEvent("%s.service() HttpSession exists: [%s]=[%s]",
-                        this.getClass().getName(),
+                        TypeUtil.toShortName(this.getClass()),
                         name,
                         Objects.toString(value)
                         );
@@ -100,7 +101,7 @@ public class CCDServlet extends HttpServlet
             }
             else
             {
-                throw new RuntimeException("Unable to execute task " + step + " in " + this.getClass().getName());
+                throw new RuntimeException("Unable to execute task " + step + " in " + TypeUtil.toShortName(this.getClass()));
             }
         }
     }

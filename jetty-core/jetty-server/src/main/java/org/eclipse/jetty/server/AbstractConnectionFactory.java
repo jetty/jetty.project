@@ -20,6 +20,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -107,7 +108,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @Override
     public String toString()
     {
-        return String.format("%s@%x%s", this.getClass().getSimpleName(), hashCode(), getProtocols());
+        return String.format("%s@%x%s", TypeUtil.toShortName(this.getClass()), hashCode(), getProtocols());
     }
 
     public static ConnectionFactory[] getFactories(SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)

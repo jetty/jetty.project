@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.channels.ClosedChannelException;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -253,7 +254,7 @@ public class WebSocketSessionState
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}", getClass().getSimpleName(), hashCode(),
+        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}", TypeUtil.toShortName(getClass()), hashCode(),
             _sessionState,
             OpCode.name(_incomingContinuation),
             OpCode.name(_outgoingContinuation),

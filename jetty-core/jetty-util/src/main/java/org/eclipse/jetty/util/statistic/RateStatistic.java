@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -199,7 +200,7 @@ public class RateStatistic
         {
             update(nanoTime);
             return String.format("%s@%x{count=%d,max=%d,rate=%d per %d %s}",
-                getClass().getSimpleName(), hashCode(),
+                TypeUtil.toShortName(getClass()), hashCode(),
                 _count, _max, _samples.size(),
                 _units.convert(_nanoPeriod, TimeUnit.NANOSECONDS), _units);
         }

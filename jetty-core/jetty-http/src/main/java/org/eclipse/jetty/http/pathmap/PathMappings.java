@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -653,6 +654,6 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
     @Override
     public String toString()
     {
-        return String.format("%s[size=%d]", this.getClass().getSimpleName(), _mappings.size());
+        return String.format("%s[size=%d]", TypeUtil.toShortName(this.getClass()), _mappings.size());
     }
 }

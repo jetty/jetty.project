@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
@@ -906,6 +907,6 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
+        return String.format("%s@%x{%s,min=%s,inflate=%s}", TypeUtil.toShortName(getClass()), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

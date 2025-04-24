@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public class Foo
 {
     private String _name;
@@ -145,7 +147,7 @@ public class Foo
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
+        return "\n=== " + TypeUtil.toShortName(getClass()) + " ===" +
             "\nname: " + _name +
             "\nint1: " + _int1 +
             "\nint2: " + _int2 +

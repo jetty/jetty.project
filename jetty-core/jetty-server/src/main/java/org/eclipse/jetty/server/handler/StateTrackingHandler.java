@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -305,7 +306,7 @@ public class StateTrackingHandler extends Handler.Wrapper
     @Override
     public String toString()
     {
-        return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 
     public static class ThreadInfo

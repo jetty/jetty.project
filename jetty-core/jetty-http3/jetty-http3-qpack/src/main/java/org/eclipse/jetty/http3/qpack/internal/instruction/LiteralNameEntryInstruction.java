@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class LiteralNameEntryInstruction implements Instruction
 {
@@ -72,6 +73,6 @@ public class LiteralNameEntryInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x[name=%s,value=%s]", getClass().getSimpleName(), hashCode(), getName(), getValue());
+        return String.format("%s@%x[name=%s,value=%s]", TypeUtil.toShortName(getClass()), hashCode(), getName(), getValue());
     }
 }

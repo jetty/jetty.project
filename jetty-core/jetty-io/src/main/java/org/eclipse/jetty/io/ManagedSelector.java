@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -728,7 +729,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+            return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 
@@ -915,7 +916,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), channel);
+            return String.format("%s@%x[%s]", TypeUtil.toShortName(getClass()), hashCode(), channel);
         }
     }
 
@@ -1069,7 +1070,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _connect);
+            return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), _connect);
         }
     }
 
