@@ -106,7 +106,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
         assertThrows(InvalidSignatureException.class, () ->
             assertOnMessageInvocation(new MessageSessionSocket(),
                 allOf(
-                    containsString("onMessage(JakartaWebSocketSession@"),
+                    containsString("onMessage(oeje9wjc.JakartaWebSocketSession@"),
                     containsString(MessageSessionSocket.class.getName())
                 ))
         );
@@ -127,7 +127,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
             allOf(
-                containsString("onMessage(JakartaWebSocketSession@"),
+                containsString("onMessage(oeje9wjc.JakartaWebSocketSession@"),
                 containsString(MessageSessionByteBufferSocket.class.getName())
             ));
     }

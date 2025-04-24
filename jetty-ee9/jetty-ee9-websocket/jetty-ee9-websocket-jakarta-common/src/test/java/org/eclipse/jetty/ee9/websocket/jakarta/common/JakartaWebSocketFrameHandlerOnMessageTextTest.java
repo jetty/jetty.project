@@ -128,7 +128,7 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     {
         assertOnMessageInvocation(new MessageSessionTextSocket(),
             allOf(
-                containsString("onMessage(JakartaWebSocketSession@"),
+                containsString("onMessage(oeje9wjc.JakartaWebSocketSession@"),
                 containsString(MessageSessionTextSocket.class.getName()),
                 containsString(", Hello World)")
             ));
