@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
-import org.eclipse.jetty.util.TypeUtil;
 
 public class DumpServlet extends HttpServlet
 {
@@ -43,7 +42,7 @@ public class DumpServlet extends HttpServlet
         if (dispatchPlan != null)
         {
             dispatchPlan.addEvent("%s.service() dispatcherType=%s method=%s requestUri=%s",
-                TypeUtil.toShortName(this.getClass()),
+                this.getClass().getName(),
                 req.getDispatcherType(), req.getMethod(), req.getRequestURI());
         }
 
@@ -117,7 +116,7 @@ public class DumpServlet extends HttpServlet
         resp.setCharacterEncoding("utf-8");
         resp.setContentType("text/x-java-properties");
         PrintWriter out = resp.getWriter();
-        props.store(out, "From " + TypeUtil.toShortName(this.getClass()));
+        props.store(out, "From " + this.getClass().getName());
     }
 
     private void addAttributes(Properties props,
