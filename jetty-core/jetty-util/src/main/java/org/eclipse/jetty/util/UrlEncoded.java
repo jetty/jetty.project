@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -362,7 +363,8 @@ public class UrlEncoded
     public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadPercent, boolean allowBadUtf8, boolean allowTruncatedUtf8)
         throws Utf8StringBuilder.Utf8IllegalArgumentException
     {
-        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
+        CodingErrorAction onCodingError = allowBadUtf8 ? CodingErrorAction.REPLACE : CodingErrorAction.REPORT;
+        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder(onCodingError, onCodingError);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8);
         try
         {
@@ -404,7 +406,7 @@ public class UrlEncoded
     {
         CharsetStringBuilder charsetStringBuilder = new CharsetStringBuilder.Iso88591StringBuilder();
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, false, false, false);
-        decoder.parse(in);
+        decoder.parse(in, StandardCharsets.ISO_8859_1);
     }
 
     /**
@@ -453,7 +455,7 @@ public class UrlEncoded
     {
         CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
-        decoder.parse(in);
+        decoder.parse(in, StandardCharsets.UTF_8);
     }
 
     public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
@@ -463,9 +465,9 @@ public class UrlEncoded
 
     public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys) throws IOException
     {
-        CharsetStringBuilder charsetStringBuilder =CharsetStringBuilder.forCharset(StandardCharsets.UTF_16);
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(StandardCharsets.UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
-        decoder.parse(in);
+        decoder.parse(in, StandardCharsets.UTF_16);
     }
 
     /**
@@ -514,7 +516,7 @@ public class UrlEncoded
 
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
-        decoder.parse(in);
+        decoder.parse(in, charset);
     }
 
     private static void checkMaxKeys(int size, int maxKeys)
