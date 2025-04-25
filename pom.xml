@@ -299,6 +299,7 @@
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
     <osgi-version>3.23.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
+    <pax.exam.debug.remote>false</pax.exam.debug.remote>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.0</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
@@ -1581,6 +1582,7 @@
               <bundle.debug>${bundle.debug}</bundle.debug>
               <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
+              <pax.exam.debug.remote>${pax.exam.debug.remote}</pax.exam.debug.remote>
             </systemPropertyVariables>
             <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
             <environmentVariables>
