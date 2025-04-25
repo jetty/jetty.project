@@ -35,6 +35,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketCo
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
@@ -185,7 +186,7 @@ public class JakartaClientShutdownWithServerWebAppTest
         String dump = server.getServer().dump();
         List<String> results = Arrays.stream(dump.split("\n"))
             .map(line -> line.replace("@ ", " "))
-            .filter(line -> line.contains("+> " + JakartaWebSocketShutdownContainer.class.getSimpleName())).toList();
+            .filter(line -> line.contains("+> " + TypeUtil.toShortName(JakartaWebSocketShutdownContainer.class))).toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
         assertThat(dump, results.size(), is(3));
