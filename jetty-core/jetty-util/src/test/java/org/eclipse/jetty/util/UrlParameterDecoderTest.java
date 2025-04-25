@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class UrlDecoderTest
+public class UrlParameterDecoderTest
 {
     @Test
     public void testUtf8()
@@ -49,7 +49,7 @@ public class UrlDecoderTest
         Fields fields = new Fields();
 
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String input = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
         decoder.parse(input);
@@ -64,7 +64,7 @@ public class UrlDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String input = "text=test%C3%A4";
         decoder.parse(input);
@@ -119,7 +119,7 @@ public class UrlDecoderTest
         {
             Fields fields = new Fields();
             CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
-            UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add);
+            UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
             decoder.parse(input);
             System.out.println("fields=" + fields);
         });
@@ -144,7 +144,7 @@ public class UrlDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
         decoder.parse(query);
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
@@ -195,7 +195,7 @@ public class UrlDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String s = new String(input, UTF_8);
         assertThrows(Utf8StringBuilder.Utf8IllegalArgumentException.class, () -> decoder.parse(s));
@@ -208,7 +208,7 @@ public class UrlDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
 
         String s = new String(input, UTF_8);
         decoder.parse(s);
@@ -229,7 +229,7 @@ public class UrlDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlDecoder decoder = new UrlDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
 
         try (InputStream is = new ByteArrayInputStream(input))
         {

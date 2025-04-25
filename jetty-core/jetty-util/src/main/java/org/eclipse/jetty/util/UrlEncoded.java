@@ -15,17 +15,13 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,156 +362,17 @@ public class UrlEncoded
     public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadPercent, boolean allowBadUtf8, boolean allowTruncatedUtf8)
         throws Utf8StringBuilder.Utf8IllegalArgumentException
     {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        String key = null;
-        String value;
-
-        AtomicBoolean badUtf8;
-        Supplier<Utf8StringBuilder.Utf8IllegalArgumentException> onCodingError;
-
-        if (allowBadUtf8)
+        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8);
+        try
         {
-            badUtf8 = new AtomicBoolean(false);
-            onCodingError = () ->
-            {
-                badUtf8.set(true);
-                return null;
-            };
+            return decoder.parse(query, offset, length);
         }
-        else
+        catch (CharacterCodingException e)
         {
-            badUtf8 = null;
-            onCodingError = Utf8StringBuilder.Utf8IllegalArgumentException::new;
+            // TODO: why do we do this only for String parsing, but not InputStream?
+            throw new Utf8StringBuilder.Utf8IllegalArgumentException(e);
         }
-
-        int end = offset + length;
-        for (int i = offset; i < end; i++)
-        {
-            char c = query.charAt(i);
-            switch (c)
-            {
-                case '&':
-                    value = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
-
-                    if (key != null)
-                    {
-                        adder.accept(key, value);
-                    }
-                    else if (value != null && !value.isEmpty())
-                    {
-                        adder.accept(value, "");
-                    }
-                    key = null;
-                    break;
-
-                case '=':
-                    if (key != null)
-                    {
-                        buffer.append(c);
-                        break;
-                    }
-
-                    key = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
-                    break;
-
-                case '+':
-                    buffer.append((byte)' ');
-                    break;
-
-                case '%':
-                    if (i + 2 < end)
-                    {
-                        char hi = query.charAt(++i);
-                        char lo = query.charAt(++i);
-                        try
-                        {
-                            decodeHexByteTo(buffer, hi, lo);
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            boolean replaced = buffer.replaceIncomplete();
-                            if (replaced && !allowBadUtf8 || !allowBadPercent)
-                                throw e;
-
-                            if (hi == '&' || key == null && hi == '=')
-                            {
-                                if (!replaced)
-                                    buffer.append('%');
-                                i = i - 2;
-                            }
-                            else if (lo == '&' || key == null && lo == '=')
-                            {
-                                if (!replaced)
-                                {
-                                    buffer.append('%');
-                                    buffer.append(hi);
-                                }
-                                i = i - 1;
-                            }
-                            else
-                            {
-                                if (!replaced)
-                                {
-                                    buffer.append('%');
-                                    buffer.append(hi);
-                                    buffer.append(lo);
-                                }
-                            }
-                        }
-                    }
-                    else if (buffer.replaceIncomplete())
-                    {
-                        if (!allowBadUtf8 || !allowBadPercent)
-                            throw new Utf8StringBuilder.Utf8IllegalArgumentException();
-                        i = end;
-                    }
-                    else if (allowBadPercent)
-                    {
-                        buffer.append('%');
-                    }
-                    else
-                    {
-                        throw new Utf8StringBuilder.Utf8IllegalArgumentException();
-                    }
-                    break;
-
-                default:
-                    buffer.append(c);
-                    break;
-            }
-        }
-
-        if (key != null)
-        {
-            value = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
-            adder.accept(key, value);
-        }
-        else if (buffer.length() > 0)
-        {
-            key = take(allowBadUtf8, allowTruncatedUtf8, buffer, badUtf8, onCodingError);
-            adder.accept(key, "");
-        }
-
-        return badUtf8 == null || !badUtf8.get();
-    }
-
-    private static <X extends Throwable> String take(boolean allowBadUtf8, Boolean allowTruncatedUtf8, Utf8StringBuilder buffer, AtomicBoolean badUtf8, Supplier<X> onCodingError) throws X
-    {
-        if (!allowBadUtf8 && !allowTruncatedUtf8)
-            return buffer.takeCompleteString(onCodingError);
-
-        boolean codingError = buffer.hasCodingErrors();
-        if (codingError && !allowBadUtf8)
-            return buffer.takeCompleteString(onCodingError);
-
-        if (buffer.replaceIncomplete() && !allowTruncatedUtf8)
-            return buffer.takeCompleteString(onCodingError);
-
-        String result = buffer.takeCompleteString(null);
-        buffer.reset();
-        if (badUtf8 != null)
-            badUtf8.set(true);
-        return result;
     }
 
     /**
@@ -545,75 +402,9 @@ public class UrlEncoded
     public static void decode88591To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys)
         throws IOException
     {
-        StringBuilder buffer = new StringBuilder();
-        String key = null;
-        String value;
-
-        int b;
-
-        int totalLength = 0;
-        int keys = 0;
-        while ((b = in.read()) >= 0)
-        {
-            switch ((char)b)
-            {
-                case '&':
-                    value = buffer.isEmpty() ? "" : buffer.toString();
-                    buffer.setLength(0);
-                    if (key != null)
-                    {
-                        adder.accept(key, value);
-                        keys++;
-                    }
-                    else if (!value.isEmpty())
-                    {
-                        adder.accept(value, "");
-                        keys++;
-                    }
-                    key = null;
-                    checkMaxKeys(keys, maxKeys);
-                    break;
-
-                case '=':
-                    if (key != null)
-                    {
-                        buffer.append((char)b);
-                        break;
-                    }
-                    key = buffer.toString();
-                    buffer.setLength(0);
-                    break;
-
-                case '+':
-                    buffer.append(' ');
-                    break;
-
-                case '%':
-                    int code0 = in.read();
-                    int code1 = in.read();
-                    buffer.append(decodeHexChar(code0, code1));
-                    break;
-
-                default:
-                    buffer.append((char)b);
-                    break;
-            }
-            checkMaxLength(++totalLength, maxLength);
-        }
-
-        if (key != null)
-        {
-            value = buffer.isEmpty() ? "" : buffer.toString();
-            buffer.setLength(0);
-            adder.accept(key, value);
-            keys++;
-        }
-        else if (!buffer.isEmpty())
-        {
-            adder.accept(buffer.toString(), "");
-            keys++;
-        }
-        checkMaxKeys(keys, maxKeys);
+        CharsetStringBuilder charsetStringBuilder = new CharsetStringBuilder.Iso88591StringBuilder();
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, false, false, false);
+        decoder.parse(in);
     }
 
     /**
@@ -660,75 +451,9 @@ public class UrlEncoded
     public static void decodeUtf8To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys)
         throws IOException
     {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        String key = null;
-        String value;
-
-        int b;
-
-        int totalLength = 0;
-        int keys = 0;
-        while ((b = in.read()) >= 0)
-        {
-            switch ((char)b)
-            {
-                case '&':
-                    value = buffer.toCompleteString();
-                    buffer.reset();
-                    if (key != null)
-                    {
-                        adder.accept(key, value);
-                        keys++;
-                    }
-                    else if (value != null && !value.isEmpty())
-                    {
-                        adder.accept(value, "");
-                        keys++;
-                    }
-                    key = null;
-                    checkMaxKeys(keys, maxKeys);
-                    break;
-
-                case '=':
-                    if (key != null)
-                    {
-                        buffer.append((byte)b);
-                        break;
-                    }
-                    key = buffer.toCompleteString();
-                    buffer.reset();
-                    break;
-
-                case '+':
-                    buffer.append((byte)' ');
-                    break;
-
-                case '%':
-                    char code0 = (char)in.read();
-                    char code1 = (char)in.read();
-                    buffer.append(decodeHexByte(code0, code1));
-                    break;
-
-                default:
-                    buffer.append((byte)b);
-                    break;
-            }
-            checkMaxLength(++totalLength, maxLength);
-        }
-
-        if (key != null)
-        {
-            value = buffer.toCompleteString();
-            buffer.reset();
-            adder.accept(key, value);
-            keys++;
-        }
-        else if (buffer.length() > 0)
-        {
-            adder.accept(buffer.toCompleteString(), "");
-            keys++;
-        }
-        checkMaxKeys(keys, maxKeys);
+        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
+        decoder.parse(in);
     }
 
     public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
@@ -738,11 +463,9 @@ public class UrlEncoded
 
     public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys) throws IOException
     {
-        InputStreamReader input = new InputStreamReader(in, StandardCharsets.UTF_16);
-        StringWriter buf = new StringWriter(8192);
-        IO.copy(input, buf, maxLength);
-
-        decodeTo(buf.getBuffer().toString(), adder, StandardCharsets.UTF_16, maxKeys);
+        CharsetStringBuilder charsetStringBuilder =CharsetStringBuilder.forCharset(StandardCharsets.UTF_16);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
+        decoder.parse(in);
     }
 
     /**
@@ -789,97 +512,9 @@ public class UrlEncoded
         if (charset == null)
             charset = ENCODING;
 
-        if (StandardCharsets.UTF_8.equals(charset))
-        {
-            decodeUtf8To(in, adder, maxLength, maxKeys);
-            return;
-        }
-
-        if (StandardCharsets.ISO_8859_1.equals(charset))
-        {
-            decode88591To(in, adder, maxLength, maxKeys);
-            return;
-        }
-
-        if (StandardCharsets.UTF_16.equals(charset)) // Should be all 2 byte encodings
-        {
-            decodeUtf16To(in, adder, maxLength, maxKeys);
-            return;
-        }
-
-        String key = null;
-        String value;
-
-        int c;
-
-        int totalLength = 0;
-
-        try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2())
-        {
-            int keys = 0;
-            int size;
-
-            while ((c = in.read()) > 0)
-            {
-                switch ((char)c)
-                {
-                    case '&':
-                        size = output.size();
-                        value = size == 0 ? "" : output.toString(charset);
-                        output.setCount(0);
-                        if (key != null)
-                        {
-                            adder.accept(key, value);
-                            keys++;
-                        }
-                        else if (value != null && !value.isEmpty())
-                        {
-                            adder.accept(value, "");
-                            keys++;
-                        }
-                        key = null;
-                        checkMaxKeys(keys, maxKeys);
-                        break;
-                    case '=':
-                        if (key != null)
-                        {
-                            output.write(c);
-                            break;
-                        }
-                        size = output.size();
-                        key = size == 0 ? "" : output.toString(charset);
-                        output.setCount(0);
-                        break;
-                    case '+':
-                        output.write(' ');
-                        break;
-                    case '%':
-                        int code0 = in.read();
-                        int code1 = in.read();
-                        output.write(decodeHexChar(code0, code1));
-                        break;
-                    default:
-                        output.write(c);
-                        break;
-                }
-                checkMaxLength(++totalLength, maxLength);
-            }
-
-            size = output.size();
-            if (key != null)
-            {
-                value = size == 0 ? "" : output.toString(charset);
-                output.setCount(0);
-                adder.accept(key, value);
-                keys++;
-            }
-            else if (size > 0)
-            {
-                adder.accept(output.toString(charset), "");
-                keys++;
-            }
-            checkMaxKeys(keys, maxKeys);
-        }
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
+        decoder.parse(in);
     }
 
     private static void checkMaxKeys(int size, int maxKeys)
@@ -909,6 +544,7 @@ public class UrlEncoded
      * @param encoded the encoded string to decode
      * @return the decoded string
      */
+    // TODO: nothing is using this method
     public static String decodeString(String encoded)
     {
         return decodeString(encoded, 0, encoded.length(), ENCODING);
@@ -925,8 +561,12 @@ public class UrlEncoded
      * @param charset the charset to use for decoding
      * @return the decoded string
      */
+    // TODO: only the decodeString(String) method (above) uses this method.
+    //       we could default this behavior to just the JVM implementation and punt on maintaining this code.
     public static String decodeString(String encoded, int offset, int length, Charset charset)
     {
+        // TODO: see if this first if block can be rolled into the generic else case
+        //       with the CodingErrorAction.REPLACE as default.
         if (charset == null || StandardCharsets.UTF_8.equals(charset))
         {
             Utf8StringBuilder buffer = null;
@@ -1084,18 +724,6 @@ public class UrlEncoded
         }
     }
 
-    private static char decodeHexChar(int hi, int lo)
-    {
-        try
-        {
-            return (char)((convertHexDigit(hi) << 4) + convertHexDigit(lo));
-        }
-        catch (NumberFormatException e)
-        {
-            throw new IllegalArgumentException("Not valid encoding '%" + (char)hi + (char)lo + "'");
-        }
-    }
-
     public static byte decodeHexByte(char hi, char lo)
     {
         try
@@ -1106,11 +734,6 @@ public class UrlEncoded
         {
             throw new IllegalArgumentException("Not valid encoding '%" + hi + lo + "'");
         }
-    }
-
-    private static void decodeHexByteTo(Utf8StringBuilder buffer, char hi, char lo)
-    {
-        buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
     /**

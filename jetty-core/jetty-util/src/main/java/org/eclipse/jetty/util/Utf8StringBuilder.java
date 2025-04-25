@@ -474,7 +474,12 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         public Utf8IllegalArgumentException()
         {
-            super(new Utf8CharacterCodingException());
+            this(new Utf8CharacterCodingException());
+        }
+
+        public Utf8IllegalArgumentException(CharacterCodingException cause)
+        {
+            super(cause);
         }
     }
 }

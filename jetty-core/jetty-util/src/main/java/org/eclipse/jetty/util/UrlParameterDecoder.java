@@ -20,7 +20,10 @@ import java.util.function.BiConsumer;
 
 import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
 
-class UrlDecoder
+/**
+ * Parsing for URL/URI Query and {@code application/x-www-form-urlencoded} parameters.
+ */
+class UrlParameterDecoder
 {
     private final BiConsumer<String, String> newFieldAdder;
     private final int maxLength;
@@ -36,18 +39,31 @@ class UrlDecoder
     private int keyCount;
     private int charCount;
 
-    public UrlDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder)
+    public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder)
     {
         this(charsetStringBuilder, newFieldAdder, -1, -1);
     }
 
-    public UrlDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys)
+    public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys)
     {
         this(charsetStringBuilder, newFieldAdder, maxLength, maxKeys, false, false, false);
     }
 
-    public UrlDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys,
-                      boolean allowBadEncoding, boolean allowBadPercent, boolean allowTruncatedEncoding)
+    /**
+     * Construct a {@code UrlParameterDecoder} that is responsible for parsing
+     * the input ({@link String} or {@link InputStream}) into the provided {@code newFieldAdder}
+     * using the {@link CharsetStringBuilder} (to satisfy {@link java.nio.charset.Charset})
+     *
+     * @param charsetStringBuilder the {@link CharsetStringBuilder} that holds parsed bytes according to {@link java.nio.charset.Charset} rules
+     * @param newFieldAdder the consumer of new fields (often a {@link Fields} instance, but sometimes a {@link MultiMap} instance)
+     * @param maxLength the maximum allowable length in bytes of the form (-1 to disable check)
+     * @param maxKeys the maximum number of keys for the form (-1 to disable)
+     * @param allowBadEncoding allow use of bad encoding with the {@link CharsetStringBuilder} (optional behavior)
+     * @param allowBadPercent allow use of bad pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
+     * @param allowTruncatedEncoding allow use of truncated pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
+     */
+    public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys,
+                               boolean allowBadEncoding, boolean allowBadPercent, boolean allowTruncatedEncoding)
     {
         this.builder = charsetStringBuilder;
         this.newFieldAdder = newFieldAdder;
@@ -59,12 +75,36 @@ class UrlDecoder
         this.allowPartialBufferString = allowBadEncoding;
     }
 
-    public void parse(String str) throws CharacterCodingException
+    /**
+     * <p>Parse a String completely.</p>
+     *
+     * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
+     *
+     * @param str the string to parse, completing the parsing after parsing.
+     * @return true if there were no coding errors, false otherwise.
+     * @throws CharacterCodingException if a coding issue is encountered with the
+     * provided {@link CharsetStringBuilder} and the specific condition
+     * is not allowed by one of the {@code allow*} parameters on the constructor.
+     */
+    public boolean parse(String str) throws CharacterCodingException
     {
-        parse(str, 0, str.length());
+        return parse(str, 0, str.length());
     }
 
-    public void parse(String str, int offset, int length) throws CharacterCodingException
+    /**
+     * <p>Parse a String completely.</p>
+     *
+     * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
+     *
+     * @param str the string to parse, completing the parsing after parsing.
+     * @param offset the offset in the string to start parsing from.
+     * @param length the length of the substring to parse.
+     * @return true if there were no coding errors, false otherwise.
+     * @throws CharacterCodingException if a coding issue is encountered with the
+     * provided {@link CharsetStringBuilder} and the specific condition
+     * is not allowed by one of the {@code allow*} parameters on the constructor.
+     */
+    public boolean parse(String str, int offset, int length) throws CharacterCodingException
     {
         int end = offset + length;
         for (int i = offset; i < end; i++)
@@ -72,9 +112,23 @@ class UrlDecoder
             parse((byte)str.charAt(i));
         }
         complete();
+        return builder.hasCodingErrors();
     }
 
-    public void parse(InputStream input) throws IOException
+    /**
+     * <p>Parse a InputStream completely.</p>
+     *
+     * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
+     *
+     * <p>The InputStream is read until EOF</p>
+     *
+     * @param input the InputStream to parse, completing the parsing after parsing.
+     * @return true if there were no coding errors, false otherwise.
+     * @throws CharacterCodingException if a coding issue is encountered with the
+     * provided {@link CharsetStringBuilder} and the specific condition
+     * is not allowed by one of the {@code allow*} parameters on the constructor.
+     */
+    public boolean parse(InputStream input) throws IOException
     {
         int b;
         while ((b = input.read()) != -1)
@@ -82,6 +136,7 @@ class UrlDecoder
             parse((byte)b);
         }
         complete();
+        return builder.hasCodingErrors();
     }
 
     private void parse(byte c) throws CharacterCodingException
@@ -185,7 +240,7 @@ class UrlDecoder
         }
     }
 
-    public void complete() throws CharacterCodingException
+    private void complete() throws CharacterCodingException
     {
         // Deal with any remaining incomplete pct-encoded sequences.
         if (percent > 0)
