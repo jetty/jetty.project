@@ -16,6 +16,8 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -74,12 +76,19 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         };
 
     final StringBuilder _buffer;
+    private final CodingErrorAction _onMalformedInput;
+    private final CodingErrorAction _onUnmappableCharacter;
     private int _codep;
     private boolean _codingErrors;
 
     public Utf8StringBuilder()
     {
-        _buffer = new StringBuilder();
+        this(new StringBuilder());
+    }
+
+    public Utf8StringBuilder(CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
+    {
+        this(new StringBuilder(), onMalformedInput, onUnmappableCharacter);
     }
 
     public Utf8StringBuilder(int capacity)
@@ -89,7 +98,14 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected Utf8StringBuilder(StringBuilder buffer)
     {
-        _buffer = buffer;
+        this(buffer, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
+    }
+
+    protected Utf8StringBuilder(StringBuilder buffer, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
+    {
+        _buffer = Objects.requireNonNull(buffer);
+        _onMalformedInput = onMalformedInput;
+        _onUnmappableCharacter = onUnmappableCharacter;
     }
 
     @Override
@@ -101,6 +117,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     /**
      * @return {@code True} if the characters decoded have contained UTF8 coding errors.
      */
+    @Override
     public boolean hasCodingErrors()
     {
         return _codingErrors;
@@ -128,13 +145,29 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         bufferReset();
     }
 
+    private void handleMalformed()
+    {
+        if (_onMalformedInput == CodingErrorAction.REPORT)
+            throw new Utf8IllegalArgumentException();
+        else if (_onMalformedInput == CodingErrorAction.REPLACE)
+            bufferAppend(REPLACEMENT);
+    }
+
+    private void handleUnmappable()
+    {
+        if (_onUnmappableCharacter == CodingErrorAction.REPORT)
+            throw new Utf8IllegalArgumentException();
+        else if (_onUnmappableCharacter == CodingErrorAction.REPLACE)
+            bufferAppend(REPLACEMENT);
+    }
+
     protected void checkCharAppend()
     {
         if (_state != UTF8_ACCEPT)
         {
-            bufferAppend(REPLACEMENT);
             _state = UTF8_ACCEPT;
             _codingErrors = true;
+            handleMalformed();
         }
     }
 
@@ -143,10 +176,10 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         if (_state == UTF8_ACCEPT)
             return false;
 
-        bufferAppend(REPLACEMENT);
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = true;
+        handleMalformed();
         return true;
     }
 
@@ -294,8 +327,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 case UTF8_REJECT ->
                 {
                     _codep = 0;
-                    bufferAppend(REPLACEMENT);
                     _codingErrors = true;
+                    handleUnmappable();
                     if (_state != UTF8_ACCEPT)
                     {
                         _state = UTF8_ACCEPT;
@@ -325,7 +358,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _codep = 0;
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            bufferAppend(REPLACEMENT);
+            handleMalformed();
         }
     }
 
@@ -361,6 +394,22 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         complete();
         return _buffer.toString();
+    }
+
+    /**
+     * <p>Attempt to build the completed string and reset the buffer,
+     * returning a partial string if there are encoding errors</p>
+     *
+     * @param allowPartialString true if a partial string is allowed to be returned,
+     * false means if complete string cannot be returned, an exception is thrown.
+     * @return The available string (complete or partial)
+     * @throws CharacterCodingException (only if {@code allowPartialString} is false) thrown if the bytes cannot be correctly decoded or a multibyte sequence is incomplete.
+     */
+    @Override
+    public String build(boolean allowPartialString) throws CharacterCodingException
+    {
+        complete();
+        return takePartialString(allowPartialString ? Utf8IllegalArgumentException::new : () -> null);
     }
 
     /**
