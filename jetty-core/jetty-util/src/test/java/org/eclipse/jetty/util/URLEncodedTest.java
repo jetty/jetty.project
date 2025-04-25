@@ -168,7 +168,7 @@ public class URLEncodedTest
                 {StandardCharsets.UTF_8.name(), null, "%30"},
                 {StandardCharsets.ISO_8859_1.name(), StandardCharsets.ISO_8859_1.name(), "%30"},
                 {StandardCharsets.UTF_8.name(), StandardCharsets.UTF_8.name(), "%30"},
-                {StandardCharsets.UTF_16.name(), StandardCharsets.UTF_16.name(), "%00%30"},
+                {StandardCharsets.UTF_16.name(), StandardCharsets.UTF_16.name(), "%FE%FF%00%30"},
             };
 
         // Note: "%30" -> decode -> "0"
@@ -196,15 +196,17 @@ public class URLEncodedTest
 
         if (java.nio.charset.Charset.isSupported("Shift_JIS"))
         {
+            Charset jisCharset = Charset.forName("Shift_JIS");
             tests.add(dynamicTest("Shift_JIS",
                 () ->
                 {
-                    try (ByteArrayInputStream in2 = new ByteArrayInputStream("name=%83e%83X%83g".getBytes(StandardCharsets.ISO_8859_1)))
+                    try (ByteArrayInputStream in2 = new ByteArrayInputStream("name=%82%B1%82%F1%82%C9%82%BF%82%CD".getBytes(jisCharset)))
                     {
                         MultiMap<String> m2 = new MultiMap<>();
-                        UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1, -1);
+                        UrlEncoded.decodeTo(in2, m2, jisCharset, -1, -1);
+                        String helloInJapanese = "こんにちは";
                         assertEquals(1, m2.size(), "stream length");
-                        assertEquals("\u30c6\u30b9\u30c8", m2.getString("name"), "stream name");
+                        assertEquals(helloInJapanese, m2.getString("name"), "stream name");
                     }
                 }
             ));
