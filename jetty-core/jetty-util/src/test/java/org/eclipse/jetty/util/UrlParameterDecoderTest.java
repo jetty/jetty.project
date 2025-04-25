@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class UrlParameterDecoderTest
 {
@@ -125,6 +127,70 @@ public class UrlParameterDecoderTest
         });
     }
 
+    /**
+     * Example of a parameter with raw UTF-8 unicode which isn't pct-encoded.
+     */
+    @Test
+    public void testBadlyEncodedValue() throws CharacterCodingException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        String input = "Name=Euro-€-Symbol";
+        decoder.parse(input);
+        assertThat("Field count", fields.getSize(), is(1));
+        Fields.Field field = fields.get("Name");
+        assertNotNull(field, "Fields[Name]");
+        assertEquals("Euro-€-Symbol", field.getValue(), "Fields[Name]");
+    }
+
+    @Test
+    public void testUtf16EncodedString() throws CharacterCodingException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        String input = "name\n=value+%FE%FF%00%30&name1=&name2&n\u00e3me3=value+3";
+        decoder.parse(input);
+
+        assertThat("Field count", fields.getSize(), is(4));
+        Fields.Field field = fields.get("name\n");
+        assertNotNull(field, "Fields[name\\n]");
+        assertEquals("value 0", field.getValue(), "Fields[name\\n]");
+
+        field = fields.get("name1");
+        assertNotNull(field, "Fields[name1]");
+        assertEquals("", field.getValue(), "Fields[name1]");
+
+        field = fields.get("name2");
+        assertNotNull(field, "Fields[name2]");
+        assertEquals("", field.getValue(), "Fields[name2]");
+
+        field = fields.get("n\u00e3me3");
+        assertNotNull(field, "Fields[n\u00e3me3]");
+        assertEquals("value 3", field.getValue(), "Fields[n\u00e3me3]");
+    }
+
+    @Test
+    public void testShiftJisEncodedString() throws CharacterCodingException
+    {
+        assumeTrue(java.nio.charset.Charset.isSupported("Shift_JIS"));
+
+        Fields fields = new Fields();
+        Charset japaneseCharset = Charset.forName("Shift_JIS");
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(japaneseCharset);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        String input = "name=%82%B1%82%F1%82%C9%82%BF%82%CD";
+        decoder.parse(input);
+
+        String helloInJapanese = "こんにちは";
+
+        assertThat("Field count", fields.getSize(), is(1));
+        Fields.Field field = fields.get("name");
+        assertNotNull(field, "Fields[name]");
+        assertEquals(helloInJapanese, field.getValue(), "Fields[name\\n]");
+    }
+
     @ParameterizedTest
     @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
         textBlock = """
@@ -186,20 +252,25 @@ public class UrlParameterDecoderTest
 
     /**
      * Default UrlDecoder behavior with incomplete sequences.
-     *
-     * Expecting a Utf8IllegalArgumentException to occur for each input.
      */
     @ParameterizedTest
     @MethodSource("incompleteSequenceCases")
-    public void testUtf8IncompleteSequenceDefault(byte[] input, Map<String, String> ignored)
+    public void testUtf8IncompleteSequenceDefault(byte[] input, Map<String, String> expected) throws CharacterCodingException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String s = new String(input, UTF_8);
-        assertThrows(Utf8StringBuilder.Utf8IllegalArgumentException.class, () -> decoder.parse(s));
-        assertEquals(0, fields.getSize());
+        decoder.parse(s);
+        assertThat("Field count", fields.getSize(), is(expected.size()));
+        for (String expectedKey : expected.keySet())
+        {
+            String message = "Field[%s]".formatted(expectedKey);
+            Fields.Field field = fields.get(expectedKey);
+            assertNotNull(field, message);
+            assertEquals(expected.get(expectedKey), field.getValue(), message);
+        }
     }
 
     @ParameterizedTest
@@ -233,7 +304,7 @@ public class UrlParameterDecoderTest
 
         try (InputStream is = new ByteArrayInputStream(input))
         {
-            decoder.parse(is);
+            decoder.parse(is, UTF_8);
 
             assertThat("Field count", fields.getSize(), is(expected.size()));
             for (String expectedKey : expected.keySet())

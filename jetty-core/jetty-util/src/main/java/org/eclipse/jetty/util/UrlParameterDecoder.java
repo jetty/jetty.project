@@ -15,7 +15,9 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
 
 import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
@@ -34,7 +36,7 @@ class UrlParameterDecoder
     private final CharsetStringBuilder builder;
     private final boolean allowPartialBufferString;
     private int percent = 0;
-    private byte percentCode = 0;
+    private char percentCode = 0;
     private String name;
     private int keyCount;
     private int charCount;
@@ -107,9 +109,9 @@ class UrlParameterDecoder
     public boolean parse(String str, int offset, int length) throws CharacterCodingException
     {
         int end = offset + length;
-        for (int i = offset; i < end; i++)
+        for (int i = offset; i<end; i++)
         {
-            parse((byte)str.charAt(i));
+            parse(str.charAt(i));
         }
         complete();
         return builder.hasCodingErrors();
@@ -128,18 +130,19 @@ class UrlParameterDecoder
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(InputStream input) throws IOException
+    public boolean parse(InputStream input, Charset charset) throws IOException
     {
-        int b;
-        while ((b = input.read()) != -1)
+        int c;
+        InputStreamReader reader = new InputStreamReader(input, charset);
+        while ((c = reader.read()) != -1)
         {
-            parse((byte)b);
+            parse((char)c);
         }
         complete();
         return builder.hasCodingErrors();
     }
 
-    private void parse(byte c) throws CharacterCodingException
+    private void parse(char c) throws CharacterCodingException
     {
         if (maxLength >= 0 && charCount++ > maxLength)
             throw new IllegalStateException("Form is larger than max length " + maxLength);
