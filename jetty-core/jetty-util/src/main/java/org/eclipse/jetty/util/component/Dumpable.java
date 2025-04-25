@@ -23,10 +23,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Jetty;
@@ -38,7 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Dumpable Object")
 public interface Dumpable
 {
-    String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited\n";
+    String LEGEND = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited\n";
 
     @ManagedOperation(value = "Dump the nested Object state as a String", impact = "INFO")
     default String dump()
@@ -83,7 +85,7 @@ public interface Dumpable
         {
             dumpable.dump(out, "");
 
-            out.append(KEY);
+            out.append(LEGEND);
             Runtime runtime = Runtime.getRuntime();
             Instant now = Instant.now();
             out.append("JVM: %s %s %s; OS: %s %s %s; Jetty: %s; CPUs: %d; mem(free/total/max): %,d/%,d/%,d MiB\nUTC: %s; %s: %s".formatted(
@@ -184,10 +186,11 @@ public interface Dumpable
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
         dumpObject(out, object);
+
         if (DumpAppendable.hasVisited(out, object))
             return;
-
         DumpAppendable.visit(out, object);
+
         int extras = extraChildren == null ? 0 : extraChildren.length;
         
         if (object instanceof Stream)
@@ -201,7 +204,7 @@ public interface Dumpable
         }
         else if (object instanceof Iterable && !(object instanceof Path))
         {
-            // Do not Dump a Path as an Iterable because it may contain itself.
+            // Do not Dump a Path as an Iterable because its toString is sufficient.
             dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
         else if (object instanceof Map)
@@ -357,7 +360,7 @@ public interface Dumpable
     class DumpAppendable implements Appendable
     {
         private final Appendable _appendable;
-        private final IdentityHashMap<Object, Boolean> _visited = new IdentityHashMap<>();
+        private final Set<Object> _visited = Collections.newSetFromMap(new IdentityHashMap<>());
 
         public DumpAppendable()
         {
@@ -369,7 +372,7 @@ public interface Dumpable
             _appendable = Objects.requireNonNullElseGet(out, StringBuilder::new);
         }
 
-        public static Appendable ensure(Appendable out)
+        public static DumpAppendable ensure(Appendable out)
         {
             return out instanceof DumpAppendable da ? da : new DumpAppendable(out);
         }
@@ -377,12 +380,12 @@ public interface Dumpable
         public static void visit(Appendable out, Object item)
         {
             if (out instanceof DumpAppendable dumpAppendable)
-                dumpAppendable._visited.putIfAbsent(item, Boolean.TRUE);
+                dumpAppendable._visited.add(item);
         }
 
         static boolean hasVisited(Appendable out, Object item)
         {
-            return out instanceof DumpAppendable dumpAppendable && Boolean.TRUE.equals(dumpAppendable._visited.get(item));
+            return out instanceof DumpAppendable dumpAppendable && dumpAppendable._visited.contains(item);
         }
 
         @Override

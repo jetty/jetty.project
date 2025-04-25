@@ -125,14 +125,14 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             if (_out == null)
             {
                 handler.dumpStdErr();
-                System.err.println(Dumpable.KEY);
+                System.err.println(Dumpable.LEGEND);
             }
             else
             {
                 try
                 {
                     handler.dump(_out);
-                    _out.println(Dumpable.KEY);
+                    _out.println(Dumpable.LEGEND);
                 }
                 catch (Exception e)
                 {

@@ -39,7 +39,7 @@ public class ContainerLifeCycleTest
     @Test
     public void testStartStop() throws Exception
     {
-        ContainerLifeCycle a0 = new NamedContainerLifeCycle("a0");
+        ContainerLifeCycle a0 = new TestContainerLifeCycle("a0");
         TestContainerLifeCycle a1 = new TestContainerLifeCycle("a1");
         a0.addBean(a1);
 
@@ -72,7 +72,7 @@ public class ContainerLifeCycleTest
     @Test
     public void testStartStopDestroy() throws Exception
     {
-        ContainerLifeCycle a0 = new NamedContainerLifeCycle("a0");
+        ContainerLifeCycle a0 = new TestContainerLifeCycle("a0");
         TestContainerLifeCycle a1 = new TestContainerLifeCycle("a1");
 
         a0.start();
@@ -133,7 +133,7 @@ public class ContainerLifeCycleTest
     @Test
     public void testDisJoint() throws Exception
     {
-        ContainerLifeCycle a0 = new NamedContainerLifeCycle("a0");
+        ContainerLifeCycle a0 = new TestContainerLifeCycle("a0");
         TestContainerLifeCycle a1 = new TestContainerLifeCycle("a1");
 
         // Start the a1 bean before adding, makes it auto disjoint
@@ -203,17 +203,17 @@ public class ContainerLifeCycleTest
     @Test
     public void testDumpable() throws Exception
     {
-        org.eclipse.jetty.util.component.ContainerLifeCycle a0 = new NamedContainerLifeCycle("a0");
+        ContainerLifeCycle a0 = new TestContainerLifeCycle("a0");
         String dump = trim(a0.dump());
         check(dump, "oejuc.ContainerLifeCycl");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aa0 = new NamedContainerLifeCycle("aa0");
+        ContainerLifeCycle aa0 = new TestContainerLifeCycle("aa0");
         a0.addBean(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
         check(dump, "+? oejuc.ContainerLife");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aa1 = new NamedContainerLifeCycle("aa1");
+        ContainerLifeCycle aa1 = new TestContainerLifeCycle("aa1");
         a0.addBean(aa1);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -221,7 +221,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+? oejuc.ContainerLife");
         check(dump, "");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aa2 = new NamedContainerLifeCycle("aa2");
+        ContainerLifeCycle aa2 = new TestContainerLifeCycle("aa2");
         a0.addBean(aa2, false);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -247,7 +247,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= oejuc.ContainerLife");
         check(dump, "");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aaa0 = new NamedContainerLifeCycle("aaa0");
+        ContainerLifeCycle aaa0 = new TestContainerLifeCycle("aaa0");
         aa0.addBean(aaa0);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -256,7 +256,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= oejuc.ContainerLife");
         check(dump, "");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aa10 = new NamedContainerLifeCycle("aa10");
+        ContainerLifeCycle aa10 = new TestContainerLifeCycle("aa10");
         aa1.addBean(aa10, true);
         dump = trim(a0.dump());
         dump = check(dump, "oejuc.ContainerLifeCycl");
@@ -266,12 +266,12 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   += oejuc.Container");
         check(dump, "");
 
-        final org.eclipse.jetty.util.component.ContainerLifeCycle a1 = new NamedContainerLifeCycle("a1");
-        final org.eclipse.jetty.util.component.ContainerLifeCycle a2 = new NamedContainerLifeCycle("a2");
-        final org.eclipse.jetty.util.component.ContainerLifeCycle a3 = new NamedContainerLifeCycle("a3");
-        final org.eclipse.jetty.util.component.ContainerLifeCycle a4 = new NamedContainerLifeCycle("a4");
+        final ContainerLifeCycle a1 = new TestContainerLifeCycle("a1");
+        final ContainerLifeCycle a2 = new TestContainerLifeCycle("a2");
+        final ContainerLifeCycle a3 = new TestContainerLifeCycle("a3");
+        final ContainerLifeCycle a4 = new TestContainerLifeCycle("a4");
 
-        org.eclipse.jetty.util.component.ContainerLifeCycle aa = new NamedContainerLifeCycle("aa")
+        ContainerLifeCycle aa = new TestContainerLifeCycle("aa")
         {
             @Override
             public void dump(Appendable out, String indent) throws IOException
@@ -378,7 +378,7 @@ public class ContainerLifeCycleTest
             }
         };
 
-        ContainerLifeCycle c0 = new NamedContainerLifeCycle("c0")
+        ContainerLifeCycle c0 = new TestContainerLifeCycle("c0")
         {
             @Override
             public String toString()
@@ -386,7 +386,7 @@ public class ContainerLifeCycleTest
                 return "c0";
             }
         };
-        ContainerLifeCycle c00 = new NamedContainerLifeCycle("c00")
+        ContainerLifeCycle c00 = new TestContainerLifeCycle("c00")
         {
             @Override
             public String toString()
@@ -516,9 +516,9 @@ public class ContainerLifeCycleTest
     @Test
     public void testInheritedListener() throws Exception
     {
-        ContainerLifeCycle c0 = new NamedContainerLifeCycle("c0");
-        ContainerLifeCycle c00 = new NamedContainerLifeCycle("c00");
-        ContainerLifeCycle c01 = new NamedContainerLifeCycle("c01");
+        ContainerLifeCycle c0 = new TestContainerLifeCycle("c0");
+        ContainerLifeCycle c00 = new TestContainerLifeCycle("c00");
+        ContainerLifeCycle c01 = new TestContainerLifeCycle("c01");
         Container.InheritedListener inherited = new InheritedListenerLifeCycle();
 
         c0.addBean(c00);
@@ -564,15 +564,16 @@ public class ContainerLifeCycleTest
         return r;
     }
 
-    private static class TestContainerLifeCycle extends NamedContainerLifeCycle
+    private static class TestContainerLifeCycle extends ContainerLifeCycle
     {
+        private final String _name;
         private final AtomicInteger destroyed = new AtomicInteger();
         private final AtomicInteger started = new AtomicInteger();
         private final AtomicInteger stopped = new AtomicInteger();
 
         private TestContainerLifeCycle(String name)
         {
-            super(name);
+            _name = name;
         }
 
         @Override
@@ -594,6 +595,12 @@ public class ContainerLifeCycleTest
         {
             destroyed.incrementAndGet();
             super.destroy();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString() + ":" + _name;
         }
     }
 
@@ -651,9 +658,9 @@ public class ContainerLifeCycleTest
     public void testFailedManagedBeanCanBeRestarted() throws Exception
     {
         AtomicBoolean fail = new AtomicBoolean();
-        ContainerLifeCycle container = new NamedContainerLifeCycle("container");
-        ContainerLifeCycle bean1 = new NamedContainerLifeCycle("bean1");
-        ContainerLifeCycle bean2 = new NamedContainerLifeCycle("bean2")
+        ContainerLifeCycle container = new TestContainerLifeCycle("container");
+        ContainerLifeCycle bean1 = new TestContainerLifeCycle("bean1");
+        ContainerLifeCycle bean2 = new TestContainerLifeCycle("bean2")
         {
             @Override
             protected void doStart() throws Exception
@@ -664,7 +671,7 @@ public class ContainerLifeCycleTest
                     throw new RuntimeException();
             }
         };
-        ContainerLifeCycle bean3 = new NamedContainerLifeCycle("bean3");
+        ContainerLifeCycle bean3 = new TestContainerLifeCycle("bean3");
         container.addBean(bean1);
         container.addBean(bean2);
         container.addBean(bean3);
@@ -688,7 +695,7 @@ public class ContainerLifeCycleTest
     public void testFailedAutoBeanIsNotRestarted() throws Exception
     {
         AtomicBoolean fail = new AtomicBoolean();
-        ContainerLifeCycle bean = new NamedContainerLifeCycle("bean")
+        ContainerLifeCycle bean = new TestContainerLifeCycle("bean")
         {
             @Override
             protected void doStart() throws Exception
@@ -703,7 +710,7 @@ public class ContainerLifeCycleTest
         assertThrows(RuntimeException.class, bean::start);
 
         // The same bean now becomes part of a container.
-        ContainerLifeCycle container = new NamedContainerLifeCycle("container");
+        ContainerLifeCycle container = new TestContainerLifeCycle("container");
         container.addBean(bean);
         assertTrue(container.isAuto(bean));
 
@@ -726,21 +733,5 @@ public class ContainerLifeCycleTest
 
         Collection<Bean> beans = container.getBeans(Bean.class);
         assertEquals(1, beans.size());
-    }
-
-    private static class NamedContainerLifeCycle extends org.eclipse.jetty.util.component.ContainerLifeCycle
-    {
-        private final String _name;
-
-        private NamedContainerLifeCycle(String name)
-        {
-            _name = name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return super.toString() + ":" + _name;
-        }
     }
 }

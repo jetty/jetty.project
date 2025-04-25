@@ -63,7 +63,7 @@ public class DumpableCollection implements Dumpable
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%d]".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name, _collection.size());
+        return "%s@%x[%s,size=%d]".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name, _collection.size());
     }
 }
 
