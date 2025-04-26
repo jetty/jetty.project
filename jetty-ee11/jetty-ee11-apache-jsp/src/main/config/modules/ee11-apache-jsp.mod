@@ -10,17 +10,11 @@ ee11
 ee11-servlet
 ee11-annotations
 
-[ini]
-ee11.jakarta.el.api.version?=@jakarta.el.api.version@
-ee11.jakarta.servlet.jsp.api.version?=@jakarta.servlet.jsp.api.version@
-eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
-ee11.jsp.impl.version?=@jsp.impl.version@
-
 [lib]
-lib/ee11-apache-jsp/jakarta.el.jakarta.el-api-${ee11.jakarta.el.api.version}.jar
-lib/ee11-apache-jsp/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee11.jakarta.servlet.jsp.api.version}.jar
-lib/ee11-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
-lib/ee11-apache-jsp/org.mortbay.jasper.apache-el-${ee11.jsp.impl.version}.jar
-lib/ee11-apache-jsp/org.mortbay.jasper.apache-jsp-${ee11.jsp.impl.version}.jar
+lib/ee11-apache-jsp/jakarta.el.jakarta.el-api-@ee11.jakarta.el.api.version@.jar
+lib/ee11-apache-jsp/jakarta.servlet.jsp.jakarta.servlet.jsp-api-@ee11.jakarta.servlet.jsp.api.version@.jar
+lib/ee11-apache-jsp/org.eclipse.jdt.ecj-@eclipse.jdt.ecj.version@.jar
+lib/ee11-apache-jsp/org.mortbay.jasper.apache-el-@ee11.jsp.impl.version@.jar
+lib/ee11-apache-jsp/org.mortbay.jasper.apache-jsp-@ee11.jsp.impl.version@.jar
 lib/jetty-ee11-apache-jsp-${jetty.version}.jar
 
