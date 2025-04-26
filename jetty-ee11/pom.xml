@@ -57,6 +57,7 @@
     <!--    <jakarta.xml.bind.impl.version>${ee11.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>-->
     <!--    <jakarta.xml.jaxws.impl.version>${ee11.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>-->
     <!--    <jakarta.xml.ws.api.version>${ee11.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>-->
+    <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
     <jersey.version>${ee11.jersey.version}</jersey.version>
     <!--    <jsp.impl.version>${ee11.jsp.impl.version}</jsp.impl.version>-->
     <!--    <mail.impl.version>${ee11.mail.impl.version}</mail.impl.version>-->
@@ -69,7 +70,7 @@
       <dependency>
         <groupId>jakarta.platform</groupId>
         <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>11.0.0</version>
+        <version>${ee11.jakarta.bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
