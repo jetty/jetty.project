@@ -109,7 +109,7 @@ class UrlParameterDecoder
     public boolean parse(String str, int offset, int length) throws CharacterCodingException
     {
         int end = offset + length;
-        for (int i = offset; i<end; i++)
+        for (int i = offset; i < end; i++)
         {
             parse(str.charAt(i));
         }

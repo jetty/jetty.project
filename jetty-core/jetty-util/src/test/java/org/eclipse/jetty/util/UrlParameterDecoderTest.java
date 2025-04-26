@@ -150,6 +150,7 @@ public class UrlParameterDecoderTest
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String input = "name\n=value+%FE%FF%00%30&name1=&name2&n\u00e3me3=value+3";
         decoder.parse(input);
 
@@ -169,6 +170,7 @@ public class UrlParameterDecoderTest
         field = fields.get("n\u00e3me3");
         assertNotNull(field, "Fields[n\u00e3me3]");
         assertEquals("value 3", field.getValue(), "Fields[n\u00e3me3]");
+        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
     }
 
     @Test
