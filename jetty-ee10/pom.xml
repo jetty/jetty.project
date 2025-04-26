@@ -188,34 +188,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-async-rest-jar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jaas-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
         <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>

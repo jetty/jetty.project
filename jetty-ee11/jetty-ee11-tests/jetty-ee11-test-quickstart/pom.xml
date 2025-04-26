@@ -36,7 +36,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -147,7 +146,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-                  <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>

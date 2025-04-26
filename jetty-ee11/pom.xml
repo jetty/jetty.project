@@ -37,32 +37,8 @@
   </modules>
 
   <properties>
-    <!--    <jakarta.activation.api.version>${ee11.jakarta.activation.api.version}</jakarta.activation.api.version>-->
-    <!--    <jakarta.annotation.api.version>${ee11.jakarta.annotation.api.version}</jakarta.annotation.api.version>-->
-    <!--    <jakarta.authentication.api.version>${ee11.jakarta.authentication.api.version}</jakarta.authentication.api.version>-->
-    <!--    <jakarta.el.api.version>${ee11.jakarta.el.api.version}</jakarta.el.api.version>-->
-    <!--    <jakarta.enterprise.cdi.api.version>${ee11.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>-->
-    <!--    <jakarta.enterprise.lang.model.version>${ee11.jakarta.enterprise.lang.model.version}</jakarta.enterprise.lang.model.version>-->
-    <!--    <jakarta.inject.api.version>${ee11.jakarta.inject.api.version}</jakarta.inject.api.version>-->
-    <!--    <jakarta.interceptor.api.version>${ee11.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>-->
-    <!--    <jakarta.mail.api.version>${ee11.jakarta.mail.api.version}</jakarta.mail.api.version>-->
-    <!--    <jakarta.servlet.api.version>${ee11.jakarta.servlet.api.version}</jakarta.servlet.api.version>-->
-    <!--    <jakarta.servlet.jsp.api.version>${ee11.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>-->
-    <!--    <jakarta.servlet.jsp.jstl.api.version>${ee11.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>-->
-    <!--    <jakarta.servlet.jsp.jstl.impl.version>${ee11.jakarta.servlet.jsp.jstl.impl.version}</jakarta.servlet.jsp.jstl.impl.version>-->
-    <!--    <jakarta.transaction-api.version>${ee11.jakarta.transaction-api.version}</jakarta.transaction-api.version>-->
-    <!--    <jakarta.websocket.api.version>${ee11.jakarta.websocket.api.version}</jakarta.websocket.api.version>-->
-    <!--    <jakarta.ws.rs.api.version>${ee11.jakarta.ws.rs.api.version}</jakarta.ws.rs.api.version>-->
-    <!--    <jakarta.xml.bind.api.version>${ee11.jakarta.xml.bind.api.version}</jakarta.xml.bind.api.version>-->
-    <!--    <jakarta.xml.bind.impl.version>${ee11.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>-->
-    <!--    <jakarta.xml.jaxws.impl.version>${ee11.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>-->
-    <!--    <jakarta.xml.ws.api.version>${ee11.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>-->
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
     <jersey.version>${ee11.jersey.version}</jersey.version>
-    <!--    <jsp.impl.version>${ee11.jsp.impl.version}</jsp.impl.version>-->
-    <!--    <mail.impl.version>${ee11.mail.impl.version}</mail.impl.version>-->
-    <!--    <sonar.skip>true</sonar.skip>-->
-    <!--    <weld.version>${ee11.weld.version}</weld.version>-->
   </properties>
 
   <dependencyManagement>
@@ -83,34 +59,6 @@
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>{ee11.jakarta.xml.jaxws.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-async-rest-jar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jaas-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
@@ -270,17 +218,17 @@
       <dependency>
         <groupId>org.glassfish.jersey.containers</groupId>
         <artifactId>jersey-container-servlet</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee11.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.inject</groupId>
         <artifactId>jersey-hk2</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee11.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-binding</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee11.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.wasp</groupId>
