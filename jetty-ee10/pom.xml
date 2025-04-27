@@ -50,6 +50,11 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>${ee10.jakarta.servlet.jsp.api.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
         <version>${ee10.mail.impl.version}</version>
