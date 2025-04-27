@@ -76,7 +76,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * A Zero-capacity, non-retainable {@code RetainableByteBuffer}.
      */
-    RetainableByteBuffer EMPTY = new NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
+    RetainableByteBuffer EMPTY = new EmptyRetainableByteBuffer();
 
     /**
      * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
@@ -1359,13 +1359,96 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * a {@link FixedCapacity} buffer that is neither not pooled nor {@link Retainable#canRetain() retainable}.
+     * A {@link FixedCapacity} buffer that is neither poolable nor {@link Retainable#canRetain() retainable}.
      */
     class NonRetainableByteBuffer extends FixedCapacity
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
             super(byteBuffer, NON_RETAINABLE);
+        }
+    }
+
+    /**
+     * A {@link RetainableByteBuffer} that is empty and not retainable.
+     */
+    class EmptyRetainableByteBuffer implements RetainableByteBuffer
+    {
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public boolean isMutable()
+        {
+            return false;
+        }
+
+        @Override
+        public RetainableByteBuffer copy()
+        {
+            return new EmptyRetainableByteBuffer();
+        }
+
+        @Override
+        public void clear()
+        {
+        }
+
+        @Override
+        public long skip(long length)
+        {
+            throw new IllegalArgumentException("cannot skip " + this);
+        }
+
+        @Override
+        public void limit(long size)
+        {
+            throw new IllegalArgumentException("cannot modify limit " + this);
+        }
+
+        @Override
+        public RetainableByteBuffer slice()
+        {
+            return new EmptyRetainableByteBuffer();
+        }
+
+        @Override
+        public RetainableByteBuffer slice(long length)
+        {
+            throw new IllegalArgumentException("cannot slice " + this);
+        }
+
+        @Override
+        public RetainableByteBuffer take(long length)
+        {
+            throw new IllegalArgumentException("cannot take " + this);
+        }
+
+        @Override
+        public RetainableByteBuffer takeFrom(long skip)
+        {
+            throw new IllegalArgumentException("cannot take " + this);
+        }
+
+        @Override
+        public RetainableByteBuffer take()
+        {
+            return this;
+        }
+
+        @Override
+        public byte[] takeByteArray()
+        {
+            return BufferUtil.EMPTY_BYTES;
+        }
+
+        @Override
+        public String toDetailString()
+        {
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 
