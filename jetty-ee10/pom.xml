@@ -43,6 +43,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${ee10.jakarta.bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
         <version>${ee10.mail.impl.version}</version>
@@ -51,13 +58,6 @@
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>${ee10.jakarta.xml.jaxws.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.platform</groupId>
-        <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>${ee10.jakarta.bom.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
@@ -229,6 +229,11 @@
         <version>${ee10.jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.jboss.weld.servlet</groupId>
+        <artifactId>weld-servlet-core</artifactId>
+        <version>${ee10.weld.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-el</artifactId>
         <version>${ee10.jsp.impl.version}</version>
@@ -238,11 +243,6 @@
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
         <version>${ee10.jsp.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.weld.servlet</groupId>
-        <artifactId>weld-servlet-core</artifactId>
-        <version>${ee10.weld.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
