@@ -68,7 +68,6 @@
     <dependency>
       <groupId>org.jboss.weld.servlet</groupId>
       <artifactId>weld-servlet-core</artifactId>
-      <version>${weld.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

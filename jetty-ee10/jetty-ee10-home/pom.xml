@@ -406,7 +406,7 @@
                 <artifactItem>
                   <groupId>jakarta.servlet</groupId>
                   <artifactId>jakarta.servlet-api</artifactId>
-                  <version>${jakarta.servlet.api.version}</version>
+                  <version>${ee10.jakarta.servlet.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -423,7 +423,7 @@
                 <artifactItem>
                   <groupId>jakarta.servlet</groupId>
                   <artifactId>jakarta.servlet-api</artifactId>
-                  <version>${jakarta.servlet.api.version}</version>
+                  <version>${ee10.jakarta.servlet.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -441,27 +441,27 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
+                  <version>${ee10.jakarta.transaction-api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.interceptor</groupId>
                   <artifactId>jakarta.interceptor-api</artifactId>
-                  <version>${jakarta.interceptor.api.version}</version>
+                  <version>${ee10.jakarta.interceptor.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.enterprise</groupId>
                   <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                  <version>${jakarta.enterprise.cdi.api.version}</version>
+                  <version>${ee10.jakarta.enterprise.cdi.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.inject</groupId>
                   <artifactId>jakarta.inject-api</artifactId>
-                  <version>${jakarta.inject.api.version}</version>
+                  <version>${ee10.jakarta.inject.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.enterprise</groupId>
                   <artifactId>jakarta.enterprise.lang-model</artifactId>
-                  <version>${jakarta.enterprise.lang.model.version}</version>
+                  <version>${ee10.jakarta.enterprise.lang.model.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -479,7 +479,7 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
+                  <version>${ee10.jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>

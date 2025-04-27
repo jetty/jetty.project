@@ -36,105 +36,77 @@
     <module>jetty-ee10-websocket</module>
   </modules>
 
-  <properties>
-    <jakarta.activation.api.version>${ee10.jakarta.activation.api.version}</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>${ee10.jakarta.annotation.api.version}</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>${ee10.jakarta.authentication.api.version}</jakarta.authentication.api.version>
-    <jakarta.el.api.version>${ee10.jakarta.el.api.version}</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>${ee10.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>
-    <jakarta.enterprise.lang.model.version>${ee10.jakarta.enterprise.lang.model.version}</jakarta.enterprise.lang.model.version>
-    <jakarta.inject.api.version>${ee10.jakarta.inject.api.version}</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>${ee10.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>${ee10.jakarta.mail.api.version}</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>${ee10.jakarta.servlet.api.version}</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>${ee10.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>${ee10.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>${ee10.jakarta.servlet.jsp.jstl.impl.version}</jakarta.servlet.jsp.jstl.impl.version>
-    <jakarta.transaction-api.version>${ee10.jakarta.transaction-api.version}</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>${ee10.jakarta.websocket.api.version}</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>${ee10.jakarta.ws.rs.api.version}</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>${ee10.jakarta.xml.bind.api.version}</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>${ee10.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>${ee10.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>${ee10.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>
-    <jersey.version>${ee10.jersey.version}</jersey.version>
-    <jsp.impl.version>${ee10.jsp.impl.version}</jsp.impl.version>
-    <mail.impl.version>${ee10.mail.impl.version}</mail.impl.version>
-    <sonar.skip>true</sonar.skip>
-    <weld.version>${ee10.weld.version}</weld.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
-        <version>${mail.impl.version}</version>
+        <version>${ee10.mail.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
-        <version>${jakarta.xml.jaxws.impl.version}</version>
+        <version>${ee10.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
-        <version>${jakarta.activation.api.version}</version>
+        <version>${ee10.jakarta.activation.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
-        <version>${jakarta.annotation.api.version}</version>
+        <version>${ee10.jakarta.annotation.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.authentication</groupId>
         <artifactId>jakarta.authentication-api</artifactId>
-        <version>${jakarta.authentication.api.version}</version>
+        <version>${ee10.jakarta.authentication.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.el</groupId>
         <artifactId>jakarta.el-api</artifactId>
-        <version>${jakarta.el.api.version}</version>
+        <version>${ee10.jakarta.el.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.enterprise</groupId>
         <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>${jakarta.enterprise.cdi.api.version}</version>
+        <version>${ee10.jakarta.enterprise.cdi.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.enterprise</groupId>
         <artifactId>jakarta.enterprise.lang-model</artifactId>
-        <version>${jakarta.enterprise.lang.model.version}</version>
+        <version>${ee10.jakarta.enterprise.lang.model.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
-        <version>${jakarta.inject.api.version}</version>
+        <version>${ee10.jakarta.inject.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.interceptor</groupId>
         <artifactId>jakarta.interceptor-api</artifactId>
-        <version>${jakarta.interceptor.api.version}</version>
+        <version>${ee10.jakarta.interceptor.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.mail</groupId>
         <artifactId>jakarta.mail-api</artifactId>
-        <version>${jakarta.mail.api.version}</version>
+        <version>${ee10.jakarta.mail.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
-        <version>${jakarta.servlet.api.version}</version>
+        <version>${ee10.jakarta.servlet.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.servlet.jsp</groupId>
         <artifactId>jakarta.servlet.jsp-api</artifactId>
-        <version>${jakarta.servlet.jsp.api.version}</version>
+        <version>${ee10.jakarta.servlet.jsp.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.servlet.jsp.jstl</groupId>
         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
+        <version>${ee10.jakarta.servlet.jsp.jstl.api.version}</version>
         <exclusions>
           <exclusion>
             <groupId>jakarta.el</groupId>
@@ -149,52 +121,36 @@
       <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
-        <version>${jakarta.transaction-api.version}</version>
+        <version>${ee10.jakarta.transaction-api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
+        <version>${ee10.jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
+        <version>${ee10.jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.ws.rs</groupId>
         <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.ws.rs.api.version}</version>
+        <version>${ee10.jakarta.ws.rs.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind.api.version}</version>
+        <version>${ee10.jakarta.xml.bind.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.xml.ws</groupId>
         <artifactId>jakarta.xml.ws-api</artifactId>
-        <version>${jakarta.xml.ws.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-openid</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
-        <version>${project.version}</version>
+        <version>${ee10.jakarta.xml.ws.api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
         <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
@@ -339,38 +295,43 @@
       <dependency>
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
-        <version>${jakarta.xml.bind.impl.version}</version>
+        <version>${ee10.jakarta.xml.bind.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.containers</groupId>
         <artifactId>jersey-container-servlet</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee10.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.inject</groupId>
         <artifactId>jersey-hk2</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee10.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-binding</artifactId>
-        <version>${jersey.version}</version>
+        <version>${ee10.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
         <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
+        <version>${ee10.jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-el</artifactId>
-        <version>${jsp.impl.version}</version>
+        <version>${ee10.jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE10 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>${jsp.impl.version}</version>
+        <version>${ee10.jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.weld.servlet</groupId>
+        <artifactId>weld-servlet-core</artifactId>
+        <version>${ee10.weld.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
