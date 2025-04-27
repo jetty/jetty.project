@@ -49,10 +49,17 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- not really needed but upperbound as jsp jasper use this version -->
       <dependency>
         <groupId>jakarta.servlet.jsp</groupId>
         <artifactId>jakarta.servlet.jsp-api</artifactId>
         <version>${ee10.jakarta.servlet.jsp.api.version}</version>
+      </dependency>
+      <!-- to have jpms data -->
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${ee10.jakarta.inject.api.version}</version>
       </dependency>
       <dependency>
         <groupId>com.sun.mail</groupId>
