@@ -16,4 +16,4 @@ ee8.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
 
 [lib]
 lib/jetty-ee8-annotations-${jetty.version}.jar
-lib/ee8-annotations/jakarta.annotation-api-${ee8.jakarta.annotation.api.version}.jar
+lib/ee8-annotations/@jakarta.annotation:jakarta.annotation-api@

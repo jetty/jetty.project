@@ -12,7 +12,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
     <ee9.module>jetty-ee9-osgi/jetty-ee9-osgi-boot-jsp</ee9.module>
-    <javax.servlet.jsp.api.version>2.3</javax.servlet.jsp.api.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.osgi.boot.jasper.*,org.eclipse.jetty.ee8.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
@@ -65,8 +64,8 @@
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
               javax.el;version="[3.0,3.1)",
-              javax.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
-              javax.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              javax.servlet;version="[$(version;==;${ee8.jetty.servlet.api.version}),$(version;+;${ee8.jetty.servlet.api.version}))",
+              javax.servlet.resources;version="[$(version;==;${ee8.jetty.servlet.api.version}),$(version;+;${ee8.jetty.servlet.api.version}))",
               javax.servlet.jsp.resources;version="[$(version;==;${javax.servlet.jsp.api.version}),$(version;+;${javax.servlet.jsp.api.version}))",
               javax.servlet.jsp;version="[$(version;==;${javax.servlet.jsp.api.version}),$(version;+;${javax.servlet.jsp.api.version}))",
               javax.servlet.jsp.el;version="[$(version;==;${javax.servlet.jsp.api.version}),$(version;+;${javax.servlet.jsp.api.version}))",
@@ -139,7 +138,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jsp.impl.version}</versionString>
+              <versionString>${ee8.jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
             </configuration>
           </execution>

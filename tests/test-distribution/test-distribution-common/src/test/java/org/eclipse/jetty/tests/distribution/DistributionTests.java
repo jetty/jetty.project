@@ -606,7 +606,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .build();
 
         String mods = String.join(",",
-            "resources", "http",
+            "resources", "http", "debuglog",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env)
         );
@@ -668,7 +668,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .build();
 
         String mods = String.join(",",
-            "resources", "http", "jmx",
+            "resources", "http", "jmx", "debuglog",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
             toEnvironment("websocket-jakarta", env),

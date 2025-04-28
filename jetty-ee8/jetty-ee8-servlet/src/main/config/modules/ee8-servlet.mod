@@ -11,6 +11,6 @@ server
 sessions
 
 [lib]
-lib/jetty-servlet-api-@jetty.servlet.api.version@.jar
+lib/jetty-servlet-api-@ee8.jetty.servlet.api.version@.jar
 lib/jetty-ee8-nested-${jetty.version}.jar
 lib/jetty-ee8-servlet-${jetty.version}.jar

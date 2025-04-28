@@ -379,7 +379,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -396,7 +395,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -414,7 +412,7 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
+                  <version>${ee8.jakarta.transaction-api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -431,7 +429,7 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
+                  <version>${ee8.jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
