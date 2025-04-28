@@ -741,9 +741,13 @@ public class TypeUtil
     }
 
     /**
-     * Utility method to provide a stream of the service type from a {@link ServiceLoader}.
-     * {@link ServiceConfigurationError}s thrown when loading or instantiating the services
-     * are logged and ignored, so that the stream can proceed with the next service provider.
+     * <p>Utility method to provide a stream of the service type from a {@link ServiceLoader}.
+     * {@link ServiceConfigurationError}s thrown when loading or instantiating the service
+     * instances are logged at DEBUG level and ignored, so that the stream can proceed with
+     * the next service provider.</p>
+     * <p>Consider using {@link #serviceProviderStream(ServiceLoader)} if you want to
+     * explicitly handle {@link ServiceConfigurationError}s thrown when loading or
+     * instantiating the service instances.</p>
      *
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.
@@ -755,9 +759,12 @@ public class TypeUtil
     }
 
     /**
-     * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
-     * However, this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
-     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
+     * <p>Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.</p>
+     * <p>However, this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.</p>
+     * <p>Consider using {@link #serviceStream(ServiceLoader)} to ignore exceptions and continue the
+     * iteration.</p>
+     *
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.
      * @return A stream that lazily loads providers for this loader's service
