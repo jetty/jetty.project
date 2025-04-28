@@ -23,9 +23,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Jetty;
@@ -37,7 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Dumpable Object")
 public interface Dumpable
 {
-    String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined\n";
+    String LEGEND = "legend: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited\n";
 
     @ManagedOperation(value = "Dump the nested Object state as a String", impact = "INFO")
     default String dump()
@@ -64,9 +67,9 @@ public interface Dumpable
      */
     static String dump(Dumpable dumpable)
     {
-        StringBuilder b = new StringBuilder();
-        dump(dumpable, b);
-        return b.toString();
+        DumpAppendable buffer = new DumpAppendable();
+        dump(dumpable, buffer);
+        return buffer.toString();
     }
 
     /**
@@ -77,14 +80,14 @@ public interface Dumpable
      */
     static void dump(Dumpable dumpable, Appendable out)
     {
+        out = DumpAppendable.ensure(out);
         try
         {
             dumpable.dump(out, "");
 
-            out.append(KEY);
+            out.append(LEGEND);
             Runtime runtime = Runtime.getRuntime();
             Instant now = Instant.now();
-            String zone = System.getProperty("user.timezone");
             out.append("JVM: %s %s %s; OS: %s %s %s; Jetty: %s; CPUs: %d; mem(free/total/max): %,d/%,d/%,d MiB\nUTC: %s; %s: %s".formatted(
                 System.getProperty("java.vm.vendor"),
                 System.getProperty("java.vm.name"),
@@ -98,8 +101,8 @@ public interface Dumpable
                 runtime.totalMemory() / (1024 * 1024),
                 runtime.maxMemory() / (1024 * 1024),
                 DateTimeFormatter.ISO_DATE_TIME.format(now.atOffset(ZoneOffset.UTC)),
-                zone,
-                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(now.atZone(ZoneId.of(zone)))));
+                ZoneId.systemDefault(),
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(now.atZone(ZoneId.systemDefault()))));
         }
         catch (IOException e)
         {
@@ -129,6 +132,7 @@ public interface Dumpable
      */
     static void dumpObject(Appendable out, Object o) throws IOException
     {
+        out = DumpAppendable.ensure(out);
         try
         {
             String s;
@@ -182,7 +186,11 @@ public interface Dumpable
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
         dumpObject(out, object);
-        
+
+        if (DumpAppendable.hasVisited(out, object))
+            return;
+        DumpAppendable.visit(out, object);
+
         int extras = extraChildren == null ? 0 : extraChildren.length;
         
         if (object instanceof Stream)
@@ -194,9 +202,9 @@ public interface Dumpable
         {
             dumpContainer(out, indent, (Container)object, extras == 0);
         }
-        // Dump an Iterable Path because it may contain itself.
-        if (object instanceof Iterable && !(object instanceof Path))
+        else if (object instanceof Iterable && !(object instanceof Path))
         {
+            // Do not Dump a Path as an Iterable because its toString is sufficient.
             dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
         else if (object instanceof Map)
@@ -212,11 +220,21 @@ public interface Dumpable
         {
             i++;
             String nextIndent = indent + (i < extras ? "|  " : "   ");
-            out.append(indent).append("+> ");
-            if (item instanceof Dumpable)
-                ((Dumpable)item).dump(out, nextIndent);
+            out.append(indent).append("+>");
+
+            if (DumpAppendable.hasVisited(out, item))
+            {
+                out.append("@ ");
+                dumpObject(out, item);
+            }
             else
-                dumpObjects(out, nextIndent, item);
+            {
+                out.append(' ');
+                if (item instanceof Dumpable)
+                    ((Dumpable)item).dump(out, nextIndent);
+                else
+                    dumpObjects(out, nextIndent, item);
+            }
         }
     }
     
@@ -232,38 +250,30 @@ public interface Dumpable
                 continue; //won't be dumped as a child bean
 
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
+
+            out.append(indent).append('+');
             if (bean instanceof LifeCycle)
             {
                 if (container.isManaged(bean))
-                {
-                    out.append(indent).append("+= ");
-                    if (bean instanceof Dumpable)
-                        ((Dumpable)bean).dump(out, nextIndent);
-                    else
-                        dumpObjects(out, nextIndent, bean);
-                }
+                    out.append('=');
                 else if (containerLifeCycle != null && containerLifeCycle.isAuto(bean))
-                {
-                    out.append(indent).append("+? ");
-                    if (bean instanceof Dumpable)
-                        ((Dumpable)bean).dump(out, nextIndent);
-                    else
-                        dumpObjects(out, nextIndent, bean);
-                }
+                    out.append('?');
                 else
-                {
-                    out.append(indent).append("+~ ");
-                    dumpObject(out, bean);
-                }
+                    out.append('~');
             }
             else if (containerLifeCycle != null && containerLifeCycle.isUnmanaged(bean))
+                out.append('~');
+            else
+                out.append('-');
+
+            if (DumpAppendable.hasVisited(out, bean))
             {
-                out.append(indent).append("+~ ");
-                dumpObject(out, bean);
+                out.append("@ ");
+                dumpObject(out, object);
             }
             else
             {
-                out.append(indent).append("+- ");
+                out.append(' ');
                 if (bean instanceof Dumpable)
                     ((Dumpable)bean).dump(out, nextIndent);
                 else
@@ -274,7 +284,7 @@ public interface Dumpable
 
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
-        for (Iterator i = iterable.iterator(); i.hasNext(); )
+        for (Iterator<?> i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
             // Safety net to stop iteration when an Iterable contains itself e.g. Path.
@@ -332,8 +342,6 @@ public interface Dumpable
     }
 
     /**
-     * DumpableContainer
-     *
      * A Dumpable that is a container of beans can implement this
      * interface to allow it to refine which of its beans can be
      * dumped.
@@ -343,6 +351,65 @@ public interface Dumpable
         default boolean isDumpable(Object o)
         {
             return true;
+        }
+    }
+
+    /**
+     * An Appendable that helps avoid dump cycles.
+     */
+    class DumpAppendable implements Appendable
+    {
+        private final Appendable _appendable;
+        private final Set<Object> _visited = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        public DumpAppendable()
+        {
+            this(null);
+        }
+
+        public DumpAppendable(Appendable out)
+        {
+            _appendable = Objects.requireNonNullElseGet(out, StringBuilder::new);
+        }
+
+        public static DumpAppendable ensure(Appendable out)
+        {
+            return out instanceof DumpAppendable da ? da : new DumpAppendable(out);
+        }
+
+        public static void visit(Appendable out, Object item)
+        {
+            if (out instanceof DumpAppendable dumpAppendable)
+                dumpAppendable._visited.add(item);
+        }
+
+        static boolean hasVisited(Appendable out, Object item)
+        {
+            return out instanceof DumpAppendable dumpAppendable && dumpAppendable._visited.contains(item);
+        }
+
+        @Override
+        public Appendable append(CharSequence csq) throws IOException
+        {
+            return _appendable.append(csq);
+        }
+
+        @Override
+        public Appendable append(CharSequence csq, int start, int end) throws IOException
+        {
+            return _appendable.append(csq, start, end);
+        }
+
+        @Override
+        public Appendable append(char c) throws IOException
+        {
+            return _appendable.append(c);
+        }
+
+        @Override
+        public String toString()
+        {
+            return _appendable.toString();
         }
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
