@@ -5,7 +5,7 @@ pipeline {
   // save some io during the build
   options {
     skipDefaultCheckout()
-    durabilityHint('PERFORMANCE_OPTIMIZED')
+    durabilityHint('MAX_SURVIVABILITY')
     //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
   }
