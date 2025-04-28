@@ -237,9 +237,9 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=f_%e0%b8", Map.of("param", "f_�")));
         cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
         cases.add(Arguments.of("param=%x", Map.of("param", "%x")));
-        cases.add(Arguments.of("param=%£", Map.of("param", "%�")));
+        cases.add(Arguments.of("param=%£", Map.of("param", "%£")));
         cases.add(Arguments.of("param=%x&other=foo", Map.of("param", "%x", "other", "foo")));
-        cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%�", "other", "foo")));
+        cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%£", "other", "foo")));
 
         // Extra ampersands
         cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
@@ -289,6 +289,172 @@ public class UrlParameterDecoderTest
             assertNotNull(field, message);
             assertEquals(expectedParams.get(key), field.getValue(), message);
         }
+    }
+
+    /**
+     * The set of allowed query string behaviors collected from Jetty 11.
+     */
+    public static Stream<Arguments> queryBehaviorsLegacyAllowed()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // Normal cases
+        cases.add(Arguments.of("param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("param=aaa&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=", Map.of("param", "")));
+        cases.add(Arguments.of("param=&other=foo", Map.of("param", "", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9C%94", Map.of("param", "✔")));
+        cases.add(Arguments.of("param=%E2%9C%94&other=foo", Map.of("param", "✔", "other", "foo")));
+
+        // Truncated / Insufficient Hex cases
+        cases.add(Arguments.of("param=%E2%9C", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%9C&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2&other=foo", Map.of("param", "�", "other", "foo")));
+
+        // Truncated sequence
+        cases.add(Arguments.of("param=%E2%82", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%82&other=foo", Map.of("param", "�", "other", "foo")));
+
+        // Community Examples
+        cases.add(Arguments.of("param=f_%e0%b8", Map.of("param", "f_�")));
+        cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
+
+        // Extra ampersands
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
+
+        // Encoded ampersands
+        cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param", "aaa", "&other", "foo")));
+
+        // pct-encoded parameter names ("帽子" means "hat" in japanese)
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", Map.of("帽子", "Beret", "other", "foo")));
+        cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret", "other", "foo")));
+
+        // truncated pct-encoded parameter names
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+
+        // raw unicode parameter names (strange replacement logic here)
+        cases.add(Arguments.of("€=currency", Map.of("€", "currency")));
+        cases.add(Arguments.of("帽子=Beret", Map.of("帽子", "Beret")));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsLegacyAllowed")
+    public void testQueryBehaviorsLegacyAllowed(String input, Map<String, String> expectedParams) throws CharacterCodingException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPORT);
+        boolean allowBadEncoding = false;
+        boolean allowBadPercent = false;
+        boolean allowTruncatedEncoding = true;
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+
+        decoder.parse(input);
+
+        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
+
+        for (String key : expectedParams.keySet())
+        {
+            Fields.Field field = fields.get(key);
+            String message = "Fields[%s]".formatted(key);
+            assertNotNull(field, message);
+            assertEquals(expectedParams.get(key), field.getValue(), message);
+        }
+    }
+
+    /**
+     * The set of rejected query string behaviors collected from Jetty 11.
+     */
+    public static Stream<Arguments> queryBehaviorsLegacyRejected()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // Truncated / Insufficient Hex cases
+        cases.add(Arguments.of("param=%E2%9C%9"));
+        cases.add(Arguments.of("param=%E2%9C%9&other=foo"));
+        cases.add(Arguments.of("param=%E2%9C%"));
+        cases.add(Arguments.of("param=%E2%9C%&other=foo"));
+        cases.add(Arguments.of("param=%E2%9"));
+        cases.add(Arguments.of("param=%E2%9&other=foo"));
+        cases.add(Arguments.of("param=%E2%"));
+        cases.add(Arguments.of("param=%E2%&other=foo"));
+
+        // Tokenized cases
+        cases.add(Arguments.of("param=%%TOK%%"));
+        cases.add(Arguments.of("param=%%TOK%%&other=foo"));
+
+        // Bad Hex
+        cases.add(Arguments.of("param=%xx"));
+        cases.add(Arguments.of("param=%xx&other=foo"));
+
+        // Overlong UTF-8 Encoding
+        cases.add(Arguments.of("param=%C0%AF"));
+        cases.add(Arguments.of("param=%C0%AF&other=foo"));
+
+        // Out of range
+        cases.add(Arguments.of("param=%F4%90%80%80"));
+        cases.add(Arguments.of("param=%F4%90%80%80&other=foo"));
+
+        // Long surrogate
+        cases.add(Arguments.of("param=%ED%A0%80"));
+        cases.add(Arguments.of("param=%ED%A0%80&other=foo"));
+
+        // Standalone continuations
+        cases.add(Arguments.of("param=%80"));
+        cases.add(Arguments.of("param=%80&other=foo"));
+
+        // C1 never starts UTF-8
+        cases.add(Arguments.of("param=%C1%BF"));
+        cases.add(Arguments.of("param=%C1%BF&other=foo"));
+
+        // E0 must be followed by A0-BF
+        cases.add(Arguments.of("param=%E0%9F%80"));
+        cases.add(Arguments.of("param=%E0%9F%80&other=foo"));
+
+        // Community Examples
+        cases.add(Arguments.of("param=%£"));
+        cases.add(Arguments.of("param=%£&other=foo"));
+
+        // truncated pct-encoded parameter names
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret")); // Not LEGACY
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret"));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo")); // Not LEGACY
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo"));
+
+        // invalid pct-encoded parameter name
+        cases.add(Arguments.of("foo%xx=abc"));
+        cases.add(Arguments.of("foo%x=abc"));
+        cases.add(Arguments.of("foo%=abc"));
+
+        // utf-16 values (LEGACY has UTF16_ENCODINGS enabled, but it doesn't work for query apparently)
+        cases.add(Arguments.of("foo=a%u2192z"));
+
+        // truncated utf-16 values (LEGACY has UTF16_ENCODINGS enabled, but it doesn't work for query apparently)
+        cases.add(Arguments.of("foo=a%u219z"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsLegacyRejected")
+    public void testQueryBehaviorsLegacyRejected(String input)
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPORT);
+        boolean allowBadEncoding = false;
+        boolean allowBadPercent = false;
+        boolean allowTruncatedEncoding = true;
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+
+        assertThrows(IllegalArgumentException.class, () -> decoder.parse(input));
     }
 
     @Test

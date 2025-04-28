@@ -363,7 +363,7 @@ public class UrlEncoded
     public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadPercent, boolean allowBadUtf8, boolean allowTruncatedUtf8)
         throws Utf8StringBuilder.Utf8IllegalArgumentException
     {
-        CodingErrorAction onCodingError = allowBadUtf8 ? CodingErrorAction.REPLACE : CodingErrorAction.REPORT;
+        CodingErrorAction onCodingError = (allowBadUtf8 || allowBadPercent || allowTruncatedUtf8) ? CodingErrorAction.REPLACE : CodingErrorAction.REPORT;
         CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder(onCodingError, onCodingError);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8);
         try

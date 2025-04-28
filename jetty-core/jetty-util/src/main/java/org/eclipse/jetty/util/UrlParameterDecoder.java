@@ -161,11 +161,13 @@ class UrlParameterDecoder
                     if (!replaced)
                         builder.append('%');
                     percent = 0;
-                    break;
                 }
-                percentCode = c;
-                percent++;
-                return;
+                else
+                {
+                    percentCode = c;
+                    percent++;
+                    return;
+                }
             }
             case 2 ->
             {
@@ -177,6 +179,11 @@ class UrlParameterDecoder
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
                         throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
+                    if (!replaced)
+                    {
+                        builder.append('%');
+                        builder.append(hi);
+                    }
                 }
                 else
                 {
@@ -190,30 +197,11 @@ class UrlParameterDecoder
                         if (replaced && !allowBadEncoding || !allowBadPercent)
                             throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
 
-                        if (hi == '&' || name == null && hi == '=')
+                        if (!replaced)
                         {
-                            if (!replaced)
-                                builder.append('%');
+                            builder.append('%');
                             builder.append(hi);
                             builder.append(lo);
-                        }
-                        else if (lo == '&' || name == null && lo == '=')
-                        {
-                            if (!replaced)
-                            {
-                                builder.append('%');
-                                builder.append(hi);
-                            }
-                            builder.append(lo);
-                        }
-                        else
-                        {
-                            if (!replaced)
-                            {
-                                builder.append('%');
-                                builder.append(hi);
-                                builder.append(lo);
-                            }
                         }
                     }
                     return;
@@ -252,39 +240,6 @@ class UrlParameterDecoder
                 case '+' -> builder.append(' ');
                 case '%' -> percent++;
                 default -> builder.append(c);
-            }
-        }
-    }
-
-    private void handleBadPctEncoded(char hi, char lo)
-    {
-        boolean replaced = builder.replaceIncomplete();
-        if (replaced && !allowBadEncoding || !allowBadPercent)
-            throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
-
-        if (hi == '&' || name == null && hi == '=')
-        {
-            if (!replaced)
-                builder.append('%');
-            builder.append(hi);
-            builder.append(lo);
-        }
-        else if (lo == '&' || name == null && lo == '=')
-        {
-            if (!replaced)
-            {
-                builder.append('%');
-                builder.append(hi);
-            }
-            builder.append(lo);
-        }
-        else
-        {
-            if (!replaced)
-            {
-                builder.append('%');
-                builder.append(hi);
-                builder.append(lo);
             }
         }
     }
@@ -330,23 +285,25 @@ class UrlParameterDecoder
 
     private String takeBuiltString() throws CharacterCodingException
     {
-        if (!allowBadEncoding && !allowTruncatedEncoding)
+        if (!allowBadEncoding && !allowBadPercent && !allowTruncatedEncoding)
         {
-            return builder.build(allowPartialBufferString);
+            String result = builder.build(false);
+            builder.reset();
+            return result;
         }
 
         boolean codingError = builder.hasCodingErrors();
         if (codingError && !allowBadEncoding)
         {
-            return builder.build(allowPartialBufferString);
+            return builder.build(false);
         }
 
         if (builder.replaceIncomplete() && !allowTruncatedEncoding)
         {
-            return builder.build(allowPartialBufferString);
+            return builder.build(false);
         }
 
-        String result = builder.build(false);
+        String result = builder.build(true);
         builder.reset();
         return result;
     }
