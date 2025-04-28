@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class StaticContextHandler extends ContextHandler
 {
-    public static final String DIR_ALLOWED_ATTRIBUTE = "jetty.static.dirAllowed";
     private final ResourceHandler resourceHandler;
 
     /**
@@ -96,7 +95,7 @@ public class StaticContextHandler extends ContextHandler
     {
         switch (keyName)
         {
-            case DIR_ALLOWED_ATTRIBUTE ->
+            case Deployable.DIR_ALLOWED ->
             {
                 if (value instanceof String str)
                     getResourceHandler().setDirAllowed(Boolean.parseBoolean(str));

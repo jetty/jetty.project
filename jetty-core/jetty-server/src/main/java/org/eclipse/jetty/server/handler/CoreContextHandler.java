@@ -65,6 +65,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
     private boolean _builtClassLoader = false;
+    private Boolean deferredDirAllowed;
 
     public CoreContextHandler()
     {
@@ -92,6 +93,13 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         switch (keyName)
         {
+            case Deployable.DIR_ALLOWED ->
+            {
+                if (value instanceof String str)
+                    setDirAllowed(Boolean.parseBoolean(str));
+                else if (value instanceof Boolean bool)
+                    setDirAllowed(bool);
+            }
             case Deployable.MAIN_PATH ->
             {
                 // The Base Resource
@@ -134,6 +142,19 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                     setBaseResource(resourceDir);
                 }
             }
+        }
+    }
+
+    private void setDirAllowed(Boolean bool)
+    {
+        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
+        if (resourceHandler != null)
+        {
+            resourceHandler.setDirAllowed(bool);
+        }
+        else
+        {
+            deferredDirAllowed = bool;
         }
     }
 
@@ -273,6 +294,8 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             {
                 ResourceHandler resourceHandler = new ResourceHandler();
                 resourceHandler.setBaseResource(staticDir);
+                if (deferredDirAllowed != null)
+                    resourceHandler.setDirAllowed(deferredDirAllowed);
                 setHandler(resourceHandler);
             }
         }

@@ -41,7 +41,15 @@ public interface Deployable
      *
      * @see ContextHandler#setBaseResource(Resource)
      */
-    String BASE_RESOURCE = "baseResource";
+    String BASE_RESOURCE = "jetty.deploy.baseResource";
+    /**
+     * <p>Attribute key name: Configure Directory Listing for Base Resource.</p>
+     *
+     * <p>Value is a {@link Boolean}, or {@code String}</p>
+     *
+     * @see org.eclipse.jetty.server.handler.ResourceHandler#setDirAllowed(boolean)
+     */
+    String DIR_ALLOWED = "jetty.deploy.baseResource.dirAllowed";
     /**
      * <p>Attribute key name: The Configuration Classes for EE based deployments.</p>
      *

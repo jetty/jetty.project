@@ -195,7 +195,7 @@ public class StaticContextHandlerTest
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
         Files.writeString(webapps.resolve("static.properties"), """
-            jetty.static.dirAllowed=false
+            jetty.deploy.baseResource.dirAllowed=false
             """);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
@@ -237,8 +237,8 @@ public class StaticContextHandlerTest
         FS.ensureEmpty(staticDir);
         Files.writeString(webapps.resolve("static.properties"), """
             environment=static
-            baseResource=%s
-            jetty.static.dirAllowed=false
+            jetty.deploy.baseResource=%s
+            jetty.deploy.baseResource.dirAllowed=false
             """.formatted(staticDir.toString()));
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
