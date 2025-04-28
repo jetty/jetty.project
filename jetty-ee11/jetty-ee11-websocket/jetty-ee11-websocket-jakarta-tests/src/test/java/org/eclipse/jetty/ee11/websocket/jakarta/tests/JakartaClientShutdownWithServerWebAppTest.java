@@ -44,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 @Isolated
@@ -185,14 +184,12 @@ public class JakartaClientShutdownWithServerWebAppTest
         // Collect the toString result of the ShutdownContainers from the dump.
         String dump = server.getServer().dump();
         List<String> results = Arrays.stream(dump.split("\n"))
-            .map(line -> line.replace("@ ", " "))
-            .filter(line -> line.contains("+> " + TypeUtil.toShortName(JakartaWebSocketShutdownContainer.class))).toList();
+            .filter(line -> line.contains("+- "))
+            .filter(line -> line.contains(JakartaWebSocketShutdownContainer.class.getSimpleName()))
+            .filter(line -> line.contains("size=1"))
+            .toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
         assertThat(dump, results.size(), is(3));
-        for (String result : results)
-        {
-            assertThat(dump, result, containsString("size=1"));
-        }
     }
 }

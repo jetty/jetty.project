@@ -160,7 +160,7 @@ public class ServerTest
         assertThat(dump, containsString("+> java.runtime.version: "));
         assertThat(dump, containsString("+= oejsh.ContextHandler@"));
         assertThat(dump, containsString("+= oejs.LocalConnector@"));
-        assertThat(dump, containsString("key: +-"));
+        assertThat(dump, containsString("legend: +-"));
         assertThat(dump, containsString("JVM: "));
         assertThat(dump, containsString(Jetty.VERSION));
     }

@@ -44,7 +44,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 public class JakartaClientShutdownWithServerWebAppTest
@@ -182,15 +181,14 @@ public class JakartaClientShutdownWithServerWebAppTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         // Collect the toString result of the ShutdownContainers from the dump.
-        List<String> results = Arrays.stream(server.getServer().dump().split("\n"))
-            .map(line -> line.replace("@ ", " "))
-            .filter(line -> line.contains("+> " + TypeUtil.toShortName(JakartaWebSocketShutdownContainer.class))).toList();
+        String dump = server.getServer().dump();
+        List<String> results = Arrays.stream(dump.split("\n"))
+            .filter(line -> line.contains("+- "))
+            .filter(line -> line.contains(JakartaWebSocketShutdownContainer.class.getSimpleName()))
+            .filter(line -> line.contains("size=1"))
+            .toList();
 
         // We only have 3 Shutdown Containers and they all contain only 1 item to be shutdown.
-        assertThat(results.size(), is(3));
-        for (String result : results)
-        {
-            assertThat(result, containsString("size=1"));
-        }
+        assertThat(dump, results.size(), is(3));
     }
 }
