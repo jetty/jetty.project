@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -188,9 +189,8 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
-
+            assertThat("Logs:" + run1.getLogs(), run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), is(true));
+            assertThat("Logs:" + run1.getLogs(), run1.getExitValue(), is(0));
             Path badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
             distribution.installWar(badWebApp, "test");
 
@@ -199,7 +199,9 @@ public class BadAppTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertThat("Logs:" + run2.getLogs(),
+                        run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                        is(true));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
@@ -209,7 +211,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
                 // Verify /test is not able to establish a WebSocket connection.
                 ContentResponse response = client.GET(serverUri.resolve("/test/badonopen/a"));
-                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+                assertThat("Logs:" + run2.getLogs(), response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
             }
         }
     }
