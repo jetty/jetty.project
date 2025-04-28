@@ -409,7 +409,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     public String build(boolean allowPartialString) throws CharacterCodingException
     {
         complete();
-        return takePartialString(allowPartialString ? () -> null: Utf8IllegalArgumentException::new);
+        return takePartialString(allowPartialString ? () -> null : Utf8IllegalArgumentException::new);
     }
 
     /**
