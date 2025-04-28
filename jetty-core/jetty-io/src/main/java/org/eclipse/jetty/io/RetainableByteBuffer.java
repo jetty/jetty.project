@@ -1398,18 +1398,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public long skip(long length)
-        {
-            throw new IllegalArgumentException("cannot skip " + this);
-        }
-
-        @Override
-        public void limit(long size)
-        {
-            throw new IllegalArgumentException("cannot modify limit " + this);
-        }
-
-        @Override
         public RetainableByteBuffer slice()
         {
             return new EmptyRetainableByteBuffer();
@@ -1418,19 +1406,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public RetainableByteBuffer slice(long length)
         {
-            throw new IllegalArgumentException("cannot slice " + this);
-        }
-
-        @Override
-        public RetainableByteBuffer take(long length)
-        {
-            throw new IllegalArgumentException("cannot take " + this);
-        }
-
-        @Override
-        public RetainableByteBuffer takeFrom(long skip)
-        {
-            throw new IllegalArgumentException("cannot take " + this);
+            return slice();
         }
 
         @Override
