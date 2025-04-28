@@ -150,8 +150,7 @@ public class UrlParameterDecoderTest
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        String input = "name\n=value+%FE%FF%00%30&name1=&name2&n\u00e3me3=value+3";
+        String input = "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3";
         decoder.parse(input);
 
         assertThat("Field count", fields.getSize(), is(4));
@@ -167,10 +166,129 @@ public class UrlParameterDecoderTest
         assertNotNull(field, "Fields[name2]");
         assertEquals("", field.getValue(), "Fields[name2]");
 
-        field = fields.get("n\u00e3me3");
-        assertNotNull(field, "Fields[n\u00e3me3]");
-        assertEquals("value 3", field.getValue(), "Fields[n\u00e3me3]");
-        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+        field = fields.get("nãme3");
+        assertNotNull(field, "Fields[nãme3]");
+        assertEquals("value 3", field.getValue(), "Fields[nãme3]");
+    }
+
+    public static Stream<Arguments> queryBehaviorsBadUtf8Allowed()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // Normal cases
+        cases.add(Arguments.of("param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("param=aaa&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=", Map.of("param", "")));
+        cases.add(Arguments.of("param=&other=foo", Map.of("param", "", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9C%94", Map.of("param", "✔")));
+        cases.add(Arguments.of("param=%E2%9C%94&other=foo", Map.of("param", "✔", "other", "foo")));
+
+        // Truncated / Insufficient Hex cases
+        cases.add(Arguments.of("param=%E2%9C%9", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%9C%9&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9C%", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%9C%&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9C", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%9C&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%9&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%&other=foo", Map.of("param", "�", "other", "foo")));
+        cases.add(Arguments.of("param=%E2", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2&other=foo", Map.of("param", "�", "other", "foo")));
+
+        // Tokenized cases
+        cases.add(Arguments.of("param=%%TOK%%", Map.of("param", "%%TOK%%")));
+        cases.add(Arguments.of("param=%%TOK%%&other=foo", Map.of("param", "%%TOK%%", "other", "foo")));
+
+        // Bad Hex
+        cases.add(Arguments.of("param=%xx", Map.of("param", "%xx")));
+        cases.add(Arguments.of("param=%xx&other=foo", Map.of("param", "%xx", "other", "foo")));
+
+        // Overlong UTF-8 Encoding
+        cases.add(Arguments.of("param=%C0%AF", Map.of("param", "��")));
+        cases.add(Arguments.of("param=%C0%AF&other=foo", Map.of("param", "��", "other", "foo")));
+
+        // Out of range
+        cases.add(Arguments.of("param=%F4%90%80%80", Map.of("param", "����")));
+        cases.add(Arguments.of("param=%F4%90%80%80&other=foo", Map.of("param", "����", "other", "foo")));
+
+        // Long surrogate
+        cases.add(Arguments.of("param=%ED%A0%80", Map.of("param", "���")));
+        cases.add(Arguments.of("param=%ED%A0%80&other=foo", Map.of("param", "���", "other", "foo")));
+
+        // Standalone continuations
+        cases.add(Arguments.of("param=%80", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%80&other=foo", Map.of("param", "�", "other", "foo")));
+
+        // Truncated sequence
+        cases.add(Arguments.of("param=%E2%82", Map.of("param", "�")));
+        cases.add(Arguments.of("param=%E2%82&other=foo", Map.of("param", "�", "other", "foo")));
+
+        // C1 never starts UTF-8
+        cases.add(Arguments.of("param=%C1%BF", Map.of("param", "��")));
+        cases.add(Arguments.of("param=%C1%BF&other=foo", Map.of("param", "��", "other", "foo")));
+
+        // E0 must be followed by A0-BF
+        cases.add(Arguments.of("param=%E0%9F%80", Map.of("param", "���")));
+        cases.add(Arguments.of("param=%E0%9F%80&other=foo", Map.of("param", "���", "other", "foo")));
+
+        // Community Examples
+        cases.add(Arguments.of("param=f_%e0%b8", Map.of("param", "f_�")));
+        cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
+        cases.add(Arguments.of("param=%x", Map.of("param", "%x")));
+        cases.add(Arguments.of("param=%£", Map.of("param", "%�")));
+        cases.add(Arguments.of("param=%x&other=foo", Map.of("param", "%x", "other", "foo")));
+        cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%�", "other", "foo")));
+
+        // Extra ampersands
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
+
+        // Encoded ampersands
+        cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param","aaa","&other", "foo")));
+
+        // pct-encoded parameter names ("帽子" means "hat" in japanese)
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", Map.of("帽子", "Beret", "other", "foo")));
+        cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret", "other", "foo")));
+
+        // bad pct-encoded parameter names
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsBadUtf8Allowed")
+    public void testQueryBehaviorsBadUtf8Allowed(String input, Map<String, String> expectedParams) throws CharacterCodingException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
+        boolean allowBadEncoding = true;
+        boolean allowBadPercent = true;
+        boolean allowTruncatedEncoding = true;
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+
+        decoder.parse(input);
+
+        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
+
+        for (String key : expectedParams.keySet())
+        {
+            Fields.Field field = fields.get(key);
+            String message = "Fields[%s]".formatted(key);
+            assertNotNull(field, message);
+            assertEquals(expectedParams.get(key), field.getValue(), message);
+        }
     }
 
     @Test

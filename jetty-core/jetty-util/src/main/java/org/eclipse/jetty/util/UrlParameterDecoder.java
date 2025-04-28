@@ -147,15 +147,19 @@ class UrlParameterDecoder
         if (maxLength >= 0 && charCount++ > maxLength)
             throw new IllegalStateException("Form is larger than max length " + maxLength);
 
-        // only run percent code if not a delimiter
-        boolean isDelim = (c == '&' || c == '=');
+        // characters that can break a pct-encoding parse
+        boolean isPctSpecial = (c == '&' || c == '=' || c == '%');
         switch (percent)
         {
             case 1 ->
             {
-                if (isDelim)
+                if (isPctSpecial)
                 {
-                    builder.append('%');
+                    boolean replaced = builder.replaceIncomplete();
+                    if (replaced && !allowBadEncoding || !allowBadPercent)
+                        throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c".formatted(c));
+                    if (!replaced)
+                        builder.append('%');
                     percent = 0;
                     break;
                 }
@@ -166,45 +170,54 @@ class UrlParameterDecoder
             case 2 ->
             {
                 percent = 0;
-                char hi = (char)percentCode;
-                char lo = (char)c;
-                try
-                {
-                    appendHexByte(hi, lo);
-                }
-                catch (NumberFormatException e)
+                char hi = percentCode;
+                char lo = c;
+                if (isPctSpecial)
                 {
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
                         throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
+                }
+                else
+                {
+                    try
+                    {
+                        appendHexByte(hi, lo);
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        boolean replaced = builder.replaceIncomplete();
+                        if (replaced && !allowBadEncoding || !allowBadPercent)
+                            throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
 
-                    if (hi == '&' || name == null && hi == '=')
-                    {
-                        if (!replaced)
-                            builder.append('%');
-                        builder.append(hi);
-                        builder.append(lo);
-                    }
-                    else if (lo == '&' || name == null && lo == '=')
-                    {
-                        if (!replaced)
+                        if (hi == '&' || name == null && hi == '=')
                         {
-                            builder.append('%');
-                            builder.append(hi);
-                        }
-                        builder.append(lo);
-                    }
-                    else
-                    {
-                        if (!replaced)
-                        {
-                            builder.append('%');
+                            if (!replaced)
+                                builder.append('%');
                             builder.append(hi);
                             builder.append(lo);
                         }
+                        else if (lo == '&' || name == null && lo == '=')
+                        {
+                            if (!replaced)
+                            {
+                                builder.append('%');
+                                builder.append(hi);
+                            }
+                            builder.append(lo);
+                        }
+                        else
+                        {
+                            if (!replaced)
+                            {
+                                builder.append('%');
+                                builder.append(hi);
+                                builder.append(lo);
+                            }
+                        }
                     }
+                    return;
                 }
-                return;
             }
         }
 
@@ -239,6 +252,39 @@ class UrlParameterDecoder
                 case '+' -> builder.append(' ');
                 case '%' -> percent++;
                 default -> builder.append(c);
+            }
+        }
+    }
+
+    private void handleBadPctEncoded(char hi, char lo)
+    {
+        boolean replaced = builder.replaceIncomplete();
+        if (replaced && !allowBadEncoding || !allowBadPercent)
+            throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
+
+        if (hi == '&' || name == null && hi == '=')
+        {
+            if (!replaced)
+                builder.append('%');
+            builder.append(hi);
+            builder.append(lo);
+        }
+        else if (lo == '&' || name == null && lo == '=')
+        {
+            if (!replaced)
+            {
+                builder.append('%');
+                builder.append(hi);
+            }
+            builder.append(lo);
+        }
+        else
+        {
+            if (!replaced)
+            {
+                builder.append('%');
+                builder.append(hi);
+                builder.append(lo);
             }
         }
     }
@@ -307,6 +353,8 @@ class UrlParameterDecoder
 
     private void onNewField(String name, String value)
     {
+        if (name == null || name.isEmpty())
+            return;
         keyCount++;
         newFieldAdder.accept(name, value);
         if (maxKeys >= 0 && keyCount > maxKeys)
