@@ -46,6 +46,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${ee9.jakarta.bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
         <version>${ee9.jakarta.mail.api.version}</version>
@@ -54,13 +61,6 @@
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>${ee9.jakarta.xml.jaxws.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.platform</groupId>
-        <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>${ee9.jakarta.bom.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
