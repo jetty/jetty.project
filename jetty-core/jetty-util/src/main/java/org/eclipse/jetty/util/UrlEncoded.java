@@ -514,8 +514,14 @@ public class UrlEncoded
         if (charset == null)
             charset = ENCODING;
 
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys);
+        CodingErrorAction onMalformedError = CodingErrorAction.REPLACE;
+        CodingErrorAction onUnmappableError = CodingErrorAction.REPLACE;
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset, onMalformedError, onUnmappableError);
+        // Settings to maintain backward compat with Jetty 11.
+        boolean allowBadEncoding = true;
+        boolean allowBadPercent = false;
+        boolean allowTruncatedEncoding = true;
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
         decoder.parse(in, charset);
     }
 

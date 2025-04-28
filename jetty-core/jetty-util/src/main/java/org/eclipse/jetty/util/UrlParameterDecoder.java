@@ -36,7 +36,8 @@ class UrlParameterDecoder
     private final CharsetStringBuilder builder;
     private final boolean allowPartialBufferString;
     private int percent = 0;
-    private char percentCode = 0;
+    private char pctHi;
+    private char pctLo;
     private String name;
     private int keyCount;
     private int charCount;
@@ -144,7 +145,7 @@ class UrlParameterDecoder
 
     private void parse(char c) throws CharacterCodingException
     {
-        if (maxLength >= 0 && charCount++ > maxLength)
+        if (maxLength >= 0 && ++charCount > maxLength)
             throw new IllegalStateException("Form is larger than max length " + maxLength);
 
         // characters that can break a pct-encoding parse
@@ -157,14 +158,14 @@ class UrlParameterDecoder
                 {
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
-                        throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c".formatted(c));
+                        throw new IllegalArgumentException(notValidPctEncoding(c, (char)0));
                     if (!replaced)
                         builder.append('%');
                     percent = 0;
                 }
                 else
                 {
-                    percentCode = c;
+                    pctHi = c;
                     percent++;
                     return;
                 }
@@ -172,36 +173,35 @@ class UrlParameterDecoder
             case 2 ->
             {
                 percent = 0;
-                char hi = percentCode;
-                char lo = c;
+                pctLo = c;
                 if (isPctSpecial)
                 {
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
-                        throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
+                        throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
                     if (!replaced)
                     {
                         builder.append('%');
-                        builder.append(hi);
+                        builder.append(pctHi);
                     }
                 }
                 else
                 {
                     try
                     {
-                        appendHexByte(hi, lo);
+                        appendHexByte(pctHi, pctLo);
                     }
                     catch (NumberFormatException e)
                     {
                         boolean replaced = builder.replaceIncomplete();
                         if (replaced && !allowBadEncoding || !allowBadPercent)
-                            throw new IllegalArgumentException("Invalid pct-encoded sequence %%%c%c".formatted(hi, lo));
+                            throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
 
                         if (!replaced)
                         {
                             builder.append('%');
-                            builder.append(hi);
-                            builder.append(lo);
+                            builder.append(pctHi);
+                            builder.append(pctLo);
                         }
                     }
                     return;
@@ -220,7 +220,12 @@ class UrlParameterDecoder
                 }
                 case '=' -> name = takeBuiltString();
                 case '+' -> builder.append(' ');
-                case '%' -> percent++;
+                case '%' ->
+                {
+                    pctHi = 0;
+                    pctLo = 0;
+                    percent++;
+                }
                 default ->
                 {
                     builder.append(c);
@@ -252,17 +257,17 @@ class UrlParameterDecoder
             if (builder.replaceIncomplete())
             {
                 if (!allowBadEncoding || !allowBadPercent)
-                    throw new IllegalArgumentException("invalid percent encoding");
+                    throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
             }
             else if (allowBadPercent)
             {
                 builder.append('%');
                 if (percent > 1)
-                    builder.append(percentCode);
+                    builder.append(pctHi);
             }
             else
             {
-                throw new IllegalArgumentException("invalid percent encoding");
+                throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
             }
         }
 
@@ -276,6 +281,11 @@ class UrlParameterDecoder
             name = takeBuiltString();
             onNewField(name, "");
         }
+    }
+
+    private String notValidPctEncoding(char hi, char lo)
+    {
+        return "Not valid encoding '%%%c%c'".formatted(hi != 0 ? hi : '?', lo != 0 ? lo : '?');
     }
 
     private void appendHexByte(char hi, char lo)
