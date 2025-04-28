@@ -1022,6 +1022,29 @@
         <type>war</type>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>jetty-fcgi-client</artifactId>
         <version>${project.version}</version>
@@ -1497,6 +1520,12 @@
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-scram</artifactId>
         <version>${wildfly.elytron.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
+        <version>${project.version}</version>
+        <scope>provided</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -60,34 +60,6 @@
         <artifactId>jaxws-rt</artifactId>
         <version>{ee11.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <!-- Jetty EE11 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee11</groupId>
