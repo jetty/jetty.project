@@ -193,20 +193,26 @@ Thanks to the fact that when Jetty starts in JPMS mode the `--add-modules=ALL-MO
 
 There are now two cases for the `postgresql-<version>.jar` file: either it is a proper JPMS module, or it is an automatic JPMS module (either an explicit automatic JPMS module with the `Automatic-Module-Name` attribute in the manifest, or an implicit automatic JPMS module whose name is derived from the `+*.jar+` file name).
 
-If the `postgresql-<version>.jar` file is a proper JPMS module, then there is nothing more that you should do: the `postgresql-<version>.jar` file is in the module-path, and all the modules in the module-path are in the module graph, and any dependency declared in the `module-info.class` will be added to the module graph.
+If the `postgresql-<version>.jar` file is a proper JPMS module, then there is nothing more that you should do: the `postgresql-<version>.jar` file is in the module-path, and all the modules in the module-path are in the module graph (thanks to `--add-modules=ALL-MODULE-PATH`), and any dependency declared in the `module-info.class` will be added to the module graph.
 
 Otherwise, `postgresql-<version>.jar` file is an automatic module, and will likely have a dependency on the JDK-bundled `java.sql` JPMS module.
 Fortunately, when Jetty starts in JPMS mode, the `--add-modules=ALL-DEFAULT` option is also added to the JVM command line, so that all the Java JPMS modules are added to the module graph, and this would include the `java.sql` JPMS module.
 
-In case you need to add a custom library JPMS module to the module graph, you have to manually add it to the module graph.
-Using the `postgresql.mod` introduced in xref:start/index.adoc#configure-custom-module[this section] as an example, modify your custom module and add the dependency to the custom library JPMS module, say `com.acme.pgutils`, in the following way:
+Thanks to the fact that Jetty starts by default adding `--add-modules=ALL-DEFAULT,ALL-MODULE-PATH`, it is enough that you put custom libraries (and their dependencies) in the module-path, and you should not need any extra JPMS configuration.
+
+However, you can explicitly configure JPMS directives in a custom Jetty module, for example to _open_ or _patch_ a JPMS module.
+Using the `postgresql.mod` introduced in xref:start/index.adoc#configure-custom-module[this section] as an example, modify your custom Jetty module and add the JPMS directives you need, like so:
 
 .postgresql.mod
 ----
-...
-
 [jpms]
-add-modules: com.acme.pgutils
+add-modules: <module>(,<module>)*
+patch-module: <module>=<file>(<path-separator><file>)*
+add-opens: <source-module>/<package>=<target-module>(,<target-module>)*
+add-exports: <source-module>/<package>=<target-module>(,<target-module>)*
+add-reads: <source-module>=<target-module>(,<target-module>)*
 ----
+
+The Jetty JPMS directives are equivalent to the JDK JPMS directives.
 
 The `[jpms]` section is only used when Jetty is started on the module-path.
