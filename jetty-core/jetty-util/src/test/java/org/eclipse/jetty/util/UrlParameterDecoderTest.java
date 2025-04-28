@@ -249,7 +249,7 @@ public class UrlParameterDecoderTest
 
         // Encoded ampersands
         cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
-        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param","aaa","&other", "foo")));
+        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param", "aaa", "&other", "foo")));
 
         // pct-encoded parameter names ("帽子" means "hat" in japanese)
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret")));
