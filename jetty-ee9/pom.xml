@@ -62,6 +62,11 @@
         <artifactId>jaxws-rt</artifactId>
         <version>${ee9.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${ee9.jakarta.inject.api.version}</version>
+      </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
