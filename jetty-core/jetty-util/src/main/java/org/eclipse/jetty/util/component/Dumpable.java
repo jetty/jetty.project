@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Dumpable Object")
 public interface Dumpable
 {
-    String LEGEND = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited\n";
+    String LEGEND = "legend: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited\n";
 
     @ManagedOperation(value = "Dump the nested Object state as a String", impact = "INFO")
     default String dump()

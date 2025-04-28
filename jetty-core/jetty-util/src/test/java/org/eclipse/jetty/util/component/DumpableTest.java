@@ -71,7 +71,7 @@ public class DumpableTest
             |     +> ai
             +> be
             +> bee
-            key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited
+            legend: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited
             JVM:"""));
     }
 }
