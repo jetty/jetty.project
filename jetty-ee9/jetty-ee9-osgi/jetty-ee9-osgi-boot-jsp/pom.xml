@@ -143,7 +143,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jsp.impl.version}</versionString>
+              <versionString>${ee9.jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
             </configuration>
           </execution>
