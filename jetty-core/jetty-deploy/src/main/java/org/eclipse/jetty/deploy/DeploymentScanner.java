@@ -847,21 +847,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         app.loadProperties();
 
                         // Ensure Environment name is set
-                        String appEnvironment = app.getEnvironmentName();
-                        if (StringUtil.isBlank(appEnvironment))
-                            appEnvironment = getDefaultEnvironmentName();
-                        app.setEnvironment(Environment.get(appEnvironment));
+                        String envName = app.getEnvironmentName();
+                        if (StringUtil.isBlank(envName))
+                            envName = getDefaultEnvironmentName();
+                        Environment env = Environment.get(envName);
+
+                        if (env == null || !trackedEnvironments.contains(envName))
+                            throw new IllegalArgumentException("Unable to deploy %s to environment %s.  Available Environments to deploy to %s"
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                    .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
-                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes envAttributes = environmentAttributesMap.get(envName);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
                         if (mainPath == null)
                             throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, env, mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the Deployer
@@ -878,21 +883,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         app.loadProperties();
 
                         // Ensure Environment name is set
-                        String appEnvironment = app.getEnvironmentName();
-                        if (StringUtil.isBlank(appEnvironment))
-                            appEnvironment = getDefaultEnvironmentName();
-                        app.setEnvironment(Environment.get(appEnvironment));
+                        String envName = app.getEnvironmentName();
+                        if (StringUtil.isBlank(envName))
+                            envName = getDefaultEnvironmentName();
+                        Environment env = Environment.get(envName);
+
+                        if (env == null || !trackedEnvironments.contains(envName))
+                            throw new IllegalArgumentException("Unable to deploy app [%s] to environment [%s].  Available Environments to deploy to %s"
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                    .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
-                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes envAttributes = environmentAttributesMap.get(envName);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
                         if (mainPath == null)
                             throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, env, mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the Deployer
@@ -1375,23 +1385,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             this.contextHandler = contextHandler;
         }
 
-        public Environment getEnvironment()
-        {
-            return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-        }
-
-        public void setEnvironment(Environment env)
-        {
-            getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, env);
-        }
-
         public String getEnvironmentName()
         {
-            Environment env = getEnvironment();
-            if (env == null)
-                return "";
-            else
+            Object obj = this.attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+            if (obj instanceof String str)
+                return str;
+            if (obj instanceof Environment env)
                 return env.getName();
+            return null;
         }
 
         /**
@@ -1570,21 +1571,23 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 }
             }
 
-            // Look for environment attribute.
+            // Verify that environment exists
             Object envObj = getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-            if (envObj instanceof Environment environment)
+            if (envObj != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Using defaulted environment of {} to {}", name, environment);
-            }
-            else if (envObj instanceof String environmentName)
-            {
-                if (StringUtil.isNotBlank(environmentName))
+                if (envObj instanceof String environmentName)
                 {
-                    Environment env = Environment.get(environmentName);
+                    if (StringUtil.isNotBlank(environmentName))
+                    {
+                        Environment env = Environment.get(environmentName);
+                        if (env == null)
+                            LOG.warn("Environment not found {}", environmentName);
+                    }
+                }
+                else
+                {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Setting environment of {} to {}", name, env);
-                    setEnvironment(env);
+                        LOG.debug("Unable to use attribute {} as type {}", ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, envObj.getClass().getName());
                 }
             }
         }

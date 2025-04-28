@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -28,8 +29,11 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -97,6 +101,28 @@ public class StaticContextHandlerTest
             containsString("Directory: /static/"),
             containsString("<table class=\"listing\">")
         ));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"other", "dnd"})
+    public void testDefaultToUnknownEnvironment(String unknownEnvName) throws Exception
+    {
+        Path webapps = workDir.getEmptyPathDir().resolve("webapps");
+        FS.ensureEmpty(webapps);
+
+        Path staticDir = webapps.resolve("static");
+        FS.ensureEmpty(staticDir);
+        Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
+        Files.writeString(webapps.resolve("static.properties"), """
+            environment=%s
+            """.formatted(unknownEnvName));
+
+        try (StacklessLogging ignored = new StacklessLogging(DeploymentScanner.class))
+        {
+            Assertions.assertThrows(IllegalArgumentException.class, () ->
+                startServer(ds -> ds.addMonitoredDirectory(webapps))
+            );
+        }
     }
 
     @Test
