@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -676,6 +677,110 @@ public class GracefulHandlerTest
         // The socket should have been closed
         assertThat(client0 + " not closed", in.read(), is(-1));
         assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+
+        // Restart the server to make sure handling resumes normally
+        server.start();
+
+        client0 = newSocketToServer("client0");
+        output0 = client0.getOutputStream();
+
+        // Send one normal request to server
+        output0.write(rawRequest.formatted(1).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Verify response
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        assertThat(response.getContent(), is("(Read:10) (Content-Length:10)"));
+
+        client0.close();
+    }
+
+    @Test
+    public void testGracefulAlsoWaitsForStreamWrappers() throws Exception
+    {
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        LatchedStreamWrappingHandler handler = new LatchedStreamWrappingHandler();
+        gracefulHandler.setHandler(handler);
+        server = createServer(gracefulHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        // Complete request
+        String rawRequest = """
+            GET /?num=%d HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            \r
+            """;
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        HttpTester.Response response;
+
+        // Send one normal request to server
+        output0.write(rawRequest.formatted(1).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Verify response
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+
+        // Trigger stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Verify shutdown does not happen while a stream wrapper is pending
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.getCurrentStreamWrapperCount() > 0);
+
+        // Unblock shutdown
+        handler.latch.countDown();
+
+        // Verify shutdown is done
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            long currentRequestCount = gracefulHandler.getCurrentRequestCount();
+            long currentStreamWrapperCount = gracefulHandler.getCurrentStreamWrapperCount();
+            return currentRequestCount == 0 && currentStreamWrapperCount == 0;
+        });
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+    }
+
+    static class LatchedStreamWrappingHandler extends Handler.Abstract
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            LOG.debug("process: request={}", request);
+            request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+            {
+                @Override
+                public void succeeded()
+                {
+                    try
+                    {
+                        if (!latch.await(5, TimeUnit.SECONDS))
+                            throw new TimeoutException();
+                        super.succeeded();
+                    }
+                    catch (Throwable x)
+                    {
+                        super.failed(x);
+                    }
+                }
+            });
+            Integer num = Request.getParameters(request).get("num").getValueAsInt();
+            Content.Sink.write(response, true, "the body #" + num, callback);
+            return true;
+        }
     }
 
     /**
