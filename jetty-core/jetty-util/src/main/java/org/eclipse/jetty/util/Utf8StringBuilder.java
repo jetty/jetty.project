@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -103,7 +102,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected Utf8StringBuilder(StringBuilder buffer, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
     {
-        _buffer = Objects.requireNonNull(buffer);
+        _buffer = buffer;
         _onMalformedInput = onMalformedInput;
         _onUnmappableCharacter = onUnmappableCharacter;
     }

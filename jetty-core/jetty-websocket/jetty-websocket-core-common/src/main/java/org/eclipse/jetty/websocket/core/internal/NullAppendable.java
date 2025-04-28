@@ -26,6 +26,12 @@ public class NullAppendable extends Utf8StringBuilder
     }
 
     @Override
+    public int length()
+    {
+        return 0;
+    }
+
+    @Override
     public void append(CharSequence chars, int offset, int length)
     {
         checkCharAppend();
