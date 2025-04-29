@@ -61,6 +61,7 @@ import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 public class HttpRequest implements Request
@@ -914,6 +915,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", TypeUtil.toShortName(getClass()), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

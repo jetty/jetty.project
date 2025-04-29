@@ -315,8 +315,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public String toString()
     {
-        String name = TypeUtil.toShortName(getClass());
-        return String.format("%s@%x{%s}", name, hashCode(), getState());
+        return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), getState());
     }
 
     /**

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -425,7 +426,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]->[%s]", getClass().getSimpleName(), hashCode(), toEndPointString(), toConnectionString());
+        return String.format("%s@%x[%s]->[%s]", TypeUtil.toShortName(getClass()), hashCode(), toEndPointString(), toConnectionString());
     }
 
     public String toEndPointString()
@@ -447,7 +448,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             return "<null>";
         if (connection instanceof AbstractConnection)
             return ((AbstractConnection)connection).toConnectionString();
-        return String.format("%s@%x", connection.getClass().getSimpleName(), connection.hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(connection.getClass()), connection.hashCode());
     }
 
     private enum State

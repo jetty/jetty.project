@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -104,7 +105,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         }
         catch (Throwable t)
         {
-            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _baseResource, t);
+            LOG.warn("Base resource failure ({} is disabled): {}", TypeUtil.toShortName(this.getClass()), _baseResource, t);
             _baseResource = null;
         }
     }
@@ -276,7 +277,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     {
         String[] protectedTargets = getProtectedTargets();
         return String.format("%s@%x{base=%s,protected=%s}",
-            this.getClass().getSimpleName(),
+            TypeUtil.toShortName(this.getClass()),
             hashCode(),
             _baseResource,
             (protectedTargets == null) ? null : Arrays.asList(protectedTargets));

@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -949,7 +950,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         public String toString()
         {
             return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 _remote,
                 _local,

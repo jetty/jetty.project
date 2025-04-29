@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -90,6 +91,6 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public String toString()
     {
-        return String.format("%s@%x{size=%d}", this.getClass().getSimpleName(), hashCode(), _map.size());
+        return String.format("%s@%x{size=%d}", TypeUtil.toShortName(this.getClass()), hashCode(), _map.size());
     }
 }

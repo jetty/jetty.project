@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -370,6 +371,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public String toString()
     {
-        return String.format("%s@%x[passivating=%b,graceSec=%d]", this.getClass().getName(), this.hashCode(), isPassivating(), getGracePeriodSec());
+        return String.format("%s@%x[passivating=%b,graceSec=%d]", TypeUtil.toShortName(this.getClass()), this.hashCode(), isPassivating(), getGracePeriodSec());
     }
 }

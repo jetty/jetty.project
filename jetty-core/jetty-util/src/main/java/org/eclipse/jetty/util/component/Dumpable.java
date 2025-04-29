@@ -269,7 +269,7 @@ public interface Dumpable
             if (DumpAppendable.hasVisited(out, bean))
             {
                 out.append("@ ");
-                dumpObject(out, object);
+                dumpObject(out, bean);
             }
             else
             {

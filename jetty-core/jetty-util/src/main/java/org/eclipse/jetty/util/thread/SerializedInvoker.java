@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
@@ -192,7 +193,7 @@ public class SerializedInvoker
     @Override
     public String toString()
     {
-        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", getClass().getSimpleName(), hashCode(), _name, _tail, _invokerThread);
+        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", TypeUtil.toShortName(getClass()), hashCode(), _name, _tail, _invokerThread);
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -294,7 +295,7 @@ public class SerializedInvoker
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s[%s] -> %s}", getClass().getSimpleName(), hashCode(), getTask(), getInvocationType(), _next);
+            return String.format("%s@%x{%s[%s] -> %s}", TypeUtil.toShortName(getClass()), hashCode(), getTask(), getInvocationType(), _next);
         }
     }
 
@@ -319,7 +320,7 @@ public class SerializedInvoker
             {
                 String className = stackTraceElement.getClassName();
                 if (!className.equals(SerializedInvoker.class.getName()) &&
-                    !className.equals(SerializedInvoker.this.getClass().getName()) &&
+                    !className.equals(TypeUtil.toShortName(this.getClass())) &&
                     !className.equals(getClass().getName()))
                     return "Queued by " + Thread.currentThread().getName() + " at " + stackTraceElement;
             }

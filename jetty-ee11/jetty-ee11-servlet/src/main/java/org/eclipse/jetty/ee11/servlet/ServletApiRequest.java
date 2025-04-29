@@ -100,6 +100,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -1730,7 +1731,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String toString()
     {
-        return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), _servletContextRequest);
+        return "%s@%x{%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _servletContextRequest);
     }
 
     static class AmbiguousURI extends ServletApiRequest

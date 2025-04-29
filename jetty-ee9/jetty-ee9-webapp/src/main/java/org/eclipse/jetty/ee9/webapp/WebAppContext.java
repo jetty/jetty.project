@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -946,7 +947,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else
             {
-                name = this.getClass().getSimpleName();
+                name = TypeUtil.toShortName(this.getClass());
             }
         }
 

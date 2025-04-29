@@ -570,7 +570,7 @@ public class Blocker
         @Override
         public String toString()
         {
-            return "%s@%x[c=%s]".formatted(getClass().getSimpleName(), hashCode(), _completed);
+            return "%s@%x[c=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _completed);
         }
     }
 }

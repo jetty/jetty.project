@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -326,7 +327,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public String dumpSelf()
     {
-        return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), extensions.size());
+        return String.format("%s@%x[size=%d]", TypeUtil.toShortName(getClass()), hashCode(), extensions.size());
     }
 
     @Override
@@ -360,8 +361,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.incoming == null) ? "<null>" : this.incoming.getClass().getName());
-        s.append(",outgoing=").append((this.outgoing == null) ? "<null>" : this.outgoing.getClass().getName());
+        s.append(",incoming=").append((incoming == null) ? "<null>" : TypeUtil.toShortName(incoming.getClass()));
+        s.append(",outgoing=").append((outgoing == null) ? "<null>" : TypeUtil.toShortName(outgoing.getClass()));
         s.append("]");
         return s.toString();
     }

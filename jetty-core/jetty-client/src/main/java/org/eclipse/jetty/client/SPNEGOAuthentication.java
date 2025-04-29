@@ -32,6 +32,7 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.SecurityUtils;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
@@ -321,7 +322,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         @Override
         public String toString()
         {
-            return String.format("%s@%x[context=%s]", getClass().getSimpleName(), hashCode(), gssContext);
+            return String.format("%s@%x[context=%s]", TypeUtil.toShortName(getClass()), hashCode(), gssContext);
         }
     }
 

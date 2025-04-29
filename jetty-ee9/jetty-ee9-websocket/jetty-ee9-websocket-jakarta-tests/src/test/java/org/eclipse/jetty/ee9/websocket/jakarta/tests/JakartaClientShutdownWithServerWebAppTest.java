@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketCon
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;

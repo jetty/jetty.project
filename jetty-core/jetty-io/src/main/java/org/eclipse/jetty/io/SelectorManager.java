@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -538,6 +539,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     public String toString()
     {
-        return String.format("%s@%x[keys=%d]", getClass().getSimpleName(), hashCode(), getTotalKeys());
+        return String.format("%s@%x[keys=%d]", TypeUtil.toShortName(getClass()), hashCode(), getTotalKeys());
     }
 }

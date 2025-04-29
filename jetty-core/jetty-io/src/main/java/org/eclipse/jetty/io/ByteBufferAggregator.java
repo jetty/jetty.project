@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,6 +140,6 @@ public class ByteBufferAggregator
     @Override
     public String toString()
     {
-        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _maxSize, _retainableByteBuffer);
+        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _aggregatedSize, _currentSize, _maxSize, _retainableByteBuffer);
     }
 }

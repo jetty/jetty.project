@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 public class Dispatcher implements RequestDispatcher
@@ -264,7 +265,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String toString()
         {
-            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getRequest());
+            return "%s@%x{%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), getRequest());
         }
     }
 

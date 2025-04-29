@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -219,7 +220,7 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 
     public static class Stats implements Dumpable
@@ -390,7 +391,7 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
         @Override
         public String toString()
         {
-            return String.format("%s[%s]", getClass().getSimpleName(), getName());
+            return String.format("%s[%s]", TypeUtil.toShortName(getClass()), getName());
         }
     }
 }

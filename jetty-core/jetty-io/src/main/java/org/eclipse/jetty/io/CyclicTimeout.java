@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -191,7 +192,7 @@ public abstract class CyclicTimeout implements Destroyable
         public String toString()
         {
             return String.format("%s@%x:%dms,%s",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 NanoTime.millisUntil(_at),
                 _wakeup);
@@ -298,7 +299,7 @@ public abstract class CyclicTimeout implements Destroyable
         public String toString()
         {
             return String.format("%s@%x:%dms->%s",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at),
                 _next);

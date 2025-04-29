@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 
 public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebSocketFrameHandlerTest
@@ -57,7 +58,7 @@ public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebS
     {
         assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
             allOf(
-                containsString("onError(JakartaWebSocketSession@"),
+                anyOf(containsString("onError(oeje8wjc.JakartaWebSocketSession@"), containsString("onError(oeje9wjc.JakartaWebSocketSession@")),
                 containsString(ErrorSessionThrowableSocket.class.getName()),
                 containsString(EXPECTED_THROWABLE)
             ));

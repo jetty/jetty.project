@@ -25,6 +25,7 @@ import jakarta.servlet.UnavailableException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -253,7 +254,7 @@ public class HttpChannelState
     private String toStringLocked()
     {
         return String.format("%s@%x{%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getStatusStringLocked());
     }

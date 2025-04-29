@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheBinding;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class ForeignQuicheBinding implements QuicheBinding
 {
@@ -79,6 +80,6 @@ public class ForeignQuicheBinding implements QuicheBinding
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{p=" + priority() + " f=" + failure + "}";
+        return TypeUtil.toShortName(getClass()) + "{p=" + priority() + " f=" + failure + "}";
     }
 }

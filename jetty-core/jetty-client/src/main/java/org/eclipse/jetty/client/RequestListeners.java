@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -487,7 +488,7 @@ public class RequestListeners implements Dumpable
         @Override
         public String toString()
         {
-            return "%s@%x(%s,%s)".formatted(getClass().getSimpleName(), hashCode(), prev, next);
+            return "%s@%x(%s,%s)".formatted(TypeUtil.toShortName(getClass()), hashCode(), prev, next);
         }
     }
 

@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
@@ -75,6 +76,6 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}", getClass().getSimpleName(), hashCode(), creator, factory);
+        return String.format("%s@%x{%s,%s}", TypeUtil.toShortName(getClass()), hashCode(), creator, factory);
     }
 }
