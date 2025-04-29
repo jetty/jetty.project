@@ -294,4 +294,46 @@ public class StaticContextHandlerTest
             not(containsString("<table class=\"listing\">"))
         ));
     }
+
+    @Test
+    public void testStaticWithDirectoryWithPropertyBaseResource() throws Exception
+    {
+        Path root = workDir.getEmptyPathDir();
+
+        Path alt = root.resolve("alt");
+        FS.ensureEmpty(alt);
+        Files.writeString(alt.resolve("hello.txt"), "Hello from alt");
+
+        Path webapps = root.resolve("webapps");
+        FS.ensureEmpty(webapps);
+
+        Path staticDir = webapps.resolve("static");
+        FS.ensureEmpty(staticDir);
+        Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
+        Files.writeString(webapps.resolve("static.properties"), """
+            environment=static
+            jetty.deploy.baseResource=%s
+            """.formatted(alt.toString()));
+
+        startServer(ds -> ds.addMonitoredDirectory(webapps));
+
+        String rawResponse = localConnector.getResponse("""
+            GET /static/test.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+
+        rawResponse = localConnector.getResponse("""
+            GET /static/hello.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), is("Hello from alt"));
+    }
 }
