@@ -669,7 +669,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .build();
 
         String mods = String.join(",",
-            "resources", "http", "jmx", "debuglog",
+            "resources", "http", "jmx", "debuglog", "logging-log4j2",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
             toEnvironment("websocket-jakarta", env),
@@ -685,6 +685,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-websocket-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test1");
             distribution.installWar(webApp, "test2");
+
+            Files.copy(Paths.get("src/test/resources/log4j2-debug.xml"),
+                    distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             int port = Tester.freePort();
             List<String> args2 = new ArrayList<>();

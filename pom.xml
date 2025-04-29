@@ -226,7 +226,7 @@
     <ee11.jakarta.servlet.jsp.jstl.api.version>3.0.2</ee11.jakarta.servlet.jsp.jstl.api.version>
     <ee11.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee11.jakarta.servlet.jsp.jstl.impl.version>
     <ee11.jakarta.transaction-api.version>2.0.1</ee11.jakarta.transaction-api.version>
-    <ee11.jakarta.websocket.api.version>2.2.0-M1</ee11.jakarta.websocket.api.version>
+    <ee11.jakarta.websocket.api.version>2.2.0</ee11.jakarta.websocket.api.version>
     <ee11.jakarta.ws.rs.api.version>4.0.0</ee11.jakarta.ws.rs.api.version>
     <ee11.jakarta.xml.bind.api.version>4.0.2</ee11.jakarta.xml.bind.api.version>
     <ee11.jakarta.xml.bind.impl.version>4.0.5</ee11.jakarta.xml.bind.impl.version>
