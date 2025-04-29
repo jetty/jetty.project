@@ -11,14 +11,10 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.security.Authenticator;
-
 module org.eclipse.jetty.ee10.servlet
 {
-    requires org.slf4j;
 
     requires transitive jakarta.servlet;
-    requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.security;
     requires transitive org.eclipse.jetty.session;
 
@@ -33,6 +29,7 @@ module org.eclipse.jetty.ee10.servlet
     requires static java.security.jgss;
     // Only required if using JDBCLoginService.
     requires static java.sql;
+    requires org.eclipse.jetty.ee;
 
     exports org.eclipse.jetty.ee10.servlet;
     exports org.eclipse.jetty.ee10.servlet.listener;
@@ -44,5 +41,5 @@ module org.eclipse.jetty.ee10.servlet
     exports org.eclipse.jetty.ee10.servlet.jmx to
          org.eclipse.jetty.jmx;
 
-    uses Authenticator.Factory;
+    uses org.eclipse.jetty.security.Authenticator.Factory;
 }

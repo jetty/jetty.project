@@ -11,20 +11,6 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee9.webapp.JaasConfiguration;
-import org.eclipse.jetty.ee9.webapp.JaspiConfiguration;
-import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.ee9.webapp.JmxConfiguration;
-import org.eclipse.jetty.ee9.webapp.JndiConfiguration;
-import org.eclipse.jetty.ee9.webapp.JspConfiguration;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.ServletsConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
-
 module org.eclipse.jetty.ee9.webapp
 {
     requires org.slf4j;
@@ -32,23 +18,22 @@ module org.eclipse.jetty.ee9.webapp
     requires transitive java.instrument;
     requires transitive org.eclipse.jetty.ee9.servlet;
     requires transitive org.eclipse.jetty.xml;
-    requires transitive org.eclipse.jetty.ee;
 
     exports org.eclipse.jetty.ee9.webapp;
 
-    uses Configuration;
+    uses org.eclipse.jetty.ee9.webapp.Configuration;
 
-    provides Configuration with
-        FragmentConfiguration,
-        JaasConfiguration,
-        JaspiConfiguration,
-        JettyWebXmlConfiguration,
-        JmxConfiguration,
-        JndiConfiguration,
-        JspConfiguration,
-        MetaInfConfiguration,
-        ServletsConfiguration,
-        WebAppConfiguration,
-        WebInfConfiguration,
-        WebXmlConfiguration;
+    provides org.eclipse.jetty.ee9.webapp.Configuration with
+        org.eclipse.jetty.ee9.webapp.FragmentConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaasConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaspiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration,
+        org.eclipse.jetty.ee9.webapp.JmxConfiguration,
+        org.eclipse.jetty.ee9.webapp.JndiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JspConfiguration,
+        org.eclipse.jetty.ee9.webapp.MetaInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.ServletsConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebAppConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 }

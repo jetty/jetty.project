@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.jetty.ee.Source.Origin;
 import org.eclipse.jetty.ee11.servlet.BaseHolder;
-import org.eclipse.jetty.ee11.servlet.Source.Origin;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.util.resource.Resource;

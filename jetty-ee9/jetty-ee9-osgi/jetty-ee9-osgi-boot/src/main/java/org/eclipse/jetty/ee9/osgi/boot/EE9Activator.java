@@ -21,16 +21,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.AbstractEEActivator;
 import org.eclipse.jetty.osgi.BundleMetadata;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
-import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
@@ -126,12 +125,12 @@ public class EE9Activator extends AbstractEEActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
-                    WebAppClassLoader.runWithHiddenClassAccess(() ->
+                    WebAppClassLoader.runWithServerClassAccess(() ->
                     {
                         Server server = provider.getServer();
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlURI));
                         xmlConfiguration.setJettyStandardIdsAndProperties(server, null);
-                        WebAppClassLoader.runWithHiddenClassAccess(() ->
+                        WebAppClassLoader.runWithServerClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
@@ -216,7 +215,7 @@ public class EE9Activator extends AbstractEEActivator
             try
             {
                 Thread.currentThread().setContextClassLoader(environmentLoader);
-                WebAppClassLoader.runWithHiddenClassAccess(() ->
+                WebAppClassLoader.runWithServerClassAccess(() ->
                 {
                     Configurations.getKnown();
                     return null;
@@ -302,12 +301,12 @@ public class EE9Activator extends AbstractEEActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(webApp.getClassLoader());
-                    WebAppClassLoader.runWithHiddenClassAccess(() ->
+                    WebAppClassLoader.runWithServerClassAccess(() ->
                     {
                         Server server = provider.getServer();
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlUri));
                         xmlConfiguration.setJettyStandardIdsAndProperties(server, null);
-                        WebAppClassLoader.runWithHiddenClassAccess(() ->
+                        WebAppClassLoader.runWithServerClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());

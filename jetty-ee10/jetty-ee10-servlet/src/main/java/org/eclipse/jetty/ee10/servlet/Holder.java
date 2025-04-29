@@ -22,6 +22,7 @@ import java.util.Set;
 
 import jakarta.servlet.Registration;
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.AutoLock;

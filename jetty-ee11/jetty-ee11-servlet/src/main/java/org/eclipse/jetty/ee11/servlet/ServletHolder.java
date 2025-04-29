@@ -42,6 +42,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.UserIdentity;

@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.annotations;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee.Source;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,7 +85,7 @@ public class TestDiscoveredServletContainerInitializerHolder
         //   ASample has subclass BSample
         Map<String, Set<String>> classMap = new HashMap<>();
         classMap.put(Ordinary.class.getName(), new HashSet(Arrays.asList("com.acme.tom", "com.acme.dick")));
-        classMap.put(ASample.class.getName(), new HashSet(Arrays.asList(BSample.class.getName())));
+        classMap.put(ASample.class.getName(), new HashSet(List.of(BSample.class.getName())));
         holder.resolveClasses(classMap);
         
         //we should now have the following classes that will be passed to the SampleServletContainerInitializer.onStartup

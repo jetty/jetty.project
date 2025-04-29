@@ -18,6 +18,7 @@ import java.util.function.BiFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -223,7 +224,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         return ServletContextHandler.getCurrentServletContext();
     }
 
-    public ServletContextHandler getServletContextHandler()
+    public ServletContextHandler  getServletContextHandler()
     {
         ServletContext context = null;
 

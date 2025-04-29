@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.servlet;
 import java.util.EventListener;
 
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.TypeUtil;

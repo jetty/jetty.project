@@ -15,8 +15,8 @@ package org.eclipse.jetty.ee10.annotations;
 
 import java.nio.file.Path;
 
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;

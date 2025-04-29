@@ -19,7 +19,8 @@ import java.util.regex.Matcher;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.ee11.servlet.Source.Origin;
+import org.eclipse.jetty.ee.Source;
+import org.eclipse.jetty.ee.Source.Origin;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 

@@ -237,7 +237,7 @@ public interface Dumpable
             }
         }
     }
-    
+
     static void dumpContainer(Appendable out, String indent, Container object, boolean last) throws IOException
     {
         Container container = object;

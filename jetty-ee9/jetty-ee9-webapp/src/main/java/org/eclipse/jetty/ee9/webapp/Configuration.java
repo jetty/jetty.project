@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.util.TopologicalSort;
 
 /**

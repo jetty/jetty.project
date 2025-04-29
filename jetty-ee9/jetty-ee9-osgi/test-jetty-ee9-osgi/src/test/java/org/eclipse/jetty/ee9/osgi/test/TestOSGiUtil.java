@@ -255,7 +255,6 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-gzip").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-ee").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-security").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-nested").versionAsInProject().start());
