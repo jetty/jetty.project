@@ -84,7 +84,7 @@ class UrlParameterDecoder
      * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
      *
      * @param str the string to parse, completing the parsing after parsing.
-     * @return true if there were no coding errors, false otherwise.
+     * @return true if there were coding errors, false otherwise.
      * @throws CharacterCodingException if a coding issue is encountered with the
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
@@ -102,7 +102,7 @@ class UrlParameterDecoder
      * @param str the string to parse, completing the parsing after parsing.
      * @param offset the offset in the string to start parsing from.
      * @param length the length of the substring to parse.
-     * @return true if there were no coding errors, false otherwise.
+     * @return true if there were coding errors, false otherwise.
      * @throws CharacterCodingException if a coding issue is encountered with the
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
@@ -126,7 +126,7 @@ class UrlParameterDecoder
      * <p>The InputStream is read until EOF</p>
      *
      * @param input the InputStream to parse, completing the parsing after parsing.
-     * @return true if there were no coding errors, false otherwise.
+     * @return true if there were coding errors, false otherwise.
      * @throws CharacterCodingException if a coding issue is encountered with the
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
