@@ -508,7 +508,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
                 ContentResponse response = client.GET(serverUri);
                 String content = response.getContentAsString();
-                assertThat("Response: " + content + System.lineSeparator() + "Logs:" + run2.getLogs(),
+                assertThat("Response: " + content + System.lineSeparator() + "Logs:" + String.join(System.lineSeparator(), run1.getLogs()),
                         response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(content, containsString("WebSocketEcho: success"));
                 assertThat(content, containsString("ConnectTimeout: 4999"));
@@ -677,8 +677,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
-            assertThat("Logs: " + run1.getLogs(), run1.awaitFor(10, TimeUnit.SECONDS), is(true));
-            assertThat("Logs: " + run1.getLogs(), run1.getExitValue(), is(0));
+            assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()),
+                    run1.awaitFor(10, TimeUnit.SECONDS), is(true));
+            assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()),
+                    run1.getExitValue(), is(0));
 
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-websocket-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test1");
