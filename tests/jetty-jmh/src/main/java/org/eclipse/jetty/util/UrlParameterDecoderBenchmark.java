@@ -44,7 +44,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class UrlParameterDecoderBenchmark
 {
     private static final String SMALL_STRING = "param=aaa&other=foo";
+    private static final int SMALL_LENGTH = SMALL_STRING.length();
     private static final String LARGE_STRING = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
+    private static final int LARGE_LENGTH = LARGE_STRING.length();
 
     private UrlParameterDecoder decoder;
     private InputStream smallInputStream;
@@ -71,14 +73,14 @@ public class UrlParameterDecoderBenchmark
     @BenchmarkMode(Mode.Throughput)
     public void testSmallString(Blackhole blackhole) throws Exception
     {
-        blackhole.consume(decoder.parse(SMALL_STRING));
+        blackhole.consume(decoder.parse(SMALL_STRING, 0, SMALL_LENGTH));
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testLargeString(Blackhole blackhole) throws Exception
     {
-        blackhole.consume(decoder.parse(LARGE_STRING));
+        blackhole.consume(decoder.parse(LARGE_STRING, 0, LARGE_LENGTH));
     }
 
     @Benchmark
