@@ -1021,6 +1021,12 @@ public interface Request extends Attributes, Content.Source
         }
     }
 
+    /** Unwrap a Request back to the given type.
+     * @param request the possibly wrapped request to unwrap
+     * @param type the type to unwrap to
+     * @return the request unwrapped back to the given type or
+     * null if it cannot be unwrapped to the supplied type.
+     */
     @SuppressWarnings("unchecked")
     static <T> T as(Request request, Class<T> type)
     {
