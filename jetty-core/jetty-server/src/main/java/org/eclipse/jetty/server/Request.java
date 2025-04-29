@@ -1045,11 +1045,11 @@ public interface Request extends Attributes, Content.Source
     {
         while (request != null)
         {
+            if (request.getContext() != context)
+                return null;
             if (type.isInstance(request))
                 return (T)request;
             request = request instanceof Request.Wrapper wrapper ? wrapper.getWrapped() : null;
-            if (request == null || request.getContext() != context)
-                return null;
         }
         return null;
     }
