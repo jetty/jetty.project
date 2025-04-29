@@ -277,12 +277,13 @@ public class JettyHomeTester
                     Path outputPath = Path.of(outputPathURI);
                     if (Files.isDirectory(path))
                     {
-                        if (!Files.exists(outputPath))
+                        if (Files.notExists(outputPath))
                             Files.createDirectory(outputPath);
                     }
                     else
                     {
-                        Files.copy(path, outputPath);
+                        if (Files.notExists(outputPath))
+                            Files.copy(path, outputPath);
                     }
                 }
             }
