@@ -58,7 +58,7 @@ public class UrlParameterDecoderBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testSmallQuery(Blackhole blackhole) throws Exception
+    public void testSmallString(Blackhole blackhole) throws Exception
     {
         String input = "param=aaa&other=foo";
         newFieldAdder.blackhole = blackhole;
@@ -67,34 +67,36 @@ public class UrlParameterDecoderBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testLargeQuery(Blackhole blackhole) throws Exception
+    public void testLargeString(Blackhole blackhole) throws Exception
     {
         String input = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
         newFieldAdder.blackhole = blackhole;
         blackhole.consume(decoder.parse(input));
     }
 
+    private final InputStream smallInputStream = new ByteArrayInputStream("param=aaa&other=foo".getBytes(UTF_8));
+    private final InputStream largeInputStream = new ByteArrayInputStream("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit".getBytes(UTF_8));
+
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testSmallForm(Blackhole blackhole) throws Exception
+    public void testSmallInputStream(Blackhole blackhole) throws Exception
     {
         String input = "param=aaa&other=foo";
         newFieldAdder.blackhole = blackhole;
-        InputStream in = new ByteArrayInputStream(input.getBytes(UTF_8));
-        blackhole.consume(decoder.parse(in, UTF_8));
+        blackhole.consume(decoder.parse(smallInputStream, UTF_8));
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testLargeForm(Blackhole blackhole) throws Exception
+    public void testLargeInputStream(Blackhole blackhole) throws Exception
     {
         String input = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
         newFieldAdder.blackhole = blackhole;
-        InputStream in = new ByteArrayInputStream(input.getBytes(UTF_8));
-        blackhole.consume(decoder.parse(in, UTF_8));
+        blackhole.consume(decoder.parse(largeInputStream, UTF_8));
     }
 
     private final InputStreamReader smallReader = new InputStreamReader(new ByteArrayInputStream("param=aaa&other=foo".getBytes(UTF_8)));
+    private final InputStreamReader largeReader = new InputStreamReader(new ByteArrayInputStream("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit".getBytes(UTF_8)));
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
@@ -102,6 +104,14 @@ public class UrlParameterDecoderBenchmark
     {
         newFieldAdder.blackhole = blackhole;
         blackhole.consume(decoder.parse(smallReader));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void testLargeReader(Blackhole blackhole) throws Exception
+    {
+        newFieldAdder.blackhole = blackhole;
+        blackhole.consume(decoder.parse(largeReader));
     }
 
     public static void main(String[] args) throws RunnerException

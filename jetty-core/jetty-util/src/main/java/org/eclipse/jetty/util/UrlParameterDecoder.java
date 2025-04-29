@@ -127,6 +127,7 @@ class UrlParameterDecoder
      * <p>The InputStream is read until EOF</p>
      *
      * @param input the InputStream to parse, completing the parsing after parsing.
+     * @param charset the charset to use when parsing the InputStream.
      * @return true if there were coding errors, false otherwise.
      * @throws CharacterCodingException if a coding issue is encountered with the
      * provided {@link CharsetStringBuilder} and the specific condition
@@ -134,16 +135,22 @@ class UrlParameterDecoder
      */
     public boolean parse(InputStream input, Charset charset) throws IOException
     {
-        int c;
-        InputStreamReader reader = new InputStreamReader(input, charset);
-        while ((c = reader.read()) != -1)
-        {
-            parse((char)c);
-        }
-        complete();
-        return builder.hasCodingErrors();
+        return parse(new InputStreamReader(input, charset));
     }
 
+    /**
+     * <p>Parse a Reader completely.</p>
+     *
+     * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
+     *
+     * <p>The Reader is read until EOF</p>
+     *
+     * @param reader the Reader to parse, completing the parsing after parsing.
+     * @return true if there were coding errors, false otherwise.
+     * @throws CharacterCodingException if a coding issue is encountered with the
+     * provided {@link CharsetStringBuilder} and the specific condition
+     * is not allowed by one of the {@code allow*} parameters on the constructor.
+     */
     public boolean parse(Reader reader) throws IOException
     {
         int c;
