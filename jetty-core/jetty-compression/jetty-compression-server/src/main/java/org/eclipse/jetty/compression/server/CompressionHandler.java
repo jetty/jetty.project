@@ -368,6 +368,6 @@ public class CompressionHandler extends Handler.Wrapper
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,supported=%s}", getClass().getSimpleName(), hashCode(), getState(), String.join(",", supportedEncodings.keySet()));
+        return String.format("%s@%x{%s,supported=%s}", TypeUtil.toShortName(getClass()), hashCode(), getState(), String.join(",", supportedEncodings.keySet()));
     }
 }

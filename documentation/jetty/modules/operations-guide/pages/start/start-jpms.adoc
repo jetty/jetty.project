@@ -18,6 +18,7 @@ This makes possible to run Jetty from the module-path, rather than the class-pat
 
 To start Jetty on the module-path rather than the class-path, it is enough to add the `--jpms` option to the command line, for example:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --jpms
 ----
@@ -33,11 +34,11 @@ Therefore, you will have two JVMs running: one that runs `start.jar` and one tha
 Forking a second JVM may be avoided as explained in xref:start/index.adoc#configure-dry-run[this section].
 ====
 
-When Jetty is started in JPMS mode, all JPMS modules in the module-path are added to the set of JPMS _root modules_ through the JVM option `--add-modules ALL_MODULE_PATH`.
+When Jetty is started in JPMS mode, all JPMS modules in the module-path are added to the set of JPMS _root modules_ through the JVM option `--add-modules=ALL-MODULE-PATH`.
 
 For a `+*.jar+` file that is not a JPMS module, but is on the module-path, the JVM will assume internally it is an automatic JPMS module, with a JPMS module name derived from the `+*.jar+` file name.
 
-Rather than adding the `--jpms` option to the command line, you can use a custom Jetty module to centralize your JPMS configuration, where you can specify additional JPMS directives.
+As an alternative to adding the `--jpms` option to the command line, you can use a custom Jetty module to centralize your JPMS configuration, where you can specify additional JPMS directives.
 
 Create the `$JETTY_BASE/modules/jpms.mod` file:
 
@@ -52,11 +53,126 @@ The `[jpms]` section allows you to specify additional JPMS configuration, for ex
 
 Then enable it:
 
+[source,bash]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=jpms
 ----
 
 Now you can start Jetty without extra command line options, and it will start in JPMS mode because you have enabled the `jpms` module.
+
+[[advantages]]
+== Advantages of JPMS
+
+The main advantage of running Jetty in JPMS mode is that it provides early error reporting if a dependency is missing, especially in case of custom Jetty modules.
+
+If a Jetty module requires a specific library `+*.jar+` file, and the `+*.jar+` file is missing, this will be detected early when running in JPMS mode, since the `+*.jar+` file would be a JPMS module, and the JPMS module graph resolution would detect this problem as the JVM starts up.
+When running in class-path mode, this problem can only be detected when the library classes are loaded, therefore much later at run-time, when an HTTP request arrives and its processing requires to load the library classes.
+
+Similarly, duplicate `+*.jar+` files, of possibly different versions, are not allowed by JPMS.
+This is again detected early, at JVM startup, when running in JPMS mode, rather than passing completely unnoticed when running in class-path mode, where classes may be loaded from either of those `+*.jar+` files, possibly from the wrong version.
+
+Another advantage of running Jetty in JPMS mode is that JPMS provides strong encapsulation.
+This means that it is not possible to use reflection to access non-exported classes in JPMS modules within the `ModuleLayer` hierarchy.
+This is enforced at the JVM level, not at the application level through, for example, a custom `ClassLoader` that performs class loading filtering.
+
+It also means that it is not possible to use reflection to access sibling ``ModuleLayer``s.
+For example a Jakarta {ee-prev-caps} web application would not be able to use reflection to access a sibling Jakarta {ee-current-caps} web application.
+
+[[hierarchy]]
+== Server Module-Path and ModuleLayers
+
+When the Jetty server is started in JPMS mode, there will be two JVMs: one started by you with `java -jar $JETTY_HOME/start.jar` and one forked by the Jetty start mechanism.
+
+NOTE: Remember that you can avoid to fork a second JVM, as described in xref:start/index.adoc#configure-dry-run[this section].
+
+The forked JVM is started with `+java --module-path $JETTY_HOME/lib/jetty-server-<version>.jar:...+`, and therefore has the server libraries in its module-path, loaded by the System ClassLoader, in the boot `ModuleLayer`:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Jetty Start JVM" as startJVM {
+  rectangle "System ClassLoader" as system1
+  note right of system1: start.jar
+}
+
+rectangle "Forked JVM" as forkedJVM {
+  rectangle "Boot ModuleLayer" as bootLayer {
+    rectangle "System ClassLoader" as system2
+
+    note right of system2: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+  }
+}
+
+startJVM --> forkedJVM: " waits for"
+----
+
+When a Jakarta EE Jetty module is enabled, for example the `{ee-current}-webapp` and/or the `{ee-current}-deploy` module, the forked JVM is configured as follows:
+
+[plantuml,subs=+attributes]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Forked JVM" as forkedJVM {
+  rectangle "Boot ModuleLayer" as bootLayer {
+    rectangle "System ClassLoader" as systemCL
+
+    note right of systemCL: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+  }
+  rectangle "Jetty {ee-current-caps} ModuleLayer" as envLayer {
+    rectangle "Jetty {ee-current-caps} ClassLoader" as envCL
+
+    note right of envCL: jakarta.servlet-api.jar\njetty-{ee-current}-servlet.jar\njetty-{ee-current}-deploy.jar\netc.
+  }
+}
+
+bootLayer <-- envLayer
+systemCL <.. envCL
+----
+
+Note how the parent of the Jetty {ee-current-caps} `ClassLoader` is the System `ClassLoader`, and how the parent of the Jetty {ee-current-caps} `ModuleLayer` is the Boot `ModuleLayer`.
+
+When different versions of the Jakarta EE Jetty modules are enabled, the forked JVM is configured as follows:
+
+[plantuml,subs=+attributes]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Forked JVM" as forkedJVM {
+  rectangle "Boot ModuleLayer" as bootLayer {
+    rectangle "System ClassLoader" as systemCL
+
+    note right of systemCL: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+  }
+  rectangle "Jetty {ee-prev-caps} ModuleLayer" as envLayer1 {
+    rectangle "Jetty {ee-prev-caps} ClassLoader" as envCL1
+
+    note left of envCL1: jakarta.servlet-api.jar ({ee-prev})\njetty-{ee-prev}-servlet.jar\njetty-{ee-prev}-deploy.jar\netc.
+  }
+  rectangle "Jetty {ee-current-caps} ModuleLayer" as envLayer2 {
+    rectangle "Jetty {ee-current-caps} ClassLoader" as envCL2
+
+    note right of envCL2: jakarta.servlet-api.jar ({ee-current})\njetty-{ee-current}-servlet.jar\njetty-{ee-current}-deploy.jar\netc.
+  }
+}
+
+bootLayer <-- envLayer1
+bootLayer <-- envLayer2
+systemCL <.. envCL1
+systemCL <.. envCL2
+----
+
+Note how the Jetty EE ``ClassLoaders``s are siblings, and both have the System `ClassLoader` as parent.
+Note also how the Jetty EE ``ModuleLayer``s are siblings, and both have the Boot `ModuleLayer` as parent.
 
 [[advanced]]
 == Advanced JPMS Configuration
@@ -73,24 +189,30 @@ However, when running on the module-path, things are quite different.
 When Jetty tries to load, for example, class `org.postgresql.ds.PGConnectionPoolDataSource`, it must be in a JPMS module that is resolved in the run-time module graph.
 Furthermore, any dependency, for example classes from the `java.sql` JPMS module, must also be in a module present in the resolved module graph.
 
-Thanks to the fact that when Jetty starts in JPMS mode the `--add-modules ALL_MODULE_PATH` option is added to the JVM command line, every `+*.jar+` file in the module-path is also present in the module graph.
+Thanks to the fact that when Jetty starts in JPMS mode the `--add-modules=ALL-MODULE-PATH` option is added to the JVM command line, every `+*.jar+` file in the module-path is also present in the module graph.
 
 There are now two cases for the `postgresql-<version>.jar` file: either it is a proper JPMS module, or it is an automatic JPMS module (either an explicit automatic JPMS module with the `Automatic-Module-Name` attribute in the manifest, or an implicit automatic JPMS module whose name is derived from the `+*.jar+` file name).
 
-If the `postgresql-<version>.jar` file is a proper JPMS module, then there is nothing more that you should do: the `postgresql-<version>.jar` file is in the module-path, and all the modules in the module-path are in the module graph, and any dependency declared in the `module-info.class` will be added to the module graph.
+If the `postgresql-<version>.jar` file is a proper JPMS module, then there is nothing more that you should do: the `postgresql-<version>.jar` file is in the module-path, and all the modules in the module-path are in the module graph (thanks to `--add-modules=ALL-MODULE-PATH`), and any dependency declared in the `module-info.class` will be added to the module graph.
 
 Otherwise, `postgresql-<version>.jar` file is an automatic module, and will likely have a dependency on the JDK-bundled `java.sql` JPMS module.
-However, the `java.sql` JPMS module is not in the module graph, because automatic modules do not have a way to declare their dependencies.
+Fortunately, when Jetty starts in JPMS mode, the `--add-modules=ALL-DEFAULT` option is also added to the JVM command line, so that all the Java JPMS modules are added to the module graph, and this would include the `java.sql` JPMS module.
 
-For this reason, you have to manually add the `java.sql` dependency to the module graph.
-Using the `postgresql.mod` introduced in xref:start/index.adoc#configure-custom-module[this section] as an example, modify your custom module in the following way:
+Thanks to the fact that Jetty starts by default adding `--add-modules=ALL-DEFAULT,ALL-MODULE-PATH`, it is enough that you put custom libraries (and their dependencies) in the module-path, and you should not need any extra JPMS configuration.
+
+However, you can explicitly configure JPMS directives in a custom Jetty module, for example to _open_ or _patch_ a JPMS module.
+Using the `postgresql.mod` introduced in xref:start/index.adoc#configure-custom-module[this section] as an example, modify your custom Jetty module and add the JPMS directives you need, like so:
 
 .postgresql.mod
 ----
-...
-
 [jpms]
-add-modules: java.sql
+add-modules: <module>(,<module>)*
+patch-module: <module>=<file>(<path-separator><file>)*
+add-opens: <source-module>/<package>=<target-module>(,<target-module>)*
+add-exports: <source-module>/<package>=<target-module>(,<target-module>)*
+add-reads: <source-module>=<target-module>(,<target-module>)*
 ----
+
+The Jetty JPMS directives are equivalent to the JDK JPMS directives.
 
 The `[jpms]` section is only used when Jetty is started on the module-path.

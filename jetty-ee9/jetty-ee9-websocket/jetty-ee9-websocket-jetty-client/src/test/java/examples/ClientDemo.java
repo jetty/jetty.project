@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.OpCode;
 
 /**
@@ -55,7 +56,7 @@ public class ClientDemo
         {
             if (verbose)
             {
-                System.err.printf("%s#onWebSocketConnect %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketConnect %s %s\n", TypeUtil.toShortName(this.getClass()), session, session.getClass().getSimpleName());
             }
         }
 

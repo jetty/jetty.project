@@ -44,6 +44,7 @@ import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -839,7 +840,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     @Override
     public String toString()
     {
-        return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
+        return String.format("%s@%x[streams=%d,%s]", TypeUtil.toShortName(getClass()), hashCode(), streamCount.get(), closeState);
     }
 
     /**

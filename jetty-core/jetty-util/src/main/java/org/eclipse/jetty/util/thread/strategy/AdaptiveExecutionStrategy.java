@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -611,7 +612,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private void getString(StringBuilder builder)
     {
-        builder.append(getClass().getSimpleName());
+        builder.append(TypeUtil.toShortName(getClass()));
         builder.append('@');
         builder.append(Integer.toHexString(hashCode()));
         builder.append('/');

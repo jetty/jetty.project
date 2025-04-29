@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -54,7 +55,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     private static final Logger LOG = LoggerFactory.getLogger(DebugListener.class);
     private static final DateCache __date = new DateCache("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
 
-    private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
+    private final String _attr = String.format("__R%s@%x", TypeUtil.toShortName(this.getClass()), System.identityHashCode(this));
 
     private final PrintStream _out;
     private boolean _renameThread;
@@ -125,14 +126,14 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             if (_out == null)
             {
                 handler.dumpStdErr();
-                System.err.println(Dumpable.KEY);
+                System.err.println(Dumpable.LEGEND);
             }
             else
             {
                 try
                 {
                     handler.dump(_out);
-                    _out.println(Dumpable.KEY);
+                    _out.println(Dumpable.LEGEND);
                 }
                 catch (Exception e)
                 {

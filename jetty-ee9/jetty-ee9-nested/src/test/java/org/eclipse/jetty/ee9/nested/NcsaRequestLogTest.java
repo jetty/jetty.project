@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -591,7 +592,7 @@ public class NcsaRequestLogTest
         @Override
         public String toString()
         {
-            return this.getClass().getSimpleName();
+            return TypeUtil.toShortName(this.getClass());
         }
     }
 

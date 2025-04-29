@@ -567,7 +567,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _connector);
+            return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), _connector);
         }
     }
 
@@ -629,7 +629,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public String toString()
         {
-            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), _pattern);
+            return "%s@%x{%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _pattern);
         }
     }
 
@@ -669,7 +669,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _method);
+            return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), _method);
         }
     }
 
@@ -710,7 +710,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _pathSpec);
+            return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), _pathSpec);
         }
     }
 

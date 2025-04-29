@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 
 public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebSocketFrameHandlerTest
@@ -84,7 +85,7 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     {
         assertOnCloseInvocation(new CloseSessionSocket(),
             allOf(
-                containsString("onClose(JakartaWebSocketSession@"),
+                anyOf(containsString("onClose(oeje8wjc.JakartaWebSocketSession@"), containsString("onClose(oeje9wjc.JakartaWebSocketSession@")),
                 containsString(CloseSessionSocket.class.getName())
             ));
     }
@@ -121,7 +122,7 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     {
         assertOnCloseInvocation(new CloseSessionReasonSocket(),
             allOf(
-                containsString("onClose(JakartaWebSocketSession@"),
+                anyOf(containsString("onClose(oeje8wjc.JakartaWebSocketSession@"), containsString("onClose(oeje9wjc.JakartaWebSocketSession@")),
                 containsString(CloseSessionReasonSocket.class.getName())
             ));
     }

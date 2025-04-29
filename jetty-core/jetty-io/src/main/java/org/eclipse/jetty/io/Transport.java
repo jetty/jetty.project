@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -185,7 +186,7 @@ public interface Transport
         @Override
         public String toString()
         {
-            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 
@@ -415,7 +416,7 @@ public interface Transport
         @Override
         public String toString()
         {
-            return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
     }
 }

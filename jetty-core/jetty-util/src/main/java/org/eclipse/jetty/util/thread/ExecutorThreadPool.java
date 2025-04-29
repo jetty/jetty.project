@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -427,7 +428,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     public String toString()
     {
         return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d,%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             getName(),
             hashCode(),
             getState(),

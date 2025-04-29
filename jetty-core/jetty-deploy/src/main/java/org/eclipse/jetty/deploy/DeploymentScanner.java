@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -1618,7 +1619,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         @Override
         public String toString()
         {
-            StringBuilder str = new StringBuilder("%s@%x".formatted(this.getClass().getSimpleName(), hashCode()));
+            StringBuilder str = new StringBuilder("%s@%x".formatted(TypeUtil.toShortName(this.getClass()), hashCode()));
             str.append("[").append(name);
             str.append("|").append(getState());
             str.append(", env=").append(getEnvironmentName());

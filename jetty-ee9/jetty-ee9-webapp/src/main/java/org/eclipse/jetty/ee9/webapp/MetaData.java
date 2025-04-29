@@ -150,8 +150,9 @@ public class MetaData
         @Override
         public String toString()
         {
+            // This format must not change over versions.
             if (descriptor != null)
-                return descriptor.toString();
+                return descriptor.getClass().getSimpleName() + "(" + descriptor.getURI() + ")";
             if (annotation != null)
                 return "@" + annotation.annotationType().getSimpleName() + "(" + annotated.getName() + ")";
             return origin.toString();

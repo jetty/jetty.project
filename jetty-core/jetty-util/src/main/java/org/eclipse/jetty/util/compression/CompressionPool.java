@@ -18,6 +18,7 @@ import java.io.Closeable;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -167,7 +168,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     public String toString()
     {
         return String.format("%s@%x{%s,size=%d,capacity=%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getState(),
             (_pool == null) ? -1 : _pool.size(),

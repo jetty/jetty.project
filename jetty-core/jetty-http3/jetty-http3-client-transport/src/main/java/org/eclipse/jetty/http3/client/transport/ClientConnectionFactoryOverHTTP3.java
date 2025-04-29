@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory, HttpClient.Aware
@@ -101,7 +102,7 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
         @Override
         public String toString()
         {
-            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+            return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 }

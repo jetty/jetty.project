@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.content.HttpContent.Factory;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any
@@ -63,7 +64,7 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%s]".formatted(getClass().getSimpleName(), hashCode(), _factory, _preCompressedFormats);
+        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _factory, _preCompressedFormats);
     }
 
     private static class CompressedFormatsHttpContent extends HttpContent.Wrapper

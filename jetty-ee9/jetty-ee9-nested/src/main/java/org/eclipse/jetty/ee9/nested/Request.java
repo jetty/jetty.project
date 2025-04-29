@@ -95,6 +95,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -1977,7 +1978,7 @@ public class Request implements HttpServletRequest
     public String toString()
     {
         return String.format("%s%s%s %s%s@%x",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             _handled ? "[" : "(",
             getMethod(),
             getHttpURI(),

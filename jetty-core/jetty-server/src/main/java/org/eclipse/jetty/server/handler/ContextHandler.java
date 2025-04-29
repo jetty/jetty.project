@@ -1530,7 +1530,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public String toString()
         {
-            return "%s@%x".formatted(getClass().getSimpleName(), ContextHandler.this.hashCode());
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), ContextHandler.this.hashCode());
         }
 
         @Override

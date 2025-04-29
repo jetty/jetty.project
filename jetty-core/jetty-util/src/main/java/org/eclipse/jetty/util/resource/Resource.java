@@ -32,6 +32,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -467,6 +468,6 @@ public abstract class Resource implements Iterable<Resource>
         URI uri = getURI();
         if (uri != null)
             str = getURI().toASCIIString();
-        return "(" + this.getClass().getSimpleName() + ") " + str;
+        return "(" + TypeUtil.toShortName(this.getClass()) + ") " + str;
     }
 }

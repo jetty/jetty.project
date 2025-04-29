@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -256,7 +257,7 @@ public interface HttpContent
         @Override
         public String toString()
         {
-            return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), _delegate);
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _delegate);
         }
     }
 }

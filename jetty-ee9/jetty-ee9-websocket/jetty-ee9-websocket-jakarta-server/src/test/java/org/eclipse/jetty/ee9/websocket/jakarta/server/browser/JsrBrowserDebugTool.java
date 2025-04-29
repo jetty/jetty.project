@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +97,6 @@ public class JsrBrowserDebugTool
         JakartaWebSocketServletContainerInitializer.configure(context,
             (servletContext, container) -> container.addEndpoint(JsrBrowserSocket.class));
 
-        LOG.info("{} setup on port {}", this.getClass().getName(), port);
+        LOG.info("{} setup on port {}", TypeUtil.toShortName(this.getClass()), port);
     }
 }

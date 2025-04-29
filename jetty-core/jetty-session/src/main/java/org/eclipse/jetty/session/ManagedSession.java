@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -821,7 +822,7 @@ public class ManagedSession implements Session
         try (AutoLock ignored = _lock.lock())
         {
             return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 _sessionData.getId(),
                 _extendedId,

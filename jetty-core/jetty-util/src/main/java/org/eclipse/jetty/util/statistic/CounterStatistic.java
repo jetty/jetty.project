@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * <p>Statistics on a counter value.</p>
  * <p>This class keeps the total, current and maximum value of a counter
@@ -125,6 +127,6 @@ public class CounterStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{c=%d,m=%d,t=%d}", getClass().getSimpleName(), hashCode(), getCurrent(), getMax(), getTotal());
+        return String.format("%s@%x{c=%d,m=%d,t=%d}", TypeUtil.toShortName(getClass()), hashCode(), getCurrent(), getMax(), getTotal());
     }
 }

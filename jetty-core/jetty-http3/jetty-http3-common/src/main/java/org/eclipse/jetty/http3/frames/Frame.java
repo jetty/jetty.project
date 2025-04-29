@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.frames;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public abstract class Frame
 {
     public static boolean isLast(Frame frame)
@@ -36,6 +38,6 @@ public abstract class Frame
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 }

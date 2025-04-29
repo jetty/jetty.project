@@ -18,7 +18,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 import javax.naming.NameNotFoundException;
-import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.ee9.webapp.WebAppContext;

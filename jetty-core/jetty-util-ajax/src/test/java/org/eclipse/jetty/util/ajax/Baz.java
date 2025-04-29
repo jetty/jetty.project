@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public class Baz
 {
     private String _message;
@@ -66,7 +68,7 @@ public class Baz
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
+        return "\n=== " + TypeUtil.toShortName(getClass()) + " ===" +
             "\nmessage: " + getMessage() +
             "\nboolean2: " + isBoolean2() +
             "\nfoo: " + getFoo();

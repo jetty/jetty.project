@@ -89,6 +89,6 @@ public class CountingCallback extends Callback.Nested
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 }

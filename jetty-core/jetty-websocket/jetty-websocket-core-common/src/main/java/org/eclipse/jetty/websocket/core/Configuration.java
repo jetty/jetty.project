@@ -15,6 +15,8 @@ package org.eclipse.jetty.websocket.core;
 
 import java.time.Duration;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public interface Configuration
 {
     /**
@@ -244,7 +246,7 @@ public interface Configuration
         {
             return String.format("%s@%x{idleTimeout=%s, writeTimeout=%s, autoFragment=%s, maxFrameSize=%s, " +
                     "inputBufferSize=%s, outputBufferSize=%s, maxBinaryMessageSize=%s, maxTextMessageSize=%s, maxOutgoingFrames=%s}",
-                getClass().getSimpleName(), hashCode(),
+                TypeUtil.toShortName(getClass()), hashCode(),
                 idleTimeout, writeTimeout, autoFragment, maxFrameSize, inputBufferSize, outputBufferSize,
                 maxBinaryMessageSize, maxTextMessageSize, maxOutgoingFrames);
         }

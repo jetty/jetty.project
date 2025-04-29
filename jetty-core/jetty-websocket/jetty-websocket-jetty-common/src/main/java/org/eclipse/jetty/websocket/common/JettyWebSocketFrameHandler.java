@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -409,7 +410,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public String toString()
     {
-        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
+        return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), this.hashCode(), TypeUtil.toShortName(endpointInstance.getClass()));
     }
 
     public static Throwable convertCause(Throwable cause)

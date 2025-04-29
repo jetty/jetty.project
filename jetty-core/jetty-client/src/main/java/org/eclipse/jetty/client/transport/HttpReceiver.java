@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -578,7 +579,7 @@ public abstract class HttpReceiver implements Invocable
     public String toString()
     {
         return String.format("%s@%x(ex=%s,rsp=%s,failure=%s)",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getHttpExchange(),
                 responseState,
@@ -884,7 +885,7 @@ public abstract class HttpReceiver implements Invocable
         @Override
         public String toString()
         {
-            return String.format("%s@%x{c=%s,d=%s}", getClass().getSimpleName(), hashCode(), chunk(), demandCallbackRef);
+            return String.format("%s@%x{c=%s,d=%s}", TypeUtil.toShortName(getClass()), hashCode(), chunk(), demandCallbackRef);
         }
     }
 }

@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -554,7 +555,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         @Override
         public String toString()
         {
-            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+            return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 
