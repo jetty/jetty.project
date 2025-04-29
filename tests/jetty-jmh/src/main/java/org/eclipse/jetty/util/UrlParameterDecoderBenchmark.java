@@ -81,7 +81,6 @@ public class UrlParameterDecoderBenchmark
     @BenchmarkMode(Mode.Throughput)
     public void testSmallInputStream(Blackhole blackhole) throws Exception
     {
-        String input = "param=aaa&other=foo";
         newFieldAdder.blackhole = blackhole;
         blackhole.consume(decoder.parse(smallInputStream, UTF_8));
     }
@@ -90,7 +89,6 @@ public class UrlParameterDecoderBenchmark
     @BenchmarkMode(Mode.Throughput)
     public void testLargeInputStream(Blackhole blackhole) throws Exception
     {
-        String input = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
         newFieldAdder.blackhole = blackhole;
         blackhole.consume(decoder.parse(largeInputStream, UTF_8));
     }
