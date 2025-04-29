@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
@@ -135,6 +136,17 @@ class UrlParameterDecoder
     {
         int c;
         InputStreamReader reader = new InputStreamReader(input, charset);
+        while ((c = reader.read()) != -1)
+        {
+            parse((char)c);
+        }
+        complete();
+        return builder.hasCodingErrors();
+    }
+
+    public boolean parse(Reader reader) throws IOException
+    {
+        int c;
         while ((c = reader.read()) != -1)
         {
             parse((char)c);
