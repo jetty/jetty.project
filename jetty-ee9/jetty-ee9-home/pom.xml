@@ -482,7 +482,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
