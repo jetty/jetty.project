@@ -21,9 +21,11 @@ import java.util.function.BiConsumer;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
@@ -56,6 +58,24 @@ public class UrlParameterDecoderBenchmark
     private final BlackholeBiConsumer newFieldAdder = new BlackholeBiConsumer();
     private final UrlParameterDecoder decoder = new UrlParameterDecoder(CharsetStringBuilder.forCharset(UTF_8), newFieldAdder);
 
+    InputStream smallInputStream;
+    InputStream largeInputStream;
+    InputStreamReader smallReader;
+    InputStreamReader largeReader;
+
+    @Setup(Level.Invocation)
+    public void setupTrial()
+    {
+        byte[] small = "param=aaa&other=foo".getBytes(UTF_8);
+        byte[] large = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit".getBytes(UTF_8);
+
+        smallInputStream = new ByteArrayInputStream(small);
+        largeInputStream = new ByteArrayInputStream(large);
+
+        smallReader = new InputStreamReader(new ByteArrayInputStream(small));
+        largeReader = new InputStreamReader(new ByteArrayInputStream(large));
+    }
+
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testSmallString(Blackhole blackhole) throws Exception
@@ -74,9 +94,6 @@ public class UrlParameterDecoderBenchmark
         blackhole.consume(decoder.parse(input));
     }
 
-    private final InputStream smallInputStream = new ByteArrayInputStream("param=aaa&other=foo".getBytes(UTF_8));
-    private final InputStream largeInputStream = new ByteArrayInputStream("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit".getBytes(UTF_8));
-
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testSmallInputStream(Blackhole blackhole) throws Exception
@@ -92,9 +109,6 @@ public class UrlParameterDecoderBenchmark
         newFieldAdder.blackhole = blackhole;
         blackhole.consume(decoder.parse(largeInputStream, UTF_8));
     }
-
-    private final InputStreamReader smallReader = new InputStreamReader(new ByteArrayInputStream("param=aaa&other=foo".getBytes(UTF_8)));
-    private final InputStreamReader largeReader = new InputStreamReader(new ByteArrayInputStream("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit".getBytes(UTF_8)));
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
@@ -117,8 +131,8 @@ public class UrlParameterDecoderBenchmark
         Options opt = new OptionsBuilder()
             .include(UrlParameterDecoderBenchmark.class.getSimpleName())
             .forks(1)
-//             .addProfiler(LinuxPerfNormProfiler.class)
-//             .addProfiler(LinuxPerfAsmProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
             .build();
 
         new Runner(opt).run();
