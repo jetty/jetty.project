@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client.transport;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public class SendFailure
 {
     public final Throwable failure;
@@ -28,7 +30,7 @@ public class SendFailure
     public String toString()
     {
         return String.format("%s@%x[failure=%s,retry=%b]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             failure,
             retry);

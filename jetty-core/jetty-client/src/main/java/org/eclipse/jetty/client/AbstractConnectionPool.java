@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -578,7 +579,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     public String toString()
     {
         return String.format("%s@%x[s=%s,c=%d/%d/%d,a=%d,i=%d,q=%d,p=%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getState(),
             getPendingConnectionCount(),

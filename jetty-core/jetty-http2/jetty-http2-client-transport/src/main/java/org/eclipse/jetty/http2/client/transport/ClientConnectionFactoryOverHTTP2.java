@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory, HttpClient.Aware
@@ -142,7 +143,7 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         @Override
         public String toString()
         {
-            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
+            return String.format("%s@%x%s", TypeUtil.toShortName(getClass()), hashCode(), protocols);
         }
     }
 }

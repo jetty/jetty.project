@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Environment;
@@ -168,7 +169,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException("Unable to init " + this.getClass().getSimpleName(), e);
+            throw new RuntimeIOException("Unable to init " + TypeUtil.toShortName(this.getClass()), e);
         }
     }
 

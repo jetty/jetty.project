@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -930,7 +931,7 @@ public class HttpGenerator
     public String toString()
     {
         return String.format("%s@%x{s=%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _state);
     }

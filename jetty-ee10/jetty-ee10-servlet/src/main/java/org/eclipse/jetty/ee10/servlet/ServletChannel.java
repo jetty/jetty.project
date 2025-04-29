@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -696,13 +697,13 @@ public class ServletChannel
         if (_servletContextRequest == null)
         {
             return String.format("%s@%x{null}",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode());
         }
 
         long timeStamp = Request.getTimeStamp(_servletContextRequest);
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _state,
             _requests,

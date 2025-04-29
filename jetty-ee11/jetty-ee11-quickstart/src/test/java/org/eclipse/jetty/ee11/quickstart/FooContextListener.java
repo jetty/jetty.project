@@ -19,11 +19,11 @@ import java.util.Set;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletRegistration;
+import org.hamcrest.Matchers;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * FooContextListener
@@ -46,7 +46,7 @@ public class FooContextListener implements ServletContextListener
         if (rego != null)
         {
             Set<String> otherMappings = rego.addMapping("/");
-            assertTrue(otherMappings.isEmpty());
+            assertThat(otherMappings, Matchers.empty());
             Collection<String> fooMappings = rego.getMappings();
             assertThat("/", is(in(fooMappings)));
         }

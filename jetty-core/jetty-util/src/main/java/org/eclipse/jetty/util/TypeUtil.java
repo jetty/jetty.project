@@ -712,11 +712,16 @@ public class TypeUtil
     }
 
     /**
-     * Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
-     * so that in the case a {@link ServiceConfigurationError} is thrown it warns and
-     * continues iterating through the service loader.
-     * <br>Usage Example:
-     * <p>{@code ServiceLoader.load(Service.class).stream().flatMap(TypeUtil::providerMap).collect(Collectors.toList());}</p>
+     * <p>Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
+     * so that in the case a {@link ServiceConfigurationError} is thrown the iteration
+     * continues to the next service provider.</p>
+     * <p>Usage Example:</p>
+     * <pre>{@code
+     * List<Service> services = ServiceLoader.load(Service.class).stream()
+     *         .flatMap(TypeUtil::mapToService)
+     *         .toList();
+     * }</pre>
+     *
      * @param <T> The class of the service type.
      * @param provider The service provider to instantiate.
      * @return a stream of the loaded service providers.
@@ -729,15 +734,21 @@ public class TypeUtil
         }
         catch (ServiceConfigurationError error)
         {
-            LOG.warn("Service Provider failed to load", error);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Service Provider failed to load", error);
             return Stream.empty();
         }
     }
 
     /**
-     * Utility method to provide a stream of the service type from a {@link ServiceLoader}.
-     * Log warnings will be given for any {@link ServiceConfigurationError}s which occur when loading or
-     * instantiating the services.
+     * <p>Utility method to provide a stream of the service type from a {@link ServiceLoader}.
+     * {@link ServiceConfigurationError}s thrown when loading or instantiating the service
+     * instances are logged at DEBUG level and ignored, so that the stream can proceed with
+     * the next service provider.</p>
+     * <p>Consider using {@link #serviceProviderStream(ServiceLoader)} if you want to
+     * explicitly handle {@link ServiceConfigurationError}s thrown when loading or
+     * instantiating the service instances.</p>
+     *
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.
      * @return a stream of the service type which will not throw {@link ServiceConfigurationError}.
@@ -748,9 +759,12 @@ public class TypeUtil
     }
 
     /**
-     * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
-     * However, this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
-     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
+     * <p>Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.</p>
+     * <p>However, this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.</p>
+     * <p>Consider using {@link #serviceStream(ServiceLoader)} to ignore exceptions and continue the
+     * iteration.</p>
+     *
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.
      * @return A stream that lazily loads providers for this loader's service

@@ -17,6 +17,7 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,6 +187,6 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
     @Override
     public String toString()
     {
-        return String.format("%s@%x(exchange=%s)", getClass().getSimpleName(), hashCode(), getHttpExchange());
+        return String.format("%s@%x(exchange=%s)", TypeUtil.toShortName(getClass()), hashCode(), getHttpExchange());
     }
 }

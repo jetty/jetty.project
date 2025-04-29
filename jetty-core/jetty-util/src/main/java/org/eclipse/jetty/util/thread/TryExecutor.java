@@ -16,6 +16,8 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * A variation of Executor that can confirm if a thread is available immediately
  */
@@ -67,7 +69,7 @@ public interface TryExecutor extends Executor
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), executor);
+            return String.format("%s@%x[%s]", TypeUtil.toShortName(getClass()), hashCode(), executor);
         }
     }
 

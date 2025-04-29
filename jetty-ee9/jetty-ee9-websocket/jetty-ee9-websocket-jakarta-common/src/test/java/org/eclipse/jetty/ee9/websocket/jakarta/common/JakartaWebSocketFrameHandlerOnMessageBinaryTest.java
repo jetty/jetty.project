@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -106,7 +107,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
         assertThrows(InvalidSignatureException.class, () ->
             assertOnMessageInvocation(new MessageSessionSocket(),
                 allOf(
-                    containsString("onMessage(JakartaWebSocketSession@"),
+                    anyOf(containsString("onMessage(oeje8wjc.JakartaWebSocketSession@"), containsString("onMessage(oeje9wjc.JakartaWebSocketSession@")),
                     containsString(MessageSessionSocket.class.getName())
                 ))
         );
@@ -127,7 +128,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
             allOf(
-                containsString("onMessage(JakartaWebSocketSession@"),
+                anyOf(containsString("onMessage(oeje8wjc.JakartaWebSocketSession@"), containsString("onMessage(oeje9wjc.JakartaWebSocketSession@")),
                 containsString(MessageSessionByteBufferSocket.class.getName())
             ));
     }

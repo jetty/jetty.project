@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -826,7 +827,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         long timeStamp = _request == null ? 0 : _request.getTimeStamp();
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _state,
             _requests,

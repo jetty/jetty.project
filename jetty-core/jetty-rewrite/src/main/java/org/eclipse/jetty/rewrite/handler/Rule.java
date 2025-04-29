@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>An abstract rule that, upon matching a certain condition, may wrap
@@ -60,7 +61,7 @@ public abstract class Rule
     @Override
     public String toString()
     {
-        return "%s@%x[terminating=%b]".formatted(getClass().getSimpleName(), hashCode(), isTerminating());
+        return "%s@%x[terminating=%b]".formatted(TypeUtil.toShortName(getClass()), hashCode(), isTerminating());
     }
 
     /**

@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1118,7 +1119,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int queue = getQueueSize();
 
         return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%dms,q=%d}[%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             _name,
             hashCode(),
             getState(),

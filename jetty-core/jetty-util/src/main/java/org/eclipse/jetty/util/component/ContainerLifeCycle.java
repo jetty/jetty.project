@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.slf4j.Logger;
@@ -409,7 +410,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} added {}", String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), newBean);
+            LOG.debug("{} added {}", String.format("%s@%x", TypeUtil.toShortName(this.getClass()), hashCode()), newBean);
 
         return true;
     }

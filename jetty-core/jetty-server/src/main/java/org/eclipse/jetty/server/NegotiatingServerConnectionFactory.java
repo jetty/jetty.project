@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.TypeUtil;
 
 public abstract class NegotiatingServerConnectionFactory extends AbstractConnectionFactory
 {
@@ -107,6 +108,6 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), getProtocols(), getDefaultProtocol(), getNegotiatedProtocols());
+        return String.format("%s@%x{%s,%s,%s}", TypeUtil.toShortName(getClass()), hashCode(), getProtocols(), getDefaultProtocol(), getNegotiatedProtocols());
     }
 }

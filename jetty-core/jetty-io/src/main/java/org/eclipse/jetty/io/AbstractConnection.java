@@ -328,7 +328,7 @@ public abstract class AbstractConnection implements Connection
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
+            return String.format("%s@%x{%s}", TypeUtil.toShortName(getClass()), hashCode(), AbstractConnection.this);
         }
     }
 }
