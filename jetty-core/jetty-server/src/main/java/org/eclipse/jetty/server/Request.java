@@ -1033,6 +1033,27 @@ public interface Request extends Attributes, Content.Source
         return null;
     }
 
+    /** Unwrap a Request back to the given type, ensuring that we do not cross a
+     * context boundary (as might be the case during cross-context dispatch).
+     * @param request the possibly wrapped request to unwrap
+     * @param type the type to unwrap to
+     * @param context the limiting context
+     * @return the request unwrapped back to the given type, or null if it cannot be
+     * unwrapped to that type or a context boundary is crossed.
+     */
+    static <T extends Request> T as(Request request, Class<T> type, Context context)
+    {
+        while (request != null)
+        {
+            if (type.isInstance(request))
+                return (T)request;
+            request = request instanceof Request.Wrapper wrapper ? wrapper.getWrapped() : null;
+            if (request == null || request.getContext() != context)
+                return null;
+        }
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     static <T, R> R get(Request request, Class<T> type, Function<T, R> getter)
     {
