@@ -61,9 +61,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DistributionHandlerTests extends AbstractJettyHomeTest
+public class DistributionCoreHandlerTests extends AbstractJettyHomeTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DistributionHandlerTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DistributionCoreHandlerTests.class);
 
     @Test
     public void testInetAccessHandler() throws Exception
