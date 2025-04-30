@@ -43,7 +43,6 @@
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <javax.servlet.jsp.api.version>2.3</javax.servlet.jsp.api.version>
-    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
   </properties>
 
@@ -274,15 +273,6 @@
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-          <version>${modify-sources-plugin.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

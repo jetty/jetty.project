@@ -36,10 +36,6 @@
     <module>jetty-ee10-websocket</module>
   </modules>
 
-  <properties>
-    <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>

@@ -30,10 +30,21 @@
     <checkstyle.skip>true</checkstyle.skip>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-demos/jetty-servlet5-demos/${ee9.module}</ee9.module.path>
-    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <warSourceDirectory>${project.build.directory}/webapp</warSourceDirectory>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${ee9.jakarta.bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <pluginManagement>
@@ -53,11 +64,6 @@
             <warSourceDirectory>${warSourceDirectory}</warSourceDirectory>
             <failOnMissingWebXml>true</failOnMissingWebXml>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-          <version>${modify-sources-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

@@ -186,10 +186,11 @@
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.40.0</eclipse.jdt.ecj.version>
-
     <ee10.jakarta.activation.api.version>2.1.3</ee10.jakarta.activation.api.version>
     <ee10.jakarta.annotation.api.version>2.1.1</ee10.jakarta.annotation.api.version>
     <ee10.jakarta.authentication.api.version>3.0.0</ee10.jakarta.authentication.api.version>
+
+    <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee10.jakarta.el.api.version>5.0.1</ee10.jakarta.el.api.version>
     <ee10.jakarta.enterprise.cdi.api.version>4.0.1</ee10.jakarta.enterprise.cdi.api.version>
     <ee10.jakarta.enterprise.lang.model.version>4.0.1</ee10.jakarta.enterprise.lang.model.version>
@@ -373,6 +374,8 @@
     <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
+
+    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.1.3</mongodb.version>
     <netty.version>4.1.115.Final</netty.version>
@@ -1902,6 +1905,11 @@
             <includeSystemScope>true</includeSystemScope>
             <includeTestScope>false</includeTestScope>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.eclipse.jetty.toolchain</groupId>
+          <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+          <version>${modify-sources-plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
