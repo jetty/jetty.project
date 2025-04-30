@@ -28,12 +28,15 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -739,13 +742,53 @@ public class IO
     {
         if (fileObject == null)
             return null;
-        if (fileObject instanceof File)
-            return (File)fileObject;
-        if (fileObject instanceof String)
-            return new File((String)fileObject);
-        if (fileObject instanceof Path)
-            return ((Path)fileObject).toFile();
+        if (fileObject instanceof File file)
+            return file;
+        if (fileObject instanceof Path path)
+            return path.toFile();
+        if (fileObject instanceof String str)
+        {
+            // attempt to support absolute, relative, partial, and URI syntaxes.
+            if (URIUtil.hasScheme(str))
+            {
+                try
+                {
+                    URI uri = new URI(str);
+                    if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Not a local file system: {}", str);
+                        return null;
+                    }
+                    return Path.of(uri).toFile();
+                }
+                catch (URISyntaxException e)
+                {
+                    // A few reasons for arriving here.
+                    // 1) The input string has a segment that looks like a scheme, but isn't a URI.
+                    //    Eg: "C:\path\to\dir"
+                    // 2) The input string has unencoded characters that are not allowed in a url (like spaces)
+                    //    Eg: "C:\path\to dir with spaces\"
+                    // We ignore this and continue with normal path processing instead.
+                    LOG.trace("ignored", e);
+                }
+            }
 
+            try
+            {
+                Path path = Path.of(str);
+                return path.toFile();
+            }
+            catch (InvalidPathException x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("String is not on local file system: {}", str);
+                return null;
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Not able to be converted to a File object: ({}) {}", fileObject.getClass().getName(), fileObject);
         return null;
     }
 

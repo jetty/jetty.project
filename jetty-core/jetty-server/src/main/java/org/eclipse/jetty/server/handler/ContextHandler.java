@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -72,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * A {@link Handler} that scopes a request to a specific {@link Context}.
  */
 @ManagedObject
-public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
+public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck, Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
@@ -137,6 +138,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     private String _displayName;
     private String _contextPath = "/";
+    private boolean _defaultContextPath = true;
     private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
@@ -668,6 +670,46 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return false;
     }
 
+    @Override
+    public void initializeDefaults(Attributes attributes)
+    {
+        for (String keyName : attributes.getAttributeNameSet())
+        {
+            Object value = attributes.getAttribute(keyName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("init {}: {}", keyName, value);
+
+            switch (keyName)
+            {
+                case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
+                case Deployable.CONTEXT_PATH -> setContextPath((String)value);
+                case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
+                default -> initializeDefault(keyName, value);
+            }
+        }
+        initializeDefaultsComplete();
+    }
+
+    /**
+     * Called for each attribute key encountered during the
+     * {@link Deployable#initializeDefaults(Attributes)} processing.
+     *
+     * @param keyName the key name
+     * @param value the value
+     */
+    protected void initializeDefault(String keyName, Object value)
+    {
+    }
+
+    /**
+     * Called after all attributes are processed via
+     * {@link Deployable#initializeDefaults(Attributes)}, to allow
+     * any kind of extra processing of the configuration.
+     */
+    protected void initializeDefaultsComplete()
+    {
+    }
+
     protected ClassLoader enterScope(Request contextRequest)
     {
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
@@ -1174,6 +1216,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             throw new IllegalStateException(getState());
         _contextPath = URIUtil.canonicalPath(Objects.requireNonNull(contextPath));
         _rootContext = "/".equals(contextPath);
+        _defaultContextPath = false;
+    }
+
+    public void setDefaultContextPath(String contextPath)
+    {
+        // Don't set default context path, if context-path is set before init (like from XML)
+        if (isContextPathDefault())
+        {
+            setContextPath(contextPath);
+            _defaultContextPath = true;
+        }
+    }
+
+    public boolean isContextPathDefault()
+    {
+        return _defaultContextPath;
     }
 
     /**

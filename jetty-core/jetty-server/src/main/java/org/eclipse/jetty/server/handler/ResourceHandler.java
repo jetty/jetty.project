@@ -101,9 +101,21 @@ public class ResourceHandler extends Handler.Wrapper
             if (context != null)
                 _baseResource = context.getBaseResource();
         }
-        else if (_baseResource.isAlias())
+
+        if (_baseResource == null)
         {
-            LOG.warn("Base Resource should not be an alias");
+            LOG.warn("Base Resource should not be null");
+        }
+        else
+        {
+            if (!Resources.isDirectory(_baseResource))
+            {
+                LOG.warn("Base Resource should be a directory: {}", _baseResource);
+            }
+            if (_baseResource.isAlias())
+            {
+                LOG.warn("Base Resource should not be an alias");
+            }
         }
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());

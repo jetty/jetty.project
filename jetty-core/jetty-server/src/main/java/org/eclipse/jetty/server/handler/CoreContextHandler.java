@@ -22,18 +22,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -41,13 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A classloader isolated Core WebApp.
+ * A Core WebApp.
  *
  * <p>
  * The Base Resource represents the metadata base that defines this {@code CoreContextHandler}.
  * </p>
  * <p>
- * The metadata base can be a directory on disk, or a non-traditional {@code war} file with the following contents.
+ * The metadata base can be a directory on disk, or an archive file (supporting {@code jar}, {@code zip}, and {@code war}) with the following contents.
  * </p>
  * <ul>
  *     <li>{@code <metadata>/lib/*.jar} - the jar files for the classloader of this webapp</li>
@@ -55,7 +53,7 @@ import org.slf4j.LoggerFactory;
  *     <li>{@code <metadata>/static/} - the static content to serve for this webapp</li>
  * </ul>
  * <p>
- *     Note: if using the non-traditional {@code war} as your metadata base, the
+ *     Note: if using the archive file as your metadata base, the
  *     existence of {@code <metadata>/lib/*.jar} files means the archive will be
  *     unpacked into the temp directory defined by this core webapp.
  * </p>
@@ -64,19 +62,22 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
     private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.webapp.originalBaseResource";
+    private static final String[] SUPPORTED_ARCHIVE_EXTENSIONS = new String[]{"war", "jar", "zip"};
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
     private boolean _builtClassLoader = false;
+    private Boolean deferredDirAllowed;
 
     public CoreContextHandler()
     {
-        this("/");
+        this(null);
     }
 
     public CoreContextHandler(String contextPath)
     {
-        super();
-        setContextPath(contextPath);
+        // don't set contextPath if not provided, leave it at "default" of "/" (to maintain default-context-path behaviors)
+        if (contextPath != null)
+            setContextPath(contextPath);
     }
 
     /**
@@ -89,41 +90,81 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     }
 
     @Override
-    public void initializeDefaults(Attributes attributes)
+    protected void initializeDefault(String keyName, Object value)
     {
-        try
+        switch (keyName)
         {
-            // This CoreContextHandler is arriving via a Deployer
-            for (String keyName : attributes.getAttributeNameSet())
+            case Deployable.DIR_ALLOWED ->
             {
-                Object value = attributes.getAttribute(keyName);
-
-                switch (keyName)
+                if (value instanceof String str)
+                    setDirAllowed(Boolean.parseBoolean(str));
+                else if (value instanceof Boolean bool)
+                    setDirAllowed(bool);
+            }
+            case Deployable.MAIN_PATH ->
+            {
+                // The Base Resource
+                Path mainPath = (Path)value;
+                if (FileID.isExtension(mainPath, SUPPORTED_ARCHIVE_EXTENSIONS) || Files.isDirectory(mainPath))
                 {
-                    case Deployable.CONTEXT_PATH, Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
-                    case Deployable.OTHER_PATHS ->
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource baseResource = resourceFactory.newResource((Path)value);
+                    setBaseResource(baseResource);
+                }
+            }
+            case Deployable.OTHER_PATHS ->
+            {
+                //noinspection unchecked
+                java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
+                Path mainDir = null;
+
+                for (Path path : deployablePaths)
+                {
+                    if (Files.isDirectory(path))
                     {
-                        // The Base Resource (before init) is a nominated directory ("/<name>.d/")
-
-                        //noinspection unchecked
-                        java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)value;
-                        Optional<Path> optionalDir = deployablePaths.stream()
-                            .sorted(PathCollators.byName(true))
-                            .filter(Files::isDirectory)
-                            .filter(p -> FileID.isExtension(p.getFileName().toString(), "d"))
-                            .findFirst();
-
-                        if (optionalDir.isPresent())
+                        if (mainDir == null)
                         {
-                            ResourceFactory resourceFactory = ResourceFactory.of(this);
-                            Resource resourceDir = resourceFactory.newResource(optionalDir.get());
-                            setBaseResource(resourceDir);
+                            mainDir = path;
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("More than one directory is not supported: " +
+                                deployablePaths.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
                         }
                     }
                 }
-            }
 
-            // Init the webapp, unpack if necessary, create the classloader, etc.
+                if (mainDir != null)
+                {
+                    // A single directory is the only form supported.
+                    // The breakdown of this directory (classes/, lib/*.jar, static/) is done by initWebApp();
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource resourceDir = resourceFactory.newResource(mainDir);
+                    setBaseResource(resourceDir);
+                }
+            }
+        }
+    }
+
+    private void setDirAllowed(Boolean bool)
+    {
+        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
+        if (resourceHandler != null)
+        {
+            resourceHandler.setDirAllowed(bool);
+        }
+        else
+        {
+            deferredDirAllowed = bool;
+        }
+    }
+
+    @Override
+    protected void initializeDefaultsComplete()
+    {
+        // Init the webapp, unpack if necessary, create the classloader, etc.
+        try
+        {
             initWebApp();
         }
         catch (IOException e)
@@ -227,7 +268,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         if (!Resources.isDirectory(base))
         {
             // see if we can unpack this reference.
-            if (FileID.isExtension(base.getURI(), "zip", "jar", "war"))
+            if (FileID.isExtension(base.getURI(), SUPPORTED_ARCHIVE_EXTENSIONS))
             {
                 // We have an archive that needs to be unpacked
                 setAttribute(ORIGINAL_BASE_RESOURCE, base.getURI());
@@ -254,6 +295,8 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             {
                 ResourceHandler resourceHandler = new ResourceHandler();
                 resourceHandler.setBaseResource(staticDir);
+                if (deferredDirAllowed != null)
+                    resourceHandler.setDirAllowed(deferredDirAllowed);
                 setHandler(resourceHandler);
             }
         }
@@ -268,7 +311,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
     {
-        boolean alreadyExists = false;
         for (Handler handler : getHandlers())
         {
             if (handler instanceof ResourceHandler resourceHandler)
@@ -279,12 +321,12 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                     URI baseResourceURI = baseResource.getURI();
                     if (baseResourceURI.equals(staticDir.getURI()))
                     {
-                        alreadyExists = true;
+                        return true;
                     }
                 }
             }
         }
-        return alreadyExists;
+        return false;
     }
 
     @Override
