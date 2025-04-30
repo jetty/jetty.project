@@ -16,7 +16,7 @@
     <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
-      <version>${ee9.jakarta.mail.api.version}</version>
+<!--      <version>${ee9.jakarta.mail.api.version}</version>-->
       <scope>provided</scope>
     </dependency>
     <dependency>
