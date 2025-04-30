@@ -478,7 +478,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         boolean ssl = "https".equals(scheme);
         String mods = String.join(",",
-            "resources", "server", "jmx",
+            "resources", "server", "jmx", "logging-log4j2",
             ssl ? "https,test-keystore" : "http",
             toEnvironment("webapp", env),
             toEnvironment("websocket-jakarta", env),
@@ -493,6 +493,10 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-websocket-client-provided-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test");
+
+            Files.copy(Paths.get("src/test/resources/log4j2-debug.xml"),
+                    distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             int port = Tester.freePort();
             List<String> args = new ArrayList<>();
