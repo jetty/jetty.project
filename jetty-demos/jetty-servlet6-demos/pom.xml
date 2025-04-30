@@ -30,7 +30,7 @@
       <dependency>
         <groupId>jakarta.platform</groupId>
         <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>${ee10.jakarta.bom.version}</version>
+        <version>${ee11.jakarta.bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

@@ -36,11 +36,6 @@
     <module>jetty-ee11-websocket</module>
   </modules>
 
-  <properties>
-    <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
-    <jersey.version>${ee11.jersey.version}</jersey.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
