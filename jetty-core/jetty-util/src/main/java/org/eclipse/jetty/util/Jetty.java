@@ -65,7 +65,7 @@ public class Jetty
             pkg.getImplementationVersion() != null)
             VERSION = pkg.getImplementationVersion();
         else
-            VERSION = System.getProperty("jetty.version", __buildProperties.getProperty("version", "10.0.z-SNAPSHOT"));
+            VERSION = System.getProperty("jetty.version", __buildProperties.getProperty("version", "12.0.z-SNAPSHOT"));
 
         POWERED_BY = "<a href=\"https://jetty.org/\">Powered by Jetty:// " + VERSION + "</a>";
 
