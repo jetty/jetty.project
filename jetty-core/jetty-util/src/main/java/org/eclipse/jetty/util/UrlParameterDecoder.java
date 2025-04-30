@@ -106,7 +106,7 @@ class UrlParameterDecoder
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(String charSequence, int offset, int length) throws IOException
+    public boolean parse(CharSequence charSequence, int offset, int length) throws IOException
     {
         return parseCompletely(new CharSequenceCharIterator(charSequence, offset, length));
     }
