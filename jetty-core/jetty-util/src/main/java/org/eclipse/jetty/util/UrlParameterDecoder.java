@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
@@ -395,16 +396,27 @@ class UrlParameterDecoder
     protected static class ReaderCharIterator implements CharIterator
     {
         private final Reader reader;
+        private final CharBuffer buffer;
 
         public ReaderCharIterator(Reader reader)
         {
             this.reader = reader;
+            this.buffer = CharBuffer.allocate(128);
+            this.buffer.flip();
         }
 
         @Override
         public int next() throws IOException
         {
-            return reader.read();
+            if (!buffer.hasRemaining())
+            {
+                buffer.clear();
+                if (reader.read(buffer) == -1)
+                    return -1;
+                buffer.flip();
+            }
+
+            return buffer.get();
         }
     }
 }
