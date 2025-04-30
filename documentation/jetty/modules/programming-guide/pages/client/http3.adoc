@@ -17,7 +17,9 @@ In the vast majority of cases, client applications should use the generic, high-
 
 The high-level HTTP library supports cookies, authentication, redirection, connection pooling and a number of other features that are absent in the low-level HTTP/3 library.
 
-The HTTP/3 client library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
+The low-level HTTP/3 client library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
+
+Support for the QUIC protocol underlying HTTP/3 is provided by default via Jetty classes that wrap the link:https://github.com/cloudflare/quiche[Quiche] native library.
 
 See also the correspondent xref:server/http3.adoc[HTTP/3 server library].
 
@@ -50,14 +52,21 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 ----
 
 `HTTP3Client` allows client applications to connect to an HTTP/3 server.
-A _session_ represents a single connection to an HTTP/3 server and is defined by class `org.eclipse.jetty.http3.api.Session`.
-A _session_ typically has a long life -- once the connection is established, it remains active until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the connection.
 
-HTTP/3 is a multiplexed protocol because it relies on the multiplexing capabilities of QUIC, the protocol based on UDP that transports HTTP/3 frames.
-Thanks to multiplexing, multiple HTTP/3 requests are sent on the same QUIC connection, or _session_.
-Each request/response cycle is represented by a _stream_.
-Therefore, a single _session_ manages multiple concurrent _streams_.
-A _stream_ has typically a very short life compared to the _session_: a _stream_ only exists for the duration of the request/response cycle and then disappears.
+The HTTP/3 protocol is layered on top of the underlying QUIC protocol.
+
+When a client wants to establish a connection with a server, the QUIC protocol establishes the connection with the server, represented by a QUIC _session_.
+
+A QUIC _session_ typically has a long life -- once the connection is established, it remains active until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the connection.
+
+There is a 1-to-1 relationship between a QUIC _session_ and an HTTP/3 _session_, defined by class `org.eclipse.jetty.http3.api.Session`.
+
+The QUIC protocol is multiplexed, that is it allows multiple, independent, QUIC _streams_ to exchange data to and from the server, over a single connection.
+Therefore, a single QUIC _session_ manages multiple concurrent QUIC _streams_.
+
+There is a 1-to-1 relationship between a QUIC _stream_ and an HTTP/3 _stream_, defined by class `org.eclipse.jetty.http3.api.Stream`.
+
+Each HTTP/3 request/response cycle is carried by an HTTP/3 _stream_, and has typically a very short life compared to the _session_: a _stream_ only exists for the duration of the request/response cycle and then disappears.
 
 // TODO: flow control?
 //[[pg-client-http3-flow-control]]
@@ -93,7 +102,7 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 The `Session.Client.Listener` is notified of session events originated by the server such as receiving a `SETTINGS` frame from the server, or the server closing the connection, or the client timing out the connection due to idleness.
 Please refer to the `Session.Client.Listener` link:{javadoc-url}/org/eclipse/jetty/http3/api/Session.Client.Listener.html[javadocs] for the complete list of events.
 
-Once a `Session` has been established, the communication with the server happens by exchanging _frames_.
+Once a `Session` has been established, the communication with the server happens by exchanging HTTP/3 _frames_ over QUIC _streams_.
 
 [[request]]
 == Sending a Request
@@ -121,7 +130,7 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 ----
 
 IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(\...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
-Use the `CompletableFuture` APIs to ensure that the second `Stream.data(\...)` call is performed when the first completed successfully.
+Use the `Promise` APIs to ensure that the second `Stream.data(\...)` call is performed when the first completed successfully.
 
 [[response]]
 == Receiving a Response
@@ -142,14 +151,14 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 // TODO: flow control?
 //include::../../http3.adoc[tag=apiFlowControl]
 
-[[reset]]
-== Resetting a Request or Response
+[[terminate]]
+== Terminating a Request or Response
 
-In HTTP/3, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, by resetting the stream.
+In HTTP/3, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, by terminating the stream.
 
-The `HTTP3Client` APIs allow client applications to send and receive this "reset" event:
+The `HTTP3Client` APIs allow client applications to send and receive this event:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=reset]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=terminate]
 ----

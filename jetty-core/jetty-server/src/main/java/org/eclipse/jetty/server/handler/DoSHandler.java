@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -357,7 +358,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             {
                 try (AutoLock ignored = _lock.lock())
                 {
-                    return "%s@%s{%d/%d}".formatted(getClass().getSimpleName(), _id, _bucket, _maxRequestsPerSecond);
+                    return "%s@%s{%d/%d}".formatted(TypeUtil.toShortName(getClass()), _id, _bucket, _maxRequestsPerSecond);
                 }
             }
         }

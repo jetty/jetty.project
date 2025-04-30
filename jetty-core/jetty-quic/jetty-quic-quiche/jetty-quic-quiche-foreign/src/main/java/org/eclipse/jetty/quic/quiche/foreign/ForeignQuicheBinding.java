@@ -18,9 +18,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheBinding;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class ForeignQuicheBinding implements QuicheBinding
 {
@@ -59,19 +60,19 @@ public class ForeignQuicheBinding implements QuicheBinding
     }
 
     @Override
-    public QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public Quiche connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
         return ForeignQuicheConnection.connect(quicheConfig, local, peer, connectionIdLength);
     }
 
     @Override
-    public boolean negotiate(QuicheConnection.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
+    public boolean negotiate(Quiche.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
     {
         return ForeignQuicheConnection.negotiate(tokenMinter, packetRead, packetToSend);
     }
 
     @Override
-    public QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
+    public Quiche tryAccept(QuicheConfig quicheConfig, Quiche.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
         return ForeignQuicheConnection.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
     }
@@ -79,6 +80,6 @@ public class ForeignQuicheBinding implements QuicheBinding
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{p=" + priority() + " f=" + failure + "}";
+        return TypeUtil.toShortName(getClass()) + "{p=" + priority() + " f=" + failure + "}";
     }
 }

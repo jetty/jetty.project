@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class Entry
 {
@@ -91,7 +92,7 @@ public class Entry
     @Override
     public String toString()
     {
-        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", getClass().getSimpleName(), hashCode(),
+        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", TypeUtil.toShortName(getClass()), hashCode(),
             _absoluteIndex, _referenceCount.get(), _field);
     }
 

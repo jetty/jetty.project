@@ -79,7 +79,7 @@ public class ThreadStarvationTest extends AbstractTest
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
-                assertTrue(result.isSucceeded());
+                assertTrue(result.isSucceeded(), server.dump());
                 assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
                 responseLatch.countDown();
             });

@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -327,7 +328,7 @@ public class WebSocketSession implements Session, Dumpable
     public String dumpSelf()
     {
         return String.format("%s@%x[idleTimeout=%dms]",
-            this.getClass().getSimpleName(), hashCode(),
+            TypeUtil.toShortName(this.getClass()), hashCode(),
             getIdleTimeout().toMillis());
     }
 

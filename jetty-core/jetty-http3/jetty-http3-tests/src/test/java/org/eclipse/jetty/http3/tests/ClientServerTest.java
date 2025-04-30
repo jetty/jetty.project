@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -27,39 +28,41 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3Configuration;
-import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
-import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.common.QuicErrorCode;
-import org.eclipse.jetty.quic.common.QuicSession;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientServerTest extends AbstractClientServerTest
 {
-    @Test
-    public void testConnectTriggersSettingsFrame() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConnectTriggersSettingsFrame(TransportType transportType) throws Exception
     {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -98,15 +101,16 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testSettings() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSettings(TransportType transportType) throws Exception
     {
         Map.Entry<Long, Long> maxTableCapacity = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_TABLE_CAPACITY, 1024L);
         Map.Entry<Long, Long> maxHeaderSize = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_FIELD_SECTION_SIZE, 2048L);
         Map.Entry<Long, Long> maxBlockedStreams = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_BLOCKED_STREAMS, 16L);
         CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -151,12 +155,13 @@ public class ClientServerTest extends AbstractClientServerTest
         assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
     }
 
-    @Test
-    public void testGETThenResponseWithoutContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testGETThenResponseWithoutContent(TransportType transportType) throws Exception
     {
         AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -164,7 +169,7 @@ public class ClientServerTest extends AbstractClientServerTest
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 serverRequestLatch.countDown();
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 // Not interested in request data.
                 return null;
             }
@@ -174,15 +179,14 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    clientResponseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                clientResponseLatch.countDown();
+            }
+        }, p));
         assertNotNull(stream);
 
         assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
@@ -192,26 +196,27 @@ public class ClientServerTest extends AbstractClientServerTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverSession.getStreams().isEmpty()); // onRequest is called *before* the serverSession's streams collection is cleaned up -> racy
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty()); // onResponse is called *before* the clientSession's streams collection is cleaned up -> racy
 
-        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
-        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ProtocolSession serverProtocolSession = serverSession.getProtocolSession();
+        assertTrue(serverProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
 
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
-        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
+        assertTrue(clientProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
     }
 
-    @Test
-    public void testDiscardRequestContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDiscardRequestContent(TransportType transportType) throws Exception
     {
         AtomicReference<CountDownLatch> serverLatch = new AtomicReference<>(new CountDownLatch(1));
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -219,16 +224,16 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // FlowControl acknowledged already.
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             // Call me again when you have data.
                             stream.demand();
                             return;
                         }
-                        // Recycle the ByteBuffer in data.frame.
-                        data.release();
-                        if (data.isLast())
+                        // Recycle the ByteBuffer in the chunk.
+                        chunk.release();
+                        if (chunk.isLast())
                             serverLatch.get().countDown();
                         else
                             stream.demand();
@@ -249,9 +254,8 @@ public class ClientServerTest extends AbstractClientServerTest
                 clientLatch.get().countDown();
             }
         };
-        Stream stream1 = session.newRequest(frame, streamListener)
-            .get(5, TimeUnit.SECONDS);
-        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true));
+        Stream stream1 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
+        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true), Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -259,29 +263,36 @@ public class ClientServerTest extends AbstractClientServerTest
         // Send another request, but with 2 chunks of data separated by some time.
         serverLatch.set(new CountDownLatch(1));
         clientLatch.set(new CountDownLatch(1));
-        Stream stream2 = session.newRequest(frame, streamListener).get(5, TimeUnit.SECONDS);
-        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false));
+        Stream stream2 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
+        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false), Promise.Invocable.noop());
         // Wait some time before sending the second chunk.
         Thread.sleep(500);
-        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true));
+        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true), Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
     }
 
+    public static java.util.stream.Stream<Arguments> transportsAndLengths()
+    {
+        return transports().stream()
+            .flatMap(transportType -> IntStream.of(1024, 10 * 1024, 100 * 1024, 1000 * 1024)
+                .mapToObj(length -> Arguments.of(transportType, length)));
+    }
+
     @ParameterizedTest
-    @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 1000 * 1024})
-    public void testEchoRequestContentAsResponseContent(int length) throws Exception
+    @MethodSource("transportsAndLengths")
+    public void testEchoRequestContentAsResponseContent(TransportType transportType, int length) throws Exception
     {
         AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 // Send the response headers.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -289,22 +300,23 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read data.
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             stream.demand();
                             return;
                         }
-                        // Echo it back, then demand only when the write is finished.
-                        stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
-                            // Always release.
-                            .whenComplete((s, x) -> data.release())
-                            // Demand only if successful and not last.
-                            .thenRun(() ->
+                        // Echo it back, then release, then demand only when the write is finished.
+                        stream.data(new DataFrame(chunk.getByteBuffer(), chunk.isLast()), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
+                        {
+                            @Override
+                            public void succeeded(Stream result)
                             {
-                                if (!data.isLast())
+                                // Demand only if successful and not last.
+                                if (!chunk.isLast())
                                     stream.demand();
-                            });
+                            }
+                        }));
                     }
                 };
             }
@@ -319,7 +331,7 @@ public class ClientServerTest extends AbstractClientServerTest
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(frame, new Stream.Client.Listener()
         {
             @Override
             public void onResponse(Stream.Client stream, HeadersFrame frame)
@@ -332,50 +344,50 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read data.
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
                 // Consume data.
-                byteBuffer.put(data.getByteBuffer());
-                data.release();
-                if (data.isLast())
+                byteBuffer.put(chunk.getByteBuffer());
+                chunk.release();
+                if (chunk.isLast())
                     clientDataLatch.countDown();
                 else
                     stream.demand();
             }
-        }).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
+        }, p));
+        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
 
         HTTP3Session serverSession = serverSessionRef.get();
-        assertTrue(serverSession.getStreams().isEmpty());
-        assertTrue(clientSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
 
-        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
-        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ProtocolSession serverProtocolSession = serverSession.getProtocolSession();
+        assertTrue(serverProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
 
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
-        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
+        assertTrue(clientProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
     }
 
-    @Test
-    @Tag("flaky")
-    public void testRequestHeadersTooLarge() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestHeadersTooLarge(TransportType transportType) throws Exception
     {
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 return null;
             }
         });
@@ -399,15 +411,17 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
         HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxRequestHeadersSize));
-        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Client.Listener() {})
-            .whenComplete((s, x) ->
+        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void failed(Throwable x)
             {
                 // The HTTP3Stream was created, but the application cannot access
                 // it, so the implementation must remove it from the HTTP3Session.
                 // See below the difference with the server.
-                if (x != null)
-                    requestFailureLatch.countDown();
-            });
+                requestFailureLatch.countDown();
+            }
+        });
 
         assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSession.getStreams().isEmpty());
@@ -421,19 +435,20 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testResponseHeadersTooLarge() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testResponseHeadersTooLarge(TransportType transportType) throws Exception
     {
         int maxResponseHeadersSize = 256;
         CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch responseFailureLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -449,23 +464,18 @@ public class ClientServerTest extends AbstractClientServerTest
                 if ("/large".equals(request.getHttpURI().getPath()))
                 {
                     HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true))
-                        .whenComplete((s, x) ->
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true), new Promise.Invocable.NonBlocking<>()
+                    {
+                        @Override
+                        public void failed(Throwable x)
                         {
-                            // The response could not be generated, but the stream is still valid.
-                            // Applications may try to send a smaller response here,
-                            // so the implementation must not remove the stream.
-                            if (x != null)
-                            {
-                                // In this test, we give up if there is an error.
-                                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                                responseFailureLatch.countDown();
-                            }
-                        });
+                            responseFailureLatch.countDown();
+                        }
+                    });
                 }
                 else
                 {
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 }
                 return null;
             }
@@ -491,13 +501,13 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
         clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
-                @Override
-                public void onFailure(Stream.Client stream, long error, Throwable failure)
-                {
-                    streamFailureLatch.countDown();
-                }
-            });
+                streamFailureLatch.countDown();
+            }
+        }, Promise.Invocable.noop());
 
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
@@ -513,17 +523,18 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testHeadersThenTrailers() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHeadersThenTrailers(TransportType transportType) throws Exception
     {
         CountDownLatch requestLatch = new CountDownLatch(1);
         CountDownLatch trailerLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -535,17 +546,23 @@ public class ClientServerTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        // Calling readData() triggers the read+parse
-                        // of the trailer, and returns no data.
-                        Stream.Data data = stream.readData();
-                        assertNull(data);
+                        // Calling read() triggers the read+parse
+                        // of the trailer, and returns EOF.
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        assertTrue(chunk.isLast());
+                        assertFalse(chunk.getByteBuffer().hasRemaining());
                     }
 
                     @Override
                     public void onTrailer(Stream.Server stream, HeadersFrame frame)
                     {
                         trailerLatch.countDown();
-                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                     }
                 };
             }
@@ -554,31 +571,32 @@ public class ClientServerTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        Stream clientStream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    responseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+            }
+        }, p));
+
 
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
-        clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+        clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
 
         assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testReadDataFromOnRequestWithoutDemanding() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReadDataFromOnRequestWithoutDemanding(TransportType transportType) throws Exception
     {
         CountDownLatch requestLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -599,16 +617,16 @@ public class ClientServerTest extends AbstractClientServerTest
                 {
                     while (true)
                     {
-                        Stream.Data data = stream.readData();
-                        if (data == null)
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
                         {
                             Thread.sleep(100);
                             continue;
                         }
-                        data.release();
-                        if (data.isLast())
+                        chunk.release();
+                        if (chunk.isLast())
                         {
-                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                             break;
                         }
                     }
@@ -622,31 +640,31 @@ public class ClientServerTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        Stream clientStream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    responseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                responseLatch.countDown();
+            }
+        }, p));
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false));
+        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false), Promise.Invocable.noop());
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
+        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true), Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testMissingNeededClientCertificateDeniesConnection() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMissingNeededClientCertificateDeniesConnection(TransportType transportType) throws Exception
     {
-        start(new Session.Server.Listener() {});
-        connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
+        start(transportType, new Session.Server.Listener() {});
+        serverSslContextFactory.setNeedClientAuth(true);
 
         CountDownLatch latch = new CountDownLatch(1);
         newSession(new Session.Client.Listener()
@@ -654,8 +672,8 @@ public class ClientServerTest extends AbstractClientServerTest
             @Override
             public void onDisconnect(Session session, long error, String reason)
             {
-                assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
-                assertEquals("missing_client_certificate_chain", reason);
+                assertEquals(ErrorCode.CONNECTION_REFUSED_ERROR.code(), error);
+                assertEquals("missing_peer_certificates", reason);
                 latch.countDown();
             }
         });

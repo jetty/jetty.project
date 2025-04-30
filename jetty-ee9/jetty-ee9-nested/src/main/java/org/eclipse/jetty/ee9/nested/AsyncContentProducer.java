@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -476,7 +477,7 @@ class AsyncContentProducer implements ContentProducer
     public String toString()
     {
         return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _rawContent,
             _transformedContent,
@@ -549,7 +550,7 @@ class AsyncContentProducer implements ContentProducer
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + " permits=" + _permits;
+            return TypeUtil.toShortName(getClass()) + " permits=" + _permits;
         }
     }
 }

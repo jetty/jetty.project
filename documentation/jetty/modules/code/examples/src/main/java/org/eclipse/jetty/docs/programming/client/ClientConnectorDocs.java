@@ -31,7 +31,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -158,8 +157,8 @@ public class ClientConnectorDocs
 
         // Populate the context with the mandatory keys to create and obtain connections.
         Map<String, Object> context = new ConcurrentHashMap<>();
-        context.put(Transport.class.getName(), transport);
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(Transport.CONTEXT_KEY, transport);
+        context.put(ClientConnectionFactory.CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
 
@@ -272,8 +271,8 @@ public class ClientConnectorDocs
         CompletableFuture<TelnetConnection> connectionPromise = new Promise.Completable<>();
 
         Map<String, Object> context = new HashMap<>();
-        context.put(Transport.class.getName(), Transport.TCP_IP);
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(Transport.CONTEXT_KEY, Transport.TCP_IP);
+        context.put(ClientConnectionFactory.CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
 
@@ -390,15 +389,14 @@ public class ClientConnectorDocs
             new TelnetConnection(endPoint, clientConnector.getExecutor());
 
         // Wrap the "telnet" ClientConnectionFactory with the SslClientConnectionFactory.
-        connectionFactory = new SslClientConnectionFactory(clientConnector.getSslContextFactory(),
-            clientConnector.getByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
+        connectionFactory = clientConnector.newSslClientConnectionFactory(null, connectionFactory);
 
         // We will obtain a SslConnection now.
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
 
         Map<String, Object> context = new ConcurrentHashMap<>();
-        context.put(Transport.class.getName(), Transport.TCP_IP);
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(Transport.CONTEXT_KEY, Transport.TCP_IP);
+        context.put(ClientConnectionFactory.CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
 

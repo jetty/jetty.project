@@ -28,18 +28,27 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
-import org.eclipse.jetty.quic.server.ServerQuicConnection;
-import org.eclipse.jetty.quic.server.ServerQuicSession;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.quiche.Quiche;
+import org.eclipse.jetty.quic.quiche.QuicheStream;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnectionFactory;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.server.internal.ServerQuicheConnection;
+import org.eclipse.jetty.quic.quiche.server.internal.ServerQuicheSession;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -53,8 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class IdleTimeoutTest
 {
+    public WorkDir workDir;
     private Server server;
-    private HTTP3Client http3Client;
 
     @BeforeEach
     public void prepare()
@@ -67,26 +76,24 @@ public class IdleTimeoutTest
     @AfterEach
     public void dispose()
     {
-        LifeCycle.stop(http3Client);
         LifeCycle.stop(server);
     }
 
     @Test
-    public void testIdleTimeoutWhenCongested(WorkDir workDir) throws Exception
+    public void testIdleTimeoutWhenCongested() throws Exception
     {
         long idleTimeout = 1000;
 
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath("src/test/resources/keystore.p12");
         sslServer.setKeyStorePassword("storepwd");
-        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
-
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
         AtomicBoolean established = new AtomicBoolean();
         CountDownLatch disconnectLatch = new CountDownLatch(1);
-        RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(serverQuicConfig, new Session.Server.Listener()
+        RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 established.set(true);
             }
@@ -99,31 +106,32 @@ public class IdleTimeoutTest
         });
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, h3)
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, HTTP3ServerQuicConfiguration.configure(serverQuicConfig), h3)
         {
             @Override
-            protected ServerQuicConnection newConnection(EndPoint endpoint)
+            protected Connection newConnection(EndPoint endpoint)
             {
-                return new ServerQuicConnection(this, getQuicConfiguration(), endpoint)
+                QuicheServerConnectionFactory q = (QuicheServerConnectionFactory)getDefaultConnectionFactory();
+                return new ServerQuicheConnection(this, getSslContextFactory(), getServerQuicConfiguration(), endpoint, q.getSessionListenerFactory())
                 {
                     @Override
-                    protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
+                    protected ServerQuicheSession newServerQuicheSession(Quiche quiche, SocketAddress remoteAddress)
                     {
-                        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector())
+                        return new ServerQuicheSession(getConnector(), getServerQuicConfiguration(), quiche, this, getEndPoint().getLocalSocketAddress(), remoteAddress, getSessionListenerFactory().newListener())
                         {
                             @Override
-                            public int flush(long streamId, ByteBuffer buffer, boolean last) throws IOException
+                            protected int data(QuicheStream stream, boolean last, ByteBuffer buffer) throws IOException
                             {
-                                if (established.get())
+                                if (stream.isBidirectional() && established.get())
                                     return 0;
-                                return super.flush(streamId, buffer, last);
+                                return super.data(stream, last, buffer);
                             }
 
                             @Override
-                            public void outwardClose(long error, String reason)
+                            public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<org.eclipse.jetty.quic.api.Session> promise)
                             {
                                 closeLatch.countDown();
-                                super.outwardClose(error, reason);
+                                super.disconnect(frame, failure, promise);
                             }
                         };
                     }
@@ -134,19 +142,20 @@ public class IdleTimeoutTest
         server.addConnector(connector);
         server.start();
 
-        SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
-        http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null));
-        http3Client.getClientConnector().setSslContextFactory(sslClient);
-        http3Client.start();
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        try (HTTP3Client http3Client = new HTTP3Client(clientQuicConfig))
+        {
+            http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
+            http3Client.start();
 
-        Session.Client session = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {}, p));
 
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
-        // The request will complete exceptionally.
-        session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener() {});
+            MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+            // The request will complete exceptionally.
+            session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener() {}, Promise.Invocable.noop());
 
-        assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(disconnectLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+            assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+            assertTrue(disconnectLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+        }
     }
 }

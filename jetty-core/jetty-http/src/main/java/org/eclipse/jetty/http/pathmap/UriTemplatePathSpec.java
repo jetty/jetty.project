@@ -486,7 +486,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" +
+            return TypeUtil.toShortName(getClass()) + "[" +
                 "pathSpec=" + pathSpec +
                 ", path=\"" + path + "\"" +
                 ", matcher=" + matcher +

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -71,11 +72,13 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ClientConnector extends ContainerLifeCycle
 {
-    public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
-    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
-    public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
-    public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
-    public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".applicationProtocols";
+    public static final String CONTEXT_KEY = ClientConnector.class.getName();
+    public static final String APPLICATION_PROTOCOL_CONTEXT_KEY = CONTEXT_KEY + ".applicationProtocol";
+    public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY = CONTEXT_KEY + ".applicationProtocols";
+    public static final String CONNECTION_PROMISE_CONTEXT_KEY = Connection.class.getName() + ".promise";
+    public static final String HTTP_CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client.HttpClient";
+    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CONTEXT_KEY + ".remoteSocketAddress";
+    public static final String SSL_CONTEXT_FACTORY_CONTEXT_KEY = CONTEXT_KEY + ".sslContextFactory";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     private final List<ConnectListener> listeners = new CopyOnWriteArrayList<>();
@@ -366,18 +369,27 @@ public class ClientConnector extends ContainerLifeCycle
         return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
     }
 
+    public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+    {
+        if (sslContextFactory == null)
+            sslContextFactory = getSslContextFactory();
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
     public void connect(SocketAddress address, Map<String, Object> context)
     {
         SelectableChannel channel = null;
         try
         {
-            context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
+            // In case ClientConnector is used directly.
+            context.put(ClientConnector.CONTEXT_KEY, this);
 
-            Transport transport = (Transport)context.get(Transport.class.getName());
+            Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
 
             if (address == null)
                 address = transport.getSocketAddress();
-            context.putIfAbsent(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
+            if (address != null)
+                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
 
             channel = transport.newSelectableChannel();
             configure(channel);
@@ -444,7 +456,7 @@ public class ClientConnector extends ContainerLifeCycle
             if (!channel.isConnected())
                 throw new IllegalStateException("SocketChannel must be connected");
 
-            context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
+            context.put(ClientConnector.CONTEXT_KEY, this);
 
             configure(channel);
             channel.configureBlocking(false);
@@ -499,13 +511,13 @@ public class ClientConnector extends ContainerLifeCycle
     {
         @SuppressWarnings("unchecked")
         Map<String, Object> context = (Map<String, Object>)selectionKey.attachment();
-        Transport transport = (Transport)context.get(Transport.class.getName());
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
         return transport.newEndPoint(getScheduler(), selector, selectable, selectionKey);
     }
 
     protected Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        Transport transport = (Transport)context.get(Transport.class.getName());
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
         return transport.newConnection(endPoint, context);
     }
 
@@ -653,7 +665,7 @@ public class ClientConnector extends ContainerLifeCycle
             super.connectionFailed(channel, failure, attachment);
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            SocketAddress address = (SocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            SocketAddress address = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             connectFailed(channel, address, failure, context);
         }
     }

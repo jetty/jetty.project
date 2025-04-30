@@ -31,8 +31,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +48,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -127,12 +131,40 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     // old attributes prefix, now stripped.
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
+    private static final Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
+
+    /**
+     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
+     * EE names are compared by EE number, otherwise simple name comparison is used.
+     */
+    protected static final Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
+    {
+        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
+        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
+
+        if (m1.matches())
+        {
+            if (m2.matches())
+            {
+                int n1 = Integer.parseInt(m1.group(1));
+                int n2 = Integer.parseInt(m2.group(1));
+                return Integer.compare(n2, n1);
+            }
+            return -1;
+        }
+        if (m2.matches())
+            return 1;
+
+        return e1.compareTo(e2);
+    };
+
     private final Server server;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
+    private Set<String> trackedEnvironments = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
@@ -277,7 +309,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      */
     public EnvironmentConfig configureEnvironment(String name)
     {
-        return new EnvironmentConfig(Environment.get(name));
+        Environment environment = Environment.get(name);
+        // Check to make sure that the Environment was created before jetty-deploy is involved.
+        // This is to ensure that the Environment ClassLoader is setup properly.
+        if (environment == null)
+            throw new IllegalStateException("Environment [" + name + "] does not exist.");
+        trackedEnvironments.add(name);
+        return new EnvironmentConfig(environment);
     }
 
     /**
@@ -298,8 +336,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * do not declare the {@link Environment} that they belong to.
      *
      * <p>
-     * Falls back to {@link Environment#getAll()} list, and returns
-     * the first name returned after sorting with {@link Deployable#ENVIRONMENT_COMPARATOR}
+     * Only uses environments that have been previously configured with {@link #configureEnvironment(String)}
      * </p>
      *
      * @return the default environment name.
@@ -308,9 +345,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         if (defaultEnvironmentName == null)
         {
-            return Environment.getAll().stream()
-                .map(Environment::getName)
-                .max(Deployable.ENVIRONMENT_COMPARATOR)
+            return trackedEnvironments.stream()
+                .min(ENVIRONMENT_COMPARATOR)
                 .orElse(null);
         }
         return defaultEnvironmentName;
@@ -797,21 +833,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         app.loadProperties();
 
                         // Ensure Environment name is set
-                        String appEnvironment = app.getEnvironmentName();
-                        if (StringUtil.isBlank(appEnvironment))
-                            appEnvironment = getDefaultEnvironmentName();
-                        app.setEnvironment(Environment.get(appEnvironment));
+                        String envName = app.getEnvironmentName();
+                        if (StringUtil.isBlank(envName))
+                            envName = getDefaultEnvironmentName();
+                        Environment env = Environment.get(envName);
+
+                        if (env == null || !trackedEnvironments.contains(envName))
+                            throw new IllegalArgumentException("Unable to deploy %s to environment %s.  Available Environments to deploy to %s"
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                    .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
-                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes envAttributes = environmentAttributesMap.get(envName);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
                         if (mainPath == null)
                             throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, env, mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the Deployer
@@ -828,21 +869,26 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         app.loadProperties();
 
                         // Ensure Environment name is set
-                        String appEnvironment = app.getEnvironmentName();
-                        if (StringUtil.isBlank(appEnvironment))
-                            appEnvironment = getDefaultEnvironmentName();
-                        app.setEnvironment(Environment.get(appEnvironment));
+                        String envName = app.getEnvironmentName();
+                        if (StringUtil.isBlank(envName))
+                            envName = getDefaultEnvironmentName();
+                        Environment env = Environment.get(envName);
+
+                        if (env == null || !trackedEnvironments.contains(envName))
+                            throw new IllegalArgumentException("Unable to deploy app [%s] to environment [%s].  Available Environments to deploy to %s"
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                    .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
-                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes envAttributes = environmentAttributesMap.get(envName);
                         Attributes deployAttributes = envAttributes == null ? app.getAttributes() : new Attributes.Layer(envAttributes, app.getAttributes());
 
                         // Create the Context Handler
                         Path mainPath = app.getMainPath();
                         if (mainPath == null)
                             throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, env, mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the Deployer
@@ -1343,23 +1389,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             this.contextHandler = contextHandler;
         }
 
-        public Environment getEnvironment()
-        {
-            return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-        }
-
-        public void setEnvironment(Environment env)
-        {
-            getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, env);
-        }
-
         public String getEnvironmentName()
         {
-            Environment env = getEnvironment();
-            if (env == null)
-                return "";
-            else
+            Object obj = this.attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
+            if (obj instanceof String str)
+                return str;
+            if (obj instanceof Environment env)
                 return env.getName();
+            return null;
         }
 
         /**
@@ -1391,6 +1428,19 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             this.mainPath = mainPath;
         }
 
+        private Path filterPath(List<Path> paths, String type, Predicate<Path> predicate)
+        {
+            List<Path> hits = paths.stream()
+                .filter(predicate)
+                .toList();
+            if (hits.size() == 1)
+                return hits.get(0);
+            else if (hits.size() > 1)
+                throw new IllegalStateException("More than 1 " + type + " for deployable " + asStringList(hits));
+
+            return null;
+        }
+
         private Path calcMainPath()
         {
             List<Path> livePaths = paths
@@ -1405,35 +1455,50 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return null;
 
             // XML always win.
-            List<Path> xmls = livePaths.stream()
-                .filter(FileID::isXml)
-                .toList();
-            if (xmls.size() == 1)
-                return xmls.get(0);
-            else if (xmls.size() > 1)
-                throw new IllegalStateException("More than 1 XML for deployable " + asStringList(xmls));
+            Path xml = filterPath(livePaths, "XML", FileID::isXml);
+            if (xml != null)
+                return xml;
 
             // WAR files are next.
-            List<Path> wars = livePaths.stream()
-                .filter(FileID::isWebArchive)
-                .toList();
-            if (wars.size() == 1)
-                return wars.get(0);
-            else if (wars.size() > 1)
-                throw new IllegalStateException("More than 1 WAR for deployable " + asStringList(wars));
+            Path war = filterPath(livePaths, "WAR", FileID::isWebArchive);
+            if (war != null)
+                return war;
+
+            // JAR files are next.
+            Path jar = filterPath(livePaths, "JAR", FileID::isJavaArchive);
+            if (jar != null)
+                return jar;
+
+            // ZIP files are next.
+            Path zip = filterPath(livePaths, "ZIP", (p -> FileID.isExtension(p, "zip")));
+            if (zip != null)
+                return zip;
 
             // Directories next.
-            List<Path> dirs = livePaths.stream()
-                .filter(Files::isDirectory)
-                .toList();
-            if (dirs.size() == 1)
-                return dirs.get(0);
-            if (dirs.size() > 1)
-                throw new IllegalStateException("More than 1 Directory for deployable " + asStringList(dirs));
+            Path dir = filterPath(livePaths, "Directory", PathsApp::isDeployableDirectory);
+            if (dir != null)
+                return dir;
 
-            LOG.warn("Unable to determine main deployable for {}", this);
+            // Finally properties files
+            Path propertyFile = filterPath(livePaths, "Property File", (p -> FileID.isExtension(p, "properties")));
+            if (propertyFile != null)
+                return propertyFile;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to determine main deployable for {}", this);
 
             return null;
+        }
+
+        private static boolean isDeployableDirectory(Path p)
+        {
+            if (p == null)
+                return false;
+            if (Files.isDirectory(p))
+            {
+                return !FileID.isExtension(p, "d"); // ignore nominated dirs
+            }
+            return false;
         }
 
         public String getName()
@@ -1495,21 +1560,23 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 loadPropertiesIntoAttributes(propFile, getAttributes());
             }
 
-            // Look for environment attribute.
+            // Verify that environment exists
             Object envObj = getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE);
-            if (envObj instanceof Environment environment)
+            if (envObj != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Using defaulted environment of {} to {}", name, environment);
-            }
-            else if (envObj instanceof String environmentName)
-            {
-                if (StringUtil.isNotBlank(environmentName))
+                if (envObj instanceof String environmentName)
                 {
-                    Environment env = Environment.get(environmentName);
+                    if (StringUtil.isNotBlank(environmentName))
+                    {
+                        Environment env = Environment.get(environmentName);
+                        if (env == null)
+                            LOG.warn("Environment not found {}", environmentName);
+                    }
+                }
+                else
+                {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Setting environment of {} to {}", name, env);
-                    setEnvironment(env);
+                        LOG.debug("Unable to use attribute {} as type {}", ContextHandlerFactory.ENVIRONMENT_ATTRIBUTE, envObj.getClass().getName());
                 }
             }
         }
@@ -1540,7 +1607,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         @Override
         public String toString()
         {
-            StringBuilder str = new StringBuilder("%s@%x".formatted(this.getClass().getSimpleName(), hashCode()));
+            StringBuilder str = new StringBuilder("%s@%x".formatted(TypeUtil.toShortName(this.getClass()), hashCode()));
             str.append("[").append(name);
             str.append("|").append(getState());
             str.append(", env=").append(getEnvironmentName());

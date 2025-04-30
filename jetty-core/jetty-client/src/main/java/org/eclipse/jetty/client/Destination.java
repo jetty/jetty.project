@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public interface Destination
 {
+    String CONTEXT_KEY = Destination.class.getName();
+
     /**
      * @return the origin of this destination
      */

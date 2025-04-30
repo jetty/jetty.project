@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,7 +197,7 @@ public abstract class LoginAuthenticator implements Authenticator
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(getClass().getSimpleName(), hashCode(), getAuthenticationType(), getUserIdentity());
+            return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), getAuthenticationType(), getUserIdentity());
         }
     }
 

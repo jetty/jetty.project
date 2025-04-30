@@ -31,7 +31,7 @@ public class ControlGenerator
         generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator(bufferPool);
     }
 
-    public int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return generators[frame.getFrameType().type()].generate(accumulator, streamId, frame, fail);
     }

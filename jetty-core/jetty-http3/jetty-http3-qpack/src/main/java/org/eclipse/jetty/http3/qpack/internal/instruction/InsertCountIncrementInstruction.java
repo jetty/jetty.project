@@ -20,6 +20,7 @@ import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class InsertCountIncrementInstruction implements Instruction
 {
@@ -39,7 +40,7 @@ public class InsertCountIncrementInstruction implements Instruction
     public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _increment);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, true);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
         buffer.put((byte)0x00);
@@ -51,6 +52,6 @@ public class InsertCountIncrementInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x[increment=%d]", getClass().getSimpleName(), hashCode(), getIncrement());
+        return String.format("%s@%x[increment=%d]", TypeUtil.toShortName(getClass()), hashCode(), getIncrement());
     }
 }

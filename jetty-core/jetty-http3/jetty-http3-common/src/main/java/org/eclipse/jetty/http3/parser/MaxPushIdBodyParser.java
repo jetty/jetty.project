@@ -23,7 +23,7 @@ public class MaxPushIdBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         throw new UnsupportedOperationException();
     }

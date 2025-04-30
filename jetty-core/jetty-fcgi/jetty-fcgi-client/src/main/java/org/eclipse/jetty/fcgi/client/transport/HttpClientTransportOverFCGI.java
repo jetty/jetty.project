@@ -29,6 +29,7 @@ import org.eclipse.jetty.fcgi.client.transport.internal.HttpConnectionOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -75,6 +76,8 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public Origin newOrigin(Request request)
     {
+        if (request.getTransport() == null)
+            request.transport(Transport.TCP_IP);
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("fastcgi/1.1"), false));
     }
 
@@ -87,9 +90,9 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
         org.eclipse.jetty.io.Connection connection = newConnection(endPoint, destination, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);

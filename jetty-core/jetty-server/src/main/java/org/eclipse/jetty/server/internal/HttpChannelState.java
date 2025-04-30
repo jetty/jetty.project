@@ -64,6 +64,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -343,16 +344,12 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Invocable.InvocationType getInvocationType()
     {
-        // TODO Can this actually be done, as we may need to invoke other Runnables after onContent?
-        //      Could we at least avoid the lock???
-        Runnable onContent;
         try (AutoLock ignored = _lock.lock())
         {
             if (_request == null)
-                return null;
-            onContent = _onContentAvailable;
+                return HttpChannel.super.getInvocationType();
+            return Invocable.getInvocationType(_onContentAvailable);
         }
-        return Invocable.getInvocationType(onContent);
     }
 
     @Override
@@ -478,7 +475,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
+                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)
@@ -603,7 +600,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             String held = lock.isHeldByCurrentThread() ? "" : "?";
             return String.format("%s@%x[%s:handling=%s,handled=%s,send=%s,completed=%s,request=%s]",
-                this.getClass().getSimpleName(),
+                TypeUtil.toShortName(this.getClass()),
                 hashCode(),
                 held,
                 _handling,
@@ -1494,7 +1491,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getStatus(), getRequest());
+            return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), getStatus(), getRequest());
         }
     }
 
@@ -1804,7 +1801,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public String toString()
         {
-            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -32,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
+ * <p>This will approve any alias to anything inside the {@link ContextHandler}s resource base which
  * is not protected by a protected target as defined by the {@link ContextHandler} protected targets at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
@@ -104,7 +105,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         }
         catch (Throwable t)
         {
-            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _baseResource, t);
+            LOG.warn("Base resource failure ({} is disabled): {}", TypeUtil.toShortName(this.getClass()), _baseResource, t);
             _baseResource = null;
         }
     }
@@ -276,7 +277,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     {
         String[] protectedTargets = getProtectedTargets();
         return String.format("%s@%x{base=%s,protected=%s}",
-            this.getClass().getSimpleName(),
+            TypeUtil.toShortName(this.getClass()),
             hashCode(),
             _baseResource,
             (protectedTargets == null) ? null : Arrays.asList(protectedTargets));

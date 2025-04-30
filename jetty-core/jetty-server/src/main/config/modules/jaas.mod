@@ -13,6 +13,6 @@ deployment-scanner
 etc/jetty-jaas.xml
 
 [ini-template]
-## The file location (relative to $jetty.base) for the
+## The file location (relative to $JETTY_BASE) for the
 ## JAAS "java.security.auth.login.config" system property
 # jetty.jaas.login.conf=etc/login.conf

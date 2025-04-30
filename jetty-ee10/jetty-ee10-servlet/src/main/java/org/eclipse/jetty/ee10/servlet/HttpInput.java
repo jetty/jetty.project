@@ -23,6 +23,7 @@ import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -396,7 +397,7 @@ public class HttpInput extends ServletInputStream
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() +
+        return TypeUtil.toShortName(getClass()) + "@" + hashCode() +
             " cs=" + _channelState +
             " cp=" + _contentProducer +
             " eof=" + _consumedEof;

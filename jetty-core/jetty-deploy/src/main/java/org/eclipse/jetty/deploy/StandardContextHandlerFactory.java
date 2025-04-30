@@ -32,7 +32,9 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,11 +219,15 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
 
         if (contextHandler.getBaseResource() == null)
         {
-            if (Files.isDirectory(path))
-            {
-                ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
-                contextHandler.setBaseResource(resourceFactory.newResource(path));
-            }
+            ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
+            Resource resource = resourceFactory.newResource(path);
+
+            // Only set base resource on safe directory paths.
+            // Deployables that want to do other things, can use the Deployable.BASE_RESOURCE to figure things out.
+            if (Resources.isDirectory(resource))
+                contextHandler.setBaseResource(resource);
+            else if (attributes.getAttribute(Deployable.BASE_RESOURCE) == null)
+                attributes.setAttribute(Deployable.BASE_RESOURCE, resource);
         }
 
         // copy attributes into context

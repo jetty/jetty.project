@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -475,7 +476,7 @@ public interface Stream
         @Override
         public String toString()
         {
-            return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), frame());
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), frame());
         }
 
         private static class EOF extends Data

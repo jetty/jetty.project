@@ -115,7 +115,7 @@ public class PrefaceTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(requestFrame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

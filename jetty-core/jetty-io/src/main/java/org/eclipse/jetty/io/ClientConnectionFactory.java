@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
  */
 public interface ClientConnectionFactory
 {
-    public static final String CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client";
+    String CONTEXT_KEY = ClientConnectionFactory.class.getName();
 
     /**
      * @param endPoint the {@link org.eclipse.jetty.io.EndPoint} to link the newly created connection to
@@ -33,14 +33,41 @@ public interface ClientConnectionFactory
      * @return a new {@link Connection}
      * @throws IOException if the connection cannot be created
      */
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException;
+    Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException;
 
-    public default Connection customize(Connection connection, Map<String, Object> context)
+    default Connection customize(Connection connection, Map<String, Object> context)
     {
-        ContainerLifeCycle client = (ContainerLifeCycle)context.get(CLIENT_CONTEXT_KEY);
+        ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnector.HTTP_CLIENT_CONTEXT_KEY);
         if (client != null)
             client.getBeans(EventListener.class).forEach(connection::addEventListener);
         return connection;
+    }
+
+    class Wrapper implements ClientConnectionFactory
+    {
+        private final ClientConnectionFactory wrapped;
+
+        public Wrapper(ClientConnectionFactory wrapped)
+        {
+            this.wrapped = wrapped;
+        }
+
+        public ClientConnectionFactory getWrapped()
+        {
+            return wrapped;
+        }
+
+        @Override
+        public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+        {
+            return getWrapped().newConnection(endPoint, context);
+        }
+
+        @Override
+        public Connection customize(Connection connection, Map<String, Object> context)
+        {
+            return getWrapped().customize(connection, context);
+        }
     }
 
     /**
@@ -51,6 +78,8 @@ public interface ClientConnectionFactory
      */
     interface Decorator
     {
+        String CONTEXT_KEY = Decorator.class.getName();
+
         /**
          * <p>Wraps the given {@code factory}.</p>
          *
@@ -66,7 +95,7 @@ public interface ClientConnectionFactory
      * {@link ClientConnectionFactory} that creates connections
      * that speak an application protocol such as HTTP.</p>
      */
-    public abstract static class Info extends ContainerLifeCycle
+    abstract class Info extends ContainerLifeCycle
     {
         private final ClientConnectionFactory factory;
 
@@ -74,6 +103,14 @@ public interface ClientConnectionFactory
         {
             this.factory = factory;
             installBean(factory);
+        }
+
+        /**
+         * @return the default {@link Transport} to use to speak the protocol
+         */
+        public Transport getTransport()
+        {
+            return Transport.TCP_IP;
         }
 
         /**
@@ -90,11 +127,6 @@ public interface ClientConnectionFactory
         {
             return factory;
         }
-
-        /**
-         * @return the default {@link Transport} used by the protocol
-         */
-        public abstract Transport newTransport();
 
         /**
          * <p>Tests whether one of the protocol identifiers of this

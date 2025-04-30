@@ -165,7 +165,7 @@ public class MultiPartFormData
      */
     public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise.Invocable<Parts> promise)
     {
-        from(content, promise.getInvocationType(), attributes, contentType, config).whenComplete(promise);
+        from(content, promise.getInvocationType(), attributes, contentType, config).whenComplete(Promise.Invocable.toBiConsumer(promise));
     }
 
     /**
@@ -445,7 +445,7 @@ public class MultiPartFormData
             }
             else
             {
-                cf.whenComplete(future);
+                cf.whenComplete(Promise.Invocable.toBiConsumer(future));
             }
         }
 
@@ -518,7 +518,7 @@ public class MultiPartFormData
                 }
             };
             futureParts.parse();
-            futureParts.whenComplete(promise);
+            futureParts.whenComplete(Promise.Invocable.toBiConsumer(promise));
         }
 
         /**

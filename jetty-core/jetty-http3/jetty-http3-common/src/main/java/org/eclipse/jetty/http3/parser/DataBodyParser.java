@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.nio.ByteBuffer;
-import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -26,15 +25,13 @@ public class DataBodyParser extends BodyParser
     private static final Logger LOG = LoggerFactory.getLogger(DataBodyParser.class);
 
     private final long streamId;
-    private final BooleanSupplier isLast;
     private State state = State.INIT;
     private long length;
 
-    public DataBodyParser(HeaderParser headerParser, ParserListener listener, long streamId, BooleanSupplier isLast)
+    public DataBodyParser(HeaderParser headerParser, ParserListener listener, long streamId)
     {
         super(headerParser, listener);
         this.streamId = streamId;
-        this.isLast = isLast;
     }
 
     private void reset()
@@ -44,13 +41,13 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer, boolean last)
     {
-        onData(BufferUtil.EMPTY_BUFFER, isLast.getAsBoolean(), false);
+        onData(BufferUtil.EMPTY_BUFFER, last, false);
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         while (buffer.hasRemaining())
         {
@@ -66,27 +63,26 @@ public class DataBodyParser extends BodyParser
                 {
                     int size = (int)Math.min(buffer.remaining(), length);
                     int position = buffer.position();
-                    int limit = buffer.limit();
-                    buffer.limit(position + size);
-                    ByteBuffer slice = buffer.slice();
-                    buffer.limit(limit);
+                    ByteBuffer slice = buffer.slice(position, size);
                     buffer.position(position + size);
-
-                    // If the buffer contains another frame that
-                    // needs to be parsed, then it's not the last frame.
-                    boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
 
                     length -= size;
                     if (length == 0)
                     {
                         reset();
-                        onData(slice, last, false);
+                        // Only HEADERS, DATA or PUSH_PROMISE can be received.
+                        // If the buffer contains more frames that need
+                        // to be parsed, then it's not the last frame.
+                        // TODO: the sequence: DATA(last=true)+PUSH_PROMISE
+                        //  would break the logic in the line below.
+                        boolean lastFrame = last && !buffer.hasRemaining();
+                        onData(slice, lastFrame, false);
                         return Result.WHOLE_FRAME;
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        onData(slice, last, true);
+                        onData(slice, false, true);
                         return Result.FRAGMENT_FRAME;
                     }
                 }

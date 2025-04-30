@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -658,7 +659,7 @@ public class MultiPartParser
     @Override
     public String toString()
     {
-        return String.format("%s{s=%s}", getClass().getSimpleName(), _state);
+        return String.format("%s{s=%s}", TypeUtil.toShortName(getClass()), _state);
     }
 
     /*

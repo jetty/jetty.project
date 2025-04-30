@@ -40,6 +40,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1098,12 +1099,12 @@ public class NamingContext implements Context, Dumpable
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        buf.append(this.getClass().getName()).append('@').append(Integer.toHexString(this.hashCode()));
+        buf.append(TypeUtil.toShortName(this.getClass())).append('@').append(Integer.toHexString(this.hashCode()));
         buf.append("[name=").append(this._name);
         buf.append(",parent=");
         if (this._parent != null)
         {
-            buf.append(this._parent.getClass().getName()).append('@').append(Integer.toHexString(this._parent.hashCode()));
+            buf.append(TypeUtil.toShortName(_parent.getClass())).append('@').append(Integer.toHexString(this._parent.hashCode()));
         }
         buf.append(",bindings");
         if (this._bindings == null)

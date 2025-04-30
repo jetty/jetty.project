@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -97,7 +98,6 @@ public class ErrorHandler implements Request.Handler
      * Write an error response, or signal that the error will be handled by a down stream handler.
      * <p>
      * The default implementation calls {@link Response#writeError(Request, Response, Callback, int)} and returns {@code true}.
-     * <p>
      * <p>
      * {@link ErrorHandler} extensions may override this method to modify the state of the
      * {@link Request} and/or {@link Response} so that when the method returns {@code false}
@@ -625,6 +625,12 @@ public class ErrorHandler implements Request.Handler
         this._bufferSize = bufferSize;
     }
 
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+    }
+
     public static class ErrorRequest extends Request.AttributesWrapper
     {
         private static final Set<String> ATTRIBUTES = Set.of(ERROR_MESSAGE, ERROR_EXCEPTION, ERROR_STATUS);
@@ -668,7 +674,7 @@ public class ErrorHandler implements Request.Handler
         @Override
         public String toString()
         {
-            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+            return "%s@%x:%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
     }
 

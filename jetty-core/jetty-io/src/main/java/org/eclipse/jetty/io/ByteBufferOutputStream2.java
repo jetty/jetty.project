@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * This class implements an output stream in which the data is buffered.
@@ -118,7 +119,7 @@ public class ByteBufferOutputStream2 extends OutputStream
     @Override
     public synchronized String toString()
     {
-        return String.format("%s@%x{size=%d, byteAccumulator=%s}", getClass().getSimpleName(),
+        return String.format("%s@%x{size=%d, byteAccumulator=%s}", TypeUtil.toShortName(getClass()),
             hashCode(), _size, _accumulator);
     }
 }

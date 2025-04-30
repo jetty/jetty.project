@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * A Zero-capacity, non-retainable {@code RetainableByteBuffer}.
      */
-    RetainableByteBuffer EMPTY = new NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
+    RetainableByteBuffer EMPTY = new EmptyRetainableByteBuffer();
 
     /**
      * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
@@ -721,7 +722,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public String toString()
         {
-            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped().toString());
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
 
         @Override
@@ -925,7 +926,7 @@ public interface RetainableByteBuffer extends Retainable
 
         protected void addStringInfo(StringBuilder builder)
         {
-            builder.append(getClass().getSimpleName());
+            builder.append(TypeUtil.toShortName(getClass()));
             builder.append("@");
             builder.append(Integer.toHexString(System.identityHashCode(this)));
             builder.append("[");
@@ -935,7 +936,7 @@ public interface RetainableByteBuffer extends Retainable
             builder.append(",d=");
             builder.append(isDirect());
             addExtraStringInfo(builder);
-            builder.append(",r=");
+            builder.append(",rc=");
             builder.append(getRetained());
             builder.append("]");
         }
@@ -1000,6 +1001,14 @@ public interface RetainableByteBuffer extends Retainable
             super.clear();
             _byteBuffer.clear();
             _flipPosition = 0;
+        }
+
+        @Override
+        public long space()
+        {
+            if (_flipPosition < 0)
+                return _byteBuffer.capacity() - _byteBuffer.limit();
+            return _byteBuffer.remaining();
         }
 
         @Override
@@ -1350,13 +1359,72 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * a {@link FixedCapacity} buffer that is neither not pooled nor {@link Retainable#canRetain() retainable}.
+     * A {@link FixedCapacity} buffer that is neither poolable nor {@link Retainable#canRetain() retainable}.
      */
     class NonRetainableByteBuffer extends FixedCapacity
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
             super(byteBuffer, NON_RETAINABLE);
+        }
+    }
+
+    /**
+     * A {@link RetainableByteBuffer} that is empty and not retainable.
+     */
+    class EmptyRetainableByteBuffer implements RetainableByteBuffer
+    {
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public boolean isMutable()
+        {
+            return false;
+        }
+
+        @Override
+        public RetainableByteBuffer copy()
+        {
+            return new EmptyRetainableByteBuffer();
+        }
+
+        @Override
+        public void clear()
+        {
+        }
+
+        @Override
+        public RetainableByteBuffer slice()
+        {
+            return new EmptyRetainableByteBuffer();
+        }
+
+        @Override
+        public RetainableByteBuffer slice(long length)
+        {
+            return slice();
+        }
+
+        @Override
+        public RetainableByteBuffer take()
+        {
+            return this;
+        }
+
+        @Override
+        public byte[] takeByteArray()
+        {
+            return BufferUtil.EMPTY_BYTES;
+        }
+
+        @Override
+        public String toDetailString()
+        {
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 

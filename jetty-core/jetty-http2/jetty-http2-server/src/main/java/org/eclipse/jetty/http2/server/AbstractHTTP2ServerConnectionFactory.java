@@ -43,6 +43,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -448,7 +449,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public String toString()
         {
-            return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), getSize());
+            return String.format("%s@%x[size=%d]", TypeUtil.toShortName(getClass()), hashCode(), getSize());
         }
     }
 }

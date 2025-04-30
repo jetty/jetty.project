@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -422,7 +423,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         Connection connection = _sslEndPoint.getConnection();
         return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _sslEngine.getHandshakeStatus(),
             ei, eo, di,
@@ -1601,7 +1602,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), toEndPointString());
+            return String.format("%s@%x[%s]", TypeUtil.toShortName(getClass()), hashCode(), toEndPointString());
         }
 
         private final class IncompleteWriteCallback implements Callback, Invocable

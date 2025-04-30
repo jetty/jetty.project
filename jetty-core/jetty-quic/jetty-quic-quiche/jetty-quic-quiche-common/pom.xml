@@ -11,14 +11,22 @@
   <name>Core :: QUIC :: Quiche :: Common</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.quic-quiche-common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.quiche.common</bundle-symbolic-name>
     <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty.quiche</groupId>

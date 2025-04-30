@@ -97,6 +97,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-test-core-example-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>core-webapp</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
@@ -249,6 +256,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
       <artifactId>jetty-http3-client-transport</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-quiche-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

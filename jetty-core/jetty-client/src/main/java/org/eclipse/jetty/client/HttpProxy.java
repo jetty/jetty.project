@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -143,7 +142,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public boolean requiresTunnel(Origin serverOrigin)
     {
-        if (HttpScheme.isSecure(serverOrigin.getScheme()))
+        if (serverOrigin.isSecure())
             return true;
         Origin.Protocol serverProtocol = serverOrigin.getProtocol();
         if (serverProtocol == null)
@@ -162,40 +161,38 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return "h2".equalsIgnoreCase(protocol) || "h2c".equalsIgnoreCase(protocol);
     }
 
-    private class HttpProxyClientConnectionFactory implements ClientConnectionFactory
+    private class HttpProxyClientConnectionFactory extends ClientConnectionFactory.Wrapper
     {
-        private final ClientConnectionFactory connectionFactory;
-
         private HttpProxyClientConnectionFactory(ClientConnectionFactory connectionFactory)
         {
-            this.connectionFactory = connectionFactory;
+            super(connectionFactory);
         }
 
         @Override
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             if (requiresTunnel(destination.getOrigin()))
                 return newProxyConnection(endPoint, context);
             else
-                return connectionFactory.newConnection(endPoint, context);
+                return getWrapped().newConnection(endPoint, context);
         }
 
         private org.eclipse.jetty.io.Connection newProxyConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
             // Replace the destination with the proxy destination.
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
             Destination proxyDestination = client.resolveDestination(getOrigin());
-            context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, proxyDestination);
+            context.put(Destination.CONTEXT_KEY, proxyDestination);
 
             // Replace the promise with the proxy promise that creates the tunnel to the server.
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-            CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(connectionFactory, endPoint, destination, promise, context);
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, tunnelPromise);
+            Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
+            CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(getWrapped(), endPoint, destination, promise, context);
+            context.put(Connection.PROMISE_CONTEXT_KEY, tunnelPromise);
 
-            return connectionFactory.newConnection(endPoint, context);
+            return getWrapped().newConnection(endPoint, context);
         }
     }
 
@@ -226,9 +223,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public void succeeded(Connection connection)
         {
             // Replace the destination back with the original.
-            context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+            context.put(Destination.CONTEXT_KEY, destination);
             // Replace the promise back with the original.
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
+            context.put(Connection.PROMISE_CONTEXT_KEY, promise);
             tunnel(connection);
         }
 
@@ -259,15 +256,16 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             try
             {
-                HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
+                HttpClient httpClient = destination.getHttpClient();
                 ClientConnectionFactory factory = connectionFactory;
-                if (destination.isSecure())
-                {
-                    // Don't want to do DNS resolution here.
-                    InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
-                    context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
-                    factory = destination.getHttpClient().newSslClientConnectionFactory(null, factory);
-                }
+                context.put(ClientConnectionFactory.class.getName(), factory);
+                // Don't want to do DNS resolution here.
+                InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
+                SslContextFactory.Client sslContextFactory = destination.isSecure() ? httpClient.getSslContextFactory() : null;
+                context.compute(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, (k, v) -> sslContextFactory);
+                factory = httpClient.newClientConnectionFactory(context);
                 var oldConnection = endPoint.getConnection();
                 var newConnection = factory.newConnection(endPoint, context);
                 if (LOG.isDebugEnabled())

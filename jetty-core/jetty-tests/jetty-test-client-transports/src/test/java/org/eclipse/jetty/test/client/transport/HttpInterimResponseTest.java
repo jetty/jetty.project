@@ -43,7 +43,7 @@ public class HttpInterimResponseTest extends AbstractTest
         start(transportType, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Reading the request content immediately
                 // issues an implicit 100 Continue response.
@@ -63,12 +63,45 @@ public class HttpInterimResponseTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testMultipleDifferentInterimResponses(TransportType transportType) throws Exception
+    public void testExplicit100ContinueWithDelayedRead(TransportType transportType) throws Exception
     {
         start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Explicitly send the 100 response.
+                response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get(5, TimeUnit.SECONDS);
+
+                // Wait for the client to send the content, and to become idle.
+                Thread.sleep(1000);
+
+                // Echo the content back, the client should wake up.
+                Content.copy(request, response, callback);
+
+                return true;
+            }
+        });
+
+        String content = "request-content";
+        ContentResponse response = client.newRequest(newURI(transportType))
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+            .body(new StringRequestContent(content))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testMultipleDifferentInterimResponses(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Callback.Completable.with(c -> Content.Source.consumeAll(request, c)))

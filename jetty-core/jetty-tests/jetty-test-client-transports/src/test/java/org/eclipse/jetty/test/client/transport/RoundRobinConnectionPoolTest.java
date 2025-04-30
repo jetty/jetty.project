@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -225,7 +225,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             }
         });
         if (transportType == TransportType.H3_QUICHE)
-            ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
+            ((QuicheServerConnector)connector).getServerQuicConfiguration().setBidirectionalMaxStreams(maxUsage);
         client.getHttpClientTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, maxMultiplex);

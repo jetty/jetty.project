@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,7 +248,7 @@ public class ThreadIdPool<E> implements Dumpable
     public String toString()
     {
         return String.format("%s@%x{capacity=%d}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             capacity());
     }

@@ -8,10 +8,10 @@
     <version>12.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-quic-quiche-foreign</artifactId>
-  <name>Core :: QUIC :: Quiche :: Foreign</name>
+  <name>Core :: QUIC :: Quiche :: Foreign Binding</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.quic-quiche-foreign</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.quiche.foreign</bundle-symbolic-name>
     <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
@@ -57,7 +57,7 @@
         <configuration>
           <argLine>@{argLine}
             ${jetty.surefire.argLine}
-            --enable-native-access org.eclipse.jetty.quic.quiche.foreign</argLine>
+            --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
         </configuration>
       </plugin>
     </plugins>

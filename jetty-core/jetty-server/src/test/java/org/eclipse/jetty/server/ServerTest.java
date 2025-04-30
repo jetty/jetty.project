@@ -152,15 +152,15 @@ public class ServerTest
         ((QueuedThreadPool)(_server.getThreadPool())).tryExecute(() -> {});
         String dump = _server.dump();
         assertThat(dump, containsString("oejs.Server@"));
-        assertThat(dump, containsString("QueuedThreadPool"));
-        assertThat(dump, containsString("+= ReservedThreadExecutor@"));
-        assertThat(dump, containsString(".ArrayByteBufferPool@"));
+        assertThat(dump, containsString("oejut.QueuedThreadPool"));
+        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString("oeji.ArrayByteBufferPool@"));
         assertThat(dump, containsString("+- System Properties size="));
         assertThat(dump, containsString("+> java.home: "));
         assertThat(dump, containsString("+> java.runtime.version: "));
         assertThat(dump, containsString("+= oejsh.ContextHandler@"));
-        assertThat(dump, containsString("+= LocalConnector@"));
-        assertThat(dump, containsString("key: +-"));
+        assertThat(dump, containsString("+= oejs.LocalConnector@"));
+        assertThat(dump, containsString("legend: +-"));
         assertThat(dump, containsString("JVM: "));
         assertThat(dump, containsString(Jetty.VERSION));
     }

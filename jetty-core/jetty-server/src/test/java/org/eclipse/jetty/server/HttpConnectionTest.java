@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -73,7 +75,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionTest
@@ -1796,12 +1797,19 @@ public class HttpConnectionTest
         assertThat(chunks.size(), greaterThan(8));
         // chunks.forEach(System.err::println);
 
-        // test all chunks are backed by the same buffer
-        Content.Chunk firstChunk = chunks.peek();
-        assertNotNull(firstChunk);
-        String backing = firstChunk.toString().replaceFirst("WithRetainable.*ReservedBuffer", "ReservedBuffer").replaceFirst("\\[.*", "");
-        for (Content.Chunk chunk : chunks)
-            if (chunk.hasRemaining())
-                assertThat(chunk.toString(), containsString(backing));
+        // Verify that all chunks are backed by the same buffer.
+        List<String> backingBuffers = chunks.stream()
+            // Drop EOF and other special chunks.
+            .filter(Content.Chunk::hasRemaining)
+            .map(Content.Chunk::toString)
+            .map(s ->
+            {
+                // Brittle, but no easy API available; look for the backing buffer.
+                Matcher matcher = Pattern.compile("ReservedBuffer@[0-9a-fA-F]+").matcher(s);
+                return matcher.find() ? matcher.group() : s;
+            })
+            .distinct()
+            .toList();
+        assertThat(backingBuffers.size(), is(1));
     }
 }

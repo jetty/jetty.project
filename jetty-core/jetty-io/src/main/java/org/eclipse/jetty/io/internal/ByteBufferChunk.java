@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity implements Content.Chunk
 {
@@ -43,7 +44,7 @@ public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity
     public String toString()
     {
         return "%s@%x[l=%b,b=%s]".formatted(
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             isLast(),
             BufferUtil.toDetailString(getByteBuffer())

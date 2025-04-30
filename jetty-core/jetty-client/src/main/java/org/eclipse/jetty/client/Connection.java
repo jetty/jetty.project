@@ -29,6 +29,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public interface Connection extends Closeable
 {
+    String PROMISE_CONTEXT_KEY = Connection.class.getName() + ".promise";
+
     /**
      * Sends a request with an associated response listener.
      * <p>

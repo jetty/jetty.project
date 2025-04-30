@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -53,7 +53,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
-    private MetaData.Request requestMetaData;
     private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
     private boolean committed;
@@ -71,11 +70,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return String.valueOf(stream.getId());
     }
 
+    public HttpChannel getHttpChannel()
+    {
+        return httpChannel;
+    }
+
     public Runnable onRequest(HeadersFrame frame)
     {
         try
         {
-            requestMetaData = (MetaData.Request)frame.getMetaData();
+            MetaData.Request requestMetaData = (MetaData.Request)frame.getMetaData();
 
             // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
             ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
@@ -156,19 +160,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (chunk != null)
                 return chunk;
 
-            Stream.Data data = stream.readData();
-            if (data == null)
+            chunk = stream.read();
+            if (chunk == null)
                 return null;
 
-            // The data instance should be released after readData() above;
-            // the chunk is stored below for later use, so should be retained;
+            // Above, the chunk instance should be released after the read();
+            // below, the chunk is stored for later use, so should be retained;
             // the two actions cancel each other, no need to further retain or release.
-            chunk = createChunk(data);
-
-            try (AutoLock ignored = lock.lock())
-            {
-                this.chunk = chunk;
-            }
+            if (!store(chunk))
+                chunk.release();
         }
     }
 
@@ -185,7 +185,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             Runnable task = httpChannel.onContentAvailable();
             if (task != null)
-                connection.offer(task);
+                connection.offerTask(task);
         }
         else
         {
@@ -200,25 +200,18 @@ public class HttpStreamOverHTTP3 implements HttpStream
             LOG.debug("HTTP3 request data available #{}/{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
         }
+        return httpChannel.onContentAvailable();
+    }
 
-        Stream.Data data = stream.readData();
-        if (data == null)
-        {
-            stream.demand();
-            return null;
-        }
-
-        // The data instance should be released after readData() above;
-        // the chunk is stored below for later use, so should be retained;
-        // the two actions cancel each other, no need to further retain or release.
-        Content.Chunk chunk = createChunk(data);
-
+    private boolean store(Content.Chunk chunk)
+    {
         try (AutoLock ignored = lock.lock())
         {
+            if (this.chunk != null)
+                return false;
             this.chunk = chunk;
+            return true;
         }
-
-        return httpChannel.onContentAvailable();
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -235,16 +228,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             chunk = new Trailers(trailers);
         }
         return httpChannel.onContentAvailable();
-    }
-
-    private Content.Chunk createChunk(Stream.Data data)
-    {
-        if (data == Stream.Data.EOF)
-        {
-            data.release();
-            return Content.Chunk.EOF;
-        }
-        return Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
     }
 
     @Override
@@ -266,8 +249,25 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        // TODO Implement after #12742 is merged
-        return () -> appCallback.failed(new UnsupportedOperationException("Implement after #12742 is merged"));
+        return () -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause, new Promise.Invocable.Abstract<>(appCallback.getInvocationType())
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                completed();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completed();
+            }
+
+            private void completed()
+            {
+                appCallback.failed(cause);
+            }
+        });
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
@@ -367,23 +367,32 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
+            LOG.debug("HTTP3 response #{}/{}:{}{} {}{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
                 System.lineSeparator(), response.getHttpFields());
         }
 
-        CompletableFuture<Stream> cf = stream.respond(headersFrame);
-
         DataFrame df = dataFrame;
-        if (df != null)
-            cf = cf.thenCompose(s -> s.data(df));
-
         HeadersFrame tf = trailersFrame;
-        if (tf != null)
-            cf = cf.thenCompose(s -> s.trailer(tf));
 
-        callback.completeWith(cf);
+        stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), s ->
+        {
+            if (df != null)
+            {
+                if (tf != null)
+                    sendDataAndTrailer(df, lastContent, tf, callback);
+                else
+                    sendData(df, lastContent, callback);
+            }
+            else
+            {
+                if (tf != null)
+                    sendTrailer(tf, callback);
+                else
+                    callback.succeeded();
+            }
+        }, callback::failed));
     }
 
     private void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
@@ -399,24 +408,28 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    callback.completeWith(sendDataFrame(content, true, true));
+                    DataFrame df = new DataFrame(content, true);
+                    sendData(df, true, callback);
                 }
                 else
                 {
                     if (hasContent)
                     {
-                        callback.completeWith(sendDataFrame(content, lastContent, false)
-                            .thenCompose(s -> sendTrailerFrame(trailers)));
+                        DataFrame df = new DataFrame(content, false);
+                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                        sendDataAndTrailer(df, true, tf, callback);
                     }
                     else
                     {
-                        callback.completeWith(sendTrailerFrame(trailers));
+                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                        sendTrailer(tf, callback);
                     }
                 }
             }
             else
             {
-                callback.completeWith(sendDataFrame(content, false, false));
+                DataFrame df = new DataFrame(content, false);
+                sendData(df, false, callback);
             }
         }
         else
@@ -441,29 +454,31 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return MetaData.isTunnel(request.getMethod(), response.getStatus());
     }
 
-    private CompletableFuture<Stream> sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream)
+    private void sendDataAndTrailer(DataFrame dataFrame, boolean lastContent, HeadersFrame trailersFrame, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("HTTP3 Response #{}/{}: {} content bytes{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                content.remaining(), lastContent ? " (last chunk)" : "");
-        }
-        DataFrame frame = new DataFrame(content, endStream);
-        return stream.data(frame);
+        sendData(dataFrame, lastContent, Callback.from(callback.getInvocationType(), () -> sendTrailer(trailersFrame, callback), callback::failed));
     }
 
-    private CompletableFuture<Stream> sendTrailerFrame(HttpFields trailers)
+    private void sendData(DataFrame dataFrame, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}: trailer{}{}",
+            LOG.debug("HTTP3 response #{}/{}: {} content bytes{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+                dataFrame.getByteBuffer().remaining(), lastContent ? " (last chunk)" : "");
         }
+        stream.data(dataFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+    }
 
-        HeadersFrame frame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-        return stream.trailer(frame);
+    private void sendTrailer(HeadersFrame trailerFrame, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP3 response #{}/{}: trailer{}{}",
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(), trailerFrame.getMetaData().getHttpFields());
+        }
+        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
     }
 
     @Override
@@ -516,7 +531,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.reset(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
+            stream.disconnect(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED, Promise.Invocable.noop());
         }
     }
 
@@ -526,7 +541,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
-        stream.reset(errorCode.code(), x);
+        stream.disconnect(errorCode.code(), x, Promise.Invocable.noop());
     }
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)

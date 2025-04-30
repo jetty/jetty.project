@@ -13,290 +13,204 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-public interface Quiche
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>Provides Java APIs to access the native Quiche library.</p>
+ * <p>The access is performed via a {@link QuicheBinding}, depending
+ * on the implementation used to access the native Quiche library.</p>
+ */
+public abstract class Quiche
 {
-    // The current QUIC wire version.
-    int QUICHE_PROTOCOL_VERSION = 0x00000001;
-    // The maximum length of a connection ID.
-    int QUICHE_MAX_CONN_ID_LEN = 20;
-    // The minimum length of Initial packets sent by a client.
-    int QUICHE_MIN_CLIENT_INITIAL_LEN = 1200;
+    private static final Logger LOG = LoggerFactory.getLogger(Quiche.class);
+    private static final QuicheBinding QUICHE_BINDING;
 
-    interface quiche_cc_algorithm
+    static
     {
-        int QUICHE_CC_RENO = 0,
-            QUICHE_CC_CUBIC = 1,
-            QUICHE_CC_BBR = 2;
+        // This code is safe even if trying to load a QuicheBinding instance throws an error,
+        // as in that case a warning would be logged and the binding ignored.
+        List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
+            .sorted(Comparator.comparingInt(QuicheBinding::priority))
+            .collect(Collectors.toList());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("found quiche binding implementations: {}", bindings);
+
+        List<Throwable> failures = new ArrayList<>();
+        QUICHE_BINDING = bindings.stream()
+            .filter(quicheBinding ->
+            {
+                Throwable failure = quicheBinding.initialize();
+                failures.add(failure);
+                return failure == null;
+            })
+            .min(Comparator.comparingInt(QuicheBinding::priority))
+            .orElseThrow(() ->
+            {
+                IllegalStateException ise = new IllegalStateException("no quiche binding implementation found");
+                failures.forEach(ise::addSuppressed);
+                return ise;
+            });
+        if (LOG.isDebugEnabled())
+            LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
     }
 
-    interface quiche_error
+    public static InetSocketAddress toInetSocketAddress(SocketAddress address, boolean client)
     {
-        // There is no more work to do.
-        long QUICHE_ERR_DONE = -1,
-
-        // The provided buffer is too short.
-        QUICHE_ERR_BUFFER_TOO_SHORT = -2,
-
-        // The provided packet cannot be parsed because its version is unknown.
-        QUICHE_ERR_UNKNOWN_VERSION = -3,
-
-        // The provided packet cannot be parsed because it contains an invalid
-        // frame.
-        QUICHE_ERR_INVALID_FRAME = -4,
-
-        // The provided packet cannot be parsed.
-        QUICHE_ERR_INVALID_PACKET = -5,
-
-        // The operation cannot be completed because the connection is in an
-        // invalid state.
-        QUICHE_ERR_INVALID_STATE = -6,
-
-        // The operation cannot be completed because the stream is in an
-        // invalid state.
-        QUICHE_ERR_INVALID_STREAM_STATE = -7,
-
-        // The peer's transport params cannot be parsed.
-        QUICHE_ERR_INVALID_TRANSPORT_PARAM = -8,
-
-        // A cryptographic operation failed.
-        QUICHE_ERR_CRYPTO_FAIL = -9,
-
-        // The TLS handshake failed.
-        QUICHE_ERR_TLS_FAIL = -10,
-
-        // The peer violated the local flow control limits.
-        QUICHE_ERR_FLOW_CONTROL = -11,
-
-        // The peer violated the local stream limits.
-        QUICHE_ERR_STREAM_LIMIT = -12,
-
-        // The received data exceeds the stream's final size.
-        QUICHE_ERR_FINAL_SIZE = -13,
-
-        // Error in congestion control.
-        QUICHE_ERR_CONGESTION_CONTROL = -14,
-
-        // The specified stream was stopped by the peer.
-        QUICHE_ERR_STREAM_STOPPED = -15,
-
-        // The specified stream was reset by the peer.
-        QUICHE_ERR_STREAM_RESET = -16,
-
-        // Too many identifiers were provided.
-        QUICHE_ERR_ID_LIMIT = -17,
-
-        // Not enough available identifiers.
-        QUICHE_ERR_OUT_OF_IDENTIFIERS = -18,
-
-        // Error in key update.
-        QUICHE_ERR_KEY_UPDATE = -19,
-
-        // The peer sent more data in CRYPTO frames than we can buffer.
-        QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED = -20;
-
-        static String errToString(long err)
-        {
-            if (err == QUICHE_ERR_DONE)
-                return "QUICHE_ERR_DONE";
-            if (err == QUICHE_ERR_BUFFER_TOO_SHORT)
-                return "QUICHE_ERR_BUFFER_TOO_SHORT";
-            if (err == QUICHE_ERR_UNKNOWN_VERSION)
-                return "QUICHE_ERR_UNKNOWN_VERSION";
-            if (err == QUICHE_ERR_INVALID_FRAME)
-                return "QUICHE_ERR_INVALID_FRAME";
-            if (err == QUICHE_ERR_INVALID_PACKET)
-                return "QUICHE_ERR_INVALID_PACKET";
-            if (err == QUICHE_ERR_INVALID_STATE)
-                return "QUICHE_ERR_INVALID_STATE";
-            if (err == QUICHE_ERR_INVALID_STREAM_STATE)
-                return "QUICHE_ERR_INVALID_STREAM_STATE";
-            if (err == QUICHE_ERR_INVALID_TRANSPORT_PARAM)
-                return "QUICHE_ERR_INVALID_TRANSPORT_PARAM";
-            if (err == QUICHE_ERR_CRYPTO_FAIL)
-                return "QUICHE_ERR_CRYPTO_FAIL";
-            if (err == QUICHE_ERR_TLS_FAIL)
-                return "QUICHE_ERR_TLS_FAIL";
-            if (err == QUICHE_ERR_FLOW_CONTROL)
-                return "QUICHE_ERR_FLOW_CONTROL";
-            if (err == QUICHE_ERR_STREAM_LIMIT)
-                return "QUICHE_ERR_STREAM_LIMIT";
-            if (err == QUICHE_ERR_FINAL_SIZE)
-                return "QUICHE_ERR_FINAL_SIZE";
-            if (err == QUICHE_ERR_CONGESTION_CONTROL)
-                return "QUICHE_ERR_CONGESTION_CONTROL";
-            if (err == QUICHE_ERR_STREAM_STOPPED)
-                return "QUICHE_ERR_STREAM_STOPPED";
-            if (err == QUICHE_ERR_STREAM_RESET)
-                return "QUICHE_ERR_STREAM_RESET";
-            if (err == QUICHE_ERR_ID_LIMIT)
-                return "QUICHE_ERR_ID_LIMIT";
-            if (err == QUICHE_ERR_OUT_OF_IDENTIFIERS)
-                return "QUICHE_ERR_OUT_OF_IDENTIFIERS";
-            if (err == QUICHE_ERR_KEY_UPDATE)
-                return "QUICHE_ERR_KEY_UPDATE";
-            if (err == QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED)
-                return "QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED";
-            return "?? " + err;
-        }
+        // Quiche requires InetSocketAddress, but in principle we could transport
+        // QUIC over UnixDomain or memory, so create a fake InetSocketAddress.
+        if (address instanceof InetSocketAddress inet)
+            return inet;
+        int port = client ? 0xFA9E : 443;
+        return new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
     }
 
-    // QUIC Transport Error Codes: https://www.iana.org/assignments/quic/quic.xhtml#quic-transport-error-codes
-    interface quic_error
+    public static byte[] probeConnectionId(ByteBuffer packet)
     {
-        long NO_ERROR = 0,
-            INTERNAL_ERROR = 1,
-            CONNECTION_REFUSED = 2,
-            FLOW_CONTROL_ERROR = 3,
-            STREAM_LIMIT_ERROR = 4,
-            STREAM_STATE_ERROR = 5,
-            FINAL_SIZE_ERROR = 6,
-            FRAME_ENCODING_ERROR = 7,
-            TRANSPORT_PARAMETER_ERROR = 8,
-            CONNECTION_ID_LIMIT_ERROR = 9,
-            PROTOCOL_VIOLATION = 10,
-            INVALID_TOKEN = 11,
-            APPLICATION_ERROR = 12,
-            CRYPTO_BUFFER_EXCEEDED = 13,
-            KEY_UPDATE_ERROR = 14,
-            AEAD_LIMIT_REACHED = 15,
-            NO_VIABLE_PATH = 16,
-            VERSION_NEGOTIATION_ERROR = 17;
-
-        static String errToString(long err)
-        {
-            if (err == NO_ERROR)
-                return "NO_ERROR";
-            if (err == INTERNAL_ERROR)
-                return "INTERNAL_ERROR";
-            if (err == CONNECTION_REFUSED)
-                return "CONNECTION_REFUSED";
-            if (err == FLOW_CONTROL_ERROR)
-                return "FLOW_CONTROL_ERROR";
-            if (err == STREAM_LIMIT_ERROR)
-                return "STREAM_LIMIT_ERROR";
-            if (err == STREAM_STATE_ERROR)
-                return "STREAM_STATE_ERROR";
-            if (err == FINAL_SIZE_ERROR)
-                return "FINAL_SIZE_ERROR";
-            if (err == FRAME_ENCODING_ERROR)
-                return "FRAME_ENCODING_ERROR";
-            if (err == TRANSPORT_PARAMETER_ERROR)
-                return "TRANSPORT_PARAMETER_ERROR";
-            if (err == CONNECTION_ID_LIMIT_ERROR)
-                return "CONNECTION_ID_LIMIT_ERROR";
-            if (err == PROTOCOL_VIOLATION)
-                return "PROTOCOL_VIOLATION";
-            if (err == INVALID_TOKEN)
-                return "INVALID_TOKEN";
-            if (err == APPLICATION_ERROR)
-                return "APPLICATION_ERROR";
-            if (err == CRYPTO_BUFFER_EXCEEDED)
-                return "CRYPTO_BUFFER_EXCEEDED";
-            if (err == KEY_UPDATE_ERROR)
-                return "KEY_UPDATE_ERROR";
-            if (err == AEAD_LIMIT_REACHED)
-                return "AEAD_LIMIT_REACHED";
-            if (err == NO_VIABLE_PATH)
-                return "NO_VIABLE_PATH";
-            if (err == VERSION_NEGOTIATION_ERROR)
-                return "VERSION_NEGOTIATION_ERROR";
-            if (err >= 0x100 && err <= 0x01FF)
-                return "CRYPTO_ERROR " + tls_alert.errToString(err - 0x100);
-            return "?? " + err;
-        }
+        return QUICHE_BINDING.fromPacket(packet);
     }
 
-    // TLS Alerts: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
-    interface tls_alert
+    public static Quiche connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
     {
-        long CLOSE_NOTIFY = 0,
-            UNEXPECTED_MESSAGE = 10,
-            BAD_RECORD_MAC = 20,
-            RECORD_OVERFLOW = 22,
-            HANDSHAKE_FAILURE = 40,
-            BAD_CERTIFICATE = 42,
-            UNSUPPORTED_CERTIFICATE = 43,
-            CERTIFICATE_REVOKED = 44,
-            CERTIFICATE_EXPIRED = 45,
-            CERTIFICATE_UNKNOWN = 46,
-            ILLEGAL_PARAMETER = 47,
-            UNKNOWN_CA = 48,
-            ACCESS_DENIED = 49,
-            DECODE_ERROR = 50,
-            DECRYPT_ERROR = 51,
-            TOO_MANY_CIDS_REQUESTED = 52,
-            PROTOCOL_VERSION = 70,
-            INSUFFICIENT_SECURITY = 71,
-            INTERNAL_ERROR = 80,
-            INAPPROPRIATE_FALLBACK = 86,
-            USER_CANCELED = 90,
-            MISSING_EXTENSION = 109,
-            UNSUPPORTED_EXTENSION = 110,
-            UNRECOGNIZED_NAME = 112,
-            BAD_CERTIFICATE_STATUS_RESPONSE = 113,
-            UNKNOWN_PSK_IDENTITY = 115,
-            CERTIFICATE_REQUIRED = 116,
-            NO_APPLICATION_PROTOCOL = 120;
+        return connect(quicheConfig, local, peer, QuicheConstants.QUICHE_MAX_CONN_ID_LEN);
+    }
 
-        static String errToString(long err)
+    public static Quiche connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
+    {
+        return QUICHE_BINDING.connect(quicheConfig, local, peer, connectionIdLength);
+    }
+
+    /**
+     * Fully consumes the {@code packetRead} buffer.
+     * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
+     * and the {@code packetRead} buffer can be dropped.
+     */
+    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
+    {
+        return QUICHE_BINDING.negotiate(tokenMinter, packetRead, packetToSend);
+    }
+
+    /**
+     * Fully consumes the {@code packetRead} buffer if the connection was accepted.
+     * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
+     */
+    public static Quiche tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
+    {
+        return QUICHE_BINDING.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
+    }
+
+    public final List<Long> readableStreamIds()
+    {
+        return iterableStreamIds(false);
+    }
+
+    public final List<Long> writableStreamIds()
+    {
+        return iterableStreamIds(true);
+    }
+
+    protected abstract List<Long> iterableStreamIds(boolean write);
+
+    /**
+     * Read the buffer of cipher text coming from the network.
+     * @param buffer the buffer to read.
+     * @param local the local address on which the buffer was received.
+     * @param peer the address of the peer from which the buffer was received.
+     * @return how many bytes were consumed.
+     */
+    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException;
+
+    /**
+     * Fill the given buffer with cipher text to be sent.
+     * @param buffer the buffer to fill.
+     * @return how many bytes were added to the buffer.
+     */
+    public abstract int drainCipherBytes(ByteBuffer buffer) throws IOException;
+
+    public abstract boolean isConnectionClosed();
+
+    public abstract boolean isConnectionEstablished();
+
+    public abstract long nextTimeout();
+
+    public abstract void onTimeout();
+
+    public abstract String getNegotiatedProtocol();
+
+    public abstract boolean close(long error, String reason);
+
+    public abstract void dispose();
+
+    public abstract boolean isDraining();
+
+    public abstract int maxLocalStreams();
+
+    public abstract long windowCapacity();
+
+    public abstract long windowCapacity(long streamId) throws IOException;
+
+    public abstract void shutdownStream(long streamId, boolean writeSide, long error) throws IOException;
+
+    public final void feedFinForStream(long streamId) throws IOException
+    {
+        feedClearBytesForStream(streamId, BufferUtil.EMPTY_BUFFER, true);
+    }
+
+    public final int feedClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
+    {
+        return feedClearBytesForStream(streamId, buffer, false);
+    }
+
+    public abstract int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException;
+
+    public abstract int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException;
+
+    /**
+     * @param streamId the stream id
+     * @return whether all the data has been read from the specified stream.
+     */
+    public abstract boolean isStreamFinished(long streamId);
+
+    public abstract CloseInfo getRemoteCloseInfo();
+
+    public abstract CloseInfo getLocalCloseInfo();
+
+    public abstract byte[] getPeerCertificate();
+
+    public record CloseInfo(long error, String reason)
+    {
+    }
+
+    public interface TokenMinter
+    {
+        int MAX_TOKEN_LENGTH = 48;
+        byte[] mint(byte[] dcid, int len);
+    }
+
+    public interface TokenValidator
+    {
+        byte[] validate(byte[] token, int len);
+    }
+
+    public static class TokenValidationException extends IOException
+    {
+        public TokenValidationException(String msg)
         {
-            if (err == CLOSE_NOTIFY)
-                return "CLOSE_NOTIFY";
-            if (err == UNEXPECTED_MESSAGE)
-                return "UNEXPECTED_MESSAGE";
-            if (err == BAD_RECORD_MAC)
-                return "BAD_RECORD_MAC";
-            if (err == RECORD_OVERFLOW)
-                return "RECORD_OVERFLOW";
-            if (err == HANDSHAKE_FAILURE)
-                return "HANDSHAKE_FAILURE";
-            if (err == BAD_CERTIFICATE)
-                return "BAD_CERTIFICATE";
-            if (err == UNSUPPORTED_CERTIFICATE)
-                return "UNSUPPORTED_CERTIFICATE";
-            if (err == CERTIFICATE_REVOKED)
-                return "CERTIFICATE_REVOKED";
-            if (err == CERTIFICATE_EXPIRED)
-                return "CERTIFICATE_EXPIRED";
-            if (err == CERTIFICATE_UNKNOWN)
-                return "CERTIFICATE_UNKNOWN";
-            if (err == ILLEGAL_PARAMETER)
-                return "ILLEGAL_PARAMETER";
-            if (err == UNKNOWN_CA)
-                return "UNKNOWN_CA";
-            if (err == ACCESS_DENIED)
-                return "ACCESS_DENIED";
-            if (err == DECODE_ERROR)
-                return "DECODE_ERROR";
-            if (err == DECRYPT_ERROR)
-                return "DECRYPT_ERROR";
-            if (err == TOO_MANY_CIDS_REQUESTED)
-                return "TOO_MANY_CIDS_REQUESTED";
-            if (err == PROTOCOL_VERSION)
-                return "PROTOCOL_VERSION";
-            if (err == INSUFFICIENT_SECURITY)
-                return "INSUFFICIENT_SECURITY";
-            if (err == INTERNAL_ERROR)
-                return "INTERNAL_ERROR";
-            if (err == INAPPROPRIATE_FALLBACK)
-                return "INAPPROPRIATE_FALLBACK";
-            if (err == USER_CANCELED)
-                return "USER_CANCELED";
-            if (err == MISSING_EXTENSION)
-                return "MISSING_EXTENSION";
-            if (err == UNSUPPORTED_EXTENSION)
-                return "UNSUPPORTED_EXTENSION";
-            if (err == UNRECOGNIZED_NAME)
-                return "UNRECOGNIZED_NAME";
-            if (err == BAD_CERTIFICATE_STATUS_RESPONSE)
-                return "BAD_CERTIFICATE_STATUS_RESPONSE";
-            if (err == UNKNOWN_PSK_IDENTITY)
-                return "UNKNOWN_PSK_IDENTITY";
-            if (err == CERTIFICATE_REQUIRED)
-                return "CERTIFICATE_REQUIRED";
-            if (err == NO_APPLICATION_PROTOCOL)
-                return "NO_APPLICATION_PROTOCOL";
-            return "?? " + err;
+            super(msg);
         }
     }
 }

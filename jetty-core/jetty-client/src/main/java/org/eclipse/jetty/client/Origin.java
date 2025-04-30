@@ -20,11 +20,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -119,6 +121,11 @@ public class Origin
         return transport;
     }
 
+    public boolean isSecure()
+    {
+        return HttpScheme.isSecure(getScheme());
+    }
+
     @Override
     public int hashCode()
     {
@@ -149,7 +156,7 @@ public class Origin
     public String toString()
     {
         return String.format("%s@%x[%s,tag=%s,protocol=%s,transport=%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             asString(),
             getTag(),
@@ -276,7 +283,7 @@ public class Origin
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
+            return String.format("%s@%x[%s]", TypeUtil.toShortName(getClass()), hashCode(), asString());
         }
     }
 }

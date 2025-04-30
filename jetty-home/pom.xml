@@ -56,7 +56,6 @@
       <artifactId>jetty-hazelcast</artifactId>
       <optional>true</optional>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-embedded</artifactId>
@@ -403,6 +402,14 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-quiche-jna</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-quiche-server</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
       <artifactId>jetty-setuid-jna</artifactId>
       <version>${jetty-setuid-version}</version>
@@ -641,8 +648,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
-              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack,jetty-quic-server,jetty-quic-common,jetty-quic-quiche-common,jetty-quic-quiche-jna,jetty-quic-quiche-foreign,jetty-quiche-native</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.http3</includeGroupIds>
+              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http3</outputDirectory>
             </configuration>
@@ -686,6 +693,19 @@
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/logging</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-quic-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
+              <includeArtifactIds>jetty-quic-api,jetty-quic-common,jetty-quic-server,jetty-quic-util,jetty-quic-quiche-common,jetty-quic-quiche-server,jetty-quic-quiche-jna,jetty-quic-quiche-foreign,jetty-quiche-native</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/quic</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -873,4 +893,19 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>enable-foreign</id>
+      <activation>
+        <jdk>[22,)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>jetty-quic-quiche-foreign</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

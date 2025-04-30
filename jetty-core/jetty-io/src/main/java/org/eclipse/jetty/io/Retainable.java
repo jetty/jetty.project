@@ -16,6 +16,8 @@ package org.eclipse.jetty.io;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * <p>A reference counted resource, for example one that is borrowed from a pool,
  * that may be retained an additional number of times, and released a correspondent
@@ -152,7 +154,7 @@ public interface Retainable
         @Override
         public String toString()
         {
-            return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
     }
 
@@ -244,7 +246,7 @@ public interface Retainable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[r=%d]", getClass().getSimpleName(), hashCode(), get());
+            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), get());
         }
     }
 

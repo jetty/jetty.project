@@ -242,9 +242,7 @@ public class HttpClientProxyProtocolTest
         });
         startClient();
 
-        int proxyPort = connector.getLocalPort();
-        int serverPort = proxyPort + 1; // Any port will do.
-        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyPort));
+        int serverPort = connector.getLocalPort();
 
         // We are simulating to be a HttpClient inside a proxy.
         // The server is configured with the PROXY protocol to know the socket address of clients.

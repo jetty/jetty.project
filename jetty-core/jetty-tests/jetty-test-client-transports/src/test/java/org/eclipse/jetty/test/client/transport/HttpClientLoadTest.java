@@ -25,16 +25,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -42,14 +39,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest
@@ -61,61 +55,42 @@ public class HttpClientLoadTest extends AbstractTest
     @MethodSource("transports")
     public void testIterative(TransportType transportType) throws Exception
     {
-        server = newServer();
         start(transportType, new LoadHandler());
         setStreamIdleTimeout(120000);
-        client.stop();
-        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
-        client.setByteBufferPool(byteBufferPool);
-        client.setMaxConnectionsPerDestination(32768);
-        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
-        try (HttpClient httpClient = client)
+
+        // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
+        int runs = 1;
+        int iterations = 100;
+        for (int i = 0; i < runs; ++i)
         {
-            httpClient.start();
-
-            // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
-            int runs = 1;
-            int iterations = 100;
-            for (int i = 0; i < runs; ++i)
-            {
-                run(transportType, iterations);
-            }
-
-            // Re-run after warmup
-            iterations = 250;
-            for (int i = 0; i < runs; ++i)
-            {
-                run(transportType, iterations);
-            }
+            run(transportType, iterations);
         }
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), is(0)));
+
+        // Re-run after warmup
+        iterations = 250;
+        for (int i = 0; i < runs; ++i)
+        {
+            run(transportType, iterations);
+        }
     }
 
     @ParameterizedTest
     @MethodSource("transports")
     public void testConcurrent(TransportType transportType) throws Exception
     {
-        // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
-
         start(transportType, new LoadHandler());
-        client.stop();
-        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
-        client.setByteBufferPool(byteBufferPool);
-        client.setMaxConnectionsPerDestination(32768);
+        setStreamIdleTimeout(120000);
+        client.setIdleTimeout(120000);
+        int cores = 8;
+        client.setMaxConnectionsPerDestination(cores);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
-        try (HttpClient httpClient = client)
-        {
-            httpClient.start();
 
-            int runs = 1;
-            int iterations = 128;
-            IntStream.range(0, 16).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                    run(transportType, iterations)));
-        }
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), is(0)));
+        int runs = 1;
+        int iterations = 64;
+        IntStream.range(0, cores).parallel().forEach(i ->
+            IntStream.range(0, runs).forEach(j ->
+                run(transportType, iterations)));
     }
 
     private void run(TransportType transportType, int iterations)

@@ -15,6 +15,8 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public abstract class AbstractPathSpec implements PathSpec
 {
     @Override
@@ -61,6 +63,6 @@ public abstract class AbstractPathSpec implements PathSpec
     @Override
     public String toString()
     {
-        return String.format("%s@%s{%s,%s}", getClass().getSimpleName(), Integer.toHexString(hashCode()), getGroup(), getDeclaration());
+        return String.format("%s@%s{%s,%s}", TypeUtil.toShortName(getClass()), Integer.toHexString(hashCode()), getGroup(), getDeclaration());
     }
 }

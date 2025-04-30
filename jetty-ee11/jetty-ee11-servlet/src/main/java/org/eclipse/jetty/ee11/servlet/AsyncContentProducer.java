@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -347,7 +348,7 @@ class AsyncContentProducer implements ContentProducer
     public String toString()
     {
         return String.format("%s@%x[c=%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _chunk
         );
@@ -426,7 +427,7 @@ class AsyncContentProducer implements ContentProducer
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + " permits=" + _permits;
+            return TypeUtil.toShortName(getClass()) + " permits=" + _permits;
         }
     }
 

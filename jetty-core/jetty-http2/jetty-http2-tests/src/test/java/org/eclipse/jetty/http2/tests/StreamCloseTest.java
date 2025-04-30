@@ -199,7 +199,7 @@ public class StreamCloseTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", HttpFields.EMPTY));
-                stream.push(pushFrame, new Promise.Adapter<>()
+                stream.push(pushFrame, new Promise<>()
                 {
                     @Override
                     public void succeeded(Stream pushedStream)
@@ -227,7 +227,7 @@ public class StreamCloseTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
@@ -262,7 +262,7 @@ public class StreamCloseTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", HttpFields.EMPTY));
-                stream.push(pushFrame, new Promise.Adapter<>(), new Stream.Listener()
+                stream.push(pushFrame, new Promise<>() {}, new Stream.Listener()
                 {
                     @Override
                     public void onReset(Stream pushedStream, ResetFrame frame, Callback callback)
@@ -282,7 +282,7 @@ public class StreamCloseTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         CountDownLatch clientLatch = new CountDownLatch(2);
-        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(frame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
@@ -348,11 +348,11 @@ public class StreamCloseTest extends AbstractTest
 
         // First stream will be idle on server.
         HeadersFrame request1 = new HeadersFrame(newRequest("HEAD", HttpFields.EMPTY), null, true);
-        session.newStream(request1, new Promise.Adapter<>(), null);
+        session.newStream(request1, new Promise<>() {}, null);
 
         // Second stream will fail on server.
         HeadersFrame request2 = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
-        session.newStream(request2, new Promise.Adapter<>(), null);
+        session.newStream(request2, new Promise<>() {}, null);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Session serverSession = sessionRef.get();

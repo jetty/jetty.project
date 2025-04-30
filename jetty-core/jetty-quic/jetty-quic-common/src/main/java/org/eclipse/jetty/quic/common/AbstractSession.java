@@ -1,0 +1,315 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.common;
+
+import java.security.cert.X509Certificate;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
+import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public abstract class AbstractSession extends ContainerLifeCycle implements Session
+{
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSession.class);
+
+    private final Executor executor;
+    private final QuicConfiguration configuration;
+    private final Session.Listener listener;
+
+    protected AbstractSession(Executor executor, QuicConfiguration configuration, Session.Listener listener)
+    {
+        this.executor = executor;
+        this.configuration = configuration;
+        this.listener = listener;
+    }
+
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public QuicConfiguration getQuicConfiguration()
+    {
+        return configuration;
+    }
+
+    public Session.Listener getListener()
+    {
+        return listener;
+    }
+
+    public abstract X509Certificate[] getPeerCertificates();
+
+    protected void emitOpen()
+    {
+        notifyOpen();
+        configuration.getEventListeners().stream()
+            .filter(l -> l instanceof Session.Listener)
+            .map(Session.Listener.class::cast)
+            .forEach(this::notifyOpen);
+    }
+
+    protected void emitDisconnect()
+    {
+        notifyDisconnect();
+        configuration.getEventListeners().stream()
+            .filter(l -> l instanceof Session.Listener)
+            .map(Session.Listener.class::cast)
+            .forEach(this::notifyDisconnect);
+    }
+
+    public abstract void offerTask(Runnable task);
+
+    public CompletableFuture<Session> shutdown()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("shutdown {}", this);
+        return notifyLocalShutdown();
+    }
+
+    @Override
+    public void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing {} {}", frame, this);
+        // Propagate inwards.
+        notifyLocalClose(frame, promise);
+    }
+
+    protected void notifyOpen()
+    {
+        notifyOpen(listener);
+    }
+
+    private void notifyOpen(Session.Listener listener)
+    {
+        try
+        {
+            listener.onOpen(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    protected Stream.Listener notifyNewStream(Stream stream)
+    {
+        try
+        {
+            return listener.onNewStream(stream);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+            return null;
+        }
+    }
+
+    protected TransportParameters notifyPrepare()
+    {
+        try
+        {
+            return listener.onPrepare(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+            return null;
+        }
+    }
+
+    protected void notifyTransportParameters(TransportParameters parameters)
+    {
+        try
+        {
+            listener.onTransportParameters(this, parameters);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyMaxStreams(MaxStreamsFrame frame)
+    {
+        try
+        {
+            listener.onMaxStreams(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyDataBlocked(DataBlockedFrame frame)
+    {
+        try
+        {
+            listener.onDataBlocked(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyMaxData(MaxDataFrame frame)
+    {
+        try
+        {
+            listener.onMaxData(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyPing()
+    {
+        try
+        {
+            listener.onPing(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyStreamsBlocked(StreamsBlockedFrame frame)
+    {
+        try
+        {
+            listener.onStreamsBlocked(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    private CompletableFuture<Session> notifyLocalShutdown()
+    {
+        try
+        {
+            if (listener instanceof AbstractSession.Listener extended)
+                return extended.onLocalShutdown(this);
+            return CompletableFuture.completedFuture(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+            return CompletableFuture.failedFuture(x);
+        }
+    }
+
+    protected boolean notifyIdleTimeout(TimeoutException failure)
+    {
+        try
+        {
+            return listener.onIdleTimeout(this, failure);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+            return true;
+        }
+    }
+
+    protected void notifyLocalClose(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+    {
+        try
+        {
+            if (listener instanceof AbstractSession.Listener extended)
+                extended.onLocalClose(this, frame, promise);
+            else
+                promise.succeeded(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+            promise.failed(x);
+        }
+    }
+
+    protected void notifyClose(ConnectionCloseFrame frame)
+    {
+        try
+        {
+            listener.onClose(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyDisconnect()
+    {
+        notifyDisconnect(listener);
+    }
+
+    private void notifyDisconnect(Session.Listener listener)
+    {
+        try
+        {
+            listener.onDisconnect(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+    }
+
+    public interface Listener extends Session.Listener
+    {
+        CompletableFuture<Session> onLocalShutdown(Session session);
+
+        void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
+    }
+}

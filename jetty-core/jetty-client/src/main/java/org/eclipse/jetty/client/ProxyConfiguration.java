@@ -121,7 +121,7 @@ public class ProxyConfiguration
          */
         public boolean isSecure()
         {
-            return HttpScheme.HTTPS.is(origin.getScheme());
+            return origin.isSecure();
         }
 
         /**
