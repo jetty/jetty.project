@@ -65,8 +65,8 @@ public class UrlParameterDecoderBenchmark
         smallInputStream = new ByteArrayInputStream(small);
         largeInputStream = new ByteArrayInputStream(large);
 
-        smallReader = new InputStreamReader(new ByteArrayInputStream(small));
-        largeReader = new InputStreamReader(new ByteArrayInputStream(large));
+        smallReader = new InputStreamReader(new ByteArrayInputStream(small), UTF_8);
+        largeReader = new InputStreamReader(new ByteArrayInputStream(large), UTF_8);
     }
 
     @Benchmark

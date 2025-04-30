@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
@@ -90,7 +91,7 @@ class UrlParameterDecoder
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(String str) throws CharacterCodingException
+    public boolean parse(CharSequence str) throws CharacterCodingException
     {
         return parse(str, 0, str.length());
     }
@@ -108,12 +109,12 @@ class UrlParameterDecoder
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(String str, int offset, int length) throws CharacterCodingException
+    public boolean parse(CharSequence str, int offset, int length) throws CharacterCodingException
     {
         int end = offset + length;
         for (int i = offset; i < end; i++)
         {
-            parse(str.charAt(i));
+            parseChar(str.charAt(i));
         }
         complete();
         return builder.hasCodingErrors();
@@ -153,16 +154,26 @@ class UrlParameterDecoder
      */
     public boolean parse(Reader reader) throws IOException
     {
-        int c;
-        while ((c = reader.read()) != -1)
+        CharBuffer buf = CharBuffer.allocate(128);
+        while (reader.read(buf) != -1)
         {
-            parse((char)c);
+            buf.flip();
+            parseCharSequence(buf);
+            buf.clear();
         }
         complete();
         return builder.hasCodingErrors();
     }
 
-    private void parse(char c) throws CharacterCodingException
+    private void parseCharSequence(CharSequence sequence) throws CharacterCodingException
+    {
+        for (int i = 0; i < sequence.length(); i++)
+        {
+            parseChar(sequence.charAt(i));
+        }
+    }
+
+    private void parseChar(char c) throws CharacterCodingException
     {
         if (maxLength >= 0 && ++charCount > maxLength)
             throw new IllegalStateException("Form is larger than max length " + maxLength);
