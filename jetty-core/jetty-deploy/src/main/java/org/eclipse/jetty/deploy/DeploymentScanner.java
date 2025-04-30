@@ -31,11 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -119,7 +116,7 @@ import org.slf4j.LoggerFactory;
  *
  * <pre>{@code
  * DeploymentScanner provider = new DeploymentScanner();
- * EnvironmentConfig env10config = provider.configureEnvironment("ee10");
+ * EnvironmentConfig env10config = provider.configureEnvironment("ee10", 1010);
  * env10config.setExtractWars(true);
  * env10config.setParentLoaderPriority(false);
  * }</pre>
@@ -131,40 +128,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     // old attributes prefix, now stripped.
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
-    private static final Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
-
-    /**
-     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
-     * EE names are compared by EE number, otherwise simple name comparison is used.
-     */
-    protected static final Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
-    {
-        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
-        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
-
-        if (m1.matches())
-        {
-            if (m2.matches())
-            {
-                int n1 = Integer.parseInt(m1.group(1));
-                int n2 = Integer.parseInt(m2.group(1));
-                return Integer.compare(n2, n1);
-            }
-            return -1;
-        }
-        if (m2.matches())
-            return 1;
-
-        return e1.compareTo(e2);
-    };
-
     private final Server server;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
-    private Set<String> trackedEnvironments = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    private List<TrackedEnv> trackedEnvironments = new ArrayList<>();
 
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
@@ -320,16 +290,20 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * Configure the Environment specific Deploy settings.
      *
      * @param name the name of the environment.
+     * @param weight the weight for environment selection when calculating a default environment.
+     *    (Example usage: {@code static} is 100, {@code core} is 200, {@code ee8} is 1008, {@code ee11} is 1011)
      * @return the deployment configuration for the {@link Environment}.
      */
-    public EnvironmentConfig configureEnvironment(String name)
+    public EnvironmentConfig configureEnvironment(String name, int weight)
     {
         Environment environment = Environment.get(name);
         // Check to make sure that the Environment was created before jetty-deploy is involved.
         // This is to ensure that the Environment ClassLoader is setup properly.
         if (environment == null)
             throw new IllegalStateException("Environment [" + name + "] does not exist.");
-        trackedEnvironments.add(name);
+
+        addTrackedEnvironment(name, weight);
+
         return new EnvironmentConfig(environment);
     }
 
@@ -351,7 +325,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * do not declare the {@link Environment} that they belong to.
      *
      * <p>
-     * Only uses environments that have been previously configured with {@link #configureEnvironment(String)}
+     * Only uses environments that have been previously configured with {@link #configureEnvironment(String, int)}
      * </p>
      *
      * @return the default environment name.
@@ -361,10 +335,27 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (defaultEnvironmentName == null)
         {
             return trackedEnvironments.stream()
-                .min(ENVIRONMENT_COMPARATOR)
+                .min(Comparator.comparing(TrackedEnv::weight))
+                .map(TrackedEnv::name)
                 .orElse(null);
         }
         return defaultEnvironmentName;
+    }
+
+    protected List<String> getTrackedEnvironmentsByWeight()
+    {
+        return trackedEnvironments.stream()
+            .sorted(Comparator.comparing(TrackedEnv::weight).reversed())
+            .map(TrackedEnv::name)
+            .toList();
+    }
+
+    protected void addTrackedEnvironment(String name, int weight)
+    {
+        if (hasTrackedEnvironment(name))
+            throw new IllegalStateException("Environment [" + name + "] is already configured for deploy.");
+
+        trackedEnvironments.add(new TrackedEnv(name, weight));
     }
 
     public void setDefaultEnvironmentName(String name)
@@ -853,9 +844,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                             envName = getDefaultEnvironmentName();
                         Environment env = Environment.get(envName);
 
-                        if (env == null || !trackedEnvironments.contains(envName))
+                        if (env == null || !hasTrackedEnvironment(envName))
                             throw new IllegalArgumentException("Unable to deploy %s to environment %s.  Available Environments to deploy to %s"
-                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(Comparator.comparing(TrackedEnv::name))
+                                    .map(TrackedEnv::name)
                                     .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
@@ -889,9 +881,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                             envName = getDefaultEnvironmentName();
                         Environment env = Environment.get(envName);
 
-                        if (env == null || !trackedEnvironments.contains(envName))
+                        if (env == null || !hasTrackedEnvironment(envName))
                             throw new IllegalArgumentException("Unable to deploy app [%s] to environment [%s].  Available Environments to deploy to %s"
-                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
+                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(Comparator.comparing(TrackedEnv::name))
+                                    .map(TrackedEnv::name)
                                     .collect(Collectors.joining(", ", "[", "]"))));
 
                         // Create a new Attributes layer for the app deployment, which is the
@@ -928,6 +921,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         {
             stopTracking(removed);
         }
+    }
+
+    protected boolean hasTrackedEnvironment(String name)
+    {
+        return trackedEnvironments.stream()
+            .anyMatch(te -> te.name.equalsIgnoreCase(name));
     }
 
     protected List<DeployAction> sortActions(List<DeployAction> actions)
@@ -1695,5 +1694,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             }
             return ret != null ? ret : PathsApp.State.UNCHANGED;
         }
+    }
+
+    record TrackedEnv(String name, int weight)
+    {
     }
 }

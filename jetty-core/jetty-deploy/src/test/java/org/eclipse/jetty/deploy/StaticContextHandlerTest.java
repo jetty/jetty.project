@@ -67,7 +67,7 @@ public class StaticContextHandlerTest
         server.addBean(deployer);
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
         Environment.ensure("static", StaticContextHandler.class);
-        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("static");
+        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("static", 100);
         environmentConfig.setContextHandlerClass(StaticContextHandler.class.getName());
         server.addBean(deploymentScanner);
 

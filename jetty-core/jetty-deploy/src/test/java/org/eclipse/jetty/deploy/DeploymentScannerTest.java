@@ -373,20 +373,23 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
     public static Stream<Arguments> envNameSorting()
     {
         return Stream.of(
-            Arguments.of(List.of("static", "core"), List.of("core", "static")),
-            Arguments.of(List.of("core", "static"), List.of("core", "static")),
-            Arguments.of(List.of("core", "ee11"), List.of("ee11", "core")),
-            Arguments.of(List.of("core", "ee11", "ee9", "ee10"), List.of("ee11", "ee10", "ee9", "core"))
+            Arguments.of(Map.of("static", 100, "core", 200), List.of("core", "static")),
+            Arguments.of(Map.of("core", 200, "static", 100), List.of("core", "static")),
+            Arguments.of(Map.of("core", 200, "ee11", 1011), List.of("ee11", "core")),
+            Arguments.of(Map.of("core", 200, "ee11", 1011, "ee9", 1009, "ee10", 1010), List.of("ee11", "ee10", "ee9", "core"))
         );
     }
 
     @ParameterizedTest
     @MethodSource("envNameSorting")
-    public void testEnvironmentNameSorting(List<String> input, List<String> expected)
+    public void testEnvironmentNameSorting(Map<String, Integer> input, List<String> expected)
     {
-        List<String> sorted = input.stream()
-            .sorted(DeploymentScanner.ENVIRONMENT_COMPARATOR)
-            .toList();
+        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
+        for (Map.Entry<String, Integer> entry : input.entrySet())
+        {
+            deploymentScanner.addTrackedEnvironment(entry.getKey(), entry.getValue());
+        }
+        List<String> sorted = deploymentScanner.getTrackedEnvironmentsByWeight();
         assertThat(sorted, ExtraMatchers.ordered(expected));
     }
 }
