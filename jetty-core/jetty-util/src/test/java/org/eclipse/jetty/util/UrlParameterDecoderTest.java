@@ -14,8 +14,10 @@
 package org.eclipse.jetty.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.CharacterCodingException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
@@ -45,7 +47,52 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class UrlParameterDecoderTest
 {
     @Test
-    public void testUtf8()
+    public void testCharSequenceCharIterator() throws IOException
+    {
+        UrlParameterDecoder.CharIterator iter = new UrlParameterDecoder.CharSequenceCharIterator("Hello");
+        StringBuilder output = new StringBuilder();
+
+        int i;
+        while ((i = iter.next()) >= 0)
+        {
+            output.append((char)i);
+        }
+        assertEquals("Hello", output.toString());
+    }
+
+    @Test
+    public void testReaderCharIterator() throws IOException
+    {
+        Reader reader = new StringReader("Hello");
+        UrlParameterDecoder.CharIterator iter = new UrlParameterDecoder.ReaderCharIterator(reader);
+        StringBuilder output = new StringBuilder();
+
+        int i;
+        while ((i = iter.next()) >= 0)
+        {
+            output.append((char)i);
+        }
+        assertEquals("Hello", output.toString());
+    }
+
+    @Test
+    public void testBasic()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "a=b&c=d";
+        decoder.parse(input);
+
+        assertEquals("b", fields.getValue("a"));
+        assertEquals("d", fields.getValue("c"));
+    }
+
+    @Test
+    public void testManyPctEncoding()
         throws Exception
     {
         Fields fields = new Fields();
@@ -62,7 +109,7 @@ public class UrlParameterDecoderTest
     }
 
     @Test
-    public void testUtf8MultiByteCodePoint() throws CharacterCodingException
+    public void testUtf8MultiByteCodePoint() throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
@@ -131,7 +178,7 @@ public class UrlParameterDecoderTest
      * Example of a parameter with raw UTF-8 unicode which isn't pct-encoded.
      */
     @Test
-    public void testBadlyEncodedValue() throws CharacterCodingException
+    public void testBadlyEncodedValue() throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
@@ -145,7 +192,7 @@ public class UrlParameterDecoderTest
     }
 
     @Test
-    public void testUtf16EncodedString() throws CharacterCodingException
+    public void testUtf16EncodedString() throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
@@ -269,7 +316,7 @@ public class UrlParameterDecoderTest
 
     @ParameterizedTest
     @MethodSource("queryBehaviorsBadUtf8Allowed")
-    public void testQueryBehaviorsBadUtf8Allowed(String input, Map<String, String> expectedParams) throws CharacterCodingException
+    public void testQueryBehaviorsBadUtf8Allowed(String input, Map<String, String> expectedParams) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
@@ -348,7 +395,7 @@ public class UrlParameterDecoderTest
 
     @ParameterizedTest
     @MethodSource("queryBehaviorsLegacyAllowed")
-    public void testQueryBehaviorsLegacyAllowed(String input, Map<String, String> expectedParams) throws CharacterCodingException
+    public void testQueryBehaviorsLegacyAllowed(String input, Map<String, String> expectedParams) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPORT);
@@ -458,7 +505,7 @@ public class UrlParameterDecoderTest
     }
 
     @Test
-    public void testShiftJisEncodedString() throws CharacterCodingException
+    public void testShiftJisEncodedString() throws IOException
     {
         assumeTrue(java.nio.charset.Charset.isSupported("Shift_JIS"));
 
@@ -492,7 +539,7 @@ public class UrlParameterDecoderTest
             # This shows how the '&' symbol does not get swallowed by a bad pct-encoding.
             i=%&z=2         | i            | %
             """)
-    public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue) throws CharacterCodingException
+    public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
@@ -541,7 +588,7 @@ public class UrlParameterDecoderTest
      */
     @ParameterizedTest
     @MethodSource("incompleteSequenceCases")
-    public void testUtf8IncompleteSequenceDefault(byte[] input, Map<String, String> expected) throws CharacterCodingException
+    public void testUtf8IncompleteSequenceDefault(byte[] input, Map<String, String> expected) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);

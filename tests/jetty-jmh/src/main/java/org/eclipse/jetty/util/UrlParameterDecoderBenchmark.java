@@ -130,8 +130,10 @@ public class UrlParameterDecoderBenchmark
 
     public static void main(String[] args) throws RunnerException
     {
+        // String asyncProfilerPath = "/home/joakim/java/async-profiler-4.0-linux-x64/lib/libasyncProfiler.so";
         Options opt = new OptionsBuilder()
             .include(UrlParameterDecoderBenchmark.class.getSimpleName())
+            // .addProfiler(AsyncProfiler.class, "dir=/home/joakim/tmp/urlparamdecoder;output=flamegraph;event=cpu;interval=500000;libPath=" + asyncProfilerPath)
             .forks(1)
             // .addProfiler(LinuxPerfNormProfiler.class)
             // .addProfiler(LinuxPerfAsmProfiler.class)

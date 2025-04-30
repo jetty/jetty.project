@@ -75,8 +75,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         };
 
     final StringBuilder _buffer;
-    private final CodingErrorAction _onMalformedInput;
-    private final CodingErrorAction _onUnmappableCharacter;
+    private final Runnable _handleMalformedInput;
+    private final Runnable _handleUnmappableCharacter;
     private int _codep;
     private boolean _codingErrors;
 
@@ -103,8 +103,24 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     protected Utf8StringBuilder(StringBuilder buffer, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
     {
         _buffer = buffer;
-        _onMalformedInput = onMalformedInput;
-        _onUnmappableCharacter = onUnmappableCharacter;
+        _handleMalformedInput = newRunnableErrorAction(onMalformedInput);
+        _handleUnmappableCharacter = newRunnableErrorAction(onUnmappableCharacter);
+    }
+
+    private Runnable newRunnableErrorAction(CodingErrorAction codingErrorAction)
+    {
+        if (codingErrorAction == CodingErrorAction.REPORT)
+            return () ->
+            {
+                throw new Utf8IllegalArgumentException();
+            };
+
+        if (codingErrorAction == CodingErrorAction.REPLACE)
+            return () ->
+                bufferAppend(REPLACEMENT);
+
+        return () ->
+        {};
     }
 
     @Override
@@ -144,29 +160,13 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         bufferReset();
     }
 
-    private void handleMalformed()
-    {
-        if (_onMalformedInput == CodingErrorAction.REPORT)
-            throw new Utf8IllegalArgumentException();
-        else if (_onMalformedInput == CodingErrorAction.REPLACE)
-            bufferAppend(REPLACEMENT);
-    }
-
-    private void handleUnmappable()
-    {
-        if (_onUnmappableCharacter == CodingErrorAction.REPORT)
-            throw new Utf8IllegalArgumentException();
-        else if (_onUnmappableCharacter == CodingErrorAction.REPLACE)
-            bufferAppend(REPLACEMENT);
-    }
-
     protected void checkCharAppend()
     {
         if (_state != UTF8_ACCEPT)
         {
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            handleMalformed();
+            _handleMalformedInput.run();
         }
     }
 
@@ -178,7 +178,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = true;
-        handleMalformed();
+        _handleMalformedInput.run();
         return true;
     }
 
@@ -327,7 +327,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 {
                     _codep = 0;
                     _codingErrors = true;
-                    handleUnmappable();
+                    _handleUnmappableCharacter.run();
                     if (_state != UTF8_ACCEPT)
                     {
                         _state = UTF8_ACCEPT;
@@ -357,7 +357,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _codep = 0;
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            handleMalformed();
+            _handleMalformedInput.run();
         }
     }
 
@@ -476,7 +476,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             this(new Utf8CharacterCodingException());
         }
 
-        public Utf8IllegalArgumentException(CharacterCodingException cause)
+        public Utf8IllegalArgumentException(IOException cause)
         {
             super(cause);
         }
