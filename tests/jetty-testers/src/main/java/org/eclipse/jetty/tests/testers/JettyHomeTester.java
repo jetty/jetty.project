@@ -24,6 +24,7 @@ import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -246,7 +247,7 @@ public class JettyHomeTester
 
     public static void unzip(Path archive, Path outputDir) throws IOException
     {
-        if (!Files.exists(outputDir))
+        if (Files.notExists(outputDir))
             throw new FileNotFoundException("Directory does not exist: " + outputDir);
 
         if (!Files.isDirectory(outputDir))
