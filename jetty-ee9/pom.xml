@@ -39,10 +39,6 @@
     <module>jetty-ee9-websocket</module>
   </modules>
 
-  <properties>
-    <ee9.jakarta.bom.version>9.1.0</ee9.jakarta.bom.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>

@@ -250,10 +250,11 @@
     <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
     <ee8.jsp.impl.version>9.0.96</ee8.jsp.impl.version>
     <ee8.weld.version>3.1.9.Final</ee8.weld.version>
-
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
     <ee9.jakarta.annotation.api.version>2.0.0</ee9.jakarta.annotation.api.version>
     <ee9.jakarta.authentication.api.version>2.0.0</ee9.jakarta.authentication.api.version>
+
+    <ee9.jakarta.bom.version>9.1.0</ee9.jakarta.bom.version>
     <ee9.jakarta.el.api.version>4.0.0</ee9.jakarta.el.api.version>
     <ee9.jakarta.enterprise.cdi.api.version>3.0.1</ee9.jakarta.enterprise.cdi.api.version>
     <ee9.jakarta.inject.api.version>2.0.1.MR</ee9.jakarta.inject.api.version>
