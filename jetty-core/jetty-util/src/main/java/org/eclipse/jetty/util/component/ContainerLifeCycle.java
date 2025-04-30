@@ -908,4 +908,20 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             }
         }
     }
+
+    @Override
+    public <T> T getContainedBean(Class<T> clazz)
+    {
+        T t = getBean(clazz);
+        if (t != null)
+            return t;
+
+        for (Container c : getBeans(Container.class))
+        {
+            t = c.getContainedBean(clazz);
+            if (t != null)
+                return t;
+        }
+        return null;
+    }
 }

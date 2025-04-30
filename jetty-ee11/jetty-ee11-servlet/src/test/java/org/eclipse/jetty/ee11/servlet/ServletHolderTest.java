@@ -127,7 +127,7 @@ public class ServletHolderTest
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
             handler.addServlet(holder);
-            holder.setServletHandler(handler);
+            holder.setContextHandler(context);
             context.start();
             assertNotNull(holder.getServlet());
         }
@@ -157,7 +157,7 @@ public class ServletHolderTest
     public void testWithClass() throws Exception
     {
         //Test adding servlet by class
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(Holder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
@@ -175,7 +175,7 @@ public class ServletHolderTest
     public void testWithClassName() throws Exception
     {
         //Test adding servlet by classname
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(Holder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
@@ -192,7 +192,7 @@ public class ServletHolderTest
     @Test
     public void testUnloadableClassName() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(Holder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();

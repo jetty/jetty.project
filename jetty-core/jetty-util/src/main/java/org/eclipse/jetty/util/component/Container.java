@@ -136,6 +136,16 @@ public interface Container
     <T> Collection<T> getContainedBeans(Class<T> clazz);
 
     /**
+     * @param clazz the class of the beans
+     * @param <T> the bean type
+     * @return the first instance of a bean of the given class from the {@code Container} hierarchy
+     */
+    default <T> T getContainedBean(Class<T> clazz)
+    {
+        return getContainedBeans(clazz).stream().findFirst().orElse(null);
+    }
+
+    /**
      * Get the beans added to the container that are EventListeners.
      * This is essentially equivalent to {@code getBeans(EventListener.class)},
      * except that: <ul>

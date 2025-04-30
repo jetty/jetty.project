@@ -35,6 +35,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import org.eclipse.jetty.ee.Source;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -42,13 +43,14 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilterHolder extends Holder<Filter>
+public class FilterHolder extends Holder.NamedHolder<Filter>
 {
     private static final Logger LOG = LoggerFactory.getLogger(FilterHolder.class);
 
     private transient Filter _filter;
     private transient Config _config;
     private transient FilterRegistration.Dynamic _registration;
+    private ServletHandler _servletHandler;
 
     /**
      * Constructor
@@ -91,9 +93,28 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
+    public void setContextHandler(ContextHandler contextHandler)
+    {
+        _servletHandler = null;
+        super.setContextHandler(contextHandler);
+        if (contextHandler != null)
+            _servletHandler = contextHandler.getContainedBean(ServletHandler.class);
+    }
+
+    public ServletHandler getServletHandler()
+    {
+        ServletHandler servletHandler = _servletHandler;
+        if (servletHandler != null)
+            return servletHandler;
+        ContextHandler contextHandler = getContextHandler();
+        return contextHandler == null ? null : contextHandler.getContainedBeans(ServletHandler.class).stream().findAny().orElse(null);
+    }
+
+    @Override
     public void doStart()
         throws Exception
     {
+        _servletHandler = getContextHandler().getContainedBean(ServletHandler.class);
         super.doStart();
 
         if (!Filter.class.isAssignableFrom(getHeldClass()))
@@ -139,22 +160,6 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    protected Filter createInstance() throws Exception
-    {
-        try (AutoLock ignored = lock())
-        {
-            Filter filter = super.createInstance();
-            if (filter == null)
-            {
-                ServletContext context = getServletContext();
-                if (context != null)
-                    filter = context.createFilter(getHeldClass());
-            }
-            return filter;
-        }
-    }
-
-    @Override
     public void doStop()
         throws Exception
     {
@@ -184,7 +189,9 @@ public class FilterHolder extends Holder<Filter>
         // need to use the unwrapped filter because lifecycle callbacks such as
         // postconstruct and predestroy are based off the classname and the wrapper
         // classes are unknown outside the ServletHolder
-        getServletHandler().destroyFilter(unwrap(filter));
+        ContextHandler contextHandler = getContextHandler();
+        if (contextHandler != null)
+            contextHandler.getContext().destroy(unwrap(filter));
 
         // destroy the wrapped filter, in case there is special behaviour
         filter.destroy();
@@ -336,6 +343,13 @@ public class FilterHolder extends Holder<Filter>
         {
             return getName();
         }
+
+        @Override
+        public ServletContext getServletContext()
+        {
+            ServletHandler servletHandler = getServletHandler();
+            return servletHandler == null ? null : servletHandler.getServletContext();
+        }
     }
 
     /**
@@ -357,7 +371,7 @@ public class FilterHolder extends Holder<Filter>
         Filter wrapFilter(Filter filter);
     }
 
-    public static class Wrapper implements Filter, BaseHolder.Wrapped<Filter>
+    public static class Wrapper implements Filter, Holder.Wrapped<Filter>
     {
         private final Filter _filter;
 

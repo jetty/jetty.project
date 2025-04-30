@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.ee.Source.Origin;
-import org.eclipse.jetty.ee11.servlet.BaseHolder;
+import org.eclipse.jetty.ee11.servlet.Holder;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.util.resource.Resource;
@@ -147,11 +147,11 @@ public class AnnotationIntrospector
         if (metaInfo == null)
             return true;  //no information about the object to introspect, assume introspectable
 
-        BaseHolder<?> holder;
+        Holder<?> holder;
 
         try
         {
-            holder = (BaseHolder<?>)metaInfo;
+            holder = (Holder<?>)metaInfo;
         }
         catch (ClassCastException e)
         {

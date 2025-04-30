@@ -592,7 +592,8 @@ public class ServletHandlerTest
     @Test
     public void testAddFilterWithMappingAPI()
     {
-        ServletHandler handler = new ServletHandler();
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        ServletHandler handler = servletContextHandler.getServletHandler();
 
         //add a non-programmatic one to begin with
         handler.addFilterWithMapping(fh1, "/*", EnumSet.allOf(DispatcherType.class));
@@ -602,7 +603,7 @@ public class ServletHandlerTest
         assertThat(mappings[0].getFilterHolder(), is(fh1));
 
         //add a programmatic one, isMatchAfter=false
-        fh4.setServletHandler(handler);
+        fh4.setContextHandler(servletContextHandler);
         handler.addFilter(fh4);
         fh4.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
         handler.updateMappings();
@@ -613,7 +614,7 @@ public class ServletHandlerTest
         assertThat(mappings[1].getFilterHolder(), is(fh1));
 
         //add a programmatic one, isMatchAfter=true
-        fh3.setServletHandler(handler);
+        fh3.setContextHandler(servletContextHandler);
         handler.addFilter(fh3);
         fh3.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
         handler.updateMappings();
@@ -625,7 +626,7 @@ public class ServletHandlerTest
         assertThat(mappings[2].getFilterHolder(), is(fh3));
 
         //add a programmatic one, isMatchAfter=false
-        fh5.setServletHandler(handler);
+        fh5.setContextHandler(servletContextHandler);
         handler.addFilter(fh5);
         fh5.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
         handler.updateMappings();
@@ -653,7 +654,7 @@ public class ServletHandlerTest
 
         //add a programmatic one, isMatchAfter=true
         FilterHolder pf = new FilterHolder(Source.JAKARTA_API);
-        pf.setServletHandler(handler);
+        pf.setContextHandler(servletContextHandler);
         pf.setName("programmaticA");
         handler.addFilter(pf);
         pf.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
@@ -670,7 +671,7 @@ public class ServletHandlerTest
 
         //add a programmatic one, isMatchAfter=false
         FilterHolder pf2 = new FilterHolder(Source.JAKARTA_API);
-        pf2.setServletHandler(handler);
+        pf2.setContextHandler(servletContextHandler);
         pf2.setName("programmaticB");
         handler.addFilter(pf2);
         pf2.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");

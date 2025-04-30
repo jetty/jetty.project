@@ -43,7 +43,7 @@ public class TestAnnotationIntrospector
             //can introspect if no metadata to say otherwise
             assertTrue(introspector.isIntrospectable(new Object(), null));
 
-            //can introspect if metdata isn't a BaseHolder
+            //can introspect if metdata isn't a Holder
             assertTrue(introspector.isIntrospectable(new Object(), new Object()));
 
             //an EMBEDDED sourced servlet can be introspected

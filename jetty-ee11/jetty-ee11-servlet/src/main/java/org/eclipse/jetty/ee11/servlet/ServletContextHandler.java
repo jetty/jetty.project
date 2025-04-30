@@ -2026,7 +2026,7 @@ public class ServletContextHandler extends ContextHandler
             return _objFactory;
         }
 
-        public <T> T createInstance(BaseHolder<T> holder) throws ServletException
+        public <T> T createInstance(Holder<T> holder) throws ServletException
         {
             try
             {

@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Holds a ServletContainerInitializer.
  */
-public class ServletContainerInitializerHolder extends BaseHolder<ServletContainerInitializer>
+public class ServletContainerInitializerHolder extends Holder<ServletContainerInitializer>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializerHolder.class);
     protected Set<String> _startupClassNames = new HashSet<>();
@@ -121,17 +121,9 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         classes.addAll(resolveStartupClasses());
 
         ServletContextHandler.ServletScopedContext ctx = null;
-        if (getServletHandler() != null)
-        {
-            ctx = getServletHandler().getServletContextHandler().getContext();
-        }
+        if (getContextHandler() instanceof ServletContextHandler servletContextHandler)
+            ctx = servletContextHandler.getContext();
 
-        if (ctx == null)
-        {
-            Context currentContext = ContextHandler.getCurrentContext();
-            if (currentContext instanceof ServletContextHandler.ServletScopedContext)
-                ctx = (ServletContextHandler.ServletScopedContext)currentContext;
-        }
         if (ctx == null)
             throw new IllegalStateException("No Context");
         

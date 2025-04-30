@@ -683,7 +683,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Generate xml for a Holder (Filter/Servlet)
+     * Generate xml for a NamedHolder (Filter/Servlet)
      */
     private void outholder(XmlAppendable out, MetaData md, FilterHolder holder) throws IOException
     {

@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
@@ -90,6 +91,7 @@ public class ServletHandler extends Handler.Wrapper
 
     private final AutoLock _lock = new AutoLock();
     private ServletContextHandler _servletContextHandler;
+    private ServletHandler _servletHandler;
     private IdentityService _identityService;
     private ServletContext _servletContext;
     private final List<FilterHolder> _filters = new ArrayList<>();
@@ -108,7 +110,7 @@ public class ServletHandler extends Handler.Wrapper
     private List<FilterMapping> _filterPathMappings;
     private MultiMap<FilterMapping> _filterNameMappings;
     private List<FilterMapping> _wildFilterNameMappings;
-    private final List<BaseHolder<?>> _durable = new ArrayList<>();
+    private final List<Holder<?>> _durable = new ArrayList<>();
 
     private final Map<String, MappedServlet> _servletNameMap = new HashMap<>();
     private PathMappings<MappedServlet> _servletPathMap;
@@ -125,6 +127,15 @@ public class ServletHandler extends Handler.Wrapper
      */
     public ServletHandler()
     {
+    }
+
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        initializeHolders(_servlets);
+        initializeHolders(_filters);
+        initializeHolders(_listeners);
     }
 
     @ManagedAttribute(value = "True if URIs with violations are decoded")
@@ -161,7 +172,7 @@ public class ServletHandler extends Handler.Wrapper
     @Override
     public boolean isDumpable(Object o)
     {
-        return !(o instanceof BaseHolder || o instanceof FilterMapping || o instanceof ServletMapping);
+        return !(o instanceof Holder || o instanceof FilterMapping || o instanceof ServletMapping);
     }
 
     @Override
@@ -252,14 +263,14 @@ public class ServletHandler extends Handler.Wrapper
         //this handler starts. They have a slightly special lifecycle, and should only be
         //started AFTER the handlers have all started (and the ContextHandler has called
         //the context listeners).
-        if (!(l instanceof Holder))
+        if (!(l instanceof Holder.NamedHolder))
             super.start(l);
     }
     
     @Override
     protected void stop(LifeCycle l) throws Exception
     {
-        if (!(l instanceof Holder))
+        if (!(l instanceof Holder.NamedHolder))
             super.stop(l);
     }
 
@@ -656,7 +667,7 @@ public class ServletHandler extends Handler.Wrapper
     {
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
-        Consumer<BaseHolder<?>> c = h ->
+        Consumer<Holder<?>> c = h ->
         {
             if (!h.isStarted())
             {
@@ -696,24 +707,27 @@ public class ServletHandler extends Handler.Wrapper
         return _initialized;
     }
 
-    protected void initializeHolders(java.util.Collection<? extends BaseHolder<?>> holders)
+    protected void initializeHolders(java.util.Collection<? extends Holder<?>> holders)
     {
-        for (BaseHolder<?> holder : holders)
+        if (getServletContextHandler() != null)
         {
-            holder.setServletHandler(this);
-            if (isInitialized())
+            for (Holder<?> holder : holders)
             {
-                try
+                holder.setContextHandler(getServletContextHandler());
+                if (isInitialized())
                 {
-                    if (!holder.isStarted())
+                    try
                     {
-                        holder.start();
-                        holder.initialize();
+                        if (!holder.isStarted())
+                        {
+                            holder.start();
+                            holder.initialize();
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }
@@ -1249,19 +1263,13 @@ public class ServletHandler extends Handler.Wrapper
             // update filter name map
             _filterNameMap.clear();
             for (FilterHolder filter : _filters)
-            {
                 _filterNameMap.put(filter.getName(), filter);
-                filter.setServletHandler(this);
-            }
 
             // Map servlet names to holders
             _servletNameMap.clear();
             // update the maps
             for (ServletHolder servlet : _servlets)
-            {
                 _servletNameMap.put(servlet.getName(), new MappedServlet(null, servlet));
-                servlet.setServletHandler(this);
-            }
         }
     }
 
@@ -1507,24 +1515,6 @@ public class ServletHandler extends Handler.Wrapper
     public void setMaxFilterChainsCacheSize(int maxFilterChainsCacheSize)
     {
         _maxFilterChainsCacheSize = maxFilterChainsCacheSize;
-    }
-
-    void destroyServlet(Servlet servlet)
-    {
-        if (_servletContextHandler != null)
-            _servletContextHandler.destroyServlet(servlet);
-    }
-
-    void destroyFilter(Filter filter)
-    {
-        if (_servletContextHandler != null)
-            _servletContextHandler.destroyFilter(filter);
-    }
-
-    void destroyListener(EventListener listener)
-    {
-        if (_servletContextHandler != null)
-            _servletContextHandler.destroyListener(listener);
     }
 
     /**

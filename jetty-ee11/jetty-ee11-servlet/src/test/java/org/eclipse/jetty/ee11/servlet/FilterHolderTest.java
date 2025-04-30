@@ -56,7 +56,8 @@ public class FilterHolderTest
     public void testInitialize()
         throws Exception
     {
-        ServletHandler handler = new ServletHandler();
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHandler handler = context.getServletHandler();
 
         final AtomicInteger counter = new AtomicInteger(0);
         Filter filter = new Filter()
@@ -79,7 +80,7 @@ public class FilterHolderTest
         };
 
         FilterHolder fh = new FilterHolder();
-        fh.setServletHandler(handler);
+        fh.setContextHandler(context);
 
         fh.setName("xx");
         fh.setFilter(filter);
@@ -122,7 +123,7 @@ public class FilterHolderTest
             server.setHandler(context);
             ServletHandler handler = context.getServletHandler();
             handler.addFilter(holder);
-            holder.setServletHandler(handler);
+            holder.setContextHandler(context);
             context.start();
             assertNotNull(holder.getFilter());
         }

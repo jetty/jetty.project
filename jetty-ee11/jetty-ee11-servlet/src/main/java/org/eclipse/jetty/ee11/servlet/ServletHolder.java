@@ -60,15 +60,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Servlet Instance and Context Holder.
+ * Servlet Instance and Context NamedHolder.
  * <p>
  * Holds the name, params and some state of a jakarta.servlet.Servlet
  * instance. It implements the ServletConfig interface.
  * This class will organise the loading of the servlet when needed or
  * requested.
  */
-@ManagedObject("Servlet Holder")
-public class ServletHolder extends Holder<Servlet> implements Comparable<ServletHolder>
+@ManagedObject("Servlet NamedHolder")
+public class ServletHolder extends Holder.NamedHolder<Servlet> implements Comparable<ServletHolder>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHolder.class);
     private int _initOrder = -1;
@@ -78,6 +78,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     private String _runAsRole;
     private ServletHolder.Registration _registration;
     private JspContainer _jspContainer;
+    private ServletHandler _servletHandler;
 
     private Servlet _servlet;
     private Config _config;
@@ -155,6 +156,24 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         this(Source.EMBEDDED);
         setHeldClass(servlet);
+    }
+
+    @Override
+    public void setContextHandler(ContextHandler contextHandler)
+    {
+        _servletHandler = null;
+        super.setContextHandler(contextHandler);
+        if (contextHandler != null)
+            _servletHandler = contextHandler.getContainedBean(ServletHandler.class);
+    }
+
+    public ServletHandler getServletHandler()
+    {
+        ServletHandler servletHandler = _servletHandler;
+        if (servletHandler != null)
+            return servletHandler;
+        ContextHandler contextHandler = getContextHandler();
+        return contextHandler == null ? null : contextHandler.getContainedBeans(ServletHandler.class).stream().findAny().orElse(null);
     }
 
     public MultipartConfigElement getMultipartConfigElement()
@@ -377,6 +396,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
         try
         {
+            _servletHandler = getContextHandler().getContainedBean(ServletHandler.class);
             super.doStart();
         }
         catch (UnavailableException ex)
@@ -474,7 +494,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         // Need to use the unwrapped servlet because lifecycle callbacks such as
         // postconstruct and predestroy are based off the classname and the wrapper
         // classes are unknown outside the ServletHolder
-        getServletHandler().destroyServlet(unwrap(servlet));
+        ContextHandler contextHandler = getContextHandler();
+        if (contextHandler != null)
+            contextHandler.getContext().destroy(unwrap(servlet));
     }
 
     /**
@@ -911,6 +933,12 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     protected class Config extends HolderConfig implements ServletConfig
     {
         @Override
+        public ServletContext getServletContext()
+        {
+            return getServletHandler().getServletContext();
+        }
+
+        @Override
         public String getServletName()
         {
             return getName();
@@ -1137,22 +1165,6 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     }
 
     @Override
-    protected Servlet createInstance() throws Exception
-    {
-        try (AutoLock ignored = lock())
-        {
-            Servlet servlet = super.createInstance();
-            if (servlet == null)
-            {
-                ServletContext ctx = getServletContext();
-                if (ctx != null)
-                    servlet = ctx.createServlet(getHeldClass());
-            }
-            return servlet;
-        }
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         if (getInitParameters().isEmpty())
@@ -1258,7 +1270,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         Servlet wrapServlet(Servlet servlet);
     }
 
-    public static class Wrapper implements Servlet, BaseHolder.Wrapped<Servlet>
+    public static class Wrapper implements Servlet, Holder.Wrapped<Servlet>
     {
         private final Servlet _wrappedServlet;
 

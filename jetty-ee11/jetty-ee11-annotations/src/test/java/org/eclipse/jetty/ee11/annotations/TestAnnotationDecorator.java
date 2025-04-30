@@ -93,7 +93,7 @@ public class TestAnnotationDecorator
         WebAppContext context = new WebAppContext();
         AnnotationDecorator decorator = new AnnotationDecorator(context);
         ServletE servlet = new ServletE();
-        //test without BaseHolder metadata
+        //test without Holder metadata
         decorator.decorate(servlet);
         LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         assertNotNull(callbacks);
@@ -102,7 +102,7 @@ public class TestAnnotationDecorator
         //reset
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
-        //test with BaseHolder metadata, should not introspect with metadata-complete==true
+        //test with Holder metadata, should not introspect with metadata-complete==true
         context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, true));
         assertTrue(context.getMetaData().isMetaDataComplete());
         ServletHolder holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR));
@@ -118,7 +118,7 @@ public class TestAnnotationDecorator
         //reset
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
-        //test with BaseHolder metadata, should introspect with metadata-complete==false
+        //test with Holder metadata, should introspect with metadata-complete==false
         context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, false));
         DecoratedObjectFactory.associateInfo(holder);
         decorator = new AnnotationDecorator(context);

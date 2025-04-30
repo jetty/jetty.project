@@ -13,278 +13,510 @@
 
 package org.eclipse.jetty.ee11.servlet;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
-import jakarta.servlet.Registration;
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee.Source;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Specialization of AbstractHolder for servlet-related classes that
- * have init-params etc
+ * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter,
+ * listener), and/or require metadata to be held regarding their origin
+ * (web.xml, annotation, programmatic api etc).
  *
  * @param <T> the type of holder
  */
-@ManagedObject("Holder - a container for servlets and the like")
-public abstract class Holder<T> extends BaseHolder<T>
+public abstract class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Holder.class);
 
-    private final Map<String, String> _initParams = new HashMap<>(3);
-    private String _displayName;
-    private boolean _asyncSupported;
-    private String _name;
+    private final AutoLock _lock = new AutoLock();
+    private final Source _source;
+    private Class<? extends T> _class;
+    private String _className;
+    private T _instance;
+    private ContextHandler _contextHandler;
 
     protected Holder(Source source)
     {
-        super(source);
-        switch (getSource().getOrigin())
+        _source = source;
+    }
+
+    public Source getSource()
+    {
+        return _source;
+    }
+
+    AutoLock lock()
+    {
+        return _lock.lock();
+    }
+
+    boolean lockIsHeldByCurrentThread()
+    {
+        return _lock.isHeldByCurrentThread();
+    }
+
+    /**
+     * Do any setup necessary after starting
+     *
+     * @throws Exception if unable to initialize
+     */
+    public void initialize()
+        throws Exception
+    {
+        if (!isStarted())
+            throw new IllegalStateException("Not started: " + this);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void doStart()
+        throws Exception
+    {
+        //if no class already loaded and no classname, make permanently unavailable
+        if (_class == null && (_className == null || _className.isEmpty()))
+            throw new IllegalStateException("No class in holder " + this);
+
+        //try to load class
+        if (_class == null)
         {
-            case JAKARTA_API:
-            case DESCRIPTOR:
-            case ANNOTATION:
-                _asyncSupported = false;
-                break;
-            default:
-                _asyncSupported = true;
+            try
+            {
+                _class = Loader.loadClass(_className);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Holding {} from {}", _class, _class.getClassLoader());
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to load class {}", _className, e);
+                throw new IllegalStateException("Class loading error for holder " + this);
+            }
         }
-    }
-
-    @ManagedAttribute(value = "Display Name", readonly = true)
-    public String getDisplayName()
-    {
-        return _displayName;
-    }
-
-    public String getInitParameter(String param)
-    {
-        return _initParams.get(param);
-    }
-
-    public Enumeration<String> getInitParameterNames()
-    {
-        return Collections.enumeration(_initParams.keySet());
-    }
-
-    @ManagedAttribute(value = "Initial Parameters", readonly = true)
-    public Map<String, String> getInitParameters()
-    {
-        return _initParams;
-    }
-
-    @ManagedAttribute(value = "Name", readonly = true)
-    public String getName()
-    {
-        return _name;
     }
 
     @Override
-    protected void setInstance(T instance)
-    {
-        try (AutoLock ignored = lock())
-        {
-            super.setInstance(instance);
-            if (getName() == null)
-                setName(String.format("%s@%x", instance.getClass().getName(), instance.hashCode()));
-        }
-    }
-
-    public void destroyInstance(Object instance)
+    public void doStop()
         throws Exception
     {
+        if (_instance == null)
+            _class = null;
+    }
+
+    @ManagedAttribute(value = "Class Name", readonly = true)
+    public String getClassName()
+    {
+        return _className;
+    }
+
+    public Class<? extends T> getHeldClass()
+    {
+        return _class;
+    }
+
+    /**
+     * @param contextHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
+     */
+    public void setContextHandler(ContextHandler contextHandler)
+    {
+        _contextHandler = contextHandler;
     }
 
     /**
      * @param className The className to set.
      */
-    @Override
     public void setClassName(String className)
     {
-        super.setClassName(className);
-        if (_name == null)
-            _name = className + "-" + Integer.toHexString(this.hashCode());
+        _className = className;
+        _class = null;
     }
 
     /**
      * @param held The class to hold
      */
-    @Override
     public void setHeldClass(Class<? extends T> held)
     {
-        super.setHeldClass(held);
+        _class = held;
         if (held != null)
         {
-            if (_name == null)
-                _name = held.getName() + "-" + Integer.toHexString(this.hashCode());
+            _className = held.getName();
         }
     }
 
-    public void setDisplayName(String name)
+    protected void illegalStateIfContextStarted()
     {
-        _displayName = name;
+        if (_contextHandler != null && _contextHandler.isStarted())
+            throw new IllegalStateException("Started");
     }
 
-    public void setInitParameter(String param, String value)
+    protected void setInstance(T instance)
     {
-        _initParams.put(param, value);
+        try (AutoLock ignored = lock())
+        {
+            _instance = instance;
+            if (instance == null)
+                setHeldClass(null);
+            else
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends T> clazz = (Class<? extends T>)instance.getClass();
+                setHeldClass(clazz);
+            }
+        }
     }
 
-    public void setInitParameters(Map<String, String> map)
+    protected T getInstance()
     {
-        _initParams.clear();
-        _initParams.putAll(map);
+        try (AutoLock ignored = lock())
+        {
+            return _instance;
+        }
+    }
+
+    protected T createInstance() throws Exception
+    {
+        try (AutoLock ignored = lock())
+        {
+            try
+            {
+                //set a thread local
+                DecoratedObjectFactory.associateInfo(this);
+                T t = getHeldClass().getDeclaredConstructor().newInstance();
+                ContextHandler contextHandler = getContextHandler();
+                return contextHandler == null ? t : contextHandler.getContext().decorate(t);
+            }
+            finally
+            {
+                //unset the thread local
+                DecoratedObjectFactory.disassociateInfo();
+            }
+        }
+    }
+
+    public ContextHandler getContextHandler()
+    {
+        ContextHandler contextHandler = _contextHandler;
+        return contextHandler == null ? ContextHandler.getCurrentContextHandler() : contextHandler;
     }
 
     /**
-     * The name is a primary key for the held object.
-     * Ensure that the name is set BEFORE adding a Holder
-     * (eg ServletHolder or FilterHolder) to a ServletHandler.
-     *
-     * @param name The name to set.
+     * @return True if this holder was created for a specific instance.
      */
-    public void setName(String name)
+    public boolean isInstance()
     {
-        _name = name;
+        try (AutoLock ignored = lock())
+        {
+            return _instance != null;
+        }
     }
 
-    public void setAsyncSupported(boolean suspendable)
+    /**
+     * Wrap component using component specific Wrapper Function beans.
+     *
+     * @param component the component to optionally wrap
+     * @param wrapperFunctionType the bean class type to look for in the {@link ServletContextHandler}
+     * @param function the BiFunction to execute for each {@code wrapperFunctionType} Bean found (passing in the component and component type)
+     * @param <W> the "wrapper function" implementation. (eg: {@code ServletHolder.WrapperFunction} or {@code FilterHolder.WrapperFunction}, etc)
+     * @return the component that has passed through all Wrapper Function beans found.
+     */
+    protected <W> T wrap(final T component, final Class<W> wrapperFunctionType, final BiFunction<W, T, T> function)
     {
-        _asyncSupported = suspendable;
+        T ret = component;
+        ContextHandler contextHandler = getContextHandler();
+        if (contextHandler != null)
+        {
+            for (W wrapperFunction : contextHandler.getBeans(wrapperFunctionType))
+            {
+                ret = function.apply(wrapperFunction, ret);
+            }
+        }
+        return ret;
     }
 
-    public boolean isAsyncSupported()
+    protected T unwrap(final T component)
     {
-        return _asyncSupported;
+        T ret = component;
+
+        while (ret instanceof Wrapped)
+        {
+            // noinspection unchecked,rawtypes
+            ret = (T)((Wrapped)ret).getWrapped();
+        }
+        return ret;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObject(out, this);
     }
 
     @Override
     public String dump()
     {
-        return super.dump();
+        return Dumpable.dump(this);
     }
 
-    @Override
-    public String toString()
+    interface Wrapped<C>
     {
-        return String.format("%s@%x==%s", _name, hashCode(), getClassName());
+        C getWrapped();
     }
 
-    protected class HolderConfig
+    /**
+     * Specialization of AbstractHolder for servlet-related classes that
+     * have init-params etc
+     *
+     * @param <T> the type of holder
+     */
+    @ManagedObject("NamedHolder - a container for servlets and the like")
+    public abstract static class NamedHolder<T> extends Holder<T>
     {
-        public ServletContext getServletContext()
+        private static final Logger LOG = LoggerFactory.getLogger(NamedHolder.class);
+
+        private final Map<String, String> _initParams = new HashMap<>(3);
+        private String _displayName;
+        private boolean _asyncSupported;
+        private String _name;
+
+        protected NamedHolder(Source source)
         {
-            return getServletHandler().getServletContext();
+            super(source);
+            switch (getSource().getOrigin())
+            {
+                case JAKARTA_API:
+                case DESCRIPTOR:
+                case ANNOTATION:
+                    _asyncSupported = false;
+                    break;
+                default:
+                    _asyncSupported = true;
+            }
+        }
+
+        @ManagedAttribute(value = "Display Name", readonly = true)
+        public String getDisplayName()
+        {
+            return _displayName;
         }
 
         public String getInitParameter(String param)
         {
-            return Holder.this.getInitParameter(param);
+            return _initParams.get(param);
         }
 
         public Enumeration<String> getInitParameterNames()
         {
-            return Holder.this.getInitParameterNames();
-        }
-    }
-
-    protected class HolderRegistration implements Registration.Dynamic
-    {
-        @Override
-        public void setAsyncSupported(boolean isAsyncSupported)
-        {
-            illegalStateIfContextStarted();
-            Holder.this.setAsyncSupported(isAsyncSupported);
+            return Collections.enumeration(_initParams.keySet());
         }
 
-        public void setDescription(String description)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} is {}", this, description);
-        }
-
-        @Override
-        public String getClassName()
-        {
-            return Holder.this.getClassName();
-        }
-
-        @Override
-        public String getInitParameter(String name)
-        {
-            return Holder.this.getInitParameter(name);
-        }
-
-        @Override
+        @ManagedAttribute(value = "Initial Parameters", readonly = true)
         public Map<String, String> getInitParameters()
         {
-            return Holder.this.getInitParameters();
+            return _initParams;
         }
 
-        @Override
+        @ManagedAttribute(value = "Name", readonly = true)
         public String getName()
         {
-            return Holder.this.getName();
+            return _name;
         }
 
         @Override
-        public boolean setInitParameter(String name, String value)
+        protected void setInstance(T instance)
         {
-            illegalStateIfContextStarted();
-            if (name == null)
+            try (AutoLock ignored = lock())
             {
-                throw new IllegalArgumentException("init parameter name required");
+                super.setInstance(instance);
+                if (getName() == null)
+                    setName(String.format("%s@%x", instance.getClass().getName(), instance.hashCode()));
             }
-            if (value == null)
+        }
+
+        public void destroyInstance(Object instance)
+            throws Exception
+        {
+        }
+
+        /**
+         * @param className The className to set.
+         */
+        @Override
+        public void setClassName(String className)
+        {
+            super.setClassName(className);
+            if (_name == null)
+                _name = className + "-" + Integer.toHexString(this.hashCode());
+        }
+
+        /**
+         * @param held The class to hold
+         */
+        @Override
+        public void setHeldClass(Class<? extends T> held)
+        {
+            super.setHeldClass(held);
+            if (held != null)
             {
-                throw new IllegalArgumentException("non-null value required for init parameter " + name);
+                if (_name == null)
+                    _name = held.getName() + "-" + Integer.toHexString(this.hashCode());
             }
-            if (Holder.this.getInitParameter(name) != null)
-                return false;
-            Holder.this.setInitParameter(name, value);
-            return true;
+        }
+
+        public void setDisplayName(String name)
+        {
+            _displayName = name;
+        }
+
+        public void setInitParameter(String param, String value)
+        {
+            _initParams.put(param, value);
+        }
+
+        public void setInitParameters(Map<String, String> map)
+        {
+            _initParams.clear();
+            _initParams.putAll(map);
+        }
+
+        /**
+         * The name is a primary key for the held object.
+         * Ensure that the name is set BEFORE adding a NamedHolder
+         * (eg ServletHolder or FilterHolder) to a ServletHandler.
+         *
+         * @param name The name to set.
+         */
+        public void setName(String name)
+        {
+            _name = name;
+        }
+
+        public void setAsyncSupported(boolean suspendable)
+        {
+            _asyncSupported = suspendable;
+        }
+
+        public boolean isAsyncSupported()
+        {
+            return _asyncSupported;
         }
 
         @Override
-        public Set<String> setInitParameters(Map<String, String> initParameters)
+        public String dump()
         {
-            illegalStateIfContextStarted();
-            Set<String> clash = null;
-            for (Map.Entry<String, String> entry : initParameters.entrySet())
+            return super.dump();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x==%s", _name, hashCode(), getClassName());
+        }
+
+        protected class HolderConfig
+        {
+            public String getInitParameter(String param)
             {
-                if (entry.getKey() == null)
+                return NamedHolder.this.getInitParameter(param);
+            }
+
+            public Enumeration<String> getInitParameterNames()
+            {
+                return NamedHolder.this.getInitParameterNames();
+            }
+        }
+
+        protected class HolderRegistration
+        {
+            public void setAsyncSupported(boolean isAsyncSupported)
+            {
+                illegalStateIfContextStarted();
+                NamedHolder.this.setAsyncSupported(isAsyncSupported);
+            }
+
+            public void setDescription(String description)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is {}", this, description);
+            }
+
+            public String getClassName()
+            {
+                return NamedHolder.this.getClassName();
+            }
+
+            public String getInitParameter(String name)
+            {
+                return NamedHolder.this.getInitParameter(name);
+            }
+
+            public Map<String, String> getInitParameters()
+            {
+                return NamedHolder.this.getInitParameters();
+            }
+
+            public String getName()
+            {
+                return NamedHolder.this.getName();
+            }
+
+            public boolean setInitParameter(String name, String value)
+            {
+                illegalStateIfContextStarted();
+                if (name == null)
                 {
                     throw new IllegalArgumentException("init parameter name required");
                 }
-                if (entry.getValue() == null)
+                if (value == null)
                 {
-                    throw new IllegalArgumentException("non-null value required for init parameter " + entry.getKey());
+                    throw new IllegalArgumentException("non-null value required for init parameter " + name);
                 }
-                if (Holder.this.getInitParameter(entry.getKey()) != null)
-                {
-                    if (clash == null)
-                        clash = new HashSet<>();
-                    clash.add(entry.getKey());
-                }
+                if (NamedHolder.this.getInitParameter(name) != null)
+                    return false;
+                NamedHolder.this.setInitParameter(name, value);
+                return true;
             }
-            if (clash != null)
-                return clash;
-            Holder.this.getInitParameters().putAll(initParameters);
-            return Collections.emptySet();
+
+            public Set<String> setInitParameters(Map<String, String> initParameters)
+            {
+                illegalStateIfContextStarted();
+                Set<String> clash = null;
+                for (Map.Entry<String, String> entry : initParameters.entrySet())
+                {
+                    if (entry.getKey() == null)
+                    {
+                        throw new IllegalArgumentException("init parameter name required");
+                    }
+                    if (entry.getValue() == null)
+                    {
+                        throw new IllegalArgumentException("non-null value required for init parameter " + entry.getKey());
+                    }
+                    if (NamedHolder.this.getInitParameter(entry.getKey()) != null)
+                    {
+                        if (clash == null)
+                            clash = new HashSet<>();
+                        clash.add(entry.getKey());
+                    }
+                }
+                if (clash != null)
+                    return clash;
+                NamedHolder.this.getInitParameters().putAll(initParameters);
+                return Collections.emptySet();
+            }
         }
     }
 }
-
-
-
-
-

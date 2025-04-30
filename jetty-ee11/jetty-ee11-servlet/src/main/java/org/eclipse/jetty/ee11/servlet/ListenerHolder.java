@@ -23,11 +23,11 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * Specialization of BaseHolder for servlet listeners. This
+ * Specialization of Holder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.
  */
-public class ListenerHolder extends BaseHolder<EventListener>
+public class ListenerHolder extends Holder<EventListener>
 {
     private EventListener _listener;
 
@@ -87,37 +87,6 @@ public class ListenerHolder extends BaseHolder<EventListener>
         contextHandler.addEventListener(_listener);
     }
 
-    private ContextHandler getContextHandler()
-    {
-        Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ContextHandler.ScopedContext scopedContext)
-            return scopedContext.getContextHandler();
-
-        ContextHandler contextHandler = null;
-        if (getServletHandler() != null)
-            contextHandler = getServletHandler().getServletContextHandler();
-        if (contextHandler != null)
-            return contextHandler;
-
-        throw new IllegalStateException("No Context");
-    }
-
-    @Override
-    protected EventListener createInstance() throws Exception
-    {
-        try (AutoLock ignored = lock())
-        {
-            EventListener listener = super.createInstance();
-            if (listener == null)
-            {
-                ServletContext ctx = getServletContext();
-                if (ctx != null)
-                    listener = ctx.createListener(getHeldClass());
-            }
-            return listener;
-        }
-    }
-
     @Override
     public void doStop() throws Exception
     {
@@ -128,8 +97,10 @@ public class ListenerHolder extends BaseHolder<EventListener>
             {
                 ContextHandler contextHandler = getContextHandler();
                 if (contextHandler != null)
+                {
                     contextHandler.removeEventListener(_listener);
-                getServletHandler().destroyListener(unwrap(_listener));
+                    contextHandler.getContext().destroy(unwrap(_listener));
+                }
             }
             finally
             {
