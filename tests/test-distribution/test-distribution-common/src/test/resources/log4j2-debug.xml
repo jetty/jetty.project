@@ -30,6 +30,13 @@
   </Appenders>
 
   <Loggers>
+
+    <Logger name="org.eclipse.jetty.jmx" level="info">
+      <AppenderRef ref="file"/>
+    </Logger>
+    <Logger name="org.eclipse.jetty.util" level="info">
+      <AppenderRef ref="file"/>
+    </Logger>
     <Root level="debug">
       <AppenderRef ref="file"/>
     </Root>
