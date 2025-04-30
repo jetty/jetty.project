@@ -13,16 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.testers.JettyHomeTester;
-import org.eclipse.jetty.tests.testers.Tester;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.nio.file.Files;
@@ -34,6 +24,16 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
