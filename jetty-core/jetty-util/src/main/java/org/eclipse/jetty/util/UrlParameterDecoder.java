@@ -37,9 +37,6 @@ class UrlParameterDecoder
     private final boolean allowTruncatedEncoding;
     private final CharsetStringBuilder builder;
     private final boolean allowPartialBufferString;
-    private int percent = 0;
-    private char pctHi;
-    private char pctLo;
     private String name;
     private int keyCount;
     private int charCount;
@@ -81,27 +78,27 @@ class UrlParameterDecoder
     }
 
     /**
-     * <p>Parse a String completely.</p>
+     * <p>Parse a CharSequence completely.</p>
      *
      * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
      *
-     * @param str the string to parse, completing the parsing after parsing.
+     * @param charSequence the char sequence to parse, completing the parsing after parsing.
      * @return true if there were coding errors, false otherwise.
      * @throws CharacterCodingException if a coding issue is encountered with the
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(CharSequence str) throws CharacterCodingException
+    public boolean parse(CharSequence charSequence) throws IOException
     {
-        return parse(str, 0, str.length());
+        return parseCompletely(new CharSequenceCharIterator(charSequence));
     }
 
     /**
-     * <p>Parse a String completely.</p>
+     * <p>Parse a CharSequence section completely.</p>
      *
      * <p>The {@code newFieldAdder} is called for each encountered {@code key=value} pair.</p>
      *
-     * @param str the string to parse, completing the parsing after parsing.
+     * @param charSequence the string to parse, completing the parsing after parsing.
      * @param offset the offset in the string to start parsing from.
      * @param length the length of the substring to parse.
      * @return true if there were coding errors, false otherwise.
@@ -109,15 +106,9 @@ class UrlParameterDecoder
      * provided {@link CharsetStringBuilder} and the specific condition
      * is not allowed by one of the {@code allow*} parameters on the constructor.
      */
-    public boolean parse(CharSequence str, int offset, int length) throws CharacterCodingException
+    public boolean parse(CharSequence charSequence, int offset, int length) throws IOException
     {
-        int end = offset + length;
-        for (int i = offset; i < end; i++)
-        {
-            parseChar(str.charAt(i));
-        }
-        complete();
-        return builder.hasCodingErrors();
+        return parseCompletely(new CharSequenceCharIterator(charSequence, offset, length));
     }
 
     /**
@@ -154,153 +145,154 @@ class UrlParameterDecoder
      */
     public boolean parse(Reader reader) throws IOException
     {
-        CharBuffer buf = CharBuffer.allocate(128);
-        while (reader.read(buf) != -1)
+        return parseCompletely(new ReaderCharIterator(reader));
+    }
+
+    private boolean parseCompletely(CharIterator iter) throws IOException
+    {
+        int i;
+        while ((i = iter.next()) >= 0)
         {
-            buf.flip();
-            parseCharSequence(buf);
-            buf.clear();
+            char c = (char)i;
+            if (maxLength >= 0 && ++charCount > maxLength)
+                throw new IllegalStateException("Form is larger than max length " + maxLength);
+
+            if (!parseChar(c, iter))
+                break;
         }
+
         complete();
         return builder.hasCodingErrors();
     }
 
-    private void parseCharSequence(CharSequence sequence) throws CharacterCodingException
+    /**
+     * Parse the read character.
+     *
+     * @param c the read character
+     * @param iter the character iterator to pull more characters from
+     * @return true if parsing should continue, false otherwise
+     * @throws IOException if unable to parse for a fundamental reason
+     */
+    private boolean parseChar(char c, CharIterator iter) throws IOException
     {
-        for (int i = 0; i < sequence.length(); i++)
+        switch (c)
         {
-            parseChar(sequence.charAt(i));
-        }
-    }
-
-    private void parseChar(char c) throws CharacterCodingException
-    {
-        if (maxLength >= 0 && ++charCount > maxLength)
-            throw new IllegalStateException("Form is larger than max length " + maxLength);
-
-        // characters that can break a pct-encoding parse
-        boolean isPctSpecial = (c == '&' || c == '=' || c == '%');
-        switch (percent)
-        {
-            case 1 ->
+            case '&' ->
             {
-                if (isPctSpecial)
+                String str = takeBuiltString();
+                if (name == null)
                 {
-                    boolean replaced = builder.replaceIncomplete();
-                    if (replaced && !allowBadEncoding || !allowBadPercent)
-                        throw new IllegalArgumentException(notValidPctEncoding(c, (char)0));
-                    if (!replaced)
-                        builder.append('%');
-                    percent = 0;
+                    onNewField(str, "");
                 }
                 else
                 {
-                    pctHi = c;
-                    percent++;
-                    return;
+                    onNewField(name, str);
+                    name = null;
                 }
             }
-            case 2 ->
+            case '=' ->
             {
-                percent = 0;
-                pctLo = c;
-                if (isPctSpecial)
+                if (name == null)
+                    name = takeBuiltString();
+                else
+                    builder.append(c);
+            }
+            case '+' -> builder.append(' ');
+            case '%' ->
+            {
+                int hi = iter.next();
+                if (hi == -1)
+                {
+                    // we have a sequence ending in '%'
+                    return handleIncompletePctEncoding(hi);
+                }
+                int lo = iter.next();
+                if (lo == -1)
+                {
+                    // we have a sequence ending in `%?` (incomplete pct-encoding)
+                    return handleIncompletePctEncoding(hi);
+                }
+
+                try
+                {
+                    decodeHexByteTo(builder, (char)hi, (char)lo);
+                }
+                catch (NumberFormatException e)
                 {
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
-                        throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
-                    if (!replaced)
-                    {
-                        builder.append('%');
-                        builder.append(pctHi);
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        appendHexByte(pctHi, pctLo);
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        boolean replaced = builder.replaceIncomplete();
-                        if (replaced && !allowBadEncoding || !allowBadPercent)
-                            throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
+                        throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)lo));
 
+                    if (hi == '&' || name == null && hi == '=')
+                    {
+                        if (!replaced)
+                            builder.append('%');
+                        parseChar((char)hi, iter);
+                        parseChar((char)lo, iter);
+                    }
+                    else if (lo == '&' || name == null && lo == '=')
+                    {
                         if (!replaced)
                         {
                             builder.append('%');
-                            builder.append(pctHi);
-                            builder.append(pctLo);
+                            builder.append((char)hi);
+                        }
+                        parseChar((char)lo, iter);
+                    }
+                    else
+                    {
+                        if (!replaced)
+                        {
+                            builder.append('%');
+                            builder.append((char)hi);
+                            builder.append((char)lo);
                         }
                     }
-                    return;
                 }
+            }
+            default ->
+            {
+                builder.append(c);
             }
         }
+        return true;
+    }
 
-        if (name == null)
+    /**
+     * Handle an incomplete pct-encoding such as {@code %} (ending in a percent symbol),
+     * or {@code %A} (ending in only 1 hex digit).
+     *
+     * @param hi the hi char in the possible pct-encoding hex sequence (-1 for undefined)
+     * @return true if parsing should continue, false otherwise
+     */
+    private boolean handleIncompletePctEncoding(int hi)
+    {
+        if (builder.replaceIncomplete())
         {
-            switch (c)
-            {
-                case '&' ->
-                {
-                    String name = takeBuiltString();
-                    onNewField(name, "");
-                }
-                case '=' -> name = takeBuiltString();
-                case '+' -> builder.append(' ');
-                case '%' ->
-                {
-                    pctHi = 0;
-                    pctLo = 0;
-                    percent++;
-                }
-                default ->
-                {
-                    builder.append(c);
-                }
-            }
+            if (!allowBadEncoding || !allowBadPercent)
+                throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)0));
+            return false;
+        }
+        else if (allowBadPercent)
+        {
+            builder.append('%');
+            if (hi != -1)
+                builder.append((char)hi);
+            return true;
         }
         else
         {
-            switch (c)
-            {
-                case '&' ->
-                {
-                    String value = takeBuiltString();
-                    onNewField(name, value);
-                    name = null;
-                }
-                case '+' -> builder.append(' ');
-                case '%' -> percent++;
-                default -> builder.append(c);
-            }
+            throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)0));
         }
+    }
+
+    private static void decodeHexByteTo(CharsetStringBuilder buffer, char hi, char lo)
+    {
+        buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
     private void complete() throws CharacterCodingException
     {
-        // Deal with any remaining incomplete pct-encoded sequences.
-        if (percent > 0)
-        {
-            if (builder.replaceIncomplete())
-            {
-                if (!allowBadEncoding || !allowBadPercent)
-                    throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
-            }
-            else if (allowBadPercent)
-            {
-                builder.append('%');
-                if (percent > 1)
-                    builder.append(pctHi);
-            }
-            else
-            {
-                throw new IllegalArgumentException(notValidPctEncoding(pctHi, pctLo));
-            }
-        }
-
         if (name != null)
         {
             String value = takeBuiltString();
@@ -356,5 +348,75 @@ class UrlParameterDecoder
         newFieldAdder.accept(name, value);
         if (maxKeys >= 0 && keyCount > maxKeys)
             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", keyCount, maxKeys));
+    }
+
+    protected interface CharIterator
+    {
+        /**
+         * Pull the next single character.
+         *
+         * <p>
+         *     This method might block, depending on implementation.
+         * </p>
+         *
+         * @return The character read, as an integer in the range 0 to 65535
+         *         ({@code 0x00-0xffff}), or -1 if the end of the iterator
+         *         has been reached (such as the end of a String or a stream EOF)
+         */
+        int next() throws IOException;
+    }
+
+    protected static class CharSequenceCharIterator implements CharIterator
+    {
+        private final CharSequence str;
+        private final int end;
+        private int idx = 0;
+
+        public CharSequenceCharIterator(CharSequence str)
+        {
+            this(str, 0, str.length());
+        }
+
+        public CharSequenceCharIterator(CharSequence str, int offset, int length)
+        {
+            this.str = str;
+            this.end = offset + length;
+            this.idx = offset;
+        }
+
+        @Override
+        public int next()
+        {
+            if (idx >= end)
+                return -1;
+            return str.charAt(idx++);
+        }
+    }
+
+    protected static class ReaderCharIterator implements CharIterator
+    {
+        private final Reader reader;
+        private final CharBuffer buffer;
+
+        public ReaderCharIterator(Reader reader)
+        {
+            this.reader = reader;
+            this.buffer = CharBuffer.allocate(128);
+            this.buffer.flip();
+        }
+
+        @Override
+        public int next() throws IOException
+        {
+            if (!buffer.hasRemaining())
+            {
+                buffer.clear();
+                if (reader.read(buffer) == -1)
+                    return -1;
+                buffer.flip();
+            }
+
+            return buffer.get();
+        }
     }
 }

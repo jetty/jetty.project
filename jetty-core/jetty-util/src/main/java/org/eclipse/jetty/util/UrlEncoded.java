@@ -370,7 +370,7 @@ public class UrlEncoded
         {
             return decoder.parse(query, offset, length);
         }
-        catch (CharacterCodingException e)
+        catch (IOException e)
         {
             // TODO: why do we do this only for String parsing, but not InputStream?
             throw new Utf8StringBuilder.Utf8IllegalArgumentException(e);
