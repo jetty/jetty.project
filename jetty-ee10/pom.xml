@@ -77,6 +77,16 @@
         <artifactId>jakarta.servlet.jsp-api</artifactId>
         <version>${ee10.jakarta.servlet.jsp.api.version}</version>
       </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
+        <version>${ee10.jakarta.websocket.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>${ee10.jakarta.websocket.api.version}</version>
+      </dependency>
       <!-- Jetty EE10 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>

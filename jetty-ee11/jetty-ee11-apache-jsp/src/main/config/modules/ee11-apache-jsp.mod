@@ -11,10 +11,10 @@ ee11-servlet
 ee11-annotations
 
 [lib]
-lib/ee11-apache-jsp/jakarta.el.jakarta.el-api-@ee11.jakarta.el.api.version@.jar
-lib/ee11-apache-jsp/jakarta.servlet.jsp.jakarta.servlet.jsp-api-@ee11.jakarta.servlet.jsp.api.version@.jar
-lib/ee11-apache-jsp/org.eclipse.jdt.ecj-@eclipse.jdt.ecj.version@.jar
-lib/ee11-apache-jsp/org.mortbay.jasper.apache-el-@ee11.jsp.impl.version@.jar
-lib/ee11-apache-jsp/org.mortbay.jasper.apache-jsp-@ee11.jsp.impl.version@.jar
+lib/ee11-apache-jsp/@jakarta.el:jakarta.el-api@
+lib/ee11-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
+lib/ee11-apache-jsp/@org.eclipse.jdt:ecj@
+lib/ee11-apache-jsp/@org.mortbay.jasper:apache-el@
+lib/ee11-apache-jsp/@org.mortbay.jasper:apache-jsp@
 lib/jetty-ee11-apache-jsp-${jetty.version}.jar
 

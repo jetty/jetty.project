@@ -255,7 +255,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp,jakarta.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -269,7 +268,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp,jakart.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -284,7 +282,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.wasp</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -298,7 +295,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.wasp</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>

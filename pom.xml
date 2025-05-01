@@ -377,7 +377,7 @@
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
 
-    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.12</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.1.3</mongodb.version>
     <netty.version>4.1.115.Final</netty.version>
@@ -1669,6 +1669,7 @@
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
               <JAVA_HOME>${java.home}</JAVA_HOME>
+              <MAVEN_DEBUG_OPTS></MAVEN_DEBUG_OPTS>
             </environmentVariables>
             <projectsDirectory>src/it</projectsDirectory>
             <timeoutInSeconds>300</timeoutInSeconds>
@@ -2349,6 +2350,18 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.shared</groupId>
+                <artifactId>maven-filtering</artifactId>
+                <version>3.3.0</version>
+              </dependency>
+              <dependency>
+                <groupId>org.eclipse.jetty.toolchain</groupId>
+                <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+                <version>${modify-sources-plugin.version}</version>
+              </dependency>
+            </dependencies>
             <executions>
               <execution>
                 <id>copy-resources</id>
@@ -2363,6 +2376,9 @@
                     <delimiter>@</delimiter>
                   </delimiters>
                   <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>
+                  <mavenFilteringHints>
+                    <mavenFilteringHint>mod-files</mavenFilteringHint>
+                  </mavenFilteringHints>
                   <resources>
                     <resource>
                       <directory>src/main/config</directory>
