@@ -85,9 +85,9 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         try
         {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            REPORT = lookup.findStatic(Utf8StringBuilder.class, "errorActionReport", methodType(void.class, StringBuilder.class));
-            REPLACE = lookup.findStatic(Utf8StringBuilder.class, "errorActionReplace", methodType(void.class, StringBuilder.class));
-            IGNORE = lookup.findStatic(Utf8StringBuilder.class, "errorActionIgnore", methodType(void.class, StringBuilder.class));
+            REPORT = lookup.findVirtual(Utf8StringBuilder.class, "errorActionReport", methodType(void.class));
+            REPLACE = lookup.findVirtual(Utf8StringBuilder.class, "errorActionReplace", methodType(void.class));
+            IGNORE = lookup.findVirtual(Utf8StringBuilder.class, "errorActionIgnore", methodType(void.class));
         }
         catch (NoSuchMethodException | IllegalAccessException e)
         {
@@ -140,17 +140,17 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         return IGNORE;
     }
 
-    private static void errorActionReport(StringBuilder ignored)
+    private void errorActionReport()
     {
         throw new Utf8IllegalArgumentException();
     }
 
-    private static void errorActionReplace(StringBuilder stringBuilder)
+    private void errorActionReplace()
     {
-        stringBuilder.append(REPLACEMENT);
+        append(REPLACEMENT);
     }
 
-    private static void errorActionIgnore(StringBuilder ignored)
+    private void errorActionIgnore()
     {
     }
 
@@ -158,7 +158,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         try
         {
-            _malformedInputMethod.invoke(_buffer);
+            _malformedInputMethod.invoke(this);
         }
         catch (RuntimeException e)
         {
@@ -174,7 +174,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         try
         {
-            _unmappableCharacterMethod.invoke(_buffer);
+            _unmappableCharacterMethod.invoke(this);
         }
         catch (RuntimeException e)
         {
