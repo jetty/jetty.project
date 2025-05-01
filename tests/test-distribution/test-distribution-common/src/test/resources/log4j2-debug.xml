@@ -33,18 +33,27 @@
 
     <Logger name="org.eclipse.jetty.jmx" level="info">
       <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="org.eclipse.jetty.jndi" level="info">
       <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="org.eclipse.jetty.xml" level="info">
       <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="org.eclipse.jetty.util" level="info">
       <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
+    </Logger>
+    <Logger name="org.eclipse.jetty.io" level="info">
+      <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Root level="debug">
       <AppenderRef ref="file"/>
+      <AppenderRef ref="console"/>
     </Root>
   </Loggers>
 
