@@ -15,7 +15,8 @@ package org.eclipse.jetty.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -53,8 +54,8 @@ public class UrlParameterDecoderBenchmark
     private UrlParameterDecoder decoder;
     private InputStream smallInputStream;
     private InputStream largeInputStream;
-    private InputStreamReader smallReader;
-    private InputStreamReader largeReader;
+    private Reader smallReader;
+    private Reader largeReader;
 
     @Setup(Level.Trial)
     public void setupTrial(Blackhole blackhole)
@@ -70,8 +71,8 @@ public class UrlParameterDecoderBenchmark
         smallInputStream = new ByteArrayInputStream(SMALL_BYTES);
         largeInputStream = new ByteArrayInputStream(LARGE_BYTES);
 
-        smallReader = new InputStreamReader(new ByteArrayInputStream(SMALL_BYTES), UTF_8);
-        largeReader = new InputStreamReader(new ByteArrayInputStream(LARGE_BYTES), UTF_8);
+        smallReader = new StringReader(SMALL_STRING);
+        largeReader = new StringReader(LARGE_STRING);
     }
 
     @Benchmark
