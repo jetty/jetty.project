@@ -88,6 +88,8 @@ class UrlParameterDecoder
      */
     public boolean parse(CharSequence charSequence) throws IOException
     {
+        if (charSequence instanceof String s)
+            return parseCompletely(new StringCharIterator(s));
         return parseCompletely(new CharSequenceCharIterator(charSequence));
     }
 
@@ -106,6 +108,8 @@ class UrlParameterDecoder
      */
     public boolean parse(CharSequence charSequence, int offset, int length) throws IOException
     {
+        if (charSequence instanceof String s)
+            return parseCompletely(new StringCharIterator(s, offset, length));
         return parseCompletely(new CharSequenceCharIterator(charSequence, offset, length));
     }
 
@@ -363,7 +367,7 @@ class UrlParameterDecoder
     {
         private final CharSequence str;
         private final int end;
-        private int idx = 0;
+        private int idx;
 
         public CharSequenceCharIterator(CharSequence str)
         {
@@ -383,6 +387,33 @@ class UrlParameterDecoder
             if (idx >= end)
                 return -1;
             return str.charAt(idx++);
+        }
+    }
+
+    protected static class StringCharIterator implements CharIterator
+    {
+        private final char[] str;
+        private final int end;
+        private int idx;
+
+        public StringCharIterator(String str)
+        {
+            this(str, 0, str.length());
+        }
+
+        public StringCharIterator(String str, int offset, int length)
+        {
+            this.str = str.toCharArray();
+            this.end = offset + length;
+            this.idx = offset;
+        }
+
+        @Override
+        public int next()
+        {
+            if (idx >= end)
+                return -1;
+            return str[idx++];
         }
     }
 
