@@ -45,8 +45,10 @@ public class UrlParameterDecoderBenchmark
 {
     private static final String SMALL_STRING = "param=aaa&other=foo";
     private static final int SMALL_LENGTH = SMALL_STRING.length();
+    private static final byte[] SMALL_BYTES = SMALL_STRING.getBytes(UTF_8);
     private static final String LARGE_STRING = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
     private static final int LARGE_LENGTH = LARGE_STRING.length();
+    private static final byte[] LARGE_BYTES = LARGE_STRING.getBytes(UTF_8);
 
     private UrlParameterDecoder decoder;
     private InputStream smallInputStream;
@@ -54,19 +56,22 @@ public class UrlParameterDecoderBenchmark
     private InputStreamReader smallReader;
     private InputStreamReader largeReader;
 
-    @Setup(Level.Invocation)
+    @Setup(Level.Trial)
     public void setupTrial(Blackhole blackhole)
     {
         decoder = new UrlParameterDecoder(CharsetStringBuilder.forCharset(UTF_8), new BlackholeBiConsumer(blackhole));
+    }
 
-        byte[] small = SMALL_STRING.getBytes(UTF_8);
-        byte[] large = LARGE_STRING.getBytes(UTF_8);
+    @Setup(Level.Invocation)
+    public void setupInvocation()
+    {
+        // Even when the benchmark method does not need these fields, the performance still is impacted by
+        // the extra garbage those allocations leave behind them.
+        smallInputStream = new ByteArrayInputStream(SMALL_BYTES);
+        largeInputStream = new ByteArrayInputStream(LARGE_BYTES);
 
-        smallInputStream = new ByteArrayInputStream(small);
-        largeInputStream = new ByteArrayInputStream(large);
-
-        smallReader = new InputStreamReader(new ByteArrayInputStream(small), UTF_8);
-        largeReader = new InputStreamReader(new ByteArrayInputStream(large), UTF_8);
+        smallReader = new InputStreamReader(new ByteArrayInputStream(SMALL_BYTES), UTF_8);
+        largeReader = new InputStreamReader(new ByteArrayInputStream(LARGE_BYTES), UTF_8);
     }
 
     @Benchmark
