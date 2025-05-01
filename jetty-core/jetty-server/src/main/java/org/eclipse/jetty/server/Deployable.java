@@ -27,6 +27,13 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Deployable
 {
     /**
+     * Deprecated attribute key prefix.
+     * No longer used.
+     * @deprecated no replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
+    /**
      * <p>Attribute key name: Temp Directory for context.</p>
      *
      * <p>Value can be a {@link File}, {@code String}, or {@link java.nio.file.Path}</p>
@@ -83,6 +90,13 @@ public interface Deployable
      */
     String DEFAULT_CONTEXT_PATH = "jetty.deploy.defaultContextPath";
     /**
+     * Deprecated context handler class attribute key.
+     *
+     * @deprecated no longer used. see DeploymentScanner EnvironmentConfig for new location.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    /**
      * <p>Attribute key name: Specifies the default descriptor to user for EE based deployments.</p>
      *
      * <p>Non-EE deployments will not use this configuration.</p>
@@ -90,6 +104,20 @@ public interface Deployable
      * <p>Value is a {@code String} pointing to a filesystem path</p>
      */
     String DEFAULTS_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
+    /**
+     * Deprecated environment attribute key.
+     * @deprecated no longer used by {@link Deployable#initializeDefaults(Attributes)}, functionality
+     *             still exists in properties files, but is now managed by DeploymentScanner.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ENVIRONMENT = "environment";
+    /**
+     * Deprecated environment XML attribute key prefix.
+     * @deprecated no longer used by {@link Deployable#initializeDefaults(Attributes)}, functionality
+     *             exists as a {@code ${jetty.base}/environments/*.xml} feature instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
     /**
      * <p>Attribute key name: Specifies the flag to extract/unpack a WAR file for EE based deployments.</p>
      *

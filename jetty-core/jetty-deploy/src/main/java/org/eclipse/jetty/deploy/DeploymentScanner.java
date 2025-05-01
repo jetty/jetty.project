@@ -280,21 +280,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     }
 
     /**
-     * Strip old {@code jetty.deploy.attribute.} prefix if found.
-     * We no longer limit the properties to only those prefixed keys, we allow all keys through now.
-     *
-     * @param key the key to possibly strip
-     * @return the stripped key
-     */
-    public static String stripOldAttributePrefix(String key)
-    {
-        if (key.startsWith(ATTRIBUTE_PREFIX))
-            return key.substring(ATTRIBUTE_PREFIX.length());
-        else
-            return key;
-    }
-
-    /**
      * @param dir Directory to scan for deployable artifacts
      */
     public void addMonitoredDirectory(Path dir)
@@ -1009,22 +994,40 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         // Load each *.properties file
         for (Path file : envPropertyFiles)
         {
-            try (InputStream stream = Files.newInputStream(file))
-            {
-                Properties tmp = new Properties();
-                tmp.load(stream);
-
-                //put each property into our substitution pool
-                tmp.stringPropertyNames().forEach(name ->
-                {
-                    String value = tmp.getProperty(name);
-                    String key = stripOldAttributePrefix(name);
-                    envLayer.setAttribute(key, value);
-                });
-            }
+            loadPropertiesIntoAttributes(file, envLayer);
         }
 
         return envLayer;
+    }
+
+    private static void loadPropertiesIntoAttributes(Path propFile, Attributes attributes)
+    {
+        try (InputStream inputStream = Files.newInputStream(propFile))
+        {
+            Properties props = new Properties();
+            props.load(inputStream);
+            for (String name : props.stringPropertyNames())
+            {
+                // Get value (before possible name cleanup)
+                String value = props.getProperty(name);
+                // Check (and possibly cleanup) key name
+                if (name.startsWith(ATTRIBUTE_PREFIX))
+                {
+                    LOG.warn("Deprecated Attribute Key prefix in use: {} (will be stripped, future support not certain)", name);
+                    name = name.substring(ATTRIBUTE_PREFIX.length());
+                }
+                if (name.startsWith("jetty.deploy.environmentXml.") || name.equals("jetty.deploy.environmentXml"))
+                {
+                    LOG.warn("Deprecated Attribute Key prefix in use: {} (Key ignored, use ${jetty.base}/environments/*.xml instead)", name);
+                    continue; // skip, don't save this key in attributes.
+                }
+                attributes.setAttribute(name, value);
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Unable to read properties file: {}", propFile, e);
+        }
     }
 
     private void startTracking(PathsApp app)
@@ -1554,22 +1557,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
             for (Path propFile : propFiles)
             {
-                try (InputStream inputStream = Files.newInputStream(propFile))
-                {
-                    Properties props = new Properties();
-                    props.load(inputStream);
-                    props.stringPropertyNames().forEach(
-                        (name) ->
-                        {
-                            String value = props.getProperty(name);
-                            String key = DeploymentScanner.stripOldAttributePrefix(name);
-                            getAttributes().setAttribute(key, value);
-                        });
-                }
-                catch (IOException e)
-                {
-                    LOG.warn("Unable to read properties file: {}", propFile, e);
-                }
+                loadPropertiesIntoAttributes(propFile, getAttributes());
             }
 
             // Verify that environment exists
