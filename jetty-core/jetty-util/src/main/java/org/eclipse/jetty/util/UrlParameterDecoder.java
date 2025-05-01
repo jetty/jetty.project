@@ -36,7 +36,6 @@ class UrlParameterDecoder
     private final boolean allowBadPercent;
     private final boolean allowTruncatedEncoding;
     private final CharsetStringBuilder builder;
-    private final boolean allowPartialBufferString;
     private String name;
     private int keyCount;
     private int charCount;
@@ -74,7 +73,6 @@ class UrlParameterDecoder
         this.allowBadEncoding = allowBadEncoding;
         this.allowBadPercent = allowBadPercent;
         this.allowTruncatedEncoding = allowTruncatedEncoding;
-        this.allowPartialBufferString = allowBadEncoding;
     }
 
     /**
@@ -308,11 +306,6 @@ class UrlParameterDecoder
     private String notValidPctEncoding(char hi, char lo)
     {
         return "Not valid encoding '%%%c%c'".formatted(hi != 0 ? hi : '?', lo != 0 ? lo : '?');
-    }
-
-    private void appendHexByte(char hi, char lo)
-    {
-        builder.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
     private String takeBuiltString() throws CharacterCodingException

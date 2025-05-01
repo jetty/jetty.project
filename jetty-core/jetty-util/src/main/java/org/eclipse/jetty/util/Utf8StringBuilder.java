@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -21,6 +23,8 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * <p>
@@ -47,8 +51,6 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 
-    protected int _state = UTF8_ACCEPT;
-
     private static final byte[] BYTE_TABLE =
         {
             // The first part of the table maps bytes to character classes that
@@ -74,9 +76,29 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
         };
 
+    private static final MethodHandle REPORT;
+    private static final MethodHandle REPLACE;
+    private static final MethodHandle IGNORE;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            REPORT = lookup.findStatic(Utf8StringBuilder.class, "errorActionReport", methodType(void.class, StringBuilder.class));
+            REPLACE = lookup.findStatic(Utf8StringBuilder.class, "errorActionReplace", methodType(void.class, StringBuilder.class));
+            IGNORE = lookup.findStatic(Utf8StringBuilder.class, "errorActionIgnore", methodType(void.class, StringBuilder.class));
+        }
+        catch (NoSuchMethodException | IllegalAccessException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected int _state = UTF8_ACCEPT;
     final StringBuilder _buffer;
-    private final Runnable _handleMalformedInput;
-    private final Runnable _handleUnmappableCharacter;
+    private final MethodHandle _malformedInputMethod;
+    private final MethodHandle _unmappableCharacterMethod;
     private int _codep;
     private boolean _codingErrors;
 
@@ -103,24 +125,65 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     protected Utf8StringBuilder(StringBuilder buffer, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
     {
         _buffer = buffer;
-        _handleMalformedInput = newRunnableErrorAction(onMalformedInput);
-        _handleUnmappableCharacter = newRunnableErrorAction(onUnmappableCharacter);
+        _malformedInputMethod = getErrorAction(onMalformedInput);
+        _unmappableCharacterMethod = getErrorAction(onUnmappableCharacter);
     }
 
-    private Runnable newRunnableErrorAction(CodingErrorAction codingErrorAction)
+    private MethodHandle getErrorAction(CodingErrorAction codingErrorAction)
     {
         if (codingErrorAction == CodingErrorAction.REPORT)
-            return () ->
-            {
-                throw new Utf8IllegalArgumentException();
-            };
+            return REPORT;
 
         if (codingErrorAction == CodingErrorAction.REPLACE)
-            return () ->
-                bufferAppend(REPLACEMENT);
+            return REPLACE;
 
-        return () ->
-        {};
+        return IGNORE;
+    }
+
+    private static void errorActionReport(StringBuilder ignored)
+    {
+        throw new Utf8IllegalArgumentException();
+    }
+
+    private static void errorActionReplace(StringBuilder stringBuilder)
+    {
+        stringBuilder.append(REPLACEMENT);
+    }
+
+    private static void errorActionIgnore(StringBuilder ignored)
+    {
+    }
+
+    private void handleMalformedInput()
+    {
+        try
+        {
+            _malformedInputMethod.invoke(_buffer);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void handleUnmappableCharacter()
+    {
+        try
+        {
+            _unmappableCharacterMethod.invoke(_buffer);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -166,7 +229,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         {
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            _handleMalformedInput.run();
+            handleMalformedInput();
         }
     }
 
@@ -178,7 +241,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = true;
-        _handleMalformedInput.run();
+        handleMalformedInput();
         return true;
     }
 
@@ -327,7 +390,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 {
                     _codep = 0;
                     _codingErrors = true;
-                    _handleUnmappableCharacter.run();
+                    handleUnmappableCharacter();
                     if (_state != UTF8_ACCEPT)
                     {
                         _state = UTF8_ACCEPT;
@@ -357,7 +420,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _codep = 0;
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            _handleMalformedInput.run();
+            handleMalformedInput();
         }
     }
 
