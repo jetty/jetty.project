@@ -61,6 +61,20 @@ public class UrlParameterDecoderTest
     }
 
     @Test
+    public void testStringCharIterator() throws IOException
+    {
+        UrlParameterDecoder.CharIterator iter = new UrlParameterDecoder.StringCharIterator("Hello");
+        StringBuilder output = new StringBuilder();
+
+        int i;
+        while ((i = iter.next()) >= 0)
+        {
+            output.append((char)i);
+        }
+        assertEquals("Hello", output.toString());
+    }
+
+    @Test
     public void testReaderCharIterator() throws IOException
     {
         Reader reader = new StringReader("Hello");
