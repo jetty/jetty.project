@@ -147,7 +147,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     private void errorActionReplace()
     {
-        append(REPLACEMENT);
+        bufferAppend(REPLACEMENT);
     }
 
     private void errorActionIgnore()
