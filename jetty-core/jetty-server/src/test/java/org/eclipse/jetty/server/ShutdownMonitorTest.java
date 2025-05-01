@@ -20,6 +20,7 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
@@ -123,7 +124,7 @@ public class ShutdownMonitorTest
         monitor.start();
 
         stop("stop", port, key, true);
-        monitor.await();
+        assertTrue(monitor.await(10, TimeUnit.SECONDS));
         assertTrue(!monitor.isAlive());
 
         // Should be able to change port and key because it is stopped.
@@ -138,7 +139,7 @@ public class ShutdownMonitorTest
         assertTrue(monitor.isAlive());
 
         stop("stop", port, key, true);
-        monitor.await();
+        assertTrue(monitor.await(5, TimeUnit.SECONDS));
         assertTrue(!monitor.isAlive());
     }
 
@@ -170,7 +171,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("stop", port, key, true);
-            monitor.await();
+            assertTrue(monitor.await(5, TimeUnit.SECONDS));
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -223,7 +224,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("forcestop", port, key, true);
-            monitor.await();
+            assertTrue(monitor.await(5, TimeUnit.SECONDS));
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -254,7 +255,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("stop", port, key, true);
-            monitor.await();
+            assertTrue(monitor.await(5, TimeUnit.SECONDS));
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -285,7 +286,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("stop", port, key, true);
-            monitor.await();
+            assertTrue(monitor.await(5, TimeUnit.SECONDS));
 
             assertTrue(!monitor.isAlive());
             assertTrue(!server.stopped);
