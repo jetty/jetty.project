@@ -30,7 +30,6 @@
     <module>jetty-ee11-plus</module>
     <module>jetty-ee11-proxy</module>
     <module>jetty-ee11-quickstart</module>
-    <module>jetty-ee11-runner</module>
     <module>jetty-ee11-servlet</module>
     <module>jetty-ee11-servlets</module>
     <module>jetty-ee11-tests</module>
