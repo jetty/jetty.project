@@ -534,8 +534,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                        String.join(System.lineSeparator(), runStart.getLogs()));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), logs(runStart));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -603,7 +602,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                    "LOGS: " + String.join(System.lineSeparator(), runStart.getLogs()));
+                    "LOGS: " + String.join("\n", runStart.getLogs()));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 

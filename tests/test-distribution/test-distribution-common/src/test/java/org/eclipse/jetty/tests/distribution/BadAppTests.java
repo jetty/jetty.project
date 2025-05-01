@@ -189,8 +189,8 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()), run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), is(true));
-            assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()), run1.getExitValue(), is(0));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(run1));
+            assertEquals(0, run1.getExitValue(), logs(run1));
             Path badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
             distribution.installWar(badWebApp, "test");
 
@@ -199,9 +199,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()),
-                        run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                        is(true));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), logs(run2));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
@@ -211,7 +209,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
                 // Verify /test is not able to establish a WebSocket connection.
                 ContentResponse response = client.GET(serverUri.resolve("/test/badonopen/a"));
-                assertThat("Logs:" + String.join(System.lineSeparator(), run1.getLogs()), response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus(), logs(run2));
             }
         }
     }

@@ -104,7 +104,7 @@ public class DistributionLoggingTests extends AbstractJettyHomeTest
 
             Path julConfig = run1.getConfig().getJettyBase().resolve("resources/java-util-logging.properties");
             assertTrue(Files.exists(julConfig));
-            Files.write(julConfig, Arrays.asList(System.lineSeparator(), "org.eclipse.jetty.level=FINE"), StandardOpenOption.APPEND);
+            Files.write(julConfig, Arrays.asList("\n", "org.eclipse.jetty.level=FINE"), StandardOpenOption.APPEND);
 
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))

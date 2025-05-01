@@ -389,7 +389,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start("--add-modules=ssl-patch"))
             {
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), String.join(System.lineSeparator(), run2.getLogs()));
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(run2));
                 assertEquals(0, run2.getExitValue());
 
                 int port = Tester.freePort();
@@ -397,7 +397,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.ssl.port=" + sslPort))
                 {
                     assertTrue(run3.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                        String.join(System.lineSeparator(), run3.getLogs()));
+                            logs(run3));
 
                     // Check for the protocol order: fcgi must be after ssl and before http.
                     assertTrue(run3.getLogs().stream()
@@ -406,7 +406,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     // Protocol "h2" must not be enabled because the
                     // http2 Jetty module was not explicitly enabled.
                     assertFalse(run3.getLogs().stream()
-                        .anyMatch(log -> log.contains("h2")), "Full logs: " + String.join(System.lineSeparator(), run3.getLogs()));
+                        .anyMatch(log -> log.contains("h2")), logs(run3));
                 }
             }
         }
