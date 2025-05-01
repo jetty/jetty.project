@@ -335,7 +335,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (defaultEnvironmentName == null)
         {
             return trackedEnvironments.stream()
-                .min(Comparator.comparing(TrackedEnv::weight))
+                .max(Comparator.comparing(TrackedEnv::weight))
                 .map(TrackedEnv::name)
                 .orElse(null);
         }
@@ -841,7 +841,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Ensure Environment name is set
                         String envName = app.getEnvironmentName();
                         if (StringUtil.isBlank(envName))
+                        {
                             envName = getDefaultEnvironmentName();
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("App {} didn't specify it's own environment, using default environment of [{}] instead.",
+                                    app.getName(), envName);
+                        }
                         Environment env = Environment.get(envName);
 
                         if (env == null || !hasTrackedEnvironment(envName))
