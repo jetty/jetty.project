@@ -341,7 +341,7 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.20.6</testcontainers.version>
+    <testcontainers.version>1.21.0</testcontainers.version>
     <versions.maven.plugin.version>2.18.0</versions.maven.plugin.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
