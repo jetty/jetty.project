@@ -344,7 +344,7 @@
             <goals>
               <goal>unpack</goal>
             </goals>
-            <phase>package</phase>
+            <phase>process-test-resources</phase>
             <configuration>
               <artifactItems>
                 <artifactItem>
