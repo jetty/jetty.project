@@ -858,12 +858,6 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
-            String loggingConfig = """
-                org.eclipse.jetty.LEVEL=DEBUG
-                """;
-            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
-
             // Add a FastCGI connector to simulate, for example, php-fpm.
             int fcgiPort = Tester.freePort();
             Path jettyBaseEtc = jettyBase.resolve("etc");
@@ -1049,12 +1043,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-
-            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
-            String loggingConfig = """
-                org.eclipse.jetty.LEVEL=INFO
-                """;
-            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
 
             int httpPort = Tester.freePort();
             String contextPath = "/" + toEnvironment("demo-simple", env);
@@ -1326,12 +1314,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-
-            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
-            String loggingConfig = """
-                org.eclipse.jetty.LEVEL=DEBUG
-                """;
-            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
 
             String name = "test-webapp";
             Path webapps = distribution.getJettyBase().resolve("webapps");
