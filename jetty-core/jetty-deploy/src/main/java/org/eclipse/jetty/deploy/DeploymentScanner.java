@@ -18,6 +18,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -116,7 +117,7 @@ import org.slf4j.LoggerFactory;
  *
  * <pre>{@code
  * DeploymentScanner provider = new DeploymentScanner();
- * EnvironmentConfig env10config = provider.configureEnvironment("ee10", 1010);
+ * EnvironmentConfig env10config = provider.configureEnvironment("ee10");
  * env10config.setExtractWars(true);
  * env10config.setParentLoaderPriority(false);
  * }</pre>
@@ -284,6 +285,38 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     void addScannerListener(Scanner.Listener listener)
     {
         scanner.addListener(listener);
+    }
+
+    protected int getDefaultWeight(String name)
+    {
+        URL url = getClass().getResource("environment-weights.properties");
+        if (url == null)
+            throw new IllegalStateException("Unable to find environment-weights.properties in classloader");
+        try (InputStream in = url.openStream())
+        {
+            Properties props = new Properties();
+            props.load(in);
+            String value = props.getProperty(name);
+            if (value == null)
+                throw new IllegalStateException("Unknown environment [%s], unable to find default weight, use configureEnvironment(name, weight) instead."
+                    .formatted(name));
+            return Integer.parseInt(value);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Configure the Environment specific Deploy settings.
+     *
+     * @param name the name of the environment.
+     * @return the deployment configuration for the {@link Environment}.
+     */
+    public EnvironmentConfig configureEnvironment(String name)
+    {
+        return configureEnvironment(name, getDefaultWeight(name));
     }
 
     /**

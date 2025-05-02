@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
@@ -368,6 +369,17 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         };
 
         deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testDefaultWeights()
+    {
+        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
+        assertThat(deploymentScanner.getDefaultWeight("core"), is(200));
+        assertThat(deploymentScanner.getDefaultWeight("ee9"), is(900));
+        assertThat(deploymentScanner.getDefaultWeight("ee11"), is(1100));
+
+        assertThrows(IllegalStateException.class, () -> deploymentScanner.getDefaultWeight("corp"));
     }
 
     public static Stream<Arguments> envNameSorting()
