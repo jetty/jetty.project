@@ -523,8 +523,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, runConfig.getExitValue());
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(runConfig));
+            assertEquals(0, runConfig.getExitValue(), logs(runConfig));
 
             int httpPort = Tester.freePort();
             int sslPort = Tester.freePort();
