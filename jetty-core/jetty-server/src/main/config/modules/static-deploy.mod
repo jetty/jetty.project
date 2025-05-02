@@ -1,7 +1,5 @@
 [description]
-# tag::description[]
-Scans and deploys `static` content from `$JETTY_BASE/webapps/` directory.
-# end::description[]
+Scans and deploys Jetty `static` environment web applications.
 
 [tags]
 deployment

@@ -1,5 +1,6 @@
 [description]
-This module enables the direct Deployer, which simply adds and starts a context.
+This module enables the standard Deployer, which adds and starts ContextHandler
+instances produced by the deployment-scanner module.
 
 [tags]
 deployment
@@ -19,4 +20,4 @@ etc/jetty-deployer-standard.xml
 [ini-template]
 
 ## Should redeploys be atomic (may have two instances running simultaneously)
-# jetty.deploy.atomicRedeploy=false
+# jetty.deploy.atomicRedeploy=true
