@@ -347,7 +347,7 @@ class UrlParameterDecoder
             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", keyCount, maxKeys));
     }
 
-    protected interface CharIterator
+    interface CharIterator
     {
         /**
          * Pull the next single character.
@@ -363,18 +363,18 @@ class UrlParameterDecoder
         int next() throws IOException;
     }
 
-    protected static class CharSequenceCharIterator implements CharIterator
+    static class CharSequenceCharIterator implements CharIterator
     {
         private final CharSequence str;
         private final int end;
         private int idx;
 
-        public CharSequenceCharIterator(CharSequence str)
+        CharSequenceCharIterator(CharSequence str)
         {
             this(str, 0, str.length());
         }
 
-        public CharSequenceCharIterator(CharSequence str, int offset, int length)
+        CharSequenceCharIterator(CharSequence str, int offset, int length)
         {
             this.str = str;
             this.end = offset + length;
@@ -390,18 +390,18 @@ class UrlParameterDecoder
         }
     }
 
-    protected static class StringCharIterator implements CharIterator
+    static class StringCharIterator implements CharIterator
     {
         private final char[] str;
         private final int end;
         private int idx;
 
-        public StringCharIterator(String str)
+        StringCharIterator(String str)
         {
             this(str, 0, str.length());
         }
 
-        public StringCharIterator(String str, int offset, int length)
+        StringCharIterator(String str, int offset, int length)
         {
             this.str = str.toCharArray();
             this.end = offset + length;
@@ -417,12 +417,12 @@ class UrlParameterDecoder
         }
     }
 
-    protected static class ReaderCharIterator implements CharIterator
+    static class ReaderCharIterator implements CharIterator
     {
         private final Reader reader;
         private final CharBuffer buffer;
 
-        public ReaderCharIterator(Reader reader)
+        ReaderCharIterator(Reader reader)
         {
             this.reader = reader;
             this.buffer = CharBuffer.allocate(128);
