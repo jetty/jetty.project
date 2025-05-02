@@ -7,7 +7,6 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>ee8</Arg>
-      <Arg type="Integer">1008</Arg>
       <Set name="defaultContextHandlerClass">
         <Property name="contextHandlerClass" default="org.eclipse.jetty.ee8.webapp.WebAppContext" />
       </Set>

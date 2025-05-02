@@ -7,7 +7,6 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>core</Arg>
-      <Arg type="Integer">200</Arg>
       <Set name="contextHandlerClass">
         <Property name="contextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />
       </Set>

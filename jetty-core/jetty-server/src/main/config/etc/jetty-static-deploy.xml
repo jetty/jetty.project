@@ -7,7 +7,6 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>static</Arg>
-      <Arg type="Integer">100</Arg>
       <Set name="contextHandlerClass">
         <Property name="contextHandlerClass" default="org.eclipse.jetty.server.handler.StaticContextHandler" />
       </Set>

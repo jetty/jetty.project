@@ -28,7 +28,6 @@
 
               <Call name="configureEnvironment">
                 <Arg>ee10</Arg>
-                <Arg type="Integer">1010</Arg>
                 <Set name="defaultContextHandlerClass">org.eclipse.jetty.ee10.webapp.WebAppContext</Set>
                 <Set name="extractWars">true</Set>
                 <Set name="containerScanJarPattern">
