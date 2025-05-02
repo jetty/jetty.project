@@ -357,7 +357,6 @@
                   <outputDirectory>${jetty.home}</outputDirectory>
                 </artifactItem>
               </artifactItems>
-              <!--              <outputDirectory>${jetty.home}/wars</outputDirectory>-->
             </configuration>
           </execution>
         </executions>
