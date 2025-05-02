@@ -67,7 +67,7 @@ public class DeploymentDefaultContextPathTest
         deploymentScanner.setScanInterval(1);
 
         Environment.ensure("ee11", WebAppContext.class);
-        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee11", 1011);
+        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee11");
         environmentConfig.setDefaultContextHandlerClass(WebAppContext.class.getName());
 
         server.addBean(deploymentScanner);
