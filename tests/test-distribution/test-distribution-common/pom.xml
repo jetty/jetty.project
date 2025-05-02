@@ -13,6 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
+    <jetty.home>${project.build.directory}/jetty-home</jetty.home>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <testcontainers-keycloak.version>3.4.0</testcontainers-keycloak.version>
@@ -332,16 +333,46 @@
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.8.1</version>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${jetty.home}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <!--              <outputDirectory>${jetty.home}/wars</outputDirectory>-->
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables combine.children="append">
+            <jetty.home>${jetty.home}</jetty.home>
             <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
             <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
           </systemPropertyVariables>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
 
