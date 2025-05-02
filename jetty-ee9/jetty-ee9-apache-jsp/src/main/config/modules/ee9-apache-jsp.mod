@@ -11,7 +11,7 @@ ee9-servlet
 ee9-annotations
 
 [lib]
-lib/ee9-apache-jsp/org.eclipse.jdt.ecj-@eclipse.jdt.ecj.version@.jar
-lib/ee9-apache-jsp/org.mortbay.jasper.apache-el-@ee9.jsp.impl.version@.jar
-lib/ee9-apache-jsp/org.mortbay.jasper.apache-jsp-@ee9.jsp.impl.version@.jar
+lib/ee9-apache-jsp/@org.eclipse.jdt:ecj@
+lib/ee9-apache-jsp/@org.mortbay.jasper:apache-el@
+lib/ee9-apache-jsp/@org.mortbay.jasper:apache-jsp@
 lib/jetty-ee9-apache-jsp-${jetty.version}.jar

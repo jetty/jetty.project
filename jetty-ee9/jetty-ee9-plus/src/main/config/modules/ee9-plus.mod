@@ -13,8 +13,8 @@ ee9-webapp
 
 [lib]
 lib/jetty-ee9-plus-${jetty.version}.jar
-lib/jakarta.transaction-api-@ee9.jakarta.transaction-api.version@.jar
-lib/jakarta.interceptor-api-@ee9.jakarta.interceptor.api.version@.jar
-lib/jakarta.enterprise.cdi-api-@ee9.jakarta.enterprise.cdi.api.version@.jar
-lib/jakarta.inject-api-@ee9.jakarta.inject.api.version@.jar
-lib/jakarta.enterprise.lang-model-@ee9.jakarta.enterprise.lang.model.version@.jar
+lib/@jakarta.transaction:jakarta.transaction-api@
+lib/@jakarta.interceptor:jakarta.interceptor-api@
+lib/@jakarta.enterprise:jakarta.enterprise.cdi-api@
+lib/@jakarta.inject:jakarta.inject-api@
+lib/@jakarta.enterprise:jakarta.enterprise.lang-model@

@@ -12,6 +12,6 @@ sessions
 
 # FIXME should servlet api version be interpolated
 [lib]
-lib/jetty-jakarta-servlet-api-@ee9.jetty.servlet.api.version@.jar
+lib/@org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api@
 lib/jetty-ee9-nested-${jetty.version}.jar
 lib/jetty-ee9-servlet-${jetty.version}.jar
