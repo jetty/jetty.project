@@ -10,5 +10,5 @@ ee10
 ee10-apache-jsp
 
 [lib]
-lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-@ee10.jakarta.servlet.jsp.jstl.api.version@.jar
-lib/ee10-glassfish-jstl/org.glassfish.web.jakarta.servlet.jsp.jstl-@ee10.jakarta.servlet.jsp.jstl.impl.version@.jar
+lib/ee10-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
+lib/ee10-glassfish-jstl/@org.glassfish.web:jakarta.servlet.jsp.jstl@
