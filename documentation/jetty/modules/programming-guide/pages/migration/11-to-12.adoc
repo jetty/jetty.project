@@ -74,7 +74,6 @@
 | org.eclipse.jetty:**jetty-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-maven-plugin**
 | org.eclipse.jetty:**jetty-plus** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-plus**
 | org.eclipse.jetty:**jetty-quickstart** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-quickstart**
-| org.eclipse.jetty:**jetty-runner** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-runner**
 | org.eclipse.jetty:**jetty-servlet** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-servlet**
 | org.eclipse.jetty:**jetty-servlets** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-servlets**
 | org.eclipse.jetty:**jetty-webapp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-webapp**
