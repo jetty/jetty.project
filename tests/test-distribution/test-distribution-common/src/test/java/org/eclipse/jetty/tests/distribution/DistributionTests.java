@@ -1359,7 +1359,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.newRequest(serverUri)
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), logs(run2));
             }
         }
     }
