@@ -348,6 +348,7 @@
             </goals>
             <phase>process-test-resources</phase>
             <configuration>
+              <ignorePermissions>true</ignorePermissions>
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
