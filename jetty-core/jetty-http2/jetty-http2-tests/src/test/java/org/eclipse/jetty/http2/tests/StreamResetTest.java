@@ -46,6 +46,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -57,7 +58,6 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -720,11 +720,10 @@ public class StreamResetTest extends AbstractTest
         Thread.sleep(500);
 
         AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
-        Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
+        Set<Session> sessions = http2.getBean(SessionContainer.class).getSessions();
         assertEquals(1, sessions.size());
         HTTP2Session session = (HTTP2Session)sessions.iterator().next();
-        HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
-        assertEquals(0, flusher.getFrameQueueSize());
+        assertEquals(0, session.getFrameQueueSize());
     }
 
     @Test
