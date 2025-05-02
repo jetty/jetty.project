@@ -366,7 +366,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables combine.children="append">
-            <jetty.home>${jetty.home}</jetty.home>
+            <jetty.home>${jetty.home}/jetty-home-${project.version}</jetty.home>
             <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
             <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
           </systemPropertyVariables>

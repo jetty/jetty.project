@@ -239,7 +239,7 @@ public class JettyHomeTester
            }
            else
            {
-               LOG.warn("Ignore non existing Jetty home {}", jettyHomeStr);
+               throw new IllegalArgumentException("Ignore non existing Jetty home: " + jettyHomeStr);
            }
         }
 
