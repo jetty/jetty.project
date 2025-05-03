@@ -251,7 +251,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -265,7 +264,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -280,7 +278,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -294,7 +291,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
