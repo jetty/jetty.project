@@ -126,7 +126,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), not(containsString("<%")));
 
                 response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), logs(run2));
                 assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
