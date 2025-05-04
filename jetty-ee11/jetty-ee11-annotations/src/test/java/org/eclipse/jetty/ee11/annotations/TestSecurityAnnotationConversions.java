@@ -325,7 +325,7 @@ public class TestSecurityAnnotationConversions
         holders[0] = new ServletHolder();
         holders[0].setClassName(className);
         holders[0].setName(servletName);
-        holders[0].setServletHandler(wac.getServletHandler());
+        holders[0].setContextHandler(wac);
         wac.getServletHandler().setServlets(holders);
         wac.setSecurityHandler(new ConstraintSecurityHandler());
 
