@@ -11,11 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.rfcs;
+package org.eclipse.jetty.server.rfc;
+
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee11.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee11.test.support.rawhttp.HttpSocket;
-import org.eclipse.jetty.ee11.test.support.rawhttp.HttpSocketImpl;
+import org.eclipse.jetty.ee11.test.support.rawhttp.HttpsSocketImpl;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -24,30 +26,32 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on standard HTTP.
+ * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on HTTPS (HTTP over SSL).
  */
 @ExtendWith(WorkDirExtension.class)
 @Deprecated(forRemoval = true, since = "12.1.0")
-public class RFC2616NIOHttpTest extends RFC2616BaseTest
+public class RFC2616NIOHttpsTest extends RFC2616Test
 {
     private static XmlBasedJettyServer xmlBasedJettyServer;
 
     @BeforeAll
     public static void setupServer(WorkDir workDir) throws Exception
     {
+        Path tmpPath = workDir.getEmptyPathDir();
         XmlBasedJettyServer server = new XmlBasedJettyServer();
-        server.setScheme(HttpScheme.HTTP.asString());
+        server.setScheme(HttpScheme.HTTPS.asString());
         server.addXmlConfiguration("RFC2616Base.xml");
         server.addXmlConfiguration("RFC2616_Redirects.xml");
         server.addXmlConfiguration("RFC2616_Filters.xml");
-        server.addXmlConfiguration("NIOHttp.xml");
-        xmlBasedJettyServer = setUpServer(server, RFC2616NIOHttpTest.class, workDir.getEmptyPathDir());
+        server.addXmlConfiguration("ssl.xml");
+        server.addXmlConfiguration("NIOHttps.xml");
+        xmlBasedJettyServer = setUpServer(server, RFC2616NIOHttpsTest.class, tmpPath);
     }
 
     @Override
-    public HttpSocket getHttpClientSocket()
+    public HttpSocket getHttpClientSocket() throws Exception
     {
-        return new HttpSocketImpl();
+        return new HttpsSocketImpl();
     }
 
     @AfterAll

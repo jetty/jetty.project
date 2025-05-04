@@ -20,6 +20,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class HttpTokens
 {
+    public static final String LN = System.getProperty("line.separator");
     static final byte COLON = (byte)':';
     static final byte TAB = 0x09;
     static final byte LINE_FEED = 0x0A;

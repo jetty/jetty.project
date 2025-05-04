@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.support.rawhttp;
+package org.eclipse.jetty.server.rfc;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.BufferUtil;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class HttpTesting
 {
     private boolean debug = false;
-    private HttpSocket httpSocket;
+    private BiFunction<InetAddress, Integer, Socket> httpSocket;
     private InetAddress serverHost;
     private int serverPort;
     private int timeoutMillis = 5000;
@@ -126,19 +127,19 @@ public class HttpTesting
         return list;
     }
 
-    public HttpTesting(HttpSocket httpSocket, InetAddress host, int port)
+    public HttpTesting(BiFunction<InetAddress, Integer, Socket> httpSocket, InetAddress host, int port)
     {
         this.httpSocket = httpSocket;
         this.serverHost = host;
         this.serverPort = port;
     }
 
-    public HttpTesting(HttpSocket socket, int port) throws UnknownHostException
+    public HttpTesting(BiFunction<InetAddress, Integer, Socket> socket, int port) throws UnknownHostException
     {
         this(socket, InetAddress.getLocalHost(), port);
     }
 
-    public HttpTesting(HttpSocket socket, String host, int port) throws UnknownHostException
+    public HttpTesting(BiFunction<InetAddress, Integer, Socket> socket, String host, int port) throws UnknownHostException
     {
         this(socket, InetAddress.getByName(host), port);
     }

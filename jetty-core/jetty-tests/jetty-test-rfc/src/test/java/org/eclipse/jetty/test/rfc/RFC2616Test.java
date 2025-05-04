@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.rfcs;
+package org.eclipse.jetty.server.rfc;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +26,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.eclipse.jetty.ee11.test.support.StringUtil;
-import org.eclipse.jetty.ee11.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.ee11.test.support.rawhttp.HttpSocket;
-import org.eclipse.jetty.ee11.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -44,6 +40,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -63,9 +60,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616</a> (HTTP/1.1) Test Case
  */
-@Deprecated(forRemoval = true, since = "12.1.0")
-public abstract class RFC2616BaseTest
+public abstract class RFC2616Test
 {
+    public static List<String> asLines(String raw) throws IOException
+    {
+        return Arrays.asList(raw.split("(\\r)?\\n"));
+    }
+
     public static class EchoHandler extends Handler.Abstract.NonBlocking
     {
         @Override
@@ -102,24 +103,10 @@ public abstract class RFC2616BaseTest
 
     private HttpTesting http;
 
-    public static XmlBasedJettyServer setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz, Path tmpPath) throws Exception
-    {
-        testableserver.load();
-        testableserver.getServer().setTempDirectory(tmpPath.toFile());
-        Arrays.stream(testableserver.getServer().getConnectors()).forEach(c -> c.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616));
-        testableserver.start();
-        return testableserver;
-    }
-
     @BeforeEach
     public void setUp() throws Exception
     {
-        http = new HttpTesting(getHttpClientSocket(), getServer().getServerPort());
     }
-
-    public abstract HttpSocket getHttpClientSocket() throws Exception;
-
-    public abstract XmlBasedJettyServer getServer();
 
     /**
      * Test Date/Time format Specs.
@@ -990,11 +977,11 @@ public abstract class RFC2616BaseTest
             // As there is a possibility that the time between GET and HEAD requests
             // can cross the second mark. (eg: GET at 11:00:00.999 and HEAD at 11:00:01.001)
             // So with that knowledge, we will remove the 'Date:' header from both sides before comparing.
-            List<String> linesGet = StringUtil.asLines(rawGetResponse.trim());
-            List<String> linesHead = StringUtil.asLines(rawHeadResponse.trim());
+            List<String> linesGet = asLines(rawGetResponse.trim());
+            List<String> linesHead = asLines(rawHeadResponse.trim());
 
-            StringUtil.removeStartsWith("Date: ", linesGet);
-            StringUtil.removeStartsWith("Date: ", linesHead);
+            linesGet = linesGet.stream().filter(line -> !line.startsWith("Date: ")).toList();
+            linesHead = linesHead.stream().filter(line -> !line.startsWith("Date: ")).toList();
 
             // Compare the 2 lists of lines to make sure they contain the same information
             // Do not worry about order of the headers, as that's not important to test,
@@ -1576,7 +1563,7 @@ public abstract class RFC2616BaseTest
 
         assertNotNull(boundary, specId + " Should have found boundary in Content-Type header");
 
-        List<String> lines = StringUtil.asLines(response.getContent().trim());
+        List<String> lines = asLines(response.getContent().trim());
         int i = 0;
         assertEquals("--" + boundary, lines.get(i++));
         assertEquals("Content-Type: text/plain", lines.get(i++));

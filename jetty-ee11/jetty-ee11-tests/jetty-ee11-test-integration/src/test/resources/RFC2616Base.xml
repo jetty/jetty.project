@@ -73,7 +73,7 @@
             <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/echo</Set>
               <Set name="Handler">
-                <New id="echohandler" class="org.eclipse.jetty.ee11.test.rfcs.RFC2616BaseTest$EchoHandler" />
+                <New id="echohandler" class="org.eclipse.jetty.server.rfc.RFC2616Test$EchoHandler" />
               </Set>
               <Set name="DisplayName">echo</Set>
             </New>
