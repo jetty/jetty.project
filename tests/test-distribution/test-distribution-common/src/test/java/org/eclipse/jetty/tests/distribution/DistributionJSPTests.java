@@ -15,6 +15,8 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -100,7 +102,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             .build();
 
         String mods = String.join(",",
-            "resources", "server", "http", "jmx",
+            "resources", "server", "http", "jmx", "logging-log4j2",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
             toEnvironment("glassfish-jstl", env),
@@ -110,6 +112,10 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
+
+            Files.copy(Paths.get("src/test/resources/log4j2-debug.xml"),
+                    distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");

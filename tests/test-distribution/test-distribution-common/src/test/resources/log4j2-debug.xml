@@ -36,7 +36,8 @@
     <Logger name="org.eclipse.jetty.xml" level="info"/>
     <Logger name="org.eclipse.jetty.util" level="info"/>
     <Logger name="org.eclipse.jetty.io" level="info"/>
-    <Root level="debug">
+    <Logger name="org.eclipse.jetty.ee10.webapp" level="debug"/>
+    <Root level="info">
       <AppenderRef ref="file"/>
       <AppenderRef ref="console"/>
     </Root>

@@ -282,6 +282,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
+              <!-- needed for JPMS and auto naming as glassfish jar doesn't have the JPMS metadata -->
+              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -295,6 +297,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
+              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -402,7 +405,6 @@
                 <artifactItem>
                   <groupId>jakarta.servlet</groupId>
                   <artifactId>jakarta.servlet-api</artifactId>
-                  <version>${ee10.jakarta.servlet.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -419,7 +421,6 @@
                 <artifactItem>
                   <groupId>jakarta.servlet</groupId>
                   <artifactId>jakarta.servlet-api</artifactId>
-                  <version>${ee10.jakarta.servlet.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -437,27 +438,22 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${ee10.jakarta.transaction-api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.interceptor</groupId>
                   <artifactId>jakarta.interceptor-api</artifactId>
-                  <version>${ee10.jakarta.interceptor.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.enterprise</groupId>
                   <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                  <version>${ee10.jakarta.enterprise.cdi.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.inject</groupId>
                   <artifactId>jakarta.inject-api</artifactId>
-                  <version>${ee10.jakarta.inject.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.enterprise</groupId>
                   <artifactId>jakarta.enterprise.lang-model</artifactId>
-                  <version>${ee10.jakarta.enterprise.lang.model.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -475,7 +471,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${ee10.jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
