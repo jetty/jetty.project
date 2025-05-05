@@ -20,6 +20,7 @@ import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterEach;
@@ -45,10 +46,10 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
     }
 
     @AfterEach
-    public void stopContainer() throws Exception
+    public void stopContainer()
     {
-        components.stop();
-        container.stop();
+        LifeCycle.stop(components);
+        LifeCycle.stop(container);
     }
 
     protected AvailableEncoders encoders;
