@@ -36,7 +36,7 @@ public class RuntimeIOException extends UncheckedIOException
 
     public RuntimeIOException(Throwable cause)
     {
-        super(cause instanceof IOException ioe ? ioe : new IOException(cause));
+        this(null, cause);
     }
 
     public RuntimeIOException(String message, Throwable cause)

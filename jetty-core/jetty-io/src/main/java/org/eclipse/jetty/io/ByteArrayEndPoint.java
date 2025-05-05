@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -45,9 +46,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             return new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0);
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
-            throw new UncheckedIOException(x);
+            throw ExceptionUtil.asRuntime(x);
         }
     }
 

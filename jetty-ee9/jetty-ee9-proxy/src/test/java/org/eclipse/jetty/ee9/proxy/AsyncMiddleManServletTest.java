@@ -1741,7 +1741,9 @@ public class AsyncMiddleManServletTest
         }
         catch (InterruptedException x)
         {
-            throw new UncheckedIOException(new IOException(x));
+            InterruptedIOException iie = new InterruptedIOException();
+            iie.addSuppressed(x);
+            throw new UncheckedIOException(iie);
         }
     }
 

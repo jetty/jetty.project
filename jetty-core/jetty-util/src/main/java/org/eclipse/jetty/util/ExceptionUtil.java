@@ -20,6 +20,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -115,23 +116,21 @@ public class ExceptionUtil
     }
 
     /**
-     * Throw a {@link Throwable} as an unchecked {@link Exception}.
+     * Convert or cast a {@link Throwable} to an unchecked {@link RuntimeException}.
      * @param cause The {@link Throwable} to that cause.
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
-     * @throws RuntimeException Otherwise, if the passed {@link Throwable} is not null.
+     * @return RuntimeException Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static void throwUnchecked(Throwable cause)
-        throws Error, RuntimeException
+    public static RuntimeException asRuntime(Throwable cause) throws Error
     {
-        if (cause == null)
-            throw new RuntimeException();
+        Objects.requireNonNull(cause);
         if (cause instanceof RuntimeException runtimeException)
-            throw runtimeException;
+            return runtimeException;
         if (cause instanceof Error error)
             throw error;
         if (cause instanceof IOException ioException)
-            throw new UncheckedIOException(ioException);
-        throw new RuntimeException(cause);
+            return new UncheckedIOException(ioException);
+        return new RuntimeException(cause);
     }
 
     /**
