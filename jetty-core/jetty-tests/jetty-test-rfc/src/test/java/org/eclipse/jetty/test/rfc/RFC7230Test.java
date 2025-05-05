@@ -128,7 +128,7 @@ public class RFC7230Test
     public void testNoUserInfo_2_7_1() throws Exception
     {
         String req = """
-            GET http://localhost@username:password/path HTTP/1.1
+            GET http://username:password@host:8888/path HTTP/1.1
             Host: localhost
             Connection: close
             

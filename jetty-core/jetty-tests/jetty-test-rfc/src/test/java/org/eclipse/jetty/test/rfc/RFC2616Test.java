@@ -498,7 +498,7 @@ public class RFC2616Test
     public void testUserInfo_5_1_2() throws Exception
     {
         String req = """
-            GET http://localhost@username:password/R1.txt HTTP/1.1
+            GET http://username:password@host:8888/R1.txt HTTP/1.1
             Host: localhost
             Connection: close
             
