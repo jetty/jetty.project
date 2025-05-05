@@ -20,30 +20,30 @@ import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 
 public abstract class AbstractJakartaWebSocketFrameHandlerTest
 {
-    protected static DummyContainer container;
-    private static WebSocketComponents components;
+    protected DummyContainer container;
+    private WebSocketComponents components;
 
-    @BeforeAll
-    public static void initContainer() throws Exception
+    @AfterEach
+    public void stopContainer() throws Exception
     {
-        container = new DummyContainer();
-        container.start();
-        components = new WebSocketComponents();
-        components.start();
-    }
+        if (components != null)
+        {
+            components.stop();
+            components = null;
+        }
 
-    @AfterAll
-    public static void stopContainer() throws Exception
-    {
-        components.stop();
-        container.stop();
+        if (container != null)
+        {
+            container.stop();
+            container = null;
+        }
     }
 
     protected AvailableEncoders encoders;
@@ -62,6 +62,11 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
 
     public AbstractJakartaWebSocketFrameHandlerTest()
     {
+        container = new DummyContainer();
+        components = new WebSocketComponents();
+        LifeCycle.start(container);
+        LifeCycle.start(components);
+
         endpointConfig = ClientEndpointConfig.Builder.create().build();
         encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
         decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
