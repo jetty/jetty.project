@@ -126,7 +126,7 @@ public class Flusher
             {
                 Throwable cause = getCause();
                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                ExceptionUtil.ifExceptionThrowUnchecked(cause);
+                ExceptionUtil.throwUnchecked(cause);
             }
 
             return _callback;

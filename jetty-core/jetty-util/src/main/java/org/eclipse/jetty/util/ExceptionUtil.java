@@ -115,6 +115,26 @@ public class ExceptionUtil
     }
 
     /**
+     * Throw a {@link Throwable} as an unchecked {@link Exception}.
+     * @param cause The {@link Throwable} to that cause.
+     * @throws Error If the passed {@link Throwable} is an {@link Error}.
+     * @throws RuntimeException Otherwise, if the passed {@link Throwable} is not null.
+     */
+    public static void throwUnchecked(Throwable cause)
+        throws Error, RuntimeException
+    {
+        if (cause == null)
+            throw new RuntimeException();
+        if (cause instanceof RuntimeException runtimeException)
+            throw runtimeException;
+        if (cause instanceof Error error)
+            throw error;
+        if (cause instanceof IOException ioException)
+            throw new UncheckedIOException(ioException);
+        throw new RuntimeException(cause);
+    }
+
+    /**
      * <p>Throw a {@link Throwable} as a specific type, casting or construction as required.</p>
      *
      * @param <T> The type of the {@link Throwable} to be thrown if <code>throwable</code> is not null.

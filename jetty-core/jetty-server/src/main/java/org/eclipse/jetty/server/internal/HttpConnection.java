@@ -1059,7 +1059,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     Throwable cause = getCause();
                     ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                    ExceptionUtil.ifExceptionThrowUnchecked(cause);
+                    ExceptionUtil.throwUnchecked(cause);
                 }
 
                 return _callback;
