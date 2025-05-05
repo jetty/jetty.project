@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -44,9 +45,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             return new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0);
         }
-        catch (Throwable x)
+        catch (IOException x)
         {
-            throw new RuntimeIOException(x);
+            throw new UncheckedIOException(x);
         }
     }
 
@@ -207,7 +208,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock ignored = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
-                throw new RuntimeIOException(new EOFException());
+                throw new UncheckedIOException(new EOFException());
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
@@ -249,7 +250,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock ignored = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
-                throw new RuntimeIOException(new EOFException());
+                throw new UncheckedIOException(new EOFException());
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {

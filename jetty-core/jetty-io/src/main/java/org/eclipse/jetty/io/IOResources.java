@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -60,7 +61,7 @@ public class IOResources
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -96,7 +97,7 @@ public class IOResources
             catch (IOException e)
             {
                 retainableByteBuffer.release();
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -127,7 +128,7 @@ public class IOResources
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException(e);
+            throw new UncheckedIOException(e);
         }
         finally
         {
@@ -178,7 +179,7 @@ public class IOResources
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -203,7 +204,7 @@ public class IOResources
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -297,7 +298,7 @@ public class IOResources
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeIOException(e);
+                    throw new UncheckedIOException(e);
                 }
                 finally
                 {

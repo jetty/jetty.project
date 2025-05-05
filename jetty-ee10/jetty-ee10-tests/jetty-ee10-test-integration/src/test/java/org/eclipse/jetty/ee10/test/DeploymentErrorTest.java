@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -145,7 +145,7 @@ public class DeploymentErrorTest
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

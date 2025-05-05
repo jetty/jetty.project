@@ -14,9 +14,9 @@
 package org.eclipse.jetty.rewrite;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.rewrite.handler.Rule;
 import org.eclipse.jetty.rewrite.handler.RuleContainer;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
@@ -41,7 +41,7 @@ public class RewriteCustomizer extends RuleContainer implements Customizer
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -72,7 +73,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -1741,7 +1741,7 @@ public class AsyncMiddleManServletTest
         }
         catch (InterruptedException x)
         {
-            throw new RuntimeIOException(x);
+            throw new UncheckedIOException(new IOException(x));
         }
     }
 

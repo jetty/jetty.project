@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -73,11 +74,11 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
             else
                 fillInterested();
         }
-        catch (Throwable x)
+        catch (IOException x)
         {
             close();
             // TODO: should we not fail the promise in the context here?
-            throw new RuntimeIOException(x);
+            throw new UncheckedIOException(x);
         }
     }
 

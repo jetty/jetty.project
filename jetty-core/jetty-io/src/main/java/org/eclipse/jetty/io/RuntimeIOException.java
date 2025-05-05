@@ -13,29 +13,34 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 /**
  * Subclass of {@link java.lang.RuntimeException} used to signal that there
  * was an {@link java.io.IOException} thrown by underlying {@link java.io.Writer}
+ * @deprecated use {@link UncheckedIOException}
  */
-public class RuntimeIOException extends RuntimeException
+@Deprecated(forRemoval = true, since = "12.1.0")
+public class RuntimeIOException extends UncheckedIOException
 {
     public RuntimeIOException()
     {
-        super();
+        this(new IOException());
     }
 
     public RuntimeIOException(String message)
     {
-        super(message);
+        this(new IOException(message));
     }
 
     public RuntimeIOException(Throwable cause)
     {
-        super(cause);
+        super(cause instanceof IOException ioe ? ioe : new IOException(cause));
     }
 
     public RuntimeIOException(String message, Throwable cause)
     {
-        super(message, cause);
+        super(message, cause instanceof IOException ioe ? ioe : new IOException(cause));
     }
 }

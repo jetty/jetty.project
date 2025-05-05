@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
@@ -107,6 +109,8 @@ public class ExceptionUtil
             throw runtimeException;
         if (throwable instanceof Error error)
             throw error;
+        if (throwable instanceof IOException ioException)
+            throw new UncheckedIOException(ioException);
         throw new RuntimeException(throwable);
     }
 

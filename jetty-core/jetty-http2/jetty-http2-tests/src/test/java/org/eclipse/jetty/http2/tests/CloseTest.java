@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
@@ -96,7 +96,7 @@ public class CloseTest extends AbstractServerTest
                     }
                     catch (IOException x)
                     {
-                        throw new RuntimeIOException(x);
+                        throw new UncheckedIOException(x);
                     }
                 }
             });

@@ -23,7 +23,6 @@ import java.util.Objects;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteThroughWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

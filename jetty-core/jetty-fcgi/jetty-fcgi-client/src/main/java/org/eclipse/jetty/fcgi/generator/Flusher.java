@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -127,7 +126,7 @@ public class Flusher
             {
                 Throwable cause = getCause();
                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                throw new RuntimeIOException(cause);
+                ExceptionUtil.ifExceptionThrowUnchecked(cause);
             }
 
             return _callback;
