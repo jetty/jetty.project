@@ -1140,7 +1140,6 @@ public interface HttpURI
             int encodedValue = 0; // the partial encoded value
             boolean dot = false; // set to true if the path contains . or .. segments
             int end = uri.length();
-            boolean password = false;
             _emptySegment = false;
             for (int i = 0; i < end; i++)
             {
@@ -1287,7 +1286,7 @@ public interface HttpURI
                             case '/':
                             case '?':
                             case '#':
-                                if (encodedCharacters > 0 || password)
+                                if (encodedCharacters > 0)
                                     throw new IllegalArgumentException("Bad authority");
                                 _host = uri.substring(mark, i);
                                 encoded = false;
@@ -1316,7 +1315,7 @@ public interface HttpURI
                             case ';':
                                 throw new IllegalArgumentException("Bad authority");
                             case ':':
-                                if (encodedCharacters > 0 || password)
+                                if (encodedCharacters > 0)
                                     throw new IllegalArgumentException("Bad authority");
                                 if (i > mark)
                                     _host = uri.substring(mark, i);
@@ -1328,7 +1327,6 @@ public interface HttpURI
                                     throw new IllegalArgumentException("Bad authority");
                                 _user = uri.substring(mark, i);
                                 addViolation(Violation.USER_INFO);
-                                password = false;
                                 encoded = false;
                                 mark = i + 1;
                                 break;
@@ -1435,7 +1433,7 @@ public interface HttpURI
                                     if (isUnreservedPctEncodedOrSubDelim(c))
                                     {
                                         // must be a password
-                                        password = true;
+                                        addViolation(Violation.USER_INFO);
                                         state = State.HOST;
                                         if (_host != null)
                                         {

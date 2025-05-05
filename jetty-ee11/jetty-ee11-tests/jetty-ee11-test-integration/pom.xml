@@ -92,13 +92,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-test-webapp-rfc2616</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee11.demos</groupId>
       <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
@@ -135,13 +128,6 @@
             <phase>process-test-resources</phase>
             <configuration>
               <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.ee11</groupId>
-                  <artifactId>jetty-ee11-test-webapp-rfc2616</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <destFileName>jetty-ee11-test-rfc2616.war</destFileName>
-                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
