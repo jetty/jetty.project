@@ -47,17 +47,8 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
     @AfterEach
     public void stopContainer() throws Exception
     {
-        if (components != null)
-        {
-            components.stop();
-            components = null;
-        }
-
-        if (container != null)
-        {
-            container.stop();
-            container = null;
-        }
+        components.stop();
+        container.stop();
     }
 
     protected AvailableEncoders encoders;
