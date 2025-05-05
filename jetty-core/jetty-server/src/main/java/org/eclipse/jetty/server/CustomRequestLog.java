@@ -351,7 +351,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private transient PathMappings<String> _ignorePathMap;
     private String[] _ignorePaths;
     private BiPredicate<Request, Response> _filter;
-    boolean _requiresLogDetail = false;
+    private boolean _requiresLogDetail = false;
 
     public CustomRequestLog()
     {
@@ -387,7 +387,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     /**
      * @return true if the {@link #LOG_DETAIL} request attribute is required to be set with an instance of {@link LogDetail}.
      */
-    public boolean requiresLogDetail()
+    public boolean isLogDetailRequired()
     {
         return _requiresLogDetail;
     }
