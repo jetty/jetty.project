@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +30,14 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 
+/**
+ * <p>A container of HTTP/2 {@link Session} instances.</p>
+ * <p>This container is part of the Jetty component tree,
+ * but the session instances are not part of the component
+ * tree for performance reasons.</p>
+ * <p>This container ensures that the session instances are
+ * dumped as if they were part of the component tree.</p>
+ */
 @ManagedObject("The container of HTTP/2 sessions")
 public class SessionContainer extends AbstractLifeCycle implements Connection.Listener, Graceful, Dumpable
 {
@@ -56,15 +65,23 @@ public class SessionContainer extends AbstractLifeCycle implements Connection.Li
             lock.readLock().unlock();
         }
         if (isShutDown)
-            shutdown(session);
+            session.shutdown();
     }
 
     @Override
     public void onClosed(Connection connection)
     {
-        Session session = ((HTTP2Connection)connection).getSession();
-        if (sessions.remove(session))
-            LifeCycle.stop(session);
+        lock.readLock().lock();
+        try
+        {
+            Session session = ((HTTP2Connection)connection).getSession();
+            if (sessions.remove(session))
+                LifeCycle.stop(session);
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
@@ -75,18 +92,13 @@ public class SessionContainer extends AbstractLifeCycle implements Connection.Li
         {
             if (shutdown != null)
                 return shutdown;
-            CompletableFuture<?>[] shutdowns = sessions.stream().map(this::shutdown).toArray(CompletableFuture[]::new);
+            CompletableFuture<?>[] shutdowns = sessions.stream().map(Session::shutdown).toArray(CompletableFuture[]::new);
             return shutdown = CompletableFuture.allOf(shutdowns);
         }
         finally
         {
             lock.writeLock().unlock();
         }
-    }
-
-    private CompletableFuture<Session> shutdown(Session session)
-    {
-        return session.shutdown().thenApply(v -> session);
     }
 
     @Override
@@ -105,7 +117,7 @@ public class SessionContainer extends AbstractLifeCycle implements Connection.Li
 
     public Set<Session> getSessions()
     {
-        return Set.copyOf(sessions);
+        return Collections.unmodifiableSet(sessions);
     }
 
     public int getSize()
