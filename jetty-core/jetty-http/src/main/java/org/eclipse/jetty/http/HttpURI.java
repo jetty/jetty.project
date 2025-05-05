@@ -513,9 +513,9 @@ public interface HttpURI
             START,
             HOST_OR_PATH,
             SCHEME_OR_PATH,
-            HOST,
+            HOST_OR_USER,
             IPV6,
-            PORT,
+            PORT_OR_PASSWORD,
             PATH,
             PARAM,
             QUERY,
@@ -1094,7 +1094,7 @@ public interface HttpURI
             if (HttpMethod.CONNECT.is(method))
             {
                 clear();
-                parse(State.HOST, uri);
+                parse(State.HOST_OR_USER, uri);
                 _path = null;
                 _query = null;
                 _param = null;
@@ -1256,7 +1256,7 @@ public interface HttpURI
                             case '/':
                                 _host = "";
                                 mark = i + 1;
-                                state = State.HOST;
+                                state = State.HOST_OR_USER;
                                 break;
                             case '%':
                             case '@':
@@ -1279,7 +1279,7 @@ public interface HttpURI
                         continue;
                     }
 
-                    case HOST:
+                    case HOST_OR_USER:
                     {
                         switch (c)
                         {
@@ -1320,7 +1320,7 @@ public interface HttpURI
                                 if (i > mark)
                                     _host = uri.substring(mark, i);
                                 mark = i + 1;
-                                state = State.PORT;
+                                state = State.PORT_OR_PASSWORD;
                                 break;
                             case '@':
                                 if (encodedCharacters > 0)
@@ -1368,7 +1368,7 @@ public interface HttpURI
                                 if (c == ':')
                                 {
                                     mark = i + 1;
-                                    state = State.PORT;
+                                    state = State.PORT_OR_PASSWORD;
                                 }
                                 else
                                 {
@@ -1385,7 +1385,7 @@ public interface HttpURI
                         }
                         break;
                     }
-                    case PORT:
+                    case PORT_OR_PASSWORD:
                     {
                         switch (c)
                         {
@@ -1395,12 +1395,14 @@ public interface HttpURI
                                     throw new IllegalArgumentException("Bad authority");
                                 // It wasn't a port, but a password!
                                 _user = _host + ":" + uri.substring(mark, i);
+                                _host = null;
                                 addViolation(Violation.USER_INFO);
                                 mark = i + 1;
-                                state = State.HOST;
+                                state = State.HOST_OR_USER;
                             }
                             case '/' ->
                             {
+                                // It was a port, so it must be an integer
                                 _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
                                 pathMark = mark = i;
                                 segment = mark + 1;
@@ -1428,22 +1430,8 @@ public interface HttpURI
                             }
                             default ->
                             {
-                                if (!isDigit(c))
-                                {
-                                    if (isUnreservedPctEncodedOrSubDelim(c))
-                                    {
-                                        // must be a password
-                                        addViolation(Violation.USER_INFO);
-                                        state = State.HOST;
-                                        if (_host != null)
-                                        {
-                                            mark = mark - _host.length() - 1;
-                                            _host = null;
-                                        }
-                                        break;
-                                    }
+                                if (!isDigit(c) && !isUnreservedPctEncodedOrSubDelim(c))
                                     throw new IllegalArgumentException("Bad authority");
-                                }
                             }
                         }
                         break;
@@ -1600,7 +1588,7 @@ public interface HttpURI
                 case HOST_OR_PATH:
                     _path = uri.substring(mark, end);
                     break;
-                case HOST:
+                case HOST_OR_USER:
                     if (end > mark)
                     {
                         _host = uri.substring(mark, end);
@@ -1609,7 +1597,7 @@ public interface HttpURI
                     break;
                 case IPV6:
                     throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
-                case PORT:
+                case PORT_OR_PASSWORD:
                     _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
                     _path = "";
                     break;
