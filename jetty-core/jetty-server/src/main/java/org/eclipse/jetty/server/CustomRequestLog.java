@@ -351,6 +351,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private transient PathMappings<String> _ignorePathMap;
     private String[] _ignorePaths;
     private BiPredicate<Request, Response> _filter;
+    boolean _requiresLogDetail = false;
 
     public CustomRequestLog()
     {
@@ -381,6 +382,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * @return true if the {@link #LOG_DETAIL} request attribute is required to be set with an instance of {@link LogDetail}.
+     */
+    public boolean requiresLogDetail()
+    {
+        return _requiresLogDetail;
     }
 
     /**
@@ -771,7 +780,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
                 yield lookup.findStatic(CustomRequestLog.class, "logEnvironmentVar", logTypeArg).bindTo(arg);
             }
-            case "f" -> lookup.findStatic(CustomRequestLog.class, "logFilename", logType);
+            case "f" ->
+            {
+                _requiresLogDetail = true;
+                yield lookup.findStatic(CustomRequestLog.class, "logFilename", logType);
+            }
             case "H" -> lookup.findStatic(CustomRequestLog.class, "logRequestProtocol", logType);
             case "i" ->
             {
@@ -790,7 +803,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             }
             case "q" -> lookup.findStatic(CustomRequestLog.class, "logQueryString", logType);
             case "r" -> lookup.findStatic(CustomRequestLog.class, "logRequestFirstLine", logType);
-            case "R" -> lookup.findStatic(CustomRequestLog.class, "logRequestHandler", logType);
+            case "R" ->
+            {
+                _requiresLogDetail = true;
+                yield lookup.findStatic(CustomRequestLog.class, "logRequestHandler", logType);
+            }
             case "s" -> lookup.findStatic(CustomRequestLog.class, "logResponseStatus", logType);
             case "t" ->
             {
