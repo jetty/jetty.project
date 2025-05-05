@@ -871,7 +871,8 @@ public class RequestTest
     @MethodSource("queryBehaviorsBadUtf8Allowed")
     public void testQueryExtractionBehaviorBadUtf8Allowed(String inputQuery, int expectedStatus, String expectedKey, String expectedValue) throws Exception
     {
-        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.BAD_PERCENT_ENCODING);
+        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING,
+            UriCompliance.Violation.BAD_PERCENT_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
         testQueryExtractionBehavior(uriCompliance, inputQuery, expectedStatus, expectedKey, expectedValue);
     }
 

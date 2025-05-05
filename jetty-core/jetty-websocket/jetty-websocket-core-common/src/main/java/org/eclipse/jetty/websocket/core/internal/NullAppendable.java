@@ -18,11 +18,26 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
+/**
+ * Null Buffer/Builder Appendable.
+ * <p>
+ *     Used by WebSocket implementation to both validate that incoming bytes conform
+ *     to UTF-8 rules, and also to truncated incoming Strings or bytes at
+ *     whole codepoints.  (Neither of which require the bytes being checked to be
+ *     appended to an internal buffer)
+ * </p>
+ */
 public class NullAppendable extends Utf8StringBuilder
 {
     public NullAppendable()
     {
         super(null);
+    }
+
+    @Override
+    public int length()
+    {
+        return 0;
     }
 
     @Override
