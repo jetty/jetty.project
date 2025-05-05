@@ -212,16 +212,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>${ee9.javax.activation.impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>${ee9.javax.mail.glassfish.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
         <version>${ee9.jakarta.servlet.jsp.jstl.impl.version}</version>
         <exclusions>

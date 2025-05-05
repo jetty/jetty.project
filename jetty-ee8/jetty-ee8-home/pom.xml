@@ -202,34 +202,6 @@
               <outputDirectory>${source-assembly-directory}/lib/ee8-annotations</outputDirectory>
             </configuration>
           </execution>
-          <!--          <execution>-->
-          <!--            <id>copy-ee8-jaspi-deps</id>-->
-          <!--            <phase>generate-resources</phase>-->
-          <!--            <goals>-->
-          <!--              <goal>copy-dependencies</goal>-->
-          <!--            </goals>-->
-          <!--            <configuration>-->
-          <!--              <includeGroupIds>jakarta.authentication</includeGroupIds>-->
-          <!--              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>-->
-          <!--              <includeTypes>jar</includeTypes>-->
-          <!--              <outputDirectory>${assembly-directory}/lib/ee8-jaspi</outputDirectory>-->
-          <!--            </configuration>-->
-          <!--          </execution>-->
-          <!--          <execution>-->
-          <!--            <id>copy-ee8-jaspi-src-deps</id>-->
-          <!--            <phase>generate-resources</phase>-->
-          <!--            <goals>-->
-          <!--              <goal>copy-dependencies</goal>-->
-          <!--            </goals>-->
-          <!--            <configuration>-->
-          <!--              <includeGroupIds>jakarta.authentication</includeGroupIds>-->
-          <!--              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>-->
-          <!--              <includeTypes>jar</includeTypes>-->
-          <!--              <classifier>sources</classifier>-->
-          <!--              <outputDirectory>${source-assembly-directory}/lib/ee8-jaspi</outputDirectory>-->
-          <!--            </configuration>-->
-          <!--          </execution>-->
-
           <execution>
             <id>copy-ee8-deps</id>
             <goals>
@@ -408,7 +380,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${ee8.jakarta.transaction-api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -425,7 +396,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${ee8.jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
