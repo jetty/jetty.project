@@ -21,15 +21,29 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractJakartaWebSocketFrameHandlerTest
 {
     protected DummyContainer container;
     private WebSocketComponents components;
+
+    @BeforeEach
+    public void startContainer() throws Exception
+    {
+        container = new DummyContainer();
+        container.start();
+        components = new WebSocketComponents();
+        components.start();
+
+        endpointConfig = ClientEndpointConfig.Builder.create().build();
+        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
+        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
+        uriParams = new HashMap<>();
+    }
 
     @AfterEach
     public void stopContainer() throws Exception
@@ -60,19 +74,6 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
             return components;
         }
     };
-
-    public AbstractJakartaWebSocketFrameHandlerTest()
-    {
-        container = new DummyContainer();
-        components = new WebSocketComponents();
-        LifeCycle.start(container);
-        LifeCycle.start(components);
-
-        endpointConfig = ClientEndpointConfig.Builder.create().build();
-        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
-        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
-        uriParams = new HashMap<>();
-    }
 
     protected JakartaWebSocketFrameHandler newJakartaFrameHandler(Object websocket) throws DeploymentException
     {
