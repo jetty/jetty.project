@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -105,6 +106,7 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     public static final String SESSION_PROMISE_CONTEXT_KEY = Session.class.getName() + ".promise";
     public static final String SESSION_LISTENER_CONTEXT_KEY = Session.Listener.class.getName();
 
+    private final SessionContainer container = new SessionContainer();
     private final ClientConnector connector;
     private int inputBufferSize = IO.DEFAULT_BUFFER_SIZE;
     private List<String> protocols = List.of("h2");
@@ -132,7 +134,13 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     public HTTP2Client(ClientConnector connector)
     {
         this.connector = connector;
+        installBean(container);
         installBean(connector);
+    }
+
+    SessionContainer getSessionContainer()
+    {
+        return container;
     }
 
     public ClientConnector getClientConnector()
