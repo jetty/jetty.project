@@ -393,6 +393,18 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     }
 
     /**
+     * Check if a {@link Server} has a {@link CustomRequestLog} with a {@link #isLogDetailRequired()} value of true.
+     *
+     * @param server the server to get the {@link RequestLog} from.
+     * @return true if the {@link #LOG_DETAIL} request attribute is required to be set with an instance of {@link LogDetail}.
+     * @see #isLogDetailRequired()
+     */
+    public static boolean isLogDetailRequired(Server server)
+    {
+        return server.getRequestLog() instanceof CustomRequestLog customRequestLog && customRequestLog.isLogDetailRequired();
+    }
+
+    /**
      * This allows you to set a custom filter to decide whether to log a request or omit it from the request log.
      * This filter is evaluated after path filtering is applied from {@link #setIgnorePaths(String[])}.
      * @param filter - a BiPredicate which returns true if this request should be logged.

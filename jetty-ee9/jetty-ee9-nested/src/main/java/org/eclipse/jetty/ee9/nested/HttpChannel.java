@@ -915,7 +915,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
-        if (getServer().getRequestLog() instanceof CustomRequestLog customRequestLog && customRequestLog.isLogDetailRequired())
+        if (CustomRequestLog.isLogDetailRequired(getServer()))
         {
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
                 _request.getServletName(),
