@@ -48,7 +48,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
         catch (Throwable x)
         {
-            throw ExceptionUtil.asRuntime(x);
+            throw ExceptionUtil.asRuntimeException(x);
         }
     }
 

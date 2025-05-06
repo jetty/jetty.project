@@ -1058,8 +1058,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 catch (InterruptedException x)
                 {
                     Throwable cause = getCause();
+                    if (cause == null)
+                        throw new RuntimeException(x);
                     ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                    throw ExceptionUtil.asRuntime(cause == null ? x : cause);
+                    throw ExceptionUtil.asRuntimeException(cause);
                 }
 
                 return _callback;

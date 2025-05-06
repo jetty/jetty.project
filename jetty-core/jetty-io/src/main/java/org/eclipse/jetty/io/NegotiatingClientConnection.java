@@ -78,7 +78,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         {
             close();
             // TODO: should we not fail the promise in the context here?
-            throw ExceptionUtil.asRuntime(x);
+            throw ExceptionUtil.asRuntimeException(x);
         }
     }
 

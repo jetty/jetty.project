@@ -121,7 +121,7 @@ public class ExceptionUtil
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
      * @return RuntimeException Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static RuntimeException asRuntime(Throwable cause) throws Error
+    public static RuntimeException asRuntimeException(Throwable cause) throws Error
     {
         Objects.requireNonNull(cause);
         if (cause instanceof RuntimeException runtimeException)
