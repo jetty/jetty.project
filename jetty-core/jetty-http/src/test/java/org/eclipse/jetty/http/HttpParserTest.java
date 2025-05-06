@@ -42,10 +42,12 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_CHUNK_TERMINATI
 import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_HEADER_TERMINATION;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTILINE_FIELD_VALUE;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -56,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -3898,6 +3901,44 @@ public class HttpParserTest
         assertFalse(handle);
         assertFalse(buffer.hasRemaining());
         assertNotNull(_bad);
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testBadWhiteSpace(Scenario scenario)
+    {
+        HttpParser.RequestHandler handler = new Handler();
+
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
+
+        ByteBuffer buffer = BufferUtil.toBuffer("GET / HTTP/1.1" + scenario.eol +
+            "Host: localhost" + scenario.eol +
+            "Name: value;param = bad" + scenario.eol +
+            "Connection: close" + scenario.eol +
+            "Content-Length: 0" + scenario.eol +
+            scenario.eol);
+        boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("/", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        for (HttpField field : _fields)
+        {
+            if (field.is("Name"))
+            {
+                if (scenario.compliance.allows(WHITESPACE_IN_PARAMETER))
+                    assertThat(field.getValueList(), hasItem("value;param=bad"));
+                else
+                    assertThrows(BadMessageException.class, field::getValueList);
+            }
+        }
     }
 
     @BeforeEach

@@ -299,4 +299,32 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 _index);
         }
     }
+
+    public static class AllowsBadWhiteSpace extends QuotedQualityCSV
+    {
+        public AllowsBadWhiteSpace()
+        {
+            super();
+        }
+
+        public AllowsBadWhiteSpace(List<String> preferredOrder)
+        {
+            super(preferredOrder);
+        }
+
+        public AllowsBadWhiteSpace(String[] preferredOrder)
+        {
+            super(preferredOrder);
+        }
+
+        public AllowsBadWhiteSpace(ToIntFunction<String> secondaryOrdering)
+        {
+            super(secondaryOrdering);
+        }
+
+        @Override
+        protected void onBadWhiteSpace()
+        {
+        }
+    }
 }

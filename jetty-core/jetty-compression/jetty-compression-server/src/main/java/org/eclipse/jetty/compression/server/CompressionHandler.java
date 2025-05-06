@@ -41,6 +41,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
+
 /**
  * <p>CompressionHandler to provide compression of response bodies and decompression of request bodies.</p>
  * <p>Supports any arbitrary {@code Content-Encoding} via {@link org.eclipse.jetty.compression.Compression}
@@ -246,6 +248,7 @@ public class CompressionHandler extends Handler.Wrapper
                 continue;
             switch (header)
             {
+                // TODO handle TE header ?
                 case CONTENT_ENCODING ->
                 {
                     // We are only interested in the last encoding.
@@ -259,7 +262,12 @@ public class CompressionHandler extends Handler.Wrapper
                 {
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
-                        qualityCSV = new QuotedQualityCSV();
+                    {
+                        qualityCSV = (request.getConnectionMetaData().getHttpConfiguration().getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
+                            ? new QuotedQualityCSV.AllowsBadWhiteSpace()
+                            : new QuotedQualityCSV();
+
+                    }
                     qualityCSV.addValue(field.getValue());
                 }
                 case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);

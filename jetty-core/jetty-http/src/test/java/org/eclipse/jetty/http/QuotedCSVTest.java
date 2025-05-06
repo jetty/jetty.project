@@ -23,6 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class QuotedCSVTest
 {
@@ -30,11 +31,38 @@ public class QuotedCSVTest
     public void testOWS()
     {
         QuotedCSV values = new QuotedCSV();
+        values.addValue("  value 0.5  ;  pqy=vwz  ;  q=0.5  ,  value 1.0 ,  other ; param ; p=\"x y\" ");
+        assertThat(values, Matchers.contains(
+            "value 0.5;pqy=vwz;q=0.5",
+            "value 1.0",
+            "other;param;p=\"x y\""));
+    }
+
+    @Test
+    public void testAllowedBWS()
+    {
+        QuotedCSV values = new QuotedCSV(true)
+        {
+            @Override
+            protected void onBadWhiteSpace()
+            {
+            }
+        };
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
         assertThat(values, Matchers.contains(
             "value 0.5;pqy=vwz;q=0.5",
             "value 1.0",
             "other;param"));
+    }
+
+    @Test
+    public void testBWS()
+    {
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param = value"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param =value"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param= value"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param= "));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "param = value"));
     }
 
     @Test
@@ -131,7 +159,7 @@ public class QuotedCSVTest
             }
         };
 
-        values.addValue("normal;param=val, testAPPENDandDELETEvalue ; n=v; IGNORE = this; x=y ");
+        values.addValue("normal;param=val, testAPPENDandDELETEvalue ; n=v; IGNORE=this; x=y ");
         assertThat(values, Matchers.contains(
             "normal;param=val",
             "testAppendandvalue!;n=v;x=y"));

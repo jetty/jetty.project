@@ -45,6 +45,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIE
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.UNSAFE_HOST_HEADER;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
 import static org.eclipse.jetty.http.HttpTokens.EOL_CRLF;
 import static org.eclipse.jetty.http.HttpTokens.EOL_LF;
@@ -1229,7 +1230,7 @@ public class HttpParser
                     case CONNECTION:
                         // Don't cache headers if not persistent
                         if (_field == null)
-                            _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                            _field = newHttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
                         if (getHeaderCacheSize() > 0 && _field.contains(HttpHeaderValue.CLOSE.asString()))
                             _fieldCache.setCapacity(-1);
                         break;
@@ -1253,14 +1254,14 @@ public class HttpParser
                 if (addToFieldCache)
                 {
                     if (_field == null)
-                        _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                        _field = newHttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
 
                     _fieldCache.add(_field);
                 }
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("parsedHeader({}) header={}, headerString=[{}], valueString=[{}]", _field, _header, _headerString, _valueString);
-            _handler.parsedHeader(_field != null ? _field : new HttpField(_header, _headerString, _valueString));
+            _handler.parsedHeader(_field != null ? _field : newHttpField(_header, _headerString, _valueString));
         }
 
         _headerString = _valueString = null;
@@ -1272,7 +1273,7 @@ public class HttpParser
     {
         // handler last header if any.  Delayed to here just in case there was a continuation line (above)
         if (_headerString != null || _valueString != null)
-            _handler.parsedTrailer(_field != null ? _field : new HttpField(_header, _headerString, _valueString));
+            _handler.parsedTrailer(_field != null ? _field : newHttpField(_header, _headerString, _valueString));
 
         _headerString = _valueString = null;
         _header = null;
@@ -1281,7 +1282,7 @@ public class HttpParser
 
     private long convertContentLength(String valueString)
     {
-        if (valueString == null || valueString.length() == 0)
+        if (valueString == null || valueString.isEmpty())
             throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
 
         long value = 0;
@@ -1442,7 +1443,7 @@ public class HttpParser
                                     String n = cachedField.getName();
                                     String v = cachedField.getValue();
 
-                                    if (v != UNMATCHED_VALUE)
+                                    if (!Objects.equals(v, UNMATCHED_VALUE))
                                     {
                                         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
                                         {
@@ -1452,7 +1453,7 @@ public class HttpParser
                                             {
                                                 reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
                                                 n = en;
-                                                cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                                cachedField = newHttpField(cachedField.getHeader(), n, v);
                                             }
                                         }
 
@@ -1462,7 +1463,7 @@ public class HttpParser
                                             if (!v.equals(ev))
                                             {
                                                 v = ev;
-                                                cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                                cachedField = newHttpField(cachedField.getHeader(), n, v);
                                             }
                                         }
                                     }
@@ -1472,7 +1473,7 @@ public class HttpParser
 
                                     int posAfterName = buffer.position() + n.length() + 1;
 
-                                    if (v == UNMATCHED_VALUE || (posAfterName + v.length()) >= buffer.limit())
+                                    if (Objects.equals(v, UNMATCHED_VALUE) || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
@@ -1946,40 +1947,39 @@ public class HttpParser
                     if (t == null)
                         break;
 
-                    switch (t.getType())
+                    if (Objects.requireNonNull(t.getType()) == HttpTokens.Type.EOL)
                     {
-                        case EOL:
-                            if (t == EOL_LF)
-                                checkViolation(LF_CHUNK_TERMINATION);
+                        if (t == EOL_LF)
+                            checkViolation(LF_CHUNK_TERMINATION);
 
-                            if (_chunkLength == 0)
-                            {
-                                setState(State.TRAILER);
-                                if (_handler.contentComplete())
-                                    return true;
-                            }
-                            else
-                            {
-                                _chunkOffset = 0;
-                                setState(State.CHUNK);
-                            }
-                            break;
-
-                        default:
-                            if (t.isHexDigit())
-                            {
-                                if (_chunkLength > MAX_CHUNK_LENGTH)
-                                    throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
-                                _chunkLength = _chunkLength * 16 + t.getHexDigit();
-                            }
-                            else if (t.getChar() == ';')
-                            {
-                                setState(State.CHUNK_PARAMS);
-                            }
-                            else
-                            {
-                                throw new IllegalCharacterException(_state, t, buffer);
-                            }
+                        if (_chunkLength == 0)
+                        {
+                            setState(State.TRAILER);
+                            if (_handler.contentComplete())
+                                return true;
+                        }
+                        else
+                        {
+                            _chunkOffset = 0;
+                            setState(State.CHUNK);
+                        }
+                    }
+                    else
+                    {
+                        if (t.isHexDigit())
+                        {
+                            if (_chunkLength > MAX_CHUNK_LENGTH)
+                                throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
+                            _chunkLength = _chunkLength * 16 + t.getHexDigit();
+                        }
+                        else if (t.getChar() == ';')
+                        {
+                            setState(State.CHUNK_PARAMS);
+                        }
+                        else
+                        {
+                            throw new IllegalCharacterException(_state, t, buffer);
+                        }
                     }
                     break;
                 }
@@ -2126,22 +2126,13 @@ public class HttpParser
     {
         if (debugEnabled)
         {
-            String info;
-            switch (state)
+            String info = switch (state)
             {
-                case SPACE1:
-                    info = _requestHandler == null ? _version.asString() : _methodString;
-                    break;
-                case SPACE2:
-                    info = _requestHandler == null ? Integer.toString(_responseStatus) : _uri.toCompleteString();
-                    break;
-                case CONTENT_END:
-                case TRAILER:
-                    info = Long.toString(_contentPosition);
-                    break;
-                default:
-                    info = null;
-            }
+                case SPACE1 -> _requestHandler == null ? _version.asString() : _methodString;
+                case SPACE2 -> _requestHandler == null ? Integer.toString(_responseStatus) : _uri.toCompleteString();
+                case CONTENT_END, TRAILER -> Long.toString(_contentPosition);
+                default -> null;
+            };
             if (info == null)
                 LOG.debug("{} --> {}", _state, state);
             else
@@ -2166,6 +2157,11 @@ public class HttpParser
     {
         _fieldCache.prepare();
         return _fieldCache.getCache();
+    }
+
+    public HttpField newHttpField(HttpHeader header, String name, String value)
+    {
+        return new ParsedHttpField(header, name, value);
     }
 
     @Override
@@ -2351,6 +2347,30 @@ public class HttpParser
                 _cacheableFields.clear();
                 _cacheableFields = null;
             }
+        }
+    }
+
+    private class ParsedHttpField extends HttpField
+    {
+        public ParsedHttpField(HttpHeader header, String name, String value)
+        {
+            super(header, name, value);
+        }
+
+        @Override
+        protected QuotedCSV newQuotedCSV(String value)
+        {
+            return new QuotedCSV(false, value)
+            {
+                @Override
+                protected void onBadWhiteSpace()
+                {
+                    if (_complianceMode.allows(WHITESPACE_IN_PARAMETER))
+                        _handler.onViolation(new ComplianceViolation.Event(_complianceMode, WHITESPACE_IN_PARAMETER, getValue()));
+                    else
+                        throw new BadMessageException("Bad white space");
+                }
+            };
         }
     }
 }
