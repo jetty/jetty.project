@@ -1387,52 +1387,59 @@ public interface HttpURI
                     }
                     case PORT_OR_PASSWORD:
                     {
-                        switch (c)
+                        try
                         {
-                            case '@' ->
+                            switch (c)
                             {
-                                if (_user != null)
-                                    throw new IllegalArgumentException("Bad authority");
-                                // It wasn't a port, but a password!
-                                _user = _host + ":" + uri.substring(mark, i);
-                                _host = null;
-                                addViolation(Violation.USER_INFO);
-                                mark = i + 1;
-                                state = State.HOST_OR_USER;
-                            }
-                            case '/' ->
-                            {
-                                // It was a port, so it must be an integer
-                                _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
-                                pathMark = mark = i;
-                                segment = mark + 1;
-                                state = State.PATH;
-                            }
-                            case '?', '#' ->
-                            {
-                                _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
-                                mark = i + 1;
-                                _path = "";
-                                state = switch (c)
+                                case '@' ->
                                 {
-                                    case '?' -> State.QUERY;
-                                    case '#' ->
+                                    if (_user != null)
+                                        throw new IllegalArgumentException("Bad authority");
+                                    // It wasn't a port, but a password!
+                                    _user = _host + ":" + uri.substring(mark, i);
+                                    _host = null;
+                                    addViolation(Violation.USER_INFO);
+                                    mark = i + 1;
+                                    state = State.HOST_OR_USER;
+                                }
+                                case '/' ->
+                                {
+                                    // It was a port, so it must be an integer
+                                    _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
+                                    pathMark = mark = i;
+                                    segment = mark + 1;
+                                    state = State.PATH;
+                                }
+                                case '?', '#' ->
+                                {
+                                    _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
+                                    mark = i + 1;
+                                    _path = "";
+                                    state = switch (c)
                                     {
-                                        addViolation(Violation.FRAGMENT);
-                                        yield State.FRAGMENT;
-                                    }
-                                    default -> throw new IllegalStateException();
-                                };
-                            }
-                            case ';' ->
-                            {
-                                throw new IllegalArgumentException("Bad authority");
-                            }
-                            default ->
-                            {
-                                if (!isDigit(c) && !isUnreservedPctEncodedOrSubDelim(c))
+                                        case '?' -> State.QUERY;
+                                        case '#' ->
+                                        {
+                                            addViolation(Violation.FRAGMENT);
+                                            yield State.FRAGMENT;
+                                        }
+                                        default -> throw new IllegalStateException();
+                                    };
+                                }
+                                case ';' ->
+                                {
                                     throw new IllegalArgumentException("Bad authority");
+                                }
+                                default ->
+                                {
+                                    if (!isDigit(c) && !isUnreservedPctEncodedOrSubDelim(c))
+                                        throw new IllegalArgumentException("Bad authority");
+                                }
                             }
+                        }
+                        catch (NumberFormatException nfe)
+                        {
+                            throw new IllegalArgumentException("Bad authority", nfe);
                         }
                         break;
                     }
@@ -1598,7 +1605,14 @@ public interface HttpURI
                 case IPV6:
                     throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
                 case PORT_OR_PASSWORD:
-                    _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
+                    try
+                    {
+                        _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
+                    }
+                    catch (NumberFormatException nfe)
+                    {
+                        throw new IllegalArgumentException("Bad Authority", nfe);
+                    }
                     _path = "";
                     break;
                 case PARAM:
