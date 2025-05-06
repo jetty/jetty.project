@@ -647,7 +647,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         if (stream != null)
             failStream(stream, error, reason, failure, callback);
         else
+        {
             callback.succeeded();
+            // TODO: failStream to notify upper layer
+        }
     }
 
     @Override

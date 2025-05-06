@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException;
@@ -232,6 +233,22 @@ public class MetaDataBuilder
         return false;
     }
 
+    private HttpURI newHttpURI() throws HpackException.StreamException
+    {
+        try
+        {
+            return HttpURI.build()
+                .scheme(_scheme)
+                .host(_authority == null ? null : _authority.getHost())
+                .port(_authority == null ? -1 : _authority.getPort())
+                .pathQuery(_path);
+        }
+        catch(Throwable x)
+        {
+            throw new HpackException.StreamException("Invalid URI", x);
+        }
+    }
+
     public MetaData build() throws HpackException.StreamException
     {
         if (_streamException != null)
@@ -260,18 +277,21 @@ public class MetaDataBuilder
                 }
                 long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
                 _beginNanoTime = Long.MIN_VALUE;
+
                 if (isConnect)
                     return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
                 else
+                {
+                    HttpURI httpURI = newHttpURI();
                     return new MetaData.Request(
                         nanoTime,
                         _method,
-                        _scheme.asString(),
-                        _authority,
-                        _path,
+                        httpURI,
                         HttpVersion.HTTP_2,
                         fields,
-                        _contentLength);
+                        _contentLength,
+                        null);
+                }
             }
             if (_response)
             {

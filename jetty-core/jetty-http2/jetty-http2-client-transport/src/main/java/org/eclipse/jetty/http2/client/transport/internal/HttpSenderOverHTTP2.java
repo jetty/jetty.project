@@ -72,12 +72,13 @@ public class HttpSenderOverHTTP2 extends HttpSender
         else
         {
             String path = relativize(request.getPath());
-            HttpURI uri = HttpURI.build()
-                .scheme(request.getScheme())
-                .host(request.getHost())
-                .port(request.getPort())
-                .path(path)
-                .query(request.getQuery());
+            HttpURI uri = HttpURI.from(
+                request.getScheme(),
+                request.getHost(),
+                request.getPort(),
+                path,
+                request.getQuery(),
+                null);
             metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailersSupplier());
         }
 
