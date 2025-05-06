@@ -17,10 +17,10 @@ The Jetty server deploys each web application to a specific _environment_.
 
 The available environments are:
 
-* The Jetty Static Environment -- Supports web applications only made of static files.
+* The Jetty Static Environment -- Supports web applications made of static files only.
 * The Jetty Core Environment -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
 * The Java EE 8 Environment -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
-* Any version from the Jakarta EE 9 Environment up to the Jakarta {ee-current-caps} Environment -- Supports correspondent Servlet (and associated specifications) in the `+jakarta.*+` packages.
+* Any version from the Jakarta EE 9 Environment up to the Jakarta {ee-current-caps} Environment -- Supports corresponding Servlet (and associated specifications) in the `+jakarta.*+` packages.
 
 This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, all in the same Jetty server.
 
@@ -29,10 +29,10 @@ For each specific environment there is a specific deploy module that must be ena
 * For Jetty Static, xref:modules/standard.adoc#static-deploy[`static-deploy`]
 * For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
 * For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
-* For Jakarta EE 9 up to Jakarta {ee-current-caps}, the correspondent xref:modules/standard.adoc#eeN-deploy[`ee<N>-deploy`]
+* For Jakarta EE 9 up to Jakarta {ee-current-caps}, the corresponding xref:modules/standard.adoc#eeN-deploy[`ee<N>-deploy`]
 
 Each of these modules provides environment specific features, such as library dependencies and default configuration.
-The Jakarta EE deploy modules provide the correspondent Jakarta EE APIs and the correspondent Jetty implementation of the Jakarta EE APIs.
+The Jakarta EE deploy modules provide the corresponding Jakarta EE APIs and Jetty implementation of the Jakarta EE APIs.
 
 For example, you can enable the `{ee-current}-deploy` module in the following way:
 

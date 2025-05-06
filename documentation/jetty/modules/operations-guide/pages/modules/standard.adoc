@@ -163,7 +163,7 @@ include::{jetty-home}/modules/console-capture.mod[tags=documentation]
 [[core-deploy]]
 == Module `core-deploy`
 
-The `core-deploy` module enables deployment of Jetty core web applications, as described in xref:deploy/index.adoc[this section].
+The `core-deploy` module enables deployment of web applications that only use the Jetty Core APIs, as described in xref:deploy/index.adoc[this section].
 
 See also the <<static-deploy,`static-deploy`>> module for Jetty static deployment, and the <<eeN-deploy,`{ee-all}-deploy`>> modules for Jakarta EE deployment environments.
 
@@ -826,7 +826,7 @@ include::{jetty-home}/modules/state-tracking.mod[tags=documentation]
 [[static-deploy]]
 == Module `static-deploy`
 
-The `static-deploy` module enables deployment of Jetty static web applications, as described in xref:deploy/index.adoc[this section].
+The `static-deploy` module enables deployment of web applications that consist only of static files, as described in xref:deploy/index.adoc[this section].
 
 See also the <<core-deploy,`core-deploy`>> module for Jetty core deployment, and the <<eeN-deploy,`{ee-all}-deploy`>> modules for Jakarta EE deployment environments.
 

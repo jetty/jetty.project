@@ -19,5 +19,6 @@ etc/jetty-deployer-standard.xml
 
 [ini-template]
 
-## Should redeploys be atomic (may have two instances running simultaneously)
+## Whether during redeploy the new ContextHandler instance is started before the old ContextHandler is
+## replaced and stopped, otherwise it is started after the old ContextHandler is replaced and stopped.
 # jetty.deploy.atomicRedeploy=true

@@ -1,5 +1,5 @@
 [description]
-This module enables scanning of the `$JETTY_BASE/webapps` directory to deploy web applications.
+This module enables scanning of the `$JETTY_BASE/webapps` directory to deploy web applications discovered during the scanning.
 
 [tags]
 deployment
