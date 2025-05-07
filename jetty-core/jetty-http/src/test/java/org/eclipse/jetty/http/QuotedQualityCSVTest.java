@@ -100,7 +100,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testOWS()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new QuotedQualityCSV.AllowsBadWhiteSpace();
         values.addValue("  value 0.5  ;  p = v  ;  q =0.5  ,  value 1.0 ");
         assertThat(values, Matchers.contains(
             "value 1.0",
@@ -121,7 +121,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testQuoted()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new QuotedQualityCSV.AllowsBadWhiteSpace();
         values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
         assertThat(values, Matchers.contains(
             "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
@@ -139,7 +139,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testQuotedQuality()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new QuotedQualityCSV.AllowsBadWhiteSpace();
         values.addValue("  value 0.5  ;  p = v  ;  q = \"0.5\"  ,  value 1.0 ");
         assertThat(values, Matchers.contains(
             "value 1.0",
