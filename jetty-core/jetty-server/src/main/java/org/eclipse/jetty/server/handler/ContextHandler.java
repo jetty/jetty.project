@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +51,6 @@ import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -692,57 +690,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                         continue; // skip
 
                     ResourceFactory resourceFactory = ResourceFactory.of(this);
-
-                    Resource resource = null;
-                    if (value instanceof Path path)
-                        resource = resourceFactory.newResource(path);
-                    else if (value instanceof String str)
-                        resource = resourceFactory.newResource(str);
-                    else if (value instanceof URI uri)
-                        resource = resourceFactory.newResource(uri);
-                    else if (value instanceof URL url)
-                        resource = resourceFactory.newResource(url);
-                    else if (value instanceof Resource res)
-                        resource = res;
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Unable to use Attribute [{}] of type [{}] to set base resource: {}",
-                                keyName, value.getClass().getName(), value);
-                        continue; // skip
-                    }
-
-                    if (resource != null)
-                    {
-                        if (Resources.isDirectory(resource))
-                        {
-                            // directories are always ok
-                            setBaseResource(resource);
-                        }
-                        else
-                        {
-                            URI uri = resource.getURI();
-                            if (!"jar".equalsIgnoreCase(uri.getScheme()) && FileID.isArchive(uri))
-                            {
-                                // archives are valid base resources at this point in time.
-                                // extra work by ContextHandler implementations (eg: WebAppContext) might
-                                // modify this base resource to point to other locations that represent
-                                // relevant parts within the archive (temp dirs, work dirs, etc)
-                                setBaseResource(resource);
-                                continue;
-                            }
-
-                            // Anything else is not supported by this Attribute.
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Attribute [{}] (transformed to a Resource: {}) was not able to be used as a base resource (not a directory or archive)",
-                                    keyName, resource);
-                        }
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Attribute [{}] was not able to be transformed to a Resource: {}", keyName, value);
-                    }
+                    Resource resource = resourceFactory.asResource(value);
+                    setBaseResource(resource);
                 }
                 default -> initializeDefault(keyName, value);
             }

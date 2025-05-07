@@ -19,7 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Path;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -267,57 +266,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         continue; // skip
 
                     ResourceFactory resourceFactory = ResourceFactory.of(this);
-
-                    Resource resource = null;
-                    if (value instanceof Path path)
-                        resource = resourceFactory.newResource(path);
-                    else if (value instanceof String str)
-                        resource = resourceFactory.newResource(str);
-                    else if (value instanceof URI uri)
-                        resource = resourceFactory.newResource(uri);
-                    else if (value instanceof URL url)
-                        resource = resourceFactory.newResource(url);
-                    else if (value instanceof Resource res)
-                        resource = res;
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Unable to use Attribute [{}] of type [{}] to set base resource: {}",
-                                keyName, value.getClass().getName(), value);
-                        continue; // skip
-                    }
-
-                    if (resource != null)
-                    {
-                        if (Resources.isDirectory(resource))
-                        {
-                            // directories are always ok
-                            setBaseResource(resource);
-                        }
-                        else
-                        {
-                            URI uri = resource.getURI();
-                            if (!"jar".equalsIgnoreCase(uri.getScheme()) && FileID.isArchive(uri))
-                            {
-                                // archives are valid base resources at this point in time.
-                                // extra work by ContextHandler implementations (eg: WebAppContext) might
-                                // modify this base resource to point to other locations that represent
-                                // relevant parts within the archive (temp dirs, work dirs, etc)
-                                setBaseResource(resource);
-                                continue;
-                            }
-
-                            // Anything else is not supported by this Attribute.
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Attribute [{}] (transformed to a Resource: {}) was not able to be used as a base resource (not a directory or archive)",
-                                    keyName, resource);
-                        }
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Attribute [{}] was not able to be transformed to a Resource: {}", keyName, value);
-                    }
+                    Resource resource = resourceFactory.asResource(value);
+                    setBaseResource(resource);
                 }
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
