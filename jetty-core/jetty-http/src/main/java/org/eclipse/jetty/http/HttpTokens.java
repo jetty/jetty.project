@@ -20,7 +20,6 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class HttpTokens
 {
-    public static final String LN = System.getProperty("line.separator");
     static final byte COLON = (byte)':';
     static final byte TAB = 0x09;
     static final byte LINE_FEED = 0x0A;
@@ -141,25 +140,13 @@ public class HttpTokens
         @Override
         public String toString()
         {
-            switch (_type)
+            return switch (_type)
             {
-                case SPACE:
-                case COLON:
-                case ALPHA:
-                case DIGIT:
-                case TCHAR:
-                case VCHAR:
-                    return _type + "='" + _c + "'";
-
-                case CR:
-                    return "CR=\\r";
-
-                case LF:
-                    return "LF=\\n";
-
-                default:
-                    return String.format("%s=0x%x", _type, _b);
-            }
+                case SPACE, COLON, ALPHA, DIGIT, TCHAR, VCHAR -> _type + "='" + _c + "'";
+                case CR -> "CR=\\r";
+                case LF -> "LF=\\n";
+                default -> String.format("%s=0x%x", _type, _b);
+            };
         }
     }
 
