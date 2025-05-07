@@ -1308,8 +1308,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             if (Files.isRegularFile(path) && FileID.isExtension(name, "jar", "war", "xml", "properties"))
                 return true;
 
-            // At this point, only thing left as valid are directories
-            return Files.isDirectory(path);
+            // At this point, only directories are considered
+            if(!Files.isDirectory(path))
+                return false;
+
+            // Ignore "nominated directory" for historical reasons
+            return !FileID.isExtension(path.toUri(), "d");
         }
     }
 
