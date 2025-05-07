@@ -517,7 +517,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 stream = _stream;
             }
-            if (_stream == null)
+            if (stream == null)
                 throw new IllegalStateException("No active stream");
             HttpStream combined = onStreamEvent.apply(stream);
             if (combined == null)

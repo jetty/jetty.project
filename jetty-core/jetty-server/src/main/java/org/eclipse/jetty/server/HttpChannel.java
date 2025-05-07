@@ -75,8 +75,9 @@ public interface HttpChannel extends Invocable
      * <p>Notifies this {@code HttpChannel} that an idle timeout happened.</p>
      *
      * @param idleTimeout the timeout.
-     * @return a {@code Runnable} that performs the timeout action, or {@code null}
-     * if no action need be performed by the calling thread
+     * @return a {@link IdleTimeoutTask} that contains the timeout action,
+     * or {@code null} if no action need be performed by the calling thread,
+     * and whether this {@code HttpChannel} is handling an HTTP request.
      * @see Request#addIdleTimeoutListener(Predicate)
      */
     IdleTimeoutTask onIdleTimeout(TimeoutException idleTimeout);
