@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * A utility handler that echoes content from the request to the response.
@@ -100,6 +102,50 @@ public class EchoHandler extends Handler.Abstract
             {
                 callback.failed(e);
             }
+        }
+    }
+
+    public static class Buffered extends EchoHandler
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.BLOCKING;
+        }
+
+        @Override
+        protected void copy(Request request, Response response, Callback callback)
+        {
+            try
+            {
+                response.write(true, Content.Source.asByteBuffer(request), callback);
+            }
+            catch (IOException e)
+            {
+                callback.failed(e);
+            }
+        }
+    }
+
+    public static class BufferedAsync extends EchoHandler
+    {
+        @Override
+        protected void copy(Request request, Response response, Callback callback)
+        {
+            Content.Source.asByteBuffer(request, new Promise<>()
+            {
+                @Override
+                public void succeeded(ByteBuffer result)
+                {
+                    response.write(true, result, callback);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                }
+            });
         }
     }
 }
