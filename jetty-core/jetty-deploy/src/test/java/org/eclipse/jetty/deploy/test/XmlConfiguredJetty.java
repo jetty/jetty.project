@@ -127,7 +127,7 @@ public class XmlConfiguredJetty
 
         Path webappsDir = _jettyBase.resolve("webapps");
         FS.ensureEmpty(webappsDir);
-        setProperty("jetty.deploy.monitoredDir", webappsDir.toString());
+        setProperty("jetty.deploy.webappsDir", webappsDir.toString());
         setProperty("jetty.deploy.scanInterval", "1");
 
         Path etcDir = _jettyBase.resolve("etc");

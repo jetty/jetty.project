@@ -121,7 +121,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
@@ -178,7 +178,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
@@ -248,7 +248,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
@@ -314,7 +314,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         DeploymentScanner scanner = new DeploymentScanner(server);
         Files.writeString(demoXml, demoXmlStr);
 
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
@@ -373,7 +373,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         Files.writeString(demoXml, demoXmlStr);
 
         DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
@@ -437,7 +437,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         Files.writeString(demoXml, demoXmlStr);
 
         DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 

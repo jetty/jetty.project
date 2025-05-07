@@ -19,8 +19,8 @@ environments/
 etc/jetty-deployment-scanner.xml
 
 [ini-template]
-## Monitored directory name (relative to $jetty.base)
-# jetty.deploy.monitoredDir=webapps
+## Webapps directory name (relative to $jetty.base)
+# jetty.deploy.webappsDir=webapps
 
 # Defer Initial Scan
 # true to have the initial scan deferred until the Server component is started.
@@ -28,7 +28,7 @@ etc/jetty-deployment-scanner.xml
 # false (default) to have initial scan occur as normal.
 # jetty.deploy.deferInitialScan=false
 
-## Monitored directory scan period (seconds)
+## Webapps directory scan period (seconds)
 # value of 0 is hot-redeploy disabled
 # value of 1 or more will enable hot-redeploy
 # jetty.deploy.scanInterval=0

@@ -85,7 +85,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         Files.writeString(xml, "XML for bar", UTF_8);
 
         AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
-        deploymentScanner.addMonitoredDirectory(dir);
+        deploymentScanner.addWebappsDirectory(dir);
 
         Map<Path, Scanner.Notification> changeSet = new HashMap<>();
         changeSet.put(xml, Scanner.Notification.ADDED);
@@ -116,7 +116,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         Files.writeString(xml, "XML for foo", UTF_8);
 
         AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
-        deploymentScanner.addMonitoredDirectory(dir);
+        deploymentScanner.addWebappsDirectory(dir);
 
         // Initial deployment.
         Map<Path, Scanner.Notification> changeSet = new HashMap<>();
@@ -174,7 +174,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         Files.writeString(war, "WAR for bar", UTF_8);
 
         AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
-        deploymentScanner.addMonitoredDirectory(dir);
+        deploymentScanner.addWebappsDirectory(dir);
 
         // Initial deployment
         Map<Path, Scanner.Notification> changeSet = new HashMap<>();
@@ -212,7 +212,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         Files.writeString(war, "WAR for bar", UTF_8);
 
         AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
-        deploymentScanner.addMonitoredDirectory(dir);
+        deploymentScanner.addWebappsDirectory(dir);
 
         // Initial deployment
         Map<Path, Scanner.Notification> changeSet = new HashMap<>();
@@ -272,7 +272,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         Files.writeString(war, "WAR for bar", UTF_8);
 
         AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
-        deploymentScanner.addMonitoredDirectory(dir);
+        deploymentScanner.addWebappsDirectory(dir);
 
         // Initial deployment
         Map<Path, Scanner.Notification> changeSet = new HashMap<>();
