@@ -720,7 +720,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("value", headerInfo.getParameter("name"));
         assertEquals("value2", headerInfo.getParameter("other"));
 
-        headerInfo = aph.getHeaderInfo("Scheme   name   = value   , other   =  \"value2\"    ").get(0);
+        headerInfo = aph.getHeaderInfo("Scheme   name=value   , other=\"value2\"    ").get(0);
         assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         assertEquals("value", headerInfo.getParameter("name"));
         assertEquals("value2", headerInfo.getParameter("other"));
