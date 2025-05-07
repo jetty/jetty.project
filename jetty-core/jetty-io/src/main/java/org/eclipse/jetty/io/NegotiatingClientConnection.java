@@ -19,6 +19,7 @@ import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         {
             close();
             // TODO: should we not fail the promise in the context here?
-            throw new RuntimeIOException(x);
+            throw ExceptionUtil.asRuntimeException(x);
         }
     }
 

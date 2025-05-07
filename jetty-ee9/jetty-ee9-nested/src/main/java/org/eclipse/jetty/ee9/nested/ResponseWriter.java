@@ -21,7 +21,6 @@ import java.util.Locale;
 
 import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteThroughWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,6 @@ import org.slf4j.LoggerFactory;
  * It differs from the standard {@link PrintWriter} in that:<ul>
  * <li>It does not support autoflush</li>
  * <li>The default Locale for {@link #format(String, Object...)} is the locale obtained by {@link ServletResponse#getLocale()}</li>
- * <li>If a write or print method is called while {@link #checkError()}  returns true, then a {@link RuntimeIOException} is thrown to stop needless iterations.</li>
  * <li>The writer may be reopen to allow for recycling</li>
  * </ul>
  */
