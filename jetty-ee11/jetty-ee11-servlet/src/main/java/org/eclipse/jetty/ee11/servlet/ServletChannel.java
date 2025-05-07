@@ -729,7 +729,7 @@ public class ServletChannel
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
 
-        if (getServer().getRequestLog() instanceof CustomRequestLog)
+        if (CustomRequestLog.isLogDetailRequired(getServer()))
         {
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
                 _servletContextRequest.getServletName(),
