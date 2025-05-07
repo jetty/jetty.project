@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -82,7 +83,6 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -1303,7 +1303,7 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-                            throw new RuntimeIOException(msg, e);
+                            throw new UncheckedIOException(msg, e);
                         }
                         catch (ServletException e)
                         {
@@ -1314,7 +1314,10 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-                            throw new RuntimeIOException(msg, e);
+
+                            if (cause instanceof IOException ioe)
+                                throw new UncheckedIOException(msg, ioe);
+                            throw new RuntimeException(msg, e);
                         }
                     }
                     else

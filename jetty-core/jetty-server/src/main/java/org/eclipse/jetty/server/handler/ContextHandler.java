@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
@@ -314,10 +314,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * Set the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
      * @param mimeProperties The property file to use as a string representation of a {@link Resource}
-     * @throws RuntimeIOException if there is an {@link IOException}
+     * @throws UncheckedIOException if there is an {@link IOException}
      * @see MimeTypes.Mutable#setMimeTypes(Resource)
      */
-    public void setMimeTypes(String mimeProperties) throws RuntimeIOException
+    public void setMimeTypes(String mimeProperties) throws UncheckedIOException
     {
         getMimeTypes().setMimeTypes(ResourceFactory.of(this).newResource(mimeProperties));
     }
@@ -325,10 +325,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * Add the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
      * @param mimeProperties The property file to use as a string representation of a {@link Resource}
-     * @throws RuntimeIOException if there is an {@link IOException}
+     * @throws UncheckedIOException if there is an {@link IOException}
      * @see MimeTypes.Mutable#addMimeTypes(Resource)
      */
-    public void addMimeTypes(String mimeProperties) throws RuntimeIOException
+    public void addMimeTypes(String mimeProperties) throws UncheckedIOException
     {
         getMimeTypes().addMimeTypes(ResourceFactory.of(this).newResource(mimeProperties));
     }
@@ -336,10 +336,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * Set the inferred and assumed encodings from a property
      * @param encodingProperties The property file to use as a string representation of a {@link Resource}
-     * @throws RuntimeIOException if there is an {@link IOException}
+     * @throws UncheckedIOException if there is an {@link IOException}
      * @see MimeTypes.Mutable#setEncodings(Resource)
      */
-    public void setEncodings(String encodingProperties) throws RuntimeIOException
+    public void setEncodings(String encodingProperties) throws UncheckedIOException
     {
         getMimeTypes().setEncodings(ResourceFactory.of(this).newResource(encodingProperties));
     }
@@ -347,10 +347,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * Add the inferred and assumed encodings from a property file.
      * @param encodingProperties The property file to use as a string representation of a {@link Resource}
-     * @throws RuntimeIOException if there is an {@link IOException}
+     * @throws UncheckedIOException if there is an {@link IOException}
      * @see MimeTypes.Mutable#addEncodings(Resource)
      */
-    public void addEncodings(String encodingProperties) throws RuntimeIOException
+    public void addEncodings(String encodingProperties) throws UncheckedIOException
     {
         getMimeTypes().addEncodings(ResourceFactory.of(this).newResource(encodingProperties));
     }

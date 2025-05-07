@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -107,7 +110,27 @@ public class ExceptionUtil
             throw runtimeException;
         if (throwable instanceof Error error)
             throw error;
+        if (throwable instanceof IOException ioException)
+            throw new UncheckedIOException(ioException);
         throw new RuntimeException(throwable);
+    }
+
+    /**
+     * Convert or cast a {@link Throwable} to an unchecked {@link RuntimeException}.
+     * @param cause The {@link Throwable} to that cause.
+     * @throws Error If the passed {@link Throwable} is an {@link Error}.
+     * @return RuntimeException Otherwise, if the passed {@link Throwable} is not null.
+     */
+    public static RuntimeException asRuntimeException(Throwable cause) throws Error
+    {
+        Objects.requireNonNull(cause);
+        if (cause instanceof RuntimeException runtimeException)
+            return runtimeException;
+        if (cause instanceof Error error)
+            throw error;
+        if (cause instanceof IOException ioException)
+            return new UncheckedIOException(ioException);
+        return new RuntimeException(cause);
     }
 
     /**

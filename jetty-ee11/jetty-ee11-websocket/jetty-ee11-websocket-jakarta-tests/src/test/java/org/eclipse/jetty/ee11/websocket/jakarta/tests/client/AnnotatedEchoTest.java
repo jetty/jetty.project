@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +26,6 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.CoreServer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ public class AnnotatedEchoTest
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeIOException(e);
+                    throw new UncheckedIOException(e);
                 }
             }
         }

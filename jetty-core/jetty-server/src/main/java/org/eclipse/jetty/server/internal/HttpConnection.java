@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.List;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -592,7 +592,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             LOG.debug("parse {} {}", _requestBuffer, this);
 
         if (_parser.isTerminated())
-            throw new RuntimeIOException("Parser is terminated");
+            throw new UncheckedIOException(new IOException("Parser is terminated"));
 
         boolean handle = _parser.parseNext(_requestBuffer.getByteBuffer());
 
@@ -1058,8 +1058,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 catch (InterruptedException x)
                 {
                     Throwable cause = getCause();
+                    if (cause == null)
+                        throw new RuntimeException(x);
                     ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                    throw new RuntimeIOException(cause);
+                    throw ExceptionUtil.asRuntimeException(cause);
                 }
 
                 return _callback;
