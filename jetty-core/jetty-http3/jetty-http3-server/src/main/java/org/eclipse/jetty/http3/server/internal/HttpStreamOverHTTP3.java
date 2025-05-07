@@ -546,9 +546,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable runnable = httpChannel.onIdleTimeout(failure);
-        boolean idle = !httpChannel.isRequestHandled();
-        consumer.accept(runnable, idle);
+        HttpChannel.IdleTimeoutTask task = httpChannel.onIdleTimeout(failure);
+        consumer.accept(task.action(), !task.handlingRequest());
     }
 
     public Runnable onFailure(Throwable failure)

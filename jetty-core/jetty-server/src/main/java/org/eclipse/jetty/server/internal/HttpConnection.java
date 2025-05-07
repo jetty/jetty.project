@@ -627,10 +627,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public boolean onIdleExpired(TimeoutException timeout)
     {
-        if (_httpChannel.getRequest() == null)
-            return true;
-        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
-        return false;
+        HttpChannel.IdleTimeoutTask task = _httpChannel.onIdleTimeout(timeout);
+        boolean handlingRequest = task.handlingRequest();
+        if (handlingRequest)
+            ThreadPool.executeImmediately(getExecutor(), task.action());
+        return !handlingRequest;
     }
 
     @Override
