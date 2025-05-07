@@ -45,7 +45,6 @@ import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.PathMappingsHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -1326,12 +1325,13 @@ public class RFC2616Test
 
         // Collect 'boundary' string
         String boundary = null;
-        String[] parts = StringUtil.split(contentType, ';');
+        String[] parts = contentType.split(";");
         for (int i = 0; i < parts.length; i++)
         {
             if (parts[i].trim().startsWith("boundary="))
             {
-                String[] boundparts = StringUtil.split(parts[i], '=');
+                String[] boundparts = parts[i] == null ? null : parts[i].split("=");
+                assertNotNull(boundparts);
                 assertEquals(2, boundparts.length, specId + " Boundary parts.length");
                 boundary = boundparts[1];
             }

@@ -1166,65 +1166,6 @@ public class StringUtil
             .toString();
     }
 
-    /**
-     * Split a string on delimiter
-     * @param s The string
-     * @param delim The delimiter
-     * @return An array of segments, excluding the delimiter
-     */
-    public static String[] split(String s, char delim)
-    {
-        if (s == null)
-        {
-            return null;
-        }
-
-        if (s.length() <= 0)
-        {
-            return new String[]{}; // empty array
-        }
-
-        String[] ret;
-
-        int count = 0;
-        int offset = 0;
-        int idx;
-
-        // Calculate entry length to not waste memory.
-        while ((idx = s.indexOf(delim, offset)) != (-1))
-        {
-            if (idx > offset)
-            {
-                count++;
-            }
-            offset = idx + 1;
-        }
-        if (s.length() > offset)
-        {
-            count++;
-        }
-
-        // Create return array.
-        offset = 0;
-        ret = new String[count];
-        int retIdx = 0;
-        while ((idx = s.indexOf(delim, offset)) != (-1))
-        {
-            if (idx > offset)
-            {
-                ret[retIdx] = s.substring(offset, idx);
-                retIdx++;
-            }
-            offset = idx + 1;
-        }
-        if (s.length() > offset)
-        {
-            ret[retIdx] = s.substring(offset);
-        }
-
-        return ret;
-    }
-
     private StringUtil()
     {
         // prevent instantiation
