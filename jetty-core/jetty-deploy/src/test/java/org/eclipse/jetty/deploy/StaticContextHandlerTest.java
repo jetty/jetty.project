@@ -13,8 +13,14 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpTester;
@@ -101,6 +107,61 @@ public class StaticContextHandlerTest
             containsString("Directory: /static/"),
             containsString("<table class=\"listing\">")
         ));
+    }
+
+    @Test
+    public void testStaticDir() throws Exception
+    {
+        Path webapps = workDir.getEmptyPathDir().resolve("webapps");
+        FS.ensureEmpty(webapps);
+
+        Path staticDir = webapps.resolve("static");
+        FS.ensureEmpty(staticDir);
+        Files.writeString(staticDir.resolve("hello.txt"), "Hello from TEXT");
+
+        startServer(ds -> ds.addMonitoredDirectory(webapps));
+
+        String rawResponse = localConnector.getResponse("""
+            GET /static/hello.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), containsString("Hello from TEXT"));
+    }
+
+    @Test
+    public void testStaticJar() throws Exception
+    {
+        Path webapps = workDir.getEmptyPathDir().resolve("webapps");
+        FS.ensureEmpty(webapps);
+
+        Path outputJar = webapps.resolve("test.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        String testFileContent = "Hello from TEXT";
+        URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("hello.txt"), testFileContent, StandardOpenOption.CREATE);
+        }
+
+        startServer(ds -> ds.addMonitoredDirectory(webapps));
+
+        String rawResponse = localConnector.getResponse("""
+            GET /test/hello.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), containsString("Hello from TEXT"));
     }
 
     @ParameterizedTest

@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -232,6 +233,31 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("skipped init property {}={}", keyName, value);
+            }
+        }
+    }
+
+    @Override
+    protected void initializeDefaultsComplete()
+    {
+        Resource baseResource = getBaseResource();
+        if (baseResource != null)
+        {
+            if (Resources.isReadableFile(baseResource))
+            {
+                // see if we need to make a passed archive into a zipfs archive.
+                URI uri = baseResource.getURI();
+                if (!"jar".equals(uri.getScheme()) && FileID.isWebArchive(uri))
+                {
+                    // Convert `file:` baseResource to `jar:file:` baseResource
+                    Resource jarResource = getResourceFactory().newJarFileResource(uri);
+                    setBaseResource(jarResource);
+                    Path path = baseResource.getPath();
+                    if (path != null)
+                    {
+                        setWar(path.toString());
+                    }
+                }
             }
         }
     }

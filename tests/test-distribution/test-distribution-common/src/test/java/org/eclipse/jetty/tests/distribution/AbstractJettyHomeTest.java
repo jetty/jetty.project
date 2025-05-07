@@ -14,7 +14,9 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -25,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.provider.Arguments;
 
 @ExtendWith({WorkDirExtension.class})
 public class AbstractJettyHomeTest
@@ -32,6 +35,12 @@ public class AbstractJettyHomeTest
     protected HttpClient client;
 
     public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
+
+    protected static Stream<Arguments> provideEnvironmentsToTest()
+    {
+        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10,ee11");
+        return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
+    }
 
     public static String toEnvironment(String module, String environment)
     {
