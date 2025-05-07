@@ -222,27 +222,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    protected void initializeDefaultsComplete()
+    public void setBaseResource(Resource baseResource)
     {
-        Resource baseResource = getBaseResource();
-        if (baseResource != null)
+        if (baseResource == null)
         {
-            if (Resources.isReadableFile(baseResource))
+            super.setBaseResource(null);
+            return;
+        }
+
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
             {
-                // see if we need to make a passed archive into a zipfs archive.
-                URI uri = baseResource.getURI();
-                if (!"jar".equals(uri.getScheme()) && FileID.isWebArchive(uri))
-                {
-                    Resource jarResource = getResourceFactory().newJarFileResource(uri);
-                    setBaseResource(jarResource);
-                    Path path = baseResource.getPath();
-                    if (path != null)
-                    {
-                        setWar(path.toString());
-                    }
-                }
+                setWarResource(baseResource);
+                return;
             }
         }
+
+        super.setBaseResource(baseResource);
     }
 
     /**
