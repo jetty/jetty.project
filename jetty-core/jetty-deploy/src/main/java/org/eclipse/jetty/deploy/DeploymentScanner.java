@@ -1309,7 +1309,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return true;
 
             // At this point, only directories are considered
-            if(!Files.isDirectory(path))
+            if (!Files.isDirectory(path))
                 return false;
 
             // Ignore "nominated directory" for historical reasons
