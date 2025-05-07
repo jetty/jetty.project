@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -1295,37 +1294,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 // ignore traditional "hidden" path entries.
                 if (name.startsWith("."))
                     return false;
-                // ignore path tagged as hidden by FS
+                // ignore path tagged as hidden by FileSystem metadata
                 if (Files.isHidden(path))
                     return false;
             }
-            catch (IOException ignore)
+            catch (IOException x)
             {
-                // ignore
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED error from isHidden check", x);
             }
 
+            // Specific file extensions that we care about
             if (Files.isRegularFile(path) && FileID.isExtension(name, "jar", "war", "xml", "properties"))
                 return true;
 
-            // From this point down, we looking for things that are possible directory deployments.
-            if (!Files.isDirectory(path))
-                return false;
-
-            // Don't deploy monitored paths
-            if (monitoredDirs.contains(path))
-                return false;
-
-            String lowerName = name.toLowerCase(Locale.ENGLISH);
-
-            // is it a nominated config directory
-            if (lowerName.endsWith(".d"))
-                return true;
-
-            // ignore source control directories
-            if ("cvs".equals(lowerName) || "cvsroot".equals(lowerName))
-                return false;
-
-            return true;
+            // At this point, only thing left as valid are directories
+            return Files.isDirectory(path);
         }
     }
 
