@@ -355,7 +355,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             // too late?
             if (_stream == null)
-                return null;
+                return new IdleTimeoutTask(null, false);
 
             requestHandled = _handling != null || _handled;
 
