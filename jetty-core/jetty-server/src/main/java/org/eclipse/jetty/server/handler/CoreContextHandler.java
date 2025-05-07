@@ -240,12 +240,17 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Core classloader for {}", urls);
+            LOG.debug("Core webapp classloader: {}", urls);
 
+        Environment environment = Environment.get("core");
+        if (environment == null)
+            throw new IllegalStateException("Could not find environment [core]");
+
+        ClassLoader parentClassLoader = environment.getClassLoader();
         if (urls.isEmpty())
-            return Environment.CORE.getClassLoader();
+            return parentClassLoader;
 
-        return new URLClassLoader(urls.toArray(URL[]::new), Environment.CORE.getClassLoader());
+        return new URLClassLoader(urls.toArray(URL[]::new), parentClassLoader);
     }
 
     protected void initWebApp() throws IOException

@@ -27,10 +27,10 @@ import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.toolchain.test.ExtraMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.Environment;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +44,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
@@ -61,7 +60,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         }
 
         @Override
-        protected void performActions(List<DeployAction> actions)
+        void performActions(List<DeployAction> actions)
         {
             assertActionList.accept(actions);
 
@@ -70,11 +69,6 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             {
                 resetAppState(action.name());
             }
-        }
-
-        public PathsApp findApp(String name)
-        {
-            return super.findApp(name);
         }
     }
 
@@ -371,37 +365,47 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.pathsChanged(changeSet);
     }
 
-    @Test
-    public void testDefaultWeights()
-    {
-        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
-        assertThat(deploymentScanner.getDefaultWeight("core"), is(200));
-        assertThat(deploymentScanner.getDefaultWeight("ee9"), is(900));
-        assertThat(deploymentScanner.getDefaultWeight("ee11"), is(1100));
-
-        assertThrows(IllegalStateException.class, () -> deploymentScanner.getDefaultWeight("corp"));
-    }
-
-    public static Stream<Arguments> envNameSorting()
+    public static Stream<Arguments> environmentsOrder()
     {
         return Stream.of(
-            Arguments.of(Map.of("static", 100, "core", 200), List.of("core", "static")),
-            Arguments.of(Map.of("core", 200, "static", 100), List.of("core", "static")),
-            Arguments.of(Map.of("core", 200, "ee11", 1011), List.of("ee11", "core")),
-            Arguments.of(Map.of("core", 200, "ee11", 1011, "ee9", 1009, "ee10", 1010), List.of("ee11", "ee10", "ee9", "core"))
+            // One environment only.
+            Arguments.of(List.of("core"), List.of(), "core"),
+            Arguments.of(List.of("core"), List.of("core"), "core"),
+            Arguments.of(List.of("core"), List.of("abc", "core"), "core"),
+            Arguments.of(List.of("core"), List.of("core", "abc"), "core"),
+            // Many environments.
+            Arguments.of(List.of("abc", "core"), List.of(), "abc"),
+            Arguments.of(List.of("abc", "core"), List.of("abc"), "abc"),
+            Arguments.of(List.of("abc", "core"), List.of("core"), "core"),
+            Arguments.of(List.of("abc", "core"), List.of("core", "abc"), "core")
         );
     }
 
     @ParameterizedTest
-    @MethodSource("envNameSorting")
-    public void testEnvironmentNameSorting(Map<String, Integer> input, List<String> expected)
+    @MethodSource("environmentsOrder")
+    public void testEnvironmentsOrder(List<String> environments, List<String> order, String expected)
     {
+        Environment.ensure("core", Environment.class);
+        Environment.ensure("abc", Environment.class);
+
         DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
-        for (Map.Entry<String, Integer> entry : input.entrySet())
-        {
-            deploymentScanner.addTrackedEnvironment(entry.getKey(), entry.getValue());
-        }
-        List<String> sorted = deploymentScanner.getTrackedEnvironmentsByWeight();
-        assertThat(sorted, ExtraMatchers.ordered(expected));
+        environments.forEach(deploymentScanner::configureEnvironment);
+        deploymentScanner.setEnvironmentsOrder(order);
+
+        assertThat(deploymentScanner.getDefaultEnvironmentName(), is(expected));
+    }
+
+    @Test
+    public void testEnvironmentsWithExplicitWrongOrder()
+    {
+        Environment.ensure("one", Environment.class);
+        Environment.ensure("two", Environment.class);
+
+        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
+        deploymentScanner.configureEnvironment("one");
+        deploymentScanner.configureEnvironment("two");
+        deploymentScanner.setEnvironmentsOrder(List.of("other"));
+
+        assertThat(deploymentScanner.getDefaultEnvironmentName(), nullValue());
     }
 }

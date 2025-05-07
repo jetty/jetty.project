@@ -9,6 +9,9 @@ deployment
 [environment]
 core
 
+[before]
+static-deploy
+
 [depend]
 deployment-scanner
 

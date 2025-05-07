@@ -9,6 +9,12 @@ deployment
 [environment]
 ee10
 
+[before]
+ee9-deploy
+ee8-deploy
+core-deploy
+static-deploy
+
 [depend]
 deployment-scanner
 ee10-webapp
