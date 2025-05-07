@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-mock-resources</artifactId>
+      <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
