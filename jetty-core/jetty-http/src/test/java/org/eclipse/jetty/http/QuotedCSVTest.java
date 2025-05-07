@@ -41,13 +41,7 @@ public class QuotedCSVTest
     @Test
     public void testAllowedBWS()
     {
-        QuotedCSV values = new QuotedCSV(true)
-        {
-            @Override
-            protected void onBadWhiteSpace()
-            {
-            }
-        };
+        QuotedCSV values = new QuotedCSV.AllowsBadWhiteSpace(true);
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
         assertThat(values, Matchers.contains(
             "value 0.5;pqy=vwz;q=0.5",
@@ -63,6 +57,11 @@ public class QuotedCSVTest
         assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param= value"));
         assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param= "));
         assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "param = value"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param\t=\tvalue"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param\t=value"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param=\tvalue"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "value;param=\t"));
+        assertThrows(IllegalArgumentException.class, () -> new QuotedCSV(true, "param\t=\tvalue"));
     }
 
     @Test
