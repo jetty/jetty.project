@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
@@ -930,7 +930,7 @@ public class Response implements HttpServletResponse
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeIOException(e);
+                    throw new UncheckedIOException(e);
                 }
             }
         }

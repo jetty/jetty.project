@@ -30,7 +30,6 @@
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-quickstart</module>
-    <module>jetty-ee8-runner</module>
     <module>jetty-ee8-security</module>
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>

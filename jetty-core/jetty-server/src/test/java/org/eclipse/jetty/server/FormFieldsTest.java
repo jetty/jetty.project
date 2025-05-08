@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
@@ -126,7 +125,7 @@ public class FormFieldsTest
             Arguments.of(List.of("n%AH=v"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%AH"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=%%TOK%%"), UTF_8, -1, -1, IllegalArgumentException.class),
-            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class),
+            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("a=0&b=1&c=2&d=4"), UTF_8, 2, -1, IllegalStateException.class),
             Arguments.of(List.of("a=0", "&b=1&", "c=", "2&d=4"), UTF_8, 2, -1, IllegalStateException.class),
             Arguments.of(List.of("abcde=123456"), UTF_8, -1, 10, IllegalStateException.class),

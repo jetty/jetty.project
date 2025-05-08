@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,13 +71,14 @@ import org.slf4j.LoggerFactory;
  *     <li>A directory containing static content</li>
  *     <li>An XML descriptor in {@link XmlConfiguration} format that configures a {@link ContextHandler} instance</li>
  * </ul>
- * Once a collection of files that represent a web application is found (or updated), an instance of `{@link ContextHandlerFactory}
- * is used to create a {@link ContextHandler}, which is then deployed/undeployed via an {@link Deployer} instance.
- * The instances of the {@link Deployer} and {@link ContextHandlerFactory} used can be:<ul>
- *     <li>passed into a constructor;</li>
- *     <li>or, discovered as a singleton {{@link org.eclipse.jetty.util.component.Container#getBean(Class)} bean} on
- *     the {@link Server};</li>
- *     <li>or, a default implementation instantiated by this scanner.</li>
+ * Once a collection of files that represent a web application is found (or updated), an instance of {@link ContextHandlerFactory}
+ * is used to create a {@link ContextHandler}, which is then deployed/undeployed via a {@link Deployer} instance.
+ * The instances of the {@link Deployer} and {@link ContextHandlerFactory} used can either be:
+ * <ul>
+ *     <li>Passed into a constructor of this class</li>
+ *     <li>Discovered as a {{@link org.eclipse.jetty.util.component.Container#getBean(Class)} bean} of
+ *     the {@link Server} instance</li>
+ *     <li>Default implementations instantiated by this class.</li>
  * </ul>
  * <p>To avoid double deployments and allow flexibility of the content of the scanned directories, the provider
  * implements some heuristics to ignore some files found in the scans:
@@ -90,22 +92,20 @@ import org.slf4j.LoggerFactory;
  *     <li>If a directory and a matching XML file exist (eg: {@code foo/} and {@code foo.xml}) then the directory is assumed to be
  * an unpacked WAR and only the XML file is deployed (which may use the directory in its configuration)</li>
  *     <li>If a WAR file and a matching XML file exist (eg: {@code foo.war} and {@code foo.xml}) then the WAR file is assumed to
- * be configured by the XML file and only the XML file is deployed.
+ * be configured by the XML file and only the XML file is deployed.</li>
  * </ul>
  * <p>For XML configured contexts, the following is available.</p>
  * <ul>
- * <li>The XML Object ID Map will have a reference to the {@link Server} instance via the ID name {@code "Server"}</li>
- * <li>The Default XML Properties are populated from a call to {@link XmlConfiguration#setJettyStandardIdsAndProperties(Object, Path)} (for things like {@code jetty.home} and {@code jetty.base})</li>
- * <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the monitored path.</li>
+ *     <li>The XML Object ID Map will have a reference to the {@link Server} instance via the ID name {@code "Server"}</li>
+ *     <li>The Default XML Properties are populated from a call to {@link XmlConfiguration#setJettyStandardIdsAndProperties(Object, Path)} (for things like {@code jetty.home} and {@code jetty.base})</li>
+ *     <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the monitored path.</li>
  * </ul>
- * <p>
- * Context Deployment properties will be initialized with:
- * </p>
+ * <p>Context Deployment properties will be initialized with:</p>
  * <ul>
- * <li>The properties set on the application via embedded calls modifying {@link PathsApp#getAttributes()}</li>
- * <li>The app specific properties file {@code webapps/<webapp-name>.properties}</li>
- * <li>The environment specific properties file {@code webapps/<environment-name>[-zzz].properties}</li>
- * <li>The {@link Attributes} from the {@link Environment}</li>
+ *     <li>The properties set on the application via embedded calls modifying {@link PathsApp#getAttributes()}</li>
+ *     <li>The app specific properties file {@code webapps/<webapp-name>.properties}</li>
+ *     <li>The environment specific properties file {@code webapps/<environment-name>[-zzz].properties}</li>
+ *     <li>The {@link Attributes} from the {@link Environment}</li>
  * </ul>
  *
  * <p>
@@ -1511,7 +1511,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
         public Map<Path, PathsApp.State> getPaths()
         {
-            return paths;
+            return Collections.unmodifiableMap(paths);
         }
 
         public PathsApp.State getState()

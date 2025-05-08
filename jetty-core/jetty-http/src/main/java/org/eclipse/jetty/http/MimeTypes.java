@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -31,7 +32,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -653,9 +653,9 @@ public class MimeTypes
          * @param mimeProperties The property file to use.
          * @see #addMimeTypes(Resource)
          * @see #addMimeMapping(String, String)
-         * @throws RuntimeIOException if there is an {@link IOException}
+         * @throws UncheckedIOException if there is an {@link IOException}
          */
-        public void setMimeTypes(Resource mimeProperties) throws RuntimeIOException
+        public void setMimeTypes(Resource mimeProperties) throws UncheckedIOException
         {
             _mimeMap.clear();
             addMimeTypes(mimeProperties);
@@ -665,9 +665,9 @@ public class MimeTypes
          * Add the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
          * @param mimeProperties The property file to use.
          * @see #addMimeMapping(String, String)
-         * @throws RuntimeIOException if there is an {@link IOException}
+         * @throws UncheckedIOException if there is an {@link IOException}
          */
-        public void addMimeTypes(Resource mimeProperties) throws RuntimeIOException
+        public void addMimeTypes(Resource mimeProperties) throws UncheckedIOException
         {
             isDefault = false;
             try
@@ -676,7 +676,7 @@ public class MimeTypes
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -692,9 +692,9 @@ public class MimeTypes
          * @see #addInferred(String, String)
          * @see #addAssumed(String, String)
          * @see #addEncodings(Resource)
-         * @throws RuntimeIOException if there is an {@link IOException}
+         * @throws UncheckedIOException if there is an {@link IOException}
          */
-        public void setEncodings(Resource encodingProperties) throws RuntimeIOException
+        public void setEncodings(Resource encodingProperties) throws UncheckedIOException
         {
             _assumedNoEncodings.clear();
             _assumedEncodings.clear();
@@ -714,9 +714,9 @@ public class MimeTypes
          * @see #addInferred(String, String)
          * @see #addAssumed(String, String)
          * @see #addEncodings(Resource)
-         * @throws RuntimeIOException if there is an {@link IOException}
+         * @throws UncheckedIOException if there is an {@link IOException}
          */
-        public void addEncodings(Resource encodingProperties) throws RuntimeIOException
+        public void addEncodings(Resource encodingProperties) throws UncheckedIOException
         {
             isDefault = false;
             try
@@ -725,7 +725,7 @@ public class MimeTypes
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 

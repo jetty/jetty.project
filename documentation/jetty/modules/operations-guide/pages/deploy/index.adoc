@@ -13,108 +13,258 @@
 
 = Web Application Deployment
 
-The Jetty Web Application Deployment mechanism provides for:
+The Jetty server deploys each web application to a specific _environment_.
 
- * the discovery of Web Applications to deploy (e.g. war files, directories or Jetty XML descriptors)
- * determination of default values for key configurations (e.g. contextPath, environment, resource base, temporary directory, etc.)
- * optional extraction of archived resources (e.g. war files and jar files)
- * the discovery of associated configuration files (e.g. properties and XML files) that can be used to customize the deployment (e.g. changing the `contextPath`, or by adding JNDI entries, or by configuring virtual hosts, etc.). The association may be by application or by environment.
- * optional monitoring of all discovered files for hot deployment and/or undeployment.
-
-Jetty supports the deployment of each web application to a specific _environment_.
 The available environments are:
 
- * Jetty Core -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
- * Java EE 8 -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
- * Jakarta EE 9 -- Supports Servlet 5.0 (and associated specifications) in the `+jakarta.*+` packages.
- * ...
- * Jakarta {ee-current-caps} -- Supports latest Servlet (and associated specifications) in the `+jakarta.*+` packages.
+* The Jetty Static Environment -- Supports web applications made of static files only.
+* The Jetty Core Environment -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
+* The Java EE 8 Environment -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
+* Any version from the Jakarta EE 9 Environment up to the Jakarta {ee-current-caps} Environment -- Supports corresponding Servlet (and associated specifications) in the `+jakarta.*+` packages.
 
-This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, say `app-jetty.xml`.
+This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, all in the same Jetty server.
 
-The customization of the deployment (for example, web application context path, etc.) is performed by processing <<jetty,Jetty context XML files>>.
+For each specific environment there is a specific deploy module that must be enabled:
 
-The `deployment-scanner` module contains the `DeploymentScanner` component that scans the `$JETTY_BASE/webapps` and `$JETTY_BASE/environments` directories for changes, following the deployment rules described in <<rules,this section>>.
+* For Jetty Static, xref:modules/standard.adoc#static-deploy[`static-deploy`]
+* For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
+* For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
+* For Jakarta EE 9 up to Jakarta {ee-current-caps}, the corresponding xref:modules/standard.adoc#eeN-deploy[`ee<N>-deploy`]
 
-For each specific environment there is a specific deploy module that also must be enabled:
+Each of these modules provides environment specific features, such as library dependencies and default configuration.
+The Jakarta EE deploy modules provide the corresponding Jakarta EE APIs and Jetty implementation of the Jakarta EE APIs.
 
- * For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
- * For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
- * ...
- * For Jakarta {ee-current-caps}, xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy`]
+For example, you can enable the `{ee-current}-deploy` module in the following way:
 
-Each of these modules provide the environment specific features, and depend on the `deploy` module that provides the scanning features.
+[source,bash,subs=attributes+]
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
+----
 
-By default, deployment uses the `deployer-standard` module, which provides the `StandardDeployer`, which is used by the scanner to deploy individual Web Applications in a way that allows listeners to be bound to deployment trigger points in a defined deployment lifecycle.
+All the deploy modules depend on the xref:modules/standard.adoc#deployment-scanner[`deployment-scanner`] module, that scans <<monitored-directories,monitored directories>> for <<web-application-files,web applications>> to deploy, and for <<environment-configuration,environment configuration>> files to process.
 
-[[hot-static]]
-== Hot vs Static Deployment
+NOTE: While you can have many deploy modules enabled, one for each environment, there is only one `deployment-scanner` module that scans the monitored directories.
 
-The `DeploymentScanner` scans the `$JETTY_BASE/webapps` and `$JETTY_BASE/environments` directories for changes every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
+By default, for security reasons, web applications are only deployed at server startup from the `$JETTY_BASE/webapps` directory.
 
-By default, the scan interval is `0` seconds, which means _static_ deployment, and the `DeploymentScanner` will not scan the `$JETTY_BASE/webapps` directory for changes.
-This means that to deploy/redeploy/undeploy a web application you will need to stop and restart Jetty.
+However, you can configure the `deployment-scanner` module to deploy web applications from a <<monitored-directories,different deploy directory>>, and/or to deploy/undeploy web applications as they are moved to/removed from the deploy directory (<<hot-cold,hot deployment>>).
 
-Setting the scan interval to a value of `1` second (or greater) means that _hot_ deployment is enabled: if a file is added/changed/removed from the `$JETTY_BASE/webapps` directory, the `DeplymentScanner` will notice the change and respectively deploy/redeploy/undeploy the web application; and if a file is added/changed/removed from the `$JETTY_BASE/environments` directory, the `DeploymentScanner` will deploy/redeploy all web applications in that environment.
+[[monitored-directories]]
+== Monitored Directories
+
+The `deployment-scanner` module scans the deploy directory specified by the `jetty.deploy.monitoredDir` property, by default `$JETTY_BASE/webapps`, for web applications to deploy.
+
+The directory specified by the `jetty.deploy.environmentsDir` property, by default `$JETTY_BASE/environments`, is also scanned for configuration files that apply to each environment, and therefore to all web applications deployed to that environment.
+
+[[web-application-files]]
+== Web Application Files
+
+A web application _basefile_ can be:
+
+* A <<context-xml, Jetty context XML file>>, for Jetty Static, Jetty Core and Jakarta EE web applications.
+* A `+*.war+` file, for Jakarta EE web applications.
+* A directory, for Jetty Static, Jetty Core and Jakarta EE web applications.
+
+A web application has a _basename_ derived either from the _basefile_ described above, that is either from the Jetty context XML file name, from the `+*.war+` file name, or from the directory name.
+
+For example, for the Jetty context XML file `old-site.xml`, the web application _basename_ is `old-site`.
+For the file `myapp.war`, the _basename_ is `myapp`.
+For the directory `shop-app/` the _basename_ is `shop-app`.
+
+Web applications may have an associated `<basename>.properties` configuration file, for example `old-site.properties` or `shop-app.properties`.
+
+This file contains properties that influence the deployment of the web application, for example by declaring its environment, as described <<rules-environment,in this section>>.
+
+A web application configuration file can specify the following properties:
+
+* `environment=<environment>`, to specify the web application environment.
+* `jetty.deploy.contextPath=<contextPath>`, to specify the web application `contextPath` (see also <<rules-context-path,this section>>).
+* `jetty.deploy.baseResource=<pathToBaseResource>`, to specify the web application base resource directory.
+The web application base resource directory can be outside of `$JETTY_BASE/webapps`.
+* `jetty.deploy.baseResource.dirAllowed=<true|false>`, to specify whether directory listing for the base resource directory is allowed (by default `true`).
+
+[[web-application-format]]
+== Web Application Format
+
+[[web-application-format-static]]
+=== Jetty Static Format
+
+For Jetty Static web applications, the web application format is just a directory, and any file in that directory and any subdirectory is served when requested with the proper request URI -- no files are hidden.
+
+For example, with the following directory structure:
+
+----
+$JETTY_BASE/webapps
+└── static-app
+    ├── css/
+    │   └── styles.css
+    └── index.html
+----
+
+Requests to `+http://localhost:8080/static-app/index.html+` and `+http://localhost:8080/static-app/css/style.css+` will serve the correspondent files.
+
+A request to `+http://localhost:8080/static-app/css/+` will list the content of the directory.
+
+To disable directory listing, create a web application <<web-application-files,properties file>> with the following content:
+
+.static-app.properties
+[,properties]
+----
+# Specifies the environment.
+environment=static
+
+# Disables directory listing.
+jetty.deploy.baseResource.dirAllowed=false
+----
+
+[[web-application-format-core]]
+=== Jetty Core Format
+
+For Jetty Core web applications, the web application format is a directory with the following structure:
+
+[,bash]
+----
+core-app
+├── static         # Static files are served from this directory.
+│   ├── css
+│   │   └── styles.css
+│   └── index.html
+├── classes        # Where web application Java classes reside.
+│   └── com
+│       └── acme
+│           └── AcmeHandler.class
+└── lib            # Where web application Java libraries reside.
+    └── acme-util.jar
+----
+
+The structure is similar to that of a `+*.war+` file.
+
+A notable difference with `+*.war+` files is that static files are only served from the `static/` directory (with the `static/` prefix removed).
+This means that files in the directory root, or under any other directory that is not `static/`, are hidden and if requested they will result in a `404 Not Found` response.
+
+This implies that the `classes/` and `lib/` directories are automatically hidden, as well as any other directory such as `includes/` or `fragments/`.
+
+The `classes/` directory stores the web application's `+*.class+` files, while the `lib/` directory stores the web application's libraries.
+
+[[web-application-format-jakarta]]
+=== Jakarta EE Format
+
+For Jakarta EE web applications, the deployment unit is the usual `+*.war+` file or a directory with a `+*.war+` structure.
+
+[[hot-cold]]
+== Hot vs Cold Deployment
+
+You can configure the `deployment-scanner` module to scan the <<monitored-directories, monitored directories>> every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
+
+By default, the scan interval is `0` seconds, which means _cold_ deployment, where the scanning is only performed once, at server startup.
+This means that to deploy a new web application, or redeploy/undeploy an existing web application, you will need to stop and restart the Jetty server.
+
+Setting the scan interval to a value greater than zero means that _hot_ deployment is enabled.
+The <<monitored-directories, monitored directories>> are scanned periodically for file changes.
+
+When a file is added/changed/removed from the deploy directory (by default `$JETTY_BASE/webapps`), then the correspondent web application is processed for deploy/redeploy/undeploy with the <<rules,deployment rules>> detailed below.
+
+When a file is added/changed/removed from the environments directory (by default `$JETTY_BASE/environments`), the file is processed and all web applications deployed to that specific environment are redeployed.
 
 The following command line enables _hot_ deployment by specifying the `jetty.deploy.scanInterval` property on the command line, and therefore only for this particular run:
 
 ----
-$ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=1
+$ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=5
 ----
 
-To make _hot_ deployment configuration persistent, you need to edit the appropriate `<env>-deploy` module configuration file, `$JETTY_BASE/start.d/<env>-deploy.ini` (eg: `ee11-deploy.ini`), uncomment the module property `jetty.deploy.scanInterval` and change the value to `1` second (or greater):
+To make _hot_ deployment configuration persistent, you need to edit the `$JETTY_BASE/start.d/deployment-scanner.ini` module configuration file, and uncomment the property `jetty.deploy.scanInterval` and change the value to `5` seconds:
 
-.<env>-deploy.ini
+.deployment-scanner.ini
 [source,subs=+quotes]
 ----
---module=deploy
-#jetty.deploy.scanInterval=1#
+--module=deployment-scanner
+
+#jetty.deploy.scanInterval=5#
 ...
 ----
+
+When _hot_ deployment is enabled, the scanner may detect changes to multiple files, and will process the changes in the following way:
+
+* Undeploy the web applications that have been removed, if any, in _basename_ [.underline]#reverse# alphabetical order.
+* Redeploy the web applications that have been modified, if any, in _basename_ alphabetical order.
+* Deploy the web applications that have been added, if any, in _basename_ alphabetical order.
 
 [[rules]]
 == Deployment Rules
 
-_Adding_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory to `$JETTY_BASE/webapps` causes the `DeploymentScanner` to deploy the new web application.
+For <<hot-cold,_cold_ deployment>>, the presence of a web application <<web-application-files,_basefile_>> causes its deployment at server startup.
 
-_Updating_ a `+*.war+` file or a Jetty context XML file causes the `DeploymentScanner` to redeploy the web application, which means that the Jetty context component representing the web application is stopped, then reconfigured, and then restarted.
+For <<hot-cold,_hot_ deployment>> the following rules apply:
 
-_Removing_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory from `$JETTY_BASE/webapps` causes the `DeploymentScanner` to undeploy the web application, which means that the Jetty context component representing the web application is stopped and removed from the Jetty server.
+* Adding a new web application _basefile_ that refers to a new _basename_ to the deploy directory (by default `$JETTY_BASE/webapps`) causes the deployment of the new web application.
+For example, adding `mywebapp.war` to an empty `$JETTY_BASE/webapps`.
+* Adding a new web application _basefile_ (such as `mywebapp.xml`), or a web application properties file (such as `mywebapp.properties`) to the deploy directory that refers to an existing _basename_ causes the redeployment of the web application.
+For example, adding `mywebapp.xml` or `mywebapp.properties` when `mywebapp.war` already exists.
+* Changing a file that refers to a _basename_ causes the redeployment of the web application.
+For example, editing or changing `mywebapp.xml`, `mywebapp.war` or `mywebapp.properties`.
+* Removing some, but not all, of the files that refer to the same _basename_ causes the redeployment of the web application.
+For example, removing `mywebapp.xml` or `mywebapp.properties`, but leaving `mywebapp.war`.
+* Removing all the files that refer to the same _basename_ causes the undeployment of the web application.
+For example, removing `mywebapp.xml`, `mywebapp.war` and `mywebapp.properties`.
+
+NOTE: When a web application is deployed as a directory (not as a file), it is not possible to change the directory (for example using the `touch` command) to cause the redeployment of the web application.
+Modification of the files inside the web application directory is not detected as a change.
+You must add at least a `<basename>.properties` file (even empty), and `touch` it to cause redeployment.
+
+In the presence of multiple web application __basefile__s that refers to the same _basename_, for example when both `mywebapp.xml` and `mywebapp.war` exist, or when both `mywebapp.war` and `mywebapp/` exist, then the following rules apply:
+
+* If `<basename>.xml` exists, it has precedence over `<basename>.war` and `<basename>/`, so only `<basename>.xml` will be considered for deployment.
+This allows the XML file to reference the `+*.war+` file or directory and avoid that the web application is deployed twice.
+* Otherwise, if `<basename>.war` exists, it has precedence over `<basename>/`, so only the `+*.war+` file will be considered for deployment.
+This allows the directory with the same _basename_ to be the `+*.war+` file unpack location and avoid that the web application is deployed twice.
+* Otherwise, `<basename>/` exists and will be considered for deployment.
 
 [[rules-context-path]]
 === Context Path Resolution
 
-When a file or directory is added to `$JETTY_BASE/webapps`, the `DeploymentScanner` derives the web application `contextPath` from the file or directory name, with the following rules:
+When a web application is deployed (or redeployed), the web application `contextPath` is derived from the web application <<web-application-files,_basename_>>, with the following rules:
 
-* If the directory name is, for example, `mywebapp/`, it is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as a web application of static content.
-The `contextPath` would be `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
-* If the directory name is `ROOT`, case-insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
-* If the directory name ends with `.d`, for example `config.d/`, it is ignored, although it may be referenced to configure other web applications (for example to store common files).
-* If the `+*.war+` file name is, for example, `mywebapp.war`, it is deployed as a standard web application with the context path `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
-* If the file name is `ROOT.war`, case-insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
-* If both the `mywebapp.war` file and the `mywebapp/` directory exist, only the file is deployed.
-This allows the directory with the same name to be the `+*.war+` file unpack location and avoid that the web application is deployed twice.
-* A <<jetty,Jetty context XML file>> named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`, which could be different from the name of the XML file.
-* If both `mywebapp.xml` and `mywebapp.war` exist, only the XML file is deployed.
-This allows the XML file to reference the `+*.war+` file and avoid that the web application is deployed twice.
+* If `<basename>.xml` exists, it is processed and the directives contained in the XML file can set the `contextPath` to any value (including one that is different from the _basename_).
+* If `<basename>.properties` exists, then the `contextPath` is set to the value of the `jetty.deploy.contextPath` property, if it is present.
+* If the _basename_ is `ROOT`, case-insensitive, the `contextPath` is `/`, and the web application is reachable at `+http://localhost:8080/+`.
+* Otherwise, the `contextPath` is the _basename_, and the web application is reachable at `+http://localhost:8080/<basename>+`.
 
 [[rules-environment]]
 === Environment Resolution
 
-A web application is always deployed to a specific environment, which is either configured for the deployed application or set to the default environment.
+A web application is always deployed to a specific environment, which is either configured explicitly for the web application or set to the default environment.
 
-If only a single specific deployer module is enabled, for example `{ee-current}-deploy`, then it is the default environment and applications will be deployed to it without any additional configuration.
+You must always enable at least one deploy module, otherwise no web application can be deployed.
 
-If multiple deployer modules are enabled, then the default environment is:
+[[rules-environment-single-deployer]]
+==== Single Deployer Environment Resolution
 
-* The most recent Jakarta EE environment of the `{ee-all}-deploy` modules that are enabled.
+If only a single specific deploy module is enabled, for example `{ee-current}-deploy`, then its environment is the default environment and applications will be deployed to that environment without any additional configuration.
+
+If a web application <<web-application-files,properties file>> exists, and it specifies the `environment` property, then its value must specify the same environment as the deploy module, otherwise the deployment will fail.
+
+[CAUTION]
+====
+Make sure that you do not inadvertently mix a deploy module for one environment with a web application of a different environment.
+
+For example, if you have a Jetty `core` web application in directory `core-app/`, and you enable the `static-deploy` module, then the `core-app/` directory will be interpreted as a `static` web application, and files from the `core-app/classes/` directory (that are normally hidden and not served) will be served as static files.
+====
+
+TIP: It is good practice to always specify the web application <<web-application-files,properties file>> and specify the `environment` property, to avoid deployment of your web applications to an unexpected environment.
+
+[[rules-environment-multiple-deployers]]
+==== Multiple Deployers Environment Resolution
+
+If multiple deployer modules are enabled, then the default environment is (in order):
+
+* The most recent Jakarta EE environment of the `{ee-all}-deploy` modules that are enabled, if any.
 * Otherwise, the `core` environment, if the `core-deploy` module is enabled.
-* Otherwise, no deployer environment has been enabled, and therefore no application can be deployed.
+* Otherwise, the `static` environment, if the `static-deploy` module is enabled.
 
 For example, if `core-deploy`, `ee9-deploy` and the `{ee-current}-deploy` modules are enabled, then `{ee-current}` is the default environment, to which applications will be deployed unless otherwise configured (see below).
 
-To configure a specific environment for an application, you add a `+*.properties+` file with the same name of the web application.
+To configure a specific environment for an application, you add a web application <<web-application-files,properties file>> and specify the `environment` property.
+
 For example, an application deployed to `$JETTY_BASE/webapps/my-ee9-app.war` is configured with the file `$JETTY_BASE/webapps/my-ee9-app.properties`, with the following content:
 
 .my-ee9-app.properties
@@ -123,27 +273,29 @@ For example, an application deployed to `$JETTY_BASE/webapps/my-ee9-app.war` is 
 environment=ee9
 ----
 
-In case of simultaneous multiple deployer environments, it is good practice to always specify the `+*.properties+` file for your web applications.
+TIP: In case of multiple deploy environments, it is good practice to always specify the web application <<web-application-files,properties file>> for your web applications, and specify the `environment` property, to avoid deployment of your web applications to an unexpected environment.
 
 [CAUTION]
 ====
-If you do *not* specify the `+*.properties+` file for your web applications, then the deployer for the default environment will be used.
+If you do *not* specify the `environment` property in the web application <<web-application-files,properties file>> for your web applications, then the deployer for the default environment will be used.
 
-For example, if you have enabled the deployer Jetty module for all Jakarta EE versions, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed by the {ee-current-caps} deployer, with unspecified results.
+For example, if the `{ee-current}-deploy` and the `ee9-deploy` module are enabled, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed to the (default) `{ee-current}` environment, with unspecified results.
 
 This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
 ====
+
+Also in case of multiple deployers, if a web application <<web-application-files,properties file>> specifies an `environment` property, and the corresponding deploy module is not enabled, the deployment will fail.
 
 [[context-xml]]
 == Deploying Jetty Context XML Files
 
 A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
 
-NOTE: Recall that the `DeploymentScanner` component of the Jetty `deployment-scanner` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
+NOTE: Recall that the <<rules,deployment rules>> give priority to Jetty context XML files over `+*.war+` files or directories.
 
-To deploy a web application using a Jetty context XML file, simply place the file in the `$JETTY_BASE/webapps` directory.
+To deploy a web application using a Jetty context XML file, simply place the Jetty context XML file in the `$JETTY_BASE/webapps` directory.
 
-A simple Jetty context XML file, for example named `wiki.xml` is the following:
+For example, to deploy a Jakarta {ee-current-caps} web application, enable the `{ee-current}-deploy` module, and add the following Jetty context XML file, named `wiki.xml`:
 
 .wiki.xml
 [,xml,subs=attributes+]
@@ -156,11 +308,11 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
   <Set name="war">/opt/myapps/myapp.war</Set> <!--3-->
 </Configure>
 ----
-<1> Configures a link:{javadoc-url}/org/eclipse/jetty/{ee-current}/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
-<2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
-<3> Specifies the file system path of the `+*.war+` file.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/{ee-current}/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application for Jakarta {ee-current-caps}.
+<2> Specifies the web application `contextPath`, which may be different from the _basename_ derived from `wiki.xml`.
+<3> Specifies the file system path of the `+*.war+` file (which may be external to `$JETTY_BASE`).
 
-The Jetty content XML file may be accompanied by a `+*.properties+` file that specifies the xref:deploy/index.adoc[environment] to use for the deployment:
+The Jetty context XML file may be accompanied by a web application <<web-application-files,properties file>> that specifies the xref:deploy/index.adoc[environment] to use for the deployment:
 
 .wiki.properties
 [,properties,subs=attributes+]
@@ -172,23 +324,25 @@ Refer to <<rules-environment,this section>> for more information about specifyin
 
 The `$JETTY_BASE` directory would look like this:
 
+[,subs=+attributes]
 ----
 $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties
 ├── start.d
-│   ├── deploy.ini
+│   ├── ...
+│   ├── {ee-current}-deploy.ini
 │   └── http.ini
 └── webapps
     ├── wiki.properties
     └── wiki.xml
 ----
 
-TIP: The `+*.war+` file may be placed anywhere in the file system and does not need to be placed in the `$JETTY_BASE/webapps` directory.
+TIP: The `+*.war+` file may be placed anywhere in the file system and does not need to be placed in the `$JETTY_BASE/webapps` directory, as long as you have a Jetty context XML file referencing it.
 
-IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must have the same file name, for example `wiki.xml` and `wiki.war`, so that the `DeploymentScanner` deploys the web application only once using the Jetty context XML file (and not the `+*.war+` file).
+IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must produce the same _basename_, for example `wiki.xml` and `wiki.war`, so that the deployment is performed only once using the Jetty context XML file (and not the `+*.war+` file).
 
-You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using system properties:
+You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using properties declared in `wiki.properties` or JVM system properties:
 
 .wiki.xml
 [,xml,subs=attributes+]
@@ -197,129 +351,119 @@ You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to har
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
-  <Set name="contextPath">/wiki</Set>
-  <Set name="war"><SystemProperty name="myapps.dir"/>/myapp.war</Set>
+  <Set name="contextPath"><Property name="wiki.contextPath"/></Set>
+  <Set name="war"><SystemProperty name="webapps.dir"/>/myapp.war</Set>
 </Configure>
 ----
 
-Note how the `+*.war+` file path is now obtained by resolving the system property `myapps.dir` that you can specify on the command line when you start Jetty:
+Note how the `contextPath` is obtained from the `wiki.contextPath` configuration property (as an alternative to the `jetty.deploy.contextPath` property specified in <<web-application-files,this section>>), while `+*.war+` file path is obtained by resolving the system property `webapps.dir` that you can specify on the command line when you start Jetty:
 
+.wiki.properties
+[,properties,subs=+attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
-----
-
-[[env-context-xml]]
-== Deploying Environment Specific Context XML Files
-
-xref:xml/index.adoc[Jetty context XML file] files can be applied to _all_ webapps deployed to a particular `environment`.
-
-Add a properties file to the deployment directory that contains a property naming the location of the xml file to apply.
-The properties file name must be prefixed by the name of the `environment`.
-For example `$JETTY_BASE/environments/ee8.properties`, `$JETTY_BASE/environments/ee8-more.properties` and `$JETTY_BASE/environments/ee8-other.properties` would all apply to all contexts deployed in the `ee8` environment.
-
-If the property file(s) contain one or more properties whose names are prefixed with `org.eclipse.jetty.deploy.environmentXml`, then their values are used as additional context XML files to apply to all contexts deployed in the corresponding environment.
-So for example `org.eclipse.jetty.deploy.environmentXml, org.eclipse.jetty.deploy.environmentXml.more, org.eclipse.jetty.deploy.environmentXml.other` are all acceptable as names.
-Each property configures the location of a context XML file to apply to a context when it is being created and deployed.
-The location may be either absolute or relative to _the parent of the deployment directory_.
-So if your webapp deployment directory is `$JETTY_BASE/webapps`, then `$JETTY_BASE` will be used to resolve any relative filenames.
-
-All environment-specific Jetty context XML files will be applied to the webapp _before_ any context XML file associated with the webapp.
-The order in which they are applied is determined by _the name of the properties that define them_.
-
-IMPORTANT: The contents of the environment specific context XML file may only contain references to classes appropriate for that environment.
-
-The `core-environment`, `ee8-environment`, ..., and `{ee-current}-environment` modules, each create template configuration files for the appropriate environment in the `$JETTY_BASE/environments/` directory.
-
-For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and its accompanying `$JETTY_BASE/webapps/wiki.properties` file that declares the `wiki` webapp should be deployed to environment `{ee-current}`, files called `$JETTY_BASE/webapps/{ee-current}.properties` and `$JETTY_BASE/webapps/{ee-current}-feature.properties` can be defined to further configure the webapp.
-
-The `{ee-current}.properties` file contains:
-
-.{ee-current}.properties
-[,properties,subs=attributes+]
-----
-jetty.deploy.environmentXml=etc/{ee-current}-context.xml
+environment={ee-current}
+wiki.contextPath=/wiki
 ----
 
-The `{ee-current}-feature.properties` file contains:
-
-.{ee-current}-feature.properties
-[,properties,subs=attributes+]
+[,bash]
 ----
-jetty.deploy.environmentXml.feature=etc/{ee-current}-feature.xml
+$ java -jar $JETTY_HOME/start.jar -Dwebapps.dir=/opt/myapps
 ----
 
-The `{ee-current}-context.xml` file contains:
+Properties specified in environment properties file (described in <<environment-configuration,this section>>) and in the web application properties file (described in <<web-application-files,this section>>) are available when processing the Jetty context XML file.
 
-.{ee-current}-context.xml
-[,xml,subs="attributes+,+quotes"]
+[[environment-configuration]]
+== Environment Configuration
+
+Environments can be configured via xref:xml/index.adoc[Jetty XML files] or `+*.properties+` files placed in the `$JETTY_HOME/environments` directory.
+
+Each environment configuration is applied to _all_ web applications deployed/redeployed to that `environment`.
+
+The environment configuration files must start with the environment name, and are processed in alphabetical order, for example `{ee-current}.xml`, `{ee-current}-extra.xml` and `{ee-current}-other.xml` are processed in this order, and they all affect the `{ee-current}` environment.
+The same holds for `+*.properties+` files.
+
+The environment-specific Jetty XML files will be applied to the web application _before_ any Jetty context XML file associated with the web application, present in the `$JETTY_HOME/webapps` directory.
+
+IMPORTANT: The contents of the environment specific Jetty context XML file may only contain references to classes appropriate for that environment.
+
+For example, you can have a `$JETTY_HOME/environments/{ee-current}.xml` file with the following content:
+
+.{ee-current}.xml
+[,xml,subs=+attributes]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Call name="setAttribute">
-    <Arg>common</Arg>
+    <Arg>com.acme.{ee-current}.feature</Arg>
     <Arg>value</Arg>
   </Call>
 </Configure>
 ----
 
-The `{ee-current}-feature.xml` file contains:
+The `$JETTY_HOME/environments/{ee-current}-extra.xml` file may contain:
 
-.{ee-current}-feature.xml
-[,xml,subs="attributes+,+quotes"]
+.{ee-current}-extra.xml
+[,xml,subs=+attributes]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Call name="addEventListener">
     <Arg>
-      <New class="com.example.MyListenerFeature"/>
+      <New class="com.acme.MyListenerFeature"/>
     </Arg>
   </Call>
 </Configure>
 ----
 
-
 The directory structure would look like this:
 
-.directory structure
-[,properties,subs=attributes+]
+[,subs=+attributes]
 ----
 $JETTY_BASE
-|- etc
-│  |-{ee-current}-context.xml
-|  |-{ee-current}-feature.xml
-|- webapps
-    |-{ee-current}.properties
-    |-{ee-current}-feature.properties
-    |-wiki.properties
-    |- wiki.xml
+├── environments
+│   ├── {ee-current}.xml
+│   └── {ee-current}-extra.xml
+└── webapps
+    ├── wiki.properties
+    └── wiki.xml
 ----
 
-The contents of the `$JETTY_BASE/etc/{ee-current}-context.xml` then `$JETTY_BASE/etc/{ee-current}-feature.xml` files will be applied to the `wiki` webapp instance _before_ `wiki.xml`, allowing the contents of the latter to override the contents of the former.
+[[jetty-web-xml]]
+== Jetty Context XML Inside `+*.war+` Files
 
-== WEB-INF/jetty-{ee-all}-web.xml
+As discussed <<context-xml,above>>, the deployment of a web application can be specified with a Jetty Context XML file placed in the `$JETTY_HOME/webapps` directory.
 
-As discussed above, a Jetty context XML file can be used to configure a webapp during deployment.
-The webapp can also be configured during its startup phase by a `WEB-INF/jetty-{ee-all}-web.xml` file.
-The contents of this file is the same as a Jetty context XML file.
+However, the web application can also be configured using a Jetty Context XML file placed _inside_ the `+*.war+` file or directory, under the `WEB-INF` directory.
+
+The files must be named either `WEB-INF/jetty-{ee-all}-web.xml` or `WEB-INF/jetty-web.xml`; the latter is only processed if the former(s) are missing.
+
 This file can be useful:
 
-* to place all configuration inside your webapp archive
-* to perform configuration that can only occur _after_ the webapp's classpath has been created
+* To place all configuration inside your web application archive.
+* To perform configuration of the web application that can only occur _after_ the web application's class-path has been created, for example because it references classes present in `WEB-INF/classes` or `WEB-INF/lib`.
 
-TIP: it is good practice to name the file according to the `environment` into which the webapp will be deployed. If your webapp can be deployed to multiple `environments` then you should include a `WEB-INF` file for each one. If you only deploy to a single `environment` then you can omit it from the filename, however be aware that you cannot change environments without updating the contents of the file.
+[TIP]
+====
+It is good practice to name the file according to the environment into which the web application will be deployed.
+
+If your web application can be deployed to multiple environments, then you should include a `WEB-INF/jetty-{ee-all}-web.xml` file for each environment.
+
+If you only deploy to a single environment, then you can omit it from the filename and use `WEB-INF/jetty-web.xml`, but be aware that likely you will not be able to deploy the web application to a different environment without updating the contents of the file.
+====
 
 [[jndi]]
 == Configuring JNDI Entries
 
 A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from the web application `web.xml` file.
-The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], for example a context XML like so:
+
+The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], for example a Jetty context XML like the following:
 
 .mywebapp.xml
-[,xml,subs="attributes+,+quotes"]
+[,xml,subs=+attributes]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
@@ -327,7 +471,7 @@ The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], 
 <Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
-    <New class="org.eclipse.jetty.plus.jndi.Resource">
+  <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/myds</Arg>
      <Arg>
@@ -341,13 +485,13 @@ The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], 
 </Configure>
 ----
 
-For more information and examples on how to use JNDI in Jetty, refer to the xref:jndi/index.adoc[JNDI] feature section.
+For more information and examples on how to use JNDI in Jetty, refer to the xref:jndi/index.adoc[JNDI] section.
 
 [IMPORTANT]
 ====
-Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath .
+Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath.
 
-If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-{ee-all}-env.xml` file - which is applied after the webapp's classpath has been set up - see the xref:jndi/index.adoc[JNDI] feature section for more information and examples.
+If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-{ee-all}-web.xml` file, which is applied after the web application's class-path has been set up (see the xref:jndi/index.adoc[JNDI] section for more information and examples).
 ====
 
 [[virtual-hosts]]
@@ -587,12 +731,3 @@ The format of the additional `web.xml` is exactly the same as a standard `web.xm
 ----
 
 In the example above, you configured the `my-servlet` Servlet (defined in the web application `web.xml`), adding a host specific `init-param` with the IP address of the host.
-
-
-// TODO: move this section to its own file
-// TODO: configuring from the Jetty context XML file happens before web.xml
-//  What about jetty-web.xml? Can this be specified externally, e.g. WebAppContext.setJettyWebXml() ?
-[[init-params]]
-== Configuring ``init-param``s
-
-TODO

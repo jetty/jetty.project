@@ -2909,7 +2909,6 @@
                   org.eclipse.jetty.ee11:jetty-ee11-test.*,
                   org.eclipse.jetty.ee10:jetty-ee10-test.*,
                   org.eclipse.jetty.ee9:jetty-ee9-test.*,
-                  jetty-.*-runner,
                   .*:.*maven.*,
                   jetty-test-http2-client-transport-provided-webapp,
                   .*-osgi-.*,

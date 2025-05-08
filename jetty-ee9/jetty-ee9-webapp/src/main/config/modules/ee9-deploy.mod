@@ -1,7 +1,5 @@
 [description]
-# tag::description[]
-Scans and deploys `ee9` environment webapps from `$JETTY_BASE/webapps` directory.
-# end::description[]
+Scans and deploys `ee9` environment web applications.
 
 [tags]
 deployment

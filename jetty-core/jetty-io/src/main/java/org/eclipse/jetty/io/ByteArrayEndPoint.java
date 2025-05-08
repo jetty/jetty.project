@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -46,7 +48,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
         catch (Throwable x)
         {
-            throw new RuntimeIOException(x);
+            throw ExceptionUtil.asRuntimeException(x);
         }
     }
 
@@ -207,7 +209,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock ignored = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
-                throw new RuntimeIOException(new EOFException());
+                throw new UncheckedIOException(new EOFException());
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
@@ -249,7 +251,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock ignored = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
-                throw new RuntimeIOException(new EOFException());
+                throw new UncheckedIOException(new EOFException());
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {

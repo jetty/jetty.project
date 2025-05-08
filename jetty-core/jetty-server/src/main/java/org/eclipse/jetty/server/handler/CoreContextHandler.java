@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -24,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.FileID;
@@ -169,7 +169,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
         catch (IOException e)
         {
-            throw new RuntimeIOException("Unable to init " + TypeUtil.toShortName(this.getClass()), e);
+            throw new UncheckedIOException("Unable to init " + TypeUtil.toShortName(this.getClass()), e);
         }
     }
 
