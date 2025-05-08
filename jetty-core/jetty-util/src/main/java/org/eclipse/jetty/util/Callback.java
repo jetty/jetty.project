@@ -49,6 +49,36 @@ public interface Callback extends Invocable
     };
 
     /**
+     * Instance of Callback to use in cases where it is known that no one will complete the callback.
+     **/
+    Callback NOT_CALLED = new Callback()
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            throw new IllegalStateException(x);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Callback.NOT_CALLED";
+        }
+    };
+
+    /**
      * <p>Completes this callback with the given {@link CompletableFuture}.</p>
      * <p>When the CompletableFuture completes normally, this callback is succeeded;
      * when the CompletableFuture completes exceptionally, this callback is failed.</p>

@@ -95,6 +95,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -272,11 +273,30 @@ public class ServletApiRequest implements HttpServletRequest
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
             AuthenticationState undeferred = deferred.authenticate(getRequest());
-            if (undeferred != null && undeferred != authenticationState)
-            {
+            if (undeferred != null)
                 authenticationState = undeferred;
-                AuthenticationState.setAuthenticationState(getRequest(), authenticationState);
+        }
+        return authenticationState;
+    }
+
+    private AuthenticationState getUndeferredAuthentication(HttpServletResponse response) throws IOException
+    {
+        AuthenticationState authenticationState = getAuthentication();
+        if (authenticationState instanceof AuthenticationState.Deferred deferred)
+        {
+            AuthenticationState undeferred;
+            try (Blocker.Callback callback = Blocker.callback())
+            {
+                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, false);
+                undeferred = deferred.authenticate(getRequest(), wrappedCoreResponse, callback);
+                if (undeferred instanceof AuthenticationState.ResponseSent)
+                    callback.block();
+                else
+                    callback.succeeded();
             }
+
+            if (undeferred != null)
+                authenticationState = undeferred;
         }
         return authenticationState;
     }
@@ -593,10 +613,10 @@ public class ServletApiRequest implements HttpServletRequest
             return true;
 
         // Get the AuthenticationState to resolve the reason why Authentication failed.
-        AuthenticationState authenticationState = getAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthentication(response);
 
         // A response has been sent by the Authenticator.
-        if (!(authenticationState instanceof AuthenticationState.ResponseSent))
+        if (authenticationState instanceof AuthenticationState.ResponseSent)
             return false;
 
         // The Authenticator could not resolve deferred auth, the response may already be committed.
