@@ -1,5 +1,5 @@
 [description]
-This module enables web application context scanning of the `$JETTY_BASE/webapps` directory.
+This module enables scanning of the `$JETTY_BASE/webapps` directory to deploy web applications discovered during the scanning.
 
 [tags]
 deployment
@@ -19,20 +19,22 @@ environments/
 etc/jetty-deployment-scanner.xml
 
 [ini-template]
-## Monitored directory name (relative to $jetty.base)
+#tag::documentation[]
+## The web application deploy directory name (relative to $JETTY_BASE).
 # jetty.deploy.monitoredDir=webapps
 
-# Defer Initial Scan
-# true to have the initial scan deferred until the Server component is started.
-#      Note: deploy failures do not fail server startup in a deferred initial scan mode.
-# false (default) to have initial scan occur as normal.
-# jetty.deploy.deferInitialScan=false
+## The environments directory name (relative to $JETTY_BASE).
+# This is where environment specific configuration files are stored.
+# jetty.deploy.environmentsDir=environments
 
-## Monitored directory scan period (seconds)
-# value of 0 is hot-redeploy disabled
-# value of 1 or more will enable hot-redeploy
+## Monitored directories scan period (seconds).
+## The value of 0 (default) disables hot deploy/redeploy/undeploy.
+## Positive values enable hot deploy/redeploy/undeploy.
 # jetty.deploy.scanInterval=0
 
-## Environments directory name (relative to $jetty.base)
-# This is where environment specific configurations are stored.
-# jetty.deploy.environmentsDir=environments
+## Whether to defer the initial scan at startup.
+## Set it to true to have the initial scan deferred until the Server component is started.
+## In this way, deploy failures do not fail the Server startup.
+## Set it to false (default) to have initial scan occur during Server startup.
+# jetty.deploy.deferInitialScan=false
+#end::documentation[]

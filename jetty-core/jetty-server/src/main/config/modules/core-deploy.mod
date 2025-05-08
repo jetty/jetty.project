@@ -1,7 +1,5 @@
 [description]
-# tag::description[]
-Scans and deploys `core` environment contexts from `$JETTY_BASE/webapps` directory.
-# end::description[]
+Scans and deploys Jetty `core` environment web applications.
 
 [tags]
 deployment

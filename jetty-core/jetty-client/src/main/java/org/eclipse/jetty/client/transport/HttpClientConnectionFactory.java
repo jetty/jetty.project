@@ -19,6 +19,7 @@ import java.util.Map;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
@@ -82,7 +83,7 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
         @Override
         public String toString()
         {
-            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
+            return String.format("%s@%x%s", TypeUtil.toShortName(getClass()), hashCode(), protocols);
         }
     }
 }

@@ -110,7 +110,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
         Throwable t = assertThrows(DeploymentException.class, () ->
             assertOnMessageInvocation(new MessageSessionSocket(),
                 allOf(
-                    containsString("onMessage(JakartaWebSocketSession@"),
+                    containsString("onMessage(oeje11wjc.JakartaWebSocketSession@"),
                     containsString(MessageSessionSocket.class.getName())
                 ))
         );
@@ -132,7 +132,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
             allOf(
-                containsString("onMessage(JakartaWebSocketSession@"),
+                containsString("onMessage(oeje11wjc.JakartaWebSocketSession@"),
                 containsString(MessageSessionByteBufferSocket.class.getName())
             ));
     }

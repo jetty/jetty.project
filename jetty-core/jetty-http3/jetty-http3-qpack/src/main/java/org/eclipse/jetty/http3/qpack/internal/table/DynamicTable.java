@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 
 public class DynamicTable implements Iterable<Entry>, Dumpable
@@ -280,6 +281,6 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{entries=%d,size=%d,max=%d}", getClass().getSimpleName(), hashCode(), getNumEntries(), _size, _capacity);
+        return String.format("%s@%x{entries=%d,size=%d,max=%d}", TypeUtil.toShortName(getClass()), hashCode(), getNumEntries(), _size, _capacity);
     }
 }

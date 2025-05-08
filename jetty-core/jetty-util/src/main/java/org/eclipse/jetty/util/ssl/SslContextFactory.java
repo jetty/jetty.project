@@ -2049,7 +2049,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     public String toString()
     {
         return String.format("%s@%x[provider=%s,keyStore=%s,trustStore=%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _sslProvider,
             _keyStoreResource,

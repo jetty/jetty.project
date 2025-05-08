@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -343,7 +344,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         public String toString()
         {
             return "%s@%x[rc=%s,l=%b,b=%s]".formatted(
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 referenceCounter == null ? "-" : referenceCounter.get(),
                 isLast(),

@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +108,6 @@ public class StateLifeCycleListener implements LifeCycle.Listener
     @Override
     public String toString()
     {
-        return String.format("%s@%h", this.getClass().getSimpleName(), this);
+        return String.format("%s@%h", TypeUtil.toShortName(this.getClass()), this);
     }
 }

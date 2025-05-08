@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -276,7 +277,7 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
     public String toString()
     {
         return String.format("%s@%x{reserved=%d/%d,pending=%d}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             _count.getLo(),
             _capacity,
@@ -426,7 +427,7 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
         public String toString()
         {
             return String.format("%s@%x{%s,thread=%s}",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 _state,
                 _thread);

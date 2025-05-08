@@ -33,6 +33,7 @@ import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.plus.jndi.Resource;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ public class TestNamingEntries
         @Override
         public String toString()
         {
-            return this.getClass().getName() + "@" + super.hashCode();
+            return TypeUtil.toShortName(this.getClass()) + "@" + super.hashCode();
         }
     }
 

@@ -805,7 +805,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=3,r=2,"));
-        assertThat(dump, containsString("[ReservedThreadExecutor@"));
+        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
 
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch waiting = new CountDownLatch(1);
@@ -827,14 +827,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("[ReservedThreadExecutor@"));
+        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(0));
 
         pool.setDetailedDump(true);
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("[ReservedThreadExecutor@"));
+        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -853,7 +853,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("[ReservedThreadExecutor@"));
+        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
         assertThat(count(dump, "> ReservedThread@"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(2));
         latch.countDown();

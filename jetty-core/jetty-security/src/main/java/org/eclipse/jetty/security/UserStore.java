@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.Credential;
 
@@ -81,6 +82,6 @@ public class UserStore extends ContainerLifeCycle
     @Override
     public String toString()
     {
-        return String.format("%s@%x[users.count=%d]", getClass().getSimpleName(), hashCode(), _users.size());
+        return String.format("%s@%x[users.count=%d]", TypeUtil.toShortName(getClass()), hashCode(), _users.size());
     }
 }

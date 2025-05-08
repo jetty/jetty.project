@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -213,7 +214,7 @@ public class WebAppPropertyConverter
         // - the tmp directory
         str = webAppProperties.getProperty(TMP_DIR);
         if (!StringUtil.isBlank(str))
-            webApp.setTempDirectory(new File(str.trim()));
+            webApp.setTempDirectory(IO.asFile(str));
 
         str = webAppProperties.getProperty(TMP_DIR_PERSIST);
         if (!StringUtil.isBlank(str))

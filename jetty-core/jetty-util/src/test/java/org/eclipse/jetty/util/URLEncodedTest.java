@@ -40,7 +40,6 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 /**
  * URL Encoding / Decoding Tests
  */
-// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class URLEncodedTest
 {
     @TestFactory
@@ -96,10 +95,10 @@ public class URLEncodedTest
         {
             MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            UrlEncoded.decodeTo("Name4=V\u0629lue+4%21", urlEncoded, UrlEncoded.ENCODING);
+            UrlEncoded.decodeTo("Name4=Vةlue+4%21", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
             assertEquals("Name4=V%D8%A9lue+4%21", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "encoded encode");
-            assertEquals("V\u0629lue 4!", urlEncoded.getString("Name4"), "encoded get");
+            assertEquals("Vةlue 4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("encoded param 1", () ->
@@ -168,7 +167,7 @@ public class URLEncodedTest
                 {StandardCharsets.UTF_8.name(), null, "%30"},
                 {StandardCharsets.ISO_8859_1.name(), StandardCharsets.ISO_8859_1.name(), "%30"},
                 {StandardCharsets.UTF_8.name(), StandardCharsets.UTF_8.name(), "%30"},
-                {StandardCharsets.UTF_16.name(), StandardCharsets.UTF_16.name(), "%00%30"},
+                {StandardCharsets.UTF_16.name(), StandardCharsets.UTF_16.name(), "%FE%FF%00%30"},
             };
 
         // Note: "%30" -> decode -> "0"
@@ -180,7 +179,7 @@ public class URLEncodedTest
             tests.add(dynamicTest(params[0] + ">" + params[1] + "|" + params[2],
                 () ->
                 {
-                    try (ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+" + params[2] + "&name1=&name2&n\u00e3me3=value+3").getBytes(params[0])))
+                    try (ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+" + params[2] + "&name1=&name2&nãme3=value+3").getBytes(params[0])))
                     {
                         MultiMap<String> m = new MultiMap<>();
                         UrlEncoded.decodeTo(in, m, params[1] == null ? null : Charset.forName(params[1]), -1, -1);
@@ -188,7 +187,7 @@ public class URLEncodedTest
                         assertThat(params[1] + " stream name\\n", m.getString("name\n"), is("value 0"));
                         assertThat(params[1] + " stream name1", m.getString("name1"), is(""));
                         assertThat(params[1] + " stream name2", m.getString("name2"), is(""));
-                        assertThat(params[1] + " stream n\u00e3me3", m.getString("n\u00e3me3"), is("value 3"));
+                        assertThat(params[1] + " stream nãme3", m.getString("nãme3"), is("value 3"));
                     }
                 }
             ));
@@ -196,15 +195,17 @@ public class URLEncodedTest
 
         if (java.nio.charset.Charset.isSupported("Shift_JIS"))
         {
+            Charset jisCharset = Charset.forName("Shift_JIS");
             tests.add(dynamicTest("Shift_JIS",
                 () ->
                 {
-                    try (ByteArrayInputStream in2 = new ByteArrayInputStream("name=%83e%83X%83g".getBytes(StandardCharsets.ISO_8859_1)))
+                    try (ByteArrayInputStream in2 = new ByteArrayInputStream("name=%82%B1%82%F1%82%C9%82%BF%82%CD".getBytes(jisCharset)))
                     {
                         MultiMap<String> m2 = new MultiMap<>();
-                        UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1, -1);
+                        UrlEncoded.decodeTo(in2, m2, jisCharset, -1, -1);
+                        String helloInJapanese = "こんにちは";
                         assertEquals(1, m2.size(), "stream length");
-                        assertEquals("\u30c6\u30b9\u30c8", m2.getString("name"), "stream name");
+                        assertEquals(helloInJapanese, m2.getString("name"), "stream name");
                     }
                 }
             ));
@@ -253,7 +254,7 @@ public class URLEncodedTest
         // Should be "testä"
         // "test" followed by a LATIN SMALL LETTER A WITH DIAERESIS
 
-        String expected = "test\u00e4";
+        String expected = "testä";
         assertThat(urlEncoded.getString("text"), is(expected));
     }
 

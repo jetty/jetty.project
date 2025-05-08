@@ -46,6 +46,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -317,7 +318,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public String toString()
     {
         return String.format("%s@%x(closed=%b)[%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             isClosed(),
             session);

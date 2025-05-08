@@ -71,9 +71,11 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -82,7 +84,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject
-public abstract class HTTP2Session extends ContainerLifeCycle implements Session, Parser.Listener
+public abstract class HTTP2Session extends AbstractLifeCycle implements Session, Parser.Listener, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
     // SPEC: stream numbers can go up to 2^31-1, but increment by 2.
@@ -137,8 +139,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.writeThreshold = 32 * 1024;
         this.pushEnabled = true; // SPEC: by default, push is enabled.
-        installBean(flowControl);
-        installBean(flusher);
     }
 
     @Override
@@ -174,6 +174,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         super.doStop();
         streamsState.halt("stop");
+    }
+
+    public int getFrameQueueSize()
+    {
+        return flusher.getFrameQueueSize();
     }
 
     @ManagedAttribute(value = "The flow control strategy", readonly = true)
@@ -1391,14 +1396,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new DumpableCollection("streams", streams.values()));
+        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, new DumpableCollection("streams", streams.values()));
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress(),

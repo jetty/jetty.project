@@ -14,12 +14,10 @@
 package org.eclipse.jetty.server;
 
 import java.io.File;
-import java.util.Comparator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Interface that can be implemented by a {@link ContextHandler}
@@ -28,33 +26,13 @@ import org.eclipse.jetty.util.Attributes;
  */
 public interface Deployable
 {
-    Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
-
     /**
-     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
-     * EE names are compared by EE number, otherwise simple name comparison is used.
+     * Deprecated attribute key prefix.
+     * No longer used.
+     * @deprecated no replacement.
      */
-    Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
-    {
-        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
-        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
-
-        if (m1.matches())
-        {
-            if (m2.matches())
-            {
-                int n1 = Integer.parseInt(m1.group(1));
-                int n2 = Integer.parseInt(m2.group(1));
-                return Integer.compare(n1, n2);
-            }
-            return 1;
-        }
-        if (m2.matches())
-            return -1;
-
-        return e1.compareTo(e2);
-    };
-
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
     /**
      * <p>Attribute key name: Temp Directory for context.</p>
      *
@@ -63,6 +41,22 @@ public interface Deployable
      * @see ContextHandler#setTempDirectory(File)
      */
     String TEMP_DIR = "jetty.deploy.tempDir";
+    /**
+     * <p>Attribute key name: Base Resource for context.</p>
+     *
+     * <p>Value can be a {@link java.net.URI}, {@code String}, {@link java.nio.file.Path}, or {@link org.eclipse.jetty.util.resource.Resource}</p>
+     *
+     * @see ContextHandler#setBaseResource(Resource)
+     */
+    String BASE_RESOURCE = "jetty.deploy.baseResource";
+    /**
+     * <p>Attribute key name: Configure Directory Listing for Base Resource.</p>
+     *
+     * <p>Value is a {@link Boolean}, or {@code String}</p>
+     *
+     * @see org.eclipse.jetty.server.handler.ResourceHandler#setDirAllowed(boolean)
+     */
+    String DIR_ALLOWED = "jetty.deploy.baseResource.dirAllowed";
     /**
      * <p>Attribute key name: The Configuration Classes for EE based deployments.</p>
      *
@@ -96,6 +90,13 @@ public interface Deployable
      */
     String DEFAULT_CONTEXT_PATH = "jetty.deploy.defaultContextPath";
     /**
+     * Deprecated context handler class attribute key.
+     *
+     * @deprecated no longer used. see DeploymentScanner EnvironmentConfig for new location.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    /**
      * <p>Attribute key name: Specifies the default descriptor to user for EE based deployments.</p>
      *
      * <p>Non-EE deployments will not use this configuration.</p>
@@ -103,6 +104,20 @@ public interface Deployable
      * <p>Value is a {@code String} pointing to a filesystem path</p>
      */
     String DEFAULTS_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
+    /**
+     * Deprecated environment attribute key.
+     * @deprecated no longer used by {@link Deployable#initializeDefaults(Attributes)}, functionality
+     *             still exists in properties files, but is now managed by DeploymentScanner.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ENVIRONMENT = "environment";
+    /**
+     * Deprecated environment XML attribute key prefix.
+     * @deprecated no longer used by {@link Deployable#initializeDefaults(Attributes)}, functionality
+     *             exists as a {@code ${jetty.base}/environments/*.xml} feature instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
     /**
      * <p>Attribute key name: Specifies the flag to extract/unpack a WAR file for EE based deployments.</p>
      *

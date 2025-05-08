@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.proxy;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -44,13 +45,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -798,7 +799,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
             catch (IOException x)
             {
-                throw new RuntimeIOException(x);
+                throw new UncheckedIOException(x);
             }
         }
 
@@ -894,7 +895,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public String toString()
         {
-            return "%s@%x[buffer=%s,callback=%s]".formatted(getClass().getSimpleName(), hashCode(), buffer, callback);
+            return "%s@%x[buffer=%s,callback=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), buffer, callback);
         }
     }
 }

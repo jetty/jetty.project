@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -718,7 +719,7 @@ public class ResponseListeners
             @Override
             public String toString()
             {
-                return "%s@%x[i=%d,d=%s,c=%s,s=%s]".formatted(getClass().getSimpleName(), hashCode(), index, demandCallbackRef, chunk, state);
+                return "%s@%x[i=%d,d=%s,c=%s,s=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), index, demandCallbackRef, chunk, state);
             }
         }
 

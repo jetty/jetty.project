@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -59,7 +60,15 @@ public class SessionContainer extends AbstractLifeCycle implements EventListener
     @Override
     public void onDisconnect(Session session)
     {
-        sessions.remove(session);
+        lock.readLock().lock();
+        try
+        {
+            sessions.remove(session);
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
@@ -113,5 +122,11 @@ public class SessionContainer extends AbstractLifeCycle implements EventListener
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, new DumpableCollection("sessions", sessions));
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[size=%d]", TypeUtil.toShortName(getClass()), hashCode(), sessions.size());
     }
 }

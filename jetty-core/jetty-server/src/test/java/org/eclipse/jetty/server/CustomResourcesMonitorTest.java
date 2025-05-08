@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.handler.DumpHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -168,7 +169,7 @@ public class CustomResourcesMonitorTest
         @Override
         public String toString()
         {
-            return getClass().getName();
+            return TypeUtil.toShortName(getClass());
         }
     }
 }

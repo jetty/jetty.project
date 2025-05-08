@@ -62,6 +62,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -1020,7 +1021,7 @@ public interface Request extends Attributes, Content.Source
         @Override
         public String toString()
         {
-            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+            return "%s@%x{%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
         }
     }
 

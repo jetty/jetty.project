@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -375,7 +376,7 @@ public class CyclicTimeoutsTest
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%sms]", getClass().getSimpleName(), hashCode(), asString);
+            return String.format("%s@%x[%sms]", TypeUtil.toShortName(getClass()), hashCode(), asString);
         }
     }
 
@@ -397,7 +398,7 @@ public class CyclicTimeoutsTest
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%dms]", getClass().getSimpleName(), hashCode(), NanoTime.millisUntil(expireNanoTime));
+            return String.format("%s@%x[%dms]", TypeUtil.toShortName(getClass()), hashCode(), NanoTime.millisUntil(expireNanoTime));
         }
     }
 }

@@ -43,6 +43,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -385,7 +386,7 @@ class MetaData
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s, attrs=%s, opers=%s]", getClass().getSimpleName(), hashCode(),
+        return String.format("%s@%x[%s, attrs=%s, opers=%s]", TypeUtil.toShortName(getClass()), hashCode(),
             _klass.getName(), _attributes.keySet(), _operations.keySet());
     }
 
@@ -513,7 +514,7 @@ class MetaData
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,proxied=%b,convert=%b,info=%s]", getClass().getSimpleName(), hashCode(),
+            return String.format("%s@%x[%s,proxied=%b,convert=%b,info=%s]", TypeUtil.toShortName(getClass()), hashCode(),
                 _name, _proxied, _convert, _info);
         }
     }
@@ -599,7 +600,7 @@ class MetaData
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
+            return String.format("%s@%x[%s,proxied=%b,convert=%b]", TypeUtil.toShortName(getClass()), hashCode(),
                 _name, _proxied, _convert);
         }
     }

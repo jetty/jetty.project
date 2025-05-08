@@ -20,6 +20,7 @@ import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class DuplicateInstruction implements Instruction
 {
@@ -51,6 +52,6 @@ public class DuplicateInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x[index=%d]", getClass().getSimpleName(), hashCode(), getIndex());
+        return String.format("%s@%x[index=%d]", TypeUtil.toShortName(getClass()), hashCode(), getIndex());
     }
 }

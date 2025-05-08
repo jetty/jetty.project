@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -254,7 +255,7 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
     public String toString()
     {
         return String.format("%s@%x{capacity=%d,threads=%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getCapacity(),
             _threads);
@@ -380,7 +381,7 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
         public String toString()
         {
             return String.format("%s@%x{thread=%s}",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 _thread);
         }

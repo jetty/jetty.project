@@ -27,9 +27,11 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -249,6 +251,18 @@ public class ShutdownMonitor
         }
     }
 
+    // For test purposes only.
+    protected boolean await(long time, TimeUnit unit) throws InterruptedException
+    {
+        try (AutoLock.WithCondition l = _lock.lock())
+        {
+            if (alive)
+                return l.await(time, unit);
+            else
+                return true;
+        }
+    }
+
     protected boolean isAlive()
     {
         try (AutoLock l = _lock.lock())
@@ -315,7 +329,7 @@ public class ShutdownMonitor
     @Override
     public String toString()
     {
-        return String.format("%s[port=%d,alive=%b]", this.getClass().getName(), getPort(), isAlive());
+        return String.format("%s[port=%d,alive=%b]", TypeUtil.toShortName(this.getClass()), getPort(), isAlive());
     }
 
     /**

@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -402,7 +403,7 @@ public class WebSocketProxyTest
         @Override
         public String toString()
         {
-            return String.format("[%s@%x]", getClass().getSimpleName(), hashCode());
+            return String.format("[%s@%x]", TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 

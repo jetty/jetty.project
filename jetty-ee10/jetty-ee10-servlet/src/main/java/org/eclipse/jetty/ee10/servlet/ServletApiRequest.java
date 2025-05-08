@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -82,7 +83,6 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -101,6 +101,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -1313,7 +1314,7 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-                            throw new RuntimeIOException(msg, e);
+                            throw new UncheckedIOException(msg, e);
                         }
                         catch (ServletException e)
                         {
@@ -1324,7 +1325,10 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-                            throw new RuntimeIOException(msg, e);
+
+                            if (cause instanceof IOException ioe)
+                                throw new UncheckedIOException(msg, ioe);
+                            throw new RuntimeException(msg, e);
                         }
                     }
                     else
@@ -1732,7 +1736,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String toString()
     {
-        return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), _servletContextRequest);
+        return "%s@%x{%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _servletContextRequest);
     }
 
     static class AmbiguousURI extends ServletApiRequest

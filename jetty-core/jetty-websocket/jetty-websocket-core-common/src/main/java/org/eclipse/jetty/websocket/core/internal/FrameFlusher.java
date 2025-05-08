@@ -538,7 +538,7 @@ public class FrameFlusher extends IteratingCallback
         @Override
         public String toString()
         {
-            return String.format("%s{%s,%s,%b}", getClass().getSimpleName(), frame, callback, batch);
+            return String.format("%s{%s,%s,%b}", TypeUtil.toShortName(getClass()), frame, callback, batch);
         }
     }
 }

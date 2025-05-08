@@ -22,6 +22,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -912,7 +913,7 @@ public interface HttpCookie
      */
     static String toString(HttpCookie httpCookie)
     {
-        return "%s@%x[%s]".formatted(httpCookie.getClass().getSimpleName(), httpCookie.hashCode(), asString(httpCookie));
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(httpCookie.getClass()), httpCookie.hashCode(), asString(httpCookie));
     }
 
     /**
