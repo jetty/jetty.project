@@ -3905,7 +3905,7 @@ public class HttpParserTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testBadWhiteSpace(Scenario scenario)
+    public void testWhiteSpaceInParameter(Scenario scenario)
     {
         HttpParser.RequestHandler handler = new Handler();
 

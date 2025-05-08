@@ -166,22 +166,4 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         }
         return list.toString();
     }
-
-    public static class AllowsBadWhiteSpace extends QuotedCSV
-    {
-        @Override
-        protected void onBadWhiteSpace()
-        {
-        }
-
-        public AllowsBadWhiteSpace(boolean keepQuotes, String... values)
-        {
-            super(keepQuotes, values);
-        }
-
-        public AllowsBadWhiteSpace(String... values)
-        {
-            super(values);
-        }
-    }
 }

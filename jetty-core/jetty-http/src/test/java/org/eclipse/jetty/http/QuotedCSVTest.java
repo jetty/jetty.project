@@ -41,7 +41,16 @@ public class QuotedCSVTest
     @Test
     public void testAllowedBWS()
     {
-        QuotedCSV values = new QuotedCSV.AllowsBadWhiteSpace(true);
+        QuotedCSV values = new QuotedCSV(true)
+        {
+            @Override
+            protected void onComplianceViolation(ComplianceViolation violation)
+            {
+                if (HttpCompliance.Violation.WHITESPACE_IN_PARAMETER.equals(violation))
+                    return;
+                super.onComplianceViolation(violation);
+            }
+        };
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
         assertThat(values, Matchers.contains(
             "value 0.5;pqy=vwz;q=0.5",

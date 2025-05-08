@@ -124,7 +124,7 @@ public abstract class QuotedCSVParser
                     if (buffer.length() > lastLength) // not leading OWS
                         buffer.append(c);
                     else if (state == State.PARAM_VALUE)
-                        onBadWhiteSpace();
+                        onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                     continue;
 
                 case '"':
@@ -165,7 +165,6 @@ public abstract class QuotedCSVParser
                         {
                             case VALUE:
                                 parsedValue(buffer);
-                                valueLength = buffer.length();
                                 break;
                             case PARAM_NAME:
                             case PARAM_VALUE:
@@ -191,7 +190,7 @@ public abstract class QuotedCSVParser
                             // It wasn't really a value, it was a param name
                             paramName = 0;
                             if (nwsLength != buffer.length())
-                                onBadWhiteSpace();
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
 
                             buffer.setLength(nwsLength); // trim following OWS
                             final String param = buffer.toString();
@@ -206,7 +205,7 @@ public abstract class QuotedCSVParser
 
                         case PARAM_NAME:
                             if (nwsLength != buffer.length())
-                                onBadWhiteSpace();
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                             buffer.setLength(nwsLength); // trim following OWS
                             buffer.append(c);
                             lastLength = ++nwsLength;
@@ -294,8 +293,8 @@ public abstract class QuotedCSVParser
     /**
      * Called when a parameter has been parsed with bad white space
      */
-    protected void onBadWhiteSpace()
+    protected void onComplianceViolation(ComplianceViolation violation)
     {
-        throw new IllegalArgumentException("Bad white space");
+        throw new IllegalArgumentException(violation.getDescription());
     }
 }

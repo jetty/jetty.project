@@ -138,6 +138,7 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void initialize()
     {
+        // TODO this should be moved somewhere common?
         List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
         _complianceViolationListener = switch (listeners.size())
         {

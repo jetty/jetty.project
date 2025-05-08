@@ -773,6 +773,24 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Utility to notify a violation for the appropriate compliance mode
+     *
+     * @param violation The violation to notify
+     * @param details Details of the violation
+     */
+    public void notifyViolation(ComplianceViolation violation, String details)
+    {
+        if (violation instanceof UriCompliance.Violation)
+            ComplianceViolation.notify(getComplianceViolationListeners(), getUriCompliance(), violation, details);
+        else if (violation instanceof HttpCompliance.Violation)
+            ComplianceViolation.notify(getComplianceViolationListeners(), getHttpCompliance(), violation, details);
+        else if (violation instanceof MultiPartCompliance.Violation)
+            ComplianceViolation.notify(getComplianceViolationListeners(), getMultiPartCompliance(), violation, details);
+        else if (violation instanceof CookieCompliance.Violation)
+            ComplianceViolation.notify(getComplianceViolationListeners(), getRequestCookieCompliance(), violation, details);
+    }
+
+    /**
      * Set whether remote errors, when detected, are notified to async applications.
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */

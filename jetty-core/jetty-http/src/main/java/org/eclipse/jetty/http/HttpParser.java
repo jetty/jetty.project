@@ -2363,7 +2363,7 @@ public class HttpParser
             return new QuotedCSV(false, value)
             {
                 @Override
-                protected void onBadWhiteSpace()
+                protected void onComplianceViolation(ComplianceViolation violation)
                 {
                     if (_complianceMode.allows(WHITESPACE_IN_PARAMETER))
                         _handler.onViolation(new ComplianceViolation.Event(_complianceMode, WHITESPACE_IN_PARAMETER, getValue()));

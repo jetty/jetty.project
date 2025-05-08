@@ -21,6 +21,7 @@ import java.util.TreeMap;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -248,7 +250,6 @@ public class CompressionHandler extends Handler.Wrapper
                 continue;
             switch (header)
             {
-                // TODO handle TE header ?
                 case CONTENT_ENCODING ->
                 {
                     // We are only interested in the last encoding.
@@ -263,8 +264,16 @@ public class CompressionHandler extends Handler.Wrapper
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
                     {
-                        qualityCSV = (request.getConnectionMetaData().getHttpConfiguration().getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
-                            ? new QuotedQualityCSV.AllowsBadWhiteSpace()
+                        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+                        qualityCSV = (httpConfiguration.getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
+                            ? new QuotedQualityCSV()
+                            {
+                                @Override
+                                protected void onComplianceViolation(ComplianceViolation violation)
+                                {
+                                    httpConfiguration.notifyViolation(violation, this.toString());
+                                }
+                            }
                             : new QuotedQualityCSV();
 
                     }
