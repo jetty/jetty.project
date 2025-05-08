@@ -113,14 +113,14 @@
     <profile>
       <id>enable-virtual-threads-preview</id>
       <activation>
-        <jdk>[19,21)</jdk>
+        <jdk>[21,)</jdk>
       </activation>
       <build>
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>@{argLine} --enable-preview</argLine>
+              <argLine>@{argLine}</argLine>
             </configuration>
           </plugin>
         </plugins>
