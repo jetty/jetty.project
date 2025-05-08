@@ -353,8 +353,8 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
-            // too late?
-            if (_stream == null)
+            // Either too early or too late.
+            if (_stream == null || _request == null)
                 return new IdleTimeoutTask(null, false);
 
             requestHandled = _handling != null || _handled;
