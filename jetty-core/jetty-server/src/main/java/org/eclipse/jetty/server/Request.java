@@ -1039,16 +1039,23 @@ public interface Request extends Attributes, Content.Source
         return null;
     }
 
-    /** Unwrap a Request back to the given type, ensuring that we do not cross a
+    /**
+     * Unwrap a Request back to the given type, ensuring that we do not cross a
      * context boundary (as might be the case during cross-context dispatch).
+     *
      * @param request the possibly wrapped request to unwrap
      * @param type the type to unwrap to
-     * @param context the limiting context
      * @return the request unwrapped back to the given type, or null if it cannot be
      * unwrapped to that type or a context boundary is crossed.
      */
-    static <T extends Request> T as(Request request, Class<T> type, Context context)
+    static <T extends Request> T asInContext(Request request, Class<T> type)
     {
+        //the context whose boundary should not be crossed
+        Context context = request == null ? null : request.getContext();
+
+        if (context == null)
+            return Request.as(request, type);
+
         while (request != null)
         {
             if (request.getContext() != context)

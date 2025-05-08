@@ -190,7 +190,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             decodedPathInContext,
             matchedResource
         );
-        ServletContextRequest originalServletContextRequest = Request.as(request, ServletContextRequest.class, request.getContext());
+        ServletContextRequest originalServletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         if (originalServletContextRequest != null)
         {
             servletContextRequest.setRequestedSession(originalServletContextRequest.getRequestedSession());

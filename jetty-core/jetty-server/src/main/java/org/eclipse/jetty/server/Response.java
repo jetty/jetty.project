@@ -208,6 +208,36 @@ public interface Response extends Content.Sink
     }
 
     /**
+     * Unwrap a Response back to the given type, ensuring that we do not cross a
+     * context boundary (as might be the case during cross-context dispatch).
+     *
+     * @param response the possibly wrapped response to unwrap
+     * @param type the type to unwrap to
+     * @return the response unwrapped back to the given type, or null if it cannot be
+     * unwrapped to that type or a context boundary is crossed.
+     */
+    static <T extends Response> T asInContext(Response response, Class<T> type)
+    {
+        //the context whose boundary should not be crossed
+        Context context = response == null ? null : (response.getRequest() == null ? null : response.getRequest().getContext());
+
+        if (context == null)
+            return Response.as(response, type);
+
+        while (response != null)
+        {
+            if (response.getRequest() == null)
+                return null;
+            if (response.getRequest().getContext() != context)
+                return null;
+            if (type.isInstance(response))
+                return (T)response;
+            response = response instanceof Response.Wrapper wrapper ? wrapper.getWrapped() : null;
+        }
+        return null;
+    }
+
+    /**
      * <p>Unwraps the given response, recursively, until the wrapped instance
      * is an instance of the given type, otherwise returns {@code null}.</p>
      *
