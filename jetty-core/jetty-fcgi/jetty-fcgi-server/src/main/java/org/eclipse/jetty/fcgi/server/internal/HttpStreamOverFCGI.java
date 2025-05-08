@@ -351,8 +351,11 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public boolean onIdleTimeout(TimeoutException timeout)
     {
-        ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), _httpChannel.onIdleTimeout(timeout));
-        return false;
+        HttpChannel.IdleTimeoutTask task = _httpChannel.onIdleTimeout(timeout);
+        boolean handlingRequest = task.handlingRequest();
+        if (handlingRequest)
+            ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), task.action());
+        return !handlingRequest;
     }
 
     private void execute(Runnable task)
