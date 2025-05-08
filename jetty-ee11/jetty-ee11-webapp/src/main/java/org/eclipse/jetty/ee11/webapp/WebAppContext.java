@@ -230,6 +230,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return;
         }
 
+        // Allow all directories
+        if (Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        // Allow only files that are archives
         if (Resources.isReadableFile(baseResource))
         {
             URI uri = baseResource.getURI();
@@ -238,8 +246,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 setWarResource(baseResource);
                 return;
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring non-directory Base Resource: {}", baseResource);
+
+            // clear out old base resource, if it exists
+            super.setBaseResource(null);
+            return;
         }
 
+        // Other resource types are just allowed.
         super.setBaseResource(baseResource);
     }
 
