@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -24,12 +25,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -99,6 +100,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -216,21 +218,17 @@ public class WebAppContextTest
     public void testDefaultContextPath() throws Exception
     {
         Server server = newServer();
-        File webXml = MavenTestingUtils.getTestResourceFile("web-with-default-context-path.xml");
-        File webXmlEmptyPath = MavenTestingUtils.getTestResourceFile("web-with-empty-default-context-path.xml");
-        File webDefaultXml = MavenTestingUtils.getTestResourceFile("web-default-with-default-context-path.xml");
-        File overrideWebXml = MavenTestingUtils.getTestResourceFile("override-web-with-default-context-path.xml");
-        assertNotNull(webXml);
-        assertNotNull(webDefaultXml);
-        assertNotNull(overrideWebXml);
-        assertNotNull(webXmlEmptyPath);
+        Path webXml = MavenPaths.findTestResourceFile("web-with-default-context-path.xml");
+        Path webXmlEmptyPath = MavenPaths.findTestResourceFile("web-with-empty-default-context-path.xml");
+        Path webDefaultXml = MavenPaths.findTestResourceFile("web-default-with-default-context-path.xml");
+        Path overrideWebXml = MavenPaths.findTestResourceFile("override-web-with-default-context-path.xml");
 
         WebAppContext wac = new WebAppContext();
-        wac.setBaseResourceAsPath(MavenTestingUtils.getTargetTestingDir().getAbsoluteFile().toPath());
+        wac.setBaseResourceAsPath(MavenPaths.targetTests());
         server.setHandler(wac);
 
         //test that an empty default-context-path defaults to root
-        wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
+        wac.setDescriptor(webXmlEmptyPath.toString());
         server.start();
         assertEquals("/", wac.getContextPath());
 
@@ -238,21 +236,21 @@ public class WebAppContextTest
 
         //test web-default.xml value is used
         wac.setDescriptor(null);
-        wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
+        wac.setDefaultsDescriptor(webDefaultXml.toString());
         server.start();
         assertEquals("/one", wac.getContextPath());
 
         server.stop();
 
         //test web.xml value is used
-        wac.setDescriptor(webXml.getAbsolutePath());
+        wac.setDescriptor(webXml.toString());
         server.start();
         assertEquals("/two", wac.getContextPath());
 
         server.stop();
 
         //test override-web.xml value is used
-        wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
+        wac.setOverrideDescriptor(overrideWebXml.toString());
         server.start();
         assertEquals("/three", wac.getContextPath());
 
@@ -286,7 +284,7 @@ public class WebAppContextTest
 
         // test if no classname set, and none from server its the defaults
         wac.setServer(server);
-        assertTrue(Arrays.equals(classNames, wac.getConfigurationClasses()));
+        assertArrayEquals(classNames, wac.getConfigurationClasses());
     }
 
     @Test
@@ -321,14 +319,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        assertThat(wac.getConfigurations(), Matchers.contains(configs));
+        assertThat(wac.getConfigurations(), contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = newServer();
         server.setAttribute(Configurations.SERVER_DEFAULT_ATTR, classNames);
         wac.setServer(server);
-        assertThat(wac.getConfigurations(), Matchers.contains(configs));
+        assertThat(wac.getConfigurations(), contains(configs));
     }
 
     @Test
@@ -429,7 +427,7 @@ public class WebAppContextTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenPaths.projectBase().resolve("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(contexts);
@@ -502,7 +500,7 @@ public class WebAppContextTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenPaths.projectBase().resolve("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(contexts);
@@ -510,7 +508,13 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + path + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
+        assertThat(HttpTester.parseResponse(connector.getResponse(
+                """
+                    GET %s HTTP/1.1\r
+                    Host: localhost:8080\r
+                    Connection: close\r
+                    \r
+                    """.formatted(path))).getStatus(),
             Matchers.anyOf(is(HttpStatus.BAD_REQUEST_400)));
     }
 
@@ -521,7 +525,7 @@ public class WebAppContextTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenPaths.projectBase().resolve("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(contexts);
@@ -532,7 +536,12 @@ public class WebAppContextTest
 
         server.start();
 
-        String rawResponse = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+        String rawResponse = connector.getResponse("""
+            GET http://localhost:8080 HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            \r
+            """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -547,7 +556,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
 
-        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path testWebapp = MavenPaths.projectBase().resolve("src/test/webapp");
         context.setBaseResourceAsPath(testWebapp);
         server.setHandler(contexts);
         contexts.addHandler(context);
@@ -577,7 +586,7 @@ public class WebAppContextTest
         }
     }
 
- public static class ErrorDumpServlet extends HttpServlet
+    public static class ErrorDumpServlet extends HttpServlet
     {
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -694,8 +703,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -712,8 +721,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -729,10 +738,10 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
-            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
-            ));
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/with_dirs/"))
+        ));
         server.setHandler(context);
         server.start();
 
@@ -794,7 +803,10 @@ public class WebAppContextTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        WebAppContext context = new WebAppContext(MavenTestingUtils.getBasePath().resolve("src/test/webapp-with-resources").toString(), "/");
+        Path warRoot = MavenPaths.projectBase().resolve("src/test/webapp-with-resources");
+        WebAppContext context = new WebAppContext();
+        context.setBaseResourceAsPath(warRoot);
+        context.setContextPath("/");
         server.setHandler(context);
         server.start();
 
@@ -851,7 +863,7 @@ public class WebAppContextTest
     {
         List<Arguments> references = new ArrayList<>();
 
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash and glob
@@ -895,7 +907,7 @@ public class WebAppContextTest
         ClassLoader contextClassLoader = context.getClassLoader();
         assertThat(contextClassLoader, instanceOf(WebAppClassLoader.class));
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
-        Path extLibsDir = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibsDir = MavenPaths.findTestResourceDir("ext");
         extLibsDir = extLibsDir.toAbsolutePath();
         List<URI> expectedUris;
         try (Stream<Path> s = Files.list(extLibsDir))
@@ -905,14 +917,14 @@ public class WebAppContextTest
                 .filter(FileID::isJavaArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
+                .filter(notInTempDirectory(context))
                 .map(URIUtil::toJarFileUri)
-                .collect(Collectors.toList());
+                .toList();
         }
-        List<URI> actualURIs = new ArrayList<>();
-        for (URL url : webAppClassLoader.getURLs())
-        {
-            actualURIs.add(url.toURI());
-        }
+        List<URI> actualURIs = Stream.of(webAppClassLoader.getURLs())
+            .map(WebAppContextTest::toURI)
+            .filter(notInTempDirectory(context))
+            .toList();
         assertThat("[" + description + "] WebAppClassLoader.urls.length", actualURIs.size(), is(expectedUris.size()));
 
         assertThat(actualURIs, contains(expectedUris.toArray()));
@@ -922,7 +934,7 @@ public class WebAppContextTest
     {
         List<Arguments> references = new ArrayList<>();
 
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash
@@ -973,11 +985,14 @@ public class WebAppContextTest
         ClassLoader contextClassLoader = context.getClassLoader();
         assertThat(contextClassLoader, instanceOf(WebAppClassLoader.class));
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
-        URL[] urls = webAppClassLoader.getURLs();
-        assertThat("URLs", urls.length, is(1));
-        Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
+        List<URI> urls = Stream.of(webAppClassLoader.getURLs())
+            .map(WebAppContextTest::toURI)
+            .filter(notInTempDirectory(context))
+            .toList();
+        assertThat("URLs", urls.size(), is(1));
+        Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
-        assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+        assertThat("URL[0]", urls.get(0), is(extLibs.toUri()));
     }
 
     @Test
@@ -1168,5 +1183,29 @@ public class WebAppContextTest
         {
             resp.setStatus(200);
         }
+    }
+
+    private static URI toURI(URL url)
+    {
+        try
+        {
+            return url.toURI();
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Predicate<URI> notInTempDirectory(WebAppContext context)
+    {
+        String tempDirUri = context.getTempDirectory().toURI().toASCIIString();
+        return (uri) ->
+        {
+            // we don't want to see entries that are in the webapp temp dir
+            // Such as <temp-dir>/WEB-INF/classes
+            //      or <temp-dir>/WEB-INF/lib/*.jar
+            return !uri.toASCIIString().startsWith(tempDirUri);
+        };
     }
 }

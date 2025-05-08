@@ -71,9 +71,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.resource.Resources;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -428,7 +426,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
-        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -489,7 +487,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
-        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         contexts.addHandler(context);
 
@@ -509,9 +507,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
-        Resource testWebappResource = context.getResourceFactory().newResource(testWebapp);
-        assertTrue(Resources.isReadableDirectory(testWebappResource));
-        context.setBaseResource(testWebappResource);
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -543,7 +539,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
-        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
+        context.setBaseResourceAsPath(testWebapp);
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -719,7 +715,7 @@ public class WebAppContextTest
         // On Unix / Linux this should have no issue.
         // On Windows with fully qualified paths such as "E:\mybase\webapps\test.war" the
         // resolution of the Resource can trigger various URI issues with the "E:" portion of the provided String.
-        context.setBaseResourceAsString(warPath.toString());
+        context.setBaseResourceAsPath(warPath);
 
         server.setHandler(context);
         server.start();
@@ -797,8 +793,7 @@ public class WebAppContextTest
 
         Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
         WebAppContext context = new WebAppContext();
-        Resource warResource = context.getResourceFactory().newResource(warRoot);
-        context.setWarResource(warResource);
+        context.setBaseResourceAsPath(warRoot);
         context.setContextPath("/");
         server.setHandler(context);
         server.start();
@@ -884,7 +879,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = createWar(testPath, "test.war");
-        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+        context.setBaseResourceAsPath(warPath);
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -962,7 +957,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = createWar(testPath, "test.war");
-        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+        context.setBaseResourceAsPath(warPath);
 
         context.setExtraClasspath(extraClassPathReference);
 
@@ -984,30 +979,6 @@ public class WebAppContextTest
         Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls.get(0), is(extLibs.toUri()));
-    }
-
-    private static URI toURI(URL url)
-    {
-        try
-        {
-            return url.toURI();
-        }
-        catch (URISyntaxException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Predicate<URI> notInTempDirectory(WebAppContext context)
-    {
-        String tempDirUri = context.getTempDirectory().toURI().toASCIIString();
-        return (uri) ->
-        {
-            // we don't want to see entries that are in the webapp temp dir
-            // Such as <temp-dir>/WEB-INF/classes
-            //      or <temp-dir>/WEB-INF/lib/*.jar
-            return !uri.toASCIIString().startsWith(tempDirUri);
-        };
     }
 
     @Test
@@ -1077,5 +1048,29 @@ public class WebAppContextTest
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
         }
         assertThat("deprecated API", systemClasses, hasItem("org.deprecated.api."));
+    }
+
+    private static URI toURI(URL url)
+    {
+        try
+        {
+            return url.toURI();
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Predicate<URI> notInTempDirectory(WebAppContext context)
+    {
+        String tempDirUri = context.getTempDirectory().toURI().toASCIIString();
+        return (uri) ->
+        {
+            // we don't want to see entries that are in the webapp temp dir
+            // Such as <temp-dir>/WEB-INF/classes
+            //      or <temp-dir>/WEB-INF/lib/*.jar
+            return !uri.toASCIIString().startsWith(tempDirUri);
+        };
     }
 }

@@ -44,11 +44,6 @@ public interface HttpChannel extends Invocable
     void setHttpStream(HttpStream httpStream);
 
     /**
-     * @return whether the request has been passed to the root {@link Handler}.
-     */
-    boolean isRequestHandled();
-
-    /**
      * <p>{@link HttpStream} invokes this method when the metadata of an HTTP
      * request (method, URI and headers, but not content) has been parsed.</p>
      * <p>The returned {@code Runnable} invokes the root {@link Handler}.</p>
@@ -80,11 +75,13 @@ public interface HttpChannel extends Invocable
      * <p>Notifies this {@code HttpChannel} that an idle timeout happened.</p>
      *
      * @param idleTimeout the timeout.
-     * @return a {@code Runnable} that performs the timeout action, or {@code null}
-     * if no action need be performed by the calling thread
+     * @return a non-{@code null}{@link IdleTimeoutTask} that contains the timeout action,
+     * which may be {@code null} if no action needs be performed by the calling thread,
+     * and a {@code boolean} indicating whether this {@code HttpChannel} is currently
+     * handling an HTTP request.
      * @see Request#addIdleTimeoutListener(Predicate)
      */
-    Runnable onIdleTimeout(TimeoutException idleTimeout);
+    IdleTimeoutTask onIdleTimeout(TimeoutException idleTimeout);
 
     /**
      * <p>Notifies this {@code HttpChannel} that an asynchronous failure happened.</p>
@@ -174,5 +171,17 @@ public interface HttpChannel extends Invocable
         {
             return new HttpChannelState(connectionMetaData);
         }
+    }
+
+    /**
+     * <p>Holds the action to perform in case of idle timeout,
+     * and whether the HTTP request is being handled when the
+     * idle timeout occurs.</p>
+     *
+     * @param action the idle timeout action to perform
+     * @param handlingRequest whether the request is being handled
+     */
+    record IdleTimeoutTask(Runnable action, boolean handlingRequest)
+    {
     }
 }
