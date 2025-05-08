@@ -588,27 +588,18 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        //TODO: if authentication is deferred, we could authenticate first, otherwise we
-        //are re-authenticating for each of getUserPrincipal, getRemoteUser and getAuthType
-
-        //if already authenticated, return true
+        // Calling these methods will attempt to resolve any deferred authentication and cache it in a request attribute.
         if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
             return true;
 
-        //do the authentication
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        // Get the AuthenticationState to resolve the reason why Authentication failed.
+        AuthenticationState authenticationState = getAuthentication();
 
-        //if the authentication did not succeed
-        if (authenticationState instanceof AuthenticationState.Deferred)
-            response.sendError(HttpStatus.UNAUTHORIZED_401);
-
-        //if the authentication is incomplete, return false
+        // A response has been sent by the Authenticator.
         if (!(authenticationState instanceof AuthenticationState.ResponseSent))
             return false;
 
-        //TODO: this should only be returned IFF the authenticator has NOT set the response,
-        //and the BasicAuthenticator at least will have set the response to SC_UNAUTHENTICATED
-        //something has gone wrong
+        // The Authenticator could not resolve deferred auth, the response may already be committed.
         throw new ServletException("Authentication failed");
     }
 
