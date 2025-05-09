@@ -416,7 +416,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    () -> String.join("\n", runStart.getLogs()));
 
                 startHttpClient();
 

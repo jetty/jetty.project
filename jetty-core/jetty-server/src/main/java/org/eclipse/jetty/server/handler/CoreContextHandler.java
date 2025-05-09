@@ -65,7 +65,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     private static final String[] SUPPORTED_ARCHIVE_EXTENSIONS = new String[]{"war", "jar", "zip"};
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
-    private boolean _builtClassLoader = false;
+    private ClassLoader _previousClassLoader;
     private Boolean deferredDirAllowed;
 
     public CoreContextHandler()
@@ -206,7 +206,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         return ResourceFactory.of(this).newResource(tempDir);
     }
 
-    protected ClassLoader newClassLoader(Resource base) throws IOException
+    protected ClassLoader newClassLoader(Resource base, ClassLoader parentClassLoader) throws IOException
     {
         List<URL> urls = new ArrayList<>();
 
@@ -240,12 +240,12 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Core classloader for {}", urls);
+            LOG.debug("Core webapp classloader: {}", urls);
 
         if (urls.isEmpty())
-            return Environment.CORE.getClassLoader();
+            return parentClassLoader;
 
-        return new URLClassLoader(urls.toArray(URL[]::new), Environment.CORE.getClassLoader());
+        return new URLClassLoader(urls.toArray(URL[]::new), parentClassLoader);
     }
 
     protected void initWebApp() throws IOException
@@ -257,38 +257,34 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             return;
         }
 
-        if (getBaseResource() == null)
-        {
-            // Nothing to do.
+        _initialized = true;
+
+        Resource baseResource = getBaseResource();
+        if (baseResource == null)
             return;
-        }
 
-        Resource base = getBaseResource();
-
-        if (!Resources.isDirectory(base))
+        if (!Resources.isDirectory(baseResource))
         {
             // see if we can unpack this reference.
-            if (FileID.isExtension(base.getURI(), SUPPORTED_ARCHIVE_EXTENSIONS))
+            if (FileID.isExtension(baseResource.getURI(), SUPPORTED_ARCHIVE_EXTENSIONS))
             {
                 // We have an archive that needs to be unpacked
-                setAttribute(ORIGINAL_BASE_RESOURCE, base.getURI());
+                setAttribute(ORIGINAL_BASE_RESOURCE, baseResource.getURI());
                 try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                 {
-                    URI archiveURI = URIUtil.toJarFileUri(base.getURI());
+                    URI archiveURI = URIUtil.toJarFileUri(baseResource.getURI());
                     Resource mountedArchive = resourceFactory.newResource(archiveURI);
-                    base = unpack(mountedArchive);
-                    setBaseResource(base);
+                    baseResource = unpack(mountedArchive);
+                    setBaseResource(baseResource);
                 }
             }
             else
             {
-                throw new IllegalArgumentException("Unrecognized non-directory base resource type: " + base);
+                throw new IllegalArgumentException("Unrecognized non-directory base resource type: " + baseResource);
             }
         }
 
-        _initialized = true;
-
-        Resource staticDir = base.resolve("static");
+        Resource staticDir = baseResource.resolve("static");
         if (Resources.isDirectory(staticDir))
         {
             if (!isResourceHandlerAlreadyPresent(staticDir))
@@ -301,12 +297,16 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             }
         }
 
-        // Don't override the user provided ClassLoader
-        if (getClassLoader() == null)
-        {
-            _builtClassLoader = true;
-            setClassLoader(newClassLoader(getBaseResource()));
-        }
+        Environment environment = Environment.get("core");
+        if (environment == null)
+            throw new IllegalStateException("Could not find environment [core]");
+
+        // Don't override the user provided ClassLoader.
+        ClassLoader classLoader = getClassLoader();
+        _previousClassLoader = classLoader;
+        if (classLoader == null)
+            classLoader = environment.getClassLoader();
+        setClassLoader(newClassLoader(baseResource, classLoader));
     }
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
@@ -333,21 +333,15 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     protected void doStart() throws Exception
     {
         initWebApp();
-
         super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        if (_builtClassLoader)
-        {
-            setClassLoader(null);
-            _builtClassLoader = false;
-        }
-
         _initialized = false;
-
+        setClassLoader(_previousClassLoader);
+        _previousClassLoader = null;
         super.doStop();
     }
 }
