@@ -210,7 +210,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), () -> String.join(System.lineSeparator(), run2.getLogs()));
 
                 startHttpClient();
                 String uri = "http://localhost:" + httpPort + "/demo/test.txt";

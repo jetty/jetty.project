@@ -155,6 +155,18 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     /**
+     * A PathMappingsHandler that does not change the {@link Context} or any other aspect of the request
+     */
+    public static class NoContext extends PathMappingsHandler
+    {
+        @Override
+        protected Request newPathSpecRequest(Request request, PathSpec pathSpec)
+        {
+            return request;
+        }
+    }
+
+    /**
      * <p>
      * A custom {@link Request.Wrapper} that provides a {@link Context} based on the results
      * of a {@link PathSpec}.

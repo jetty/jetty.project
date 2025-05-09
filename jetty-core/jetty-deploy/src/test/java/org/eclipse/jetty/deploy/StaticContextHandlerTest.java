@@ -180,7 +180,7 @@ public class StaticContextHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(DeploymentScanner.class))
         {
-            Assertions.assertThrows(IllegalArgumentException.class, () ->
+            Assertions.assertThrows(IllegalStateException.class, () ->
                 startServer(ds -> ds.addMonitoredDirectory(webapps))
             );
         }

@@ -7,6 +7,13 @@ deployment
 [environment]
 ee11
 
+[before]
+ee10-deploy
+ee9-deploy
+ee8-deploy
+core-deploy
+static-deploy
+
 [depend]
 deployment-scanner
 ee11-webapp

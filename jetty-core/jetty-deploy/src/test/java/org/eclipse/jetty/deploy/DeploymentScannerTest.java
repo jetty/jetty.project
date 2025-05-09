@@ -27,10 +27,10 @@ import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.toolchain.test.ExtraMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.Environment;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         }
 
         @Override
-        protected void performActions(List<DeployAction> actions)
+        void performActions(List<DeployAction> actions)
         {
             assertActionList.accept(actions);
 
@@ -69,11 +69,6 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             {
                 resetAppState(action.name());
             }
-        }
-
-        public PathsApp findApp(String name)
-        {
-            return super.findApp(name);
         }
     }
 
@@ -370,23 +365,47 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.pathsChanged(changeSet);
     }
 
-    public static Stream<Arguments> envNameSorting()
+    public static Stream<Arguments> environmentsOrder()
     {
         return Stream.of(
-            Arguments.of(List.of("static", "core"), List.of("core", "static")),
-            Arguments.of(List.of("core", "static"), List.of("core", "static")),
-            Arguments.of(List.of("core", "ee11"), List.of("ee11", "core")),
-            Arguments.of(List.of("core", "ee11", "ee9", "ee10"), List.of("ee11", "ee10", "ee9", "core"))
+            // One environment only.
+            Arguments.of(List.of("core"), List.of(), "core"),
+            Arguments.of(List.of("core"), List.of("core"), "core"),
+            Arguments.of(List.of("core"), List.of("abc", "core"), "core"),
+            Arguments.of(List.of("core"), List.of("core", "abc"), "core"),
+            // Many environments.
+            Arguments.of(List.of("abc", "core"), List.of(), "abc"),
+            Arguments.of(List.of("abc", "core"), List.of("abc"), "abc"),
+            Arguments.of(List.of("abc", "core"), List.of("core"), "core"),
+            Arguments.of(List.of("abc", "core"), List.of("core", "abc"), "core")
         );
     }
 
     @ParameterizedTest
-    @MethodSource("envNameSorting")
-    public void testEnvironmentNameSorting(List<String> input, List<String> expected)
+    @MethodSource("environmentsOrder")
+    public void testEnvironmentsOrder(List<String> environments, List<String> order, String expected)
     {
-        List<String> sorted = input.stream()
-            .sorted(DeploymentScanner.ENVIRONMENT_COMPARATOR)
-            .toList();
-        assertThat(sorted, ExtraMatchers.ordered(expected));
+        Environment.ensure("core", Environment.class);
+        Environment.ensure("abc", Environment.class);
+
+        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
+        environments.forEach(deploymentScanner::configureEnvironment);
+        deploymentScanner.setEnvironmentsOrder(order);
+
+        assertThat(deploymentScanner.getDefaultEnvironmentName(), is(expected));
+    }
+
+    @Test
+    public void testEnvironmentsWithExplicitWrongOrder()
+    {
+        Environment.ensure("one", Environment.class);
+        Environment.ensure("two", Environment.class);
+
+        DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
+        deploymentScanner.configureEnvironment("one");
+        deploymentScanner.configureEnvironment("two");
+        deploymentScanner.setEnvironmentsOrder(List.of("other"));
+
+        assertThat(deploymentScanner.getDefaultEnvironmentName(), nullValue());
     }
 }

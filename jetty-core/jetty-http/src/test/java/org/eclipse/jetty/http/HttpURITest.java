@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -1262,5 +1263,22 @@ public class HttpURITest
     public void testBadAuthority(String uri)
     {
         assertThrows(IllegalArgumentException.class, () -> HttpURI.from(uri));
+    }
+
+    public static Stream<String> userInfo()
+    {
+        return Stream.of(
+            "https://username@host/path",
+            "https://username:password@host/path",
+            "https://username@host:8080/path",
+            "https://username:password@host:8080/path"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("userInfo")
+    public void testUserInfoViolation(String uri)
+    {
+        assertThat(HttpURI.from(uri).getViolations(), hasItem(Violation.USER_INFO));
     }
 }

@@ -28,9 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TreeMap;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -132,7 +132,7 @@ public class StartArgs
 
     private final Map<String, String> systemPropertySource = new HashMap<>();
 
-    private static final Map<String, StartEnvironment> environments = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String, StartEnvironment> environments = new HashMap<>();
 
     // jetty.base - build out commands
     /**
@@ -630,7 +630,14 @@ public class StartArgs
 
         if (parts.contains("envs"))
         {
-            for (StartEnvironment environment : getEnvironments())
+            // Iterate the environments in topological order.
+            List<StartEnvironment> enabledEnvironments = getAllModules().getEnabled().stream()
+                .map(Module::getEnvironment)
+                .filter(Objects::nonNull)
+                .map(this::getEnvironment)
+                .distinct()
+                .toList();
+            for (StartEnvironment environment : enabledEnvironments)
             {
                 if (environment == jettyEnvironment)
                     continue;

@@ -180,6 +180,9 @@ public class ResourceHandler extends Handler.Wrapper
     {
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
+            if (Handler.optionsMethodHandled(null, request, response, callback))
+                return true;
+
             // try another handler
             return super.handle(request, response, callback);
         }

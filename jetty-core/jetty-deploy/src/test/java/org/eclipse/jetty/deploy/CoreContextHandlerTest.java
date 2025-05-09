@@ -37,10 +37,12 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +63,12 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
     public WorkDir workDir;
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
+
+    @BeforeEach
+    public void ensureCoreEnvironment()
+    {
+        Environment.ensure("core", Environment.class);
+    }
 
     public void startServer(Object... beans) throws Exception
     {

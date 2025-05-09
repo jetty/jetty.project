@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.deploy;
 
+import org.eclipse.jetty.util.component.Environment;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.parallel.Isolated;
 
 /**
@@ -22,4 +24,9 @@ import org.junit.jupiter.api.parallel.Isolated;
 @Isolated
 public abstract class AbstractCleanEnvironmentTest
 {
+    @AfterEach
+    public void removeAllEnvironments()
+    {
+        Environment.removeAll();
+    }
 }
