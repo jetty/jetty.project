@@ -186,7 +186,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());

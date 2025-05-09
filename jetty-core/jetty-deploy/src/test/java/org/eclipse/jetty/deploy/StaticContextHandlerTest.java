@@ -119,7 +119,7 @@ public class StaticContextHandlerTest
         FS.ensureEmpty(staticDir);
         Files.writeString(staticDir.resolve("hello.txt"), "Hello from TEXT");
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/hello.txt HTTP/1.1
@@ -151,7 +151,7 @@ public class StaticContextHandlerTest
             Files.writeString(root.resolve("hello.txt"), testFileContent, StandardOpenOption.CREATE);
         }
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /test/hello.txt HTTP/1.1
