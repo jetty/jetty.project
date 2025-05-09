@@ -293,7 +293,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("webappsDirs", webappDirs),
+            new DumpableCollection("webappDirs", webappDirs),
             Dumpable.named("environmentsDir", environmentsDir),
             Dumpable.named("scanInterval", this.scanInterval),
             new DumpableCollection("enabledEnvironments", this.enabledEnvironments),
