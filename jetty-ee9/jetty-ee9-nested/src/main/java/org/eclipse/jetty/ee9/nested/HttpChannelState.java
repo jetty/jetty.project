@@ -838,6 +838,8 @@ public class HttpChannelState
                 {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
+//                        Case 3
+//                        return false;
                         if (committed)
                             return true;
                         sendError(th);

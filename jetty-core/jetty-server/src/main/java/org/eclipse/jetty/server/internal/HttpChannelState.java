@@ -480,6 +480,11 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
+
+//                Case 2
+//                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+//                    invokeOnFailureListeners = null;
+
                 task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
             }
         }
