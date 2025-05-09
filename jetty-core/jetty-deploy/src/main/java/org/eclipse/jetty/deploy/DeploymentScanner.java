@@ -383,7 +383,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         return webappDirs;
     }
 
-    public void setWebappDirsDirectories(Collection<Path> directories)
+    public void setWebappDirectories(Collection<Path> directories)
     {
         if (isStarted())
             throw new IllegalStateException("Unable to add webapp directories while running");

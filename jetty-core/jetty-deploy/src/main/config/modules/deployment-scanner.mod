@@ -28,7 +28,8 @@ etc/jetty-deployment-scanner.xml
 # false (default) to have initial scan occur as normal.
 # jetty.deploy.deferInitialScan=false
 
-## Webapps directory scan period (seconds)
+## Monitored directory scan period (seconds)
+# This is applied equally to both the webappsDir and environmentsDir
 # value of 0 is hot-redeploy disabled
 # value of 1 or more will enable hot-redeploy
 # jetty.deploy.scanInterval=0

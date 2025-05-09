@@ -255,7 +255,7 @@ include::{jetty-home}/modules/ee11-deploy.mod[tags=ini-template]
 Among the configurable properties, the most relevant are:
 
 `jetty.deploy.webappsDir`::
-The name of the monitored directory.
+The name of the web application deploy directory.
 `jetty.deploy.scanInterval`::
 The scan period in seconds, that is how frequently the `DeploymentScanner` wakes up to scan the monitored directory for changes.
 Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:deploy/index.adoc#hot-static[here] for more information).
