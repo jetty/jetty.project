@@ -274,6 +274,7 @@
     <!-- TODO: Remove these javax.* entries? -->
     <ee9.javax.activation.impl.version>1.1.0.v201105071233</ee9.javax.activation.impl.version>
     <ee9.javax.mail.glassfish.version>1.4.1.v201005082020</ee9.javax.mail.glassfish.version>
+    <ee9.jersey.version>3.0.17</ee9.jersey.version>
     <!-- FIXME we need a separate property for this one -->
     <ee9.jetty.servlet.api.version>5.0.2</ee9.jetty.servlet.api.version>
     <ee9.jsp.impl.version>10.0.27</ee9.jsp.impl.version>

@@ -40,7 +40,6 @@
   </modules>
 
   <properties>
-
     <jakarta.activation.api.version>${ee9.jakarta.activation.api.version}</jakarta.activation.api.version>
     <jakarta.annotation.api.version>${ee9.jakarta.annotation.api.version}</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>${ee9.jakarta.authentication.api.version}</jakarta.authentication.api.version>
@@ -64,6 +63,7 @@
     <!-- TODO: Remove these javax.* entries? -->
     <javax.activation.impl.version>${ee9.javax.activation.impl.version}</javax.activation.impl.version>
     <javax.mail.glassfish.version>${ee9.javax.mail.glassfish.version}</javax.mail.glassfish.version>
+    <jersey.version>${ee9.jersey.version}</jersey.version>
     <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>${ee9.jetty.servlet.api.version}</jetty.servlet.api.version>
     <jsp.impl.version>${ee9.jsp.impl.version}</jsp.impl.version>
@@ -416,6 +416,27 @@
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
         <version>${jakarta.xml.bind.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.containers</groupId>
+        <artifactId>jersey-container-servlet</artifactId>
+        <version>${jersey.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.inject</groupId>
+        <artifactId>jersey-hk2</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-json-binding</artifactId>
+        <version>${jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
