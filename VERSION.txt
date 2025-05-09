@@ -1,20 +1,33 @@
-jetty-12.0.21-SNAPSHOT
+jetty-12.0.21 - 09 May 2025
+ + 13046 Restore `ee9` (and `ee8`) behaviors with parsing
+   `application/x-www-form-urlencoded` parameters
+ + 13064 Jetty 12.0.x/12.1.x: ShutdownMonitorTest is stuck
+ + 13083 Jetty Server is starting but application is giving 404 error
+ + 13085 Improvements to HTTP/2 session container code.
 
 jetty-12.0.20 - 29 April 2025
- + 13033 Added "since" and "forRemoval" attributes to AbstractLifeCycle.AbstractLifeCycleListener deprecation, and removed its usages.
- + 13029 Web-socket that use permessage-deflate extensions are keeping in memory the last message sent to the client
- + 13019 [util-ajax] Support CharSequence instead of String for JSON.parse (@scrat98)
+ + 13033 Added "since" and "forRemoval" attributes to
+   AbstractLifeCycle.AbstractLifeCycleListener deprecation, and removed its
+   usages
+ + 13029 Web-socket that use permessage-deflate extensions are keeping in
+   memory the last message sent to the client
+ + 13019 util-ajax] Support CharSequence instead of String for JSON.parse
+   (@scrat98)
  + 13017 Upgrade quiche to version 0.24.0
- + 13016 Allow the HttpClient in AbstractProxyServlet to configure additional attributes (@garydgregory)
+ + 13016 Allow the HttpClient in AbstractProxyServlet to configure additional
+   attributes (@garydgregory)
  + 13008 Introduce HttpClient's Request.onResponseListener()
- + 13004 QueuedThreadPool throws error on quick successive execute calls if initialized with BlockingArrayQueue or ArrayBlockingQueue
+ + 13004 QueuedThreadPool throws error on quick successive execute calls if
+   initialized with BlockingArrayQueue or ArrayBlockingQueue
  + 12988 Introduce an HTTP/2 frame listener
  + 12985 Optimize memory usage of FrameFlusher.timeoutExpired
  + 12981 MultiPart annotation scanning not done if metadata-complete==true
  + 12965 Allow `Resource` instances to provide `Content.Source` directly
- + 12963 Slow transfers on custom / non-Path Resource instances (@kohlschuetter)
+ + 12963 Slow transfers on custom / non-Path Resource instances
+   (@kohlschuetter)
  + 12961 Different results for `getRequestURL` in filters with async requests
- + 12958 Discrepancy between Jetty 9 and Jetty 12 when setting the base resource to a path containing `..`
+ + 12958 Discrepancy between Jetty 9 and Jetty 12 when setting the base
+   resource to a path containing `..`
  + 12900 Make JPMS work with new Environments features
  + 12746 Sporadic NPE in HttpChannelState.onFailure
 
