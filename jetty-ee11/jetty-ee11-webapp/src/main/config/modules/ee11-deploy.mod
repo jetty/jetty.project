@@ -1,13 +1,18 @@
 [description]
-# tag::description[]
-Scans and deploys `ee11` environment webapps from `$JETTY_BASE/webapps` directory.
-# end::description[]
+Scans and deploys `ee11` environment web applications.
 
 [tags]
 deployment
 
 [environment]
 ee11
+
+[before]
+ee10-deploy
+ee9-deploy
+ee8-deploy
+core-deploy
+static-deploy
 
 [depend]
 deployment-scanner

@@ -28,9 +28,6 @@ public interface Environment extends Attributes
 {
     Logger LOG = LoggerFactory.getLogger(Environment.class);
 
-    // Ensure there is a core environment for possible later deployments to it
-    Environment CORE = ensure("core", Environment.class);
-
     /**
      * Gets all existing environments.
      * @return the environments
@@ -38,6 +35,14 @@ public interface Environment extends Attributes
     static Collection<Environment> getAll()
     {
         return Collections.unmodifiableCollection(NamedEnvironment.ENVIRONMENTS.values());
+    }
+
+    /**
+     * Removes all the environments.
+     */
+    static void removeAll()
+    {
+        NamedEnvironment.ENVIRONMENTS.clear();
     }
 
     /**

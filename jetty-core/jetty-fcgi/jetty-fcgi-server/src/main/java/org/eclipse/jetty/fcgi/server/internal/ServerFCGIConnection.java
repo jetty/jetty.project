@@ -279,14 +279,6 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         }
     }
 
-    @Override
-    protected boolean onReadTimeout(TimeoutException timeout)
-    {
-        if (stream != null)
-            return stream.onIdleTimeout(timeout);
-        return true;
-    }
-
     private boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
@@ -318,8 +310,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         HttpStreamOverFCGI stream = this.stream;
         if (stream == null)
             return true;
-        ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onIdleTimeout(timeoutException));
-        return false;
+        HttpChannel.IdleTimeoutTask task = stream.getHttpChannel().onIdleTimeout(timeoutException);
+        boolean handlingRequest = task.handlingRequest();
+        if (handlingRequest)
+            ThreadPool.executeImmediately(getExecutor(), task.action());
+        return !handlingRequest;
     }
 
     private class ServerListener implements ServerParser.Listener

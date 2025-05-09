@@ -1995,10 +1995,9 @@ public class XmlConfiguration
                         envBuilder.build();
                     String envName = args[++i];
                     environment = Environment.get(envName);
-                    if (environment != null && environment != Environment.CORE)
+                    if (environment != null)
                         throw new IllegalArgumentException("Duplicated --env " + envName + " command line arguments");
-                    if (environment == null)
-                        envBuilder = new EnvironmentBuilder(envName);
+                    envBuilder = new EnvironmentBuilder(envName);
                     envProperties.clear();
                     lastEnvConfiguration = null;
                 }

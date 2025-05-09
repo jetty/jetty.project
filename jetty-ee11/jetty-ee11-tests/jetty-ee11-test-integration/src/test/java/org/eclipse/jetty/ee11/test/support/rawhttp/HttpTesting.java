@@ -186,7 +186,7 @@ public class HttpTesting
      */
     public Socket open() throws IOException
     {
-        Socket sock = httpSocket.connect(serverHost, serverPort);
+        Socket sock = httpSocket.apply(serverHost, serverPort);
         sock.setSoTimeout(timeoutMillis);
         return sock;
     }

@@ -140,6 +140,8 @@ public class DefaultHandler extends Handler.Abstract
 
         if (!isShowContexts() || !HttpMethod.GET.is(method) || !Request.getPathInContext(request).equals("/"))
         {
+            if (Handler.optionsMethodHandled(null, request, response, callback))
+                return true;
             Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
             return true;
         }
