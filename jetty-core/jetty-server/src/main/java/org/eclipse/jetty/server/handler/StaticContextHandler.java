@@ -108,11 +108,7 @@ public class StaticContextHandler extends ContextHandler
     @Override
     public void setBaseResource(Resource baseResource)
     {
-        if (baseResource == null)
-        {
-            super.setBaseResource(null);
-        }
-        else if (Resources.isDirectory(baseResource))
+        if (baseResource == null || Resources.isDirectory(baseResource))
         {
             super.setBaseResource(baseResource);
         }

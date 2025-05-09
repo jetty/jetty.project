@@ -240,14 +240,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void setBaseResource(Resource baseResource)
     {
-        if (baseResource == null)
-        {
-            super.setBaseResource(null);
-            return;
-        }
-
-        // Allow all directories
-        if (Resources.isDirectory(baseResource))
+        if (baseResource == null || Resources.isDirectory(baseResource))
         {
             super.setBaseResource(baseResource);
             return;
