@@ -1219,7 +1219,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
 
 //                Case 1
-//                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
+                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }
