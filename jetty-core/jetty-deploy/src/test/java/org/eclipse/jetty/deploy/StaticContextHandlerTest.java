@@ -92,7 +92,7 @@ public class StaticContextHandlerTest
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
@@ -181,7 +181,7 @@ public class StaticContextHandlerTest
         try (StacklessLogging ignored = new StacklessLogging(DeploymentScanner.class))
         {
             Assertions.assertThrows(IllegalStateException.class, () ->
-                startServer(ds -> ds.addMonitoredDirectory(webapps))
+                startServer(ds -> ds.addWebappsDirectory(webapps))
             );
         }
     }
@@ -196,7 +196,7 @@ public class StaticContextHandlerTest
         FS.ensureEmpty(staticDir);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -246,7 +246,7 @@ public class StaticContextHandlerTest
             </Configure>
             """);
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -286,7 +286,7 @@ public class StaticContextHandlerTest
             """);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -330,7 +330,7 @@ public class StaticContextHandlerTest
             """.formatted(staticDir.toString()));
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -377,7 +377,7 @@ public class StaticContextHandlerTest
             jetty.deploy.baseResource=%s
             """.formatted(alt.toString()));
 
-        startServer(ds -> ds.addMonitoredDirectory(webapps));
+        startServer(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1

@@ -104,7 +104,7 @@ public class DeploymentErrorTest
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
-        deploymentScanner.addMonitoredDirectory(docroots);
+        deploymentScanner.addWebappsDirectory(docroots);
         server.addBean(deploymentScanner);
 
         server.addBean(deployer);
