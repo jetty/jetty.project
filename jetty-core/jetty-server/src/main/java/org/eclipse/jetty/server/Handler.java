@@ -468,6 +468,13 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
 
             return handler;
         }
+
+        @Override
+        default InvocationType getInvocationType()
+        {
+            Handler child = getHandler();
+            return child == null ? InvocationType.NON_BLOCKING : child.getInvocationType();
+        }
     }
 
     /**
@@ -677,7 +684,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         public InvocationType getInvocationType()
         {
             // Dynamic is always BLOCKING, as a blocking handler can be added at any time.
-            if (_dynamic)
+            if (isDynamic())
                 return InvocationType.BLOCKING;
             InvocationType invocationType = InvocationType.NON_BLOCKING;
             for (Handler child : getHandlers())
@@ -790,10 +797,10 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         @Override
         public InvocationType getInvocationType()
         {
+            // Dynamic is always BLOCKING, as a blocking handler can be added at any time.
             if (isDynamic())
                 return InvocationType.BLOCKING;
-            Handler next = getHandler();
-            return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
+            return Singleton.super.getInvocationType();
         }
     }
 
@@ -910,18 +917,6 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
                 if (!newHandlers.contains(h))
                     removeBean(h);
             }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            if (isDynamic())
-                return InvocationType.BLOCKING;
-
-            InvocationType invocationType = InvocationType.NON_BLOCKING;
-            for (Handler handler : _handlers)
-                invocationType = Invocable.combine(invocationType, handler.getInvocationType());
-            return invocationType;
         }
 
         protected List<Handler> newHandlers(List<Handler> handlers)
