@@ -20,7 +20,7 @@ etc/jetty-deployment-scanner.xml
 
 [ini-template]
 #tag::documentation[]
-## The web application deploy directory name (relative to $jetty.base)
+## The web application deploy directory name (relative to $JETTY_BASE)
 # jetty.deploy.webappsDir=webapps
 
 ## The environments directory name (relative to $JETTY_BASE).

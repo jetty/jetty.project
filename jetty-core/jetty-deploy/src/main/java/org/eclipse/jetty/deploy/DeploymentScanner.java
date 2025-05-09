@@ -592,13 +592,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         scanner.nudge();
     }
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x[webappsDirs=%s]", this.getClass(), hashCode(), webappDirs);
-    }
-
-    protected List<DeployAction> buildActionList(List<PathsApp> changedApps)
+    private List<DeployAction> buildActionList(List<PathsApp> changedApps)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("buildActionList: {}", changedApps);
@@ -1033,6 +1027,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private void stopTracking(PathsApp app)
     {
         scannedApps.remove(app.getName());
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[webappsDirs=%s]", this.getClass(), hashCode(), webappDirs);
     }
 
     public record DeployAction(DeployAction.Type type, String name)
