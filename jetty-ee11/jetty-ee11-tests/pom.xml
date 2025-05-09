@@ -32,7 +32,6 @@
     <module>jetty-ee11-test-quickstart</module>
     <module>jetty-ee11-test-sessions</module>
     <module>jetty-ee11-test-simple-session-webapp</module>
-    <module>jetty-ee11-test-webapp-rfc2616</module>
     <module>jetty-ee11-test-websocket-client-provided-webapp</module>
     <module>jetty-ee11-test-websocket-client-webapp</module>
     <module>jetty-ee11-test-websocket-webapp</module>
