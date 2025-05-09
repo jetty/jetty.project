@@ -97,7 +97,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *     <li>The XML Object ID Map will have a reference to the {@link Server} instance via the ID name {@code "Server"}</li>
  *     <li>The Default XML Properties are populated from a call to {@link XmlConfiguration#setJettyStandardIdsAndProperties(Object, Path)} (for things like {@code jetty.home} and {@code jetty.base})</li>
- *     <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the monitored path.</li>
+ * <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the webapps path.</li>
  * </ul>
  * <p>Context Deployment properties will be initialized with:</p>
  * <ul>
@@ -129,7 +129,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     private final Server server;
     private final FilenameFilter filenameFilter;
-    private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
+    private final List<Path> webappDirs = new CopyOnWriteArrayList<>();
     private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> scannedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
@@ -243,20 +243,20 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
         installBean(deployer);
-        this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter());
-        installBean(new DumpableCollection("monitored", monitoredDirs));
+        this.filenameFilter = Objects.requireNonNullElse(filter, new WebappsPathFilter(webappDirs));
+        installBean(new DumpableCollection("webappDirs", webappDirs));
     }
 
     /**
      * @param dir Directory to scan for deployable artifacts
      */
-    public void addMonitoredDirectory(Path dir)
+    public void addWebappsDirectory(Path dir)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding monitored directory: {}", dir);
+            LOG.debug("Adding webapps directory: {}", dir);
         if (isStarted())
-            throw new IllegalStateException("Unable to add monitored directory while running");
-        monitoredDirs.add(Objects.requireNonNull(dir));
+            throw new IllegalStateException("Unable to add webapps directory while running");
+        webappDirs.add(Objects.requireNonNull(dir));
     }
 
     /**
@@ -360,21 +360,21 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * @return The {@link List} of {@link Path}s scanned for files to deploy.
      */
-    public List<Path> getMonitoredDirectories()
+    public List<Path> getWebappDirectories()
     {
-        return monitoredDirs;
+        return webappDirs;
     }
 
-    public void setMonitoredDirectories(Collection<Path> directories)
+    public void setWebappDirectories(Collection<Path> directories)
     {
         if (isStarted())
-            throw new IllegalStateException("Unable to add monitored directories while running");
+            throw new IllegalStateException("Unable to add webapp directories while running");
 
-        monitoredDirs.clear();
+        webappDirs.clear();
 
         for (Path dir : directories)
         {
-            addMonitoredDirectory(dir);
+            addWebappsDirectory(dir);
         }
     }
 
@@ -488,7 +488,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 basename = basename.substring(0, basename.length() - 2);
             }
 
-            if (isMonitoredPath(path))
+            if (isWebappsPath(path))
             {
                 // we have a normal path entry
                 changedBaseNames.add(basename);
@@ -580,11 +580,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         app.resetStates();
     }
 
-    @ManagedOperation(value = "Scan the monitored directories", impact = "ACTION")
+    @ManagedOperation(value = "Scan the webapps directories", impact = "ACTION")
     public void scan()
     {
-        LOG.info("Performing scan of monitored directories: {}",
-            monitoredDirs.stream()
+        LOG.info("Performing scan of webapps directories: {}",
+            webappDirs.stream()
                 .map(Path::toUri)
                 .map(URI::toASCIIString)
                 .collect(Collectors.joining(", ", "[", "]"))
@@ -648,10 +648,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 throw new IllegalStateException("No deployer available");
         }
 
-        if (monitoredDirs.isEmpty())
-            throw new IllegalStateException("No monitored dir specified");
+        if (webappDirs.isEmpty())
+            throw new IllegalStateException("No webapps dir specified");
 
-        LOG.info("Deployment monitoring {} at intervals {}s {}", monitoredDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
+        LOG.info("Deployment monitoring of {} at intervals {}s {}", webappDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
@@ -671,7 +671,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         };
 
         List<Path> dirs = new ArrayList<>();
-        for (Path dir : monitoredDirs)
+        for (Path dir : webappDirs)
         {
             if (validDir.test(dir))
                 dirs.add(dir);
@@ -699,7 +699,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             if (server == null)
                 throw new IllegalStateException("Cannot defer initial scan with a null Server");
             // Setup listener to wait for Server in STARTED state, which
-            // triggers the first scan of the monitored directories
+            // triggers the first scan of the webapps directories
             server.addEventListener(
                 new LifeCycle.Listener()
                 {
@@ -747,12 +747,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         return FileID.isExtension(path, "xml", "properties");
     }
 
-    private boolean isMonitoredPath(Path path)
+    private boolean isWebappsPath(Path path)
     {
         Path parentDir = path.getParent();
-        for (Path monitoredDir : monitoredDirs)
+        for (Path dir : webappDirs)
         {
-            if (isSameDir(monitoredDir, parentDir))
+            if (isSameDir(dir, parentDir))
                 return true;
         }
         return false;
@@ -1032,7 +1032,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     @Override
     public String toString()
     {
-        return String.format("%s@%x[dirs=%s]", this.getClass(), hashCode(), monitoredDirs);
+        return String.format("%s@%x[webappsDirs=%s]", this.getClass(), hashCode(), webappDirs);
     }
 
     public record DeployAction(DeployAction.Type type, String name)
@@ -1192,7 +1192,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * This is the fallback class used, if the context class itself isn't defined by
          * the web application being deployed. (such as from an XML definition)
          * </p>
-         *
          * @param classname the default classname for this environment's context deployable.
          * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
          */
@@ -1269,8 +1268,15 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
-    private static class MonitoredPathFilter implements FilenameFilter
+    private static class WebappsPathFilter implements FilenameFilter
     {
+        private final List<Path> webappDirs;
+
+        public WebappsPathFilter(List<Path> webappDirs)
+        {
+            this.webappDirs = webappDirs;
+        }
+
         @Override
         public boolean accept(File dir, String name)
         {
