@@ -320,6 +320,7 @@ public class StaticContextHandlerTest
         Path webapps = root.resolve("webapps");
         FS.ensureEmpty(webapps);
 
+        // Intentionally not in webapps directory
         Path staticDir = root.resolve("static");
         FS.ensureEmpty(staticDir);
         Files.writeString(webapps.resolve("static.properties"), """

@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
-public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTest
+public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir workDir;
     private final Server server = new Server();
@@ -136,6 +136,61 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString(destURI.getPath()));
         assertThat(responseBody, containsString("it all looks so easy."));
+    }
+
+    @Test
+    public void testBaseResourceInXmlPointingOutsideWebappsDir() throws Exception
+    {
+        Path root = workDir.getEmptyPathDir();
+
+        Path demobase = root.resolve("demobase");
+        FS.ensureDirExists(demobase);
+
+        Files.writeString(demobase.resolve("index.html"),
+            """
+                demobase index
+                """);
+
+        Path webapps = root.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoXml = webapps.resolve("demo.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+              <Set name="contextPath">/demo</Set>
+              <Set name="baseResourceAsPath">
+                <Call class="java.nio.file.Path" name="of">
+                  <Arg>%s</Arg>
+                </Call>
+              </Set>
+              <Set name="handler">
+                <New class="org.eclipse.jetty.server.handler.ResourceHandler" />
+              </Set>
+            </Configure>
+            """.formatted(demobase.toString());
+        Files.writeString(demoXml, demoXmlStr);
+
+        server.setHandler(contexts);
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
+        deploymentScanner.addMonitoredDirectory(webapps);
+        server.addBean(deploymentScanner);
+        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
+        coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+
+        server.start();
+        deploymentScanner.start();
+
+        URI destURI = server.getURI().resolve("/demo/");
+        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
+        assertThat(http.getResponseCode(), is(200));
+        String responseBody = IO.toString(http.getInputStream());
+        assertThat(responseBody, containsString("demobase index"));
     }
 
     @Test
