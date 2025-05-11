@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
@@ -46,7 +47,7 @@ public class QuotedCSVTest
             @Override
             protected void onComplianceViolation(ComplianceViolation violation)
             {
-                if (HttpCompliance.Violation.WHITESPACE_IN_PARAMETER.equals(violation))
+                if (WHITESPACE_IN_PARAMETER.equals(violation))
                     return;
                 super.onComplianceViolation(violation);
             }

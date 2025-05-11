@@ -21,6 +21,7 @@ import java.util.TreeMap;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpException;
@@ -265,17 +266,17 @@ public class CompressionHandler extends Handler.Wrapper
                     if (qualityCSV == null)
                     {
                         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
-                        qualityCSV = (httpConfiguration.getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
-                            ? new QuotedQualityCSV()
+                        qualityCSV = new QuotedQualityCSV()
+                        {
+                            @Override
+                            protected void onComplianceViolation(ComplianceViolation violation)
                             {
-                                @Override
-                                protected void onComplianceViolation(ComplianceViolation violation)
-                                {
+                                if (WHITESPACE_IN_PARAMETER.equals(violation) && httpConfiguration.getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
                                     httpConfiguration.notifyViolation(violation, this.toString());
-                                }
+                                else
+                                    throw new BadMessageException(violation.toString());
                             }
-                            : new QuotedQualityCSV();
-
+                        };
                     }
                     qualityCSV.addValue(field.getValue());
                 }

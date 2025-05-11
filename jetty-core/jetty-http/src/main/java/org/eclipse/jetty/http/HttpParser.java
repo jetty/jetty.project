@@ -2365,7 +2365,7 @@ public class HttpParser
                 @Override
                 protected void onComplianceViolation(ComplianceViolation violation)
                 {
-                    if (_complianceMode.allows(WHITESPACE_IN_PARAMETER))
+                    if (Violation.WHITESPACE_IN_PARAMETER.equals(violation) && _complianceMode.allows(WHITESPACE_IN_PARAMETER))
                         _handler.onViolation(new ComplianceViolation.Event(_complianceMode, WHITESPACE_IN_PARAMETER, getValue()));
                     else
                         throw new BadMessageException(violation.toString());
