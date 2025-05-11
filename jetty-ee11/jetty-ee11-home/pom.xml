@@ -186,8 +186,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>jakarta.annotation</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee11-annotations</outputDirectory>
             </configuration>
@@ -199,8 +199,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>jakarta.annotation</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee11-annotations</outputDirectory>
