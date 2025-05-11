@@ -2368,7 +2368,7 @@ public class HttpParser
                     if (_complianceMode.allows(WHITESPACE_IN_PARAMETER))
                         _handler.onViolation(new ComplianceViolation.Event(_complianceMode, WHITESPACE_IN_PARAMETER, getValue()));
                     else
-                        throw new BadMessageException("Bad white space");
+                        throw new BadMessageException(violation.toString());
                 }
             };
         }
