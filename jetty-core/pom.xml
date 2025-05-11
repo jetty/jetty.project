@@ -13,6 +13,7 @@
 
   <modules>
     <module>jetty-alpn</module>
+    <module>jetty-annotations</module>
     <module>jetty-bom</module>
     <module>jetty-client</module>
     <module>jetty-compression</module>

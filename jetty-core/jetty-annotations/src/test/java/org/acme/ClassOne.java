@@ -11,12 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.acme;
 
 /**
- * InterfaceD
+ * ClassOne
  */
-public interface InterfaceD
+public class ClassOne
 {
-
+    public void one()
+    {
+    }
 }

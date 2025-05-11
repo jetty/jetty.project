@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.annotations;
 
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +64,7 @@ public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler
 
         //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
         Set<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
-        //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
+        //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in
         //first and add it
         if (implementingClasses == null)
         {

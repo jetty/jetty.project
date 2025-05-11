@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.annotations;
+package org.eclipse.jetty.annotations;
 
 /**
  * InterfaceD

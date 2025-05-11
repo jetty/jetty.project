@@ -7,12 +7,12 @@
     <artifactId>jetty-core</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee</artifactId>
-  <name>Core :: EE Common</name>
+  <artifactId>jetty-annotations</artifactId>
+  <name>Core :: Annotations</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.ee</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.annotations.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -51,17 +51,6 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee=org.eclipse.jetty.logging</argLine>
-          <excludes>
-            <!-- This class modifies internal JVM statics, and causes problems in parallel testing -->
-            <exclude>org.eclipse.jetty.ee.WebAppClassLoaderUrlStreamTest</exclude>
-          </excludes>
-        </configuration>
       </plugin>
     </plugins>
   </build>

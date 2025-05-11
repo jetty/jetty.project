@@ -11,15 +11,13 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-
 module org.eclipse.jetty.ee11.annotations
 {
     requires jakarta.annotation;
     requires java.naming;
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.annotations;
     requires transitive org.eclipse.jetty.plus;
     requires transitive org.eclipse.jetty.ee11.plus;
     requires transitive org.objectweb.asm;

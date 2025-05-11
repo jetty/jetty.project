@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.annotations;
+package org.eclipse.jetty.annotations;
 
 import java.io.IOException;
 import java.io.InputStream;

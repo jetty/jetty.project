@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.ee10.osgi.annotations;
 
-import java.io.File;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.osgi.BundleIndex;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Extension of AnnotationParser to parse classes inside bundles.
  */
-public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.AnnotationParser
+public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
     

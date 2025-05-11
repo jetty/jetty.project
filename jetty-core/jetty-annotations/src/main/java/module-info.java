@@ -11,16 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.annotations;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
-public @interface Multi
+module org.eclipse.jetty.annotations
 {
-    String[] value();
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.server;
+    requires java.instrument;
+    requires org.objectweb.asm;
+
+    exports org.eclipse.jetty.annotations;
 }

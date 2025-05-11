@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
+import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
