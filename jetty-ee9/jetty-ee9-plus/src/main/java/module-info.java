@@ -28,6 +28,6 @@ module org.eclipse.jetty.ee9.plus
     exports org.eclipse.jetty.ee9.plus.webapp;
 
     provides org.eclipse.jetty.ee9.webapp.Configuration with
-        EnvConfiguration,
-        PlusConfiguration;
+        org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration,
+        org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 }

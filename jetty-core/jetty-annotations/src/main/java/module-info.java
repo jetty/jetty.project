@@ -17,8 +17,8 @@ module org.eclipse.jetty.annotations
 
     requires transitive org.eclipse.jetty.util;
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.objectweb.asm;
     requires java.instrument;
-    requires org.objectweb.asm;
 
     exports org.eclipse.jetty.annotations;
 }
