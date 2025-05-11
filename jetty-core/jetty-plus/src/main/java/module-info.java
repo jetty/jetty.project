@@ -13,7 +13,9 @@
 
 module org.eclipse.jetty.plus
 {
+    requires transitive org.eclipse.jetty.annotations;
     requires transitive org.eclipse.jetty.security;
+
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 
