@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -126,6 +129,27 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * @param server the {@code Server} to associate to this {@code Handler}
      */
     void setServer(Server server);
+
+    /**
+     * Utility method to handle OPTIONS method
+     *
+     * @param allowedMethods The allowed methods or {@code null} for "GET,HEAD,OPTIONS"
+     * @param request The request
+     * @param response The response
+     * @param callback The callback
+     * @return {@code true} if the request is handled
+     */
+    static boolean optionsMethodHandled(String allowedMethods, Request request, Response response, Callback callback)
+    {
+        if (HttpMethod.OPTIONS.is(request.getMethod()))
+        {
+            response.getHeaders().add(HttpHeader.ALLOW, allowedMethods == null ? "GET,HEAD,OPTIONS" : allowedMethods);
+            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "0");
+            Response.writeError(request, response, callback, HttpStatus.OK_200, null);
+            return true;
+        }
+        return false;
+    }
 
     /**
      * <p>A {@code Handler} that contains one or more other {@code Handler}s.</p>

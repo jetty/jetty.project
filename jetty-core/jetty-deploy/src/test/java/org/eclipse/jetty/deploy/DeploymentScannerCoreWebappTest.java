@@ -37,10 +37,12 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +63,12 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
     public WorkDir workDir;
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
+
+    @BeforeEach
+    public void ensureCoreEnvironment()
+    {
+        Environment.ensure("core", Environment.class);
+    }
 
     public void startServer(Object... beans) throws Exception
     {
@@ -121,7 +129,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
@@ -178,7 +186,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
@@ -248,7 +256,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         server.addConnector(connector);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addMonitoredDirectory(webapps);
+        deploymentScanner.addWebappsDirectory(webapps);
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
@@ -314,7 +322,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         DeploymentScanner scanner = new DeploymentScanner(server);
         Files.writeString(demoXml, demoXmlStr);
 
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
@@ -373,7 +381,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         Files.writeString(demoXml, demoXmlStr);
 
         DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
@@ -437,7 +445,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         Files.writeString(demoXml, demoXmlStr);
 
         DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addMonitoredDirectory(webapps);
+        scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 

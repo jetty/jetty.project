@@ -107,14 +107,12 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         {
             Thread.currentThread().setContextClassLoader(environment.getClassLoader());
 
-            /*
-             * The process now is to figure out the context object to use.
-             * This can come from a number of places.
-             * 1. If an XML deployable, this is the <Configure class="contextClass"> entry.
-             * 2. If another deployable (like a web archive, or directory), then check attributes.
-             *    a. use the app attributes to figure out the context handler class.
-             *    b. use the environment attributes default context handler class.
-             */
+            // The process now is to figure out the context object to use.
+            // This can come from a number of places.
+            // 1. If an XML deployable, this is the <Configure class="contextClass"> entry.
+            // 2. If another deployable (like a web archive, or directory), then check attributes.
+            //    a. use the app attributes to figure out the context handler class.
+            //    b. use the environment attributes default context handler class.
             Object context = newContextInstance(server, environment, mainPath, deployAttributes, mainPath);
             if (context == null)
                 throw new IllegalStateException("unable to create ContextHandler for " + mainPath);

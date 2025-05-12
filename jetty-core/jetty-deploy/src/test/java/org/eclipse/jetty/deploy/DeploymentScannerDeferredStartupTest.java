@@ -30,8 +30,10 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -48,10 +50,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir testdir;
-    private static XmlConfiguredJetty jetty;
+    private XmlConfiguredJetty jetty;
+
+    @BeforeEach
+    public void ensureCoreEnvironment()
+    {
+        Environment.ensure("core", Environment.class);
+    }
 
     @AfterEach
-    public void teardownEnvironment() throws Exception
+    public void dispose() throws Exception
     {
         jetty.stop();
     }
