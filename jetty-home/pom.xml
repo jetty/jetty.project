@@ -348,9 +348,9 @@
 
     <!-- ignore sort pom so we know which eeXX will be build first -->
     <?SORTPOM IGNORE?>
-      <dependency>
-          <groupId>org.eclipse.jetty.ee11</groupId>
-          <artifactId>jetty-ee11-home</artifactId>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
