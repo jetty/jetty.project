@@ -1,0 +1,239 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.ee9.jersey.tests;
+
+import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.model.Resource;
+import org.glassfish.jersey.servlet.ServletContainer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class HungBlockingThreadsTest
+{
+    private static final Logger LOG = LoggerFactory.getLogger(HungBlockingThreadsTest.class);
+    private static final int THREAD_COUNT = 1000;
+    private Server server;
+    private ExecutorService executorService;
+    private HttpClient httpClient;
+
+    @BeforeAll
+    public static void beforeAll()
+    {
+        // Wire up java.util.logging to slf4j.
+        org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+        org.slf4j.bridge.SLF4JBridgeHandler.install();
+    }
+
+    @AfterAll
+    public static void afterAll()
+    {
+        org.slf4j.bridge.SLF4JBridgeHandler.uninstall();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception
+    {
+        QueuedThreadPool queuedThreadPool = new QueuedThreadPool(10, 10, (int)TimeUnit.MINUTES.toMillis(1000L));
+        queuedThreadPool.setName("jetty-queue-tp");
+        queuedThreadPool.setDaemon(true);
+        queuedThreadPool.setReservedThreads(1);
+
+        server = new Server(queuedThreadPool);
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
+
+        ResourceConfig resourceConfig = new ResourceConfig();
+        resourceConfig.registerResources(makeAsync(Resource.builder(MyResource.class).build()));
+        resourceConfig.register(CustomFeature.class);
+
+        context.addServlet(new ServletHolder(new ServletContainer(resourceConfig)), "/*");
+
+        server.setHandler(context);
+
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        connector.setIdleTimeout(Long.MAX_VALUE);
+        server.addConnector(connector);
+        server.start();
+
+        executorService = Executors.newCachedThreadPool();
+        httpClient = HttpClient.newHttpClient();
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        executorService.shutdownNow();
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        List<Future<?>> futures = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+        for (int i = 0; i < THREAD_COUNT; i++)
+        {
+            executorService.submit(() ->
+            {
+                HttpRequest request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> new HangInputStream(latch)))
+                    .uri(server.getURI())
+                    .timeout(Duration.ofDays(1))
+                    .build();
+                CompletableFuture<HttpResponse<String>> future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+                futures.add(future);
+            });
+        }
+
+        LOG.debug("awaiting for client to block on all threads");
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
+
+        LOG.debug("Shutting down client");
+        // while hanging in inputstream read, close connections.
+        futures.forEach(f -> f.cancel(true));
+
+        LOG.debug("Waiting for hung threads");
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(SharedBlockingCallback.class.getSimpleName()))));
+    }
+
+    private static class HangInputStream extends InputStream
+    {
+        private final CountDownLatch latch;
+        private int count = 0;
+
+        public HangInputStream(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Override
+        public int read()
+        {
+            if (count == 1_000_000)
+            {
+                try
+                {
+                    latch.countDown();
+                    Thread.sleep(Duration.ofDays(1).toMillis());
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+            count++;
+            return 'A';
+        }
+    }
+
+    private static String threadDump()
+    {
+        StringBuilder threadDump = new StringBuilder(System.lineSeparator());
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        for (ThreadInfo threadInfo : threadMXBean.dumpAllThreads(true, true))
+        {
+            threadDump.append(threadInfo.toString());
+        }
+        return threadDump.toString();
+    }
+
+    private static Resource makeAsync(Resource resource)
+    {
+        Resource.Builder resourceBuilder = Resource.builder(resource);
+        resource.getResourceMethods().forEach(resourceMethod -> resourceBuilder.updateMethod(resourceMethod).managedAsync());
+        return resourceBuilder.build();
+    }
+
+    public static class CustomFeature implements Feature
+    {
+        @Override
+        public boolean configure(FeatureContext context)
+        {
+            context.register(JettyEofExceptionMapper.class);
+            return true;
+        }
+    }
+
+    /**
+     * Used to not log a stack trace for Jetty EOF exceptions
+     */
+    public static class JettyEofExceptionMapper implements ExceptionMapper<EofException>
+    {
+        @Override
+        public Response toResponse(EofException e)
+        {
+            Response.Status status = Response.Status.BAD_REQUEST;
+            return Response.status((Response.StatusType)status)
+                .type(MediaType.APPLICATION_JSON + "; " + MediaType.CHARSET_PARAMETER + "=utf-8")
+                .entity(status.getReasonPhrase()).build();
+        }
+    }
+
+    @Path("")
+    public static class MyResource
+    {
+        @POST
+        @Consumes("text/plain")
+        public Response doPost(String body)
+        {
+            return Response.ok().entity(body).build();
+        }
+    }
+}
