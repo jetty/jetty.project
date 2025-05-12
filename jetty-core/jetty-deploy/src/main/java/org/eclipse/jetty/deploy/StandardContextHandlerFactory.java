@@ -221,7 +221,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
             Resource resource = resourceFactory.newResource(path);
 
             // Only set base resource on safe directory paths.
-            // Deployables that want to do other things, can use the Deployable.BASE_RESOURCE to figure things out.
+            // Deployable contexts that want to do other things, can use the Deployable.BASE_RESOURCE to figure things out.
             if (Resources.isDirectory(resource))
                 contextHandler.setBaseResource(resource);
             else if (attributes.getAttribute(Deployable.BASE_RESOURCE) == null)
