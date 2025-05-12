@@ -111,7 +111,7 @@ jetty-12.0.17 - 03 March 2025
  + 12689 Add statistics about `ByteBufferPool.acquire()` calls made for which
    there is no bucket
  + 12690 Add configurable capping for values of H2 `MAX_HEADER_LIST_SIZE`
-   settings frames
+   settings frames (CVE-2025-1948)
  + 12705 Orphaned sessions are never deleted at runtime in the
    SessionDataStore.
  + 12706 Export ArrayByteBufferPool statistics via JMX

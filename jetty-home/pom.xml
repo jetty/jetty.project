@@ -345,21 +345,18 @@
       <optional>true</optional>
     </dependency>
     <!-- EE10 -->
+
+    <!-- ignore sort pom so we know which eeXX will be build first -->
+    <?SORTPOM IGNORE?>
+      <dependency>
+          <groupId>org.eclipse.jetty.ee11</groupId>
+          <artifactId>jetty-ee11-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -369,6 +366,13 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <?SORTPOM RESUME?>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>jetty-fcgi-proxy</artifactId>
