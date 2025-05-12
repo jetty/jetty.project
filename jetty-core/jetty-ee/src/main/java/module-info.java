@@ -18,7 +18,6 @@ module org.eclipse.jetty.ee
     requires transitive org.eclipse.jetty.util;
     requires transitive org.eclipse.jetty.server;
     requires java.instrument;
-    requires org.objectweb.asm;
 
     exports org.eclipse.jetty.ee;
 }
