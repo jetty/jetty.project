@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.contains;
 
 public class QuotedQualityCSVTest
 {
-
     @Test
     public void test7231Sec532Example1()
     {
@@ -100,7 +99,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testOWS()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q =0.5  ,  value 1.0 ");
         assertThat(values, Matchers.contains(
             "value 1.0",
@@ -121,7 +120,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testQuoted()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
         values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
         assertThat(values, Matchers.contains(
             "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
@@ -139,7 +138,7 @@ public class QuotedQualityCSVTest
     @Test
     public void testQuotedQuality()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV();
+        QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q = \"0.5\"  ,  value 1.0 ");
         assertThat(values, Matchers.contains(
             "value 1.0",
@@ -337,5 +336,16 @@ public class QuotedQualityCSVTest
 
         // However the QuotedQualityCSV only handles the q parameter and that is consumed from the parameter string.
         assertThat(values, contains("p=0.5", ""));
+    }
+
+    private static class AllowWhiteSpaceInParameterQQCSV extends QuotedQualityCSV
+    {
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation)
+        {
+            if (HttpCompliance.Violation.WHITESPACE_IN_PARAMETER.equals(violation))
+                return;
+            super.onComplianceViolation(violation);
+        }
     }
 }

@@ -515,7 +515,7 @@ public class HttpField
         String value = getValue();
         if (value == null)
             return null;
-        QuotedCSV list = new QuotedCSV(false, value);
+        QuotedCSV list = newQuotedCSV(value);
         return list.getValues();
     }
 
@@ -567,7 +567,7 @@ public class HttpField
         if (!contains(value))
             return this;
 
-        QuotedCSV csv = new QuotedCSV(false, _value);
+        QuotedCSV csv = newQuotedCSV(_value);
         for (Iterator<String> i = csv.iterator(); i.hasNext();)
         {
             if (i.next().equalsIgnoreCase(value))
@@ -621,6 +621,11 @@ public class HttpField
             this._hash = h;
         }
         return h;
+    }
+
+    protected QuotedCSV newQuotedCSV(String value)
+    {
+        return new QuotedCSV(false, value);
     }
 
     @Override
@@ -740,7 +745,7 @@ public class HttpField
                 if (StringUtil.isBlank(v))
                     throw new IllegalArgumentException("blank element");
                 if (builder == null)
-                    builder = new StringBuilder(list.size() * (v == null ? 5 : v.length()) * 2);
+                    builder = new StringBuilder(list.size() * v.length() * 2);
                 else
                     builder.append(", ");
                 builder.append(v);

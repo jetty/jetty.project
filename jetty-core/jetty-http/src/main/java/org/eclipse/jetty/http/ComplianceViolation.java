@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,25 @@ public interface ComplianceViolation
          * @return The immutable set of violations allowed by this mode.
          */
         Set<? extends ComplianceViolation> getAllowed();
+    }
+
+    static void notify(List<ComplianceViolation.Listener> listeners, ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    {
+        Event event = new Event(mode, violation, details);
+
+        Throwable throwable = null;
+        for (Listener listener : listeners)
+        {
+            try
+            {
+                listener.onComplianceViolation(event);
+            }
+            catch (Throwable t)
+            {
+                throwable = ExceptionUtil.combine(throwable, t);
+            }
+        }
+        ExceptionUtil.ifExceptionThrowUnchecked(throwable);
     }
 
     record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
