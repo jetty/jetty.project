@@ -18,7 +18,6 @@
     <module>jetty-ee10-bom</module>
     <module>jetty-ee10-cdi</module>
     <module>jetty-ee10-demos</module>
-    <module>jetty-ee10-examples</module>
     <module>jetty-ee10-fcgi-proxy</module>
     <module>jetty-ee10-glassfish-jstl</module>
     <module>jetty-ee10-home</module>
