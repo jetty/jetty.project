@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -218,6 +219,36 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     LOG.debug("skipped init property {}={}", keyName, value);
             }
         }
+    }
+
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
+            {
+                setWarResource(baseResource);
+                return;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring non-directory Base Resource: {}", baseResource);
+
+            // clear out old base resource, if it exists
+            super.setBaseResource(null);
+            return;
+        }
+
+        // Other resource types are just allowed.
+        super.setBaseResource(baseResource);
     }
 
     /**
