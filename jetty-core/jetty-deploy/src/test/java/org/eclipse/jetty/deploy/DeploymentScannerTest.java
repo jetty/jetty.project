@@ -442,8 +442,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             server.start();
 
             String dump = server.dump();
-            // System.out.println(dump);
-            assertThat(dump, containsString("webappsDirs size=1"));
+            assertThat(dump, containsString("webappDirs size=1"));
             assertThat(dump, containsString("+> " + webapps));
             assertThat(dump, containsString("environmentsDir: " + environments));
             assertThat(dump, containsString("scanInterval: 0"));
