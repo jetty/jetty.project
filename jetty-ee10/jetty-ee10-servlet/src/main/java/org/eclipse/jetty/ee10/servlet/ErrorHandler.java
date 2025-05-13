@@ -88,7 +88,7 @@ public class ErrorHandler implements Request.Handler
             return true;
         }
 
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();

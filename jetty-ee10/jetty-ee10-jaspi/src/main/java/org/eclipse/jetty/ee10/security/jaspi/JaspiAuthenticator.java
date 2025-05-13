@@ -248,7 +248,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     // TODO This is not longer supported by core security
     public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
     {
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee10.security.jaspi.info");
         if (info == null)
             throw new NullPointerException("MessageInfo from request missing: " + request);

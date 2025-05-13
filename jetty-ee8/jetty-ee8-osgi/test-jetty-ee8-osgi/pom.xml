@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.osgi</groupId>
     <artifactId>jetty-ee8-osgi</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee8-osgi</artifactId>
   <name>EE8 :: OSGi :: Test</name>
@@ -14,7 +14,6 @@
     <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <bundle.debug>true</bundle.debug>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
@@ -27,23 +26,27 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <interceptor.artifactId>jakarta.interceptor-api</interceptor.artifactId>
     <interceptor.groupId>jakarta.interceptor</interceptor.groupId>
-    <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <jstl.artifactId>jakarta.servlet.jsp.jstl-api</jstl.artifactId>
     <jstl.groupId>jakarta.servlet.jsp.jstl</jstl.groupId>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <pax.exam.LEVEL>WARN</pax.exam.LEVEL>
     <pax.exam.debug.port>-1</pax.exam.debug.port>
-    <pax.exam.version>4.13.5</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
     <servlet.artifactId>jetty-servlet-api</servlet.artifactId>
-    <spifly.version>1.3.6</spifly.version>
-    <swissbox.version>1.8.3</swissbox.version>
-    <tinybundles.version>3.0.0</tinybundles.version>
     <transaction.artifactId>jakarta.transaction-api</transaction.artifactId>
     <transaction.groupId>jakarta.transaction</transaction.groupId>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>biz.aQute.bnd</groupId>
+      <artifactId>biz.aQute.bnd.util</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.osgi</groupId>
+          <artifactId>org.osgi.core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
@@ -534,6 +537,13 @@
       <artifactId>asm-util</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- https://github.com/ops4j/org.ops4j.pax.url/issues/454 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Jetty OSGi Deps -->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -551,7 +561,6 @@
             <systemPropertyVariables>
               <annotation.groupId>${annotation.groupId}</annotation.groupId>
               <annotation.artifactId>${annotation.artifactId}</annotation.artifactId>
-              <bundle.debug>${bundle.debug}</bundle.debug>
               <el.artifactId>${el.artifactId}</el.artifactId>
               <el.groupId>${el.groupId}</el.groupId>
               <enterprise.groupId>${enterprise.groupId}</enterprise.groupId>
@@ -597,31 +606,6 @@
               </goals>
             </execution>
           </executions>
-        </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.servicemix.tooling</groupId>
-                    <artifactId>depends-maven-plugin</artifactId>
-                    <versionRange>[1.2,)</versionRange>
-                    <goals>
-                      <goal>generate-depends-file</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore></ignore>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

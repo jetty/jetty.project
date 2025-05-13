@@ -5,7 +5,7 @@ pipeline {
   // save some io during the build
   options {
     skipDefaultCheckout()
-    durabilityHint('PERFORMANCE_OPTIMIZED')
+    durabilityHint('MAX_SURVIVABILITY')
     //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
   }
@@ -50,7 +50,7 @@ pipeline {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
                          configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
-                  sh "mvn -DsettingsPath=$GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
+                  sh "mvn -s $GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
                 }
               }
             }

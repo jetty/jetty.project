@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-home</artifactId>
@@ -129,15 +129,11 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
+    <!-- ignore sort pom so we know which eeXX will be build first -->
+    <?SORTPOM IGNORE?>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -147,6 +143,13 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <?SORTPOM RESUME?>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>jetty-fcgi-proxy</artifactId>

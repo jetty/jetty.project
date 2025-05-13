@@ -143,7 +143,7 @@ public class ServletChannel
         if (_callback != null)
             throw new IllegalStateException();
 
-        if (request != _request && Request.as(request, ServletContextRequest.class) != _servletContextRequest)
+        if (request != _request && Request.asInContext(request, ServletContextRequest.class) != _servletContextRequest)
             throw new IllegalStateException();
         _request = request;
         _response = response;

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>jetty-websocket</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-websocket-jetty-common</artifactId>
   <name>Core :: Websocket :: Jetty Common</name>

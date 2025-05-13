@@ -66,6 +66,7 @@ public class FormAuthenticatorTest
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            req.getSession();
             PrintWriter writer = resp.getWriter();
             writer.println("contextPath: " + req.getContextPath());
             writer.println("servletPath: " + req.getServletPath());

@@ -400,11 +400,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public ManagedSession getManagedSession(Request request)
     {
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         if (servletContextRequest != null)
             return servletContextRequest.getManagedSession();
 
-        NonServletSessionRequest nonServletSessionRequest = Request.as(request, NonServletSessionRequest.class);
+        NonServletSessionRequest nonServletSessionRequest = Request.asInContext(request, NonServletSessionRequest.class);
         if (nonServletSessionRequest != null)
             return nonServletSessionRequest.getManagedSession();
 

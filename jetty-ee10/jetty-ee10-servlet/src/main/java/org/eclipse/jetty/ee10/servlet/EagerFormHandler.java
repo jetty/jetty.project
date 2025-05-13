@@ -147,7 +147,7 @@ public class EagerFormHandler extends Handler.Wrapper
             }
         };
 
-        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts);
+        ServletMultiPartFormData.onParts(Request.asInContext(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts);
         if (done.decrementAndGet() == 0)
             onParts.handle();
         return true;

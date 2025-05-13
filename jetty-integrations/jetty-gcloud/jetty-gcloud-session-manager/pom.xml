@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.gcloud</groupId>
     <artifactId>jetty-gcloud</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-gcloud-session-manager</artifactId>
   <name>Integrations :: GCloud :: Sessions</name>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests.ccd</groupId>
     <artifactId>test-cross-context-dispatch</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>ccd-tests</artifactId>
   <packaging>jar</packaging>

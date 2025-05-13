@@ -26,15 +26,16 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -45,6 +46,8 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
     
     /**
      * Null FragmentActivator for the fake bundle
@@ -160,10 +163,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject());
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
-        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
-        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
-        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
-        loggingPropertiesBundle.add(FragmentActivator.class);
+        loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+        loggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+        loggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+        loggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         
         res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
@@ -185,7 +188,9 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.position").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.tracker").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.xml").versionAsInProject());
+//        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.http.whiteboard").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.repository").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.equinox.http.service.api").versionAsInProject());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
@@ -262,7 +267,13 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-            assertNull(err, prevBundle);
+            if (prevBundle != null)
+            {
+                LOGGER.warn(err);
+            }
+            // we can't fail for this anymore as inject is adding automatically by pax exam framework
+            // but with lower version
+            //assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }
