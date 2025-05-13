@@ -45,7 +45,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-          cache: maven
 
       # Install and setup JDK 17
       - name: Setup JDK 17
@@ -57,7 +56,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: maven
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
