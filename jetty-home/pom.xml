@@ -902,7 +902,7 @@
     <profile>
       <id>enable-foreign</id>
       <activation>
-        <jdk>[22,)</jdk>
+        <jdk>${jdk.enable.foreign}</jdk>
       </activation>
       <dependencies>
         <dependency>
