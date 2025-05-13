@@ -69,6 +69,14 @@ jobs:
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
+      - name: Handle Maven Build Cache caches
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          key: mbc-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            mbc-
+
       - name: Prepare Mimir
         shell: bash
         run: |
@@ -86,7 +94,7 @@ jobs:
 
       - name: Set up Maven
         run:
-          mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.1.0:wrapper "-Dmaven=3.9.9"
+          mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dmaven=3.9.9"
 
       - name: Clean install dependencies and build
         env:
