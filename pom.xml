@@ -147,19 +147,6 @@
     <url>https://github.com/jetty/jetty.project/issues</url>
   </issueManagement>
 
-  <distributionManagement>
-    <repository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Staging Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-    <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.15</ant.version>
@@ -2463,6 +2450,8 @@
             <version>0.7.0</version>
             <extensions>true</extensions>
             <configuration>
+              <deploymentName>${project.groupId} - ${project.version}</deploymentName>
+              <publishingServerId>central</publishingServerId>
               <autoPublish>false</autoPublish>
               <excludeArtifacts>
                 <excludeArtifact>build-resources</excludeArtifact>
