@@ -45,8 +45,8 @@ public class MultiAuthenticator extends LoginAuthenticator
     private static final Logger LOG = LoggerFactory.getLogger(MultiAuthenticator.class);
     public static final String LOGIN_PATH_PARAM = "org.eclipse.jetty.security.multi.login_path";
     public static final String AUTH_TYPE_ATTR = MultiAuthState.class.getName() + ".AuthType";
-
     private static final String AUTH_STATE_ATTR = MultiAuthState.class.getName() + ".AuthState";
+
     private final DefaultAuthenticator _defaultAuthenticator = new DefaultAuthenticator();
     private final PathMappings<Authenticator> _authenticatorsMappings = new PathMappings<>();
     private String _loginPath;
@@ -85,7 +85,8 @@ public class MultiAuthenticator extends LoginAuthenticator
         {
             if (!loginPath.startsWith("/"))
             {
-                LOG.warn("login path must start with /");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("login path must start with /");
                 loginPath = "/" + loginPath;
             }
 

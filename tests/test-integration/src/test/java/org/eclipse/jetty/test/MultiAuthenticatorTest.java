@@ -173,7 +173,6 @@ public class MultiAuthenticatorTest
         assertThat(response.getContentAsString(), containsString("name: openIdUser"));
         assertThat(response.getContentAsString(), containsString("authType: OPENID"));
 
-
         // Logout is successful.
         response = _client.GET(uri.resolve("/logout"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
