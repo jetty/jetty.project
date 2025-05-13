@@ -83,6 +83,7 @@ public class TestQuickStart
         server.setDryRun(true);
         server.start();
 
+        assertTrue(server.isStopped());
         assertTrue(quickstartXml.exists());
 
         //now run the webapp again

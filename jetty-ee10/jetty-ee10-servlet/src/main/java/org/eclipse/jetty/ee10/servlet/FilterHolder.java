@@ -392,7 +392,7 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _filter);
+            return String.format("%s:%s", TypeUtil.toShortName(this.getClass()), _filter);
         }
     }
 }

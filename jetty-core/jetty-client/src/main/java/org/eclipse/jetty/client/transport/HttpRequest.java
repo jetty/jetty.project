@@ -61,6 +61,7 @@ import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 public class HttpRequest implements Request
@@ -453,7 +454,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request listener(Request.Listener listener)
+    public Request onRequestListener(Listener listener)
     {
         requestListeners().addListener(listener);
         return this;
@@ -555,6 +556,13 @@ public class HttpRequest implements Request
         if (requestListeners != null)
             requestListeners.notifyFailure(this, failure);
         getHttpClientRequestListeners().notifyFailure(this, failure);
+    }
+
+    @Override
+    public Request onResponseListener(Response.Listener listener)
+    {
+        responseListeners.addCompleteListener(listener, true);
+        return this;
     }
 
     @Override
@@ -907,6 +915,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", TypeUtil.toShortName(getClass()), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

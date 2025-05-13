@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.proxy;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -798,7 +798,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
             catch (IOException x)
             {
-                throw new RuntimeIOException(x);
+                throw new UncheckedIOException(x);
             }
         }
 

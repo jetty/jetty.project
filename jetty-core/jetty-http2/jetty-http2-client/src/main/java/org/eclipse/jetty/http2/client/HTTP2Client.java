@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -102,6 +102,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
 {
+    public static final String CONTEXT_KEY = HTTP2Client.class.getName();
+    public static final String SESSION_PROMISE_CONTEXT_KEY = Session.class.getName() + ".promise";
+    public static final String SESSION_LISTENER_CONTEXT_KEY = Session.Listener.class.getName();
+
+    private final SessionContainer container = new SessionContainer();
     private final ClientConnector connector;
     private int inputBufferSize = IO.DEFAULT_BUFFER_SIZE;
     private List<String> protocols = List.of("h2");
@@ -119,7 +124,7 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private boolean isUseALPN = true;
+    private boolean useALPN = true;
 
     public HTTP2Client()
     {
@@ -129,7 +134,13 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     public HTTP2Client(ClientConnector connector)
     {
         this.connector = connector;
+        installBean(container);
         installBean(connector);
+    }
+
+    SessionContainer getSessionContainer()
+    {
+        return container;
     }
 
     public ClientConnector getClientConnector()
@@ -254,14 +265,14 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     }
 
     @ManagedAttribute("The ALPN protocol list")
-    public List<String> getProtocols()
+    public List<String> getApplicationProtocols()
     {
         return protocols;
     }
 
-    public void setProtocols(List<String> protocols)
+    public void setApplicationProtocols(List<String> protocols)
     {
-        this.protocols = protocols;
+        this.protocols = List.copyOf(protocols);
     }
 
     @ManagedAttribute("The initial size of session's flow control receive window")
@@ -405,104 +416,160 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
     public boolean isUseALPN()
     {
-        return isUseALPN;
+        return useALPN;
     }
 
     public void setUseALPN(boolean useALPN)
     {
-        isUseALPN = useALPN;
+        this.useALPN = useALPN;
     }
 
+    /**
+     * <p>Connect for clear-text HTTP/2.</p>
+     *
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @return a {@code CompletableFuture} that is completed when the connect operation is complete
+     */
     public CompletableFuture<Session> connect(SocketAddress address, Session.Listener listener)
     {
         return Promise.Completable.with(p -> connect(address, listener, p));
     }
 
+    /**
+     * <p>Connect for clear-text HTTP/2.</p>
+     *
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @param promise the {@code Promise} that is completed when the connect operation is complete
+     */
     public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
-        // Prior-knowledge clear-text HTTP/2 (h2c).
         connect(null, address, listener, promise);
     }
 
+    /**
+     * <p>Connect for clear-text or secure HTTP/2.</p>
+     *
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @return a {@code CompletableFuture} that is completed when the connect operation is complete
+     */
     public CompletableFuture<Session> connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
     {
         return Promise.Completable.with(p -> connect(sslContextFactory, address, listener, p));
     }
 
+    /**
+     * <p>Connect for clear-text or secure HTTP/2.</p>
+     *
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @param promise the {@code Promise} that is completed when the connect operation is complete
+     */
     public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
-        connect(sslContextFactory, address, listener, promise, null);
+        connect(Transport.TCP_IP, sslContextFactory, address, listener, promise);
     }
 
-    public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
-    {
-        connect(Transport.TCP_IP, sslContextFactory, address, listener, promise, context);
-    }
-
+    /**
+     * <p>Connect for clear-text or secure HTTP/2 with the specified {@link Transport}.</p>
+     *
+     * @param transport the {@code Transport} to use
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @return a {@code CompletableFuture} that is completed when the connect operation is complete
+     */
     public CompletableFuture<Session> connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
     {
-        return Promise.Completable.with(p -> connect(transport, sslContextFactory, address, listener, p, null));
+        return Promise.Completable.with(p -> connect(transport, sslContextFactory, address, listener, p));
+    }
+
+    /**
+     * <p>Connect for clear-text or secure HTTP/2 with the specified {@link Transport}.</p>
+     *
+     * @param transport the {@code Transport} to use
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param address the address to connect to
+     * @param listener the listener to notify of session events
+     * @param promise the {@code Promise} that is completed when the connect operation is complete
+     */
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    {
+        connect(transport, sslContextFactory, address, listener, promise, null);
     }
 
     public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
-        connect(transport, address, factory, listener, promise, context);
-    }
-
-    public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
-    {
-        connect(Transport.TCP_IP, address, factory, listener, promise, context);
-    }
-
-    public void connect(Transport transport, SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
-    {
-        context = contextFrom(factory, listener, promise, context);
-        context.put(Transport.class.getName(), transport);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context = contextFrom(transport, sslContextFactory, listener, promise, context);
         transport.connect(address, context);
     }
 
+    /**
+     * <p>Accepts the already connected {@link SocketChannel} for clear-text or secure HTTP/2.</p>
+     *
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param channel the already connected {@code SocketChannel}
+     * @param listener the listener to notify of session events
+     * @param promise the {@code Promise} that is completed when the connect operation is complete
+     */
     public void accept(SslContextFactory.Client sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
     {
-        ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
-        accept(channel, factory, listener, promise);
+        accept(Transport.TCP_IP, sslContextFactory, channel, listener, promise);
     }
 
-    public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
+    /**
+     * <p>Accepts the already connected {@link SocketChannel} for clear-text or secure HTTP/2 with the specified {@link Transport}.</p>
+     *
+     * @param transport the {@code Transport} to use
+     * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/2
+     * @param channel the already connected {@code SocketChannel}
+     * @param listener the listener to notify of session events
+     * @param promise the {@code Promise} that is completed when the connect operation is complete
+     */
+    public void accept(Transport transport, SslContextFactory.Client sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
     {
-        accept(Transport.TCP_IP, channel, factory, listener, promise);
-    }
-
-    public void accept(Transport transport, SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
-    {
-        Map<String, Object> context = contextFrom(factory, listener, promise, null);
-        context.put(Transport.class.getName(), transport);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        Map<String, Object> context = contextFrom(transport, sslContextFactory, listener, promise, null);
         connector.accept(channel, context);
     }
 
-    private Map<String, Object> contextFrom(ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    private Map<String, Object> contextFrom(Transport transport, SslContextFactory.Client sslContextFactory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
-        context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
-        context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
-        context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
-        context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, factory);
+        context.put(HTTP2Client.CONTEXT_KEY, this);
+        context.put(HTTP2Client.SESSION_LISTENER_CONTEXT_KEY, listener);
+        context.put(HTTP2Client.SESSION_PROMISE_CONTEXT_KEY, promise);
+        context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
+        context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, key -> sslContextFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport, sslContextFactory, context));
+        context.put(Transport.CONTEXT_KEY, transport);
         return context;
     }
 
-    private ClientConnectionFactory newClientConnectionFactory(SslContextFactory.Client sslContextFactory)
+    private ClientConnectionFactory resolveClientConnectionFactory(Transport transport, SslContextFactory.Client sslContextFactory, Map<String, Object> context)
     {
-        ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
-        if (sslContextFactory != null)
+        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnectionFactory.CONTEXT_KEY);
+        if (factory == null)
+            factory = new HTTP2ClientConnectionFactory();
+        ClientConnector clientConnector = getClientConnector();
+        factory = transport.newClientConnectionFactory(clientConnector, factory);
+        if (sslContextFactory != null && !transport.isIntrinsicallySecure())
         {
-            if (isUseALPN())
-                factory = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
+            @SuppressWarnings("unchecked")
+            List<String> applicationProtocols = (List<String>)context.get(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY);
+            if (isUseALPN() && !applicationProtocols.isEmpty())
+                factory = new ALPNClientConnectionFactory(clientConnector.getExecutor(), factory, applicationProtocols);
+            factory = clientConnector.newSslClientConnectionFactory(sslContextFactory, factory);
         }
+        ClientConnectionFactory.Decorator decorator = (ClientConnectionFactory.Decorator)context.get(ClientConnectionFactory.Decorator.CONTEXT_KEY);
+        if (decorator != null)
+            factory = decorator.apply(factory);
         return factory;
     }
 

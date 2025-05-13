@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -631,7 +632,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             @Override
             public String toString()
             {
-                return "%s[%s]".formatted(getClass().getSimpleName(), runnable);
+                return "%s[%s]".formatted(TypeUtil.toShortName(getClass()), runnable);
             }
         }
 

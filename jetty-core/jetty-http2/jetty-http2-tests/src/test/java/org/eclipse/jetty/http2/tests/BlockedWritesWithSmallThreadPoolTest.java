@@ -133,7 +133,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         // Send a request to TCP congest the server.
         HttpURI uri = HttpURI.build("http://localhost:" + connector.getLocalPort() + "/congest");
         MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
-        session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)

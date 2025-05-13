@@ -23,6 +23,7 @@ import java.nio.file.StandardOpenOption;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -100,11 +101,8 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
         Path environments = jettyBase.resolve("environments");
         FS.ensureDirExists(environments);
 
-        Files.writeString(environments.resolve("core.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=etc/core-context.xml", StandardOpenOption.CREATE_NEW);
-        Files.writeString(environments.resolve("core-other.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + ".other=etc/core-context-other.xml", StandardOpenOption.CREATE_NEW);
-
-        Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), jettyBase.resolve("etc/core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(MavenPaths.findTestResourceFile("etc/core-context-other.xml"), jettyBase.resolve("etc/core-context-other.xml"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), environments.resolve("core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(MavenPaths.findTestResourceFile("etc/core-context-other.xml"), environments.resolve("core-context-other.xml"), StandardCopyOption.REPLACE_EXISTING);
 
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");
         startJetty();
@@ -128,12 +126,8 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
         Path environments = jettyBase.resolve("environments");
         FS.ensureDirExists(environments);
 
-        Files.writeString(environments.resolve("core.properties"),
-            String.format("%s=%s%n", ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE, MavenPaths.findTestResourceFile("etc/core-context.xml")),
-            StandardOpenOption.CREATE_NEW);
-        Files.writeString(environments.resolve("core-other.properties"),
-            String.format("%s=%s%n", (ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + ".other"), MavenPaths.findTestResourceFile("etc/core-context-other.xml")),
-            StandardOpenOption.CREATE_NEW);
+        IO.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), environments.resolve("core-context.xml"));
+        IO.copy(MavenPaths.findTestResourceFile("etc/core-context-other.xml"), environments.resolve("core-context-other.xml"));
 
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");
         startJetty();
@@ -158,11 +152,11 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
         Path environments = jettyBase.resolve("environments");
         FS.ensureDirExists(environments);
 
-        Files.writeString(environments.resolve("non-env.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=some/file/that/should/be/ignored.txt");
-        Files.writeString(environments.resolve("ee8.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=some/file/that/should/be/ignored.txt");
-        Files.writeString(environments.resolve("ee9.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=some/file/that/should/be/ignored.txt");
-        Files.writeString(environments.resolve("ee10.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=some/file/that/should/be/ignored.txt");
-        Files.writeString(environments.resolve("not-core.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=some/file/that/should/be/ignored.txt");
+        Files.writeString(environments.resolve("non-env.properties"), "data.path=some/file/that/should/be/ignored.txt");
+        Files.writeString(environments.resolve("ee8.properties"), "data.path=some/file/that/should/be/ignored.txt");
+        Files.writeString(environments.resolve("ee9.properties"), "data.path=some/file/that/should/be/ignored.txt");
+        Files.writeString(environments.resolve("ee10.properties"), "data.path=some/file/that/should/be/ignored.txt");
+        Files.writeString(environments.resolve("not-core.properties"), "data.path=some/file/that/should/be/ignored.txt");
 
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");
         startJetty();
@@ -184,21 +178,13 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
         Path environments = jettyBase.resolve("environments");
         FS.ensureDirExists(environments);
 
-        Files.writeString(environments.resolve("core-a.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=etc/a.xml");
-        Files.writeString(environments.resolve("core-b.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=etc/b.xml");
-        Files.writeString(environments.resolve("core-c.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=etc/c.xml");
-        Files.writeString(environments.resolve("core-d.properties"), ContextHandlerFactory.ENVIRONMENT_XML_ATTRIBUTE + "=etc/d.xml");
-
-        Path etc = jettyBase.resolve("etc");
-        FS.ensureDirExists(etc);
-
-        Path aPath = etc.resolve("a.xml");
+        Path aPath = environments.resolve("core-a.xml");
         writeXmlDisplayName(aPath, "A WebApp");
-        Path bPath = etc.resolve("b.xml");
+        Path bPath = environments.resolve("core-b.xml");
         writeXmlDisplayName(bPath, "B WebApp");
-        Path cPath = etc.resolve("c.xml");
+        Path cPath = environments.resolve("core-c.xml");
         writeXmlDisplayName(cPath, "C WebApp");
-        Path dPath = etc.resolve("d.xml");
+        Path dPath = environments.resolve("core-d.xml");
         writeXmlDisplayName(dPath, "D WebApp");
 
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");
@@ -223,12 +209,11 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
 
         Files.writeString(environments.resolve("core.properties"),
             """
-                jetty.deploy.environmentXml=etc/core-context-sub.xml
                 test.displayName=DisplayName Set By Property
                 """);
 
         Files.copy(MavenPaths.findTestResourceFile("etc/core-context-sub.xml"),
-            jettyBase.resolve("etc/core-context-sub.xml"),
+            environments.resolve("core-context-sub.xml"),
             StandardCopyOption.REPLACE_EXISTING);
 
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");

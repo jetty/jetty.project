@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -39,13 +40,15 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
@@ -74,7 +77,6 @@ public class AbstractTest
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected Path pemDir;
     protected SslContextFactory.Server sslContextFactoryServer;
-    protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
     protected AbstractConnector connector;
     protected ServletContextHandler servletContextHandler;
@@ -104,9 +106,8 @@ public class AbstractTest
 
     public static Collection<TransportType> transportsSecure()
     {
-        EnumSet<TransportType> transportTypes = EnumSet.of(TransportType.HTTPS, TransportType.H2, TransportType.H3_QUICHE);
-        if ("ci".equals(System.getProperty("env")))
-            transportTypes.remove(TransportType.H3_QUICHE);
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.removeIf(t -> !t.isSecure());
         return transportTypes;
     }
 
@@ -138,8 +139,6 @@ public class AbstractTest
     protected void prepareServer(TransportType transportType, HttpServlet servlet) throws Exception
     {
         sslContextFactoryServer = newSslContextFactoryServer();
-        Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
-        serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, serverPemDirectory);
         if (server == null)
             server = newServer();
         connector = newConnector(transportType, server);
@@ -197,14 +196,18 @@ public class AbstractTest
         client.start();
     }
 
-    public AbstractConnector newConnector(TransportType transportType, Server server)
+    public AbstractConnector newConnector(TransportType transportType, Server server) throws IOException
     {
         return switch (transportType)
         {
             case HTTP, HTTPS, H2C, H2, FCGI ->
                 new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
             case H3_QUICHE ->
-                new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transportType));
+            {
+                Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
+                QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(serverPemDirectory);
+                yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
+            }
         };
     }
 
@@ -239,7 +242,7 @@ public class AbstractTest
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
+                yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
             }
             case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
         };
@@ -280,8 +283,9 @@ public class AbstractTest
                 SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
                 clientConnector.setSslContextFactory(sslContextFactory);
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
-                yield new HttpClientTransportOverHTTP3(http3Client);
+                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration(clientPemDirectory));
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
         };

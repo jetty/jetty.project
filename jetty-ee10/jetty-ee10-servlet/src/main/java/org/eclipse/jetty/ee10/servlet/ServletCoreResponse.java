@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
@@ -221,7 +222,7 @@ public class ServletCoreResponse implements Response
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
+        return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), this._coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable

@@ -17,5 +17,5 @@
  * under the License.
  */
 File buildLog = new File( basedir, 'build.log' )
-assert buildLog.text.contains( 'Started Server' )
+assert buildLog.text.contains( 'Started oejs.Server' )
 assert buildLog.text.contains( 'Running org.eclipse.jetty.ee10.maven.plugin.it.IntegrationTestGetContent')

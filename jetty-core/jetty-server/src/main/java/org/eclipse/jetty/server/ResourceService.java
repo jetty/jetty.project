@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -875,7 +876,7 @@ public class ResourceService
     @Override
     public String toString()
     {
-        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
+        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)", TypeUtil.toShortName(this.getClass()), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
     }
 
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)

@@ -30,7 +30,6 @@
     <module>jetty-ee10-plus</module>
     <module>jetty-ee10-proxy</module>
     <module>jetty-ee10-quickstart</module>
-    <module>jetty-ee10-runner</module>
     <module>jetty-ee10-servlet</module>
     <module>jetty-ee10-servlets</module>
     <module>jetty-ee10-tests</module>

@@ -60,6 +60,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -239,7 +241,7 @@ public class HttpClientTransportDynamicTest
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
         startClient(clientConnector, h2c);
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-//                .version(HttpVersion.HTTP_2)
+                .version(HttpVersion.HTTP_2)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -485,11 +487,12 @@ public class HttpClientTransportDynamicTest
             .count());
     }
 
-    @Test
-    public void testHTTP11UpgradeToH2C() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testHTTP11UpgradeToH2C(boolean secure) throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new Handler.Abstract()
+        startServer(secure ? this::sslH1H2C : this::h1H2C, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -503,9 +506,11 @@ public class HttpClientTransportDynamicTest
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
         startClient(clientConnector, HttpClientConnectionFactory.HTTP11, http2);
+        String scheme = secure ? "https" : "http";
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
             .headers(headers -> headers
                 .put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
@@ -519,46 +524,48 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         Destination h1Destination = destinations.get(0);
-        Destination h2Destination = destinations.get(1);
-        if (h2Destination.getOrigin().getProtocol().getProtocols().contains("http/1.1"))
+        Destination h2cDestination = destinations.get(1);
+        if (h2cDestination.getOrigin().getProtocol().getProtocols().contains("http/1.1"))
         {
             Destination swap = h1Destination;
-            h1Destination = h2Destination;
-            h2Destination = swap;
+            h1Destination = h2cDestination;
+            h2cDestination = swap;
         }
         List<String> protocols1 = h1Destination.getOrigin().getProtocol().getProtocols();
-        assertEquals(1, protocols1.size());
+        assertEquals(secure ? 2 : 1, protocols1.size());
         assertTrue(protocols1.contains("http/1.1"));
+        if (secure)
+            assertTrue(protocols1.contains("h2"));
         AbstractConnectionPool h1ConnectionPool = (AbstractConnectionPool)h1Destination.getConnectionPool();
         assertTrue(h1ConnectionPool.isEmpty());
-        List<String> protocols2 = h2Destination.getOrigin().getProtocol().getProtocols();
+        List<String> protocols2 = h2cDestination.getOrigin().getProtocol().getProtocols();
         assertEquals(1, protocols2.size());
         assertTrue(protocols2.contains("h2c"));
-        AbstractConnectionPool h2ConnectionPool = (AbstractConnectionPool)h2Destination.getConnectionPool();
-        assertEquals(1, h2ConnectionPool.getConnectionCount());
+        AbstractConnectionPool h2cConnectionPool = (AbstractConnectionPool)h2cDestination.getConnectionPool();
+        assertEquals(1, h2cConnectionPool.getConnectionCount());
 
         // Make a normal HTTP/2 request.
         response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
             .version(HttpVersion.HTTP_2)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(content, response.getContentAsString());
-        // We still have 2 destinations.
-        assertEquals(2, client.getDestinations().size());
+        assertEquals(secure ? 3 : 2, client.getDestinations().size());
         // We still have 1 HTTP/2 connection.
-        assertEquals(1, h2ConnectionPool.getConnectionCount());
+        assertEquals(1, h2cConnectionPool.getConnectionCount());
 
         // Make a normal HTTP/1.1 request.
         response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
             .version(HttpVersion.HTTP_1_1)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(content, response.getContentAsString());
-        // We still have 2 destinations.
-        assertEquals(2, client.getDestinations().size());
+        assertEquals(secure ? 4 : 2, client.getDestinations().size());
     }
 
     @Test

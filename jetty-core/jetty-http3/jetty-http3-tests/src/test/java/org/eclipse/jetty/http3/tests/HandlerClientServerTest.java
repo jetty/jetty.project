@@ -32,9 +32,11 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.util.Promise;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -43,11 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HandlerClientServerTest extends AbstractClientServerTest
 {
-    @Test
-    public void testGet() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testGet(TransportType transportType) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -62,28 +65,27 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        session.newRequest(frame, new Stream.Client.Listener()
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    clientResponseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                clientResponseLatch.countDown();
+            }
+        }, p));
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Disabled
-    @Test
-    public void testPost() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPost(TransportType transportType) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -100,49 +102,53 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
-        Stream stream = session.newRequest(frame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
                     stream.demand();
+                    return;
                 }
 
-                @Override
-                public void onDataAvailable(Stream.Client stream)
+                ByteBuffer byteBuffer = chunk.getByteBuffer();
+                ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
+                copy.put(byteBuffer);
+                copy.flip();
+                clientReceivedBuffers.add(copy);
+                chunk.release();
+
+                if (chunk.isLast())
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
-                    {
-                        stream.demand();
-                        return;
-                    }
-
-                    ByteBuffer byteBuffer = data.getByteBuffer();
-                    ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
-                    copy.put(byteBuffer);
-                    copy.flip();
-                    clientReceivedBuffers.add(copy);
-                    data.release();
-
-                    if (data.isLast())
-                    {
-                        clientResponseLatch.countDown();
-                        return;
-                    }
-
-                    stream.demand();
+                    clientResponseLatch.countDown();
+                    return;
                 }
-            })
-            .get(5, TimeUnit.SECONDS);
+
+                stream.demand();
+            }
+        }, p));
 
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false))
-            .thenCompose(s -> s.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true)))
-            .get(5, TimeUnit.SECONDS);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false), new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                result.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true), p);
+            }
+        }));
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));

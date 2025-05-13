@@ -20,7 +20,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,10 +30,15 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -44,11 +48,12 @@ public class HTTP3ClientDocs
     public void start() throws Exception
     {
         // tag::start[]
+        // Create a QUIC configuration suitable for HTTP/3.
+        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
         // Instantiate HTTP3Client.
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
 
-        // Configure HTTP3Client, for example:
+        // Configure HTTP/3 features, for example:
         http3Client.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
         // Start HTTP3Client.
@@ -58,8 +63,8 @@ public class HTTP3ClientDocs
 
     public void stop() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        ClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration);
         http3Client.start();
         // tag::stop[]
         // Stop HTTP3Client.
@@ -69,32 +74,41 @@ public class HTTP3ClientDocs
 
     public void connect() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::connect[]
         // Address of the server's port.
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
 
-        // Connect to the server, the CompletableFuture will be
+        // Connect to the server, the Promise will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(Session.Client result)
+            {
+                // Connected successfully.
+            }
 
-        // Block to obtain the Session.
-        // Alternatively you can use the CompletableFuture APIs to avoid blocking.
-        Session session = sessionCF.get();
+            @Override
+            public void failed(Throwable x)
+            {
+                // Failed to connect.
+            }
+        });
         // end::connect[]
     }
 
     public void configure() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
 
         // tag::configure[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        http3Client.connect(serverAddress, new Session.Client.Listener()
+        http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -105,19 +119,18 @@ public class HTTP3ClientDocs
 
                 return configuration;
             }
-        });
+        }, Promise.Invocable.noop());
         // end::configure[]
     }
 
     public void newStream() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -126,24 +139,23 @@ public class HTTP3ClientDocs
         // The request metadata with method, URI and headers.
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
 
-        // The HTTP/3 HEADERS frame, with endStream=true
-        // to signal that this request has no content.
+        // The HTTP/3 HEADERS frame, with last=true to signal
+        // that there will be no more frames in this stream.
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
-        // Open a Stream by sending the HEADERS frame.
-        session.newRequest(headersFrame, new Stream.Client.Listener() {});
+        // Open a stream by sending the HEADERS frame.
+        session.newRequest(headersFrame, new Stream.Client.Listener() {}, Promise.Invocable.noop());
         // end::newStream[]
     }
 
     public void newStreamWithData() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -152,16 +164,13 @@ public class HTTP3ClientDocs
         // The request metadata with method, URI and headers.
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
 
-        // The HTTP/3 HEADERS frame, with endStream=false to
+        // The HTTP/3 HEADERS frame, with last=false to
         // signal that there will be more frames in this stream.
         HeadersFrame headersFrame = new HeadersFrame(request, false);
 
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener() {});
-
-        // Block to obtain the Stream.
-        // Alternatively you can use the CompletableFuture APIs to avoid blocking.
-        Stream stream = streamCF.get();
+        // Block to obtain the Stream (or use a Promise).
+        Stream stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener() {}, p));
 
         // The request content, in two chunks.
         String content1 = "{\"greet\": \"hello world\"}";
@@ -169,24 +178,28 @@ public class HTTP3ClientDocs
         String content2 = "{\"user\": \"jetty\"}";
         ByteBuffer buffer2 = StandardCharsets.UTF_8.encode(content2);
 
-        // Send the first DATA frame on the stream, with endStream=false
+        // Send the first DATA frame on the stream, with last=false
         // to signal that there are more frames in this stream.
-        CompletableFuture<Stream> dataCF1 = stream.data(new DataFrame(buffer1, false));
-
-        // Only when the first chunk has been sent we can send the second,
-        // with endStream=true to signal that there are no more frames.
-        dataCF1.thenCompose(s -> s.data(new DataFrame(buffer2, true)));
+        stream.data(new DataFrame(buffer1, false), new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                // Only when the first chunk has been sent we can send the second,
+                // with last=true to signal that there will be no more frames.
+                result.data(new DataFrame(buffer2, true), Promise.Invocable.noop());
+            }
+        });
         // end::newStreamWithData[]
     }
 
     public void responseListener() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
@@ -200,17 +213,24 @@ public class HTTP3ClientDocs
             @Override
             public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                MetaData metaData = frame.getMetaData();
-                MetaData.Response response = (MetaData.Response)metaData;
+                // Process the response status code and headers, if necessary.
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
                 System.getLogger("http3").log(INFO, "Received response {0}", response);
+
+                if (!frame.isLast())
+                {
+                    // There will be content, so call demand() to have
+                    // onDataAvailable() be called when the content is available.
+                    stream.demand();
+                }
             }
 
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read a chunk of the content.
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     // No data available now, demand to be called back.
                     stream.demand();
@@ -218,19 +238,19 @@ public class HTTP3ClientDocs
                 else
                 {
                     // Process the content.
-                    process(data.getByteBuffer());
+                    process(chunk.getByteBuffer());
 
                     // Notify the implementation that the content has been consumed.
-                    data.release();
+                    chunk.release();
 
-                    if (!data.isLast())
+                    if (!chunk.isLast())
                     {
                         // Demand to be called back.
                         stream.demand();
                     }
                 }
             }
-        });
+        }, Promise.Invocable.noop());
         // end::responseListener[]
     }
 
@@ -238,34 +258,32 @@ public class HTTP3ClientDocs
     {
     }
 
-    public void reset() throws Exception
+    public void terminate() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
-        // tag::reset[]
+        // tag::terminate[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
         {
             @Override
             public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
-                // The server reset this stream.
+                // The server terminated this stream.
             }
-        });
-        Stream stream = streamCF.get();
+        }, p));
 
-        // Reset this stream (for example, the user closed the application).
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException());
-        // end::reset[]
+        // The client terminates this stream (for example, the user closed the application).
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException(), Promise.Invocable.noop());
+        // end::terminate[]
     }
 }

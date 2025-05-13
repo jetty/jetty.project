@@ -30,10 +30,13 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -55,16 +58,16 @@ public class HTTP3ServerDocs
         // The listener for session events.
         Session.Server.Listener sessionListener = new Session.Server.Listener() {};
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, Path.of("/path/to/pem/dir"));
+        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
         // Configure the max number of requests per QUIC connection.
-        quicConfiguration.setMaxBidirectionalRemoteStreams(1024);
+        serverQuicConfig.setBidirectionalMaxStreams(1024 * 1024);
 
         // Create and configure the RawHTTP3ServerConnectionFactory.
-        RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(quicConfiguration, sessionListener);
+        RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(sessionListener);
         http3.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
-        // Create and configure the QuicServerConnector.
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, http3);
+        // Create and configure the QuicheServerConnector.
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, http3);
 
         // Add the Connector to the Server.
         server.addConnector(connector);
@@ -80,7 +83,7 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 SocketAddress remoteAddress = session.getRemoteSocketAddress();
                 System.getLogger("http3").log(INFO, "Connection from {0}", remoteAddress);
@@ -99,7 +102,8 @@ public class HTTP3ServerDocs
             {
                 Map<Long, Long> settings = new HashMap<>();
 
-                // Customize the settings
+                // Customize the settings, for example:
+                settings.put(SettingsFrame.MAX_BLOCKED_STREAMS, 16L);
 
                 return settings;
             }
@@ -115,10 +119,11 @@ public class HTTP3ServerDocs
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
+                // Process the request method, URI and headers.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
                 // Return a Stream.Server.Listener to handle the request events,
-                // for example request content events or a request reset.
+                // for example request content events or request cancellation.
                 return new Stream.Server.Listener() {};
             }
         };
@@ -133,6 +138,7 @@ public class HTTP3ServerDocs
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
+                // Process the request method, URI and headers.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
                 // Demand to be called back when data is available.
@@ -145,9 +151,9 @@ public class HTTP3ServerDocs
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read a chunk of the request content.
-                        Stream.Data data = stream.readData();
+                        Content.Chunk chunk = stream.read();
 
-                        if (data == null)
+                        if (chunk == null)
                         {
                             // No data available now, demand to be called back.
                             stream.demand();
@@ -155,15 +161,15 @@ public class HTTP3ServerDocs
                         else
                         {
                             // Get the content buffer.
-                            ByteBuffer buffer = data.getByteBuffer();
+                            ByteBuffer buffer = chunk.getByteBuffer();
 
                             // Consume the buffer, here - as an example - just log it.
                             System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
 
                             // Tell the implementation that the buffer has been consumed.
-                            data.release();
+                            chunk.release();
 
-                            if (!data.isLast())
+                            if (!chunk.isLast())
                             {
                                 // Demand to be called back.
                                 stream.demand();
@@ -200,17 +206,17 @@ public class HTTP3ServerDocs
                         @Override
                         public void onDataAvailable(Stream.Server stream)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data == null)
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
                             {
                                 stream.demand();
                             }
                             else
                             {
                                 // Consume the request content.
-                                data.release();
+                                chunk.release();
 
-                                if (data.isLast())
+                                if (chunk.isLast())
                                     respond(stream, request);
                                 else
                                     stream.demand();
@@ -234,13 +240,19 @@ public class HTTP3ServerDocs
 
                     // Send the HEADERS frame with the response status and headers,
                     // and a DATA frame with the response content bytes.
-                    stream.respond(new HeadersFrame(response, false))
-                        .thenCompose(s -> s.data(new DataFrame(resourceBytes, true)));
+                    stream.respond(new HeadersFrame(response, false), new Promise.Invocable.NonBlocking<>()
+                    {
+                        @Override
+                        public void succeeded(Stream result)
+                        {
+                            result.data(new DataFrame(resourceBytes, true), Promise.Invocable.noop());
+                        }
+                    });
                 }
                 else
                 {
                     // Send just the HEADERS frame with the response status and headers.
-                    stream.respond(new HeadersFrame(response, true));
+                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                 }
             }
             // tag::exclude[]
@@ -254,10 +266,10 @@ public class HTTP3ServerDocs
         // end::response[]
     }
 
-    public void reset()
+    public void terminate()
     {
         float maxRequestRate = 0F;
-        // tag::reset[]
+        // tag::terminate[]
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
@@ -267,7 +279,7 @@ public class HTTP3ServerDocs
 
                 if (requestRate > maxRequestRate)
                 {
-                    stream.reset(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException());
+                    stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException(), Promise.Invocable.noop());
                     return null;
                 }
                 else
@@ -286,7 +298,7 @@ public class HTTP3ServerDocs
             }
             // end::exclude[]
         };
-        // end::reset[]
+        // end::terminate[]
     }
 
     // TODO: push not yet implemented in HTTP/3.

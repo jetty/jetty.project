@@ -31,7 +31,6 @@
     <module>jetty-ee9-plus</module>
     <module>jetty-ee9-proxy</module>
     <module>jetty-ee9-quickstart</module>
-    <module>jetty-ee9-runner</module>
     <module>jetty-ee9-security</module>
     <module>jetty-ee9-servlet</module>
     <module>jetty-ee9-servlets</module>

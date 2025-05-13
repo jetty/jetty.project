@@ -24,6 +24,7 @@ import java.util.zip.Inflater;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
@@ -223,7 +224,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     public String toString()
     {
         return String.format("%s[requested=\"%s\", negotiated=\"%s\"]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             configRequested.getParameterizedName(),
             configNegotiated.getParameterizedName());
     }
@@ -292,6 +293,13 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         {
             boolean finished = deflate(callback);
             _first = false;
+
+            if (finished)
+            {
+                _frame = null;
+                getDeflater().setInput(BufferUtil.EMPTY_BUFFER);
+            }
+
             return finished;
         }
 
@@ -457,6 +465,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                         continue;
                     }
 
+                    inflater.setInput(BufferUtil.EMPTY_BUFFER);
                     complete = true;
                     break;
                 }

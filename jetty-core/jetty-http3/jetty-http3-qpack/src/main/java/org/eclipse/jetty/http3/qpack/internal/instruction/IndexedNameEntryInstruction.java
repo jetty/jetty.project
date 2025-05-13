@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class IndexedNameEntryInstruction implements Instruction
 {
@@ -56,7 +57,7 @@ public class IndexedNameEntryInstruction implements Instruction
     public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + NBitStringEncoder.octetsNeeded(8, _value, _huffman);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, true);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
 
@@ -72,6 +73,6 @@ public class IndexedNameEntryInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x[index=%d,name=%s]", getClass().getSimpleName(), hashCode(), getIndex(), getValue());
+        return String.format("%s@%x[index=%d,name=%s]", TypeUtil.toShortName(getClass()), hashCode(), getIndex(), getValue());
     }
 }

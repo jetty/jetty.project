@@ -192,10 +192,10 @@ public class CustomTransportTest
                 // Set up the client-side.
                 EndPoint localEndPoint = pipe.getLocalEndPoint();
 
-                ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
+                ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
                 localEndPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
-                Transport transport = (Transport)context.get(Transport.class.getName());
+                Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
                 Connection connection = transport.newConnection(localEndPoint, context);
                 localEndPoint.setConnection(connection);
 

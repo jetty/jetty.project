@@ -23,26 +23,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
-import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
-import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -53,25 +48,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 {
-    @Test
-    public void testPropertiesAreForwardedOverHTTP3() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPropertiesAreForwardedOverHTTP3(TransportType transportType) throws Exception
     {
-        ClientConnector clientConnector = new ClientConnector();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(), null), clientConnector);
-        testPropertiesAreForwarded(http3Client, new HttpClientTransportOverHTTP3(http3Client));
+        prepareClient(transportType, false);
+        testPropertiesAreForwarded(http3Client);
     }
 
-    @Test
-    public void testPropertiesAreForwardedDynamic() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPropertiesAreForwardedDynamic(TransportType transportType) throws Exception
     {
-        ClientConnector clientConnector = new ClientConnector();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(), null), clientConnector);
-        testPropertiesAreForwarded(http3Client, new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+        prepareClient(transportType, true);
+        testPropertiesAreForwarded(http3Client);
     }
 
-    private void testPropertiesAreForwarded(HTTP3Client http3Client, HttpClientTransport httpClientTransport) throws Exception
+    private void testPropertiesAreForwarded(HTTP3Client http3Client) throws Exception
     {
-        try (HttpClient httpClient = new HttpClient(httpClientTransport))
+        try (HttpClient httpClient = this.httpClient)
         {
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
@@ -98,10 +93,11 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertTrue(http3Client.isStopped());
     }
 
-    @Test
-    public void testRequestHasHTTP3Version() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestHasHTTP3Version(TransportType transportType) throws Exception
     {
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -120,17 +116,19 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                 if (request.getVersion() != HttpVersion.HTTP_3)
                     request.abort(new Exception("Not an HTTP/3 request"));
             })
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testRequestResponseWithSmallContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestResponseWithSmallContent(TransportType transportType) throws Exception
     {
         String content = "Hello, World!";
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -141,15 +139,19 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         });
 
         ContentResponse response = httpClient.newRequest("https://localhost:" + connector.getLocalPort())
-            .timeout(10, TimeUnit.SECONDS)
+            .transport(transport)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(content, response.getContentAsString());
     }
 
-    @Test
-    public void testDelayedClientRead() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDelayedClientRead(TransportType transportType) throws Exception
     {
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -190,6 +192,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                         demander.run();
                 }
             })
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
@@ -210,10 +213,11 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testDelayDemandAfterHeaders() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDelayDemandAfterHeaders(TransportType transportType) throws Exception
     {
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -236,6 +240,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                     contentCount.incrementAndGet();
                 beforeContentLatch.countDown();
             })
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
@@ -256,10 +261,11 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertEquals(0, contentCount.get());
     }
 
-    @Test
-    public void testDelayDemandAfterLastContentChunk() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDelayDemandAfterLastContentChunk(TransportType transportType) throws Exception
     {
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -280,6 +286,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                 contentSourceRef.getAndSet(contentSource);
                 contentLatch.countDown();
             })
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
@@ -299,10 +306,11 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testDynamicTableReference() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDynamicTableReference(TransportType transportType) throws Exception
     {
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -323,6 +331,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -338,5 +347,4 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     {
         assertThat(response.getHeaders().getValuesList(header), equalTo(Arrays.asList(values)));
     }
-
 }

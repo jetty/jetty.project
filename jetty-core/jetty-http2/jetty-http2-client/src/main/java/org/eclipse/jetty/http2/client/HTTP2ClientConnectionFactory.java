@@ -38,20 +38,15 @@ import org.eclipse.jetty.util.Promise;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 {
-    public static final String CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client.http2";
-    public static final String SESSION_LISTENER_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionListener";
-    public static final String SESSION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionPromise";
-
-    private final Connection.Listener connectionListener = new ConnectionListener();
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
+        HTTP2Client client = (HTTP2Client)context.get(HTTP2Client.CONTEXT_KEY);
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
+        Session.Listener listener = (Session.Listener)context.get(HTTP2Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+        Promise<Session> sessionPromise = (Promise<Session>)context.get(HTTP2Client.SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         generator.getHpackEncoder().setMaxHeaderListSize(client.getMaxRequestHeadersSize());
@@ -70,7 +65,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         context.put(HTTP2Connection.class.getName(), connection);
-        connection.addEventListener(connectionListener);
+        connection.addEventListener(client.getSessionContainer());
+        client.getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
         return customize(connection, context);
@@ -95,7 +91,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void onOpen()
         {
-            Map<Integer, Integer> settings = listener.onPreface(getSession());
+            HTTP2Session session = getSession();
+            session.notifyLifeCycleOpen();
+
+            Map<Integer, Integer> settings = listener.onPreface(session);
             settings = settings == null ? new HashMap<>() : new HashMap<>(settings);
 
             // Below we want to populate any settings to send to the server
@@ -147,8 +146,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-            HTTP2Session session = getSession();
-
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             session.updateRecvWindow(windowDelta);
             if (windowDelta > 0)
@@ -173,23 +170,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             close();
             promise.failed(x);
-        }
-    }
-
-    private static class ConnectionListener implements Connection.Listener
-    {
-        @Override
-        public void onOpened(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.addManaged(http2Connection.getSession());
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.removeBean(http2Connection.getSession());
         }
     }
 }

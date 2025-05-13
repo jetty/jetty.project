@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -70,15 +70,14 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
             if (transport instanceof HttpClientTransportDynamic dynamicTransport)
             {
                 Origin origin = destination.getOrigin();
-                Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false));
+                Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false), origin.getTransport());
                 Destination newDestination = httpClient.resolveDestination(newOrigin);
 
                 // Multiple threads may access the map, especially with DEBUG logging enabled.
                 Map<String, Object> context = new ConcurrentHashMap<>();
-                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, httpClient);
-                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, newDestination);
+                context.put(Destination.CONTEXT_KEY, newDestination);
                 context.put(HttpResponse.class.getName(), response);
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
+                context.put(Connection.PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrading {} on {}", response.getRequest(), endPoint);

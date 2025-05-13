@@ -31,7 +31,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
+import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -54,7 +56,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -136,7 +137,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+    private String name = "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
@@ -176,6 +177,11 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public HttpClientTransport getHttpClientTransport()
     {
         return transport;
+    }
+
+    public ClientConnector getClientConnector()
+    {
+        return connector;
     }
 
     /**
@@ -491,10 +497,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         host = host.toLowerCase(Locale.ENGLISH);
         int port = request.getPort();
         port = normalizePort(scheme, port);
-        Transport transport = request.getTransport();
-        if (transport == null)
-            transport = Transport.TCP_IP;
-        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transport);
+        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, request.getTransport());
     }
 
     /**
@@ -544,21 +547,31 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
     public void newConnection(Destination destination, Promise<Connection> promise)
     {
+        HttpDestination httpDestination = (HttpDestination)destination;
+
         // Multiple threads may access the map, especially with DEBUG logging enabled.
         Map<String, Object> context = new ConcurrentHashMap<>();
-        context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
-        context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
-        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        context.put(ClientConnector.HTTP_CLIENT_CONTEXT_KEY, HttpClient.this);
+        context.put(Destination.CONTEXT_KEY, httpDestination);
+
+        Origin origin = httpDestination.resolveOrigin();
+        Origin.Protocol protocol = origin.getProtocol();
         List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
 
-        Origin origin = destination.getOrigin();
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy != null)
-            origin = proxy.getOrigin();
+        ClientConnectionFactory clientConnectionFactory = httpDestination.resolveClientConnectionFactory();
+        context.put(ClientConnectionFactory.CONTEXT_KEY, clientConnectionFactory);
+
+        Object tag = origin.getTag();
+        if (tag instanceof ClientConnectionFactory.Decorator)
+            context.put(ClientConnectionFactory.Decorator.CONTEXT_KEY, tag);
+
+        SslContextFactory.Client sslContextFactory = httpDestination.resolveSslContextFactory();
+        if (sslContextFactory != null)
+            context.put(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
 
         Transport transport = origin.getTransport();
-        context.put(Transport.class.getName(), transport);
+        context.put(Transport.CONTEXT_KEY, transport);
 
         if (transport.requiresDomainNameResolution())
         {
@@ -579,7 +592,10 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
                 private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
                 {
-                    context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
+                    InetSocketAddress socketAddress = socketAddresses.get(index);
+                    context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, socketAddress);
+                    context.put(ClientConnectionFactory.CONTEXT_KEY, clientConnectionFactory);
+                    context.put(Connection.PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
                     {
                         @Override
                         public void failed(Throwable x)
@@ -591,15 +607,57 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
                                 connect(socketAddresses, nextIndex, context);
                         }
                     });
-                    HttpClient.this.transport.connect(socketAddresses.get(index), context);
+                    getHttpClientTransport().connect(socketAddress, context);
                 }
             });
         }
         else
         {
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
-            this.transport.connect(transport.getSocketAddress(), context);
+            context.put(Connection.PROMISE_CONTEXT_KEY, promise);
+            getHttpClientTransport().connect(transport.getSocketAddress(), context);
         }
+    }
+
+    void connect(SocketAddress address, Map<String, Object> context)
+    {
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
+        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(context));
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
+        transport.connect(address, context);
+    }
+
+    ClientConnectionFactory resolveClientConnectionFactory(Map<String, Object> context)
+    {
+        return newClientConnectionFactory(context, HttpDestination::resolveOrigin);
+    }
+
+    ClientConnectionFactory newClientConnectionFactory(Map<String, Object> context)
+    {
+        return newClientConnectionFactory(context, HttpDestination::getOrigin);
+    }
+
+    private ClientConnectionFactory newClientConnectionFactory(Map<String, Object> context, Function<HttpDestination, Origin> originFn)
+    {
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
+        SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnectionFactory.CONTEXT_KEY);
+        ClientConnector clientConnector = getClientConnector();
+        factory = transport.newClientConnectionFactory(clientConnector, factory);
+        if (sslContextFactory != null && !transport.isIntrinsicallySecure())
+        {
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
+            Origin.Protocol protocol = originFn.apply(destination).getProtocol();
+            if (protocol != null && protocol.isNegotiate())
+                factory = new ALPNClientConnectionFactory(getExecutor(), factory, protocol.getProtocols());
+            factory = clientConnector.newSslClientConnectionFactory(sslContextFactory, factory);
+        }
+        ClientConnectionFactory.Decorator decorator = (ClientConnectionFactory.Decorator)context.get(ClientConnectionFactory.Decorator.CONTEXT_KEY);
+        if (decorator != null)
+            factory = decorator.apply(factory);
+        return factory;
     }
 
     private HttpConversation newConversation()
@@ -1167,13 +1225,6 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (port > 0)
             return port;
         return URIUtil.getDefaultPortForScheme(scheme);
-    }
-
-    public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
-    {
-        if (sslContextFactory == null)
-            sslContextFactory = getSslContextFactory();
-        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     @Override

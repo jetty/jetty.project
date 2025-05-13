@@ -21,6 +21,7 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
@@ -68,6 +69,6 @@ public class JakartaWebSocketShutdownContainer extends ContainerLifeCycle implem
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s, size=%s}", getClass().getSimpleName(), hashCode(), getState(), getBeans().size());
+        return String.format("%s@%x{%s, size=%s}", TypeUtil.toShortName(getClass()), hashCode(), getState(), getBeans().size());
     }
 }

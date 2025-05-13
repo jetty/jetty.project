@@ -31,7 +31,6 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -92,25 +91,12 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
-        ClientConnectionFactory connectionFactory = client.getHttpClientTransport();
-        boolean intrinsicallySecure = origin.getTransport().isIntrinsicallySecure();
-
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
+
+        ClientConnectionFactory connectionFactory = client.getHttpClientTransport();
         if (proxy != null)
-        {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
-            if (!intrinsicallySecure && proxy.isSecure())
-                connectionFactory = newSslClientConnectionFactory(proxy.getSslContextFactory(), connectionFactory);
-        }
-        else
-        {
-            if (!intrinsicallySecure && isSecure())
-                connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
-        }
-        Object tag = origin.getTag();
-        if (tag instanceof ClientConnectionFactory.Decorator)
-            connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
         this.connectionFactory = connectionFactory;
     }
 
@@ -197,15 +183,10 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return new BlockingArrayQueue<>(maxCapacity);
     }
 
-    private ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
-    {
-        return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
-    }
-
     @Override
     public boolean isSecure()
     {
-        return HttpScheme.isSecure(getScheme());
+        return origin.isSecure();
     }
 
     @Override
@@ -231,9 +212,28 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return proxy;
     }
 
-    public ClientConnectionFactory getClientConnectionFactory()
+    public Origin resolveOrigin()
+    {
+        return proxy == null ? getOrigin() : proxy.getOrigin();
+    }
+
+    public ClientConnectionFactory resolveClientConnectionFactory()
     {
         return connectionFactory;
+    }
+
+    public SslContextFactory.Client resolveSslContextFactory()
+    {
+        boolean secure = proxy == null ? isSecure() : proxy.isSecure();
+        if (secure)
+        {
+            SslContextFactory.Client sslContextFactory = getHttpClient().getSslContextFactory();
+            if (proxy == null)
+                return sslContextFactory;
+            SslContextFactory.Client proxySslContextFactory = proxy.getSslContextFactory();
+            return proxySslContextFactory != null ? proxySslContextFactory : sslContextFactory;
+        }
+        return null;
     }
 
     @ManagedAttribute(value = "The destination scheme", readonly = true)

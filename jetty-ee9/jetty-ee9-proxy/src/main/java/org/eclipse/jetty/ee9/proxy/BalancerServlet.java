@@ -27,6 +27,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 public class BalancerServlet extends ProxyServlet
@@ -285,7 +286,7 @@ public class BalancerServlet extends ProxyServlet
         @Override
         public String toString()
         {
-            return String.format("%s[name=%s,proxyTo=%s]", getClass().getSimpleName(), _name, _proxyTo);
+            return String.format("%s[name=%s,proxyTo=%s]", TypeUtil.toShortName(getClass()), _name, _proxyTo);
         }
 
         @Override

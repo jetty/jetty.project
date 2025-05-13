@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -713,7 +714,7 @@ public class ConnectHandler extends Handler.Wrapper
         {
             EndPoint endPoint = getEndPoint();
             return String.format("%s@%x[l:%s<=>r:%s]",
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 endPoint.getLocalSocketAddress(),
                 endPoint.getRemoteSocketAddress());

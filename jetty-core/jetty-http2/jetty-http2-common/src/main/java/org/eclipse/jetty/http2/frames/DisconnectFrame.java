@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.http2.frames;
 
-@Deprecated (forRemoval = true, since = "12.1.0")
+/**
+ * @deprecated No replacement, never used.
+ */
+@Deprecated(since = "12.0.20", forRemoval = true)
 public class DisconnectFrame extends Frame
 {
     public DisconnectFrame()

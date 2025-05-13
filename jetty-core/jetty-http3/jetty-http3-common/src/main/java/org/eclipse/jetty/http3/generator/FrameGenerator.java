@@ -32,5 +32,5 @@ public abstract class FrameGenerator
         return bufferPool;
     }
 
-    public abstract int generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail);
+    public abstract long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail);
 }

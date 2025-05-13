@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1463,7 +1464,7 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock lock = _channelState.tryLock())
         {
             boolean held = lock.isHeldByCurrentThread();
-            return String.format("%s@%x{%s%s}", this.getClass().getSimpleName(), hashCode(), held ? "" : "?:", unsafeStateString());
+            return String.format("%s@%x{%s%s}", TypeUtil.toShortName(this.getClass()), hashCode(), held ? "" : "?:", unsafeStateString());
         }
     }
 

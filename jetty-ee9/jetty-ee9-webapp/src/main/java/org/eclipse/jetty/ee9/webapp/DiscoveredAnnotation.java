@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,6 @@ public abstract class DiscoveredAnnotation
     @Override
     public String toString()
     {
-        return getClass().getName() + "[" + getClassName() + "," + getResource() + "]";
+        return TypeUtil.toShortName(getClass()) + "[" + getClassName() + "," + getResource() + "]";
     }
 }

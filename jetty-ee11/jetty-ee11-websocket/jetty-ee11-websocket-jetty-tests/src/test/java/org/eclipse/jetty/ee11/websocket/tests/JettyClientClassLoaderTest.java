@@ -206,7 +206,7 @@ public class JettyClientClassLoaderTest
         MatcherAssert.assertThat(response.getStatus(), Matchers.is(HttpStatus.OK_200));
 
         // The ContextClassLoader in the WebSocketClients onOpen was the WebAppClassloader.
-        MatcherAssert.assertThat(response.getContentAsString(), containsString("ContextClassLoader: WebAppClassLoader"));
+        MatcherAssert.assertThat(response.getContentAsString(), containsString("ContextClassLoader: oeje.WebAppClassLoader"));
 
         // Verify that we used Servers version of WebSocketClient.
         ClassLoader serverClassLoader = webAppTester.getServer().getClass().getClassLoader();
@@ -242,9 +242,9 @@ public class JettyClientClassLoaderTest
         MatcherAssert.assertThat(response.getStatus(), Matchers.is(HttpStatus.OK_200));
 
         // The ContextClassLoader in the WebSocketClients onOpen was the WebAppClassloader.
-        MatcherAssert.assertThat(response.getContentAsString(), containsString("ContextClassLoader: WebAppClassLoader"));
+        MatcherAssert.assertThat(response.getContentAsString(), containsString("ContextClassLoader: oeje.WebAppClassLoader"));
 
         // Verify that we used WebApps version of WebSocketClient.
-        MatcherAssert.assertThat(response.getContentAsString(), containsString("ClientClassLoader: WebAppClassLoader"));
+        MatcherAssert.assertThat(response.getContentAsString(), containsString("ClientClassLoader: oeje.WebAppClassLoader"));
     }
 }

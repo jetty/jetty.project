@@ -13,14 +13,15 @@
 
 module org.eclipse.jetty.http3.client
 {
-    requires org.slf4j;
-
+    requires org.eclipse.jetty.alpn.client;
     requires transitive org.eclipse.jetty.http3.common;
     requires transitive org.eclipse.jetty.http3.qpack;
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.common;
     requires transitive org.eclipse.jetty.quic.client;
     requires transitive org.eclipse.jetty.util;
+    requires org.slf4j;
 
     exports org.eclipse.jetty.http3.client;
+    exports org.eclipse.jetty.http3.client.internal;
 }

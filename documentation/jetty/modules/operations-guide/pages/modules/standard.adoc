@@ -163,12 +163,9 @@ include::{jetty-home}/modules/console-capture.mod[tags=documentation]
 [[core-deploy]]
 == Module `core-deploy`
 
-include::{jetty-home}/modules/ee11-deploy.mod[tags=description]
+The `core-deploy` module enables deployment of web applications that only use the Jetty Core APIs, as described in xref:deploy/index.adoc[this section].
 
-Deployment is managed via a `DeploymentScanner` component that watches a directory for changes.
-See xref:deploy/index.adoc[how to deploy web applications] for more information.
-
-TODO
+See also the <<static-deploy,`static-deploy`>> module for Jetty static deployment, and the <<eeN-deploy,`{ee-all}-deploy`>> modules for Jakarta EE deployment environments.
 
 [[cross-origin]]
 == Module `cross-origin`
@@ -205,6 +202,29 @@ The module properties are:
 include::{jetty-home}/modules/debuglog.mod[tags=documentation]
 ----
 
+[[deployment-scanner]]
+== Module `deployment-scanner`
+
+The `deployment-scanner` module installs the `org.eclipse.jetty.deploy.DeploymentScanner` component that watches web application deploy directories for changes, to deploy/redeploy/undeploy web applications that are present in those directories.
+
+This module is a dependency for all the deploy modules such as <<static-deploy,`static-deploy`>>, <<core-deploy,`core-deploy`>> and <<eeN-deploy,`{ee-all}-deploy`.
+
+There is only one `DeploymentScanner` for all the deploy modules that are enabled.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/deployment-scanner.mod[tags=documentation]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.deploy.monitoredDir`::
+The name of the directory to deploy web applications.
+`jetty.deploy.scanInterval`::
+The scan period in seconds, that is how frequently the `DeploymentScanner` wakes up to scan the monitored directories for changes.
+By default, `jetty.deploy.scanInterval=0` so that _hot_ deployment is disabled and only _cold_ deployment is possible (see also xref:deploy/index.adoc#hot-cold[here] for more information).
+
 [[dos]]
 == Module `dos`
 
@@ -237,28 +257,21 @@ include::{jetty-home}/modules/eager-content.mod[tags=documentation]
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`
 
-include::{jetty-home}/modules/ee11-deploy.mod[tags=description]
+The `{ee-all}-deploy` modules enable deployment of corresponding Java/Jakarta EE web applications, as described in xref:deploy/index.adoc[this section].
 
-Deployment is managed via a `DeploymentScanner` component that watches a directory for changes.
-See xref:deploy/index.adoc[how to deploy web applications] for more information.
+Each `eeN-deploy` module supports the correspondent Java/Jakarta EE specification.
 
-Adding files or directories to this monitored directory will cause the `DeploymentScanner` to deploy them as web applications; updating files already existing in this monitored directory will cause the `DeploymentScanner` to re-deploy the corresponding web application; removing files in this monitored directory will cause the `DeploymentScanner` to "undeploy" the corresponding web application.
-(You can find a more detailed discussion of these rules in the xref:deploy/index.adoc#rules[deployment rules] section.)
+Multiple `eeN-deploy` modules may be enabled at the same time, allowing deployment of, for example, old Java EE 8 web applications alongside new Jakarta {ee-current-caps} web applications, in the same server.
 
-Multiple versions of this module exist (`{ee-all}-deploy`) to support each Jakarta EE platform's version of the Java Servlet specification.
-Jetty's configuration properties are nearly identical across these versions; the configuration properties for the `{ee-current}-deploy` Jetty module are:
+The module configuration properties are nearly identical across the EE versions.
+The module configuration properties for the `{ee-current}-deploy` Jetty module are:
 
+[,properties,subs=+attributes]
 ----
-include::{jetty-home}/modules/ee11-deploy.mod[tags=ini-template]
+include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=ini-template]
 ----
 
-Among the configurable properties, the most relevant are:
-
-`jetty.deploy.monitoredDir`::
-The name of the monitored directory.
-`jetty.deploy.scanInterval`::
-The scan period in seconds, that is how frequently the `DeploymentScanner` wakes up to scan the monitored directory for changes.
-Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:deploy/index.adoc#hot-static[here] for more information).
+See also the <<static-deploy,`static-deploy`>> module and the <<core-deploy,`core-deploy`>> module for Jetty specific deployment environments.
 
 [[eeN-webapp]]
 == Module `{ee-all}-webapp`
@@ -382,10 +395,12 @@ The same attack may be performed with `PRIORITY` frames, empty `DATA` frames, `P
 
 The `http3` module enables support for the HTTP/3 protocol.
 
-The module properties are:
+Support for the QUIC protocol underlying HTTP/3 is provided by default via the `http3-quiche` module that uses the link:https://github.com/cloudflare/quiche[Quiche] native library.
+
+The `http3-quiche` module properties are:
 
 ----
-include::{jetty-home}/modules/http3.mod[tags=documentation]
+include::{jetty-home}/modules/http3-quiche.mod[tags=documentation]
 ----
 
 [[http-config]]
@@ -807,6 +822,13 @@ The module properties are:
 ----
 include::{jetty-home}/modules/state-tracking.mod[tags=documentation]
 ----
+
+[[static-deploy]]
+== Module `static-deploy`
+
+The `static-deploy` module enables deployment of web applications that consist only of static files, as described in xref:deploy/index.adoc[this section].
+
+See also the <<core-deploy,`core-deploy`>> module for Jetty core deployment, and the <<eeN-deploy,`{ee-all}-deploy`>> modules for Jakarta EE deployment environments.
 
 [[test-keystore]]
 == Module `test-keystore`

@@ -14,23 +14,22 @@
 package org.eclipse.jetty.http3;
 
 import java.util.EnumSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.CyclicTimeouts;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +38,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private final AtomicReference<Data> dataRef = new AtomicReference<>();
     private final HTTP3Session session;
-    private final QuicStreamEndPoint endPoint;
+    private final StreamEndPoint endPoint;
     private final boolean local;
+    private final SerializedInvoker invoker;
     private CloseState closeState = CloseState.NOT_CLOSED;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
@@ -53,14 +52,15 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private boolean dataLast;
     private boolean dataAvailable;
 
-    public HTTP3Stream(HTTP3Session session, QuicStreamEndPoint endPoint, boolean local)
+    public HTTP3Stream(HTTP3Session session, StreamEndPoint endPoint, boolean local)
     {
         this.session = session;
         this.endPoint = endPoint;
         this.local = local;
+        this.invoker = new SerializedInvoker(TypeUtil.toShortName(getClass()), session.getProtocolSession().getExecutor());
     }
 
-    public QuicStreamEndPoint getEndPoint()
+    public StreamEndPoint getStreamEndPoint()
     {
         return endPoint;
     }
@@ -80,7 +80,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public long getId()
     {
-        return endPoint.getStreamId();
+        return endPoint.getStream().getId();
     }
 
     @Override
@@ -101,11 +101,11 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void setIdleTimeout(long idleTimeout)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting idle timeout {} ms for {}", idleTimeout, this);
         this.idleTimeout = idleTimeout;
         notIdle();
         session.scheduleIdleTimeout(this);
-        if (LOG.isDebugEnabled())
-            LOG.debug("set idle timeout {} ms for {}", idleTimeout, this);
     }
 
     @Override
@@ -124,11 +124,11 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     void onIdleTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
+            LOG.debug("stream idle timeout {} ms expired on {}", getIdleTimeout(), this);
         notifyIdleTimeout(timeout, Promise.from(timedOut ->
         {
             if (timedOut)
-                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout, Promise.Invocable.noop());
             else
                 notIdle();
             promise.succeeded(timedOut);
@@ -136,146 +136,122 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public CompletableFuture<Stream> data(DataFrame frame)
+    public void data(DataFrame frame, Promise.Invocable<Stream> promise)
     {
-        return write(frame);
+        write(frame, promise);
     }
 
-    protected CompletableFuture<Stream> write(Frame frame)
+    protected void write(Frame frame, Promise.Invocable<Stream> promise)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", frame, this);
-
-        return writeFrame(frame)
-            .whenComplete((s, x) ->
+        writeFrame(frame, new Promise.Invocable.Abstract<>(promise.getInvocationType())
+        {
+            @Override
+            public void succeeded(Stream result)
             {
-                if (x == null)
-                    updateClose(Frame.isLast(frame), true);
-                else
-                    session.removeStream(this, x);
-            });
+                updateClose(Frame.isLast(frame), true);
+                promise.succeeded(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                updateClose(Frame.isLast(frame), true);
+                Promise.Invocable<Stream> p = Promise.Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
+            }
+        });
     }
 
     @Override
-    public Data readData()
+    public Content.Chunk read()
     {
-        try
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("reading data on {}", this);
+        HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
+        Content.Chunk chunk = connection.read();
 
-            Data data;
-            if (isLast())
-            {
-                data = Stream.Data.EOF;
-            }
-            else
-            {
-                data = read();
-                if (data == null)
-                {
-                    HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-                    connection.receive();
-                    data = read();
-                }
-            }
+        if (LOG.isDebugEnabled())
+            LOG.debug("read {} on {}", chunk, this);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {} on {}", data, this);
-            return data;
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not read {}", this, x);
-            reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-            // Rethrow to the application, so don't notify onFailure().
-            throw x;
-        }
-    }
-
-    private Data read()
-    {
-        Data data = dataRef.getAndSet(null);
         try (AutoLock ignored = lock.lock())
         {
-            if (data != null)
-                dataLast = data.isLast();
-            else
-                dataAvailable = false;
+            dataAvailable = chunk != null;
+            dataLast = chunk != null && chunk.isLast();
         }
-        if (data != null)
-            updateClose(data.isLast(), false);
-        if (LOG.isDebugEnabled())
-            LOG.debug("reading available data {} on {}", data, this);
-        return data;
+
+        if (chunk != null)
+            updateClose(chunk.isLast(), false);
+
+        return chunk;
     }
 
     @Override
     public void demand()
     {
-        boolean hasData;
+        // On the server, the first demand typically comes from
+        // Session.Server.Listener.onRequest(), but cannot notify
+        // onDataAvailable() until onRequest() has returned the
+        // Stream.Server.Listener instance, so initially dataStalled=false.
+        // This is not strictly necessary on the client because
+        // the Stream.Client.Listener is already available, but
+        // the mechanism is implemented in this common class for
+        // simplicity, and it is more symmetric since onDataAvailable()
+        // is only called after returning from onResponse().
+
+        boolean needsFillInterest;
         boolean process = false;
         try (AutoLock ignored = lock.lock())
         {
             dataDemand = true;
-            hasData = dataAvailable;
-            if (dataStalled && hasData || dataLast)
+            needsFillInterest = !dataAvailable;
+            if (dataStalled && dataAvailable || dataLast)
             {
                 dataStalled = false;
                 process = true;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("demand, wasStalled={} dataAvailable={} on {}", process, hasData, this);
+            LOG.debug("demand, process={} needsFillInterest={} on {}", process, needsFillInterest, this);
         if (process)
         {
-            processData();
+            processData(false);
         }
-        else if (!hasData)
+        else if (needsFillInterest)
         {
             HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
             connection.fillInterested();
         }
     }
 
-    private void processData()
+    void processData(boolean notifyDataAvailable)
     {
-        while (true)
+        boolean notify = false;
+        try (AutoLock ignored = lock.lock())
         {
-            boolean notify = true;
-            try (AutoLock ignored = lock.lock())
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing demand={}, dataAvailable={}, notify={} on {}", dataDemand, dataAvailable, notifyDataAvailable, this);
+            dataStalled = true;
+            if (dataDemand)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("processing demand={}, last={} on {}", dataDemand, dataLast, this);
-                if (dataDemand)
+                // Notify if there is both demand and data available.
+                if (dataAvailable || notifyDataAvailable)
                 {
-                    // Do not notify if there is demand but no data.
-                    if (!dataAvailable)
-                        notify = false;
-                    else
-                        dataDemand = false;
-                }
-                else
-                {
-                    dataStalled = true;
-                    notify = false;
+                    dataDemand = false;
+                    notify = true;
                 }
             }
-
-            if (!notify)
-                break;
-
-            onDataAvailable();
         }
+        if (notify)
+            invoker.run(this::onDataAvailable);
     }
 
     @Override
-    public CompletableFuture<Stream> trailer(HeadersFrame frame)
+    public void trailer(HeadersFrame frame, Promise.Invocable<Stream> promise)
     {
         if (!frame.isLast())
-            throw new IllegalArgumentException("invalid trailer frame: property 'last' must be true");
-        return write(frame);
+        {
+            promise.failed(new IllegalArgumentException("invalid trailer frame: property 'last' must be true"));
+            return;
+        }
+        write(frame, promise);
     }
 
     public boolean hasDemand()
@@ -308,23 +284,15 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         try (AutoLock ignored = lock.lock())
         {
             dataLast = frame.isLast();
-            dataAvailable = true;
-        }
-    }
-
-    protected boolean hasDemandOrStall()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            dataStalled = !dataDemand;
-            return dataDemand;
+            // Assume there will be data.
+            dataAvailable = !dataLast;
         }
     }
 
     public void onData(DataFrame ignored)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA))
-            notIdle();
+        validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA);
+        notIdle();
     }
 
     private void onDataAvailable()
@@ -334,36 +302,14 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         notifyDataAvailable();
     }
 
-    public void onData(Data data)
-    {
-        // Retain the data because it is stored for later reads.
-        data.retain();
-        if (!dataRef.compareAndSet(null, data))
-            throw new IllegalStateException();
-
-        boolean process;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onData demand={}, last={} {} on {}", dataDemand, dataLast, data, this);
-            dataAvailable = true;
-            process = dataDemand;
-        }
-
-        if (process)
-            processData();
-    }
-
     protected abstract void notifyDataAvailable();
 
     public void onTrailer(HeadersFrame frame)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER))
-        {
-            notIdle();
-            notifyTrailer(frame);
-            updateClose(frame.isLast(), false);
-        }
+        validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER);
+        notIdle();
+        updateClose(frame.isLast(), false);
+        notifyTrailer(frame);
     }
 
     protected abstract void notifyTrailer(HeadersFrame frame);
@@ -373,58 +319,70 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public void onFailure(long error, Throwable failure)
     {
         notifyFailure(error, failure);
-        session.removeStream(this, failure);
+        disconnect(error, failure, Promise.Invocable.noop());
     }
 
     protected abstract void notifyFailure(long error, Throwable failure);
 
-    protected boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
+    protected void validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {
         if (allowed.contains(frameState))
         {
             frameState = target;
-            return true;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("invalid frame sequence, current={}, allowed={}, next={}", frameState, allowed, target);
-            if (frameState == FrameState.FAILED)
-                return false;
             frameState = FrameState.FAILED;
-            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
-            return false;
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR, "invalid_frame_sequence");
         }
     }
 
-    public Promise.Completable<Stream> writeFrame(Frame frame)
+    public void writeFrame(Frame frame, Promise.Invocable<Stream> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing {} on {}", frame, this);
         notIdle();
-        return Promise.Completable.with(p ->
-            session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
+        session.writeMessageFrame(endPoint, frame, Promise.Invocable.toCallback(promise, this));
+    }
+
+    private CloseState getCloseState()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return closeState;
+        }
     }
 
     public boolean isClosed()
     {
-        return closeState == CloseState.CLOSED;
+        return getCloseState()  == CloseState.CLOSED;
     }
 
     public void updateClose(boolean update, boolean local)
     {
-        if (update)
+        if (!update)
+            return;
+        boolean remove = false;
+        try (AutoLock ignored = lock.lock())
         {
-            switch (closeState)
+            CloseState oldCloseState = closeState;
+            switch (oldCloseState)
             {
                 case NOT_CLOSED ->
                 {
-                    closeState = local ? CloseState.LOCALLY_CLOSED : CloseState.REMOTELY_CLOSED;
+                    if (local)
+                        closeState = CloseState.LOCALLY_CLOSED;
+                    else
+                        closeState = CloseState.REMOTELY_CLOSED;
                 }
                 case LOCALLY_CLOSED ->
                 {
                     if (!local)
                     {
                         closeState = CloseState.CLOSED;
-                        session.removeStream(this, null);
+                        remove = true;
                     }
                 }
                 case REMOTELY_CLOSED ->
@@ -432,7 +390,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
                     if (local)
                     {
                         closeState = CloseState.CLOSED;
-                        session.removeStream(this, null);
+                        remove = true;
                     }
                 }
                 case CLOSED ->
@@ -440,30 +398,53 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
                 }
                 default -> throw new IllegalStateException();
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("updated close {}->{} on {}", oldCloseState, closeState, this);
         }
+        if (remove)
+            session.removeStream(this);
     }
 
     @Override
-    public void reset(long error, Throwable failure)
+    public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
+    {
+        disconnect(appErrorCode, failure, failure != null, promise);
+    }
+
+    private void disconnect(long appErrorCode, Throwable failure, boolean notifyFailure, Promise.Invocable<Stream> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("resetting {} with error 0x{} {}", this, Long.toHexString(error), failure.toString());
-        closeState = CloseState.CLOSED;
-        session.removeStream(this, failure);
-        endPoint.close(error, failure);
+            LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
+        try (AutoLock ignored = lock.lock())
+        {
+            closeState = CloseState.CLOSED;
+        }
+
+        // TODO: reset data* fields?
+
+        if (notifyFailure)
+            notifyFailure(appErrorCode, failure);
+
+        session.removeStream(this);
+
+        // Propagate outwards.
+        HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
+        connection.disconnect(appErrorCode, failure, Promise.Invocable.toPromise(promise, streamEndPoint -> this));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[demand=%b,stalled=%b,last=%b,idle=%d,session=%s]",
-            getClass().getSimpleName(),
+        return String.format("%s@%x#%d[%s,demand=%b,stalled=%b,last=%b,idle=%d/%d,session=%s]",
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getId(),
+            getCloseState(),
             hasDemand(),
             isStalled(),
             isLast(),
-            NanoTime.millisSince(expireNanoTime),
+            NanoTime.millisUntil(expireNanoTime),
+            getIdleTimeout(),
             getSession()
         );
     }

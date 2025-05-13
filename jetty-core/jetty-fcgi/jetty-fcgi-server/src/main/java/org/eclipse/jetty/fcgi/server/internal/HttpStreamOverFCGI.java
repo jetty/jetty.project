@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -383,6 +384,6 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public String toString()
     {
-        return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 }

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.frames;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 public class GoAwayFrame extends Frame
 {
     public static final GoAwayFrame CLIENT_GRACEFUL = new GoAwayFrame((1L << 62) - 1);
@@ -39,6 +41,6 @@ public class GoAwayFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s@%x[lastId=%d,graceful=%b]", getClass().getSimpleName(), hashCode(), getLastId(), isGraceful());
+        return String.format("%s@%x[lastId=%d,graceful=%b]", TypeUtil.toShortName(getClass()), hashCode(), getLastId(), isGraceful());
     }
 }

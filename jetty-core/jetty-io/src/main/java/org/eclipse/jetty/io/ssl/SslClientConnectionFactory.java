@@ -35,24 +35,21 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 /**
  * <p>A ClientConnectionFactory that creates client-side {@link SslConnection} instances.</p>
  */
-public class SslClientConnectionFactory implements ClientConnectionFactory
+public class SslClientConnectionFactory extends ClientConnectionFactory.Wrapper
 {
-    public static final String SSL_ENGINE_CONTEXT_KEY = "org.eclipse.jetty.client.ssl.engine";
-
     private final SslContextFactory.Client _sslContextFactory;
     private final ByteBufferPool _byteBufferPool;
     private final Executor _executor;
-    private final ClientConnectionFactory _clientConnectionFactory;
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
     private boolean _requireCloseMessage;
 
     public SslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
+        super(connectionFactory);
         _sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
         _byteBufferPool = byteBufferPool;
         _executor = executor;
-        _clientConnectionFactory = connectionFactory;
     }
 
     public SslContextFactory.Client getSslContextFactory()
@@ -68,11 +65,6 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     public Executor getExecutor()
     {
         return _executor;
-    }
-
-    public ClientConnectionFactory getClientConnectionFactory()
-    {
-        return _clientConnectionFactory;
     }
 
     public void setDirectBuffersForEncryption(boolean useDirectBuffers)
@@ -118,9 +110,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     {
         SSLEngine engine;
         SocketAddress remote = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        if (remote instanceof InetSocketAddress)
+        if (remote instanceof InetSocketAddress inetRemote)
         {
-            InetSocketAddress inetRemote = (InetSocketAddress)remote;
             String host = inetRemote.getHostString();
             int port = inetRemote.getPort();
             engine = _sslContextFactory instanceof SslEngineFactory
@@ -132,12 +123,12 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             engine = _sslContextFactory.newSSLEngine();
         }
         engine.setUseClientMode(true);
-        context.put(SSL_ENGINE_CONTEXT_KEY, engine);
+        context.put(SSLEngine.class.getName(), engine);
 
         SslConnection sslConnection = newSslConnection(endPoint, engine);
 
         EndPoint appEndPoint = sslConnection.getSslEndPoint();
-        appEndPoint.setConnection(_clientConnectionFactory.newConnection(appEndPoint, context));
+        appEndPoint.setConnection(getWrapped().newConnection(appEndPoint, context));
 
         sslConnection.addHandshakeListener(new HTTPSHandshakeListener(context));
         customize(sslConnection, context);
@@ -153,17 +144,16 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     @Override
     public Connection customize(Connection connection, Map<String, Object> context)
     {
-        if (connection instanceof SslConnection)
+        if (connection instanceof SslConnection sslConnection)
         {
-            SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(_sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslContextFactory.getRenegotiationLimit());
             sslConnection.setRequireCloseMessage(isRequireCloseMessage());
-            ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnectionFactory.CLIENT_CONTEXT_KEY);
+            ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnector.HTTP_CLIENT_CONTEXT_KEY);
             if (client != null)
                 client.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
-        return ClientConnectionFactory.super.customize(connection, context);
+        return super.customize(connection, context);
     }
 
     /**
@@ -182,7 +172,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
          * @param context the {@link ClientConnectionFactory} context
          * @return a new SSLEngine instance
          */
-        public SSLEngine newSslEngine(String host, int port, Map<String, Object> context);
+        SSLEngine newSslEngine(String host, int port, Map<String, Object> context);
     }
 
     private class HTTPSHandshakeListener implements SslHandshakeListener

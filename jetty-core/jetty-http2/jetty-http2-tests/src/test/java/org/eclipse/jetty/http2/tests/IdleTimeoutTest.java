@@ -98,7 +98,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -138,7 +138,7 @@ public class IdleTimeoutTest extends AbstractTest
         // The request is not replied, and the server should idle timeout.
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -186,7 +186,7 @@ public class IdleTimeoutTest extends AbstractTest
         CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -236,7 +236,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -274,7 +274,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -316,7 +316,7 @@ public class IdleTimeoutTest extends AbstractTest
         CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -383,7 +383,7 @@ public class IdleTimeoutTest extends AbstractTest
         CountDownLatch timeoutLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<>()
+        session.newStream(requestFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -452,7 +452,7 @@ public class IdleTimeoutTest extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         // Stream does not end here, but we won't send any DATA frame.
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(requestFrame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onReset(Stream stream, ResetFrame frame, Callback callback)

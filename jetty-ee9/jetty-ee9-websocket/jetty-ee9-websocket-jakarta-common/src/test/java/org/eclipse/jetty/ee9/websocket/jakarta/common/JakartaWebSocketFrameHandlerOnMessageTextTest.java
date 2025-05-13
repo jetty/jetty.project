@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -128,7 +129,7 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     {
         assertOnMessageInvocation(new MessageSessionTextSocket(),
             allOf(
-                containsString("onMessage(JakartaWebSocketSession@"),
+                anyOf(containsString("onMessage(oeje8wjc.JakartaWebSocketSession@"), containsString("onMessage(oeje9wjc.JakartaWebSocketSession@")),
                 containsString(MessageSessionTextSocket.class.getName()),
                 containsString(", Hello World)")
             ));

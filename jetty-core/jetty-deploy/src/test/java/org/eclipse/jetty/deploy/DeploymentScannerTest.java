@@ -21,17 +21,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.toolchain.test.ExtraMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -363,5 +368,25 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         };
 
         deploymentScanner.pathsChanged(changeSet);
+    }
+
+    public static Stream<Arguments> envNameSorting()
+    {
+        return Stream.of(
+            Arguments.of(List.of("static", "core"), List.of("core", "static")),
+            Arguments.of(List.of("core", "static"), List.of("core", "static")),
+            Arguments.of(List.of("core", "ee11"), List.of("ee11", "core")),
+            Arguments.of(List.of("core", "ee11", "ee9", "ee10"), List.of("ee11", "ee10", "ee9", "core"))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("envNameSorting")
+    public void testEnvironmentNameSorting(List<String> input, List<String> expected)
+    {
+        List<String> sorted = input.stream()
+            .sorted(DeploymentScanner.ENVIRONMENT_COMPARATOR)
+            .toList();
+        assertThat(sorted, ExtraMatchers.ordered(expected));
     }
 }

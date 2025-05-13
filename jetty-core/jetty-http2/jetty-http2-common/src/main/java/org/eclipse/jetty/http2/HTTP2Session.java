@@ -22,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +30,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -68,9 +71,11 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -79,7 +84,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject
-public abstract class HTTP2Session extends ContainerLifeCycle implements Session, Parser.Listener
+public abstract class HTTP2Session extends AbstractLifeCycle implements Session, Parser.Listener, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
     // SPEC: stream numbers can go up to 2^31-1, but increment by 2.
@@ -87,6 +92,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private final Map<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
     private final Set<Integer> priorityStreams = ConcurrentHashMap.newKeySet();
+    private final List<FrameListener> frameListeners = new CopyOnWriteArrayList<>();
+    private final List<LifeCycleListener> lifeCycleListeners = new CopyOnWriteArrayList<>();
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();
@@ -132,8 +139,34 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.writeThreshold = 32 * 1024;
         this.pushEnabled = true; // SPEC: by default, push is enabled.
-        installBean(flowControl);
-        installBean(flusher);
+    }
+
+    @Override
+    public boolean addEventListener(EventListener listener)
+    {
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof FrameListener frameListener)
+                frameListeners.add(frameListener);
+            if (listener instanceof LifeCycleListener lifeCycleListener)
+                lifeCycleListeners.add(lifeCycleListener);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeEventListener(EventListener listener)
+    {
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof FrameListener frameListener)
+                frameListeners.remove(frameListener);
+            if (listener instanceof LifeCycleListener lifeCycleListener)
+                lifeCycleListeners.remove(lifeCycleListener);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -141,6 +174,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         super.doStop();
         streamsState.halt("stop");
+    }
+
+    public int getFrameQueueSize()
+    {
+        return flusher.getFrameQueueSize();
     }
 
     @ManagedAttribute(value = "The flow control strategy", readonly = true)
@@ -274,6 +312,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             LOG.debug("Received {} on {}", data, this);
 
         DataFrame frame = data.frame();
+        notifyIncomingFrame(frame);
+
         int streamId = frame.getStreamId();
         HTTP2Stream stream = getStream(streamId);
 
@@ -343,13 +383,19 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public abstract void onHeaders(HeadersFrame frame);
+    public void onHeaders(HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {} on {}", frame, this);
+        notifyIncomingFrame(frame);
+    }
 
     @Override
     public void onPriority(PriorityFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} on {}", frame, this);
+        notifyIncomingFrame(frame);
     }
 
     @Override
@@ -360,6 +406,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} for {} on {}", frame, stream, this);
+
+        notifyIncomingFrame(frame);
 
         if (stream != null)
         {
@@ -390,6 +438,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} on {}", frame, this);
+
+        notifyIncomingFrame(frame);
 
         if (frame.isReply())
             return;
@@ -490,10 +540,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     }
 
     @Override
+    public void onPushPromise(PushPromiseFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {} on {}", frame, this);
+        notifyIncomingFrame(frame);
+    }
+
+    @Override
     public void onPing(PingFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} on {}", frame, this);
+
+        notifyIncomingFrame(frame);
 
         if (frame.isReply())
         {
@@ -519,6 +579,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} on {}", frame, this);
+
+        notifyIncomingFrame(frame);
+
         streamsState.onGoAway(frame);
     }
 
@@ -527,6 +590,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {} on {}", frame, this);
+
+        notifyIncomingFrame(frame);
 
         int streamId = frame.getStreamId();
         int windowDelta = frame.getWindowDelta();
@@ -1169,6 +1234,61 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         Atomics.updateMax(lastRemoteStreamId, streamId);
     }
 
+    public void notifyLifeCycleOpen()
+    {
+        notifyLifeCycle(LifeCycleListener::onOpen);
+    }
+
+    private void notifyLifeCycleClose()
+    {
+        notifyLifeCycle(LifeCycleListener::onClose);
+    }
+
+    private void notifyLifeCycle(BiConsumer<LifeCycleListener, Session> method)
+    {
+        for (LifeCycleListener listener : lifeCycleListeners)
+        {
+            try
+            {
+                method.accept(listener, this);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
+        }
+    }
+
+    private void notifyIncomingFrame(Frame frame)
+    {
+        notifyFrame(listener -> listener.onIncomingFrame(this, frame));
+    }
+
+    public void notifyOutgoingFrames(Collection<Entry> entries)
+    {
+        for (Entry entry : entries)
+        {
+            Frame frame = entry.frame();
+            if (!frame.getType().isSynthetic())
+                notifyFrame(listener -> listener.onOutgoingFrame(this, frame));
+        }
+    }
+
+    private void notifyFrame(Consumer<FrameListener> method)
+    {
+        for (FrameListener listener : frameListeners)
+        {
+            try
+            {
+                method.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
+        }
+    }
+
     protected Stream.Listener notifyNewStream(Stream stream, HeadersFrame frame)
     {
         try
@@ -1276,14 +1396,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new DumpableCollection("streams", streams.values()));
+        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, new DumpableCollection("streams", streams.values()));
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress(),
@@ -1291,6 +1411,83 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             recvWindow,
             streamsState
         );
+    }
+
+    /**
+     * <p>Listener for processable HTTP/2 frames that have been received.</p>
+     * <p>Non-processable frames, such as those that caused a low-level
+     * protocol error, or those that exceed frame rate control, are not
+     * notified to instances of this class.</p>
+     * <p>Applications can register instances of this class either
+     * directly on the HTTP/2 session via
+     * {@link HTTP2Session#addEventListener(EventListener)}, or by adding
+     * the instances as beans to either the {@code HTTP2Client} (on the
+     * client), or the HTTP/2 {@code ConnectionFactory} (on the server).
+     * <p>Applications may invoke effect-free methods on the
+     * {@link Session} object received in the methods of this class,
+     * such as {@link Session#getRemoteSocketAddress()} or
+     * {@link Session#getStreams()}, but should not invoke
+     * {@link Session} methods that are effect-ful, such as
+     * {@link Session#close(int, String, Callback)} or
+     * {@link Session#newStream(HeadersFrame, Promise, Stream.Listener)},
+     * since they may result in undefined behavior.</p>
+     * <p>Instances of this class must be stateless or thread-safe,
+     * since the same instance will be registered for all sessions.</p>
+     * <p>Consider using {@link LifeCycleListener} if you need to
+     * maintain per-session state.</p>
+     */
+    public interface FrameListener extends EventListener
+    {
+        /**
+         * <p>Invoked when a processable HTTP/2 frame has been received.</p>
+         *
+         * @param session the associated HTTP/2 session
+         * @param frame the HTTP/2 frame
+         */
+        default void onIncomingFrame(Session session, Frame frame)
+        {
+        }
+
+        /**
+         * <p>Invoked when a processable HTTP/2 frame is about to be sent.</p>
+         *
+         * @param session the associated HTTP/2 session
+         * @param frame the HTTP/2 frame
+         */
+        default void onOutgoingFrame(Session session, Frame frame)
+        {
+        }
+    }
+
+    /**
+     * <p>Listener for open/close {@link Session} events.</p>
+     * <p>Applications can register instances of this class either
+     * directly on the HTTP/2 session via
+     * {@link HTTP2Session#addEventListener(EventListener)}, or by adding
+     * the instances as beans to either the {@code HTTP2Client} (on the
+     * client), or the HTTP/2 {@code ConnectionFactory} (on the server).
+     * <p>Instances of this class must be stateless or thread-safe,
+     * since the same instance will be registered for all sessions.</p>
+     */
+    public interface LifeCycleListener extends EventListener
+    {
+        /**
+         * <p>Invoked when a session is opened.</p>
+         *
+         * @param session the associated HTTP/2 session
+         */
+        default void onOpen(Session session)
+        {
+        }
+
+        /**
+         * <p>Invoked when a session is closed.</p>
+         *
+         * @param session the associated HTTP/2 session
+         */
+        default void onClose(Session session)
+        {
+        }
     }
 
     public abstract static class Entry extends Callback.Nested
@@ -2164,6 +2361,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             HTTP2Session.this.terminate(failure);
             notifyClose(HTTP2Session.this, frame, Callback.NOOP);
+            notifyLifeCycleClose();
         }
 
         private int priority(PriorityFrame frame, Callback callback)

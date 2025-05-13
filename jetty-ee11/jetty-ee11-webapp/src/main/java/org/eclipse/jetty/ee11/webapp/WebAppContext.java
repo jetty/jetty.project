@@ -53,10 +53,9 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -115,7 +114,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _logUrlOnStart = false;
     private boolean _parentLoaderPriority = Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
-    private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
 
@@ -196,62 +194,30 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public void initializeDefaults(Attributes attributes)
+    protected void initializeDefault(String keyName, Object value)
     {
-        for (String keyName : attributes.getAttributeNameSet())
+        switch (keyName)
         {
-            Object value = attributes.getAttribute(keyName);
-            if (LOG.isDebugEnabled())
-                LOG.debug("init {}: {}", keyName, value);
-
-            switch (keyName)
+            case Deployable.WAR ->
             {
-                case Deployable.WAR ->
-                {
-                    if (getWar() == null)
-                        setWar((String)value);
-                }
-                case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
-                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
-                case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
-                case Deployable.CONTEXT_PATH -> setContextPath((String)value);
-                case Deployable.DEFAULT_CONTEXT_PATH ->
-                {
-                    // Don't set default context path, if context-path is set before init (like from XML)
-                    if (isContextPathDefault())
-                        setDefaultContextPath((String)value);
-                }
-                case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
-                case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
-                case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
-                case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor((String)value);
-                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
-                case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
-                default ->
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("skipped init property {}={}", keyName, value);
-                }
+                if (getWar() == null)
+                    setWar((String)value);
+            }
+            case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
+            case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
+            case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
+            case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
+            case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
+            case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor((String)value);
+            case Deployable.SCI_EXCLUSION_PATTERN ->
+                setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
+            case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
+            default ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("skipped init property {}={}", keyName, value);
             }
         }
-    }
-
-    public boolean isContextPathDefault()
-    {
-        return _defaultContextPath;
-    }
-
-    @Override
-    public void setContextPath(String contextPath)
-    {
-        super.setContextPath(contextPath);
-        _defaultContextPath = false;
-    }
-
-    public void setDefaultContextPath(String contextPath)
-    {
-        super.setContextPath(contextPath);
-        _defaultContextPath = true;
     }
 
     /**
@@ -873,7 +839,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else
             {
-                name = this.getClass().getSimpleName();
+                name = TypeUtil.toShortName(this.getClass());
             }
         }
 

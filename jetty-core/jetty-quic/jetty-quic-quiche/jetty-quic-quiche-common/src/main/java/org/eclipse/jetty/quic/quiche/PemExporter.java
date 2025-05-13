@@ -38,7 +38,7 @@ public class PemExporter
     private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] LINE_SEPARATOR = System.lineSeparator().getBytes(StandardCharsets.US_ASCII);
     private static final Base64.Encoder ENCODER = Base64.getMimeEncoder(64, LINE_SEPARATOR);
 
     private PemExporter()
@@ -76,7 +76,7 @@ public class PemExporter
             throw new IllegalArgumentException("Target folder is not a directory: " + targetFolder);
 
         Path[] paths = new Path[2];
-        paths[1] = targetFolder.resolve(alias + ".crt");
+        paths[1] = Files.createTempFile(targetFolder, alias + "-", ".crt");
         try (OutputStream os = Files.newOutputStream(paths[1]))
         {
             Certificate[] certChain = keyStore.getCertificateChain(alias);
@@ -93,7 +93,7 @@ public class PemExporter
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to set Posix file permissions", e);
         }
-        paths[0] = targetFolder.resolve(alias + ".key");
+        paths[0] = Files.createTempFile(targetFolder, alias + "-", ".key");
         try (OutputStream os = Files.newOutputStream(paths[0]))
         {
             Key key = keyStore.getKey(alias, keyPassword);

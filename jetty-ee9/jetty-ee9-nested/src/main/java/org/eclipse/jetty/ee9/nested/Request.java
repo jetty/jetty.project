@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -79,7 +80,6 @@ import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.FormFields;
@@ -95,6 +95,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -569,7 +570,7 @@ public class Request implements HttpServletRequest
             String msg = "Unable to extract form parameters";
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, e);
-            throw new RuntimeIOException(msg, e);
+            throw new UncheckedIOException(msg, e);
         }
     }
 
@@ -1977,7 +1978,7 @@ public class Request implements HttpServletRequest
     public String toString()
     {
         return String.format("%s%s%s %s%s@%x",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             _handled ? "[" : "(",
             getMethod(),
             getHttpURI(),

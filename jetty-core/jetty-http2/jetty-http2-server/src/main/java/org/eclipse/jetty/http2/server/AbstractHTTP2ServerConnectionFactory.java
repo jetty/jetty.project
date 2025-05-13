@@ -13,23 +13,16 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.WindowRateControl;
-import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -43,12 +36,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -62,7 +53,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         };
     }
 
-    private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
+    private final SessionContainer sessionContainer = new SessionContainer();
     private final HttpConfiguration httpConfiguration;
     private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
@@ -351,6 +342,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
+        getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
         return configure(connection, connector, endPoint);
@@ -361,92 +353,5 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private ServerParser newServerParser(Connector connector, RateControl rateControl)
     {
         return new ServerParser(connector.getByteBufferPool(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
-    }
-
-    @ManagedObject("The container of HTTP/2 sessions")
-    public static class HTTP2SessionContainer implements Connection.Listener, Graceful, Dumpable
-    {
-        private final Set<HTTP2Session> sessions = ConcurrentHashMap.newKeySet();
-        private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();
-
-        @Override
-        public void onOpened(Connection connection)
-        {
-            HTTP2Session session = ((HTTP2Connection)connection).getSession();
-            sessions.add(session);
-            LifeCycle.start(session);
-            if (isShutdown())
-                shutdown(session);
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            HTTP2Session session = ((HTTP2Connection)connection).getSession();
-            if (sessions.remove(session))
-                LifeCycle.stop(session);
-        }
-
-        public Set<Session> getSessions()
-        {
-            return new HashSet<>(sessions);
-        }
-
-        @ManagedAttribute(value = "The number of HTTP/2 sessions", readonly = true)
-        public int getSize()
-        {
-            return sessions.size();
-        }
-
-        @Override
-        public CompletableFuture<Void> shutdown()
-        {
-            CompletableFuture<Void> result = new CompletableFuture<>();
-            if (shutdown.compareAndSet(null, result))
-            {
-                CompletableFuture.allOf(sessions.stream().map(this::shutdown).toArray(CompletableFuture[]::new))
-                    .whenComplete((v, x) ->
-                    {
-                        if (x == null)
-                            result.complete(v);
-                        else
-                            result.completeExceptionally(x);
-                    });
-                return result;
-            }
-            else
-            {
-                return shutdown.get();
-            }
-        }
-
-        @Override
-        public boolean isShutdown()
-        {
-            return shutdown.get() != null;
-        }
-
-        private CompletableFuture<Void> shutdown(HTTP2Session session)
-        {
-            return session.shutdown();
-        }
-
-        @Override
-        public String dump()
-        {
-            return Dumpable.dump(this);
-        }
-
-        @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
-            Dumpable.dumpObjects(out, indent, this, sessions);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), getSize());
-        }
     }
 }

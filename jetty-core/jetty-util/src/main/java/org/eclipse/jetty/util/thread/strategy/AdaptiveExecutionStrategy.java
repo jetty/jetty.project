@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -149,7 +150,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         installBean(_tryExecutor);
         installBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} created", this);
+            LOG.debug("created {}", this);
     }
 
     @Override
@@ -184,7 +185,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} dispatch {}", this, execute);
+            LOG.debug("dispatch {} {}", execute, this);
         if (execute)
             _executor.execute(this);
     }
@@ -209,7 +210,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private void tryProduce(boolean wasPending)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} tryProduce {}", this, wasPending);
+            LOG.debug("try producing pending={} {}", wasPending, this);
 
         // check if the thread can produce.
         loop: while (true)
@@ -248,6 +249,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     throw new IllegalStateException(toString(biState));
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("producing pending={} {}", wasPending, this);
 
         // Determine the thread's invocation type once, outside of the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
@@ -608,7 +612,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private void getString(StringBuilder builder)
     {
-        builder.append(getClass().getSimpleName());
+        builder.append(TypeUtil.toShortName(getClass()));
         builder.append('@');
         builder.append(Integer.toHexString(hashCode()));
         builder.append('/');

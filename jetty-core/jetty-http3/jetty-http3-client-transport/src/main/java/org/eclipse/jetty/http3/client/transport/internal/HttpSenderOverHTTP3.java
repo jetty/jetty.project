@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -34,10 +33,15 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpSenderOverHTTP3 extends HttpSender
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSenderOverHTTP3.class);
+
     public HttpSenderOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
@@ -130,21 +134,40 @@ public class HttpSenderOverHTTP3 extends HttpSender
         HeadersFrame tf = trailerFrame;
 
         HTTP3SessionClient session = getHttpChannel().getSession();
-        CompletableFuture<Stream> completable = session.newRequest(hf, getHttpChannel().getStreamListener())
-            .thenApply(stream -> onNewStream(stream, request));
-        if (df != null)
-            completable = completable.thenCompose(stream -> stream.data(df));
-        if (tf != null)
-            completable = completable.thenCompose(stream -> stream.trailer(tf));
-        callback.completeWith(completable);
+        session.newRequest(hf, getHttpChannel().getStreamListener(), Promise.Invocable.from(callback.getInvocationType(), s ->
+        {
+            onNewStream(s, request);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("HTTP3 request #{}/{}:{}{} {}{}{}",
+                    s.getId(), Integer.toHexString(s.getSession().hashCode()),
+                    System.lineSeparator(), metaData.getMethod(), metaData.getHttpURI(),
+                    System.lineSeparator(), metaData.getHttpFields());
+            }
+
+            if (df != null)
+            {
+                if (tf != null)
+                    sendDataAndTrailer(s, df, lastContent, tf, callback);
+                else
+                    sendData(s, df, lastContent, callback);
+            }
+            else
+            {
+                if (tf != null)
+                    sendTrailer(s, tf, callback);
+                else
+                    callback.succeeded();
+            }
+        }, callback::failed));
     }
 
-    private Stream onNewStream(Stream stream, HttpRequest request)
+    private void onNewStream(Stream stream, HttpRequest request)
     {
         long idleTimeout = request.getIdleTimeout();
         if (idleTimeout > 0)
             ((HTTP3Stream)stream).setIdleTimeout(idleTimeout);
-        return stream;
     }
 
     private HttpFields retrieveTrailers(HttpRequest request)
@@ -167,29 +190,36 @@ public class HttpSenderOverHTTP3 extends HttpSender
             if (hasContent)
             {
                 DataFrame dataFrame = new DataFrame(contentBuffer, !hasTrailers);
-                CompletableFuture<Stream> completable;
                 if (hasTrailers)
-                    completable = stream.data(dataFrame).thenCompose(s -> sendTrailer(s, trailers));
+                {
+                    HeadersFrame trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                    sendDataAndTrailer(stream, dataFrame, true, trailerFrame, callback);
+                }
                 else
-                    completable = stream.data(dataFrame);
-                callback.completeWith(completable);
+                {
+                    sendData(stream, dataFrame, true, callback);
+                }
             }
             else
             {
-                CompletableFuture<Stream> completable;
                 if (hasTrailers)
-                    completable = sendTrailer(stream, trailers);
+                {
+                    HeadersFrame trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                    sendTrailer(stream, trailerFrame, callback);
+                }
                 else
-                    completable = stream.data(new DataFrame(contentBuffer, true));
-                callback.completeWith(completable);
+                {
+                    DataFrame dataFrame = new DataFrame(contentBuffer, true);
+                    sendData(stream, dataFrame, true, callback);
+                }
             }
         }
         else
         {
             if (hasContent)
             {
-                CompletableFuture<Stream> completable = stream.data(new DataFrame(contentBuffer, false));
-                callback.completeWith(completable);
+                DataFrame dataFrame = new DataFrame(contentBuffer, false);
+                sendData(stream, dataFrame, false, callback);
             }
             else
             {
@@ -199,10 +229,30 @@ public class HttpSenderOverHTTP3 extends HttpSender
         }
     }
 
-    private CompletableFuture<Stream> sendTrailer(Stream stream, HttpFields trailers)
+    private void sendDataAndTrailer(Stream stream, DataFrame dataFrame, boolean lastContent, HeadersFrame trailersFrame, Callback callback)
     {
-        MetaData metaData = new MetaData(HttpVersion.HTTP_3, trailers);
-        HeadersFrame trailerFrame = new HeadersFrame(metaData, true);
-        return stream.trailer(trailerFrame);
+        sendData(stream, dataFrame, lastContent, Callback.from(callback.getInvocationType(), () -> sendTrailer(stream, trailersFrame, callback), callback::failed));
+    }
+
+    private void sendData(Stream stream, DataFrame dataFrame, boolean lastContent, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP3 request #{}/{}: {} content bytes{}",
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                dataFrame.getByteBuffer().remaining(), lastContent ? " (last chunk)" : "");
+        }
+        stream.data(dataFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+    }
+
+    private void sendTrailer(Stream stream, HeadersFrame trailerFrame, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP3 request #{}/{}: trailer{}{}",
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(), trailerFrame.getMetaData().getHttpFields());
+        }
+        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
     }
 }

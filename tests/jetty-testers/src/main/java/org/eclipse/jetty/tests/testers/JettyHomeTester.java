@@ -212,6 +212,13 @@ public class JettyHomeTester
         return webapps;
     }
 
+    /**
+     * Resolve a maven artifact from a String.
+     *
+     * @param mavenCoordinate The artifact coordinates in the format
+     *        {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}, must not be {@code null}.
+     * @see org.eclipse.aether.artifact.DefaultArtifact
+     */
     public Path resolveArtifact(String mavenCoordinate) throws ArtifactResolutionException
     {
         return mavenHelper.resolveArtifact(mavenCoordinate);

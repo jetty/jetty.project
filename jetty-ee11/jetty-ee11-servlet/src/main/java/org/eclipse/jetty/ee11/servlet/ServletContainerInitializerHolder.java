@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,7 +260,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedSCI.toString());
+            return String.format("%s:%s", TypeUtil.toShortName(this.getClass()), _wrappedSCI.toString());
         }
     }
 }

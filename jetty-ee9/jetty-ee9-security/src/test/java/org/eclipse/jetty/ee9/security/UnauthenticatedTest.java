@@ -31,6 +31,7 @@ import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -123,7 +124,7 @@ public class UnauthenticatedTest
         @Override
         public String getAuthMethod()
         {
-            return this.getClass().getSimpleName();
+            return TypeUtil.toShortName(this.getClass());
         }
 
         @Override

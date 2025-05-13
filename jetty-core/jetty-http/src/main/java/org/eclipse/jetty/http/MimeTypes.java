@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -24,16 +25,17 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,13 @@ public class MimeTypes
         .with("utf16", UTF16)
         .with("iso-8859-1", ISO_8859_1)
         .with("iso_8859_1", ISO_8859_1)
+        .build();
+    private static final Index<String> WILDS = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("text/", "text/*")
+        .with("image/", "image/*")
+        .with("application/xml", "application/*")
+        .with("multipart/", "multipart/*")
         .build();
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
@@ -340,6 +349,7 @@ public class MimeTypes
     protected final Map<String, String> _mimeMap = new HashMap<>();
     protected final Map<String, Charset> _inferredEncodings = new HashMap<>();
     protected final Map<String, Charset> _assumedEncodings = new HashMap<>();
+    protected final Set<String> _assumedNoEncodings = new HashSet<>();
 
     public MimeTypes()
     {
@@ -353,6 +363,50 @@ public class MimeTypes
             _mimeMap.putAll(defaults.getMimeMap());
             _assumedEncodings.putAll(defaults._assumedEncodings);
             _inferredEncodings.putAll(defaults._inferredEncodings);
+            _assumedNoEncodings.addAll(defaults._assumedNoEncodings);
+        }
+    }
+
+    protected void loadMimeProperties(InputStream stream, String resourceName) throws IOException
+    {
+        if (stream == null)
+            throw new IOException("Missing mime-type resource: " + resourceName);
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+        {
+            Properties props = new Properties();
+            props.load(reader);
+            props.stringPropertyNames().stream()
+                .filter(Objects::nonNull)
+                .forEach(x ->
+                {
+                    if (x.contains("."))
+                        LOG.warn("ignoring invalid extension {} from mime.properties {}", x, resourceName);
+                    else
+                        _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
+                });
+        }
+    }
+
+    protected void loadEncodings(InputStream stream, String resourceName) throws IOException
+    {
+        if (stream == null)
+            throw new IOException("Missing encoding resource: " + resourceName);
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+        {
+            Properties props = new Properties();
+            props.load(reader);
+            props.stringPropertyNames().stream()
+                .filter(Objects::nonNull)
+                .forEach(type ->
+                {
+                    String charset = props.getProperty(type);
+                    if ("-".equals(charset))
+                        _assumedNoEncodings.add(type);
+                    else if (charset.startsWith("-"))
+                        _assumedEncodings.put(type, Charset.forName(charset.substring(1)));
+                    else
+                        _inferredEncodings.put(type, Charset.forName(props.getProperty(type)));
+                });
         }
     }
 
@@ -422,24 +476,90 @@ public class MimeTypes
         return _mimeMap.get(extension);
     }
 
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return A Charset is returned if it can be inferred from content-type.  This is essentially a default charset
+     *         determined for the contentType.  For example, the content-type "text/html" may be configured to have 
+     *         an inferred charset of "utf-8", in which case setting that content-type should result in a value
+     *         of "text/html;charset=utf8".
+     * @see #getAssumedCharset(String) 
+     */
     public Charset getInferredCharset(String contentType)
     {
-        return _inferredEncodings.get(contentType);
+        if (contentType == null)
+            return null;
+        Charset charset = _inferredEncodings.get(contentType);
+        if (charset == null)
+            charset = _inferredEncodings.get(toWild(contentType));
+        return charset;
     }
 
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return A Charset is returned if it can be assumed from content-type.  This is essentially a known charset
+     *         for the specific contentType.  For example, the content-type "application/json" is specified to use utf-8, 
+     *         so it has an assumed charset of "utf-8". As this is universally known, there is no need to modify the 
+     *         the content-type which will just have a value of "application/json".   Note that some content-types may be
+     *         assumed to have no charset, in which case {@link #isCharsetAssumed(String)} must be used.
+     * @see #isCharsetAssumed(String) 
+     * @see #getAssumedCharset(String)
+     */
     public Charset getAssumedCharset(String contentType)
     {
-        return _assumedEncodings.get(contentType);
+        if (contentType == null)
+            return null;
+        Charset charset = _assumedEncodings.get(contentType);
+        if (charset == null)
+            charset = _assumedEncodings.get(toWild(contentType));
+        return charset;
     }
 
-    public String getCharsetInferredFromContentType(String contentType)
+    /**
+     * @param contentType The content-type to obtain a charset for
+     * @return {@code True} if the content-type is assumed to have a specific charset (include assumed to 
+     *         have no charset.  For example "application/json" is assumed as it has a specified charset of "utf-8".
+     *         Another example is "image/jpeg", which is assumed to have no charset, so it would also return true.
+     */
+    public boolean isCharsetAssumed(String contentType)
     {
-        return nameOf(_inferredEncodings.get(contentType));
+        Charset charset = _assumedEncodings.get(contentType);
+        if (charset == null)
+        {
+            if (_assumedNoEncodings.contains(contentType))
+                return true;
+
+            String wild = toWild(contentType);
+            charset = _assumedEncodings.get(wild);
+            return charset != null || _assumedNoEncodings.contains(wild);
+        }
+        return false;
     }
 
-    public String getCharsetAssumedFromContentType(String contentType)
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return The string value of {@link #getInferredCharset(String)}
+     * @see #getInferredCharset(String)
+     */
+    public String getInferredCharsetName(String contentType)
     {
-        return nameOf(_assumedEncodings.get(contentType));
+        return nameOf(getInferredCharset(contentType));
+    }
+
+    /**
+     * @param contentType The content type to obtain a charset for.
+     * @return The string value of {@link #getAssumedCharset(String)};
+     *         or the empty string if the type is assumed to not have a charset;
+     *         or {@code null} of the type has no assumed charset.
+     * @see #getAssumedCharset(String)
+     */
+    public String getAssumedCharsetName(String contentType)
+    {
+        if (contentType == null)
+            return null;
+        Charset charset = getAssumedCharset(contentType);
+        if (charset == null)
+            return isCharsetAssumed(contentType) ? "" : null;
+        return charset.name();
     }
 
     public Map<String, String> getMimeMap()
@@ -447,18 +567,10 @@ public class MimeTypes
         return Collections.unmodifiableMap(_mimeMap);
     }
 
-    public Map<String, String> getInferredMap()
-    {
-        return _inferredEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
-    }
-
-    public Map<String, String> getAssumedMap()
-    {
-        return _assumedEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
-    }
-
     public static class Mutable extends MimeTypes
     {
+        boolean isDefault;
+
         public Mutable()
         {
             this(DEFAULTS);
@@ -467,104 +579,221 @@ public class MimeTypes
         public Mutable(MimeTypes defaults)
         {
             super(defaults);
+            isDefault = defaults == DEFAULTS;
+        }
+
+        public boolean isDefault()
+        {
+            return isDefault;
         }
 
         /**
          * Set a mime mapping
          *
          * @param extension the extension
-         * @param type the mime type
+         * @param type the mime type or {@code null} to remove a mapping
          * @return previous value
          */
         public String addMimeMapping(String extension, String type)
         {
             if (extension.contains("."))
                 throw new IllegalArgumentException("extensions cannot contain '.'");
+            isDefault = false;
+            if (type == null)
+                return _mimeMap.remove(StringUtil.asciiToLowerCase(extension));
             return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
         }
 
-        public String addInferred(String contentType, String encoding)
+        /**
+         * Add an inferred encoding for a mimeType
+         * @param mimeType The mimeType to infer an encoding for
+         * @param encoding The encoding or {@code null} to remove
+         * @return {@code true} if the encoding was added
+         */
+        public String addInferred(String mimeType, String encoding)
         {
-            return nameOf(_inferredEncodings.put(contentType, Charset.forName(encoding)));
+            isDefault = false;
+            if (encoding == null)
+                return nameOf(_inferredEncodings.remove(normalizeMimeType(mimeType)));
+            return nameOf(_inferredEncodings.put(normalizeMimeType(mimeType), Charset.forName(encoding)));
         }
 
-        public String addAssumed(String contentType, String encoding)
+        /**
+         * Add an assumed charset encoding for a content-type. Default values for this
+         * mapping are set by the "encoding.properties" class path resource.
+         * @param mimeType The mimeType to map to an encoding,
+         *                 either in absolute form (e.g. "text/html")
+         *                 or wildcard form (e.g. "image/*").
+         * @param encoding The assumed encoding;
+         *                 or the empty string if it is assumed to have no charset;
+         *                 or {@code null} if there is no assumed charset.
+         * @return The old value.
+         */
+        public String addAssumed(String mimeType, String encoding)
         {
-            return nameOf(_assumedEncodings.put(contentType, Charset.forName(encoding)));
-        }
-    }
+            isDefault = false;
+            if (encoding == null)
+            {
+                _assumedNoEncodings.remove(mimeType);
+                return nameOf(_assumedEncodings.remove(mimeType));
+            }
 
-    public static class Wrapper extends Mutable
-    {
-        private MimeTypes _wrapped;
+            if (encoding.isEmpty())
+            {
+                _assumedNoEncodings.add(mimeType);
+                return nameOf(_assumedEncodings.remove(mimeType));
+            }
 
-        public Wrapper()
-        {
-            super(null);
-        }
-
-        public MimeTypes getWrapped()
-        {
-            return _wrapped;
-        }
-
-        public void setWrapped(MimeTypes wrapped)
-        {
-            _wrapped = wrapped;
-        }
-
-        @Override
-        public String getMimeForExtension(String extension)
-        {
-            String mime = super.getMimeForExtension(extension);
-            return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
+            _assumedNoEncodings.remove(mimeType);
+            return nameOf(_assumedEncodings.put(mimeType, Charset.forName(encoding)));
         }
 
-        @Override
-        public String getCharsetInferredFromContentType(String contentType)
+        /**
+         * Set the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+         * @param mimeProperties The property file to use.
+         * @see #addMimeTypes(Resource)
+         * @see #addMimeMapping(String, String)
+         * @throws UncheckedIOException if there is an {@link IOException}
+         */
+        public void setMimeTypes(Resource mimeProperties) throws UncheckedIOException
         {
-            String charset = super.getCharsetInferredFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
+            _mimeMap.clear();
+            addMimeTypes(mimeProperties);
         }
 
-        @Override
-        public String getCharsetAssumedFromContentType(String contentType)
+        /**
+         * Add the mime types from a properties file in the format "ext=mimeType" (e.g. "txt=text/plain")
+         * @param mimeProperties The property file to use.
+         * @see #addMimeMapping(String, String)
+         * @throws UncheckedIOException if there is an {@link IOException}
+         */
+        public void addMimeTypes(Resource mimeProperties) throws UncheckedIOException
         {
-            String charset = super.getCharsetAssumedFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetAssumedFromContentType(contentType) : charset;
+            isDefault = false;
+            try
+            {
+                loadMimeProperties(mimeProperties.newInputStream(), mimeProperties.toString());
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
         }
 
-        @Override
-        public Map<String, String> getMimeMap()
+        /**
+         * Set the inferred and assumed encodings from a property file in the format of:
+         * <dl>
+         *     <dt>mimeType=encoding</dt><dd>An inferred encoding for the mimeType</dd>
+         *     <dt>mimeType=-encoding</dt><dd>An assumed encoding for the mimeType</dd>
+         *     <dt>mimeType=-</dt><dd>An assumed no encoding for the mimeType</dd>
+         * </dl>
+         * The mimeType may be a wildcard like "image/*"
+         * @param encodingProperties The property file to use.
+         * @see #addInferred(String, String)
+         * @see #addAssumed(String, String)
+         * @see #addEncodings(Resource)
+         * @throws UncheckedIOException if there is an {@link IOException}
+         */
+        public void setEncodings(Resource encodingProperties) throws UncheckedIOException
         {
-            Map<String, String> map = super.getMimeMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getMimeMap());
-            return Collections.unmodifiableMap(map);
+            _assumedNoEncodings.clear();
+            _assumedEncodings.clear();
+            _inferredEncodings.clear();
+            addEncodings(encodingProperties);
         }
 
-        @Override
-        public Map<String, String> getInferredMap()
+        /**
+         * Add the inferred and assumed encodings from a property file in the format of:
+         * <dl>
+         *     <dt>mimeType=encoding</dt><dd>An inferred encoding for the mimeType</dd>
+         *     <dt>mimeType=-encoding</dt><dd>An assumed encoding for the mimeType</dd>
+         *     <dt>mimeType=-</dt><dd>An assumed no encoding for the mimeType</dd>
+         * </dl>
+         * The mimeType may be a wildcard like "image/*"
+         * @param encodingProperties The property file to use.
+         * @see #addInferred(String, String)
+         * @see #addAssumed(String, String)
+         * @see #addEncodings(Resource)
+         * @throws UncheckedIOException if there is an {@link IOException}
+         */
+        public void addEncodings(Resource encodingProperties) throws UncheckedIOException
         {
-            Map<String, String> map = super.getInferredMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getInferredMap());
-            return Collections.unmodifiableMap(map);
+            isDefault = false;
+            try
+            {
+                loadEncodings(encodingProperties.newInputStream(), encodingProperties.toString());
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
         }
 
-        @Override
-        public Map<String, String> getAssumedMap()
+        /**
+         * Set the {@code MimeTypes} mappings and encodings from another {@code MimeTypes}
+         * @param other The other {@code MimeTypes}.
+         */
+        public void setFrom(MimeTypes other)
         {
-            Map<String, String> map = super.getAssumedMap();
-            if (_wrapped == null || map.isEmpty())
-                return map;
-            map = new HashMap<>(map);
-            map.putAll(_wrapped.getAssumedMap());
-            return Collections.unmodifiableMap(map);
+            _mimeMap.clear();
+            _mimeMap.putAll(other.getMimeMap());
+            _assumedEncodings.clear();
+            _assumedEncodings.putAll(other._assumedEncodings);
+            _inferredEncodings.clear();
+            _inferredEncodings.putAll(other._inferredEncodings);
+            _assumedNoEncodings.clear();
+            _assumedNoEncodings.addAll(other._assumedNoEncodings);
+        }
+
+        /**
+         * Merge the {@code MimeTypes} mappings and encodings from another {@code MimeTypes}.
+         * Any non default values in this instance are kept in preference to the values from the other.
+         * @param other The other {@code MimeTypes}.
+         */
+        public void mergeFrom(MimeTypes other)
+        {
+            mergeMap(_mimeMap, other._mimeMap, DEFAULTS._mimeMap);
+            mergeMap(_assumedEncodings, other._assumedEncodings, DEFAULTS._assumedEncodings);
+            mergeMap(_inferredEncodings, other._inferredEncodings, DEFAULTS._inferredEncodings);
+
+            _assumedEncodings.clear();
+            _assumedEncodings.putAll(other._assumedEncodings);
+            _inferredEncodings.clear();
+            _inferredEncodings.putAll(other._inferredEncodings);
+            _assumedNoEncodings.clear();
+            _assumedNoEncodings.addAll(other._assumedNoEncodings);
+
+            for (String encoding : other._assumedNoEncodings)
+            {
+                if (!DEFAULTS._assumedNoEncodings.contains(encoding))
+                    _assumedNoEncodings.add(encoding);
+            }
+        }
+
+        private <V> void mergeMap(Map<String, V> target, Map<String, V> other, Map<String, V> reference)
+        {
+            // handle all reference entries
+            for (Map.Entry<String, V> entry : reference.entrySet())
+            {
+                String key = entry.getKey();
+                V value = entry.getValue();
+                if (Objects.equals(target.get(key), value))
+                {
+                    // The target value is default, so replace with any non default value from the other
+                    V otherValue = other.get(entry.getKey());
+                    if (otherValue == null)
+                        target.remove(key);
+                    else if (!Objects.equals(value, otherValue))
+                        entry.setValue(otherValue);
+                }
+            }
+
+            // handle non-reference entries
+            for (Map.Entry<String, V> entry : other.entrySet())
+            {
+                if (!reference.containsKey(entry.getKey()))
+                    target.put(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -580,43 +809,7 @@ public class MimeTypes
             String resourceName = "mime.properties";
             try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
             {
-                if (stream == null)
-                {
-                    LOG.warn("Missing mime-type resource: {}", resourceName);
-                }
-                else
-                {
-                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
-                    {
-                        Properties props = new Properties();
-                        props.load(reader);
-                        props.stringPropertyNames().stream()
-                            .filter(Objects::nonNull)
-                            .forEach(x ->
-                            {
-                                if (x.contains("."))
-                                    LOG.warn("ignoring invalid extension {} from mime.properties", x);
-                                else
-                                    _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
-                            });
-
-                        if (_mimeMap.isEmpty())
-                        {
-                            LOG.warn("Empty mime types at {}", resourceName);
-                        }
-                        else if (_mimeMap.size() < props.keySet().size())
-                        {
-                            LOG.warn("Duplicate or null mime-type extension in resource: {}", resourceName);
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
-                        else
-                            LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
-                    }
-                }
+                loadMimeProperties(stream, resourceName);
             }
             catch (IOException e)
             {
@@ -629,42 +822,7 @@ public class MimeTypes
             resourceName = "encoding.properties";
             try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
             {
-                if (stream == null)
-                    LOG.warn("Missing encoding resource: {}", resourceName);
-                else
-                {
-                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
-                    {
-                        Properties props = new Properties();
-                        props.load(reader);
-                        props.stringPropertyNames().stream()
-                            .filter(Objects::nonNull)
-                            .forEach(t ->
-                            {
-                                String charset = props.getProperty(t);
-                                if (charset.startsWith("-"))
-                                    _assumedEncodings.put(t, Charset.forName(charset.substring(1)));
-                                else
-                                    _inferredEncodings.put(t, Charset.forName(props.getProperty(t)));
-                            });
-
-                        if (_inferredEncodings.isEmpty())
-                        {
-                            LOG.warn("Empty encodings at {}", resourceName);
-                        }
-                        else if ((_inferredEncodings.size() + _assumedEncodings.size()) < props.keySet().size())
-                        {
-                            LOG.warn("Null or duplicate encodings in resource: {}", resourceName);
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn("Unable to read encoding resource: {}", resourceName, e);
-                        else
-                            LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
-                    }
-                }
+                loadEncodings(stream, resourceName);
             }
             catch (IOException e)
             {
@@ -985,6 +1143,17 @@ public class MimeTypes
         if (builder == null)
             return value;
         return builder.toString();
+    }
+
+    private String toWild(String contentType)
+    {
+        String wild = WILDS.getBest(contentType);
+        if (wild != null)
+            return wild;
+        int slash = contentType.indexOf('/');
+        if (slash > 0)
+            return contentType.substring(0, slash) + "/*";
+        return "*/*";
     }
 
     /**

@@ -19,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -175,5 +176,11 @@ public class ThreadPoolBudget
                 return budget.leaseTo(leasee, threads);
         }
         return NOOP_LEASE;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 }

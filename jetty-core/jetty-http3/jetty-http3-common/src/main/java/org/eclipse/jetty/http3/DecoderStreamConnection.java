@@ -24,9 +24,6 @@ import org.eclipse.jetty.io.EndPoint;
 
 public class DecoderStreamConnection extends InstructionStreamConnection
 {
-    // SPEC: QPACK Encoder Stream Type.
-    public static final long STREAM_TYPE = 0x03;
-
     private final QpackEncoder encoder;
 
     public DecoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, ParserListener listener)

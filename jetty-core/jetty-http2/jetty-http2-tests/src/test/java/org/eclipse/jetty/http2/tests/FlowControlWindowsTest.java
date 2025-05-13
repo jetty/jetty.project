@@ -161,7 +161,7 @@ public class FlowControlWindowsTest
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
         MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP.asString(), hostPort, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(request, null, true);
-        clientSession.newStream(frame, new Promise.Adapter<>(), null);
+        clientSession.newStream(frame, new Promise<>() {}, null);
 
         assertTrue(streamLatch.await(5, TimeUnit.SECONDS));
         HTTP2Stream serverStream = streamRef.get();

@@ -26,30 +26,28 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
-import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
 {
-    public HTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration)
+    public HTTP3ServerConnectionFactory()
     {
-        this(quicConfiguration, new HttpConfiguration());
+        this(new HttpConfiguration());
     }
 
-    public HTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration, HttpConfiguration configuration)
+    public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
     {
-        super(quicConfiguration, configuration, new HTTP3SessionListener());
+        super(configuration, new HTTP3SessionListener());
         configuration.addCustomizer(new AltSvcCustomizer());
     }
 
@@ -74,7 +72,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            HTTP3StreamListener listener = new HTTP3StreamListener(http3Stream.getEndPoint());
+            HTTP3StreamListener listener = new HTTP3StreamListener(http3Stream);
             listener.onRequest(stream, frame);
             return listener;
         }
@@ -102,53 +100,40 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
     }
 
-    private static class HTTP3StreamListener implements Stream.Server.Listener
+    private static class HTTP3StreamListener implements Stream.Server.Listener, Invocable
     {
-        private final EndPoint endPoint;
+        private final HTTP3Stream stream;
 
-        public HTTP3StreamListener(EndPoint endPoint)
+        private HTTP3StreamListener(HTTP3Stream stream)
         {
-            this.endPoint = endPoint;
+            this.stream = stream;
         }
 
         private ServerHTTP3StreamConnection getConnection()
         {
-            return (ServerHTTP3StreamConnection)endPoint.getConnection();
+            return (ServerHTTP3StreamConnection)stream.getStreamEndPoint().getConnection();
         }
 
         public void onRequest(Stream stream, HeadersFrame frame)
         {
             HTTP3StreamServer http3Stream = (HTTP3StreamServer)stream;
-            Runnable task = getConnection().onRequest(http3Stream, frame);
-            if (task != null)
-            {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(task, false);
-            }
+            getConnection().onRequest(http3Stream, frame);
         }
 
         @Override
         public void onDataAvailable(Stream.Server stream)
         {
+            ServerHTTP3StreamConnection connection = getConnection();
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onDataAvailable(http3Stream);
-            if (task != null)
-            {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(task, false);
-            }
+            connection.onDataAvailable(http3Stream);
         }
 
         @Override
         public void onTrailer(Stream.Server stream, HeadersFrame frame)
         {
+            ServerHTTP3StreamConnection connection = getConnection();
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onTrailer(http3Stream, frame);
-            if (task != null)
-            {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(task, false);
-            }
+            connection.onTrailer(http3Stream, frame);
         }
 
         @Override
@@ -162,7 +147,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
                     promise.succeeded(timedOut);
                     return;
                 }
-                Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
+                Executor executor = http3Stream.getSession().getProtocolSession().getExecutor();
                 ThreadPool.executeImmediately(executor, () ->
                 {
                     try
@@ -183,8 +168,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onFailure(http3Stream, failure);
-            Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
+            Executor executor = http3Stream.getSession().getProtocolSession().getExecutor();
             ThreadPool.executeImmediately(executor, task);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+            return httpStream.getHttpChannel().getInvocationType();
         }
     }
 }

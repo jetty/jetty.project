@@ -228,7 +228,7 @@ public class TrailersTest extends AbstractTest
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(requestFrame, new Promise<>() {}, new Stream.Listener()
         {
             private boolean responded;
 
@@ -281,7 +281,7 @@ public class TrailersTest extends AbstractTest
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(2);
         List<Frame> frames = new ArrayList<>();
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(requestFrame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

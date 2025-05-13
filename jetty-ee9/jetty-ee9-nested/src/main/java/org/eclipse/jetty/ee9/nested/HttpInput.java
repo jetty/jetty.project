@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -455,7 +456,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() +
+        return TypeUtil.toShortName(getClass()) + "@" + hashCode() +
             " cs=" + _httpChannel.getState() +
             " cp=" + _contentProducer +
             " eof=" + _consumedEof;
@@ -567,7 +568,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "@" + hashCode() + " [p=" + _prev + ",n=" + _next + "]";
+            return TypeUtil.toShortName(getClass()) + "@" + hashCode() + " [p=" + _prev + ",n=" + _next + "]";
         }
     }
 
@@ -719,7 +720,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", getClass().getSimpleName(), hashCode(),
+            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", TypeUtil.toShortName(getClass()), hashCode(),
                 BufferUtil.toDetailString(_content), isSpecial(), isEof(), getError());
         }
     }
@@ -831,7 +832,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return getClass().getSimpleName();
+            return TypeUtil.toShortName(getClass());
         }
     }
 
@@ -856,7 +857,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + " [" + _error + "]";
+            return TypeUtil.toShortName(getClass()) + " [" + _error + "]";
         }
     }
 }

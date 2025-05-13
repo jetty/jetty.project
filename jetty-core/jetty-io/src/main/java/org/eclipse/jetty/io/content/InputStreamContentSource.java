@@ -15,13 +15,13 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -81,7 +81,7 @@ public class InputStreamContentSource implements Content.Source
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
     }

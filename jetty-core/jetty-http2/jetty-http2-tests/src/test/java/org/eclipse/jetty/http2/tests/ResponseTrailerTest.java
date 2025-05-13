@@ -88,7 +88,7 @@ public class ResponseTrailerTest extends AbstractTest
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);
-            session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+            session.newStream(frame, new Promise<>() {}, new Stream.Listener()
             {
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)

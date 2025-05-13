@@ -21,14 +21,14 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
-import org.eclipse.jetty.http3.internal.ControlStreamConnection;
-import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final QuicStreamEndPoint endPoint;
+    private final StreamEndPoint endPoint;
     private final ControlGenerator generator;
     private final ByteBufferPool.Accumulator accumulator;
     private boolean initialized;
@@ -48,11 +48,10 @@ public class ControlFlusher extends IteratingCallback
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint, boolean useDirectByteBuffers)
+    public ControlFlusher(ByteBufferPool byteBufferPool, StreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
         this.endPoint = endPoint;
-        ByteBufferPool bufferPool = session.getByteBufferPool();
-        this.generator = new ControlGenerator(bufferPool, useDirectByteBuffers);
+        this.generator = new ControlGenerator(byteBufferPool, useDirectByteBuffers);
         this.accumulator = new ByteBufferPool.Accumulator();
     }
 
@@ -87,15 +86,16 @@ public class ControlFlusher extends IteratingCallback
 
         for (Entry entry : entries)
         {
-            generator.generate(accumulator, endPoint.getStreamId(), entry.frame, null);
+            generator.generate(accumulator, endPoint.getStream().getId(), entry.frame, null);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());
         }
 
         if (!initialized)
         {
             initialized = true;
-            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlStreamConnection.STREAM_TYPE));
-            VarLenInt.encode(buffer, ControlStreamConnection.STREAM_TYPE);
+            long streamType = StreamType.CONTROL_STREAM.type();
+            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
+            VarLenInt.encode(buffer, streamType);
             buffer.flip();
             accumulator.insert(0, RetainableByteBuffer.wrap(buffer));
         }
@@ -103,7 +103,7 @@ public class ControlFlusher extends IteratingCallback
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), accumulator.getTotalLength(), this);
-        endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
+        endPoint.write(false, buffers, this);
         return Action.SCHEDULED;
     }
 
@@ -138,11 +138,9 @@ public class ControlFlusher extends IteratingCallback
 
         allEntries.forEach(e -> e.callback.failed(failure));
 
-        long error = HTTP3ErrorCode.INTERNAL_ERROR.code();
-        endPoint.close(error, failure);
-
         // Cannot continue without the control stream, close the session.
-        endPoint.getQuicSession().getProtocolSession().outwardClose(error, "control_stream_failure");
+        ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "control_stream_failure");
+        endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
     }
 
     @Override
@@ -160,7 +158,7 @@ public class ControlFlusher extends IteratingCallback
     @Override
     public String toString()
     {
-        return String.format("%s#%s", super.toString(), endPoint.getStreamId());
+        return String.format("%s#%s", super.toString(), endPoint.getStream().getId());
     }
 
     private record Entry(Frame frame, Callback callback)

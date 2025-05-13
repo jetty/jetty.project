@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -518,6 +519,6 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public String toString()
     {
         return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
-            getClass().getSimpleName(), hashCode(), issuer, clientId, authorizationEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
+            TypeUtil.toShortName(getClass()), hashCode(), issuer, clientId, authorizationEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
     }
 }

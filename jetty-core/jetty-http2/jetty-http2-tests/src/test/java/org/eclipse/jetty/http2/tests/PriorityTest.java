@@ -57,7 +57,7 @@ public class PriorityTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(2);
         MetaData metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(streamId, metaData, null, true);
-        session.newStream(headersFrame, new Promise.Adapter<>()
+        session.newStream(headersFrame, new Promise<>()
         {
             @Override
             public void succeeded(Stream result)
@@ -167,7 +167,7 @@ public class PriorityTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         MetaData metaData = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(metaData, priorityFrame, true);
-        session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(headersFrame, new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

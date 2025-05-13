@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.Grease;
@@ -41,27 +40,24 @@ public class MessageParser
     private final ParserListener listener;
     private final QpackDecoder decoder;
     private final long streamId;
-    private final BooleanSupplier isLast;
     private BodyParser unknownBodyParser;
     private State state = State.HEADER;
-    private boolean dataMode;
     private long beginNanoTime;
     private boolean beginNanoTimeStored;
 
-    public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
+    public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId)
     {
         this.listener = listener;
         this.decoder = decoder;
         decoder.setBeginNanoTimeSupplier(this::getBeginNanoTime);
         this.streamId = streamId;
-        this.isLast = isLast;
     }
 
     public void init(UnaryOperator<ParserListener> wrapper)
     {
         ParserListener listener = wrapper.apply(this.listener);
-        this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(headerParser, listener, streamId, isLast);
-        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(headerParser, listener, decoder, streamId, isLast);
+        this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(headerParser, listener, streamId);
+        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(headerParser, listener, decoder, streamId);
         this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
     }
@@ -92,16 +88,6 @@ public class MessageParser
         return listener;
     }
 
-    public boolean isDataMode()
-    {
-        return dataMode;
-    }
-
-    public void setDataMode(boolean enable)
-    {
-        this.dataMode = enable;
-    }
-
     /**
      * <p>Parses the given {@code buffer} bytes and emit events to a {@link ParserListener}.</p>
      * <p>Only the bytes of one frame are consumed, therefore when this method returns,
@@ -110,7 +96,7 @@ public class MessageParser
      * @param buffer the buffer to parse
      * @return the result of the parsing
      */
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         try
         {
@@ -123,16 +109,9 @@ public class MessageParser
                         if (buffer.hasRemaining())
                             storeBeginNanoTime();
                         if (headerParser.parse(buffer))
-                        {
                             state = State.BODY;
-                            // If we are in data mode, but we did not parse a DATA frame, bail out.
-                            if (isDataMode() && headerParser.getFrameType() != FrameType.DATA.type())
-                                return Result.SWITCH_MODE;
-                        }
                         else
-                        {
                             return Result.NO_FRAME;
-                        }
                     }
                     case BODY ->
                     {
@@ -156,7 +135,7 @@ public class MessageParser
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
-                            BodyParser.Result result = unknownBodyParser.parse(buffer);
+                            BodyParser.Result result = unknownBodyParser.parse(buffer, last);
                             if (result == BodyParser.Result.NO_FRAME)
                                 return Result.NO_FRAME;
                             if (LOG.isDebugEnabled())
@@ -168,7 +147,7 @@ public class MessageParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
-                                bodyParser.emptyBody(buffer);
+                                bodyParser.emptyBody(buffer, last);
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
                                 reset();
@@ -176,7 +155,7 @@ public class MessageParser
                             }
                             else
                             {
-                                BodyParser.Result result = bodyParser.parse(buffer);
+                                BodyParser.Result result = bodyParser.parse(buffer, last);
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
 
@@ -221,7 +200,7 @@ public class MessageParser
     public enum Result
     {
         /**
-         * Indicates that no frame was parsed, either for lack of bytes, or because or errors.
+         * Indicates that no frame was parsed, either for lack of bytes, or because of errors.
          */
         NO_FRAME,
         /**
@@ -233,10 +212,6 @@ public class MessageParser
          * This is the case of HEADERS frames that are waiting to be unblocked.
          */
         BLOCKED_FRAME,
-        /**
-         * Indicates that a DATA frame was expected, but a HEADERS was found instead.
-         */
-        SWITCH_MODE
     }
 
     private enum State

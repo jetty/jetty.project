@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.SearchPattern;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -475,7 +476,7 @@ public class MultiPart
         public String toString()
         {
             return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getName(),
                 getFileName(),
@@ -546,7 +547,7 @@ public class MultiPart
         public String toString()
         {
             return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getName(),
                 getFileName(),
@@ -594,7 +595,7 @@ public class MultiPart
         public String toString()
         {
             return "%s@%x[name=%s,fileName=%s,path=%s]".formatted(
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getName(),
                 getFileName(),
@@ -628,7 +629,7 @@ public class MultiPart
         public String toString()
         {
             return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
+                TypeUtil.toShortName(getClass()),
                 hashCode(),
                 getName(),
                 getFileName(),

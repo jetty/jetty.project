@@ -171,8 +171,8 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         startJetty();
 
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
-        Files.createDirectory(webappsDir.resolve("simple"));
-        Files.writeString(webappsDir.resolve("simple/simple.txt"), "Simple Contents");
+        FS.ensureDirExists(webappsDir.resolve("simple/static"));
+        Files.writeString(webappsDir.resolve("simple/static/simple.txt"), "Simple Contents");
         waitForDirectoryScan();
         jetty.assertContextHandlerExists("/simple");
         ContextHandler contextHandler = jetty.getContextHandler("/simple");
@@ -202,6 +202,11 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
         Files.createFile(webappsDir.resolve("simple.war"));
         jetty.copyWebapp("simple.xml", "simple.xml");
+        Files.writeString(jetty.getJettyBasePath().resolve("webapps/simple.properties"),
+            """
+                environment=core
+                """
+        );
 
         // Start jetty
         startJetty();

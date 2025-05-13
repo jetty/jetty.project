@@ -162,14 +162,16 @@ public class QpackEncoder implements Dumpable
      */
     public void setTableCapacity(int capacity)
     {
+        List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())
         {
             if (capacity > getMaxTableCapacity())
                 throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
             _context.getDynamicTable().setCapacity(capacity);
-            _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
-            notifyInstructionHandler();
+            _instructions.add(0, new SetCapacityInstruction(capacity));
+            instructions = takeInstructions();
         }
+        notifyInstructionHandler(instructions);
     }
 
     /**
@@ -185,26 +187,27 @@ public class QpackEncoder implements Dumpable
      */
     public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
+
+        // Verify that we can encode without errors.
+        if (metadata.getHttpFields() != null)
+        {
+            // TODO: enforce that the length of the header is less than maxHeadersSize.
+            //  See RFC 9114, section 4.2.2.
+
+            for (HttpField field : metadata.getHttpFields())
+            {
+                String name = field.getName();
+                char firstChar = name.charAt(0);
+                if (firstChar <= ' ')
+                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
+            }
+        }
+
+        List<Instruction> instructions = null;
         try (AutoLock ignored = lock.lock())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
-
-            // Verify that we can encode without errors.
-            if (metadata.getHttpFields() != null)
-            {
-                // TODO: enforce that the length of the header is less than maxHeadersSize.
-                //  See RFC 9114, section 4.2.2.
-
-                for (HttpField field : metadata.getHttpFields())
-                {
-                    String name = field.getName();
-                    char firstChar = name.charAt(0);
-                    if (firstChar <= ' ')
-                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
-                }
-            }
-
             List<EncodableEntry> encodableEntries = new ArrayList<>();
             DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -260,15 +263,15 @@ public class QpackEncoder implements Dumpable
                     entry.encode(buffer, base);
                 }
 
-                notifyInstructionHandler();
+                instructions = takeInstructions();
             }
             catch (BufferOverflowException e)
             {
                 // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
                 //  Can we prevent adding to the table until we know the buffer has enough space?
-                notifyInstructionHandler();
                 streamInfo.remove(sectionInfo);
                 sectionInfo.release();
+                instructions = takeInstructions();
                 throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
             }
             catch (Throwable t)
@@ -276,6 +279,10 @@ public class QpackEncoder implements Dumpable
                 // We are failing the whole Session so don't need to send instructions back.
                 throw new QpackException.SessionException(H3_GENERAL_PROTOCOL_ERROR, "compression_error", t);
             }
+        }
+        finally
+        {
+            notifyInstructionHandler(instructions);
         }
     }
 
@@ -289,13 +296,17 @@ public class QpackEncoder implements Dumpable
      */
     public void parseInstructions(ByteBuffer buffer) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsing Instructions {}", BufferUtil.toDetailString(buffer));
+
+        List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())
         {
             while (BufferUtil.hasContent(buffer))
             {
                 _parser.parse(buffer);
             }
-            notifyInstructionHandler();
+            instructions = takeInstructions();
         }
         catch (QpackException.SessionException e)
         {
@@ -305,6 +316,7 @@ public class QpackEncoder implements Dumpable
         {
             throw new QpackException.SessionException(QPACK_DECODER_STREAM_ERROR, t.getMessage(), t);
         }
+        notifyInstructionHandler(instructions);
     }
 
     /**
@@ -316,6 +328,7 @@ public class QpackEncoder implements Dumpable
      */
     public boolean insert(HttpField field)
     {
+        List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())
         {
             DynamicTable dynamicTable = _context.getDynamicTable();
@@ -334,28 +347,31 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(entry);
                 dynamicTable.add(new Entry(field));
                 _instructions.add(new DuplicateInstruction(index));
-                notifyInstructionHandler();
-                return true;
+                instructions = takeInstructions();
             }
-
-            // Can we insert by referencing a name?
-            boolean huffman = shouldHuffmanEncode(field);
-            Entry nameEntry = _context.get(field.getName());
-            if (nameEntry != null)
+            else
             {
-                int index = _context.indexOf(nameEntry);
-                dynamicTable.add(new Entry(field));
-                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
-                notifyInstructionHandler();
-                return true;
+                // Can we insert by referencing a name?
+                boolean huffman = shouldHuffmanEncode(field);
+                Entry nameEntry = _context.get(field.getName());
+                if (nameEntry != null)
+                {
+                    int index = _context.indexOf(nameEntry);
+                    dynamicTable.add(new Entry(field));
+                    _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                    instructions = takeInstructions();
+                }
+                else
+                {
+                    // Add the entry without referencing an existing entry.
+                    dynamicTable.add(new Entry(field));
+                    _instructions.add(new LiteralNameEntryInstruction(field, huffman));
+                    instructions = takeInstructions();
+                }
             }
-
-            // Add the entry without referencing an existing entry.
-            dynamicTable.add(new Entry(field));
-            _instructions.add(new LiteralNameEntryInstruction(field, huffman));
-            notifyInstructionHandler();
-            return true;
         }
+        notifyInstructionHandler(instructions);
+        return true;
     }
 
     /**
@@ -367,11 +383,13 @@ public class QpackEncoder implements Dumpable
      */
     public void streamCancellation(long streamId)
     {
+        List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())
         {
             _instructionHandler.onStreamCancellation(streamId);
-            notifyInstructionHandler();
+            instructions = takeInstructions();
         }
+        notifyInstructionHandler(instructions);
     }
 
     protected boolean shouldIndex(HttpField httpField)
@@ -502,14 +520,20 @@ public class QpackEncoder implements Dumpable
         return (reqInsertCount % (2 * maxEntries)) + 1;
     }
 
-    private void notifyInstructionHandler()
+    private List<Instruction> takeInstructions()
     {
         if (_instructions.isEmpty())
-            return;
+            return List.of();
         // Copy the list to avoid re-entrance.
         List<Instruction> instructions = List.copyOf(_instructions);
         _instructions.clear();
-        _handler.onInstructions(instructions);
+        return instructions;
+    }
+
+    private void notifyInstructionHandler(List<Instruction> instructions)
+    {
+        if (instructions != null && !instructions.isEmpty())
+            _handler.onInstructions(instructions);
     }
 
     InstructionHandler getInstructionHandler()
