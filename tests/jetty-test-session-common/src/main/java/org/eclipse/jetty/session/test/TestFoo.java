@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session.test;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -20,6 +21,7 @@ import java.io.Serializable;
  */
 public class TestFoo implements Foo, Serializable
 {
+    @Serial
     private static final long serialVersionUID = 953717519120144555L;
 
     private int i = -99;

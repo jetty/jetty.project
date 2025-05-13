@@ -38,8 +38,6 @@ public class SessionData implements Serializable
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionData.class);
 
-    private static final long serialVersionUID = 1L;
-
     protected String _id;
     protected String _contextPath;
     protected String _vhost;

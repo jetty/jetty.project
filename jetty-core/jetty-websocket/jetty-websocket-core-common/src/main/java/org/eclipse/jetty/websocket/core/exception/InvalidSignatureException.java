@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
-@SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException
 {
     public static InvalidSignatureException build(Class<?> pojo, Class<? extends Annotation> methodAnnotationClass, Method method)

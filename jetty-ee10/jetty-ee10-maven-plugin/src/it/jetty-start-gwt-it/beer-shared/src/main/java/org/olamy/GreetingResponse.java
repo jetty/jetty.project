@@ -15,7 +15,6 @@ package org.olamy;
 
 import java.io.Serializable;
 
-@SuppressWarnings("serial")
 public class GreetingResponse implements Serializable
 {
     private String greeting;

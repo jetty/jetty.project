@@ -31,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 // Simple asynchronous Chat room.
 // This does not handle duplicate usernames or multiple frames/tabs from the same browser
 // Some code is duplicated for clarity.
-@SuppressWarnings("serial")
 public class ChatServlet extends HttpServlet
 {
     private long asyncTimeout = 10000;

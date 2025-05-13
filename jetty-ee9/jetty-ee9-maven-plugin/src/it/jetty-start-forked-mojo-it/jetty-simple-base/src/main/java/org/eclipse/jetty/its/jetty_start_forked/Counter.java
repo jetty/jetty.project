@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.its.jetty_start_forked;
 
-@SuppressWarnings("serial")
 public class Counter implements java.io.Serializable
 {
     int counter = 0;

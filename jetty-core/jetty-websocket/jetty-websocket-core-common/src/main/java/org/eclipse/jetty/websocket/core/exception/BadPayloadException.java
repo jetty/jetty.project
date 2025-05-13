@@ -22,7 +22,6 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
  *
  * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
-@SuppressWarnings("serial")
 public class BadPayloadException extends CloseException
 {
     public BadPayloadException(String message)

@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Test Servlet Rewrite
  */
-@SuppressWarnings("serial")
 public class RewriteServlet extends HttpServlet
 {
 

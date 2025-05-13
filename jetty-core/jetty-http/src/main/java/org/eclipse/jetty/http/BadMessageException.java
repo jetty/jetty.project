@@ -18,7 +18,6 @@ package org.eclipse.jetty.http;
  * or attempted to be generated.  Typically these are handled with either 400
  * responses.</p>
  */
-@SuppressWarnings("serial")
 public class BadMessageException extends HttpException.RuntimeException
 {
     public BadMessageException()

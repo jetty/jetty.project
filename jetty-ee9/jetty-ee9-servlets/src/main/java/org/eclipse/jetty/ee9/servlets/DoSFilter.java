@@ -1097,8 +1097,6 @@ public class DoSFilter implements Filter
      */
     static class RateTracker implements Runnable, Serializable
     {
-        private static final long serialVersionUID = 3534663738034577872L;
-
         final AutoLock _lock = new AutoLock();
         protected final String _filterName;
         protected transient ServletContext _context;

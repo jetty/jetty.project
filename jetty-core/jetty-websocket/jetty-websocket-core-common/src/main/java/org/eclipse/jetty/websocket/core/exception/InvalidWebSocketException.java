@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.exception;
 /**
  * Indicating that the provided Class is not a valid WebSocket per the chosen API.
  */
-@SuppressWarnings("serial")
 public class InvalidWebSocketException extends WebSocketException
 {
     public InvalidWebSocketException(String message)
