@@ -48,7 +48,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
     public boolean writeError(Request request, Response response, Callback callback, int code)
     {
         // If we have not entered the servlet channel we should trigger a sendError for when we do enter the servlet channel.
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         boolean enteredServletChannel = servletContextRequest.getServletChannel().getCallback() != null;
         if (!enteredServletChannel)
         {
@@ -71,7 +71,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
 
         generateCacheControl(response);
 
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
