@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 

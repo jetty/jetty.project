@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.ee11.annotations.AnnotationParser.Handler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.ee11.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
@@ -80,7 +80,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
     @Override
-    protected org.eclipse.jetty.ee11.annotations.AnnotationParser createAnnotationParser(int platform)
+    protected org.eclipse.jetty.annotations.AnnotationParser createAnnotationParser(int platform)
     {
         return new AnnotationParser(platform);
     }
@@ -107,7 +107,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
      * </ol>
      */
     @Override
-    public void parseWebInfLib(State state, org.eclipse.jetty.ee11.annotations.AnnotationParser parser)
+    public void parseWebInfLib(State state, org.eclipse.jetty.annotations.AnnotationParser parser)
         throws Exception
     {
         AnnotationParser osgiParser = (AnnotationParser)parser;
@@ -198,7 +198,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
     }
 
     @Override
-    public void parseWebInfClasses(State state, org.eclipse.jetty.ee11.annotations.AnnotationParser parser)
+    public void parseWebInfClasses(State state, org.eclipse.jetty.annotations.AnnotationParser parser)
     {
         WebAppContext context = state._context;
         Bundle webbundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);

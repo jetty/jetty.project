@@ -11,9 +11,6 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
-
 module org.eclipse.jetty.ee10.plus
 {
     requires transitive org.eclipse.jetty.plus;
@@ -29,6 +26,6 @@ module org.eclipse.jetty.ee10.plus
     exports org.eclipse.jetty.ee10.plus.webapp;
 
     provides org.eclipse.jetty.ee10.webapp.Configuration with
-        EnvConfiguration,
-        PlusConfiguration;
+        org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration,
+        org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 }

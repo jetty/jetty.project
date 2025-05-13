@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.annotations;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
 
 /**

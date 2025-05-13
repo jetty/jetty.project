@@ -9,15 +9,11 @@ ee8
 [depend]
 plus
 ee8-plus
+annotations
 
 [ini]
-ee8.asm.version?=@asm.version@
 ee8.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
 
 [lib]
 lib/jetty-ee8-annotations-${jetty.version}.jar
-lib/ee8-annotations/asm-${ee8.asm.version}.jar
-lib/ee8-annotations/asm-analysis-${ee8.asm.version}.jar
-lib/ee8-annotations/asm-commons-${ee8.asm.version}.jar
-lib/ee8-annotations/asm-tree-${ee8.asm.version}.jar
 lib/ee8-annotations/jakarta.annotation-api-${ee8.jakarta.annotation.api.version}.jar
