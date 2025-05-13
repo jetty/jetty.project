@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
@@ -57,7 +58,8 @@ public class AsyncRequestContentTest extends AbstractTest
         CountDownLatch serverHandleLatch = new CountDownLatch(1);
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         AtomicReference<Throwable> failureRef = new AtomicReference<>();
-        start(transport, new Handler.Abstract() {
+        start(transport, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
