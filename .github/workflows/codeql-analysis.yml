@@ -69,15 +69,6 @@ jobs:
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
-      # MBC cache
-      - name: Handle Maven Build Cache caches
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/build-cache
-          key: mbc-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            mbc-
-
       - name: Prepare Mimir
         shell: bash
         run: |
@@ -101,7 +92,7 @@ jobs:
         env:
           MAVEN_OPTS: "-Djava.awt.headless=true -client -Xmx4G -Xms4G"
         run:
-          ./mvnw clean install -DskipTests -B -V
+          ./mvnw clean install -P fast -B -V
 
 
       # ℹ️ Command-line programs to run using the OS shell.
