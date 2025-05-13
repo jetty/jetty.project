@@ -74,8 +74,7 @@
         <configuration>
           <reuseForks>false</reuseForks>
           <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED
-            --add-reads org.eclipse.jetty.http.spi=org.eclipse.jetty.logging
-          </argLine>
+            --add-reads org.eclipse.jetty.http.spi=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>
     </plugins>
