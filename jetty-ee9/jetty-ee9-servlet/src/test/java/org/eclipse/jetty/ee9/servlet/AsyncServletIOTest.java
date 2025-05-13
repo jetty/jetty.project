@@ -1020,10 +1020,6 @@ public class AsyncServletIOTest
                     {
                         exceptionRef.set(e);
                     }
-                    finally
-                    {
-//                        asyncContext.complete();
-                    }
                 }
                 catch (Throwable x)
                 {
@@ -1031,34 +1027,34 @@ public class AsyncServletIOTest
                 }
             }).start();
         }
-    }
 
-    static class TestAsyncListener implements AsyncListener
-    {
-        final List<String> events = new CopyOnWriteArrayList<>();
-
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        static class TestAsyncListener implements AsyncListener
         {
-            events.add("complete");
-        }
+            final List<String> events = new CopyOnWriteArrayList<>();
 
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            events.add("timeout");
-        }
+            @Override
+            public void onComplete(AsyncEvent event)
+            {
+                events.add("complete");
+            }
 
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            events.add("error");
-        }
+            @Override
+            public void onTimeout(AsyncEvent event)
+            {
+                events.add("timeout");
+            }
 
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            events.add("startAsync");
+            @Override
+            public void onError(AsyncEvent event)
+            {
+                events.add("error");
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event)
+            {
+                events.add("startAsync");
+            }
         }
     }
 
