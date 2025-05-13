@@ -21,6 +21,8 @@ import java.util.TreeMap;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -40,6 +43,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 
 /**
  * <p>CompressionHandler to provide compression of response bodies and decompression of request bodies.</p>
@@ -259,7 +264,20 @@ public class CompressionHandler extends Handler.Wrapper
                 {
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
-                        qualityCSV = new QuotedQualityCSV();
+                    {
+                        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+                        qualityCSV = new QuotedQualityCSV()
+                        {
+                            @Override
+                            protected void onComplianceViolation(ComplianceViolation violation)
+                            {
+                                if (WHITESPACE_IN_PARAMETER.equals(violation) && httpConfiguration.getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
+                                    httpConfiguration.notifyViolation(violation, this.toString());
+                                else
+                                    throw new BadMessageException(violation.toString());
+                            }
+                        };
+                    }
                     qualityCSV.addValue(field.getValue());
                 }
                 case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);

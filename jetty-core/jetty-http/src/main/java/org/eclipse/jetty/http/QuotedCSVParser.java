@@ -71,8 +71,6 @@ public abstract class QuotedCSVParser
         // The parser does not actually use LIST_TOKENIZER as we wish to keep the tokens in the StringBuilder
         // and allow them to be mutated by the callbacks.
 
-        // TODO update to RFC9110, specifically no OWS around '='
-
         StringBuilder buffer = new StringBuilder();
 
         int l = value.length();
@@ -125,6 +123,8 @@ public abstract class QuotedCSVParser
                 case '\t':
                     if (buffer.length() > lastLength) // not leading OWS
                         buffer.append(c);
+                    else if (state == State.PARAM_VALUE)
+                        onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                     continue;
 
                 case '"':
@@ -165,7 +165,6 @@ public abstract class QuotedCSVParser
                         {
                             case VALUE:
                                 parsedValue(buffer);
-                                valueLength = buffer.length();
                                 break;
                             case PARAM_NAME:
                             case PARAM_VALUE:
@@ -190,6 +189,9 @@ public abstract class QuotedCSVParser
                         case VALUE:
                             // It wasn't really a value, it was a param name
                             paramName = 0;
+                            if (nwsLength != buffer.length())
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
+
                             buffer.setLength(nwsLength); // trim following OWS
                             final String param = buffer.toString();
                             buffer.setLength(0);
@@ -202,6 +204,8 @@ public abstract class QuotedCSVParser
                             continue;
 
                         case PARAM_NAME:
+                            if (nwsLength != buffer.length())
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                             buffer.setLength(nwsLength); // trim following OWS
                             buffer.append(c);
                             lastLength = ++nwsLength;
@@ -284,5 +288,13 @@ public abstract class QuotedCSVParser
      */
     protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
+    }
+
+    /**
+     * Called when a parameter has been parsed with bad white space
+     */
+    protected void onComplianceViolation(ComplianceViolation violation)
+    {
+        throw new IllegalArgumentException(violation.getDescription());
     }
 }

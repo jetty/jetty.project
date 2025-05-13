@@ -51,7 +51,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathCollators;
@@ -243,8 +245,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
         installBean(deployer);
-        this.filenameFilter = Objects.requireNonNullElse(filter, new WebappsPathFilter(webappDirs));
-        installBean(new DumpableCollection("webappDirs", webappDirs));
+        this.filenameFilter = Objects.requireNonNullElse(filter, new WebappsPathFilter());
     }
 
     /**
@@ -286,6 +287,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         enableEnvironment(name);
 
         return new EnvironmentConfig(environment);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("webappDirs", webappDirs),
+            Dumpable.named("environmentsDir", environmentsDir),
+            Dumpable.named("scanInterval", this.scanInterval),
+            new DumpableCollection("enabledEnvironments", this.enabledEnvironments),
+            Dumpable.named("environmentsOrder", this.environmentsOrder),
+            new DumpableMap("environmentAttributes", this.environmentAttributesMap),
+            Dumpable.named("contextHandlerFactory", this.contextHandlerFactory),
+            Dumpable.named("deferInitialScan", this.deferInitialScan),
+            Dumpable.named("useRealPaths", this.useRealPaths)
+        );
     }
 
     /**
@@ -1270,13 +1287,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     private static class WebappsPathFilter implements FilenameFilter
     {
-        private final List<Path> webappDirs;
-
-        public WebappsPathFilter(List<Path> webappDirs)
-        {
-            this.webappDirs = webappDirs;
-        }
-
         @Override
         public boolean accept(File dir, String name)
         {

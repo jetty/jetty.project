@@ -34,6 +34,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -305,7 +307,62 @@ public class DeployerTest extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
-                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertEquals(HttpStatus.OK_200, response.getStatus(), () -> String.join("\n", run2.getLogs()));
+                assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testEEWebAppProperties(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("deploy", env)
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start(argsConfig))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path wars = jettyBase.resolve("wars");
+            FS.ensureDirExists(wars);
+            Path outputJar = wars.resolve("app.war");
+            Map<String, String> zipfsEnv = new HashMap<>();
+            zipfsEnv.put("create", "true");
+
+            String testFileContent = "hello";
+            URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
+            // Use ZipFS so that we can create paths that are just "/"
+            try (FileSystem zipfs = FileSystems.newFileSystem(uri, zipfsEnv))
+            {
+                Path root = zipfs.getPath("/");
+                Files.writeString(root.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
+            }
+
+            Files.writeString(jettyBase.resolve("webapps/test-%s.properties".formatted(env)),
+                """
+                    environment=%s
+                    jetty.deploy.contextPath=/test
+                    jetty.deploy.baseResource=%s
+                    """.formatted(env, outputJar.toString()));
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), () -> String.join("\n", run2.getLogs()));
                 assertThat(response.getContentAsString(), is(testFileContent));
             }
         }

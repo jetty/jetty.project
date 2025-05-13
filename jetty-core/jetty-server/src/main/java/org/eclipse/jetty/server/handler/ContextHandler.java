@@ -684,6 +684,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
                 case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
+                case Deployable.BASE_RESOURCE ->
+                {
+                    if (value == null)
+                        continue; // skip
+
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource resource = resourceFactory.asResource(value);
+                    setBaseResource(resource);
+                }
                 default -> initializeDefault(keyName, value);
             }
         }

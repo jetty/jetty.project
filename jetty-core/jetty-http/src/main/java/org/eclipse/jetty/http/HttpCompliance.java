@@ -100,6 +100,13 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         WHITESPACE_AFTER_FIELD_NAME("https://datatracker.ietf.org/doc/html/rfc9112#name-field-syntax", "Whitespace not allowed after field name"),
 
         /**
+         * Since <a href="https://tools.ietf.org/html/9110#section-5.6.7">RFC 9110</a>, the HTTP protocol has required that
+         * a request header field parameters have no white space around the  '='.
+         * A deployment may include this violation to allow such fields to be in a received request.
+         */
+        WHITESPACE_IN_PARAMETER("https://datatracker.ietf.org/doc/html/rfc9110#name-parameters", "No Bad Whitespace allowed in parameters"),
+
+        /**
          * Prior to <a href="https://tools.ietf.org/html/rfc7230#section-3.2">RFC 7230</a>, the HTTP protocol allowed a header
          * line of a single token with neither a colon nor value following, to be interpreted as a field name with no value.
          * A deployment may include this violation to allow such fields to be in a received request.
@@ -189,7 +196,10 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */
-    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", of(Violation.LF_CHUNK_TERMINATION, Violation.LF_HEADER_TERMINATION));
+    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", of(
+        Violation.LF_CHUNK_TERMINATION,
+        Violation.LF_HEADER_TERMINATION,
+        Violation.WHITESPACE_IN_PARAMETER));
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
@@ -200,7 +210,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         Violation.MULTILINE_FIELD_VALUE,
         Violation.MISMATCHED_AUTHORITY,
         Violation.LF_CHUNK_TERMINATION,
-        Violation.LF_HEADER_TERMINATION
+        Violation.LF_HEADER_TERMINATION,
+        Violation.WHITESPACE_IN_PARAMETER
     ));
 
     /**
@@ -216,7 +227,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         Violation.CASE_INSENSITIVE_METHOD,
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
-        Violation.MULTIPLE_CONTENT_LENGTHS);
+        Violation.MULTIPLE_CONTENT_LENGTHS,
+        Violation.WHITESPACE_IN_PARAMETER);
 
     /**
      * A legacy HttpCompliance mode that supports {@link #RFC7230}, but with case-insensitive methods allowed.

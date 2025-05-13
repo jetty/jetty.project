@@ -447,6 +447,36 @@ public interface ResourceFactory
     }
 
     /**
+     * Convert an anonymous Object to a Resource.
+     *
+     * <p>
+     *     The supported types: {@link Path}, {@link String}, {@link URI}, {@link URL}, and {@link Resource}
+     * </p>
+     *
+     * @param obj if the object to convert
+     * @return the Resource representing the provided obj
+     * @throws IllegalArgumentException if the object is none of the supported types.
+     */
+    default Resource asResource(Object obj)
+    {
+        if (obj == null)
+            return null;
+
+        if (obj instanceof Path path)
+            return newResource(path);
+        if (obj instanceof String str)
+            return newResource(str);
+        if (obj instanceof URI uri)
+            return newResource(uri);
+        if (obj instanceof URL url)
+            return newResource(url);
+        if (obj instanceof Resource res)
+            return res;
+
+        throw new IllegalArgumentException("Cannot convert %s to a Resource".formatted(obj.getClass().getName()));
+    }
+
+    /**
      * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
      * <p>
      *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).

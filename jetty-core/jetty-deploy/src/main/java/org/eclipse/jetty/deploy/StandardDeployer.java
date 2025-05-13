@@ -192,7 +192,7 @@ public class StandardDeployer extends ContainerLifeCycle implements Deployer
     @Override
     public String toString()
     {
-        return "%s@%x{contexts=%s,sbrd=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _atomicRedeploy);
+        return "%s@%x{contexts=%s,atomicRedeploy=%b}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts, _atomicRedeploy);
     }
 
     private static class ListenerAdaptor implements LifeCycle.Listener, Container.Listener

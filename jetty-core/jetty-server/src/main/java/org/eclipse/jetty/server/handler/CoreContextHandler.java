@@ -62,7 +62,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
     private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.webapp.originalBaseResource";
-    private static final String[] SUPPORTED_ARCHIVE_EXTENSIONS = new String[]{"war", "jar", "zip"};
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
     private ClassLoader _previousClassLoader;
@@ -105,7 +104,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             {
                 // The Base Resource
                 Path mainPath = (Path)value;
-                if (FileID.isExtension(mainPath, SUPPORTED_ARCHIVE_EXTENSIONS) || Files.isDirectory(mainPath))
+                if (Files.isDirectory(mainPath) || FileID.isArchive(mainPath))
                 {
                     ResourceFactory resourceFactory = ResourceFactory.of(this);
                     Resource baseResource = resourceFactory.newResource((Path)value);
@@ -199,6 +198,35 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         return ResourceFactory.of(this);
     }
 
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
+            {
+                // convert to "jar:file:" resource
+                Resource jarResource = getResourceFactory().newJarFileResource(uri);
+                super.setBaseResource(jarResource);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignored base resource: {}", baseResource);
+            }
+            return;
+        }
+
+        super.setBaseResource(baseResource);
+    }
+
     protected Resource unpack(Resource dir) throws IOException
     {
         Path tempDir = getTempDirectory().toPath();
@@ -266,7 +294,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         if (!Resources.isDirectory(baseResource))
         {
             // see if we can unpack this reference.
-            if (FileID.isExtension(baseResource.getURI(), SUPPORTED_ARCHIVE_EXTENSIONS))
+            if (FileID.isArchive(baseResource.getURI()))
             {
                 // We have an archive that needs to be unpacked
                 setAttribute(ORIGINAL_BASE_RESOURCE, baseResource.getURI());

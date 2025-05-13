@@ -26,11 +26,15 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.StaticContextHandler;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -407,5 +412,48 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.setEnvironmentsOrder(List.of("other"));
 
         assertThat(deploymentScanner.getDefaultEnvironmentName(), nullValue());
+    }
+
+    @Test
+    public void testDump() throws Exception
+    {
+        Path root = workDir.getEmptyPathDir();
+        Path webapps = root.resolve("webapps");
+        FS.ensureDirExists(webapps);
+        Path environments = root.resolve("environments");
+        FS.ensureDirExists(environments);
+
+        Server server = new Server();
+        try
+        {
+            ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+            server.setHandler(contextHandlerCollection);
+            StandardDeployer deployer = new StandardDeployer(contextHandlerCollection);
+            server.addBean(deployer);
+            DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
+            deploymentScanner.addWebappsDirectory(webapps);
+            deploymentScanner.setEnvironmentsDirectory(environments);
+
+            Environment.ensure("static", ContextHandler.class);
+            DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("static");
+            coreConfig.setContextHandlerClass(StaticContextHandler.class.getName());
+
+            server.addBean(deploymentScanner);
+            server.start();
+
+            String dump = server.dump();
+            assertThat(dump, containsString("webappDirs size=1"));
+            assertThat(dump, containsString("+> " + webapps));
+            assertThat(dump, containsString("environmentsDir: " + environments));
+            assertThat(dump, containsString("scanInterval: 0"));
+            assertThat(dump, containsString("enabledEnvironments size=1"));
+            assertThat(dump, containsString(" +> static"));
+            assertThat(dump, containsString("environmentAttributes size=1"));
+            assertThat(dump, containsString("jetty.deploy.contextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler"));
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 }

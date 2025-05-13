@@ -50,7 +50,7 @@ public interface ContextHandlerFactory
     /**
      * @param server The server for the context.
      * @param environment The environment for the context
-     * @param mainPath The {@link Path} of the main file of the context (e.g. a WAR file or XML}
+     * @param mainPath The {@link Path} of the main file of the context (e.g. a WAR file or XML)
      * @param otherPaths Other files associated with the context (e.g. property files)
      * @param deployAttributes Attributes describing the details of the deployment and that are made available to the
      *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <ul>

@@ -243,10 +243,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public InvocationType getInvocationType()
     {
-        if (isDynamic())
-            return InvocationType.BLOCKING;
-        Handler handler = getHandler();
-        InvocationType handlerInvocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
-        return Invocable.combine(handlerInvocationType, _container.getInvocationType());
+        return Invocable.combine(super.getInvocationType(), _container.getInvocationType());
     }
 }
