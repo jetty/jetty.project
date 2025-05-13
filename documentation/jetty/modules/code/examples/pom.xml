@@ -173,7 +173,7 @@
     <profile>
       <id>disable-virtualthreads</id>
       <activation>
-        <jdk>${jdk.disable.virtualthreads}</jdk>
+        <jdk>[17,20)</jdk>
       </activation>
       <build>
         <plugins>
@@ -191,7 +191,7 @@
     <profile>
       <id>enable-virtualthreads</id>
       <activation>
-        <jdk>${jdk.enable.virtualthreads}</jdk>
+        <jdk>[21,)</jdk>
       </activation>
       <build>
         <plugins>
