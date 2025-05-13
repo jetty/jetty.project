@@ -16,7 +16,6 @@ package org.eclipse.jetty.security;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.eclipse.jetty.security.AuthenticationState.Succeeded;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -88,15 +87,21 @@ public interface Authenticator
     }
 
     /**
-     * Validate a request
+     * Attempts to validate the authentication state of the given request.
+     * <p>
+     * If authentication is successful, an {@link AuthenticationState.Succeeded} is returned.
+     * If the authenticator has already committed a response (for either success or failure),
+     * the returned value will implement {@link AuthenticationState.ResponseSent}, and the provided
+     * {@link Callback} will be eventually be completed, otherwise the caller is responsible for completing the {@link Callback}.
+     * <p>
+     * A {@code null} return value indicates that no authentication state could be established, possibly because the response
+     * has already been committed.
      *
-     * @param request The request
-     * @param response The response
-     * @param callback the callback to use for writing a response
-     * @return An Authentication.  If Authentication is successful, this will be a {@link Succeeded}. If a response has
-     * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
-     * implement {@link AuthenticationState.ResponseSent}.
-     * @throws ServerAuthException if unable to validate request
+     * @param request the request to validate.
+     * @param response the response associated with the request.
+     * @param callback the callback to use for writing a response.
+     * @return an {@link AuthenticationState}, or {@code null} if authentication could not be resolved.
+     * @throws ServerAuthException if unable to validate request.
      */
     AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;
 
