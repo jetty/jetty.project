@@ -229,10 +229,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
-            processing();
+            processing(true);
     }
 
-    private void processing()
+    private void processing(boolean processing)
     {
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
@@ -245,12 +245,6 @@ public abstract class IteratingCallback implements Callback
         while (true)
         {
             // Call process to get the action that we have to take.
-            boolean processing;
-            try (AutoLock ignored = _lock.lock())
-            {
-                processing = _state == State.PROCESSING;
-            }
-
             Action action = null;
             if (processing)
             {
@@ -344,7 +338,13 @@ public abstract class IteratingCallback implements Callback
             finally
             {
                 if (callOnSuccess)
+                {
                     onSuccess();
+                    try (AutoLock ignored = _lock.lock())
+                    {
+                        processing = _state == State.PROCESSING;
+                    }
+                }
             }
         }
 
@@ -398,7 +398,12 @@ public abstract class IteratingCallback implements Callback
         if (process)
         {
             onSuccess();
-            processing();
+            boolean processing;
+            try (AutoLock ignored = _lock.lock())
+            {
+                processing = _state == State.PROCESSING;
+            }
+            processing(processing);
         }
     }
 
