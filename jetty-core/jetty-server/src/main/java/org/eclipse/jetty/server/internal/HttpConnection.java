@@ -529,6 +529,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             int filled = fillRequestBuffer();
             if (filled <= 0)
             {
+                // TODO comment and write test for this change
+                if (filled < 0)
+                {
+                    _parser.atEOF();
+                    _parser.parseNext(BufferUtil.EMPTY_BUFFER);
+                }
                 releaseRequestBuffer();
                 break;
             }
@@ -1093,7 +1099,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
 
 //              Case 1
-                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
+//                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }
