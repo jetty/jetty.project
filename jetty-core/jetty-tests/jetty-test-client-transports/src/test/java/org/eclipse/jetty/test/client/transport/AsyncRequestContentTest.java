@@ -64,7 +64,6 @@ public class AsyncRequestContentTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                serverHandleLatch.countDown();
                 request.addFailureListener(x -> failureRef.compareAndExchange(null, x).addSuppressed(x));
 
                 request.demand(new Runnable()
@@ -91,6 +90,7 @@ public class AsyncRequestContentTest extends AbstractTest
                             request.demand(this);
                     }
                 });
+                serverHandleLatch.countDown();
 
                 return true;
             }
