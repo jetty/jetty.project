@@ -37,6 +37,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
@@ -345,12 +349,9 @@
       <optional>true</optional>
     </dependency>
     <!-- EE10 -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
+
+    <!-- ignore sort pom so we know which eeXX will be build first -->
+    <?SORTPOM IGNORE?>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-home</artifactId>
@@ -358,8 +359,8 @@
       <type>zip</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-home</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -369,6 +370,13 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <?SORTPOM RESUME?>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>jetty-fcgi-proxy</artifactId>
@@ -545,6 +553,33 @@
                   <destFileName>start.jar</destFileName>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-annotations-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-annotations-src-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
           </execution>
           <execution>

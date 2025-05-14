@@ -15,7 +15,7 @@
               <Arg name="server"><Ref refid="Server"/></Arg>
               <Arg name="deployer"><Ref refid="Deployer"/></Arg>
 
-              <Call name="addMonitoredDirectory">
+              <Call name="addWebappsDirectory">
                 <Arg>
                   <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
                     <Arg>target</Arg>

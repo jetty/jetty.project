@@ -27,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.Environment;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,10 +46,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir testdir;
-    private static XmlConfiguredJetty jetty;
+    private XmlConfiguredJetty jetty;
 
     @BeforeEach
-    public void setupEnvironment() throws Exception
+    public void prepare() throws Exception
     {
         Path p = testdir.getEmptyPathDir();
         jetty = new XmlConfiguredJetty(p);
@@ -67,6 +68,8 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
 
         // Setup initial context
         jetty.copyWebapp("bar-core-context.xml", "bar.xml");
+
+        Environment.ensure("core", Environment.class);
 
         // Should not throw an Exception
         jetty.load();

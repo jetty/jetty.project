@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.Environment;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -51,9 +52,15 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentScannerRuntimeUpdatesTest.class);
 
-    private static XmlConfiguredJetty jetty;
+    private XmlConfiguredJetty jetty;
     private final AtomicInteger _scans = new AtomicInteger();
     private int _providerCount;
+
+    @BeforeEach
+    public void ensureCoreEnvironment()
+    {
+        Environment.ensure("core", Environment.class);
+    }
 
     public void createJettyBase(Path testdir) throws Exception
     {
@@ -110,7 +117,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     }
 
     @AfterEach
-    public void teardownEnvironment() throws Exception
+    public void dispose() throws Exception
     {
         jetty.stop();
     }
@@ -196,7 +203,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         Path environments = jetty.getJettyBasePath().resolve("environments");
         FS.ensureDirExists(environments);
 
-        Environment.CORE.setAttribute("testname", "Initial");
+        Environment.get("core").setAttribute("testname", "Initial");
 
         // Setup initial webapp, with XML
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");

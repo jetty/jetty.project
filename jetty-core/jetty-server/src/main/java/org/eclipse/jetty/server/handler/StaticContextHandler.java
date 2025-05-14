@@ -102,37 +102,28 @@ public class StaticContextHandler extends ContextHandler
                 else if (value instanceof Boolean bool)
                     getResourceHandler().setDirAllowed(bool);
             }
-            case Deployable.BASE_RESOURCE ->
-            {
-                ResourceFactory resourceFactory = ResourceFactory.of(this);
-                Resource resource = null;
-                if (value instanceof Path path)
-                    resource = resourceFactory.newResource(path);
-                if (value instanceof String str)
-                    resource = resourceFactory.newResource(str);
-                if (value instanceof URI uri)
-                    resource = resourceFactory.newResource(uri);
-                if (value instanceof Resource res)
-                    resource = res;
+        }
+    }
 
-                if (resource != null)
-                {
-                    if (!Resources.isDirectory(resource))
-                    {
-                        URI uri = resource.getURI();
-                        if (!"jar".equalsIgnoreCase(uri.getScheme()) && FileID.isArchive(uri))
-                        {
-                            // open archive as resource, to serve contents.
-                            setBaseResource(resourceFactory.newJarFileResource(uri));
-                        }
-                    }
-                    else
-                    {
-                        // directories are ok
-                        setBaseResource(resource);
-                    }
-                    // anything else isn't a base resource that this class cares about
-                }
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+        }
+        else if (Resources.isReadableFile(baseResource))
+        {
+            // see if we need to make a passed archive into a zipfs archive.
+            URI uri = baseResource.getURI();
+            if (!"jar".equals(uri.getScheme()) && FileID.isArchive(uri))
+            {
+                Resource jarResource = ResourceFactory.of(this).newJarFileResource(uri);
+                super.setBaseResource(jarResource);
+            }
+            else
+            {
+                super.setBaseResource(baseResource);
             }
         }
     }

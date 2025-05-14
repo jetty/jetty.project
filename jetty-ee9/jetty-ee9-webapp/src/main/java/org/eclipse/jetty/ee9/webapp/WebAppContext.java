@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PermissionCollection;
@@ -57,6 +58,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -257,6 +259,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         setWar((String)value);
                 }
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
+                // copied from core ContextHandler as ee9 doesn't extend from it.
+                case Deployable.BASE_RESOURCE ->
+                {
+                    if (value == null)
+                        continue; // skip
+
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource resource = resourceFactory.asResource(value);
+                    setBaseResource(resource);
+                }
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
@@ -279,6 +291,37 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 }
             }
         }
+    }
+
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        // Allow only files that are archives
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
+            {
+                setWarResource(baseResource);
+                return;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring non-directory Base Resource: {}", baseResource);
+
+            // clear out old base resource, if it exists
+            super.setBaseResource(null);
+            return;
+        }
+
+        // Other resource types are just allowed.
+        super.setBaseResource(baseResource);
     }
 
     public boolean isContextPathDefault()

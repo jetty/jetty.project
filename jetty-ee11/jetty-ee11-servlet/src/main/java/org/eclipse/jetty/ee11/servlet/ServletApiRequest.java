@@ -95,6 +95,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -273,11 +274,30 @@ public class ServletApiRequest implements HttpServletRequest
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
             AuthenticationState undeferred = deferred.authenticate(getRequest());
-            if (undeferred != null && undeferred != authenticationState)
-            {
+            if (undeferred != null)
                 authenticationState = undeferred;
-                AuthenticationState.setAuthenticationState(getRequest(), authenticationState);
+        }
+        return authenticationState;
+    }
+
+    private AuthenticationState getUndeferredAuthentication(HttpServletResponse response) throws IOException
+    {
+        AuthenticationState authenticationState = getAuthentication();
+        if (authenticationState instanceof AuthenticationState.Deferred deferred)
+        {
+            AuthenticationState undeferred;
+            try (Blocker.Callback callback = Blocker.callback())
+            {
+                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, false);
+                undeferred = deferred.authenticate(getRequest(), wrappedCoreResponse, callback);
+                if (undeferred instanceof AuthenticationState.ResponseSent)
+                    callback.block();
+                else
+                    callback.succeeded();
             }
+
+            if (undeferred != null)
+                authenticationState = undeferred;
         }
         return authenticationState;
     }
@@ -589,27 +609,18 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        //TODO: if authentication is deferred, we could authenticate first, otherwise we
-        //are re-authenticating for each of getUserPrincipal, getRemoteUser and getAuthType
-
-        //if already authenticated, return true
+        // Calling these methods will attempt to resolve any deferred authentication and cache it in a request attribute.
         if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
             return true;
 
-        //do the authentication
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        // Get the AuthenticationState to resolve the reason why Authentication failed.
+        AuthenticationState authenticationState = getUndeferredAuthentication(response);
 
-        //if the authentication did not succeed
-        if (authenticationState instanceof AuthenticationState.Deferred)
-            response.sendError(HttpStatus.UNAUTHORIZED_401);
-
-        //if the authentication is incomplete, return false
-        if (!(authenticationState instanceof AuthenticationState.ResponseSent))
+        // A response has been sent by the Authenticator.
+        if (authenticationState instanceof AuthenticationState.ResponseSent)
             return false;
 
-        //TODO: this should only be returned IFF the authenticator has NOT set the response,
-        //and the BasicAuthenticator at least will have set the response to SC_UNAUTHENTICATED
-        //something has gone wrong
+        // The Authenticator could not resolve deferred auth, the response may already be committed.
         throw new ServletException("Authentication failed");
     }
 

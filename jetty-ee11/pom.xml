@@ -18,7 +18,6 @@
     <module>jetty-ee11-bom</module>
     <module>jetty-ee11-cdi</module>
     <module>jetty-ee11-demos</module>
-    <module>jetty-ee11-examples</module>
     <module>jetty-ee11-fcgi-proxy</module>
     <module>jetty-ee11-glassfish-jstl</module>
     <module>jetty-ee11-home</module>

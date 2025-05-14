@@ -1493,11 +1493,11 @@ public class DistributionTests extends AbstractJettyHomeTest
             // Deploy a Jetty context XML file that is only necessary for the test,
             // as it simulates, for example, what the php-fpm server would return.
             Path jettyBaseWork = jettyBase.resolve("work");
-            Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
+            Path phpXML = jettyBase.resolve("webapps/php.xml");
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
@@ -1509,6 +1509,10 @@ public class DistributionTests extends AbstractJettyHomeTest
                   </Set>
                 </Configure>
                 """.replace("$R", jettyBaseWork.toAbsolutePath().toString()), StandardOpenOption.CREATE);
+            Files.writeString(jettyBase.resolve("webapps/php.properties"),
+                """
+                    environment=core
+                    """);
             // Save a file in $JETTY_BASE/work so that it can be requested.
             String testFileContent = "hello";
             Files.writeString(jettyBaseWork.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
@@ -1537,7 +1541,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 """.replace("$ENV", env).replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
 
             Path proxyProps = jettyBase.resolve("webapps").resolve("proxy.properties");
-            Files.writeString(proxyProps, """
+            Files.writeString(proxyProps,
+                """
                 environment=$ENV
                 """.replace("$ENV", env), StandardOpenOption.CREATE);
 

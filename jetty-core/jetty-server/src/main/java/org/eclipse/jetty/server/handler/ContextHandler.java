@@ -118,7 +118,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public static ContextHandler getContextHandler(Request request)
     {
-        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        ContextRequest contextRequest = Request.asInContext(request, ContextRequest.class);
         if (contextRequest == null)
             return null;
         return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
@@ -684,6 +684,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
                 case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
+                case Deployable.BASE_RESOURCE ->
+                {
+                    if (value == null)
+                        continue; // skip
+
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    Resource resource = resourceFactory.asResource(value);
+                    setBaseResource(resource);
+                }
                 default -> initializeDefault(keyName, value);
             }
         }

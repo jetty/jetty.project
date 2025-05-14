@@ -138,6 +138,7 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void initialize()
     {
+        // TODO this should be moved somewhere common?
         List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
         _complianceViolationListener = switch (listeners.size())
         {
@@ -320,14 +321,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    public boolean isRequestHandled()
-    {
-        try (AutoLock ignored = _lock.lock())
-        {
-            return _handling != null || _handled;
-        }
-    }
-
     public Runnable onContentAvailable()
     {
         Runnable onContent;
@@ -353,16 +346,19 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     @Override
-    public Runnable onIdleTimeout(TimeoutException t)
+    public IdleTimeoutTask onIdleTimeout(TimeoutException t)
     {
+        boolean requestHandled;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
-            // too late?
-            if (_stream == null)
-                return null;
+            // Either too early or too late.
+            if (_stream == null || _request == null)
+                return new IdleTimeoutTask(null, false);
+
+            requestHandled = _handling != null || _handled;
 
             Runnable invokeOnContentAvailable = null;
             if (_readFailure == null)
@@ -381,13 +377,13 @@ public class HttpChannelState implements HttpChannel, Components
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                return Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure));
+                return new IdleTimeoutTask(Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure)), requestHandled);
 
             // Otherwise, if there are idle timeout listeners, ask them whether we should call onFailure.
             Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
             if (onIdleTimeout != null)
             {
-                return () ->
+                return new IdleTimeoutTask(() ->
                 {
                     if (onIdleTimeout.test(t))
                     {
@@ -396,12 +392,12 @@ public class HttpChannelState implements HttpChannel, Components
                         if (task != null)
                             task.run();
                     }
-                };
+                }, requestHandled);
             }
         }
 
         // Otherwise treat as a failure.
-        return onFailure(t);
+        return new IdleTimeoutTask(onFailure(t), requestHandled);
     }
 
     @Override
@@ -522,7 +518,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 stream = _stream;
             }
-            if (_stream == null)
+            if (stream == null)
                 throw new IllegalStateException("No active stream");
             HttpStream combined = onStreamEvent.apply(stream);
             if (combined == null)

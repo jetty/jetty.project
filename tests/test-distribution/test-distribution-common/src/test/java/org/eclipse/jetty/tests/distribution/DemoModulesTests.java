@@ -16,7 +16,6 @@ package org.eclipse.jetty.tests.distribution;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -34,7 +33,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,12 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
-    private static Stream<Arguments> provideEnvironmentsToTest()
-    {
-        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10,ee11");
-        return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
-    }
-
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
     public void testAuthentication(String env) throws Exception
@@ -416,7 +408,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    () -> String.join("\n", runStart.getLogs()));
 
                 startHttpClient();
 

@@ -27,16 +27,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,7 +51,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathCollators;
@@ -101,7 +99,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *     <li>The XML Object ID Map will have a reference to the {@link Server} instance via the ID name {@code "Server"}</li>
  *     <li>The Default XML Properties are populated from a call to {@link XmlConfiguration#setJettyStandardIdsAndProperties(Object, Path)} (for things like {@code jetty.home} and {@code jetty.base})</li>
- *     <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the monitored path.</li>
+ * <li>An extra XML Property named {@code "jetty.webapps"} is available, and points to the webapps path.</li>
  * </ul>
  * <p>Context Deployment properties will be initialized with:</p>
  * <ul>
@@ -131,40 +129,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     // old attributes prefix, now stripped.
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
-    private static final Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d+)");
-
-    /**
-     * A comparator that ranks names matching EE_ENVIRONMENT_NAME_PATTERN higher than other names,
-     * EE names are compared by EE number, otherwise simple name comparison is used.
-     */
-    protected static final Comparator<String> ENVIRONMENT_COMPARATOR = (e1, e2) ->
-    {
-        Matcher m1 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e1);
-        Matcher m2 = EE_ENVIRONMENT_NAME_PATTERN.matcher(e2);
-
-        if (m1.matches())
-        {
-            if (m2.matches())
-            {
-                int n1 = Integer.parseInt(m1.group(1));
-                int n2 = Integer.parseInt(m2.group(1));
-                return Integer.compare(n2, n1);
-            }
-            return -1;
-        }
-        if (m2.matches())
-            return 1;
-
-        return e1.compareTo(e2);
-    };
-
     private final Server server;
     private final FilenameFilter filenameFilter;
-    private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
+    private final List<Path> webappDirs = new CopyOnWriteArrayList<>();
     private final ContextHandlerFactory contextHandlerFactory;
-    private final Map<String, PathsApp> trackedApps = new HashMap<>();
+    private final Map<String, PathsApp> scannedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
-    private final Set<String> trackedEnvironments = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    private final List<String> enabledEnvironments = new ArrayList<>();
+    private List<String> environmentsOrder = new ArrayList<>();
     private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
@@ -172,13 +144,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private Scanner scanner;
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
-    private String defaultEnvironmentName;
 
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
-     * it's configured destination.
+     * its configured destination.
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
@@ -192,7 +163,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
-     * it's configured destination.
+     * its configured destination.
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
@@ -210,7 +181,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
-     * it's configured destination.
+     * its configured destination.
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
@@ -231,7 +202,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
-     * it's configured destination.
+     * its configured destination.
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
@@ -252,7 +223,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
-     * it's configured destination.
+     * its configured destination.
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
@@ -274,20 +245,19 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
         installBean(deployer);
-        this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
-        installBean(new DumpableCollection("monitored", monitoredDirs));
+        this.filenameFilter = Objects.requireNonNullElse(filter, new WebappsPathFilter());
     }
 
     /**
      * @param dir Directory to scan for deployable artifacts
      */
-    public void addMonitoredDirectory(Path dir)
+    public void addWebappsDirectory(Path dir)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding monitored directory: {}", dir);
+            LOG.debug("Adding webapps directory: {}", dir);
         if (isStarted())
-            throw new IllegalStateException("Unable to add monitored directory while running");
-        monitoredDirs.add(Objects.requireNonNull(dir));
+            throw new IllegalStateException("Unable to add webapps directory while running");
+        webappDirs.add(Objects.requireNonNull(dir));
     }
 
     /**
@@ -310,11 +280,29 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         Environment environment = Environment.get(name);
         // Check to make sure that the Environment was created before jetty-deploy is involved.
-        // This is to ensure that the Environment ClassLoader is setup properly.
+        // This is to ensure that the Environment ClassLoader is set up properly.
         if (environment == null)
             throw new IllegalStateException("Environment [" + name + "] does not exist.");
-        trackedEnvironments.add(name);
+
+        enableEnvironment(name);
+
         return new EnvironmentConfig(environment);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("webappDirs", webappDirs),
+            Dumpable.named("environmentsDir", environmentsDir),
+            Dumpable.named("scanInterval", this.scanInterval),
+            new DumpableCollection("enabledEnvironments", this.enabledEnvironments),
+            Dumpable.named("environmentsOrder", this.environmentsOrder),
+            new DumpableMap("environmentAttributes", this.environmentAttributesMap),
+            Dumpable.named("contextHandlerFactory", this.contextHandlerFactory),
+            Dumpable.named("deferInitialScan", this.deferInitialScan),
+            Dumpable.named("useRealPaths", this.useRealPaths)
+        );
     }
 
     /**
@@ -330,30 +318,42 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         this.actionComparator = actionComparator;
     }
 
-    /**
-     * Get the default {@link Environment} name for discovered web applications that
-     * do not declare the {@link Environment} that they belong to.
-     *
-     * <p>
-     * Only uses environments that have been previously configured with {@link #configureEnvironment(String)}
-     * </p>
-     *
-     * @return the default environment name.
-     */
-    public String getDefaultEnvironmentName()
+    public List<String> getEnvironmentsOrder()
     {
-        if (defaultEnvironmentName == null)
-        {
-            return trackedEnvironments.stream()
-                .min(ENVIRONMENT_COMPARATOR)
-                .orElse(null);
-        }
-        return defaultEnvironmentName;
+        return environmentsOrder;
     }
 
-    public void setDefaultEnvironmentName(String name)
+    public void setEnvironmentsOrder(List<String> environmentsOrder)
     {
-        this.defaultEnvironmentName = name;
+        this.environmentsOrder = Objects.requireNonNull(environmentsOrder);
+    }
+
+    String getDefaultEnvironmentName()
+    {
+        return switch (enabledEnvironments.size())
+        {
+            case 0 -> null;
+            case 1 -> enabledEnvironments.get(0);
+            default ->
+            {
+                List<String> order = getEnvironmentsOrder();
+                if (order.isEmpty())
+                    yield enabledEnvironments.get(0);
+                for (String name : order)
+                {
+                    if (enabledEnvironments.contains(name))
+                        yield name;
+                }
+                yield null;
+            }
+        };
+    }
+
+    private void enableEnvironment(String name)
+    {
+        if (enabledEnvironments.contains(name))
+            throw new IllegalStateException("Environment [" + name + "] is already configured for deploy.");
+        enabledEnvironments.add(name);
     }
 
     /**
@@ -377,21 +377,21 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * @return The {@link List} of {@link Path}s scanned for files to deploy.
      */
-    public List<Path> getMonitoredDirectories()
+    public List<Path> getWebappDirectories()
     {
-        return monitoredDirs;
+        return webappDirs;
     }
 
-    public void setMonitoredDirectories(Collection<Path> directories)
+    public void setWebappDirectories(Collection<Path> directories)
     {
         if (isStarted())
-            throw new IllegalStateException("Unable to add monitored directories while running");
+            throw new IllegalStateException("Unable to add webapp directories while running");
 
-        monitoredDirs.clear();
+        webappDirs.clear();
 
         for (Path dir : directories)
         {
-            addMonitoredDirectory(dir);
+            addWebappsDirectory(dir);
         }
     }
 
@@ -429,7 +429,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      *
      * <ul>
      *     <li>{@code true} - to have initial scan deferred until the {@link Server} component
-     *     has reached it's STARTED state.<br>
+     *     has reached its STARTED state.<br>
      *     Note: any failures in a deployment will not fail the Server startup in this mode.</li>
      *     <li>{@code false} - (default value) to have initial scan occur as normal on
      *     {@code DeploymentScanner} startup.</li>
@@ -499,35 +499,35 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             // Using lower-case as defined by System Locale, as the files themselves from System FS.
             String basename = FileID.getBasename(path).toLowerCase();
 
-            // Strip the ".d" extension on directory basenames
+            // Strip the ".d" extension on directory baseNames
             if (Files.isDirectory(path) && FileID.isExtension(path, "d"))
             {
                 basename = basename.substring(0, basename.length() - 2);
             }
 
-            if (isMonitoredPath(path))
+            if (isWebappsPath(path))
             {
                 // we have a normal path entry
                 changedBaseNames.add(basename);
-                PathsApp app = trackedApps.computeIfAbsent(basename, PathsApp::new);
+                PathsApp app = scannedApps.computeIfAbsent(basename, PathsApp::new);
                 app.putPath(path, state);
             }
             else if (isEnvironmentConfigPath(path))
             {
-                String envname = null;
+                String envName = null;
 
                 for (Environment environment : Environment.getAll())
                 {
                     String name = environment.getName();
                     if (basename.startsWith(name))
-                        envname = name;
+                        envName = name;
                 }
-                if (StringUtil.isBlank(envname))
+                if (StringUtil.isBlank(envName))
                 {
                     LOG.warn("Unable to determine Environment for file: {}", path);
                     continue;
                 }
-                changedEnvironments.add(envname);
+                changedEnvironments.add(envName);
             }
         }
 
@@ -552,7 +552,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             for (String changedEnvName : changedEnvironments)
             {
                 // Add any missing apps to changedApps list
-                for (PathsApp app : trackedApps.values())
+                for (PathsApp app : scannedApps.values())
                 {
                     if (changedBaseNames.contains(app.getName()))
                         continue; // skip app that's already in the change list.
@@ -589,7 +589,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         performActions(actions);
     }
 
-    public void resetAppState(String name)
+    void resetAppState(String name)
     {
         PathsApp app = findApp(name);
         if (app == null)
@@ -597,11 +597,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         app.resetStates();
     }
 
-    @ManagedOperation(value = "Scan the monitored directories", impact = "ACTION")
+    @ManagedOperation(value = "Scan the webapps directories", impact = "ACTION")
     public void scan()
     {
-        LOG.info("Performing scan of monitored directories: {}",
-            monitoredDirs.stream()
+        LOG.info("Performing scan of webapps directories: {}",
+            webappDirs.stream()
                 .map(Path::toUri)
                 .map(URI::toASCIIString)
                 .collect(Collectors.joining(", ", "[", "]"))
@@ -609,13 +609,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         scanner.nudge();
     }
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x[dirs=%s]", this.getClass(), hashCode(), monitoredDirs);
-    }
-
-    protected List<DeployAction> buildActionList(List<PathsApp> changedApps)
+    private List<DeployAction> buildActionList(List<PathsApp> changedApps)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("buildActionList: {}", changedApps);
@@ -658,10 +652,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             deployer = server.getBean(Deployer.class);
             if (deployer == null)
             {
-                Collection<ContextHandlerCollection> chcs = server.getContainedBeans(ContextHandlerCollection.class);
-                if (chcs.size() == 1)
+                Collection<ContextHandlerCollection> handlers = server.getContainedBeans(ContextHandlerCollection.class);
+                if (handlers.size() == 1)
                 {
-                    deployer = new StandardDeployer(chcs.iterator().next());
+                    deployer = new StandardDeployer(handlers.iterator().next());
                     addBean(deployer, true);
                     LifeCycle.start(deployer);
                 }
@@ -671,10 +665,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 throw new IllegalStateException("No deployer available");
         }
 
-        if (monitoredDirs.isEmpty())
-            throw new IllegalStateException("No monitored dir specified");
+        if (webappDirs.isEmpty())
+            throw new IllegalStateException("No webapps dir specified");
 
-        LOG.info("Deployment monitoring {} at intervals {}s {}", monitoredDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
+        LOG.info("Deployment monitoring of {} at intervals {}s {}", webappDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
@@ -694,7 +688,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         };
 
         List<Path> dirs = new ArrayList<>();
-        for (Path dir : monitoredDirs)
+        for (Path dir : webappDirs)
         {
             if (validDir.test(dir))
                 dirs.add(dir);
@@ -722,7 +716,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             if (server == null)
                 throw new IllegalStateException("Cannot defer initial scan with a null Server");
             // Setup listener to wait for Server in STARTED state, which
-            // triggers the first scan of the monitored directories
+            // triggers the first scan of the webapps directories
             server.addEventListener(
                 new LifeCycle.Listener()
                 {
@@ -754,17 +748,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
-    protected boolean exists(String path)
+    PathsApp findApp(String name)
     {
-        return scanner.exists(path);
+        return scannedApps.get(name);
     }
 
-    protected PathsApp findApp(String name)
-    {
-        return trackedApps.get(name);
-    }
-
-    protected boolean isEnvironmentConfigPath(Path path)
+    private boolean isEnvironmentConfigPath(Path path)
     {
         if (environmentsDir == null)
             return false;
@@ -775,18 +764,18 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         return FileID.isExtension(path, "xml", "properties");
     }
 
-    protected boolean isMonitoredPath(Path path)
+    private boolean isWebappsPath(Path path)
     {
         Path parentDir = path.getParent();
-        for (Path monitoredDir : monitoredDirs)
+        for (Path dir : webappDirs)
         {
-            if (isSameDir(monitoredDir, parentDir))
+            if (isSameDir(dir, parentDir))
                 return true;
         }
         return false;
     }
 
-    protected boolean isSameDir(Path dirA, Path dirB)
+    private boolean isSameDir(Path dirA, Path dirB)
     {
         try
         {
@@ -800,7 +789,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
-    protected void performActions(List<DeployAction> actions)
+    void performActions(List<DeployAction> actions)
     {
         // Track apps that have been removed as a result of executing the
         // full set of actions.
@@ -834,13 +823,18 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Ensure Environment name is set
                         String envName = app.getEnvironmentName();
                         if (StringUtil.isBlank(envName))
+                        {
                             envName = getDefaultEnvironmentName();
+                            if (envName == null)
+                                throw new IllegalStateException("Unable to deploy %s to unknown environment".formatted(app.getName()));
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Using default environment {} to deploy app {}", envName, app.getName());
+                        }
                         Environment env = Environment.get(envName);
 
-                        if (env == null || !trackedEnvironments.contains(envName))
-                            throw new IllegalArgumentException("Unable to deploy %s to environment %s.  Available Environments to deploy to %s"
-                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
-                                    .collect(Collectors.joining(", ", "[", "]"))));
+                        if (env == null || !enabledEnvironments.contains(envName))
+                            throw new IllegalStateException("Unable to deploy %s to environment %s. Available environments: %s"
+                                .formatted(app.name, envName, enabledEnvironments));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
@@ -856,6 +850,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
                         // Introduce the ContextHandler to the Deployer
                         startTracking(app);
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Deploying {} to environment {}", app.getName(), envName);
+
                         deployer.deploy(app.getContextHandler());
                     }
 
@@ -870,13 +868,18 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         // Ensure Environment name is set
                         String envName = app.getEnvironmentName();
                         if (StringUtil.isBlank(envName))
+                        {
                             envName = getDefaultEnvironmentName();
+                            if (envName == null)
+                                throw new IllegalStateException("Unable to redeploy %s to unknown environment".formatted(app.getName()));
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Using default environment {} to redeploy app {}", envName, app.getName());
+                        }
                         Environment env = Environment.get(envName);
 
-                        if (env == null || !trackedEnvironments.contains(envName))
-                            throw new IllegalArgumentException("Unable to deploy app [%s] to environment [%s].  Available Environments to deploy to %s"
-                                .formatted(app.name, envName, trackedEnvironments.stream().sorted(ENVIRONMENT_COMPARATOR)
-                                    .collect(Collectors.joining(", ", "[", "]"))));
+                        if (env == null || !enabledEnvironments.contains(envName))
+                            throw new IllegalStateException("Unable to redeploy %s to environment %s. Available environments: %s"
+                                .formatted(app.name, envName, enabledEnvironments));
 
                         // Create a new Attributes layer for the app deployment, which is the
                         // combination of layered Environment Attributes with app Attributes overlaying them.
@@ -892,6 +895,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
                         // Introduce the ContextHandler to the Deployer
                         startTracking(app);
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Redeploying {} to environment {}", app.getName(), envName);
+
                         deployer.redeploy(oldContextHandler, app.getContextHandler());
                     }
                 }
@@ -914,7 +921,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
-    protected List<DeployAction> sortActions(List<DeployAction> actions)
+    private List<DeployAction> sortActions(List<DeployAction> actions)
     {
         Comparator<DeployAction> deployActionComparator = getActionComparator();
         if (deployActionComparator != null)
@@ -1031,12 +1038,18 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     private void startTracking(PathsApp app)
     {
-        trackedApps.put(app.getName(), app);
+        scannedApps.put(app.getName(), app);
     }
 
     private void stopTracking(PathsApp app)
     {
-        trackedApps.remove(app.getName());
+        scannedApps.remove(app.getName());
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[webappsDirs=%s]", this.getClass(), hashCode(), webappDirs);
     }
 
     public record DeployAction(DeployAction.Type type, String name)
@@ -1059,7 +1072,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      *     <li>{@link DeployAction.Type#DEPLOY} type are in ascending alphabetically order.</li>
      * </ul>>
      */
-    public static class DeployActionComparator implements Comparator<DeployAction>
+    static class DeployActionComparator implements Comparator<DeployAction>
     {
         private final Comparator<DeployAction> typeComparator;
         private final Comparator<DeployAction> basenameComparator;
@@ -1123,7 +1136,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
 
         /**
-         * Convenience method for {@code loadProperties(Path.of(pathName));}
+         * Convenience method for {@code loadProperties(Path.of(pathName))},
+         * called from Jetty XML files.
          *
          * @param pathName the name of the path to load.
          * @throws IOException if unable to read the properties file
@@ -1195,7 +1209,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * This is the fallback class used, if the context class itself isn't defined by
          * the web application being deployed. (such as from an XML definition)
          * </p>
-         *
          * @param classname the default classname for this environment's context deployable.
          * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
          */
@@ -1272,15 +1285,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
     }
 
-    public static class MonitoredPathFilter implements FilenameFilter
+    private static class WebappsPathFilter implements FilenameFilter
     {
-        private final List<Path> monitoredDirs;
-
-        public MonitoredPathFilter(List<Path> monitoredDirs)
-        {
-            this.monitoredDirs = monitoredDirs;
-        }
-
         @Override
         public boolean accept(File dir, String name)
         {
@@ -1294,37 +1300,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 // ignore traditional "hidden" path entries.
                 if (name.startsWith("."))
                     return false;
-                // ignore path tagged as hidden by FS
+                // ignore path tagged as hidden by FileSystem metadata
                 if (Files.isHidden(path))
                     return false;
             }
-            catch (IOException ignore)
+            catch (IOException x)
             {
-                // ignore
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED error from isHidden check", x);
             }
 
+            // Specific file extensions that we care about
             if (Files.isRegularFile(path) && FileID.isExtension(name, "jar", "war", "xml", "properties"))
                 return true;
 
-            // From this point down, we looking for things that are possible directory deployments.
-            if (!Files.isDirectory(path))
-                return false;
-
-            // Don't deploy monitored paths
-            if (monitoredDirs.contains(path))
-                return false;
-
-            String lowerName = name.toLowerCase(Locale.ENGLISH);
-
-            // is it a nominated config directory
-            if (lowerName.endsWith(".d"))
-                return true;
-
-            // ignore source control directories
-            if ("cvs".equals(lowerName) || "cvsroot".equals(lowerName))
-                return false;
-
-            return true;
+            // Directories are ok
+            return Files.isDirectory(path);
         }
     }
 
@@ -1332,7 +1323,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * A representation of all the filesystem components that are used to
      * create a {@link ContextHandler}
      */
-    protected static class PathsApp
+    static class PathsApp
     {
         public enum State
         {
@@ -1371,6 +1362,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return false;
             PathsApp that = (PathsApp)o;
             return Objects.equals(name, that.name);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hashCode(name);
         }
 
         public Attributes getAttributes()
@@ -1495,7 +1492,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return false;
             if (Files.isDirectory(p))
             {
-                return !FileID.isExtension(p, "d"); // ignore nominated dirs
+                return !FileID.isExtension(p.toUri(), "d"); // ignore nominated dirs
             }
             return false;
         }
@@ -1518,12 +1515,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         public void setState(PathsApp.State state)
         {
             this.state = state;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hashCode(name);
         }
 
         /**
@@ -1603,28 +1594,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             state = calcState();
         }
 
-        @Override
-        public String toString()
-        {
-            StringBuilder str = new StringBuilder("%s@%x".formatted(TypeUtil.toShortName(this.getClass()), hashCode()));
-            str.append("[").append(name);
-            str.append("|").append(getState());
-            str.append(", env=").append(getEnvironmentName());
-            str.append(", mainPath=").append(getMainPath());
-            str.append(", paths=");
-            str.append(paths.entrySet().stream()
-                .map((e) -> String.format("%s|%s", e.getKey(), e.getValue()))
-                .collect(Collectors.joining(", ", "[", "]"))
-            );
-            str.append(", contextHandler=");
-            if (contextHandler == null)
-                str.append("<unset>");
-            else
-                str.append(contextHandler);
-            str.append("]");
-            return str.toString();
-        }
-
         /**
          * <p>
          * Calculate the State of the overall State based on the States in the Paths.
@@ -1681,6 +1650,28 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 }
             }
             return ret != null ? ret : PathsApp.State.UNCHANGED;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder str = new StringBuilder("%s@%x".formatted(TypeUtil.toShortName(this.getClass()), hashCode()));
+            str.append("[").append(name);
+            str.append("|").append(getState());
+            str.append(", env=").append(getEnvironmentName());
+            str.append(", mainPath=").append(getMainPath());
+            str.append(", paths=");
+            str.append(paths.entrySet().stream()
+                .map((e) -> String.format("%s|%s", e.getKey(), e.getValue()))
+                .collect(Collectors.joining(", ", "[", "]"))
+            );
+            str.append(", contextHandler=");
+            if (contextHandler == null)
+                str.append("<unset>");
+            else
+                str.append(contextHandler);
+            str.append("]");
+            return str.toString();
         }
     }
 }
