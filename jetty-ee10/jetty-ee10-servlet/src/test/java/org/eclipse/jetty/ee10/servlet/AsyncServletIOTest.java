@@ -937,15 +937,8 @@ public class AsyncServletIOTest
             {
                 try
                 {
-                    try
-                    {
-                        IO.readBytes(req.getInputStream());
-                        throw new AssertionError("expected IOException");
-                    }
-                    catch (IOException e)
-                    {
-                        exceptionRef.set(e);
-                    }
+                    IO.readBytes(req.getInputStream());
+                    throw new AssertionError("expected IOException");
                 }
                 catch (Throwable x)
                 {
