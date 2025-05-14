@@ -245,15 +245,24 @@ public abstract class IteratingCallback implements Callback
         while (true)
         {
             // Call process to get the action that we have to take.
-            Action action = null;
-            try
+            boolean processing;
+            try (AutoLock ignored = _lock.lock())
             {
-                action = process();
+                processing = _state == State.PROCESSING;
             }
-            catch (Throwable x)
+
+            Action action = null;
+            if (processing)
             {
-                failed(x);
-                // Fall through to possibly invoke onCompleteFailure().
+                try
+                {
+                    action = process();
+                }
+                catch (Throwable x)
+                {
+                    failed(x);
+                    // Fall through to possibly invoke onCompleteFailure().
+                }
             }
 
             boolean callOnSuccess = false;
