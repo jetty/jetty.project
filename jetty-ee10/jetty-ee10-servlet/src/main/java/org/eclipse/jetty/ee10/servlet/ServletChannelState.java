@@ -834,7 +834,7 @@ public class ServletChannelState
      * normal handling loop and then actually handled by {@link #onError(Throwable)}
      * @param failure the error.
      */
-    public void asyncError(Throwable failure)
+    public void asyncError(Throwable failure, Boolean notified)
     {
         AsyncContextEvent event = null;
         try (AutoLock ignored = lock())
@@ -857,7 +857,7 @@ public class ServletChannelState
             }
         }
 
-        if (event != null)
+        if (event != null && !Boolean.TRUE.equals(notified))
         {
             cancelTimeout(event);
             runInContext(event, _servletChannel::handle);

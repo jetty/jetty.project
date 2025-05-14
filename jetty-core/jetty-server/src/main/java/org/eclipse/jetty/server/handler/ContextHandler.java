@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -1497,6 +1498,25 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 try
                 {
                     consumer.accept(t);
+                }
+                finally
+                {
+                    exitScope(request, lastContext, lastLoader);
+                }
+            }
+        }
+
+        public void accept(BiConsumer<Throwable, Boolean> consumer, Throwable t, Boolean n, Request request)
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                consumer.accept(t, n);
+            else
+            {
+                ClassLoader lastLoader = enterScope(request);
+                try
+                {
+                    consumer.accept(t, n);
                 }
                 finally
                 {

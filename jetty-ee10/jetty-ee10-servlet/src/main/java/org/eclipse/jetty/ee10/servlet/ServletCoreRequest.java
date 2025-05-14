@@ -18,6 +18,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -287,6 +288,12 @@ public class ServletCoreRequest implements Request
 
     @Override
     public void addFailureListener(Consumer<Throwable> onFailure)
+    {
+        _servletContextRequest.addFailureListener(onFailure);
+    }
+
+    @Override
+    public void addFailureListener(BiConsumer<Throwable, Boolean> onFailure)
     {
         _servletContextRequest.addFailureListener(onFailure);
     }

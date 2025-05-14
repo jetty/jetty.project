@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -320,8 +321,32 @@ public interface Request extends Attributes, Content.Source
      *
      * @param onFailure the failure listener as a consumer function
      * @see #addIdleTimeoutListener(Predicate)
+     * @deprecated use {@link #addFailureListener(BiConsumer)}
      */
+    @Deprecated
     void addFailureListener(Consumer<Throwable> onFailure);
+
+    /**
+     * <p>Adds a listener for asynchronous fatal failures.</p>
+     * <p>When a listener is called, the effects of the failure have already taken place:</p>
+     * <ul>
+     *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
+     *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
+     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls
+     *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
+     *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
+     * </ul>
+     * <p>Listeners are processed in the same order they are added.</p>
+     *
+     * @param onFailure the failure listener as a consumer function, which is passed the failure and a boolean indicating
+     *                  if a read/write was in progress and thus the application will already be notified of the failure.
+     *                  Applications need to take care that they do not create races in error handling.
+     * @see #addIdleTimeoutListener(Predicate)
+     */
+    default void addFailureListener(BiConsumer<Throwable, Boolean> onFailure)
+    {
+        addFailureListener(t -> onFailure.accept(t, null));
+    }
 
     TunnelSupport getTunnelSupport();
 
@@ -951,6 +976,12 @@ public interface Request extends Attributes, Content.Source
 
         @Override
         public void addFailureListener(Consumer<Throwable> onFailure)
+        {
+            getWrapped().addFailureListener(onFailure);
+        }
+
+        @Override
+        public void addFailureListener(BiConsumer<Throwable, Boolean> onFailure)
         {
             getWrapped().addFailureListener(onFailure);
         }

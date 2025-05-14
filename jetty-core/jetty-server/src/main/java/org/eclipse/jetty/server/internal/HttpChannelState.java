@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -120,7 +121,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Runnable _onContentAvailable;
     private Predicate<TimeoutException> _onIdleTimeout;
     private Content.Chunk _readFailure;
-    private Consumer<Throwable> _onFailure;
+    private BiConsumer<Throwable, Boolean> _onFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
@@ -462,7 +463,7 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Notify the failure listeners only once.
-                Consumer<Throwable> onFailure = _onFailure;
+                BiConsumer<Throwable, Boolean> onFailure = _onFailure;
                 _onFailure = null;
 
                 boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
@@ -472,7 +473,7 @@ public class HttpChannelState implements HttpChannel, Components
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
-                        onFailure.accept(x);
+                        onFailure.accept(x, invokeOnContentAvailable != null || invokeWriteFailure != null);
                     }
                     catch (Throwable throwable)
                     {
@@ -1069,6 +1070,12 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void addFailureListener(Consumer<Throwable> onFailure)
         {
+            addFailureListener((throwable, notice) -> onFailure.accept(throwable));
+        }
+
+        @Override
+        public void addFailureListener(BiConsumer<Throwable, Boolean> onFailure)
+        {
             try (AutoLock ignored = _lock.lock())
             {
                 HttpChannelState httpChannel = lockedGetHttpChannelState();
@@ -1082,12 +1089,12 @@ public class HttpChannelState implements HttpChannel, Components
                 }
                 else
                 {
-                    Consumer<Throwable> previous = httpChannel._onFailure;
-                    httpChannel._onFailure = throwable ->
+                    BiConsumer<Throwable, Boolean> previous = httpChannel._onFailure;
+                    httpChannel._onFailure = (throwable, notice) ->
                     {
                         try
                         {
-                            previous.accept(throwable);
+                            previous.accept(throwable, notice);
                         }
                         catch (Throwable t)
                         {
@@ -1095,7 +1102,7 @@ public class HttpChannelState implements HttpChannel, Components
                         }
                         finally
                         {
-                            onFailure.accept(throwable);
+                            onFailure.accept(throwable, notice);
                         }
                     };
                 }

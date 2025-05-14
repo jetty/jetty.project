@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -51,6 +52,12 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     public void addFailureListener(Consumer<Throwable> onFailure)
     {
         super.addFailureListener(t -> _context.accept(onFailure, t, ContextRequest.this));
+    }
+
+    @Override
+    public void addFailureListener(BiConsumer<Throwable, Boolean> onFailure)
+    {
+        super.addFailureListener((t, n) -> _context.accept(onFailure, t, n, ContextRequest.this));
     }
 
     @Override

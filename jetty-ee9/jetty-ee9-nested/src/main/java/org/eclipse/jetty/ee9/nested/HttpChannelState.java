@@ -764,7 +764,7 @@ public class HttpChannelState
             runInContext(event, _channel);
     }
 
-    public void asyncError(Throwable failure)
+    public void asyncError(Throwable failure, Boolean notified)
     {
         // This method is called when an failure occurs asynchronously to
         // normal handling.  If the request is async, we arrange for the
@@ -792,7 +792,7 @@ public class HttpChannelState
             }
         }
 
-        if (event != null)
+        if (event != null && !Boolean.TRUE.equals(notified))
         {
             cancelTimeout(event);
             runInContext(event, _channel);
