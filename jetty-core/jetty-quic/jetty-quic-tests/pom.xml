@@ -9,6 +9,10 @@
   <artifactId>jetty-quic-tests</artifactId>
   <name>Core :: QUIC :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
