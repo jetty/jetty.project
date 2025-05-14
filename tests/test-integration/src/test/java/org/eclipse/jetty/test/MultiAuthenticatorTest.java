@@ -208,12 +208,16 @@ public class MultiAuthenticatorTest
                 return onError(request, response, callback);
             else if (pathInContext.startsWith("/logout"))
                 return onLogout(request, response, callback);
+            else if (pathInContext.equals("/login"))
+                return onLogin(request, response, callback);
             else if (pathInContext.startsWith("/login/form"))
                 return onFormLogin(request, response, callback);
             else if (pathInContext.startsWith("/login/openid"))
                 return onOpenIdLogin(request, response, callback);
 
             Session session = request.getSession(false);
+            assertNotNull(session);
+
             try (PrintWriter writer = new PrintWriter(Content.Sink.asOutputStream(response)))
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
@@ -221,7 +225,6 @@ public class MultiAuthenticatorTest
                 AuthenticationState.Succeeded auth = getAuthentication(request);
                 if (auth != null)
                 {
-                    assertNotNull(session);
                     writer.println("<b>authState: " + auth + "</b><br>");
                     writer.println("<b>userPrincipal: " + auth.getUserPrincipal() + "</b><br>");
 
@@ -242,18 +245,31 @@ public class MultiAuthenticatorTest
                         <a href="/logout">Logout</a><br>
                         """);
                 }
-                else
-                {
-                    writer.println("""
+            }
+
+            callback.succeeded();
+            return true;
+        }
+
+        private boolean onLogin(Request request, Response response, Callback callback) throws Exception
+        {
+            AuthenticationState.Succeeded authentication = getAuthentication(request);
+            if (authentication != null)
+            {
+                Response.sendRedirect(request, response, callback, "/");
+                return true;
+            }
+
+            Session session = request.getSession(false);
+            String authType = (session == null || session.getAttribute(AUTH_TYPE_ATTR) == null) ? "null" : (String)session.getAttribute(AUTH_TYPE_ATTR);
+            String content = """
                         <h1>Multi Login Page</h1>
                         <a href="/login/openid">OpenID Login</a><br>
                         <a href="/login/form">Form Login</a><br>
                         <a href="/logout">Logout</a><br>
-                        """);
-                }
-            }
-
-            callback.succeeded();
+                        <b>authType: %s</b><br>
+                        """.formatted(authType);
+            response.write(true, BufferUtil.toBuffer(content), callback);
             return true;
         }
 
