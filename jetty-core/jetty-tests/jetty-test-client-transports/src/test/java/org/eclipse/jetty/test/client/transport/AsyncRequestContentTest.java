@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -120,7 +121,7 @@ public class AsyncRequestContentTest extends AbstractTest
             assertThat(chunks.size(), is(1));
             assertInstanceOf(EofException.class, chunks.get(0).getFailure());
         });
-        assertInstanceOf(EofException.class, failureRef.get());
+        assertThat(failureRef.get(), nullValue());
     }
 
     @ParameterizedTest
