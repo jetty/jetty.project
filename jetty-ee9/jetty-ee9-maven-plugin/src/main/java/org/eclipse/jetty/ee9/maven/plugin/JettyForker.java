@@ -13,20 +13,9 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.jetty.maven.AbstractForker;
 import org.eclipse.jetty.maven.AbstractServerForker;
-import org.eclipse.jetty.maven.PluginLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Jetty;
 
 /**
- * JettyForker
- *
  * Uses quickstart to generate a webapp and forks a process to run it.
  */
 public class JettyForker extends AbstractServerForker

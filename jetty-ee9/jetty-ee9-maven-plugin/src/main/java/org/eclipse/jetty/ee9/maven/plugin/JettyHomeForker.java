@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee9.maven.plugin;
 import org.eclipse.jetty.maven.AbstractHomeForker;
 
 /**
- * JettyHomeForker
- *
  * Unpacks a jetty-home and configures it with a base that allows it
  * to run an unassembled webapp.
  */

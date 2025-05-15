@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * AbstractClusteredInvalidationSessionTest
- *
  * Goal of the test is to be sure that invalidating a session on one node
  * result in the session being unavailable in the other node also. This
  * simulates an environment without a sticky load balancer. In this case,

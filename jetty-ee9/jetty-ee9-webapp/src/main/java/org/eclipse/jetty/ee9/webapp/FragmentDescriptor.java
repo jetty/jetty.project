@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
- * Fragment
- *
  * A web-fragment.xml descriptor.
  */
 public class FragmentDescriptor extends WebDescriptor

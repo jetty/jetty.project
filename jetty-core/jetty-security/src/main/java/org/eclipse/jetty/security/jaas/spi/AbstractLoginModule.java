@@ -32,8 +32,6 @@ import org.eclipse.jetty.security.jaas.JAASRole;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
 
 /**
- * AbstractLoginModule
- *
  * Abstract base class for all {@link LoginModule LoginModules}. Subclasses should
  * implement {@link #getUser(String)} method, and subclass {@link JAASUser} to implement
  * {@link JAASUser#doFetchRoles()} method.

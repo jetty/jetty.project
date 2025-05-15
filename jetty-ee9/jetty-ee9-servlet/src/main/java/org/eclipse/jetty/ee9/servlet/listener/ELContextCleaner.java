@@ -23,13 +23,10 @@ import jakarta.servlet.ServletContextListener;
 import org.eclipse.jetty.util.Loader;
 
 /**
- * ELContextCleaner
- *
  * Clean up BeanELResolver when the context is going out
- * of service:
- *
- * See http://java.net/jira/browse/GLASSFISH-1649
- * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095
+ * of service.
+ * @see <a href="http://java.net/jira/browse/GLASSFISH-1649">GLASSFISH-1649</a>
+ * @see <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095">bug 353095</a>
  */
 @Deprecated
 public class ELContextCleaner implements ServletContextListener

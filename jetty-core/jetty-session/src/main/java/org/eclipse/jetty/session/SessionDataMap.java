@@ -16,8 +16,6 @@ package org.eclipse.jetty.session;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * SessionDataMap
- *
  * A map style access to SessionData keyed by the session id.
  */
 public interface SessionDataMap extends LifeCycle

@@ -23,7 +23,7 @@ import java.util.Objects;
 /**
  * An interface for managing invocations of methods whose arguments may need to be augmented, by
  * binding in certain parameters ahead of time.
- *
+ * <p>
  * Implementations may use various invocation mechanisms, including:
  * <ul>
  *  <li>direct method invocation on an held object</li>

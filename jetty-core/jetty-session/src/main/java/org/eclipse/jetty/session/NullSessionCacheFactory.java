@@ -17,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NullSessionCacheFactory
- *
  * Factory for NullSessionCaches.
  */
 public class NullSessionCacheFactory extends AbstractSessionCacheFactory

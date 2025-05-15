@@ -25,8 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jasper.servlet.JspServlet;
 
 /**
- * JettyJspServlet
- *
  * Wrapper for the jsp servlet that handles receiving requests mapped from
  * jsp-property-groups. Mappings could be wildcard urls like "/*", which would
  * include welcome files, but we need those to be handled by the DefaultServlet.

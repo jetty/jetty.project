@@ -52,8 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * CreationTest
- *
  * Test combinations of creating, forwarding and invalidating
  * a session.
  */

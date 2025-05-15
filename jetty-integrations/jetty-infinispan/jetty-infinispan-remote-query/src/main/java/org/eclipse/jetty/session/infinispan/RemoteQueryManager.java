@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * RemoteQueryManager
- *
  * A QueryManager impl that supports doing queries against remote infinispan server.
  */
 public class RemoteQueryManager implements QueryManager

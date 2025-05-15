@@ -21,8 +21,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * ListenerHolder
- *
  * Specialization of BaseHolder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.

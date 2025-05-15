@@ -106,9 +106,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ContextHandler.
- *
- * <p>
  * This handler wraps a call to handle by setting the context and servlet path, plus setting the context classloader.
  * </p>
  * <p>

@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Transaction
- *
  * Class to represent a JTA UserTransaction impl.
  */
 public class Transaction extends NamingEntry

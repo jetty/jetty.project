@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * AbstractClusteredOrphanedSessionTest
- *
  * Mimic node1 creating a session then crashing. Check that node2 will
  * eventually scavenge the orphaned session, even if the session was
  * never used on node2.

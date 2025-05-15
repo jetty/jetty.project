@@ -31,8 +31,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
- * MemcachedSessionDataMap
- *
  * Uses memcached as a cache for SessionData.
  */
 @ManagedObject

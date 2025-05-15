@@ -24,8 +24,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * RoleAnnotationTest
- *
  * Use DeclareRolesAnnotations from within Jetty.
  */
 @DeclareRoles({"server-administrator", "user"})

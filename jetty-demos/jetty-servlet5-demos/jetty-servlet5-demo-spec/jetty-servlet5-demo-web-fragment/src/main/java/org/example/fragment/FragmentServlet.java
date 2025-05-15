@@ -23,11 +23,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * FragmentServlet
- *
  * A web fragment jar.
  */
-
 public class FragmentServlet extends HttpServlet
 {
     private ServletConfig config;

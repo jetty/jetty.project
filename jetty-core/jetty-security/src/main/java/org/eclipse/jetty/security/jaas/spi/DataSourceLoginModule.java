@@ -22,8 +22,6 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.sql.DataSource;
 
 /**
- * DataSourceLoginModule
- *
  * A LoginModule that uses a DataSource to retrieve user authentication
  * and authorisation information.
  *

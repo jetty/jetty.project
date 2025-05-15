@@ -19,9 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JettyForkedChild
- *
- * This is the class that is executed when the jetty maven plugin 
+ * This is the class that is executed when the jetty maven plugin
  * forks a process when DeploymentMode=FORKED.
  */
 public class JettyForkedChild extends AbstractForkedChild

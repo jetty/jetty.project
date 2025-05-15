@@ -25,8 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HouseKeeper
- *
  * There is 1 session HouseKeeper per SessionIdManager instance.
  */
 @ManagedObject

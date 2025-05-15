@@ -49,8 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * IdleSessionTest
- *
  * Checks that a session can be passivated and re-activated on the next request if it hasn't expired.
  */
 public class IdleSessionTest

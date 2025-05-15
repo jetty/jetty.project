@@ -38,11 +38,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
-/**
- * TestJettyOSGiClasspathResources
- *
- */
-
 @RunWith(PaxExam.class)
 public class TestJettyOSGiClasspathResources
 {

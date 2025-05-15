@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 
 /**
  * Implementation of HttpServletMapping.
- *
+ * <p>
  * Represents the application of a {@link ServletPathSpec} to a specific path
  * that resulted in a mapping to a {@link jakarta.servlet.Servlet}.
  * As well as supporting the standard {@link HttpServletMapping} methods, this

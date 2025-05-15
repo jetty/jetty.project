@@ -32,11 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ServletSecurityAnnotationHandler
- *
  * Inspect a class to see if it has an <code>&#064;ServletSecurity</code> annotation on it,
  * setting up the <code>&lt;security-constraint&gt;s</code>.
- *
+ * <p>
  * A servlet can be defined in:
  * <ul>
  * <li>web.xml</li>

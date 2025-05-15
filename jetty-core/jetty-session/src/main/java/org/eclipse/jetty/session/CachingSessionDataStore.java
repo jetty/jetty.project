@@ -20,8 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CachingSessionDataStore
- *
  * A SessionDataStore is a mechanism for (persistently) storing data associated with sessions.
  * This implementation delegates to a pluggable SessionDataStore for actually storing the
  * session data. It also uses a pluggable cache implementation in front of the
@@ -29,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * technology can be expensive time-wise, so introducing a fronting cache
  * can increase performance. The cache implementation can either be a local cache,
  * a remote cache, or a clustered cache.
- *
+ * <p>
  * The implementation here will try to read first from the cache and fallback to
  * reading from the SessionDataStore if the session key is not found. On writes, the
  * session data is written first to the SessionDataStore, and then to the cache. On

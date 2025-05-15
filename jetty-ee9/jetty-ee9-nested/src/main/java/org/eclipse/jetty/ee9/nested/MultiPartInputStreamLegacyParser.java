@@ -53,16 +53,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MultiPartInputStreamLegacyParser.
- *
- * <p>
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
- * </p>
- *
  * <p>
  * Non Compliance warnings are documented by the method {@link #getNonComplianceWarnings()}
- * </p>
- *
+ * <p>
  * @deprecated Replaced by {@link MultiPartFormInputStream}.
  * This code is slower and subject to more bugs than its replacement {@link MultiPartFormInputStream}. However,
  * this class accepts non-compliant RFC formats that the new {@link MultiPartFormInputStream} does not accept.

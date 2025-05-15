@@ -29,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Holder
- *
  * Specialization of AbstractHolder for servlet-related classes that
  * have init-params etc
  *

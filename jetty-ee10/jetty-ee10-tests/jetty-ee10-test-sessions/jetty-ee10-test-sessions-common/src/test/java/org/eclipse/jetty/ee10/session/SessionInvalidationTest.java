@@ -41,8 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * SessionInvalidationTest
- *
  * Test that various methods on sessions can't be accessed after invalidation
  */
 public class SessionInvalidationTest

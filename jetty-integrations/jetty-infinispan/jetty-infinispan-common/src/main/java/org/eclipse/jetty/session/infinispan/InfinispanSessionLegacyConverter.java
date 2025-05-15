@@ -26,11 +26,9 @@ import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 
 /**
- * InfinispanSessionLegacyConverter
- *
  * Converts sessions saved in the old serialization
  * format into the new protobuf-based serialization.
- *
+ * <p>
  * Use the -Dverbose=true system property to
  * print out more information about conversion failures.
  */

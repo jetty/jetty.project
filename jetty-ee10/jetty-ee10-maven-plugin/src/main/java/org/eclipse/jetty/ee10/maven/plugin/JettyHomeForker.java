@@ -18,8 +18,6 @@ import java.io.File;
 import org.eclipse.jetty.maven.AbstractHomeForker;
 
 /**
- * JettyHomeBaseForker
- *
  * Unpacks a jetty-home and configures it with a base that allows it
  * to run an unassembled webapp.
  */

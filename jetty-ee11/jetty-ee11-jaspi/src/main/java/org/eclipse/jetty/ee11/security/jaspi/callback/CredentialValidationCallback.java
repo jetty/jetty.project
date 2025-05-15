@@ -19,8 +19,6 @@ import javax.security.auth.callback.Callback;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
- * CredentialValidationCallback
- *
  * Store a jetty Credential for a user so that it can be
  * validated by jaspi
  */

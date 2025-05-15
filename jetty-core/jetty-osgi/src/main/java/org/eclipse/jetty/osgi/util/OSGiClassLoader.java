@@ -26,8 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * OSGiClassLoader
- *
  * Class loader that is aware of a bundle. Similar to WebAppClassLoader from Jetty
  * and the OSGiWebAppClassLoader, but works without webapps.
  */

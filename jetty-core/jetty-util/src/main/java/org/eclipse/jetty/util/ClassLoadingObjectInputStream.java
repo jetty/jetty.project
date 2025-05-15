@@ -19,8 +19,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 
 /**
- * ClassLoadingObjectInputStream
- *
  * For re-inflating serialized objects, this class uses the thread context classloader
  * rather than the jvm's default classloader selection.
  */

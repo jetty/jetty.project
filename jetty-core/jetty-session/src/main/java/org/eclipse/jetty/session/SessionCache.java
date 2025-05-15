@@ -18,14 +18,12 @@ import java.util.Set;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * SessionCache
- *
  * A working set of {@link ManagedSession} objects for a context.
- *
+ * <p>
  * Ideally, multiple requests for the same session id in the same context will always
  * share the same Session object from the SessionCache, but it would be possible
  * for implementations of SessionCache to create a fresh object for each request.
- *
+ * <p>
  * The SessionData pertaining to the Session objects is obtained from/written to a SessionDataStore.
  * The SessionDataStore is the authoritative source of session data:
  * <ul>
@@ -40,7 +38,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * <li>whenever the last request exits a Session</li>
  * <li>whenever the Session has not been accessed for a configurable number of seconds</li>
  * </ul>.
- *
  * Eviction can save memory, and can also help mitigate
  * some of the problems of a non-sticky load balancer by forcing the session data to
  * be re-read from the SessionDataStore more frequently.

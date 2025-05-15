@@ -48,8 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * AbstractClusteredSessionScavengingTest
- *
  * Test that a session that was live on node1, but then more
  * recently used on node2 does not expire over on node1.
  */

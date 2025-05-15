@@ -26,8 +26,6 @@ import javax.management.remote.JMXServiceURL;
 import org.eclipse.jetty.toolchain.test.IO;
 
 /**
- * JmxServiceConnection
- *
  * Provides ability to create a connection to either an external
  * JMX server, or a loopback connection to the internal one.
  */

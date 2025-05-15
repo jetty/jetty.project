@@ -37,11 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * ConcurrencyTest
- *
  * This test performs multiple concurrent requests from different clients
  * for the same session on the same node.
  */

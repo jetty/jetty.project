@@ -31,8 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MetaData
- *
  * All data associated with the configuration and deployment of a web application.
  */
 public class MetaData

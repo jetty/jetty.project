@@ -27,11 +27,6 @@ import org.infinispan.commons.api.BasicCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * InfinispanSessionDataStore
- *
- *
- */
 @ManagedObject
 public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {

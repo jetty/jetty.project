@@ -26,13 +26,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.UserTransaction;
 
 /**
- * JNDITest
- *
  * Use JNDI from within Jetty.
- *
+ * <p>
  * Also, use servlet spec 2.5 resource injection and lifecycle callbacks from within the web.xml
  * to set up some of the JNDI resources.
- *
  */
 public class JNDITest extends HttpServlet
 {

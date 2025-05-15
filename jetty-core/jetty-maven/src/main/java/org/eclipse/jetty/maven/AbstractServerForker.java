@@ -21,8 +21,6 @@ import java.util.Map;
 import org.eclipse.jetty.server.Server;
 
 /**
- * AbstractServerForker
- *
  * Fork a jetty Server
  */
 public abstract class AbstractServerForker extends AbstractForker

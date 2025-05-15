@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * SameContextForwardedSessionTest
- *
  * Test that creating a session inside a forward on the same context works, and that
  * attributes set after the forward returns are preserved.
  */

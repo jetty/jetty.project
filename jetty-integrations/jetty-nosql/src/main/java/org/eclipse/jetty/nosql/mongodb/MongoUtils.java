@@ -28,8 +28,6 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * MongoUtils
- *
  * Some utility methods for manipulating mongo data. This class facilitates testing.
  */
 public class MongoUtils

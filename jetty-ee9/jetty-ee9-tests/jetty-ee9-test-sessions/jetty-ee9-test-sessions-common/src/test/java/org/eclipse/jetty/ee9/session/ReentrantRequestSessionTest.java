@@ -32,11 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * ReentrantRequestSessionTest
- *
  * While a request is still active in a context, make another
  * request to it to ensure both share same session.
  */

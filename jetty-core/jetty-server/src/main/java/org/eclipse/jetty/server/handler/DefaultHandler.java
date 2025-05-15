@@ -48,9 +48,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Default Handler.
- *
- * This handle will deal with unhandled requests in the server.
+ * This default handle will deal with unhandled requests in the server.
  * For requests for favicon.ico, the Jetty icon is served.
  * For requests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.

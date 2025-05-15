@@ -14,8 +14,6 @@
 package org.eclipse.jetty.session;
 
 /**
- * DefaultSessionCacheFactory
- *
  * Factory for creating new DefaultSessionCaches.
  */
 public class DefaultSessionCacheFactory extends AbstractSessionCacheFactory

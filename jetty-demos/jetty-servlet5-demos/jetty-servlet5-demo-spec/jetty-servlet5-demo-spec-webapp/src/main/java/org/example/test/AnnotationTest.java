@@ -36,14 +36,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.UserTransaction;
 
 /**
- * AnnotationTest
- *
  * Use Annotations from within Jetty.
- *
+ * <p>
  * Also, use servlet spec 2.5 resource injection and lifecycle callbacks from within the web.xml
  * to set up some of the JNDI resources.
  */
-
 @RunAs("special")
 @WebServlet(urlPatterns = {"/", "/test/*"}, name = "AnnotationTest", initParams = {
     @WebInitParam(name = "fromAnnotation", value = "xyz")

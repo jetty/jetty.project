@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for
  * {@link GzipHandler} in the past.
- *
+ * <p>
  * Using a real-world pattern of:
  *
  * <pre>

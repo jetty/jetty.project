@@ -17,8 +17,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * Constraint
- *
  * Describe an auth and/or data constraint.
  */
 public class ServletConstraint implements Cloneable, Serializable

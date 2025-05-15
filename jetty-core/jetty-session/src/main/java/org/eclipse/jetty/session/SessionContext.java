@@ -20,11 +20,9 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * SessionContext
- *
  * Information about the context to which sessions belong: the Context,
  * the SessionManager of the context, and the unique name of the node.
- *
+ * <p>
  * A SessionManager is 1:1 with a SessionContext.
  */
 public class SessionContext

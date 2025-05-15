@@ -32,9 +32,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * RolloverFileOutputStream.
- *
- * <p>
  * This output stream puts content in a file that is rolled over every 24 hours.
  * The filename must include the string "yyyy_mm_dd", which is replaced with the
  * actual date when creating and rolling over the file.

@@ -44,10 +44,10 @@ import static org.hamcrest.Matchers.not;
 
 /**
  * GzipHandler setting of headers when reset and/or not compressed.
- *
+ * <p>
  * The GzipHandler now sets deferred headers (content-length and etag) when it decides not to commit.
  * Also does not allow a reset after a decision to commit
- *
+ * <p>
  * Originally from http://bugs.eclipse.org/408909
  */
 @Disabled // TODO move to core

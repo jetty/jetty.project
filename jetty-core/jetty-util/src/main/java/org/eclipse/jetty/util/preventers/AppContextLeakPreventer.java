@@ -16,11 +16,9 @@ package org.eclipse.jetty.util.preventers;
 import javax.imageio.ImageIO;
 
 /**
- * AppContextLeakPreventer
- *
  * Cause the classloader that is pinned by AppContext.getAppContext() to be
  * a container or system classloader, not a webapp classloader.
- *
+ * <p>
  * Inspired by Tomcat JreMemoryLeakPrevention.
  */
 public class AppContextLeakPreventer extends AbstractLeakPreventer

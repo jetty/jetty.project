@@ -18,8 +18,6 @@ import javax.naming.NamingException;
 import jakarta.transaction.UserTransaction;
 
 /**
- * Transaction
- *
  * Class to represent a JTA UserTransaction impl.
  */
 public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction

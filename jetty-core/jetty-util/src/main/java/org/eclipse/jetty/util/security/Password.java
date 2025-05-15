@@ -22,16 +22,12 @@ import java.util.Locale;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * Password utility class.
- *
- * This utility class gets a password or pass phrase either by:
- *
+ * This password utility class obtains a password or pass phrase either by:
  * <PRE>
  * + Password is set as a system property.
  * + The password is prompted for and read from standard input
  * + A program is run to get the password.
  * </pre>
- *
  * Passwords that begin with OBF: are de obfuscated. Passwords can be obfuscated
  * by run org.eclipse.util.Password as a main class. Obfuscated password are
  * required if a system needs to recover the full password (eg. so that it may
