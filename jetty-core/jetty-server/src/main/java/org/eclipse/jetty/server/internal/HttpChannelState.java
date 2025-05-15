@@ -120,7 +120,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Runnable _onContentAvailable;
     private Predicate<TimeoutException> _onIdleTimeout;
     private Content.Chunk _readFailure;
-    private Consumer<Throwable> _onFailure;
+    private List<Consumer<Throwable>> _onFailureListeners;
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
@@ -179,7 +179,7 @@ public class HttpChannelState implements HttpChannel, Components
             _onContentAvailable = null;
             _onIdleTimeout = null;
             _readFailure = null;
-            _onFailure = null;
+            _onFailureListeners = null;
             _callbackFailure = null;
             _expects100Continue = false;
             _complianceViolationListener = null;
@@ -463,29 +463,31 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Notify the failure listeners only once.
-                Consumer<Throwable> onFailure = _onFailure;
-                _onFailure = null;
+                List<Consumer<Throwable>> onFailureListeners = _onFailureListeners;
+                _onFailureListeners = null;
 
-                boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
-                Runnable invokeOnFailureListeners = onFailure == null || skipListeners ? null : () ->
+                Runnable invokeOnFailureListeners = onFailureListeners == null ? null : () ->
                 {
-                    try
+                    boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors() || invokeOnContentAvailable != null || invokeWriteFailure != null;
+
+                    for (Consumer<Throwable> onFailure : onFailureListeners)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
-                        onFailure.accept(x);
-                    }
-                    catch (Throwable throwable)
-                    {
-                        ExceptionUtil.addSuppressedIfNotAssociated(x, throwable);
+                        // Case 2
+                        if (skipListeners && !(onFailure instanceof Request.AllFailures))
+                            continue;
+
+                        try
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
+                            onFailure.accept(x);
+                        }
+                        catch (Throwable throwable)
+                        {
+                            ExceptionUtil.addSuppressedIfNotAssociated(x, throwable);
+                        }
                     }
                 };
-
-                // Serialize all the error actions.
-
-//                Case 2
-                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                    invokeOnFailureListeners = null;
 
                 task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
             }
@@ -1075,30 +1077,32 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpChannelState httpChannel = lockedGetHttpChannelState();
 
                 if (httpChannel._readFailure != null)
-                    return;
-
-                if (httpChannel._onFailure == null)
                 {
-                    httpChannel._onFailure = onFailure;
+                    try
+                    {
+                        onFailure.accept(httpChannel._readFailure.getFailure());
+                    }
+                    catch (Exception e)
+                    {
+                        ExceptionUtil.addSuppressedIfNotAssociated(httpChannel._readFailure.getFailure(), e);
+                    }
+                    return;
+                }
+
+                if (httpChannel._onFailureListeners == null)
+                {
+                    httpChannel._onFailureListeners = List.of(onFailure);
+                }
+                else if (httpChannel._onFailureListeners.size() == 1)
+                {
+                    List<Consumer<Throwable>> onFailureListeners = new ArrayList<>(4);
+                    onFailureListeners.add(httpChannel._onFailureListeners.get(0));
+                    onFailureListeners.add(onFailure);
+                    httpChannel._onFailureListeners = onFailureListeners;
                 }
                 else
                 {
-                    Consumer<Throwable> previous = httpChannel._onFailure;
-                    httpChannel._onFailure = throwable ->
-                    {
-                        try
-                        {
-                            previous.accept(throwable);
-                        }
-                        catch (Throwable t)
-                        {
-                            ExceptionUtil.addSuppressedIfNotAssociated(throwable, t);
-                        }
-                        finally
-                        {
-                            onFailure.accept(throwable);
-                        }
-                    };
+                    httpChannel._onFailureListeners.add(onFailure);
                 }
             }
         }

@@ -25,6 +25,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -308,7 +309,11 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * <p>Adds a listener for asynchronous fatal failures.</p>
-     * <p>When a listener is called, the effects of the failure have already taken place:</p>
+     * <p>By default, listeners will only be called with a failure if there is no read demand or
+     * pending write, which can be used to pass the failure to the application and, if the failure is remote,
+     * then {@link HttpConfiguration#isNotifyRemoteAsyncErrors()} is {@code true}.   However, if the
+     * passed listener implements the {@link AllFailures} interface, then it will be called for
+     * all failures and the effects of the failure may have already taken place:</p>
      * <ul>
      *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
      *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
@@ -316,6 +321,8 @@ public interface Request extends Attributes, Content.Source
      *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
      *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
      * </ul>
+     * <p>Thus {@link AllFailures} listeners must be aware they could be in a race with other application handling of
+     * the failure.</p>
      * <p>Listeners are processed in the same order they are added.</p>
      *
      * @param onFailure the failure listener as a consumer function
@@ -1197,4 +1204,11 @@ public interface Request extends Attributes, Content.Source
             return _attributes.getAttributeNameSet();
         }
     }
+
+    /**
+     * A marker interface to receive notification of all failures.
+     * @see #addFailureListener(Consumer) 
+     */
+    interface AllFailures extends EventListener
+    {}
 }
