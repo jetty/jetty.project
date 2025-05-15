@@ -63,6 +63,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
         return super.getUserIdentity();
     }
 
+    @Serial
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {

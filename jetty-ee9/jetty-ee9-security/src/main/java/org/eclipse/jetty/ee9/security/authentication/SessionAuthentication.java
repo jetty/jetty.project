@@ -67,6 +67,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
         return super.getUserIdentity();
     }
 
+    @Serial
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {
