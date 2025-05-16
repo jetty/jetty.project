@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Configuration that looks for XmlConfiguration files in WEB-INF.
- * Searches in order for the first of jetty8-web.xml, jetty-web.xml or web-jetty.xml
+ * Searches in order for the first of jetty-ee[n]-web.xml then jetty-web.xml.
  */
 public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
