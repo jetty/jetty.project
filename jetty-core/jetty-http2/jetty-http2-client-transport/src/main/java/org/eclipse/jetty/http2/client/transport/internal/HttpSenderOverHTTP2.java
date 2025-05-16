@@ -72,6 +72,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         else
         {
             String path = relativize(request.getPath());
+            // TODO: revert to use build()
             HttpURI uri = HttpURI.from(
                 request.getScheme(),
                 request.getHost(),

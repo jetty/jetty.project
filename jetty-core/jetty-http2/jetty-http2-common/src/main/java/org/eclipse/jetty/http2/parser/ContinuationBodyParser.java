@@ -119,18 +119,15 @@ public class ContinuationBodyParser extends BodyParser
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
         headerBlockFragments.reset();
 
-        if (metaData == HeaderBlockParser.SESSION_FAILURE)
+        if (metaData instanceof HeaderBlockParser.SessionFailureMetaData)
             return false;
 
-        if (metaData != HeaderBlockParser.STREAM_FAILURE)
-        {
-            notifyHeaders(frame);
-        }
-        else
+        if (metaData instanceof HeaderBlockParser.StreamFailureMetaData)
         {
             if (!rateControlOnEvent(frame))
                 return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
         }
+        notifyHeaders(frame);
         return true;
     }
 

@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.HeaderBlockParser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -114,12 +115,21 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                             }
                         }
 
-                        stream.process(frame, Callback.NOOP);
-                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-                        Stream.Listener listener = notifyNewStream(stream, frame);
-                        stream.setListener(listener);
-                        if (closed)
-                            removeStream(stream);
+                        if (metaData instanceof HeaderBlockParser.StreamFailureMetaData f)
+                        {
+                            // No request content, but might write an error response.
+                            stream.updateClose(true, CloseState.Event.RECEIVED);
+                            notifyStreamFailure(stream, f.getFailure(), Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.process(frame, Callback.NOOP);
+                            boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                            Stream.Listener listener = notifyNewStream(stream, frame);
+                            stream.setListener(listener);
+                            if (closed)
+                                removeStream(stream);
+                        }
                     }
                 }
             }
@@ -168,6 +178,21 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
     }
 
+    private void notifyStreamFailure(Stream stream, Throwable failure, Callback callback)
+    {
+        if (listener instanceof Listener l)
+        {
+            try
+            {
+                l.onStreamFailure(stream, failure, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
+        }
+    }
+
     @Override
     public void onFrame(Frame frame)
     {
@@ -190,5 +215,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     public void standardUpgrade()
     {
         getParser().standardUpgrade();
+    }
+
+    public interface Listener extends ServerSessionListener
+    {
+        void onStreamFailure(Stream stream, Throwable failure, Callback callback);
     }
 }

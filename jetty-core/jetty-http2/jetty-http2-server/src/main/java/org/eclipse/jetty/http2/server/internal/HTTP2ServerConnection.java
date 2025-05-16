@@ -212,18 +212,20 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing stream failure on {}", stream, failure);
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
-        if (channel != null)
+        HTTP2Stream http2Stream = (HTTP2Stream)stream;
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)(http2Stream).getAttachment();
+        if (channel == null)
         {
-            Runnable task = channel.onFailure(failure, callback);
-            // The task may unblock a blocked read or write, so it cannot be
-            // queued, because there may be no threads available to run it.
-            ThreadPool.executeImmediately(getExecutor(), task);
+            HttpChannel httpChannel = pollHttpChannel();
+            HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, http2Stream);
+            httpChannel.setHttpStream(httpStream);
+            http2Stream.setAttachment(httpStream);
+            channel = httpStream;
         }
-        else
-        {
-            callback.succeeded();
-        }
+        Runnable task = channel.onFailure(failure, callback);
+        // The task may unblock a blocked read or write, so it cannot be
+        // queued, because there may be no threads available to run it.
+        ThreadPool.executeImmediately(getExecutor(), task);
     }
 
     public boolean onSessionTimeout(Throwable failure)

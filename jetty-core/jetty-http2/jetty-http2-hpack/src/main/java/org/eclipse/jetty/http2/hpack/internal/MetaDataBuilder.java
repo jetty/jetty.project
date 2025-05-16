@@ -213,7 +213,7 @@ public class MetaDataBuilder
 
     public void streamException(String messageFormat, Object... args)
     {
-        HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
+        HpackException.StreamException stream = new HpackException.StreamException(_request, _response, messageFormat, args);
         if (_streamException == null)
             _streamException = stream;
         else
@@ -233,22 +233,6 @@ public class MetaDataBuilder
         return false;
     }
 
-    private HttpURI newHttpURI() throws HpackException.StreamException
-    {
-        try
-        {
-            return HttpURI.build()
-                .scheme(_scheme)
-                .host(_authority == null ? null : _authority.getHost())
-                .port(_authority == null ? -1 : _authority.getPort())
-                .pathQuery(_path);
-        }
-        catch(Throwable x)
-        {
-            throw new HpackException.StreamException("Invalid URI", x);
-        }
-    }
-
     public MetaData build() throws HpackException.StreamException
     {
         if (_streamException != null)
@@ -258,7 +242,7 @@ public class MetaDataBuilder
         }
 
         if (_request && _response)
-            throw new HpackException.StreamException("Request and Response headers");
+            throw new HpackException.StreamException(true, true, "Request and Response headers");
 
         HttpFields.Mutable fields = _fields;
         try
@@ -266,37 +250,39 @@ public class MetaDataBuilder
             if (_request)
             {
                 if (_method == null)
-                    throw new HpackException.StreamException("No Method");
+                    throw new HpackException.StreamException(true, false, "No Method");
                 boolean isConnect = HttpMethod.CONNECT.is(_method);
                 if (!isConnect || _protocol != null)
                 {
                     if (_scheme == null)
-                        throw new HpackException.StreamException("No Scheme");
+                        throw new HpackException.StreamException(true, false, "No Scheme");
                     if (_path == null)
-                        throw new HpackException.StreamException("No Path");
+                        throw new HpackException.StreamException(true, false, "No Path");
                 }
                 long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
                 _beginNanoTime = Long.MIN_VALUE;
 
                 if (isConnect)
+                {
                     return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
+                }
                 else
                 {
-                    HttpURI httpURI = newHttpURI();
                     return new MetaData.Request(
                         nanoTime,
                         _method,
-                        httpURI,
+                        newHttpURI(),
                         HttpVersion.HTTP_2,
                         fields,
                         _contentLength,
                         null);
                 }
             }
+
             if (_response)
             {
                 if (_status == null)
-                    throw new HpackException.StreamException("No Status");
+                    throw new HpackException.StreamException(false, true, "No Status");
                 return new MetaData.Response(_status, null, HttpVersion.HTTP_2, fields, _contentLength);
             }
 
@@ -315,6 +301,22 @@ public class MetaDataBuilder
             _protocol = null;
             _size = 0;
             _contentLength = -1;
+        }
+    }
+
+    private HttpURI newHttpURI() throws HpackException.StreamException
+    {
+        try
+        {
+            return HttpURI.build()
+                .scheme(_scheme)
+                .host(_authority == null ? null : _authority.getHost())
+                .port(_authority == null ? -1 : _authority.getPort())
+                .pathQuery(_path);
+        }
+        catch(Throwable x)
+        {
+            throw new HpackException.StreamException(x, true, false, "Invalid URI");
         }
     }
 }

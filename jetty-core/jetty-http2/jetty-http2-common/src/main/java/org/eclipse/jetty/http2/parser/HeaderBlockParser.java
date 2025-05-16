@@ -15,6 +15,8 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -28,8 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class HeaderBlockParser
 {
-    public static final MetaData STREAM_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
-    public static final MetaData SESSION_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
+    private static final SessionFailureMetaData SESSION_FAILURE = new SessionFailureMetaData();
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
@@ -57,9 +58,9 @@ public class HeaderBlockParser
      * @param buffer the buffer to parse
      * @param blockLength the length of the HPACK block
      * @return null, if the buffer contains less than {@code blockLength} bytes;
-     * {@link #STREAM_FAILURE} if parsing the HPACK block produced a stream failure;
-     * {@link #SESSION_FAILURE} if parsing the HPACK block produced a session failure;
-     * a valid MetaData object if the parsing was successful.
+     * an instance of {@link StreamFailureMetaData} if parsing the HPACK block produced a stream failure;
+     * an instance of {@link SessionFailureMetaData} if parsing the HPACK block produced a session failure;
+     * an instance of {@link MetaData} if the parsing was successful.
      */
     public MetaData parse(ByteBuffer buffer, int blockLength)
     {
@@ -106,8 +107,11 @@ public class HeaderBlockParser
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
-                notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
-                return STREAM_FAILURE;
+                if (x.isRequest())
+                    return new StreamFailureMetaDataRequest(x);
+                if (x.isResponse())
+                    return new StreamFailureMetaDataResponse(x);
+                return new StreamFailureMetaDataTrailer(x);
             }
             catch (HpackException.CompressionException x)
             {
@@ -133,6 +137,70 @@ public class HeaderBlockParser
                     blockBuffer = null;
                 }
             }
+        }
+    }
+
+    public static class SessionFailureMetaData extends MetaData
+    {
+        private SessionFailureMetaData()
+        {
+            super(HttpVersion.HTTP_2, HttpFields.EMPTY);
+        }
+    }
+
+    public interface StreamFailureMetaData
+    {
+        Throwable getFailure();
+    }
+
+    public static class StreamFailureMetaDataRequest extends MetaData.Request implements StreamFailureMetaData
+    {
+        private final Throwable failure;
+
+        private StreamFailureMetaDataRequest(Throwable failure)
+        {
+            super("GET", HttpURI.build(), HttpVersion.HTTP_2, HttpFields.EMPTY);
+            this.failure = failure;
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
+        }
+    }
+
+    public static class StreamFailureMetaDataResponse extends MetaData.Response implements StreamFailureMetaData
+    {
+        private final Throwable failure;
+
+        private StreamFailureMetaDataResponse(Throwable failure)
+        {
+            super(0, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            this.failure = failure;
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
+        }
+    }
+
+    public static class StreamFailureMetaDataTrailer extends MetaData implements StreamFailureMetaData
+    {
+        private final Throwable failure;
+
+        private StreamFailureMetaDataTrailer(Throwable failure)
+        {
+            super(HttpVersion.HTTP_2, HttpFields.EMPTY);
+            this.failure = failure;
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
         }
     }
 }

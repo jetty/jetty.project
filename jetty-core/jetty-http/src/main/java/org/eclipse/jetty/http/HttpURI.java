@@ -152,9 +152,21 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
+    /**
+     *
+     * @param scheme
+     * @param host
+     * @param port
+     * @param path
+     * @param query
+     * @param fragment
+     * @return
+     * @deprecated use {@link Unsafe} instead
+     */
+    @Deprecated(since = "12.0.21", forRemoval = true)
     static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
     {
-        return new Immutable(scheme, host, port, path, query, fragment);
+        return new Unsafe(scheme, host, port, path, query, fragment);
     }
 
     Immutable asImmutable();
@@ -503,6 +515,14 @@ public interface HttpURI
         public String toString()
         {
             return asString();
+        }
+    }
+
+    class Unsafe extends Immutable
+    {
+        public Unsafe(String scheme, String host, int port, String path, String query, String fragment)
+        {
+            super(scheme, host, port, path, query, fragment);
         }
     }
 
