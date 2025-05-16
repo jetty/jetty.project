@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Set;
 
@@ -31,6 +32,7 @@ import org.eclipse.jetty.security.UserIdentity;
  */
 public abstract class AbstractUserAuthentication implements User, Serializable
 {
+    @Serial
     private static final long serialVersionUID = -6290411814232723403L;
     protected String _method;
     protected transient UserIdentity _userIdentity;

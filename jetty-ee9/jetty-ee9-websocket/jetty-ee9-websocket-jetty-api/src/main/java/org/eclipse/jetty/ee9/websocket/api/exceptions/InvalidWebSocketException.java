@@ -27,7 +27,6 @@ import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
  * <li>Declare the {@link WebSocket &#064;WebSocket} annotation on the type</li>
  * </ul>
  */
-@SuppressWarnings("serial")
 public class InvalidWebSocketException extends WebSocketException
 {
     public InvalidWebSocketException(String message)

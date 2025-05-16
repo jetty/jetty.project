@@ -30,7 +30,6 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 /**
  * Test Servlet RequestDispatcher.
  */
-@SuppressWarnings("serial")
 public class DispatchServlet extends HttpServlet
 {
 

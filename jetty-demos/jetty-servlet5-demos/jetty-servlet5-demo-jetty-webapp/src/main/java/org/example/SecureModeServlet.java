@@ -31,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Dump Servlet Request.
  */
-@SuppressWarnings("serial")
 public class SecureModeServlet extends HttpServlet
 {
     @Override

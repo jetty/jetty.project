@@ -27,7 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Test Servlet Cookies.
  */
-@SuppressWarnings("serial")
 public class CookieDump extends HttpServlet
 {
     int redirectCount = 0;

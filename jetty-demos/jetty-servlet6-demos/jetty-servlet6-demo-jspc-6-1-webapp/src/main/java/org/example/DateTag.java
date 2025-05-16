@@ -24,7 +24,6 @@ import jakarta.servlet.jsp.tagext.BodyContent;
 import jakarta.servlet.jsp.tagext.BodyTagSupport;
 import jakarta.servlet.jsp.tagext.Tag;
 
-@SuppressWarnings("serial")
 public class DateTag extends BodyTagSupport
 {
     Tag parent;

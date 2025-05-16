@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.security.Principal;
 import javax.security.auth.Subject;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class UserPrincipal implements Principal, Serializable
 {
+    @Serial
     private static final long serialVersionUID = -6226920753748399662L;
     private final String _name;
     protected final Credential _credential;

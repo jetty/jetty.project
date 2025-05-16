@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee11.websocket.jakarta.common;
 
+import java.io.Serial;
+
 /**
  * Exception during initialization of the Endpoint
  */
 public class InitException extends IllegalStateException
 {
+    @Serial
     private static final long serialVersionUID = -4691138423037387558L;
 
     public InitException(String message, Throwable cause)

@@ -17,8 +17,6 @@ import java.io.Serializable;
 
 public class Chocolate implements Serializable
 {
-    private static final long serialVersionUID = 1L;
-
     private static final String THE_BEST_EVER = "FRENCH";
 
     private String theBest = THE_BEST_EVER;

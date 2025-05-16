@@ -23,7 +23,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@SuppressWarnings("serial")
 public class AsyncTimeoutDispatchWrite extends AbstractFileContentServlet implements AsyncListener
 {
     public static class Default extends AsyncTimeoutDispatchWrite

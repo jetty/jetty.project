@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Collection;
@@ -269,9 +268,6 @@ public interface HttpURI
 
     class Immutable implements HttpURI, Serializable
     {
-        @Serial
-        private static final long serialVersionUID = 2245620284548399386L;
-
         private final String _scheme;
         private final String _user;
         private final String _host;

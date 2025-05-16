@@ -226,8 +226,6 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
     public static class TestServlet extends HttpServlet
     {
         @Serial
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

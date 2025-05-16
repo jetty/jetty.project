@@ -149,8 +149,6 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-        
         private static long createTime = 0;
 
         @Override

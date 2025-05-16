@@ -690,7 +690,6 @@ public class AsyncServletTest
 
     private static class AsyncServlet extends HttpServlet
     {
-        private static final long serialVersionUID = -8161977157098646562L;
         private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
 
         @Override

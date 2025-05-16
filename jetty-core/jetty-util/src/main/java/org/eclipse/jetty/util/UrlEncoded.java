@@ -44,7 +44,6 @@ import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
  *
  * @see java.net.URLEncoder
  */
-@SuppressWarnings("serial")
 public class UrlEncoded
 {
     static final Logger LOG = LoggerFactory.getLogger(UrlEncoded.class);

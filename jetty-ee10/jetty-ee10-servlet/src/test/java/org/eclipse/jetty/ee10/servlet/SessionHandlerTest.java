@@ -535,7 +535,6 @@ public class SessionHandlerTest
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public String _id = null;
 
         @Override
@@ -562,7 +561,6 @@ public class SessionHandlerTest
 
     public static class TestRequestedSessionIdServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public String _id = null;
 
         @Override

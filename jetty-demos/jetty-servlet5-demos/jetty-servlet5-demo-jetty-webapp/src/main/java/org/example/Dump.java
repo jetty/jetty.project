@@ -55,7 +55,6 @@ import jakarta.servlet.http.Part;
 /**
  * Dump Servlet Request.
  */
-@SuppressWarnings("serial")
 public class Dump extends HttpServlet
 {
     /**

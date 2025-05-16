@@ -33,7 +33,6 @@ import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 
-@SuppressWarnings("serial")
 public class WebSocketChatServlet extends JettyWebSocketServlet implements JettyWebSocketCreator
 {
     /**

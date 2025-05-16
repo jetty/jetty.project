@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JspPropertyGroupServlet extends GenericServlet
 {
-    private static final long serialVersionUID = 3681783214726776945L;
-
     public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
     private final ContextHandler _contextHandler;

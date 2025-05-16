@@ -25,20 +25,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.jasper.servlet.JspServlet;
 
 /**
- * JettyJspServlet
- *
  * Wrapper for the jsp servlet that handles receiving requests mapped from
  * jsp-property-groups. Mappings could be wildcard urls like "/*", which would
  * include welcome files, but we need those to be handled by the DefaultServlet.
  */
 public class JettyJspServlet extends JspServlet
 {
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = -5387857473125086791L;
-
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {

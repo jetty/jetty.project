@@ -19,7 +19,6 @@ import jakarta.servlet.annotation.WebServlet;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
 
-@SuppressWarnings("serial")
 @WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = {"/echo"})
 public class MyEchoServlet extends JettyWebSocketServlet
 {
