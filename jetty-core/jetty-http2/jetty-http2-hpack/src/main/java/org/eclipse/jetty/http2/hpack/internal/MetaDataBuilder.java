@@ -314,7 +314,7 @@ public class MetaDataBuilder
                 .port(_authority == null ? -1 : _authority.getPort())
                 .pathQuery(_path);
         }
-        catch(Throwable x)
+        catch (Throwable x)
         {
             throw new HpackException.StreamException(x, true, false, "Invalid URI");
         }
