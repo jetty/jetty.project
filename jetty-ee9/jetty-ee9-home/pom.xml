@@ -257,7 +257,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -271,7 +270,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -286,7 +284,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -300,7 +297,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -319,7 +315,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-websocket-api</artifactId>
-                  <version>${jakarta.websocket.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib/ee9-websocket</outputDirectory>
@@ -336,7 +331,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-websocket-api</artifactId>
-                  <version>${jakarta.websocket.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -418,7 +412,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -435,7 +428,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -453,22 +445,18 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.interceptor</groupId>
                   <artifactId>jakarta.interceptor-api</artifactId>
-                  <version>${jakarta.interceptor.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.enterprise</groupId>
                   <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                  <version>${jakarta.enterprise.cdi.api.version}</version>
                 </artifactItem>
                 <artifactItem>
                   <groupId>jakarta.inject</groupId>
                   <artifactId>jakarta.inject-api</artifactId>
-                  <version>${jakarta.inject.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -486,7 +474,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>

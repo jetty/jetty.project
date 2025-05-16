@@ -145,7 +145,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
-          dashProfile = ""
+          def dashProfile = ""
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }

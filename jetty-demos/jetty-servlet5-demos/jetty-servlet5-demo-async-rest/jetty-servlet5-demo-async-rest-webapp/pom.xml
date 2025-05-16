@@ -20,7 +20,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-async-rest-jar</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -29,7 +28,6 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>${ee9.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

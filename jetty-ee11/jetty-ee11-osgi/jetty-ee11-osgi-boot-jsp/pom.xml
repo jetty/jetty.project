@@ -138,7 +138,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jakarta.servlet.jsp.api.version}</versionString>
+              <versionString>${ee11.jakarta.servlet.jsp.api.version}</versionString>
               <propertyPrefix>jspApi</propertyPrefix>
             </configuration>
           </execution>
@@ -149,7 +149,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jsp.impl.version}</versionString>
+              <versionString>${ee11.jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
             </configuration>
           </execution>
@@ -160,7 +160,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jakarta.servlet.api.version}</versionString>
+              <versionString>${ee11.jakarta.servlet.api.version}</versionString>
               <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>

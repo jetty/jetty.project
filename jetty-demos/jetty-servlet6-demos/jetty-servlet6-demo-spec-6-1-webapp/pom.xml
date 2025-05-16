@@ -18,13 +18,11 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>${ee11.jakarta.annotation.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>${ee11.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

@@ -67,13 +67,12 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
-      <version>${jboss.logging.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jboss.weld.servlet</groupId>
       <artifactId>weld-servlet-core</artifactId>
-      <version>${weld.version}</version>
+      <version>${ee9.weld.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

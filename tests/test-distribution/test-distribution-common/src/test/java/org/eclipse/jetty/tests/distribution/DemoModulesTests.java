@@ -473,7 +473,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int sslPort = Tester.freePort();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
+            "--add-modules=http,debuglog," + toEnvironment("demos", env)
         };
 
         String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
@@ -518,13 +518,13 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
+            "--add-modules=http,debuglog," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, runConfig.getExitValue());
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(runConfig));
+            assertEquals(0, runConfig.getExitValue(), logs(runConfig));
 
             int httpPort = Tester.freePort();
             int sslPort = Tester.freePort();
@@ -534,8 +534,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                        String.join("", runStart.getLogs()));
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), logs(runStart));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -603,7 +602,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                    String.join("", runStart.getLogs()));
+                    "LOGS: " + String.join("\n", runStart.getLogs()));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -780,7 +779,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int sslPort = Tester.freePort();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env) + ",debuglog"
+            "--add-modules=http,debuglog," + toEnvironment("demos", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))

@@ -36,27 +36,23 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -127,7 +123,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
-                  <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
@@ -137,7 +132,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
-                  <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
@@ -147,7 +141,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-                  <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>

@@ -13,4 +13,4 @@ ee8-webapp
 
 [lib]
 lib/jetty-ee8-plus-${jetty.version}.jar
-lib/jakarta.transaction-api-@jakarta.transaction-api.version@.jar
+lib/@jakarta.transaction:jakarta.transaction-api@

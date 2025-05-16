@@ -40,23 +40,21 @@
   <properties>
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
+    <ee8.jakarta.activation.api.version>1.2.2</ee8.jakarta.activation.api.version>
+
+    <ee8.jakarta.servlet.jsp.api.version>2.3.6</ee8.jakarta.servlet.jsp.api.version>
+    <ee8.jakarta.servlet.jsp.jstl.api.version>1.2.7</ee8.jakarta.servlet.jsp.jstl.api.version>
+    <ee8.jakarta.transaction-api.version>1.3.3</ee8.jakarta.transaction-api.version>
+
+    <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
+    <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
+    <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
+    <ee8.jsp.impl.version>9.0.96</ee8.jsp.impl.version>
+    <ee8.weld.version>3.1.9.Final</ee8.weld.version>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
-    <jakarta.activation.api.version>${ee8.jakarta.activation.api.version}</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>${ee8.jakarta.annotation.api.version}</jakarta.annotation.api.version>
-    <jakarta.servlet.jsp.api.version>${ee8.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>${ee8.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.transaction-api.version>${ee8.jakarta.transaction-api.version}</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>${ee8.jakarta.websocket.api.version}</jakarta.websocket.api.version>
-    <javax.mail.glassfish.version>${ee8.javax.mail.glassfish.version}</javax.mail.glassfish.version>
-    <javax.security.auth.message>${ee8.javax.security.auth.message}</javax.security.auth.message>
-    <javax.servlet.jsp.jstl.impl.version>${ee8.javax.servlet.jsp.jstl.impl.version}</javax.servlet.jsp.jstl.impl.version>
-    <jetty.servlet.api.version>${ee8.jetty.servlet.api.version}</jetty.servlet.api.version>
-    <jsp.impl.version>${ee8.jsp.impl.version}</jsp.impl.version>
-    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
+    <javax.servlet.jsp.api.version>2.3</javax.servlet.jsp.api.version>
     <sonar.skip>true</sonar.skip>
-    <weld.version>${ee8.weld.version}</weld.version>
-
   </properties>
 
   <dependencyManagement>
@@ -66,27 +64,27 @@
       <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
-        <version>${jakarta.activation.api.version}</version>
+        <version>${ee8.jakarta.activation.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
-        <version>${jakarta.annotation.api.version}</version>
+        <version>${ee8.jakarta.annotation.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.servlet.jsp</groupId>
         <artifactId>jakarta.servlet.jsp-api</artifactId>
-        <version>${jakarta.servlet.jsp.api.version}</version>
+        <version>${ee8.jakarta.servlet.jsp.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.servlet.jsp.jstl</groupId>
         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
+        <version>${ee8.jakarta.servlet.jsp.jstl.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
-        <version>${jakarta.transaction-api.version}</version>
+        <version>${ee8.jakarta.transaction-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
@@ -232,27 +230,27 @@
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.mail.glassfish</artifactId>
-        <version>${javax.mail.glassfish.version}</version>
+        <version>${ee8.javax.mail.glassfish.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.security.auth.message</artifactId>
-        <version>${javax.security.auth.message}</version>
+        <version>${ee8.javax.security.auth.message}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-javax-websocket-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
+        <version>${ee8.jakarta.websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-servlet-api</artifactId>
-        <version>${jetty.servlet.api.version}</version>
+        <version>${ee8.jetty.servlet.api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${javax.servlet.jsp.jstl.impl.version}</version>
+        <version>${ee8.javax.servlet.jsp.jstl.impl.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.servlet</groupId>
@@ -275,26 +273,17 @@
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-el</artifactId>
-        <version>${jsp.impl.version}</version>
+        <version>${ee8.jsp.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>${jsp.impl.version}</version>
+        <version>${ee8.jsp.impl.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-modify-sources-maven-plugin</artifactId>
-          <version>${modify-sources-plugin.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -366,26 +355,6 @@
               </resources>
             </configuration>
           </execution>
-          <!-- TODO this would be nice to reuse mod files from ee9 but the mod file name need to be changed as well as the content -->
-          <!--          <execution>-->
-          <!--            <id>copy-ee8-modules-resources</id>-->
-          <!--            <phase>generate-resources</phase>-->
-          <!--            <goals>-->
-          <!--              <goal>copy-resources</goal>-->
-          <!--            </goals>-->
-          <!--            <configuration>-->
-          <!--              <mavenFilteringHints>-->
-          <!--                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>-->
-          <!--              </mavenFilteringHints>-->
-          <!--              <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>-->
-          <!--              <resources>-->
-          <!--                <resource>-->
-          <!--                  <filtering>true</filtering>-->
-          <!--                  <directory>${ee9.module.path}/src/main/config</directory>-->
-          <!--                </resource>-->
-          <!--              </resources>-->
-          <!--            </configuration>-->
-          <!--          </execution>-->
           <execution>
             <id>copy-ee8-test-resources</id>
             <goals>
