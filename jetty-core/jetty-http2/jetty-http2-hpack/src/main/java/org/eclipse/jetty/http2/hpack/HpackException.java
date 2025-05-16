@@ -15,6 +15,11 @@ package org.eclipse.jetty.http2.hpack;
 
 public abstract class HpackException extends Exception
 {
+    HpackException(String messageFormat, Object... args)
+    {
+        super(String.format(messageFormat, args));
+    }
+
     HpackException(Throwable cause, String messageFormat, Object... args)
     {
         super(String.format(messageFormat, args), cause);
@@ -33,7 +38,8 @@ public abstract class HpackException extends Exception
 
         public StreamException(boolean request, boolean response, String messageFormat, Object... args)
         {
-            this(null, request, response, messageFormat, args);
+            super(messageFormat, args);
+            this.type = request ? Boolean.TRUE : response ? Boolean.FALSE : null;
         }
 
         public StreamException(Throwable cause, boolean request, boolean response, String messageFormat, Object... args)
@@ -62,7 +68,7 @@ public abstract class HpackException extends Exception
     {
         public SessionException(String messageFormat, Object... args)
         {
-            super(null, messageFormat, args);
+            super(messageFormat, args);
         }
     }
 
