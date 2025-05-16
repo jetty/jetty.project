@@ -74,7 +74,6 @@
         <configuration>
           <reuseForks>true</reuseForks>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-modules org.eclipse.jetty.util.ajax
             --add-reads org.eclipse.jetty.ee9.servlet=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>
