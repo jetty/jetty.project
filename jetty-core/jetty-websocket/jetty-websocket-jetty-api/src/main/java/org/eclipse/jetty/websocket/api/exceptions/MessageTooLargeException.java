@@ -20,7 +20,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
  *
  * @see StatusCode#MESSAGE_TOO_LARGE
  */
-@SuppressWarnings("serial")
 public class MessageTooLargeException extends CloseException
 {
     public MessageTooLargeException(String message)

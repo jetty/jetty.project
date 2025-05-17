@@ -15,7 +15,6 @@
   <modules>
     <module>jetty-ee11-demo-jetty-websocket-webapp</module>
     <module>jetty-ee11-demo-proxy-webapp</module>
-    <module>jetty-ee11-demo-template</module>
   </modules>
 
   <properties>

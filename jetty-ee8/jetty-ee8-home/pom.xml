@@ -202,34 +202,6 @@
               <outputDirectory>${source-assembly-directory}/lib/ee8-annotations</outputDirectory>
             </configuration>
           </execution>
-          <!--          <execution>-->
-          <!--            <id>copy-ee8-jaspi-deps</id>-->
-          <!--            <phase>generate-resources</phase>-->
-          <!--            <goals>-->
-          <!--              <goal>copy-dependencies</goal>-->
-          <!--            </goals>-->
-          <!--            <configuration>-->
-          <!--              <includeGroupIds>jakarta.authentication</includeGroupIds>-->
-          <!--              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>-->
-          <!--              <includeTypes>jar</includeTypes>-->
-          <!--              <outputDirectory>${assembly-directory}/lib/ee8-jaspi</outputDirectory>-->
-          <!--            </configuration>-->
-          <!--          </execution>-->
-          <!--          <execution>-->
-          <!--            <id>copy-ee8-jaspi-src-deps</id>-->
-          <!--            <phase>generate-resources</phase>-->
-          <!--            <goals>-->
-          <!--              <goal>copy-dependencies</goal>-->
-          <!--            </goals>-->
-          <!--            <configuration>-->
-          <!--              <includeGroupIds>jakarta.authentication</includeGroupIds>-->
-          <!--              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>-->
-          <!--              <includeTypes>jar</includeTypes>-->
-          <!--              <classifier>sources</classifier>-->
-          <!--              <outputDirectory>${source-assembly-directory}/lib/ee8-jaspi</outputDirectory>-->
-          <!--            </configuration>-->
-          <!--          </execution>-->
-
           <execution>
             <id>copy-ee8-deps</id>
             <goals>
@@ -251,7 +223,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -265,7 +236,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -280,7 +250,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -294,7 +263,6 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
@@ -379,7 +347,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -396,7 +363,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>
@@ -414,7 +380,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -431,7 +396,6 @@
                 <artifactItem>
                   <groupId>jakarta.transaction</groupId>
                   <artifactId>jakarta.transaction-api</artifactId>
-                  <version>${jakarta.transaction-api.version}</version>
                   <classifier>sources</classifier>
                 </artifactItem>
               </artifactItems>

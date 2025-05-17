@@ -28,7 +28,6 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>${ee8.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

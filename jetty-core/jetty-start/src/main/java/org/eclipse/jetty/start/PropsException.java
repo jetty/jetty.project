@@ -16,7 +16,6 @@ package org.eclipse.jetty.start;
 /**
  * An non-recoverable error with Props usage
  */
-@SuppressWarnings("serial")
 public class PropsException extends RuntimeException
 {
     public PropsException(String message, Throwable cause)

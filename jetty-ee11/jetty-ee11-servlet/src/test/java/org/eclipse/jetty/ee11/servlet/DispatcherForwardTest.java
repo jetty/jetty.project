@@ -35,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SuppressWarnings("serial")
 public class DispatcherForwardTest
 {
     private Server server;

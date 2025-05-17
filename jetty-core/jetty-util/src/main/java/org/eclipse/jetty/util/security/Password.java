@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.security;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -45,6 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class Password extends Credential
 {
     // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
+    @Serial
     private static final long serialVersionUID = 5062906681431569445L;
 
     public static final String __OBFUSCATE = "OBF:";

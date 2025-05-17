@@ -15,15 +15,16 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>@ee11.jakarta.bom.version@</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>2.7</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>@jakarta.servlet.api.version@</version>
-        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -95,9 +96,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>@maven.compiler.plugin.version@</version>
           <configuration>
-            <target>11</target>
-            <source>11</source>
-            <release>11</release>
+            <release>17</release>
           </configuration>
         </plugin>
         <plugin>

@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
  *
  * @see <a href="Eclipse Bug 354014">https://bugs.eclipse.org/354014</a>
  */
-@SuppressWarnings("serial")
 public class BlockingServletStreamLengthTypeWrite extends AbstractFileContentServlet
 {
     @Override

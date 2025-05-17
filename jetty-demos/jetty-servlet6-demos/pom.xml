@@ -13,7 +13,6 @@
   <name>Servlet 6 :: Demos</name>
 
   <modules>
-    <module>jetty-servlet6-demo-mock-resources</module>
     <module>jetty-servlet6-demo-embedded</module>
     <module>jetty-servlet6-demo-jspc-webapp</module>
     <module>jetty-servlet6-demo-jspc-6-1-webapp</module>
@@ -24,6 +23,18 @@
   <properties>
     <sonar.skip>true</sonar.skip>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${ee11.jakarta.bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>

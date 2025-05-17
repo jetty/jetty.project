@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlets;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -1097,6 +1098,7 @@ public class DoSFilter implements Filter
      */
     static class RateTracker implements Runnable, Serializable
     {
+        @Serial
         private static final long serialVersionUID = 3534663738034577872L;
 
         final AutoLock _lock = new AutoLock();

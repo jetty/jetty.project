@@ -21,7 +21,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
  *
  * @see StatusCode#BAD_PAYLOAD
  */
-@SuppressWarnings("serial")
 public class BadPayloadException extends CloseException
 {
     public BadPayloadException(String message)

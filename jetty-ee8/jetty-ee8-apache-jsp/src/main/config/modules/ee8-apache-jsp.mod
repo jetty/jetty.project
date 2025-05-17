@@ -10,12 +10,8 @@ ee8
 ee8-servlet
 ee8-annotations
 
-[ini]
-eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
-ee8.jsp.impl.version?=@jsp.impl.version@
-
 [lib]
-lib/ee8-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
-lib/ee8-apache-jsp/org.mortbay.jasper.apache-el-${ee8.jsp.impl.version}.jar
-lib/ee8-apache-jsp/org.mortbay.jasper.apache-jsp-${ee8.jsp.impl.version}.jar
+lib/ee8-apache-jsp/@org.eclipse.jdt:ecj@
+lib/ee8-apache-jsp/@org.mortbay.jasper:apache-el@
+lib/ee8-apache-jsp/@org.mortbay.jasper:apache-jsp@
 lib/jetty-ee8-apache-jsp-${jetty.version}.jar

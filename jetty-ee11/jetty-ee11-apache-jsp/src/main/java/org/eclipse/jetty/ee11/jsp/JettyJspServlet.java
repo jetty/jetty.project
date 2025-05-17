@@ -31,12 +31,6 @@ import org.apache.jasper.servlet.JspServlet;
  */
 public class JettyJspServlet extends JspServlet
 {
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = -5387857473125086791L;
-
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {

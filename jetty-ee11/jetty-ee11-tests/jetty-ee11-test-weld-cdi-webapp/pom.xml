@@ -19,14 +19,12 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
-      <version>${jboss.logging.version}</version>
     </dependency>
 
     <!-- included in webapp -->
     <dependency>
       <groupId>org.jboss.weld.servlet</groupId>
       <artifactId>weld-servlet-core</artifactId>
-      <version>${weld.version}</version>
     </dependency>
 
     <dependency>

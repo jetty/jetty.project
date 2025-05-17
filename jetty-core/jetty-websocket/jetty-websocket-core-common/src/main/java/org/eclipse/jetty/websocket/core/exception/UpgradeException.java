@@ -18,7 +18,6 @@ import java.net.URI;
 /**
  * Exception during WebSocket Upgrade Handshake.
  */
-@SuppressWarnings("serial")
 public class UpgradeException extends WebSocketException
 {
     private final URI requestURI;

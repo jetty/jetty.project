@@ -13,12 +13,9 @@ security
 ee10-security
 auth-config-factory
 
-[ini]
-ee10.jakarta.authentication.api.version?=@jakarta.authentication.api.version@
-
 [lib]
 lib/jetty-ee10-jaspi-${jetty.version}.jar
-lib/ee10-jaspi/jakarta.authentication-api-${ee10.jakarta.authentication.api.version}.jar
+lib/ee10-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
 etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml

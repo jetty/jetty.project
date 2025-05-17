@@ -24,7 +24,6 @@ import java.util.Map;
  *
  * @param <V> the entry type for multimap values
  */
-@SuppressWarnings("serial")
 public class MultiMap<V> extends LinkedHashMap<String, List<V>>
 {
     // TODO review if this is really still needed or can we just use Map<List<V>> instead?

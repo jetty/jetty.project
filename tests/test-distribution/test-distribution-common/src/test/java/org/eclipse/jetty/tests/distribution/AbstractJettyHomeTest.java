@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -107,5 +108,10 @@ public class AbstractJettyHomeTest
             ret.append(response.getContentAsString()).append(System.lineSeparator());
             return ret.toString();
         }
+    }
+
+    protected Supplier<String> logs(JettyHomeTester.Run run)
+    {
+        return () -> "Logs: " + String.join("\n", run.getLogs());
     }
 }

@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@SuppressWarnings("serial")
 public class WebSocketChatServlet extends JettyWebSocketServlet implements JettyWebSocketCreator
 {
     /**

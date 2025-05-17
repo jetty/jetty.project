@@ -10,9 +10,6 @@ ee9
 ee9-plus
 annotations
 
-[ini]
-ee9.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
-
 [lib]
 lib/jetty-ee9-annotations-${jetty.version}.jar
-lib/ee9-annotations/jakarta.annotation-api-${ee9.jakarta.annotation.api.version}.jar
+lib/ee9-annotations/@jakarta.annotation:jakarta.annotation-api@

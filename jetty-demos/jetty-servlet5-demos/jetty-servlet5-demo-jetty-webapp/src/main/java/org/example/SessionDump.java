@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.MultiMap;
 /**
  * Test Servlet Sessions.
  */
-@SuppressWarnings("serial")
 public class SessionDump extends HttpServlet
 {
     /**

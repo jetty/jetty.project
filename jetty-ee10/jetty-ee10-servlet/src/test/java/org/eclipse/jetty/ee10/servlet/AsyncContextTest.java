@@ -527,8 +527,6 @@ public class AsyncContextTest
 
     private static class ForwardingServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
@@ -545,8 +543,6 @@ public class AsyncContextTest
 
     private class AsyncDispatchingServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest req, final HttpServletResponse response) throws ServletException, IOException
         {
@@ -707,8 +703,6 @@ public class AsyncContextTest
 
     private class ErrorServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -721,7 +715,6 @@ public class AsyncContextTest
 
     private class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         private String dispatchPath = "/servletPath2";
 
         @Override
@@ -763,8 +756,6 @@ public class AsyncContextTest
 
     private class TestServlet2 extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

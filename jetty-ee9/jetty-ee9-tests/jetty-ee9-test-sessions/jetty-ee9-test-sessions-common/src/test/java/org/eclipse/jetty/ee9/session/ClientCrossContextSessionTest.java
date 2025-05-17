@@ -104,7 +104,6 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletA extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public String sessionId;
 
         @Override
@@ -128,7 +127,6 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletB extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public String sessionId;
 
         @Override

@@ -54,7 +54,6 @@ import java.util.ListIterator;
  *
  * @see java.util.List
  */
-@SuppressWarnings("serial")
 public class LazyList
     implements Cloneable, Serializable
 {

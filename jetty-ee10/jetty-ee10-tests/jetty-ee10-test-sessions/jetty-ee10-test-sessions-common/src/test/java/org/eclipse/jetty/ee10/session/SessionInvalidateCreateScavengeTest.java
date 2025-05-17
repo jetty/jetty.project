@@ -148,7 +148,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 
     public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
-        private static final long serialVersionUID = 1L;
         private boolean unbound = false;
 
         @Override
@@ -166,7 +165,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public MySessionBindingListener listener = new MySessionBindingListener();
 
         @Override
