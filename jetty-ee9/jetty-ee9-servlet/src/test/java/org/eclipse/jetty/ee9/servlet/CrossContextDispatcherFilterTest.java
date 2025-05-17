@@ -205,7 +205,7 @@ public class CrossContextDispatcherFilterTest
         contextService.setContextPath("/service");
         ServletHolder serviceHolder = new ServletHolder("service-servlet", new HttpServlet()
         {
-            final static String ASYNC_CONTEXT = "async.context";
+            static final String ASYNC_CONTEXT = "async.context";
 
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
