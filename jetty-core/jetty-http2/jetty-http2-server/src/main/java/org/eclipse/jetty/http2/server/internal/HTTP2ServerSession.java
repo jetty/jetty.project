@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -117,9 +118,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
                         if (metaData instanceof HeaderBlockParser.StreamFailureMetaData f)
                         {
-                            // No request content, but might write an error response.
+                            // It's a bad request, request content will be dropped.
                             stream.updateClose(true, CloseState.Event.RECEIVED);
-                            notifyStreamFailure(stream, f.getFailure(), Callback.NOOP);
+                            Throwable failure = f.getFailure();
+                            notifyStreamFailure(stream, new BadMessageException(failure.getMessage(), failure), Callback.NOOP);
                         }
                         else
                         {
