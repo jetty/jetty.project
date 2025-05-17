@@ -155,6 +155,10 @@ public class JettyHomeTester
         if (StringUtils.isNotBlank(mavenLocalRepository))
             args.add("maven.local.repo=" + mavenLocalRepository);
 
+        String mavenOnlyLocalRepo = System.getProperty("maven.only.local.repo", "false");
+        if (StringUtils.isNotBlank(mavenOnlyLocalRepo))
+            args.add("maven.only.local.repo=" + mavenOnlyLocalRepo);
+
         // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
         String remoteRepoUri = System.getProperty("maven.repo.uri");
         if (remoteRepoUri != null)

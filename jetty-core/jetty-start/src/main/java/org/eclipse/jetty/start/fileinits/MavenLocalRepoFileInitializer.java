@@ -106,6 +106,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 
     private final boolean readonly;
     private String mavenRepoUri;
+    private boolean onlyLocalRepo;
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
@@ -213,6 +214,12 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
                 StartLog.info("copy %s to %s", localRepoFile, _basehome.toShortForm(destination));
                 Files.copy(localRepoFile, destination);
                 return true;
+            }
+
+            if (onlyLocalRepo)
+            {
+                StartLog.warn("Can only use files from Maven local repository");
+                return false;
             }
 
             // normal non-local repo version
@@ -376,4 +383,11 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     {
         super.download(uri, destination);
     }
+
+    public MavenLocalRepoFileInitializer onlyLocalRepo(boolean onlyLocalRepo)
+    {
+        this.onlyLocalRepo = onlyLocalRepo;
+        return this;
+    }
+
 }
