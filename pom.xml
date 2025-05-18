@@ -147,6 +147,17 @@
     <url>https://github.com/jetty/jetty.project/issues</url>
   </issueManagement>
 
+  <distributionManagement>
+    <repository>
+      <id>sonatype-cp</id>
+      <url>https://jetty.org</url>
+    </repository>
+    <snapshotRepository>
+      <id>sonatype-cp</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.15</ant.version>
@@ -313,7 +324,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
-    <project.build.outputTimestamp>2024-04-26T07:15:13Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-05-18T02:28:38Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settingsPath>src/it/settings.xml</settingsPath>
@@ -1462,7 +1473,6 @@
   </dependencies>
 
   <build>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -2184,6 +2194,11 @@
     </plugins>
     <extensions>
       <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.5.3</version>
+      </extension>
+      <extension>
         <groupId>org.apache.maven.extensions</groupId>
         <artifactId>maven-build-cache-extension</artifactId>
         <version>${maven-build-cache.version}</version>
@@ -2443,169 +2458,6 @@
                 </configuration>
               </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.sonatype.central</groupId>
-            <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.7.0</version>
-            <extensions>true</extensions>
-            <configuration>
-              <deploymentName>${project.groupId} - ${project.version}</deploymentName>
-              <publishingServerId>central</publishingServerId>
-              <autoPublish>false</autoPublish>
-              <excludeArtifacts>
-                <excludeArtifact>build-resources</excludeArtifact>
-                <excludeArtifact>tests</excludeArtifact>
-                <excludeArtifact>jetty-test-multipart</excludeArtifact>
-                <excludeArtifact>jetty-tests</excludeArtifact>
-                <excludeArtifact>jetty-test-core-example-webapp</excludeArtifact>
-                <excludeArtifact>jetty-http2-tests</excludeArtifact>
-                <excludeArtifact>jetty-http3-tests</excludeArtifact>
-                <excludeArtifact>jetty-test-rfc</excludeArtifact>
-                <excludeArtifact>jetty-test-client-transports</excludeArtifact>
-                <excludeArtifact>jetty-test-jmx</excludeArtifact>
-                <excludeArtifact>jetty-test-http2-client-transport-provided-webapp</excludeArtifact>
-                <excludeArtifact>jetty-websocket-core-tests</excludeArtifact>
-                <excludeArtifact>jetty-websocket-jetty-tests</excludeArtifact>
-                <excludeArtifact>jetty-test-common</excludeArtifact>
-                <excludeArtifact>test-jetty-ee11-osgi-fragment</excludeArtifact>
-                <excludeArtifact>test-jetty-ee11-osgi-server</excludeArtifact>
-                <excludeArtifact>test-jetty-ee11-osgi-webapp-resources</excludeArtifact>
-                <excludeArtifact>test-jetty-ee11-osgi</excludeArtifact>
-                <excludeArtifact>jetty-ee11-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-bad-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-badinit-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-cdi</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-cdi-common-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-client-transports</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-felix-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-http2-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-integration</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-jmx</excludeArtifact>
-                <excludeArtifact>jetty-ee11-jmx-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-jmx-webapp-it</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-jndi</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-log4j2-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-loginservice</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-openid-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-owb-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-quickstart</excludeArtifact>
-                <excludeArtifact>jetty-test-session-common</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-common</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-file</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-gcloud</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-hazelcast</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-infinispan</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-jdbc</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-memcached</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-sessions-mongodb</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-simple-session-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-websocket-client-provided-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-websocket-client-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-test-weld-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee11-websocket-jakarta-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee11-websocket-jetty-tests</excludeArtifact>
-                <excludeArtifact>test-jetty-ee10-osgi-fragment</excludeArtifact>
-                <excludeArtifact>test-jetty-ee10-osgi-server</excludeArtifact>
-                <excludeArtifact>test-jetty-ee10-osgi-webapp-resources</excludeArtifact>
-                <excludeArtifact>test-jetty-ee10-osgi</excludeArtifact>
-                <excludeArtifact>jetty-ee10-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-bad-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-badinit-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-cdi</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-cdi-common-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-client-transports</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-felix-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-http2-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-integration</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-jersey</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-jmx</excludeArtifact>
-                <excludeArtifact>jetty-ee10-jmx-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-jmx-webapp-it</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-jndi</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-log4j2-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-loginservice</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-openid-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-siwe-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-owb-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-quickstart</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-common</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-file</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-gcloud</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-hazelcast</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-infinispan</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-jdbc</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-memcached</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-sessions-mongodb</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-simple-session-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-websocket-client-provided-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-websocket-client-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-test-weld-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee10-websocket-jakarta-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee10-websocket-jetty-tests</excludeArtifact>
-                <excludeArtifact>test-jetty-ee9-osgi-fragment</excludeArtifact>
-                <excludeArtifact>test-jetty-ee9-osgi-server</excludeArtifact>
-                <excludeArtifact>test-jetty-ee9-osgi-webapp-resources</excludeArtifact>
-                <excludeArtifact>test-jetty-ee9-osgi</excludeArtifact>
-                <excludeArtifact>jetty-ee9-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-bad-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-badinit-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-cdi</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-cdi-common-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-client-transports</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-felix-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-http2-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-integration</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-jmx</excludeArtifact>
-                <excludeArtifact>jetty-ee9-jmx-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-jmx-webapp-it</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-jndi</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-loginservice</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-openid-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-owb-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-quickstart</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-common</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-file</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-gcloud</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-hazelcast</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-infinispan</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-jdbc</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-memcached</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-sessions-mongodb</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-simple-session-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-websocket-client-provided-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-websocket-client-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-websocket-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-test-weld-cdi-webapp</excludeArtifact>
-                <excludeArtifact>jetty-ee9-websocket-jakarta-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee9-websocket-jetty-tests</excludeArtifact>
-                <excludeArtifact>test-jetty-ee8-osgi-webapp-resources</excludeArtifact>
-                <excludeArtifact>test-jetty-ee8-osgi-fragment</excludeArtifact>
-                <excludeArtifact>test-jetty-ee8-osgi-server</excludeArtifact>
-                <excludeArtifact>test-jetty-ee8-osgi</excludeArtifact>
-                <excludeArtifact>jetty-ee8-websocket-javax-tests</excludeArtifact>
-                <excludeArtifact>jetty-ee8-websocket-jetty-tests</excludeArtifact>
-                <excludeArtifact>jetty-testers</excludeArtifact>
-                <excludeArtifact>jetty-jmh</excludeArtifact>
-                <excludeArtifact>test-cross-context-dispatch</excludeArtifact>
-                <excludeArtifact>ccd-common</excludeArtifact>
-                <excludeArtifact>ccd-ee11-webapp</excludeArtifact>
-                <excludeArtifact>ccd-ee10-webapp</excludeArtifact>
-                <excludeArtifact>ccd-ee9-webapp</excludeArtifact>
-                <excludeArtifact>ccd-ee8-webapp</excludeArtifact>
-                <excludeArtifact>ccd-tests</excludeArtifact>
-                <excludeArtifact>test-distribution</excludeArtifact>
-                <excludeArtifact>test-distribution-common</excludeArtifact>
-                <excludeArtifact>test-integration</excludeArtifact>
-                <excludeArtifact>test-jpms</excludeArtifact>
-                <excludeArtifact>code-examples</excludeArtifact>
-              </excludeArtifacts>
-            </configuration>
           </plugin>
         </plugins>
       </build>
