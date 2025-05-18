@@ -1,3 +1,5 @@
+jetty-12.1.0-SNAPSHOT
+
 jetty-12.1.0.beta0 - 19 May 2025
  + 2717 Async requests are not considered when shutting down gracefully
  + 3377 Improve jetty-ssl-context.xml
