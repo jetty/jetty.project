@@ -500,7 +500,6 @@ public class AsyncServletIOTest
         }
     }
 
-    @SuppressWarnings("serial")
     public class AsyncIOServlet2 extends HttpServlet
     {
         public CountDownLatch completed = new CountDownLatch(1);
@@ -577,7 +576,6 @@ public class AsyncServletIOTest
         }
     }
 
-    @SuppressWarnings("serial")
     public class AsyncIOServlet3 extends HttpServlet
     {
         public CountDownLatch completed = new CountDownLatch(1);
@@ -693,7 +691,6 @@ public class AsyncServletIOTest
         assertEquals(0, _servlet4.onWP.get());
     }
 
-    @SuppressWarnings("serial")
     public class AsyncIOServlet4 extends HttpServlet
     {
         public CountDownLatch completed = new CountDownLatch(1);
