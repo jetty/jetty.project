@@ -21,10 +21,10 @@ import java.io.IOException;
  * which can greatly increase performance for applications that search
  * for resources.
  *
- * @deprecated use core {@link org.eclipse.jetty.ee.CachingWebAppClassLoader} instead
+ * @deprecated use core {@link org.eclipse.jetty.ee.webapp.CachingWebAppClassLoader} instead
  */
 @Deprecated(since = "12.1.0", forRemoval = true)
-public class CachingWebAppClassLoader extends org.eclipse.jetty.ee.CachingWebAppClassLoader
+public class CachingWebAppClassLoader extends org.eclipse.jetty.ee.webapp.CachingWebAppClassLoader
 {
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
     {

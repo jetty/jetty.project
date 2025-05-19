@@ -727,11 +727,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ee</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-ethereum</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -962,6 +957,16 @@
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
         <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-test-resources</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -44,6 +44,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.test.resources.TestEeResources;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -291,7 +292,7 @@ public class DefaultServletTest
         Path path = docRoot.resolve("keystore.p12");
         byte[] originalBytes;
 
-        try (InputStream is = getClass().getResourceAsStream("/keystore.p12");
+        try (InputStream is = TestEeResources.class.getResourceAsStream("/keystore.p12");
              ByteArrayOutputStream baos = new ByteArrayOutputStream();
              OutputStream fos = Files.newOutputStream(path))
         {
@@ -3408,7 +3409,7 @@ public class DefaultServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path docroot = MavenTestingUtils.getTestResourcePath("docroot");
+        Path docroot = TestEeResources.getResourceAsPath("/docroot");
 
         ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
@@ -3416,7 +3417,7 @@ public class DefaultServletTest
         slashHolder.setInitParameter("baseResource", docroot.toAbsolutePath().toString());
         context.addServlet(slashHolder, "/");
 
-        Path altroot = MavenTestingUtils.getTestResourcePath("altroot");
+        Path altroot = TestEeResources.getResourceAsPath("/altroot");
         ServletHolder rHolder = new ServletHolder("alt", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
@@ -3444,7 +3445,7 @@ public class DefaultServletTest
     {
         server.stop();
 
-        Path suffixroot = MavenTestingUtils.getTestResourcePath("suffixroot");
+        Path suffixroot = TestEeResources.getResourceAsPath("/suffixroot");
         ResourceFactory resourceFactory = ResourceFactory.of(context);
         context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
 
@@ -3462,7 +3463,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceRange() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.class.getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3483,7 +3484,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.class.getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3504,7 +3505,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceMultipleRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.class.getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3528,7 +3529,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.class.getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3552,7 +3553,7 @@ public class DefaultServletTest
     @Test
     public void testNotAcceptRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.class.getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
