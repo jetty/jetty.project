@@ -17,17 +17,10 @@ import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.ws.rs.Consumes;
@@ -38,6 +31,8 @@ import jakarta.ws.rs.core.FeatureContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.io.EofException;
@@ -89,7 +84,7 @@ public class HungBlockingThreadsTest
     public void setUp() throws Exception
     {
         QueuedThreadPool queuedThreadPool = new QueuedThreadPool(10, 10, (int)TimeUnit.MINUTES.toMillis(1000L));
-        queuedThreadPool.setName("jetty-queue-tp");
+        queuedThreadPool.setName("server");
         queuedThreadPool.setDaemon(true);
         queuedThreadPool.setReservedThreads(1);
 
@@ -99,7 +94,10 @@ public class HungBlockingThreadsTest
         context.setContextPath("/");
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.registerResources(makeAsync(Resource.builder(MyResource.class).build()));
+        Resource resource = Resource.builder(PostResource.class).build();
+        Resource.Builder resourceBuilder = Resource.builder(resource);
+        resource.getResourceMethods().forEach(resourceMethod -> resourceBuilder.updateMethod(resourceMethod).managedAsync());
+        resourceConfig.registerResources(resourceBuilder.build());
         resourceConfig.register(CustomFeature.class);
 
         context.addServlet(new ServletHolder(new ServletContainer(resourceConfig)), "/*");
@@ -112,8 +110,14 @@ public class HungBlockingThreadsTest
         server.addConnector(connector);
         server.start();
 
+        httpClient = new HttpClient();
+        QueuedThreadPool clientQtp = new QueuedThreadPool(THREAD_COUNT * 2);
+        clientQtp.setName("client");
+        httpClient.setExecutor(clientQtp);
+        httpClient.setMaxConnectionsPerDestination(THREAD_COUNT);
+        httpClient.start();
+
         executorService = Executors.newCachedThreadPool();
-        httpClient = HttpClient.newHttpClient();
     }
 
     @AfterEach
@@ -121,24 +125,21 @@ public class HungBlockingThreadsTest
     {
         executorService.shutdownNow();
         LifeCycle.stop(server);
+        LifeCycle.stop(httpClient);
     }
 
     @Test
     public void test() throws Exception
     {
-        List<Future<?>> futures = new CopyOnWriteArrayList<>();
         CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
         for (int i = 0; i < THREAD_COUNT; i++)
         {
             executorService.submit(() ->
             {
-                HttpRequest request = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> new HangInputStream(latch)))
-                    .uri(server.getURI())
-                    .timeout(Duration.ofDays(1))
-                    .build();
-                CompletableFuture<HttpResponse<String>> future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-                futures.add(future);
+                httpClient.POST(server.getURI())
+                    .body(new InputStreamRequestContent("text/plain", new HangInputStream(latch)))
+                    .timeout(1, TimeUnit.DAYS)
+                    .send(result -> {});
             });
         }
 
@@ -147,10 +148,10 @@ public class HungBlockingThreadsTest
 
         LOG.debug("Shutting down client");
         // while hanging in inputstream read, close connections.
-        futures.forEach(f -> f.cancel(true));
+        LifeCycle.stop(httpClient);
 
         LOG.debug("Waiting for hung threads");
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(SharedBlockingCallback.class.getSimpleName()))));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(SharedBlockingCallback.class.getName()))));
     }
 
     private static class HangInputStream extends InputStream
@@ -194,13 +195,6 @@ public class HungBlockingThreadsTest
         return threadDump.toString();
     }
 
-    private static Resource makeAsync(Resource resource)
-    {
-        Resource.Builder resourceBuilder = Resource.builder(resource);
-        resource.getResourceMethods().forEach(resourceMethod -> resourceBuilder.updateMethod(resourceMethod).managedAsync());
-        return resourceBuilder.build();
-    }
-
     public static class CustomFeature implements Feature
     {
         @Override
@@ -227,7 +221,7 @@ public class HungBlockingThreadsTest
     }
 
     @Path("")
-    public static class MyResource
+    public static class PostResource
     {
         @POST
         @Consumes("text/plain")
