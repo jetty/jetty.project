@@ -43,8 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * OSGiMetaInfConfiguration
- *
  * Handle adding resources found in bundles.
  */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration

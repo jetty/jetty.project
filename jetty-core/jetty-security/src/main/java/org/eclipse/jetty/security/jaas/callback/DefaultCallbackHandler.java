@@ -24,8 +24,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
 
 /**
- * DefaultCallbackHandler
- *
  * An implementation of the JAAS CallbackHandler. Users can provide
  * their own implementation instead and set the name of its class on the JAASLoginService.
  */

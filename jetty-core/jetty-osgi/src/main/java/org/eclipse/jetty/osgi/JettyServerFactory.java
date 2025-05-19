@@ -41,8 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JettyServerFactory
- *
  * Configures a jetty Server instance.
  */
 public class JettyServerFactory

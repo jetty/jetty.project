@@ -40,8 +40,6 @@ import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
- * QuickStartDescriptorProcessor
- *
  * Handle  extended elements for quickstart-web.xml
  */
 public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor implements Closeable

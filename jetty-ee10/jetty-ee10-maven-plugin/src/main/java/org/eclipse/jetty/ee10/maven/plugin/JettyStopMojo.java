@@ -31,7 +31,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * This goal stops a running instance of jetty.
- *
+ * <p>
  * The <b>stopPort</b> and <b>stopKey</b> parameters can be used to
  * configure which jetty to stop.
  */

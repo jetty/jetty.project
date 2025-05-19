@@ -21,12 +21,10 @@ import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
 
 /**
- * JettyTldPreScanned
- *
  * Change to TldPreScanned to not require that the tlds have been
  * pre-scanned from a jar file, but rather may be files in the
  * file system.
- *
+ * <p>
  * This is important for running in the jetty maven plugin
  * environment in multi-module builds, where modules that contain tlds
  * may be in the reactor at the same time as a webapp being run with the

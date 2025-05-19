@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * Accumulates data into a list of ByteBuffers which can then be combined into a single buffer or written to an OutputStream.
  * The buffer list automatically grows as data is written to it, the buffers are taken from the
  * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
- *
+ * <p>
  * The method {@link #ensureBuffer(int, int)} is used to write directly to the last buffer stored in the buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
  * @see #ensureBuffer(int, int)

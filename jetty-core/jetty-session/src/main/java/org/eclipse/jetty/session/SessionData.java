@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SessionData
- *
  * The data associated with a session. A Session object has a 1:1 relationship
  * with a SessionData object. The behaviour of sessions is implemented in the
  * Session object (eg calling listeners, keeping timers etc). A Session's

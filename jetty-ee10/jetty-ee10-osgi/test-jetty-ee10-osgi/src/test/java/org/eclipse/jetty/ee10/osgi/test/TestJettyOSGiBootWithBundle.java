@@ -41,10 +41,8 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
- * TestJettyOSGiBootWithBundle
- *
  * Tests reading config from a bundle and loading classes from it
- *
+ * <p>
  * Tests the ServiceContextProvider.
  */
 @RunWith(PaxExam.class)

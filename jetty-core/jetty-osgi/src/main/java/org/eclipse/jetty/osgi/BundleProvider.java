@@ -16,8 +16,6 @@ package org.eclipse.jetty.osgi;
 import org.osgi.framework.Bundle;
 
 /**
- * BundleProvider
- *
  * Interfaces the deployment of a bundle in osgi to the deployment of a ContextHandler for it
  */
 public interface BundleProvider

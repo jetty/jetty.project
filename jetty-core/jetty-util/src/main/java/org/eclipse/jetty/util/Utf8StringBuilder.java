@@ -42,7 +42,7 @@ import static java.lang.invoke.MethodType.methodType;
  * making this class suitable for decoding % encoded strings of already decoded characters.
  * </p>
  *
- * @see CharsetStringBuilder for decoding of arbitrary {@link java.nio.charset.Charset}s.
+ * @see CharsetStringBuilder
  */
 public class Utf8StringBuilder implements CharsetStringBuilder
 {

@@ -40,8 +40,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
- * AbstractHomeForker
- *
  * Unpacks a jetty-home and configures it with a base that allows it
  * to run an unassembled webapp.
  */

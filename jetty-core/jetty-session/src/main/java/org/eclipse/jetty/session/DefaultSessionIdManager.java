@@ -32,15 +32,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DefaultSessionIdManager
- *
  * Manages session ids to ensure each session id within a context is unique, and that
  * session ids can be shared across contexts (but not session contents).
- *
+ * <p>
  * There is only 1 session id manager per Server instance.
- *
+ * <p>
  * Runs a HouseKeeper thread to periodically check for expired Sessions.
- *
  * @see HouseKeeper
  */
 @ManagedObject

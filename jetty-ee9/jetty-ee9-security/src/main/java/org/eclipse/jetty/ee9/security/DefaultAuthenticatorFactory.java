@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * All authenticators derived from {@link LoginAuthenticator} are
  * wrapped with a {@link DeferredAuthentication}
  * instance, which is used if authentication is not mandatory.
- *
+ * <p>
  * The Authentications from the {@link FormAuthenticator} are always wrapped in a
  * {@link SessionAuthentication}
  * <p>

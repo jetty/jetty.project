@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Utility methods to generate a List of paths.
- *
  * TODO: add XML and JSON versions?
  */
 public class ResourceListing

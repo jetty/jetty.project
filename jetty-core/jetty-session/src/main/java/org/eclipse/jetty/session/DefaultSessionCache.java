@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DefaultSessionCache
- *
  * A session store that keeps its sessions in memory within a concurrent map
  */
 @ManagedObject

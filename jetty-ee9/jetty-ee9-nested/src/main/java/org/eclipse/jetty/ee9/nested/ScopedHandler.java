@@ -20,8 +20,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * ScopedHandler.
- *
  * A ScopedHandler is a HandlerWrapper where the wrapped handlers
  * each define a scope.
  *

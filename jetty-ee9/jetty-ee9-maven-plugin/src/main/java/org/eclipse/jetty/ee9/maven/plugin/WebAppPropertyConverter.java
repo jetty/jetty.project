@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
- * WebAppPropertyConverter
- *
  * Converts a webapp's configuration to a properties file, and
  * vice versa.
  */

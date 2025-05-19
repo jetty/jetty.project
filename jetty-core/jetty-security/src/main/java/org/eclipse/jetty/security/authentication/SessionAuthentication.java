@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SessionAuthentication
- *
  * When a user has been successfully authenticated with some types
  * of Authenticator, the Authenticator stashes a SessionAuthentication
  * into an HttpSession to remember that the user is authenticated.

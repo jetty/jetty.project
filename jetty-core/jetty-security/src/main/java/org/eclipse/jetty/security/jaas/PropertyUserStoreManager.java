@@ -23,11 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * PropertyUserStoreManager
- *
  * Maintains a map of PropertyUserStores, keyed off the location of the property file containing
  * the authentication and authorization information.
- * 
+ * <p>
  * This class is used to enable the PropertyUserStores to be cached and shared. This is essential
  * for the PropertyFileLoginModules, whose lifecycle is controlled by the JAAS api and instantiated
  * afresh whenever a user needs to be authenticated. Without this class, every PropertyFileLoginModule

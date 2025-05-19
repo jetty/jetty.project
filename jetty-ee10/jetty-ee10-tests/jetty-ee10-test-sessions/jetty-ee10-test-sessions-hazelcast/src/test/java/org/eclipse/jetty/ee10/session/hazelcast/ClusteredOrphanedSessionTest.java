@@ -18,10 +18,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 
-/**
- * ClusteredOrphanedSessionTest
- *
- */
 public class ClusteredOrphanedSessionTest
     extends AbstractClusteredOrphanedSessionTest
 {

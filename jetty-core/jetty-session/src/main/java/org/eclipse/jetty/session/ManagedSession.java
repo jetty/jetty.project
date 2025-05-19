@@ -31,14 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Session
- *
  * A heavy-weight Session object representing an HttpSession. Session objects
  * relating to a context are kept in a {@link SessionCache}. The purpose of the
  * SessionCache is to keep the working set of Session objects in memory so that
  * they may be accessed quickly, and facilitate the sharing of a Session object
  * amongst multiple simultaneous requests referring to the same session id.
- *
+ * <p>
  * The {@link SessionManager} coordinates the lifecycle of Session objects with
  * the help of the SessionCache/SessionDataStore.
  *

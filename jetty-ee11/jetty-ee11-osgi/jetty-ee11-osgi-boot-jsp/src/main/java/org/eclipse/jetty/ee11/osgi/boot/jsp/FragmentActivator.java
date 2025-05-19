@@ -18,8 +18,6 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
- * FragmentActivator
- *
  * Sets up support for jsp and jstl. All relevant jsp jars must also be installed
  * into the osgi environment.
  * <p>

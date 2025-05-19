@@ -55,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SessionRenewTest
- *
  * Test that changes the session id during a request.
  */
 public class SessionRenewTest

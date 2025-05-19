@@ -20,8 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
 /**
- * ReadLineInputStream
- *
  * Read from an input stream, accepting CR/LF, LF or just CR.
  */
 @Deprecated(forRemoval = true)

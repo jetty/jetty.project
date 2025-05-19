@@ -47,8 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * AsyncTest
- *
  * Tests async handling wrt sessions.
  */
 public class AsyncTest

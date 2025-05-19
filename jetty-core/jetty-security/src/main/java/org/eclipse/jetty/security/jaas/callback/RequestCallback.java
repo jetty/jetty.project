@@ -18,8 +18,6 @@ import javax.security.auth.callback.Callback;
 import org.eclipse.jetty.server.Request;
 
 /**
- * ServletRequestCallback
- *
  * Provides access to the request associated with the authentication.
  */
 public class RequestCallback implements Callback

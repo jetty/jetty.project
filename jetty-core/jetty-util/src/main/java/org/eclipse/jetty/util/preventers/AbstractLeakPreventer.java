@@ -18,12 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractLeakPreventer
- *
  * Abstract base class for code that seeks to avoid pinning of webapp classloaders by using the jetty classloader to
  * proactively call the code that pins them (generally pinned as static data members, or as static
  * data members that are daemon threads (which use the context classloader)).
- *
+ * <p>
  * Instances of subclasses of this class should be set with Server.addBean(), which will
  * ensure that they are called when the Server instance starts up, which will have the jetty
  * classloader in scope.

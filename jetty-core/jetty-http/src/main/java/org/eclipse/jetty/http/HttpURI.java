@@ -28,11 +28,11 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Http URI.
- *
+ * A HTTP URI.
+ * <p>
  * Both {@link Mutable} and {@link Immutable} implementations are available
  * via the static methods such as {@link #build()} and {@link #from(String)}.
- *
+ * <p>
  * A URI such as
  * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar%20bob;param2?query#fragment}
  * is split into the following optional elements:<ul>

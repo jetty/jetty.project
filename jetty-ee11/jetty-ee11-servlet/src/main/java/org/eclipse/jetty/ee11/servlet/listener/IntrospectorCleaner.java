@@ -17,8 +17,6 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 
 /**
- * IntrospectorCleaner
- *
  * Cleans a static cache of Methods held by java.beans.Introspector
  * class when a context is undeployed.
  *

@@ -22,12 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SessionInactivityTimer
- *
  * Each Session has a timer associated with it that fires whenever it has
  * been idle (ie not accessed by a request) for a configurable amount of
  * time, or the Session expires.
- * 
+ * <p>
  * The timer is only scheduled when all Requests have exited the Session.
  * If a request enters a Session whose timer is active, it is cancelled.
  */

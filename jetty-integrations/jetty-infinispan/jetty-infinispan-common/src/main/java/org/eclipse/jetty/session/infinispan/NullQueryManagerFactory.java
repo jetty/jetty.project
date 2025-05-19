@@ -16,8 +16,6 @@ package org.eclipse.jetty.session.infinispan;
 import org.infinispan.commons.api.BasicCache;
 
 /**
- * NullQueryManagerFactory
- *
  * Trivial impl of the QueryManagerFactory that does not support doing queries.
  */
 public class NullQueryManagerFactory implements QueryManagerFactory

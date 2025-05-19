@@ -42,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * RemoveSessionTest
- *
  * Test that invalidating a session does not return the session on the next request.
  */
 public class RemoveSessionTest

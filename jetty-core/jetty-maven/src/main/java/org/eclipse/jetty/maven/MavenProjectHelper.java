@@ -37,8 +37,6 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 /**
- * MavenProjectHelper
- *
  * A class to facilitate interacting with the build time maven environment.
  */
 public class MavenProjectHelper

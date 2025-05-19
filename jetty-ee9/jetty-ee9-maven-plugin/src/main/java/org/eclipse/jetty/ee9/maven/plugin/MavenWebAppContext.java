@@ -49,8 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MavenWebAppContext
- *
  * Extends the WebAppContext to specialize for the maven environment. We pass in
  * the list of files that should form the classpath for the webapp when
  * executing in the plugin, and any jetty-env.xml file that may have been

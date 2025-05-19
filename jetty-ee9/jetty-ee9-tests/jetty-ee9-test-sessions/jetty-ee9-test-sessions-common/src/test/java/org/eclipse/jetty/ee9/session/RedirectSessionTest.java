@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * RedirectSessionTest
- *
  * Test that creating a session and then doing a redirect preserves the session.
  */
 public class RedirectSessionTest

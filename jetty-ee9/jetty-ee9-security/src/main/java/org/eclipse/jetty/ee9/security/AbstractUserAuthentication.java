@@ -25,9 +25,6 @@ import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.UserIdentity;
 
 /**
- * AbstractUserAuthentication
- *
- *
  * Base class for representing an authenticated user.
  */
 public abstract class AbstractUserAuthentication implements User, Serializable

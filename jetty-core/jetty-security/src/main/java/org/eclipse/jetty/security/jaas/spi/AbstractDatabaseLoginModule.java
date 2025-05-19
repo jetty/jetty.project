@@ -28,13 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractDatabaseLoginModule
- *
- * <p>
  * Abstract base class for LoginModules that interact with a
  * database to retrieve authentication and authorization information.
  * Used by the JDBCLoginModule and DataSourceLoginModule.
- * </p>
  */
 public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 {

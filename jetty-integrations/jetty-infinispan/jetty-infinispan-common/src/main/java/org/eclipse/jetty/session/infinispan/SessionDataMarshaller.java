@@ -21,8 +21,6 @@ import org.infinispan.protostream.ProtobufUtil;
 import org.infinispan.protostream.SerializationContext;
 
 /**
- * SessionDataMarshaller
- *
  * A marshaller for converting a SessionData object into protobuf format which
  * gives greater control over serialization/deserialization. We use that extra
  * control to ensure that session attributes can be deserialized using either

@@ -25,8 +25,6 @@ import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 
 /**
- * SessionDataSerializer
- *
  * Handles serialization on behalf of the SessionData object, and
  * ensures that we use jetty's classloading knowledge.
  */

@@ -31,10 +31,8 @@ import jakarta.mail.Session;
 import org.eclipse.jetty.util.security.Password;
 
 /**
- * MailSessionReference
- *
  * This is a subclass of jakarta.mail.Reference and an ObjectFactory for jakarta.mail.Session objects.
- *
+ * <p>
  * The subclassing of Reference allows all of the setup for a jakarta.mail.Session
  * to be captured without necessitating first instantiating a Session object. The
  * reference is bound into JNDI and it is only when the reference is looked up that

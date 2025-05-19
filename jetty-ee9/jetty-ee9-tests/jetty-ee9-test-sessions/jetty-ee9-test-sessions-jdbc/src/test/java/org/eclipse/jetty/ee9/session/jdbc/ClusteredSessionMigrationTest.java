@@ -40,10 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * ClusteredSessionMigrationTest
- *
  * Test that a session that is active on node 1 can be loaded by node 2.
- *
+ * <p>
  * This test is applicable to any of the SessionDataStores that support
  * clustering, but does not test the actual SessionDataStore itself.
  * Rather, it tests all of the machinery above the SessionDataStore. Thus,

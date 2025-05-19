@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * DirtyAttributeTest
- *
  * Check that repeated calls to setAttribute when we never evict the
  * session from the cache still result in writes.
  */
