@@ -475,8 +475,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Consumer<Throwable> onFailure = _onFailure;
                 _onFailure = null;
 
+                boolean hasFailureConsumer = onFailure == null;
                 boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
-                Runnable invokeOnFailureListeners = onFailure == null || skipListeners ? null : () ->
+                boolean readerOrWriterWaiting = invokeOnContentAvailable != null || invokeWriteFailure != null; // Case 2
+                Runnable invokeOnFailureListeners = hasFailureConsumer || readerOrWriterWaiting || skipListeners ? null : () ->
                 {
                     try
                     {
@@ -491,11 +493,6 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-
-//                Case 2
-                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                    invokeOnFailureListeners = null;
-
                 task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
             }
         }
