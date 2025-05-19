@@ -836,14 +836,7 @@ public class HttpChannelState
                 case ASYNC:
                 {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
-                    {
-//                      Case 3 (ee9)
                         return false;
-//                        if (committed)
-//                            return true;
-//                        sendError(th);
-//                        return false;
-                    }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;

@@ -1098,9 +1098,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         chunk.release();
                     stream._chunk = Content.Chunk.from(bad);
                 }
-
-//              Case 1
-//                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }

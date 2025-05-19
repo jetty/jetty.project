@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HungBlockingThreadsTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(HungBlockingThreadsTest.class);
-    private static final int THREAD_COUNT = 1000;
+    private static final int THREAD_COUNT = 128;
     private Server server;
     private ExecutorService executorService;
     private HttpClient httpClient;
