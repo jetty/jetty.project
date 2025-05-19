@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -114,7 +115,7 @@ public class AsyncContextTest
         });
 
         String request =
-            "GET /ctx/startthrow HTTP/1.1\r\n" +
+            "GET /ctx/startthrow?timeout=100 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -124,9 +125,10 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat(responseBody, containsString("ERROR: /error"));
-        assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, containsString("HTTP ERROR 500 AsyncContext timeout"));
+        assertThat(responseBody, not(containsString("ERROR: /error")));
+        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
+        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test")));
     }
 
     @Test
@@ -149,13 +151,15 @@ public class AsyncContextTest
                 "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
-        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
+        // OK b/c exception was thrown after AsyncContext.dispatch() was called
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
 
-        assertThat(responseBody, containsString("ERROR: /error"));
-        assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, emptyString());
+        assertThat(responseBody, not(containsString("ERROR: /error")));
+        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
+        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test")));
     }
 
     @Test
@@ -178,12 +182,14 @@ public class AsyncContextTest
             "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
-        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
+          // OK b/c exception was thrown after AsyncContext.complete() was called
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
-        assertThat(responseBody, containsString("ERROR: /error"));
-        assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, containsString("completeBeforeThrow"));
+        assertThat(responseBody, not(containsString("ERROR: /error")));
+        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
+        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test")));
     }
 
     @Test
@@ -789,7 +795,10 @@ public class AsyncContextTest
         {
             if (request.getDispatcherType() == DispatcherType.REQUEST)
             {
-                request.startAsync(request, response);
+                AsyncContext async = request.startAsync(request, response);
+                String timeoutString = request.getParameter("timeout");
+                if (timeoutString != null)
+                    async.setTimeout(Long.parseLong(timeoutString));
 
                 if (Boolean.parseBoolean(request.getParameter("dispatch")))
                 {
