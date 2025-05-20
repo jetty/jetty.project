@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.client.transport.internal;
 import java.io.EOFException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.client.RetryRequestException;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpResponse;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
@@ -156,6 +158,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     @Override
     public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
+        if (failure instanceof HTTP3Session.RetryStreamException)
+            failure = new RetryRequestException(failure);
         responseFailure(failure, Promise.noop());
     }
 }
