@@ -1944,6 +1944,8 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, this, getResponse());
+        event.setDispatchContext(getServletContext());
+        event.setDispatchPath(state.getBaseRequest().getPathInContext());
         state.startAsync(event);
         return _async;
     }
@@ -1957,6 +1959,7 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
+        event.setDispatchPath(Request.getBaseRequest(servletRequest).getPathInContext());
         event.setDispatchContext(getServletContext());
         state.startAsync(event);
         return _async;
