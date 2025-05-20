@@ -13,9 +13,11 @@
 
   <modules>
     <module>jetty-core-demos</module>
-    <module>jetty-servlet4-demos</module>
-    <module>jetty-servlet5-demos</module>
     <module>jetty-servlet6-demos</module>
+    <?SORTPOM IGNORE?>
+    <module>jetty-servlet5-demos</module>
+    <module>jetty-servlet4-demos</module>
+    <?SORTPOM RESUME?>
   </modules>
 
   <properties>

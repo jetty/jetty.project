@@ -86,7 +86,6 @@ public class RequestURITest
         return ret.stream();
     }
 
-    @SuppressWarnings("serial")
     public static class RequestUriServlet extends HttpServlet
     {
         @Override

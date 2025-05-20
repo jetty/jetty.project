@@ -699,7 +699,6 @@ public class MultiPartParser
         }
     }
 
-    @SuppressWarnings("serial")
     private static class IllegalCharacterException extends BadMessageException
     {
         private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)

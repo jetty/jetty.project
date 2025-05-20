@@ -78,7 +78,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private abstract static class AbstractTestServlet extends HttpServlet
     {
         @Override
@@ -88,7 +87,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class HelloServlet extends AbstractTestServlet
     {
         @Override
@@ -99,7 +97,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class ResponseSendErrorServlet extends AbstractTestServlet
     {
         @Override
@@ -109,7 +106,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class ServletExceptionServlet extends AbstractTestServlet
     {
         @Override
@@ -119,7 +115,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class IOExceptionServlet extends AbstractTestServlet
     {
         @Override
@@ -129,7 +124,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class RuntimeExceptionServlet extends AbstractTestServlet
     {
         @Override
@@ -139,7 +133,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class AsyncOnTimeoutCompleteServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
@@ -172,7 +165,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class AsyncOnTimeoutDispatchServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
@@ -209,7 +201,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     private static class AsyncOnStartIOExceptionServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
@@ -244,7 +235,6 @@ public class ServletRequestLogTest
         }
     }
 
-    @SuppressWarnings("serial")
     public static class CustomErrorServlet extends HttpServlet
     {
         @Override

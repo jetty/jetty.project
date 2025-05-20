@@ -46,7 +46,6 @@ public class WebSocketServer
     /**
      * Servlet layer
      */
-    @SuppressWarnings("serial")
     public static class EchoServlet extends JettyWebSocketServlet
     {
         @Override
