@@ -207,6 +207,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-test-log4j2-webapp</artifactId>
       <version>${project.version}</version>
@@ -339,7 +346,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.8.1</version>
         <executions>
           <execution>
             <id>unpack</id>
