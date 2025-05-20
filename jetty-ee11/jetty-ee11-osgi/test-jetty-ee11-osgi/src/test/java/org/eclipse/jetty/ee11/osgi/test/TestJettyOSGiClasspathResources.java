@@ -14,9 +14,10 @@
 package org.eclipse.jetty.ee11.osgi.test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.jar.JarInputStream;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
@@ -29,8 +30,8 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -105,10 +106,10 @@ public class TestJettyOSGiClasspathResources
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
         File warFile = new File("target/test-jetty-ee11-osgi-webapp-resources.war");
         TinyBundle tiny = TinyBundles.bundle();
-        tiny.read(new FileInputStream(warFile));
-        tiny.set(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
-        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee11.osgi.webapp.resources.alt");
-        InputStream is = tiny.build(TinyBundles.withBnd());
+        tiny.readIn(new JarInputStream(Files.newInputStream(warFile.toPath())));
+        tiny.setHeader(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
+        tiny.setHeader(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee11.osgi.webapp.resources.alt");
+        InputStream is = tiny.build(TinyBundles.bndBuilder());
         bundleContext.installBundle("dummyAltLocation", is);
 
         webappBundle.stop();

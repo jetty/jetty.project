@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -181,10 +181,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject());
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
-        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
-        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
-        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
-        loggingPropertiesBundle.add(FragmentActivator.class);
+        loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+        loggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+        loggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+        loggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
 
         res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
