@@ -205,9 +205,6 @@ public class HungBlockingThreadsTest
         }
     }
 
-    /**
-     * Used to not log a stack trace for Jetty EOF exceptions
-     */
     public static class JettyEofExceptionMapper implements ExceptionMapper<EofException>
     {
         @Override
