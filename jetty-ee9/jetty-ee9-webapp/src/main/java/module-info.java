@@ -22,19 +22,19 @@ module org.eclipse.jetty.ee9.webapp
 
     exports org.eclipse.jetty.ee9.webapp;
 
-    uses Configuration;
+    uses org.eclipse.jetty.ee9.webapp.Configuration;
 
-    provides Configuration with
-        FragmentConfiguration,
-        JaasConfiguration,
-        JaspiConfiguration,
-        JettyWebXmlConfiguration,
-        JmxConfiguration,
-        JndiConfiguration,
-        JspConfiguration,
-        MetaInfConfiguration,
-        ServletsConfiguration,
-        WebAppConfiguration,
-        WebInfConfiguration,
-        WebXmlConfiguration;
+    provides org.eclipse.jetty.ee9.webapp.Configuration with
+        org.eclipse.jetty.ee9.webapp.FragmentConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaasConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaspiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration,
+        org.eclipse.jetty.ee9.webapp.JmxConfiguration,
+        org.eclipse.jetty.ee9.webapp.JndiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JspConfiguration,
+        org.eclipse.jetty.ee9.webapp.MetaInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.ServletsConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebAppConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 }
