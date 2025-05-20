@@ -15,8 +15,6 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -30,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 public class HeaderBlockParser
 {
-    private static final SessionFailureMetaData SESSION_FAILURE = new SessionFailureMetaData();
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
@@ -58,8 +55,7 @@ public class HeaderBlockParser
      * @param buffer the buffer to parse
      * @param blockLength the length of the HPACK block
      * @return null, if the buffer contains less than {@code blockLength} bytes;
-     * an instance of {@link StreamFailureMetaData} if parsing the HPACK block produced a stream failure;
-     * an instance of {@link SessionFailureMetaData} if parsing the HPACK block produced a session failure;
+     * an instance of {@link MetaData.Failed} if parsing the HPACK block produced a failure;
      * an instance of {@link MetaData} if the parsing was successful.
      */
     public MetaData parse(ByteBuffer buffer, int blockLength)
@@ -108,24 +104,24 @@ public class HeaderBlockParser
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
                 if (x.isRequest())
-                    return new StreamFailureMetaDataRequest(x);
+                    return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_2, x);
                 if (x.isResponse())
-                    return new StreamFailureMetaDataResponse(x);
-                return new StreamFailureMetaDataTrailer(x);
+                    return MetaData.Failed.newFailedMetaDataResponse(HttpVersion.HTTP_2, x);
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
-                return SESSION_FAILURE;
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
-                return SESSION_FAILURE;
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             finally
             {
@@ -137,70 +133,6 @@ public class HeaderBlockParser
                     blockBuffer = null;
                 }
             }
-        }
-    }
-
-    public static class SessionFailureMetaData extends MetaData
-    {
-        private SessionFailureMetaData()
-        {
-            super(HttpVersion.HTTP_2, HttpFields.EMPTY);
-        }
-    }
-
-    public interface StreamFailureMetaData
-    {
-        Throwable getFailure();
-    }
-
-    public static class StreamFailureMetaDataRequest extends MetaData.Request implements StreamFailureMetaData
-    {
-        private final Throwable failure;
-
-        private StreamFailureMetaDataRequest(Throwable failure)
-        {
-            super("GET", HttpURI.build(), HttpVersion.HTTP_2, HttpFields.EMPTY);
-            this.failure = failure;
-        }
-
-        @Override
-        public Throwable getFailure()
-        {
-            return failure;
-        }
-    }
-
-    public static class StreamFailureMetaDataResponse extends MetaData.Response implements StreamFailureMetaData
-    {
-        private final Throwable failure;
-
-        private StreamFailureMetaDataResponse(Throwable failure)
-        {
-            super(0, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-            this.failure = failure;
-        }
-
-        @Override
-        public Throwable getFailure()
-        {
-            return failure;
-        }
-    }
-
-    public static class StreamFailureMetaDataTrailer extends MetaData implements StreamFailureMetaData
-    {
-        private final Throwable failure;
-
-        private StreamFailureMetaDataTrailer(Throwable failure)
-        {
-            super(HttpVersion.HTTP_2, HttpFields.EMPTY);
-            this.failure = failure;
-        }
-
-        @Override
-        public Throwable getFailure()
-        {
-            return failure;
         }
     }
 }

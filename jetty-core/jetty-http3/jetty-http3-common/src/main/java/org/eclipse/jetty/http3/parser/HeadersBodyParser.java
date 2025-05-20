@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -127,7 +128,13 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifyStreamFailure(streamId, x.getErrorCode(), x);
+            if (x.isRequest())
+                onHeaders(MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_3, x), true, false);
+            else if (x.isResponse())
+                onHeaders(MetaData.Failed.newFailedMetaDataResponse(HttpVersion.HTTP_3, x), true, false);
+            else
+                onHeaders(MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_3, x), true, false);
+            return true;
         }
         catch (QpackException.SessionException x)
         {

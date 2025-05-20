@@ -376,7 +376,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         session.removeStream(this, failure);
     }
 
-    protected abstract void notifyFailure(long error, Throwable failure);
+    public abstract void notifyFailure(long error, Throwable failure);
 
     protected boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {

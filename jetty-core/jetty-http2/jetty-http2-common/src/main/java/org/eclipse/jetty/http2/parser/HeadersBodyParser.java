@@ -21,6 +21,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,13 +204,14 @@ public class HeadersBodyParser extends BodyParser
                         if (LOG.isDebugEnabled())
                             LOG.debug("Parsed {} frame hpack from {}", FrameType.HEADERS, buffer);
 
-                        if (metaData instanceof HeaderBlockParser.SessionFailureMetaData)
+                        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                        if (metaDataFailure instanceof HpackException.SessionException)
                             return false;
 
                         state = State.PADDING;
                         loop = paddingLength == 0;
 
-                        if (metaData instanceof HeaderBlockParser.StreamFailureMetaData)
+                        if (metaDataFailure != null)
                         {
                             HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
                             if (!rateControlOnEvent(frame))

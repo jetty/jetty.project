@@ -34,7 +34,6 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.HeaderBlockParser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -116,12 +115,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                             }
                         }
 
-                        if (metaData instanceof HeaderBlockParser.StreamFailureMetaData f)
+                        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                        if (metaDataFailure != null)
                         {
                             // It's a bad request, request content will be dropped.
                             stream.updateClose(true, CloseState.Event.RECEIVED);
-                            Throwable failure = f.getFailure();
-                            notifyStreamFailure(stream, new BadMessageException(failure.getMessage(), failure), Callback.NOOP);
+                            notifyStreamFailure(stream, new BadMessageException(metaDataFailure.getMessage(), metaDataFailure), Callback.NOOP);
                         }
                         else
                         {
@@ -192,6 +191,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             {
                 LOG.info("Failure while notifying listener {}", listener, x);
             }
+        }
+        else
+        {
+            onStreamFailure(stream, ErrorCode.CANCEL_STREAM_ERROR.code, failure.getMessage(), failure, callback);
         }
     }
 

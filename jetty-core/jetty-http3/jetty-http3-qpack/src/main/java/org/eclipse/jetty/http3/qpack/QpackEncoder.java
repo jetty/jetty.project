@@ -207,7 +207,7 @@ public class QpackEncoder implements Dumpable
                     String name = field.getName();
                     char firstChar = name.charAt(0);
                     if (firstChar <= ' ')
-                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
+                        throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(), H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
                 }
             }
 
@@ -275,7 +275,7 @@ public class QpackEncoder implements Dumpable
                 notifyInstructionHandler();
                 streamInfo.remove(sectionInfo);
                 sectionInfo.release();
-                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
+                throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(), H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
             }
             catch (Throwable t)
             {

@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee9.test;
 
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,20 +32,27 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -51,13 +60,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTP2RequestTest
+@ExtendWith(WorkDirExtension.class)
+public class HTTP3RequestTest
 {
+    public WorkDir workDir;
+    private Path pemDir;
     private Server server;
-    private ServerConnector connector;
+    private QuicServerConnector connector;
+
+    @BeforeEach
+    public void prepare()
+    {
+        pemDir = workDir.getEmptyPathDir();
+    }
 
     @AfterEach
-    public void stopAll()
+    public void dispose()
     {
         LifeCycle.stop(server);
     }
@@ -66,7 +84,12 @@ public class HTTP2RequestTest
     {
         server = new Server();
 
-        connector = new ServerConnector(server, new HTTP2ServerConnectionFactory());
+        SslContextFactory.Server ssl = new SslContextFactory.Server();
+        ssl.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        ssl.setKeyStorePassword("storepwd");
+        Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(ssl, serverPemDirectory);
+        connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -101,12 +124,12 @@ public class HTTP2RequestTest
             }
         });
 
-        try (HTTP2Client http2Client = new HTTP2Client())
+        try (HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(true), null)))
         {
-            http2Client.start();
+            http3Client.start();
 
             InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-            Session session = http2Client.connect(address, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+            Session.Client session = http3Client.connect(address, new Session.Client.Listener() {}).get(5, TimeUnit.SECONDS);
 
             // Craft a request with a bad URI, it will not hit the Servlet.
             MetaData.Request metaData = new MetaData.Request(
@@ -119,20 +142,20 @@ public class HTTP2RequestTest
             AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
             CountDownLatch responseLatch = new CountDownLatch(1);
             CountDownLatch failureLatch = new CountDownLatch(1);
-            session.newStream(new HeadersFrame(metaData, null, true), new Stream.Listener()
+            session.newRequest(new HeadersFrame(metaData, true), new Stream.Client.Listener()
             {
                 @Override
-                public void onHeaders(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     responseRef.set((MetaData.Response)frame.getMetaData());
-                    if (frame.isEndStream())
+                    if (frame.isLast())
                         responseLatch.countDown();
                     else
                         stream.demand();
                 }
 
                 @Override
-                public void onDataAvailable(Stream stream)
+                public void onDataAvailable(Stream.Client stream)
                 {
                     Stream.Data data = stream.readData();
                     if (data == null)
@@ -141,20 +164,14 @@ public class HTTP2RequestTest
                         return;
                     }
                     data.release();
-                    if (data.frame().isEndStream())
+                    if (data.isLast())
                         responseLatch.countDown();
                     else
                         stream.demand();
                 }
 
                 @Override
-                public void onReset(Stream stream, ResetFrame frame, Callback callback)
-                {
-                    failureLatch.countDown();
-                }
-
-                @Override
-                public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+                public void onFailure(Stream.Client stream, long error, Throwable failure)
                 {
                     failureLatch.countDown();
                 }

@@ -642,12 +642,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         HTTP2Stream stream = getStream(streamId);
         Callback callback = Callback.from(() -> reset(stream, new ResetFrame(streamId, error), Callback.NOOP));
         Throwable failure = toFailure(error, reason);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Stream #{} failure {}", streamId, this, failure);
         if (stream != null)
-            failStream(stream, error, reason, failure, callback);
+            onStreamFailure(stream, error, reason, failure, callback);
         else
             callback.succeeded();
+    }
+
+    protected void onStreamFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stream #{} failure {}", stream.getId(), this, failure);
+        failStream(stream, error, reason, failure, callback);
     }
 
     @Override

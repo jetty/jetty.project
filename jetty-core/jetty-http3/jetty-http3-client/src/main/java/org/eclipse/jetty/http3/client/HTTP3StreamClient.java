@@ -148,7 +148,7 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
     }
 
     @Override
-    protected void notifyFailure(long error, Throwable failure)
+    public void notifyFailure(long error, Throwable failure)
     {
         Listener listener = getListener();
         try

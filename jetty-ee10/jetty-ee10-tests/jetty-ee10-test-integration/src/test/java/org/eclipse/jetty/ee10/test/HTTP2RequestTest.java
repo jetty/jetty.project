@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.ee10.test;
 
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,18 +30,16 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -53,6 +48,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP2RequestTest
@@ -105,64 +101,70 @@ public class HTTP2RequestTest
             }
         });
 
-        ByteBufferPool bufferPool = connector.getByteBufferPool();
-        Generator generator = new Generator(bufferPool);
-
-        // Craft a request with a bad URI, it will not hit the Servlet.
-        MetaData.Request metaData = new MetaData.Request(
-            HttpMethod.GET.asString(),
-            new HttpURI.Unsafe(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort(), badPath, null, null),
-            HttpVersion.HTTP_2,
-            HttpFields.EMPTY
-        );
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-        generator.control(accumulator, new PrefaceFrame());
-        generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
-
-        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (HTTP2Client http2Client = new HTTP2Client())
         {
-            for (ByteBuffer buffer : accumulator.getByteBuffers())
-            {
-                socket.getOutputStream().write(BufferUtil.toArray(buffer));
-            }
-            socket.getOutputStream().flush();
+            http2Client.start();
+
+            InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
+            Session session = http2Client.connect(address, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+
+            // Craft a request with a bad URI, it will not hit the Servlet.
+            MetaData.Request metaData = new MetaData.Request(
+                HttpMethod.GET.asString(),
+                new HttpURI.Unsafe(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort(), badPath, null, null),
+                HttpVersion.HTTP_3,
+                HttpFields.EMPTY
+            );
 
             AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
             CountDownLatch responseLatch = new CountDownLatch(1);
-            Parser parser = new Parser(bufferPool, 8192);
-            parser.init(new Parser.Listener()
+            CountDownLatch failureLatch = new CountDownLatch(1);
+            session.newStream(new HeadersFrame(metaData, null, true), new Stream.Listener()
             {
                 @Override
-                public void onHeaders(HeadersFrame frame)
+                public void onHeaders(Stream stream, HeadersFrame frame)
                 {
                     responseRef.set((MetaData.Response)frame.getMetaData());
-                    responseLatch.countDown();
+                    if (frame.isEndStream())
+                        responseLatch.countDown();
+                    else
+                        stream.demand();
+                }
+
+                @Override
+                public void onDataAvailable(Stream stream)
+                {
+                    Stream.Data data = stream.readData();
+                    if (data == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    data.release();
+                    if (data.frame().isEndStream())
+                        responseLatch.countDown();
+                    else
+                        stream.demand();
+                }
+
+                @Override
+                public void onReset(Stream stream, ResetFrame frame, Callback callback)
+                {
+                    failureLatch.countDown();
+                }
+
+                @Override
+                public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+                {
+                    failureLatch.countDown();
                 }
             });
-
-            byte[] bytes = new byte[2048];
-            socket.setSoTimeout(1000);
-
-            while (true)
-            {
-                try
-                {
-                    int read = socket.getInputStream().read(bytes);
-                    if (read < 0)
-                        break;
-                    parser.parse(ByteBuffer.wrap(bytes, 0, read));
-                }
-                catch (SocketTimeoutException x)
-                {
-                    break;
-                }
-            }
 
             assertTrue(errorHandlerLatch.await(5, TimeUnit.SECONDS));
             assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
             MetaData.Response response = responseRef.get();
             assertThat(response.getStatus(), Matchers.is(HttpStatus.BAD_REQUEST_400));
+            assertFalse(failureLatch.await(1, TimeUnit.SECONDS));
         }
     }
 }

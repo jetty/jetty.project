@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
@@ -208,9 +207,9 @@ public class QpackDecoder implements Dumpable
             notifyMetaDataHandler(false);
             return hadMetaData;
         }
-        catch (QpackException.SessionException e)
+        catch (QpackException x)
         {
-            throw e;
+            throw x;
         }
         catch (Throwable t)
         {
@@ -368,7 +367,7 @@ public class QpackDecoder implements Dumpable
         public void onSetDynamicTableCapacity(int capacity) throws QpackException
         {
             if (capacity > getMaxTableCapacity())
-                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds max capacity");
+                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "DynamicTable capacity exceeds max capacity");
             _context.getDynamicTable().setCapacity(capacity);
         }
 

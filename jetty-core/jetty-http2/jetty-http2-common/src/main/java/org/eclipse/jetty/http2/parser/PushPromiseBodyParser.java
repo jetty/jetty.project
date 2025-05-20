@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 
 public class PushPromiseBodyParser extends BodyParser
 {
@@ -125,13 +126,14 @@ public class PushPromiseBodyParser extends BodyParser
                     if (metaData == null)
                         break;
 
-                    if (metaData instanceof HeaderBlockParser.SessionFailureMetaData)
+                    Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                    if (metaDataFailure instanceof HpackException.SessionException)
                         return false;
 
                     state = State.PADDING;
                     loop = paddingLength == 0;
 
-                    if (metaData instanceof HeaderBlockParser.StreamFailureMetaData)
+                    if (metaDataFailure != null)
                     {
                         PushPromiseFrame frame = new PushPromiseFrame(getStreamId(), streamId, (MetaData.Request)metaData);
                         if (!rateControlOnEvent(frame))
