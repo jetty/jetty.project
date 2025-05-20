@@ -34,28 +34,31 @@ public abstract class HpackException extends Exception
      */
     public static class StreamException extends HpackException
     {
-        private final Boolean type;
+        private final boolean request;
+        private final boolean response;
 
         public StreamException(boolean request, boolean response, String messageFormat, Object... args)
         {
             super(messageFormat, args);
-            this.type = request ? Boolean.TRUE : response ? Boolean.FALSE : null;
+            this.request = request;
+            this.response = response;
         }
 
         public StreamException(Throwable cause, boolean request, boolean response, String messageFormat, Object... args)
         {
             super(cause, messageFormat, args);
-            this.type = request ? Boolean.TRUE : response ? Boolean.FALSE : null;
+            this.request = request;
+            this.response = response;
         }
 
         public boolean isRequest()
         {
-            return type == Boolean.TRUE;
+            return request;
         }
 
         public boolean isResponse()
         {
-            return type == Boolean.FALSE;
+            return response;
         }
     }
 

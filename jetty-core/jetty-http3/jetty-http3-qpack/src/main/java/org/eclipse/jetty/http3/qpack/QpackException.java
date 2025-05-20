@@ -47,28 +47,31 @@ public abstract class QpackException extends Exception
      */
     public static class StreamException extends QpackException
     {
-        private final Boolean type;
+        private final boolean request;
+        private final boolean response;
 
         public StreamException(boolean request, boolean response, long errorCode, String message)
         {
             super(errorCode, message);
-            this.type = request ? Boolean.TRUE : response ? Boolean.FALSE : null;
+            this.request = request;
+            this.response = response;
         }
 
         public StreamException(boolean request, boolean response, long errorCode, String message, Throwable cause)
         {
             super(errorCode, message, cause);
-            this.type = request ? Boolean.TRUE : response ? Boolean.FALSE : null;
+            this.request = request;
+            this.response = response;
         }
 
         public boolean isRequest()
         {
-            return type == Boolean.TRUE;
+            return request;
         }
 
         public boolean isResponse()
         {
-            return type == Boolean.FALSE;
+            return response;
         }
     }
 
