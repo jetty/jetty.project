@@ -15,16 +15,8 @@
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <injection.bundle.version>1.2</injection.bundle.version>
-    <injection.bundle.version>1.2</injection.bundle.version>
-    <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
-    <maven.javadoc.skip>true</maven.javadoc.skip>
-    <pax.exam.version>4.13.5</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
-    <spifly.version>1.3.6</spifly.version>
-    <spifly.version>1.3.7</spifly.version>
-    <swissbox.version>1.8.3</swissbox.version>
   </properties>
   <dependencies>
     <dependency>
@@ -56,6 +48,10 @@
           <artifactId>jakarta.el-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-keystore</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
@@ -267,13 +263,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <!--
-    <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-simple</artifactId>
-       <scope>test</scope>
-     </dependency>
-     -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
@@ -431,6 +420,12 @@
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
@@ -520,7 +515,13 @@
       <artifactId>asm-util</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Jetty OSGi Deps -->
+    <dependency>
+      <!-- https://github.com/ops4j/org.ops4j.pax.url/issues/454 -->
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
