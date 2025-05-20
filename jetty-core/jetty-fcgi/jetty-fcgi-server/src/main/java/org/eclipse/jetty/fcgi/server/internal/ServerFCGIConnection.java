@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -236,12 +237,16 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (parse(inputBuffer.getByteBuffer()))
                 return;
 
-            // Check if the request was completed by the parsing.
-            if (stream == null || fillInputBuffer() <= 0)
+            // Check if the request was completed by the parsing; parse() sets
+            // stream to null when the end of the stream is reached.
+            int filled = 0;
+            if (stream == null || (filled = fillInputBuffer()) <= 0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("parseAndFill completed the request by parsing {}", this);
                 releaseInputBuffer();
+                if (filled < 0)
+                    stream.onContent(Content.Chunk.from(new EofException()));
                 return;
             }
         }
