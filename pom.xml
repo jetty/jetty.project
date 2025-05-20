@@ -1404,7 +1404,7 @@
       <dependency>
         <groupId>org.wildfly.common</groupId>
         <artifactId>wildfly-common</artifactId>
-        <version>1.7.0.Final</version>
+        <version>${wildfly.common.version}</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
