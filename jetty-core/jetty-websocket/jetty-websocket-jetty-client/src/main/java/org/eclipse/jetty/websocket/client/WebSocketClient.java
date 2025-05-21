@@ -60,7 +60,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private boolean stopAtShutdown = false;
-    private long _stopTimeout = 30;
+    private long _stopTimeout;
 
     /**
      * Instantiates a WebSocketClient with a default {@link HttpClient}.

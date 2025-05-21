@@ -64,7 +64,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
-    private long _stopTimeout = 30;
+    private long _stopTimeout;
 
     /**
      * Instantiate a WebSocketClient with defaults
