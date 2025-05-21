@@ -305,7 +305,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOnErrorThrows(Transport transport) throws Exception
+    public void testOnDataAvailableThrows(Transport transport) throws Exception
     {
         AtomicInteger errors = new AtomicInteger();
         start(transport, new HttpServlet()

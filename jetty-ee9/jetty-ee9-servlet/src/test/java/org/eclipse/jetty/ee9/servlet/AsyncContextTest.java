@@ -14,7 +14,9 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import jakarta.servlet.AsyncContext;
@@ -29,11 +31,9 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.nested.QuietServletException;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -43,11 +43,12 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
@@ -111,9 +112,19 @@ public class AsyncContextTest
     @Test
     public void testStartThrow() throws Exception
     {
+        AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    AsyncContext async = request.startAsync(request, response);
+                    asyncContextRef.set(async);
+                    response.getOutputStream().write("wrote text just fine".getBytes(StandardCharsets.UTF_8));
+                    throw new QuietServletException(new IOException("Test"));
+                }
+            }), "/startthrow/*");
             _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
             ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
             errorHandler.setUnwrapServletException(false);
@@ -121,22 +132,27 @@ public class AsyncContextTest
             errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
         });
 
-        String request = """
-            GET /ctx/startthrow?timeout=100 HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request, 10, TimeUnit.MINUTES));
+        String request =
+            """
+                GET /ctx/startthrow HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
 
-        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
+        {
+            localEndPoint.addInputAndExecute(request);
+            assertThat(localEndPoint.getResponse(false, 1, TimeUnit.SECONDS), nullValue());
 
-        String responseBody = response.getContent();
+            await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, not(nullValue())).complete();
 
-        assertThat(responseBody, containsString("HTTP ERROR 500 AsyncContext timeout"));
-        assertThat(responseBody, not(containsString("ERROR: /error")));
-        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
-        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee9.nested.QuietServletException: java.io.IOException: Test")));
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 10, TimeUnit.SECONDS));
+            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+
+            String responseBody = response.getContent();
+            assertThat(responseBody, is("wrote text just fine"));
+        }
     }
 
     @Test
@@ -144,7 +160,23 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException
+                {
+                    AsyncContext async = request.startAsync(request, response);
+                    async.dispatch("/dispatch-landing/");
+                    throw new QuietServletException(new IOException("Test"));
+                }
+            }), "/startthrow/*");
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+                {
+                    response.getOutputStream().write("Landed just fine".getBytes(StandardCharsets.UTF_8));
+                }
+            }), "/dispatch-landing/*");
+
             _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
             ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
             errorHandler.setUnwrapServletException(false);
@@ -152,12 +184,13 @@ public class AsyncContextTest
             errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
         });
 
-        String request = """
-            GET /ctx/startthrow?dispatch=true HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /ctx/startthrow HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
         // OK b/c exception was thrown after AsyncContext.dispatch() was called
@@ -165,10 +198,7 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat(responseBody, emptyString());
-        assertThat(responseBody, not(containsString("ERROR: /error")));
-        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
-        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee9.nested.QuietServletException: java.io.IOException: Test")));
+        assertThat(responseBody, is("Landed just fine"));
     }
 
     @Test
@@ -176,7 +206,16 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    AsyncContext async = request.startAsync(request, response);
+                    response.getOutputStream().write("completeBeforeThrow".getBytes(StandardCharsets.UTF_8));
+                    async.complete();
+                    throw new QuietServletException(new IOException("Test"));
+                }
+            }), "/startthrow/*");
             _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
             ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
             errorHandler.setUnwrapServletException(false);
@@ -185,7 +224,7 @@ public class AsyncContextTest
         });
 
         String request = """
-            GET /ctx/startthrow?complete=true HTTP/1.1\r
+            GET /ctx/startthrow HTTP/1.1\r
             Host: localhost\r
             Content-Type: application/x-www-form-urlencoded\r
             Connection: close\r
@@ -198,9 +237,6 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("completeBeforeThrow"));
-        assertThat(responseBody, not(containsString("ERROR: /error")));
-        assertThat(responseBody, not(containsString("PathInfo= /IOE")));
-        assertThat(responseBody, not(containsString("EXCEPTION: org.eclipse.jetty.ee9.nested.QuietServletException: java.io.IOException: Test")));
     }
 
     @Test
@@ -208,7 +244,17 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    AsyncContext async = request.startAsync(request, response);
+                    response.getOutputStream().write("completeBeforeThrow".getBytes());
+                    response.flushBuffer();
+                    async.complete();
+                    throw new QuietServletException(new IOException("Test"));
+                }
+            }), "/startthrow/*");
             _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
             ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
             errorHandler.setUnwrapServletException(false);
@@ -216,22 +262,19 @@ public class AsyncContextTest
             errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
         });
 
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            String request = """
-                GET /ctx/startthrow?flush=true&complete=true HTTP/1.1\r
-                Host: localhost\r
-                Content-Type: application/x-www-form-urlencoded\r
-                Connection: close\r
-                \r
-                """;
-            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+        String request = """
+            GET /ctx/startthrow HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Connection: close\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
-            String responseBody = response.getContent();
+        String responseBody = response.getContent();
 
-            assertThat("error servlet", responseBody, containsString("completeBeforeThrow"));
-        }
+        assertThat("error servlet", responseBody, containsString("completeBeforeThrow"));
     }
 
     @Test
@@ -760,36 +803,6 @@ public class AsyncContextTest
             response.getOutputStream().print("doGet:async:getRequestURL:" + asyncRequest.getRequestURL() + "\n");
             response.getOutputStream().print("doGet:async:getPathInfo:" + asyncRequest.getPathInfo() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
-        }
-    }
-
-    private static class TestStartThrowServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            if (request.getDispatcherType() == DispatcherType.REQUEST)
-            {
-                AsyncContext async = request.startAsync(request, response);
-                String timeoutString = request.getParameter("timeout");
-                if (timeoutString != null)
-                    async.setTimeout(Long.parseLong(timeoutString));
-
-                if (Boolean.parseBoolean(request.getParameter("dispatch")))
-                {
-                    request.getAsyncContext().dispatch();
-                }
-
-                if (Boolean.parseBoolean(request.getParameter("complete")))
-                {
-                    response.getOutputStream().write("completeBeforeThrow".getBytes());
-                    if (Boolean.parseBoolean(request.getParameter("flush")))
-                        response.flushBuffer();
-                    request.getAsyncContext().complete();
-                }
-
-                throw new QuietServletException(new IOException("Test"));
-            }
         }
     }
 

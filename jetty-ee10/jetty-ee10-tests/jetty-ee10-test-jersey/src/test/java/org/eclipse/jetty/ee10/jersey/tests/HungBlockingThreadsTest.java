@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.ee10.jersey.tests;
 
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.time.Duration;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,8 +31,9 @@ import jakarta.ws.rs.core.FeatureContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.io.EofException;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HungBlockingThreadsTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(HungBlockingThreadsTest.class);
-    private static final int THREAD_COUNT = 128;
+    private static final int THREAD_COUNT = 512;
     private Server server;
     private ExecutorService executorService;
     private HttpClient httpClient;
@@ -128,60 +130,45 @@ public class HungBlockingThreadsTest
         LifeCycle.stop(httpClient);
     }
 
+    /**
+     * This test tries to reproduce issue #13066 by running THREAD_COUNT parallel requests
+     * in the hope of reproducing the issue statistically.
+     */
+    @Tag("stress")
     @Test
     public void test() throws Exception
     {
+        ByteBuffer data = ByteBuffer.wrap("A".repeat(1024).getBytes(StandardCharsets.UTF_8));
         CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
         for (int i = 0; i < THREAD_COUNT; i++)
         {
             executorService.submit(() ->
             {
-                httpClient.POST(server.getURI())
-                    .body(new InputStreamRequestContent("text/plain", new HangInputStream(latch)))
-                    .timeout(1, TimeUnit.DAYS)
+                AsyncRequestContent content = new AsyncRequestContent("text/plain", data.slice());
+                Request request = httpClient.POST(server.getURI());
+                request
+                    .onRequestListener(new Request.Listener() {
+                        @Override
+                        public void onCommit(Request request)
+                        {
+                            latch.countDown();
+                        }
+                    })
+                    .body(content)
+                    .timeout(60, TimeUnit.SECONDS)
                     .send(result -> {});
             });
         }
 
-        LOG.debug("awaiting for client to block on all threads");
+        LOG.debug("Awaiting for client to block on all threads");
         assertTrue(latch.await(15, TimeUnit.SECONDS));
 
         LOG.debug("Shutting down client");
-        // while hanging in inputstream read, close connections.
-        LifeCycle.stop(httpClient);
+        // While the server is hanging in InputStream read, close the client's connections.
+        httpClient.stop();
 
         LOG.debug("Waiting for hung threads");
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(Blocker.Shared.class.getName()))));
-    }
-
-    private static class HangInputStream extends InputStream
-    {
-        private final CountDownLatch latch;
-        private int count = 0;
-
-        public HangInputStream(CountDownLatch latch)
-        {
-            this.latch = latch;
-        }
-
-        @Override
-        public int read()
-        {
-            if (count == 1_000_000)
-            {
-                try
-                {
-                    latch.countDown();
-                    Thread.sleep(Duration.ofDays(1).toMillis());
-                }
-                catch (InterruptedException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-            count++;
-            return 'A';
-        }
     }
 
     private static String threadDump()
