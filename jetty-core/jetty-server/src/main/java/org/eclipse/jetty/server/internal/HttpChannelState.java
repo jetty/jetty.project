@@ -388,19 +388,20 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 return () ->
                 {
+                    boolean failure;
                     try
                     {
-                        if (onIdleTimeout.test(t))
-                        {
-                            // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
-                            Runnable task = onFailure(t);
-                            if (task != null)
-                                task.run();
-                        }
+                        failure = onIdleTimeout.test(t);
                     }
                     catch (Throwable x)
                     {
                         ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                        failure = true;
+                    }
+                    if (failure)
+                    {
+                        // If the idle timeout listener(s) returns true or throws,
+                        // then we call onFailure and run any task it returns.
                         Runnable task = onFailure(t);
                         if (task != null)
                             task.run();
