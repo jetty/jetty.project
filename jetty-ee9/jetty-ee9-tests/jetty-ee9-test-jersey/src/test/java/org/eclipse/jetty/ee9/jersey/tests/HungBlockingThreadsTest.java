@@ -147,7 +147,8 @@ public class HungBlockingThreadsTest
                 AsyncRequestContent content = new AsyncRequestContent("text/plain", data.slice());
                 Request request = httpClient.POST(server.getURI());
                 request
-                    .onRequestListener(new Request.Listener() {
+                    .onRequestListener(new Request.Listener()
+                    {
                         @Override
                         public void onCommit(Request request)
                         {
