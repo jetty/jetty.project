@@ -72,12 +72,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
         else
         {
             String path = relativize(request.getPath());
-            HttpURI uri = HttpURI.build()
-                .scheme(request.getScheme())
-                .host(request.getHost())
-                .port(request.getPort())
-                .path(path)
-                .query(request.getQuery());
+            // URI validations already performed by using the java.net.URI class.
+            HttpURI uri = new HttpURI.Unsafe(request.getScheme(), request.getHost(), request.getPort(), path, request.getQuery(), null);
             metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_3, request.getHeaders(), -1, request.getTrailersSupplier());
         }
 
