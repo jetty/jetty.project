@@ -1610,7 +1610,6 @@ public class ServletHandler extends ScopedHandler
 
     }
 
-    @SuppressWarnings("serial")
     public static class Default404Servlet extends HttpServlet
     {
         @Override

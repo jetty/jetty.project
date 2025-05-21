@@ -1564,7 +1564,6 @@ public class ServletHandler extends Handler.Wrapper
         }
     }
 
-    @SuppressWarnings("serial")
     public static class Default404Servlet extends HttpServlet
     {
         @Override
