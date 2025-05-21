@@ -131,7 +131,6 @@ public abstract class IteratingCallback implements Callback
 
     private final AutoLock _lock = new AutoLock();
     private final Runnable _onSuccess = this::onSuccess;
-    private final Runnable _processing = this::processing;
     private final Consumer<Throwable> _onCompleted = this::onCompleted;
     private State _state;
     private Throwable _failure;
@@ -270,7 +269,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doOnSuccessProcessing()
     {
-        ExceptionUtil.callAndThen(_onSuccess, _processing);
+        ExceptionUtil.callAndThen(_onSuccess, () -> processing(isProcessing()));
     }
 
     private void doCompleteSuccess()
@@ -353,10 +352,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
-            processing();
+            processing(true);
     }
 
-    private void processing()
+    private void processing(boolean processFirst)
     {
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
@@ -371,16 +370,18 @@ public abstract class IteratingCallback implements Callback
         while (true)
         {
             // Call process to get the action that we have to take.
-            Action action;
-            try
+            Action action = null;
+            if (processFirst)
             {
-                action = process();
-            }
-            catch (Throwable x)
-            {
-                action = null;
-                failed(x);
-                // Fall through to possibly invoke onCompleteFailure().
+                try
+                {
+                    action = process();
+                }
+                catch (Throwable x)
+                {
+                    failed(x);
+                    // Fall through to possibly invoke onCompleteFailure().
+                }
             }
 
             boolean callOnSuccess = false;
@@ -494,7 +495,10 @@ public abstract class IteratingCallback implements Callback
             finally
             {
                 if (callOnSuccess)
+                {
                     onSuccess();
+                    processFirst = isProcessing();
+                }
             }
         }
         if (onAbortedOnFailureOnCompleted != null)
@@ -870,7 +874,18 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.COMPLETE && _failure == null;
+            return _state == State.COMPLETE && _failure == null && !_aborted;
+        }
+    }
+
+    /**
+     * @return {@code true} if the iterating callback is processing
+     */
+    private boolean isProcessing()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PROCESSING  && _failure == null && !_aborted;
         }
     }
 
