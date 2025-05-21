@@ -1222,6 +1222,9 @@ public class HttpChannelTest
         // Demand callback was called.
         assertTrue(demand.await(5, TimeUnit.SECONDS));
 
+        // onFailure listeners were not called by the onFailure task.
+        assertThat(error.get(), nullValue());
+
         // Complete the request.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
@@ -1231,7 +1234,7 @@ public class HttpChannelTest
         // Request handling was completed.
         assertTrue(stream.isComplete());
 
-        // onFailure listeners were not called.
+        // onFailure listeners were not called by the callback's failed().
         assertThat(error.get(), nullValue());
     }
 
