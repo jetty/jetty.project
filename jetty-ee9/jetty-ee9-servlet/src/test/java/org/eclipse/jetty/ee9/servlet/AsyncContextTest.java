@@ -115,7 +115,8 @@ public class AsyncContextTest
         AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+            {
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
@@ -160,7 +161,8 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+            {
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException
                 {
@@ -169,7 +171,8 @@ public class AsyncContextTest
                     throw new QuietServletException(new IOException("Test"));
                 }
             }), "/startthrow/*");
-            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+            {
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
@@ -206,7 +209,8 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+            {
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
@@ -244,7 +248,8 @@ public class AsyncContextTest
     {
         startServer((config) ->
         {
-            _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+            _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+            {
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
