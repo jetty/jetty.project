@@ -16,7 +16,6 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -98,7 +96,8 @@ public class AsyncRequestContentTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CompletableFuture<Result> clientResponseFuture = new CompletableFuture<>();
-        client.POST(newURI(transport))
+        org.eclipse.jetty.client.Request request = client.POST(newURI(transport));
+        request
             .body(content)
             .send(result ->
             {
@@ -110,11 +109,9 @@ public class AsyncRequestContentTest extends AbstractTest
 
         assertTrue(serverHandleLatch.await(5, TimeUnit.SECONDS));
 
-        // Stop the client while an upload is in progress -> abruptly closes the connection so that provokes an early EOF on the server.
-        LifeCycle.stop(client);
-
-        ExecutionException ex = assertThrows(ExecutionException.class, () -> clientResponseFuture.get(5, TimeUnit.SECONDS));
-        assertInstanceOf(ClosedChannelException.class, ex.getCause());
+        // Abruptly abort the request while an upload is in progress to provoke an early EOF on the server.
+        assertThat(request.abort(new Throwable("test aborts the request")).get(5, TimeUnit.SECONDS), is(Boolean.TRUE));
+        assertThrows(ExecutionException.class, () -> clientResponseFuture.get(5, TimeUnit.SECONDS));
 
         await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
         {
