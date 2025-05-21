@@ -156,7 +156,7 @@ public class CrossContextDispatcherFilterTest
         assertThat(eventsInOrder, ordered(expectedEvents));
     }
 
-    @Test
+     @Test
     public void testFilterInitiatedWithAsync() throws Exception
     {
         final CountDownLatch filterCompleteLatch = new CountDownLatch(1);
@@ -184,14 +184,14 @@ public class CrossContextDispatcherFilterTest
             public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
             {
                 HttpServletRequest httpRequest = (HttpServletRequest)request;
-                events.add("Reached Filter (context=" + request.getServletContext().getContextPath() + ")");
+                events.add("Reached Filter (context=" + request.getServletContext().getContextPath() + ", Dispatchertype=" + request.getDispatcherType() + ")");
                 ServletContext otherContext = request.getServletContext().getContext("/service");
                 RequestDispatcher dispatcher = otherContext.getRequestDispatcher("/alt/foo.hello");
-                events.add("Filter Dispatcher Forward (context=" + request.getServletContext().getContextPath() + ")");
+                events.add("Filter Dispatcher Forward (context=" + request.getServletContext().getContextPath() + ", Dispatchertype=" + request.getDispatcherType() + ")");
                 events.add(" + http.requestURI=" + httpRequest.getRequestURI());
                 events.add(" + http.requestURL=" + httpRequest.getRequestURL());
                 dispatcher.forward(request, response);
-                events.add("Filter Returned from Forward Dispatch (context=" + request.getServletContext().getContextPath() + ")");
+                events.add("Filter Returned from Forward Dispatch (context=" + request.getServletContext().getContextPath() + ", Dispatchertype=" + request.getDispatcherType() + ")");
                 events.add(" - http.requestURI=" + httpRequest.getRequestURI());
                 events.add(" - http.requestURL=" + httpRequest.getRequestURL());
                 filterCompleteLatch.countDown();
@@ -205,18 +205,17 @@ public class CrossContextDispatcherFilterTest
         contextService.setContextPath("/service");
         ServletHolder serviceHolder = new ServletHolder("service-servlet", new HttpServlet()
         {
-            static final String ASYNC_CONTEXT = "async.context";
+            static final String ASYNC_FLAG_NAME = "async.flag";
 
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
-                events.add("Service Servlet GET (context=" + getServletContext().getContextPath() + ")");
-                AsyncContext asyncContext = (AsyncContext)req.getAttribute(ASYNC_CONTEXT);
-                if (asyncContext == null)
+                if (req.getAttribute(ASYNC_FLAG_NAME) == null)
                 {
-                    asyncContext = req.startAsync(req, resp);
-                    req.setAttribute(ASYNC_CONTEXT, asyncContext);
-                    asyncContext.setTimeout(100);
+                    events.add("Service Servlet GET (context=" + getServletContext().getContextPath() + ", Dispatchertype=" + req.getDispatcherType() + ") startAsync");
+                    AsyncContext asyncContext = req.startAsync(req, resp);
+                    req.setAttribute(ASYNC_FLAG_NAME, new Object());
+                    asyncContext.setTimeout(1000);
                     asyncContext.addListener(new AsyncListener()
                     {
                         @Override
@@ -228,7 +227,9 @@ public class CrossContextDispatcherFilterTest
                         public void onTimeout(AsyncEvent event)
                         {
                             // trigger redispatch back to this servlet
+                            events.add("Async onTimeout predispatch");
                             event.getAsyncContext().dispatch();
+                            events.add("Async onTimeout postdispatch");
                         }
 
                         @Override
@@ -244,10 +245,10 @@ public class CrossContextDispatcherFilterTest
                 }
                 else
                 {
+                    events.add("Service Servlet GET (context=" + getServletContext().getContextPath() + ", Dispatchertype=" + req.getDispatcherType() + ") afterDispatch");
                     resp.setCharacterEncoding("utf-8");
                     resp.setContentType("text/plain");
                     resp.getWriter().println("Reached Service context");
-                    asyncContext.complete();
                 }
             }
         });
@@ -272,14 +273,18 @@ public class CrossContextDispatcherFilterTest
 
         assertTrue(filterCompleteLatch.await(5, TimeUnit.SECONDS));
         List<String> expectedEvents = new ArrayList<>();
-        expectedEvents.add("Reached Filter (context=)");
-        expectedEvents.add("Filter Dispatcher Forward (context=)");
+        expectedEvents.add("Reached Filter (context=, Dispatchertype=REQUEST)");
+        expectedEvents.add("Filter Dispatcher Forward (context=, Dispatchertype=REQUEST)");
         expectedEvents.add(" + http.requestURI=/group/formal.hello");
         expectedEvents.add(" + http.requestURL=http://local/group/formal.hello");
-        expectedEvents.add("Service Servlet GET (context=/service)");
-        expectedEvents.add("Filter Returned from Forward Dispatch (context=)");
+        expectedEvents.add("Service Servlet GET (context=/service, Dispatchertype=FORWARD) startAsync");
+        expectedEvents.add("Filter Returned from Forward Dispatch (context=, Dispatchertype=REQUEST)");
         expectedEvents.add(" - http.requestURI=/group/formal.hello");
         expectedEvents.add(" - http.requestURL=http://local/group/formal.hello");
+        expectedEvents.add("Service Servlet GET (context=/service, DispatcherType=ASYNC) afterDispatch");
+        expectedEvents.add("Async onTimeout predispatch");
+        expectedEvents.add("Async onTimeout postdispatch");
+
         List<String> eventsInOrder = new ArrayList<>(events);
         assertThat(eventsInOrder, ordered(expectedEvents));
     }

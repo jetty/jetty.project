@@ -246,10 +246,10 @@ public class AsyncTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
-                AsyncContext asyncContext = (AsyncContext)req.getAttribute(ASYNC_FLAG_NAME);
                 resp.setCharacterEncoding("utf-8");
                 resp.setContentType("text/plain");
                 resp.getWriter().println("Dispatched to ctxB in test-servlet");
+                resp.getWriter().println(req.getQueryString());
             }
         });
 
@@ -267,7 +267,7 @@ public class AsyncTest
         {
 
             String rawRequest = """
-                GET /ctxA/dispatcher/x HTTP/1.1
+                GET /ctxA/dispatcher/x?foo=bar HTTP/1.1
                 Host: local
                 Connection: close
                             
@@ -277,6 +277,7 @@ public class AsyncTest
             assertThat(response.getStatus(), is(200));
             assertThat(events, Matchers.containsInRelativeOrder("Request Initialized: /ctxA", "Request Destroyed: /ctxA"));
             assertThat(response.getContent(), containsString("Dispatched to ctxB in test-servlet"));
+            assertThat(response.getContent(), containsString("foo=bar"));
         }
         finally
         {
@@ -415,7 +416,6 @@ public class AsyncTest
 
         try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
-
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 
