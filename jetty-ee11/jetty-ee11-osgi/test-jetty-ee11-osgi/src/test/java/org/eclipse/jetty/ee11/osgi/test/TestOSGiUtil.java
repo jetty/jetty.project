@@ -35,8 +35,9 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -46,6 +47,9 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  */
 public class TestOSGiUtil
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
+
     public static final String BUNDLE_DEBUG = "bundle.debug";
     
     /**
@@ -206,6 +210,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.position").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.tracker").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.xml").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.repository").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.equinox.http.service.api").versionAsInProject());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
@@ -286,7 +291,13 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-            assertNull(err, prevBundle);
+            if (prevBundle != null)
+            {
+                LOGGER.warn(err);
+            }
+            // we can't fail for this anymore as inject is adding automatically by pax exam framework
+            // but with lower version
+            //assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }

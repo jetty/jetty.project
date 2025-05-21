@@ -37,6 +37,8 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -50,7 +52,9 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
+
     /**
      * Null FragmentActivator for the fake bundle
      * that exposes src/test/resources/jetty-logging.properties in
@@ -328,7 +332,13 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-            assertNull(err, prevBundle);
+            if (prevBundle != null)
+            {
+                LOGGER.warn(err);
+            }
+            // we can't fail for this anymore as inject is adding automatically by pax exam framework
+            // but with lower version
+            //assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }
