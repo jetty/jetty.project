@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.osgi.BundleIndex;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.osgi.framework.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,9 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         if (r == null)
             return;
 
+        if (!Resources.exists(r))
+            return;
+
         if (FileID.isJavaArchive(r.getPath()))
         {
             parseJar(handlers, r);
@@ -80,11 +84,11 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
 
         if (FileID.isClassFile(r.getPath()))
         {
-            parseClass(handlers, null, r.getPath());
+            parseClass(handlers, null, r);
         }
         
-        //Not already parsed, it could be a file that actually is compressed but does not have
-        //.jar/.zip etc extension, such as equinox urls, so try to parse it
+        // Not already parsed, it could be a file that actually is compressed but does not have
+        // .jar/.zip etc extension, such as equinox urls, so try to parse it
         try
         {
             parseJar(handlers, r);
