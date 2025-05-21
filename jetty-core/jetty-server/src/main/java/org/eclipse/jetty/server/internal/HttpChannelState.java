@@ -476,10 +476,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Consumer<Throwable> onFailure = _onFailure;
                 _onFailure = null;
 
-                boolean hasFailureConsumer = onFailure == null;
+                boolean hasNoFailureConsumer = onFailure == null;
                 boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
                 boolean readerOrWriterWaiting = invokeOnContentAvailable != null || invokeWriteFailure != null;
-                Runnable invokeOnFailureListeners = hasFailureConsumer || readerOrWriterWaiting || skipListeners ? null : () ->
+                Runnable invokeOnFailureListeners = hasNoFailureConsumer || readerOrWriterWaiting || skipListeners ? null : () ->
                 {
                     try
                     {
