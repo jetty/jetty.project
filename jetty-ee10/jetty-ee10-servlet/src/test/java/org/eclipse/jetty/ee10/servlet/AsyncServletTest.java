@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletTest
 {
-    private final AsyncServlet _servlet = new AsyncServlet();
+    private final PathServlet _servlet = new PathServlet();
     private int _port;
     private final Server _server = new Server();
     private ServletHandler _servletHandler;
@@ -145,8 +145,9 @@ public class AsyncServletTest
         String response = process(null, null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info",
-            "initial"));
+            "REQUEST >>> PathServlet /ctx/path/info",
+            "initial",
+            "REQUEST <<< PathServlet /ctx/path/info"));
         assertContains("NORMAL", response);
         assertFalse(_history.contains("onTimeout"));
         assertFalse(_history.contains("onComplete"));
@@ -158,23 +159,12 @@ public class AsyncServletTest
         String response = process("sleep=200", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?sleep=200",
-            "initial"));
+            "REQUEST >>> PathServlet /ctx/path/info?sleep=200",
+            "initial",
+            "REQUEST <<< PathServlet /ctx/path/info?sleep=200"));
         assertContains("SLEPT", response);
         assertFalse(_history.contains("onTimeout"));
         assertFalse(_history.contains("onComplete"));
-    }
-
-    @Test
-    public void testNonAsync() throws Exception
-    {
-        String response = process(null, null);
-        assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
-        assertThat(_history, contains(
-            "REQUEST /ctx/path/info",
-            "initial"));
-
-        assertContains("NORMAL", response);
     }
 
     @Test
@@ -184,8 +174,9 @@ public class AsyncServletTest
         String response = process("noasync", null, null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/noasync/info",
-            "initial"
+            "REQUEST >>> PathServlet /ctx/noasync/info",
+            "initial",
+            "REQUEST <<< PathServlet /ctx/noasync/info"
         ));
 
         assertContains("NORMAL", response);
@@ -200,11 +191,14 @@ public class AsyncServletTest
             String response = process("noasync", "start=1000", null);
             assertThat(response, Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(_history, contains(
-                "REQUEST /ctx/noasync/info?start=1000",
+                "REQUEST >>> PathServlet /ctx/noasync/info?start=1000",
                 "initial",
-                "ERROR /ctx/error/custom?start=1000",
+                "PathServlet!!! java.lang.IllegalStateException: Async Not Supported",
+                "REQUEST <<< PathServlet /ctx/noasync/info?start=1000",
+                "ERROR >>> PathServlet /ctx/error/custom?start=1000",
                 "wrapped REQ",
-                "!initial"
+                "!initial",
+                "ERROR <<< PathServlet /ctx/error/custom?start=1000"
             ));
 
             assertContains("500", response);
@@ -219,13 +213,15 @@ public class AsyncServletTest
         String response = process("start=1000", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 500 Server Error"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000",
             "onTimeout",
-            "ERROR /ctx/error/custom?start=1000",
+            "ERROR >>> PathServlet /ctx/error/custom?start=1000",
             "wrapped REQ",
             "!initial",
+            "ERROR <<< PathServlet /ctx/error/custom?start=1000",
             "onComplete"));
 
         assertContains("ERROR DISPATCH: /ctx/error/custom", response);
@@ -237,14 +233,16 @@ public class AsyncServletTest
         String response = process("start=200&timeout=dispatch", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=200&timeout=dispatch",
+            "REQUEST >>> PathServlet /ctx/path/info?start=200&timeout=dispatch",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=200&timeout=dispatch",
             "onTimeout",
             "dispatch",
-            "ASYNC /ctx/path/info?start=200&timeout=dispatch",
+            "ASYNC >>> PathServlet /ctx/path/info?start=200&timeout=dispatch",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?start=200&timeout=dispatch",
             "onComplete"));
 
         assertContains("DISPATCHED", response);
@@ -257,14 +255,16 @@ public class AsyncServletTest
         String response = process("start=200&timeout=error", null);
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=200&timeout=error",
+            "REQUEST >>> PathServlet /ctx/path/info?start=200&timeout=error",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=200&timeout=error",
             "onTimeout",
             "error",
-            "ERROR /ctx/error/custom?start=200&timeout=error",
+            "ERROR >>> PathServlet /ctx/error/custom?start=200&timeout=error",
             "wrapped REQ",
             "!initial",
+            "ERROR <<< PathServlet /ctx/error/custom?start=200&timeout=error",
             "onComplete"));
 
         assertContains("ERROR DISPATCH", response);
@@ -276,9 +276,10 @@ public class AsyncServletTest
         String response = process("start=200&timeout=complete", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=200&timeout=complete",
+            "REQUEST >>> PathServlet /ctx/path/info?start=200&timeout=complete",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=200&timeout=complete",
             "onTimeout",
             "complete",
             "onComplete"));
@@ -289,16 +290,18 @@ public class AsyncServletTest
     @Test
     public void testStartWaitDispatch() throws Exception
     {
-        String response = process("start=1000&dispatch=10", null);
+        String response = process("start=1000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=100",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=100",
             "onComplete"));
         assertFalse(_history.contains("onTimeout"));
     }
@@ -309,13 +312,15 @@ public class AsyncServletTest
         String response = process("start=1000&dispatch=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=0",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=0",
             "initial",
-            "start",
+            "startAsync",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=0",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=0",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=0",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=0",
             "onComplete"));
     }
 
@@ -323,16 +328,19 @@ public class AsyncServletTest
     public void testStartError() throws Exception
     {
         _expectedCode = "500 ";
-        String response = process("start=1000&throw=1", null);
+        String response = process("start=1000&throw=true", null);
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&throw=1",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&throw=true",
             "initial",
-            "start",
+            "startAsync",
+            "PathServlet!!! org.eclipse.jetty.ee10.servlet.QuietServletException: java.lang.Exception: test throw in async",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&throw=true",
             "onError",
-            "ERROR /ctx/error/custom?start=1000&throw=1",
+            "ERROR >>> PathServlet /ctx/error/custom?start=1000&throw=true",
             "wrapped REQ",
             "!initial",
+            "ERROR <<< PathServlet /ctx/error/custom?start=1000&throw=true",
             "onComplete"));
         assertContains("ERROR DISPATCH: /ctx/error/custom", response);
     }
@@ -340,12 +348,13 @@ public class AsyncServletTest
     @Test
     public void testStartWaitComplete() throws Exception
     {
-        String response = process("start=1000&complete=50", null);
+        String response = process("start=1000&complete=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&complete=50",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&complete=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&complete=100",
             "complete",
             "onComplete"));
         assertContains("COMPLETED", response);
@@ -359,10 +368,11 @@ public class AsyncServletTest
         String response = process("start=1000&complete=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&complete=0",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&complete=0",
             "initial",
-            "start",
+            "startAsync",
             "complete",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&complete=0",
             "onComplete"));
         assertContains("COMPLETED", response);
         assertFalse(_history.contains("onTimeout"));
@@ -372,22 +382,25 @@ public class AsyncServletTest
     @Test
     public void testStartWaitDispatchStartWaitDispatch() throws Exception
     {
-        String response = process("start=1000&dispatch=10&start2=1000&dispatch2=10", null);
+        String response = process("start=1000&dispatch=100&start2=1000&dispatch2=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=10&start2=1000&dispatch2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&dispatch2=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&dispatch2=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&dispatch2=100",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -395,18 +408,20 @@ public class AsyncServletTest
     @Test
     public void testStartWaitDispatchStartComplete() throws Exception
     {
-        String response = process("start=1000&dispatch=10&start2=1000&complete2=10", null);
+        String response = process("start=1000&dispatch=100&start2=1000&complete2=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=10&start2=1000&complete2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&complete2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&complete2=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=1000&complete2=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&complete2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=1000&complete2=100",
             "complete",
             "onComplete"));
         assertContains("COMPLETED", response);
@@ -416,22 +431,25 @@ public class AsyncServletTest
     public void testStartWaitDispatchStart() throws Exception
     {
         _expectedCode = "500 ";
-        String response = process("start=1000&dispatch=10&start2=10", null);
+        String response = process("start=1000&dispatch=100&start2=100", null);
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=10&start2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=1000&dispatch=10&start2=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=1000&dispatch=100&start2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ASYNC <<< PathServlet /ctx/path/info?start=1000&dispatch=100&start2=100",
             "onTimeout",
-            "ERROR /ctx/error/custom?start=1000&dispatch=10&start2=10",
+            "ERROR >>> PathServlet /ctx/error/custom?start=1000&dispatch=100&start2=100",
             "wrapped REQ",
             "!initial",
+            "ERROR <<< PathServlet /ctx/error/custom?start=1000&dispatch=100&start2=100",
             "onComplete"));
         assertContains("ERROR DISPATCH: /ctx/error/custom", response);
     }
@@ -439,22 +457,25 @@ public class AsyncServletTest
     @Test
     public void testStartTimeoutStartDispatch() throws Exception
     {
-        String response = process("start=10&start2=1000&dispatch2=10", null);
+        String response = process("start=100&start2=1000&dispatch2=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=10&start2=1000&dispatch2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=100&start2=1000&dispatch2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=100&start2=1000&dispatch2=100",
             "onTimeout",
-            "ERROR /ctx/error/custom?start=10&start2=1000&dispatch2=10",
+            "ERROR >>> PathServlet /ctx/error/custom?start=100&start2=1000&dispatch2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ERROR <<< PathServlet /ctx/error/custom?start=100&start2=1000&dispatch2=100",
             "dispatch",
-            "ASYNC /ctx/path/info?start=10&start2=1000&dispatch2=10",
+            "ASYNC >>> PathServlet /ctx/path/info?start=100&start2=1000&dispatch2=100",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?start=100&start2=1000&dispatch2=100",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -462,18 +483,20 @@ public class AsyncServletTest
     @Test
     public void testStartTimeoutStartComplete() throws Exception
     {
-        String response = process("start=10&start2=1000&complete2=10", null);
+        String response = process("start=100&start2=1000&complete2=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=10&start2=1000&complete2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=100&start2=1000&complete2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=100&start2=1000&complete2=100",
             "onTimeout",
-            "ERROR /ctx/error/custom?start=10&start2=1000&complete2=10",
+            "ERROR >>> PathServlet /ctx/error/custom?start=100&start2=1000&complete2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ERROR <<< PathServlet /ctx/error/custom?start=100&start2=1000&complete2=100",
             "complete",
             "onComplete"));
         assertContains("COMPLETED", response);
@@ -485,21 +508,24 @@ public class AsyncServletTest
         _expectedCode = "500 ";
         _errorHandler.addErrorPage(500, "/path/error");
 
-        String response = process("start=10&start2=10", null);
+        String response = process("start=100&start2=100", null);
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=10&start2=10",
+            "REQUEST >>> PathServlet /ctx/path/info?start=100&start2=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=100&start2=100",
             "onTimeout",
-            "ERROR /ctx/path/error?start=10&start2=10",
+            "ERROR >>> PathServlet /ctx/path/error?start=100&start2=100",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
-            "start",
+            "startAsync",
+            "ERROR <<< PathServlet /ctx/path/error?start=100&start2=100",
             "onTimeout",
-            "ERROR /ctx/path/error?start=10&start2=10",
+            "ERROR >>> PathServlet /ctx/path/error?start=100&start2=100",
             "wrapped REQ",
             "!initial",
+            "ERROR <<< PathServlet /ctx/path/error?start=100&start2=100",
             "onComplete")); // Error Page Loop!
         assertContains("AsyncContext timeout", response);
     }
@@ -507,16 +533,18 @@ public class AsyncServletTest
     @Test
     public void testWrapStartDispatch() throws Exception
     {
-        String response = process("wrap=true&start=1000&dispatch=20", null);
+        String response = process("wrap=true&start=1000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?wrap=true&start=1000&dispatch=20",
+            "REQUEST >>> PathServlet /ctx/path/info?wrap=true&start=1000&dispatch=100",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?wrap=true&start=1000&dispatch=100",
             "dispatch",
-            "ASYNC /ctx/path/info?wrap=true&start=1000&dispatch=20",
+            "ASYNC >>> PathServlet /ctx/path/info?wrap=true&start=1000&dispatch=100",
             "wrapped REQ RSP",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path/info?wrap=true&start=1000&dispatch=100",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -524,16 +552,18 @@ public class AsyncServletTest
     @Test
     public void testStartDispatchEncodedPath() throws Exception
     {
-        String response = process("start=1000&dispatch=20&path=/p%20th3", null);
+        String response = process("start=1000&dispatch=100&path=/p%20th3", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "REQUEST /ctx/path/info?start=1000&dispatch=20&path=/p%20th3",
+            "REQUEST >>> PathServlet /ctx/path/info?start=1000&dispatch=100&path=/p%20th3",
             "initial",
-            "start",
+            "startAsync",
+            "REQUEST <<< PathServlet /ctx/path/info?start=1000&dispatch=100&path=/p%20th3",
             "dispatch",
-            "ASYNC /ctx/p%20th3?start=1000&dispatch=20&path=/p%20th3",
+            "ASYNC >>> PathServlet /ctx/p%20th3?start=1000&dispatch=100&path=/p%20th3",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/p%20th3?start=1000&dispatch=100&path=/p%20th3",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -543,18 +573,23 @@ public class AsyncServletTest
     {
         String response = process("fwd", "start=10000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        _history.forEach(System.out::println);
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?start=10000&dispatch=100",
-            "FORWARD /ctx/path1?forward=true",
+            "REQUEST >>> FwdServlet /ctx/fwd/info?start=10000&dispatch=100",
+            "FORWARD >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
-            "start",
+            "startAsync",
+            "FORWARD <<< PathServlet /ctx/path1?forward=true",
+            "REQUEST <<< FwdServlet /ctx/fwd/info?start=10000&dispatch=100",
             "dispatch",
-            "FWD ASYNC /ctx/fwd/info?start=10000&dispatch=100",
+            "ASYNC >>> FwdServlet /ctx/fwd/info?start=10000&dispatch=100",
             "wrapped REQ",
-            "FORWARD /ctx/path1?forward=true",
+            "FORWARD >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ",
             "!initial",
+            "FORWARD <<< PathServlet /ctx/path1?forward=true",
+            "ASYNC <<< FwdServlet /ctx/fwd/info?start=10000&dispatch=100",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -562,18 +597,21 @@ public class AsyncServletTest
     @Test
     public void testFwdStartDispatchPath() throws Exception
     {
-        String response = process("fwd", "start=10000&dispatch=20&path=/path2", null);
+        String response = process("fwd", "start=10000&dispatch=100&path=/path2", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?start=10000&dispatch=20&path=/path2",
-            "FORWARD /ctx/path1?forward=true",
+            "REQUEST >>> FwdServlet /ctx/fwd/info?start=10000&dispatch=100&path=/path2",
+            "FORWARD >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
-            "start",
+            "startAsync",
+            "FORWARD <<< PathServlet /ctx/path1?forward=true",
+            "REQUEST <<< FwdServlet /ctx/fwd/info?start=10000&dispatch=100&path=/path2",
             "dispatch",
-            "ASYNC /ctx/path2?start=10000&dispatch=20&path=/path2",
+            "ASYNC >>> PathServlet /ctx/path2?start=10000&dispatch=100&path=/path2",
             "wrapped REQ",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path2?start=10000&dispatch=100&path=/path2",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -581,18 +619,22 @@ public class AsyncServletTest
     @Test
     public void testFwdWrapStartDispatch() throws Exception
     {
-        String response = process("fwd", "wrap=true&start=1000&dispatch=20", null);
+        String response = process("fwd", "wrap=true&start=1000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        _history.forEach(System.out::println);
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?wrap=true&start=1000&dispatch=20",
-            "FORWARD /ctx/path1?forward=true",
+            "REQUEST >>> FwdServlet /ctx/fwd/info?wrap=true&start=1000&dispatch=100",
+            "FORWARD >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
-            "start",
+            "startAsync",
+            "FORWARD <<< PathServlet /ctx/path1?forward=true",
+            "REQUEST <<< FwdServlet /ctx/fwd/info?wrap=true&start=1000&dispatch=100",
             "dispatch",
-            "ASYNC /ctx/path1?forward=true",
+            "ASYNC >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ RSP",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path1?forward=true",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -600,18 +642,21 @@ public class AsyncServletTest
     @Test
     public void testFwdWrapStartDispatchPath() throws Exception
     {
-        String response = process("fwd", "wrap=true&start=1000&dispatch=20&path=/path2", null);
+        String response = process("fwd", "wrap=true&start=1000&dispatch=100&path=/path2", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?wrap=true&start=1000&dispatch=20&path=/path2",
-            "FORWARD /ctx/path1?forward=true",
+            "REQUEST >>> FwdServlet /ctx/fwd/info?wrap=true&start=1000&dispatch=100&path=/path2",
+            "FORWARD >>> PathServlet /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
-            "start",
+            "startAsync",
+            "FORWARD <<< PathServlet /ctx/path1?forward=true",
+            "REQUEST <<< FwdServlet /ctx/fwd/info?wrap=true&start=1000&dispatch=100&path=/path2",
             "dispatch",
-            "ASYNC /ctx/path2?forward=true",
+            "ASYNC >>> PathServlet /ctx/path2?forward=true",
             "wrapped REQ RSP",
             "!initial",
+            "ASYNC <<< PathServlet /ctx/path2?forward=true",
             "onComplete"));
         assertContains("DISPATCHED", response);
     }
@@ -640,14 +685,16 @@ public class AsyncServletTest
             assertTrue(_latch.await(1, TimeUnit.SECONDS));
             assertThat(response, startsWith("HTTP/1.1 200 OK"));
             assertThat(_history, contains(
-                "REQUEST /ctx/path/info?start=10000&dispatch=1500",
+                "REQUEST >>> PathServlet /ctx/path/info?start=10000&dispatch=1500",
                 "initial",
-                "start",
+                "startAsync",
+                "REQUEST <<< PathServlet /ctx/path/info?start=10000&dispatch=1500",
                 "async-read=10",
                 "dispatch",
-                "ASYNC /ctx/path/info?start=10000&dispatch=1500",
+                "ASYNC >>> PathServlet /ctx/path/info?start=10000&dispatch=1500",
                 "wrapped REQ",
                 "!initial",
+                "ASYNC <<< PathServlet /ctx/path/info?start=10000&dispatch=1500",
                 "onComplete"));
         }
     }
@@ -672,7 +719,7 @@ public class AsyncServletTest
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
-                    historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    historyAdd(request.getDispatcherType() + " >>> TestServletA " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
                     historyAdd("name=" + Arrays.asList(request.getParameterValues("name")));
 
                     if (request.getAttribute("FWD") == null)
@@ -680,6 +727,7 @@ public class AsyncServletTest
                         request.setAttribute("FWD", "OK");
                         request.getServletContext().getRequestDispatcher("/target?name=forward&two=2").forward(request, response);
                     }
+                    historyAdd(request.getDispatcherType() + " <<< TestServletA " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
                 }
             }),
             "/forwarder/*"
@@ -691,7 +739,7 @@ public class AsyncServletTest
                 @Override
                 protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 {
-                    historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
+                    historyAdd(request.getDispatcherType() + " >>> TestServletB " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
                     historyAdd("name=" + Arrays.asList(request.getParameterValues("name")));
 
                     if (request.getAttribute("TEST") == null)
@@ -705,6 +753,7 @@ public class AsyncServletTest
                         else
                             asyncContext.dispatch();
                     }
+                    historyAdd(request.getDispatcherType() + " <<< TestServletB " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
                 }
             }),
             "/target/*"
@@ -713,15 +762,19 @@ public class AsyncServletTest
         String response = process("forwarder", "name=orig&one=1", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
-        // _history.forEach(System.err::println);
+        _history.forEach(System.err::println);
 
         assertThat(_history, contains(
-            "REQUEST /ctx/forwarder/info?name=orig&one=1",
+            "REQUEST >>> TestServletA /ctx/forwarder/info?name=orig&one=1",
             "name=[orig]",
-            "FORWARD /ctx/target?name=forward&two=2",
+            "FORWARD >>> TestServletB /ctx/target?name=forward&two=2",
             "name=[forward, orig]",
-            (!startWithRequest && !dispatchTarget ? "ASYNC /ctx/forwarder/info?" : "ASYNC /ctx/target?") + expectedQuery,
-            "name=[" + expectedName + "]"));
+            "FORWARD <<< TestServletB /ctx/target?name=forward&two=2",
+            "REQUEST <<< TestServletA /ctx/forwarder/info?name=orig&one=1",
+            (!startWithRequest && !dispatchTarget ? "ASYNC >>> TestServletA /ctx/forwarder/info?" : "ASYNC >>> TestServletB /ctx/target?") + expectedQuery,
+            "name=[" + expectedName + "]",
+            (!startWithRequest && !dispatchTarget ? "ASYNC <<< TestServletA /ctx/forwarder/info?" : "ASYNC <<< TestServletB /ctx/target?") + expectedQuery
+            ));
     }
 
     public synchronized String process(String query, String content) throws Exception
@@ -776,252 +829,277 @@ public class AsyncServletTest
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
-            historyAdd("FWD " + request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
-            if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
-                historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
-            request.getServletContext().getRequestDispatcher("/path1?forward=true").forward(request, response);
+            String action = request.getDispatcherType() + " >>> FwdServlet " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString());
+            try
+            {
+                historyAdd(action);
+
+                if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
+                    historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
+                request.getServletContext().getRequestDispatcher("/path1?forward=true").forward(request, response);
+            }
+            catch (Throwable t)
+            {
+                historyAdd("FwdServlet!!! " + t);
+                throw t;
+            }
+            finally
+            {
+                historyAdd(action.replace(" >>> ", " <<< "));
+            }
         }
     }
 
-    private class AsyncServlet extends HttpServlet
+    private class PathServlet extends HttpServlet
     {
         private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
 
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
-            // this should always fail at this point
+            String action = request.getDispatcherType() + " >>> PathServlet " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString());
             try
             {
-                request.getAsyncContext();
-                throw new IllegalStateException();
-            }
-            catch (IllegalStateException e)
-            {
-                // ignored
-            }
+                historyAdd(action);
 
-            historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
-            if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
-                historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
-
-            boolean wrap = "true".equals(request.getParameter("wrap"));
-            int readBefore = 0;
-            long sleepFor = -1;
-            long startFor = -1;
-            long start2For = -1;
-            long dispatchAfter = -1;
-            long dispatch2After = -1;
-            long completeAfter = -1;
-            long complete2After = -1;
-
-            if (request.getParameter("read") != null)
-                readBefore = Integer.parseInt(request.getParameter("read"));
-            if (request.getParameter("sleep") != null)
-                sleepFor = Integer.parseInt(request.getParameter("sleep"));
-            if (request.getParameter("start") != null)
-                startFor = Integer.parseInt(request.getParameter("start"));
-            if (request.getParameter("start2") != null)
-                start2For = Integer.parseInt(request.getParameter("start2"));
-            if (request.getParameter("dispatch") != null)
-                dispatchAfter = Integer.parseInt(request.getParameter("dispatch"));
-            final String path = request.getParameter("path");
-            if (request.getParameter("dispatch2") != null)
-                dispatch2After = Integer.parseInt(request.getParameter("dispatch2"));
-            if (request.getParameter("complete") != null)
-                completeAfter = Integer.parseInt(request.getParameter("complete"));
-            if (request.getParameter("complete2") != null)
-                complete2After = Integer.parseInt(request.getParameter("complete2"));
-
-            if (request.getAttribute("State") == null)
-            {
-                request.setAttribute("State", 1);
-                historyAdd("initial");
-                if (readBefore > 0)
+                // this should always fail at this point
+                try
                 {
-                    byte[] buf = new byte[readBefore];
-                    request.getInputStream().read(buf);
+                    request.getAsyncContext();
+                    throw new IllegalStateException();
                 }
-                else if (readBefore < 0)
+                catch (IllegalStateException e)
                 {
-                    InputStream in = request.getInputStream();
-                    int b = in.read();
-                    while (b != -1)
+                    // ignored
+                }
+
+                if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
+                    historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
+
+                boolean wrap = "true".equals(request.getParameter("wrap"));
+                int readBefore = 0;
+                long sleepFor = -1;
+                long startFor = -1;
+                long start2For = -1;
+                long dispatchAfter = -1;
+                long dispatch2After = -1;
+                long completeAfter = -1;
+                long complete2After = -1;
+
+                if (request.getParameter("read") != null)
+                    readBefore = Integer.parseInt(request.getParameter("read"));
+                if (request.getParameter("sleep") != null)
+                    sleepFor = Integer.parseInt(request.getParameter("sleep"));
+                if (request.getParameter("start") != null)
+                    startFor = Integer.parseInt(request.getParameter("start"));
+                if (request.getParameter("start2") != null)
+                    start2For = Integer.parseInt(request.getParameter("start2"));
+                if (request.getParameter("dispatch") != null)
+                    dispatchAfter = Integer.parseInt(request.getParameter("dispatch"));
+                final String path = request.getParameter("path");
+                if (request.getParameter("dispatch2") != null)
+                    dispatch2After = Integer.parseInt(request.getParameter("dispatch2"));
+                if (request.getParameter("complete") != null)
+                    completeAfter = Integer.parseInt(request.getParameter("complete"));
+                if (request.getParameter("complete2") != null)
+                    complete2After = Integer.parseInt(request.getParameter("complete2"));
+
+                if (request.getAttribute("State") == null)
+                {
+                    request.setAttribute("State", 1);
+                    historyAdd("initial");
+                    if (readBefore > 0)
                     {
-                        b = in.read();
+                        byte[] buf = new byte[readBefore];
+                        request.getInputStream().read(buf);
                     }
-                }
-                else if (request.getContentLength() > 0)
-                {
-                    new Thread(() ->
+                    else if (readBefore < 0)
                     {
-                        int c = 0;
-                        try
+                        InputStream in = request.getInputStream();
+                        int b = in.read();
+                        while (b != -1)
                         {
-                            InputStream in = request.getInputStream();
-                            int b = 0;
-                            while (b != -1)
-                            {
-                                if ((b = in.read()) >= 0)
-                                    c++;
-                            }
-                            historyAdd("async-read=" + c);
+                            b = in.read();
                         }
-                        catch (Exception e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }).start();
-                }
-
-                if (startFor >= 0)
-                {
-                    final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
-                    if (startFor > 0)
-                        async.setTimeout(startFor);
-                    async.addListener(_listener);
-                    historyAdd("start");
-
-                    if ("1".equals(request.getParameter("throw")))
-                        throw new QuietServletException(new Exception("test throw in async 1"));
-
-                    if (completeAfter > 0)
+                    }
+                    else if (request.getContentLength() > 0)
                     {
-                        _scheduler.schedule(() ->
+                        new Thread(() ->
                         {
+                            int c = 0;
                             try
                             {
-                                response.setStatus(200);
-                                response.getOutputStream().println("COMPLETED\n");
-                                historyAdd("complete");
-                                async.complete();
+                                InputStream in = request.getInputStream();
+                                int b = 0;
+                                while (b != -1)
+                                {
+                                    if ((b = in.read()) >= 0)
+                                        c++;
+                                }
+                                historyAdd("async-read=" + c);
                             }
                             catch (Exception e)
                             {
                                 e.printStackTrace();
                             }
-                        }, completeAfter, TimeUnit.MILLISECONDS);
+                        }).start();
                     }
-                    else if (completeAfter == 0)
+
+                    if (startFor >= 0)
                     {
-                        response.setStatus(200);
-                        response.getOutputStream().println("COMPLETED\n");
-                        historyAdd("complete");
-                        async.complete();
-                    }
-                    else if (dispatchAfter > 0)
-                    {
-                        _scheduler.schedule(() ->
+                        final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
+                        historyAdd("startAsync");
+                        if (startFor > 0)
+                            async.setTimeout(startFor);
+                        async.addListener(_listener);
+
+                        if ("true".equals(request.getParameter("throw")))
+                            throw new QuietServletException(new Exception("test throw in async"));
+
+                        if (completeAfter > 0)
+                        {
+                            _scheduler.schedule(() ->
+                            {
+                                try
+                                {
+                                    response.setStatus(200);
+                                    response.getOutputStream().println("COMPLETED\n");
+                                    historyAdd("complete");
+                                    async.complete();
+                                }
+                                catch (Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }, completeAfter, TimeUnit.MILLISECONDS);
+                        }
+                        else if (completeAfter == 0)
+                        {
+                            response.setStatus(200);
+                            response.getOutputStream().println("COMPLETED\n");
+                            historyAdd("complete");
+                            async.complete();
+                        }
+                        else if (dispatchAfter > 0)
+                        {
+                            _scheduler.schedule(() ->
+                            {
+                                historyAdd("dispatch");
+                                if (path != null)
+                                {
+                                    int q = path.indexOf('?');
+                                    String uriInContext = (q >= 0)
+                                        ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
+                                        : URIUtil.encodePath(path);
+                                    async.dispatch(uriInContext);
+                                }
+                                else
+                                    async.dispatch();
+                            }, dispatchAfter, TimeUnit.MILLISECONDS);
+                        }
+                        else if (dispatchAfter == 0)
                         {
                             historyAdd("dispatch");
                             if (path != null)
-                            {
-                                int q = path.indexOf('?');
-                                String uriInContext = (q >= 0)
-                                    ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
-                                    : URIUtil.encodePath(path);
-                                async.dispatch(uriInContext);
-                            }
+                                async.dispatch(path);
                             else
                                 async.dispatch();
-                        }, dispatchAfter, TimeUnit.MILLISECONDS);
+                        }
                     }
-                    else if (dispatchAfter == 0)
+                    else if (sleepFor >= 0)
                     {
-                        historyAdd("dispatch");
-                        if (path != null)
-                            async.dispatch(path);
-                        else
-                            async.dispatch();
+                        try
+                        {
+                            Thread.sleep(sleepFor);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        response.setStatus(200);
+                        response.getOutputStream().println("SLEPT\n");
                     }
-                }
-                else if (sleepFor >= 0)
-                {
-                    try
+                    else
                     {
-                        Thread.sleep(sleepFor);
+                        response.setStatus(200);
+                        response.getOutputStream().println("NORMAL\n");
                     }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    response.setStatus(200);
-                    response.getOutputStream().println("SLEPT\n");
                 }
                 else
                 {
-                    response.setStatus(200);
-                    response.getOutputStream().println("NORMAL\n");
-                }
-            }
-            else
-            {
-                historyAdd("!initial");
+                    historyAdd("!initial");
 
-                if (start2For >= 0 && request.getAttribute("2nd") == null)
-                {
-                    final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
-                    async.addListener(_listener);
-                    request.setAttribute("2nd", "cycle");
-
-                    if (start2For > 0)
+                    if (start2For >= 0 && request.getAttribute("2nd") == null)
                     {
-                        async.setTimeout(start2For);
-                    }
-                    historyAdd("start");
+                        final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
+                        historyAdd("startAsync");
+                        async.addListener(_listener);
+                        request.setAttribute("2nd", "cycle");
 
-                    if ("2".equals(request.getParameter("throw")))
-                        throw new QuietServletException(new Exception("test throw in async 2"));
-
-                    if (complete2After > 0)
-                    {
-                        _scheduler.schedule(() ->
+                        if (start2For > 0)
                         {
-                            try
+                            async.setTimeout(start2For);
+                        }
+
+                        if (complete2After > 0)
+                        {
+                            _scheduler.schedule(() ->
                             {
-                                response.setStatus(200);
-                                response.getOutputStream().println("COMPLETED\n");
-                                historyAdd("complete");
-                                async.complete();
-                            }
-                            catch (Exception e)
+                                try
+                                {
+                                    response.setStatus(200);
+                                    response.getOutputStream().println("COMPLETED\n");
+                                    historyAdd("complete");
+                                    async.complete();
+                                }
+                                catch (Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }, complete2After, TimeUnit.MILLISECONDS);
+                        }
+                        else if (complete2After == 0)
+                        {
+                            response.setStatus(200);
+                            response.getOutputStream().println("COMPLETED\n");
+                            historyAdd("complete");
+                            async.complete();
+                        }
+                        else if (dispatch2After > 0)
+                        {
+                            _scheduler.schedule(() ->
                             {
-                                e.printStackTrace();
-                            }
-                        }, complete2After, TimeUnit.MILLISECONDS);
-                    }
-                    else if (complete2After == 0)
-                    {
-                        response.setStatus(200);
-                        response.getOutputStream().println("COMPLETED\n");
-                        historyAdd("complete");
-                        async.complete();
-                    }
-                    else if (dispatch2After > 0)
-                    {
-                        _scheduler.schedule(() ->
+                                historyAdd("dispatch");
+                                async.dispatch();
+                            }, dispatch2After, TimeUnit.MILLISECONDS);
+                        }
+                        else if (dispatch2After == 0)
                         {
                             historyAdd("dispatch");
                             async.dispatch();
-                        }, dispatch2After, TimeUnit.MILLISECONDS);
+                        }
                     }
-                    else if (dispatch2After == 0)
+                    else if (request.getDispatcherType() == DispatcherType.ERROR)
                     {
-                        historyAdd("dispatch");
-                        async.dispatch();
+                        response.getOutputStream().println("ERROR DISPATCH: " + request.getContextPath() + request.getServletPath() + request.getPathInfo());
+                        response.getOutputStream().println("" + request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
+                        response.getOutputStream().println("" + request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
+                    }
+                    else
+                    {
+                        response.setStatus(200);
+                        response.getOutputStream().println("DISPATCHED");
                     }
                 }
-                else if (request.getDispatcherType() == DispatcherType.ERROR)
-                {
-                    response.getOutputStream().println("ERROR DISPATCH: " + request.getContextPath() + request.getServletPath() + request.getPathInfo());
-                    response.getOutputStream().println("" + request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
-                    response.getOutputStream().println("" + request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
-                }
-                else
-                {
-                    response.setStatus(200);
-                    response.getOutputStream().println("DISPATCHED");
-                }
+            }
+            catch (Throwable t)
+            {
+                historyAdd("PathServlet!!! " + t);
+                throw t;
+            }
+            finally
+            {
+                historyAdd(action.replace(">>>", "<<<"));
             }
         }
     }
