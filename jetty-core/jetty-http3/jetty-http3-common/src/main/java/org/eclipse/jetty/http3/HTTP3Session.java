@@ -545,7 +545,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             // The other peer sent us a GOAWAY with the last processed streamId,
             // so we must fail the streams that have a bigger streamId.
             Predicate<HTTP3Stream> predicate = stream -> stream.isLocal() && stream.getId() > frame.getLastId();
-            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), true, new RetryStreamException());
+            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), true, new RetryableStreamException());
         }
 
         tryRunZeroStreamsAction();
@@ -855,14 +855,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public String toString()
     {
         return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
-    }
-
-    /**
-     * <p>Exception indicating that the HTTP/2 stream was not handled
-     * by the server, and can therefore be retried, if possible.</p>
-     */
-    public static class RetryStreamException extends RuntimeException
-    {
     }
 
     private enum CloseState

@@ -983,6 +983,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 `HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests into the HTTP/2 specific format.
 
+When the HTTP/2 server closes the connection (see xref:client/http2.adoc#goaway[this section]), ``RetryableStreamException``s are converted into ``RetryableRequestException``s, so that the high-level APIs do not depend on the transport.
+
 See also xref:client/http2.adoc#listeners[this section] to be able to interact with the low-level HTTP/2 APIs while using the high-level APIs.
 
 [[transport-http3]]
@@ -998,6 +1000,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 `HTTP3Client` is the lower-level client that provides an API based on HTTP/3 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/3. See xref:client/http3.adoc[the HTTP/3 client section] for more information.
 
 `HttpClientTransportOverHTTP3` uses `HTTP3Client` to format high-level semantic HTTP requests into the HTTP/3 specific format.
+
+When the HTTP/3 server closes the connection (see xref:client/http3.adoc#goaway[this section]), ``RetryableStreamException``s are converted into ``RetryableRequestException``s, so that the high-level APIs do not depend on the transport.
 
 [[transport-fcgi]]
 === FastCGI Transport

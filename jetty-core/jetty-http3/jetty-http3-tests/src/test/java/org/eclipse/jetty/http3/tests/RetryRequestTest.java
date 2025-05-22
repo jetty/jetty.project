@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.RetryRequestException;
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -72,6 +72,6 @@ public class RetryRequestTest extends AbstractClientServerTest
         Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, Objects::nonNull);
 
         assertTrue(result.isFailed());
-        assertThat(result.getFailure(), instanceOf(RetryRequestException.class));
+        assertThat(result.getFailure(), instanceOf(RetryableRequestException.class));
     }
 }

@@ -17,15 +17,15 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.client.RetryRequestException;
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.RetryableStreamException;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -220,8 +220,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            if (failure instanceof HTTP2Session.RetryStreamException)
-                failure = new RetryRequestException(failure);
+            if (failure instanceof RetryableStreamException)
+                failure = new RetryableRequestException(failure);
             connection.offerTask(channel.onFailure(failure, callback), false);
         }
     }

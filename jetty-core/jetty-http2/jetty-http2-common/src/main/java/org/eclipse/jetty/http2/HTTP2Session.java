@@ -1480,14 +1480,6 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
     }
 
-    /**
-     * <p>Exception indicating that the HTTP/2 stream was not handled
-     * by the server, and can therefore be retried, if possible.</p>
-     */
-    public static class RetryStreamException extends RuntimeException
-    {
-    }
-
     public abstract static class Entry extends Callback.Nested
     {
         protected final Frame frame;
@@ -2068,7 +2060,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 // The lastStreamId carried by the GOAWAY is that of a local stream,
                 // so the lastStreamId must be compared only to local streams ids.
                 Predicate<Stream> failIf = stream -> stream.isLocal() && stream.getId() > frame.getLastStreamId();
-                failStreams(failIf, new RetryStreamException(), false);
+                failStreams(failIf, new RetryableStreamException(), false);
             }
 
             if (tryRunZeroStreamsAction)

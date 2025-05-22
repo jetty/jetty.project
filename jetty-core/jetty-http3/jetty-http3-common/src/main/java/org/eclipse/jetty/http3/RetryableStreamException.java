@@ -11,16 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.http3;
 
 /**
- * <p>Exception indicating that the HTTP request was not handled
+ * <p>Exception indicating that the HTTP/2 stream was not handled
  * by the server, and can therefore be retried, if possible.</p>
  */
-public class RetryRequestException extends RuntimeException
+public class RetryableStreamException extends RuntimeException
 {
-    public RetryRequestException(Throwable failure)
-    {
-        super(failure);
-    }
 }
