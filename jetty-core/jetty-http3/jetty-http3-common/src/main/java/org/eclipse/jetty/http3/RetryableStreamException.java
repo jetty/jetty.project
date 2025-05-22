@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http3;
 
 /**
- * <p>Exception indicating that the HTTP/2 stream was not handled
+ * <p>Exception indicating that the HTTP/3 stream was not handled
  * by the server, and can therefore be retried, if possible.</p>
  */
 public class RetryableStreamException extends RuntimeException
