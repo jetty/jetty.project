@@ -102,17 +102,14 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         @Override
         public String toString()
         {
-            StringBuilder pathlike = new StringBuilder();
-            pathlike.append(groupId);
-            pathlike.append(':').append(artifactId);
-            pathlike.append(':').append(version);
-            pathlike.append(':').append(artifactId);
+            StringBuilder str = new StringBuilder();
+            str.append(groupId);
+            str.append(':').append(artifactId);
+            str.append(':').append(version);
+            str.append(':').append(type);
             if (classifier != null)
-            {
-                pathlike.append(':').append(classifier);
-            }
-            pathlike.append(':').append(type);
-            return pathlike.toString();
+                str.append(':').append(classifier);
+            return str.toString();
         }
     }
 
