@@ -93,7 +93,7 @@ public class BaseBuilder
                 // Use provided local repo directory
                 fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
                     args.getMavenLocalRepoDir() == null,
-                    startArgs.getMavenBaseUri()).onlyLocalRepo(args.useOnlyLocalMavenRepo()));
+                    startArgs.getMavenBaseUri()).offline(args.useMavenOffline()));
             }
             else
             {

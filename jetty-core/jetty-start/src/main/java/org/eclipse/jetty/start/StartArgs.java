@@ -670,17 +670,16 @@ public class StartArgs
         return mainClass;
     }
 
-    public boolean useOnlyLocalMavenRepo()
+    public boolean useMavenOffline()
     {
-        String onlyLocalRepo = getJettyEnvironment().getProperties().getString("maven.only.local.repo");
-        if (Utils.isBlank(onlyLocalRepo))
-            onlyLocalRepo = System.getenv("JETTY_MAVEN_ONLY_LOCAL_REPO");
+        String offline = getJettyEnvironment().getProperties().getString("maven.offline");
+        if (Utils.isBlank(offline))
+            offline = System.getenv("JETTY_MAVEN_OFFLINE");
 
-        if (Utils.isBlank(onlyLocalRepo))
-            onlyLocalRepo = System.getenv("MAVEN_ONLY_LOCAL_REPO");
+        if (Utils.isBlank(offline))
+            offline = System.getenv("MAVEN_OFFLINE");
 
-        return Boolean.parseBoolean(onlyLocalRepo);
-
+        return Boolean.parseBoolean(offline);
     }
 
     public String getMavenLocalRepoDir()

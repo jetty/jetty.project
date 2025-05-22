@@ -98,6 +98,22 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         {
             return URI.create(mavenRepoUri + toMetadataPath());
         }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder pathlike = new StringBuilder();
+            pathlike.append(groupId);
+            pathlike.append(':').append(artifactId);
+            pathlike.append(':').append(version);
+            pathlike.append(':').append(artifactId);
+            if (classifier != null)
+            {
+                pathlike.append(':').append(classifier);
+            }
+            pathlike.append(':').append(type);
+            return pathlike.toString();
+        }
     }
 
     private final Path localRepositoryDir;
@@ -105,8 +121,8 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     private static final String DEFAULT_REMOTE_REPO = "https://repo1.maven.org/maven2/";
 
     private final boolean readonly;
-    private String mavenRepoUri;
-    private boolean onlyLocalRepo;
+    private final String mavenRepoUri;
+    private boolean offline;
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
@@ -165,12 +181,20 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             Path localFile = localRepositoryDir.resolve(coords.toPath());
             if (!FS.canReadFile(localFile))
             {
-                if (FS.ensureDirectoryExists(localFile.getParent()))
-                    StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
-                download(coords, localFile);
-                if (!FS.canReadFile(localFile))
+                if (offline)
                 {
-                    throw new IOException("Unable to establish temp copy of file to extract: " + localFile);
+                    StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+                    return false;
+                }
+                else
+                {
+                    if (FS.ensureDirectoryExists(localFile.getParent()))
+                        StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
+                    download(coords, localFile);
+                    if (!FS.canReadFile(localFile))
+                    {
+                        throw new IOException("Unable to establish temp copy of file to extract: " + localFile);
+                    }
                 }
             }
 
@@ -216,14 +240,16 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
                 return true;
             }
 
-            if (onlyLocalRepo)
+            if (offline)
             {
-                StartLog.warn("Can only use files from Maven local repository");
+                StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
                 return false;
             }
-
-            // normal non-local repo version
-            download(coords, destination);
+            else
+            {
+                // normal non-local repo version
+                download(coords, destination);
+            }
         }
 
         return true;
@@ -238,6 +264,11 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         // Download, if needed
         if (!readonly)
         {
+            if (offline)
+            {
+                StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+                return null;
+            }
             download(coords, localFile);
             return localFile;
         }
@@ -315,6 +346,12 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     protected void download(Coordinates coords, Path destination)
         throws IOException
     {
+        if (offline)
+        {
+            StartLog.warn("Maven configuration is set to offline, unable to download: %s", coords);
+            return;
+        }
+
         if (coords.version.endsWith("-SNAPSHOT"))
         {
             Path localRepoMetadataPath = localRepositoryDir.resolve(coords.toMetadataPath());
@@ -374,7 +411,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     /**
      * protected only for testing purpose
      *
-     * @param uri the the uri to download
+     * @param uri the uri to download
      * @param destination the destination File
      */
     @Override
@@ -384,10 +421,9 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         super.download(uri, destination);
     }
 
-    public MavenLocalRepoFileInitializer onlyLocalRepo(boolean onlyLocalRepo)
+    public MavenLocalRepoFileInitializer offline(boolean offline)
     {
-        this.onlyLocalRepo = onlyLocalRepo;
+        this.offline = offline;
         return this;
     }
-
 }
