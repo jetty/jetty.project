@@ -246,7 +246,6 @@
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.17.0</jna.version>
-    <njord.version>0.5.5</njord.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.2</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
@@ -299,6 +298,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.1.4</mongodb.version>
     <netty.version>4.2.0.Final</netty.version>
+    <njord.version>0.5.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
