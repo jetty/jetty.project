@@ -38,6 +38,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -426,7 +429,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    () -> String.join("\n", run2.getLogs()));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -716,7 +720,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-log4j2"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS),
+                () -> String.join("\n", run1.getLogs()));
             assertEquals(0, run1.getExitValue());
 
             Files.copy(Paths.get("src/test/resources/log4j2.xml"),
@@ -728,7 +733,9 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
                 await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                await().atMost(10, TimeUnit.SECONDS).until(() ->
+                await()
+                    .conditionEvaluationListener(new ShowLogOnTimeout(run2))
+                    .atMost(10, TimeUnit.SECONDS).until(() ->
                 {
                     try (Stream<String> lines = Files.lines(logFile))
                     {
@@ -768,7 +775,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    () -> String.join("\n", run2.getLogs()));
                 assertThat(run2.getLogs().stream()
                     // Check that the level formatting is that of the j.u.l. configuration file.
                     .filter(log -> log.contains("[FINE]"))
@@ -2093,6 +2101,25 @@ public class DistributionTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, ee10Response.getStatus());
             }
+        }
+    }
+
+    /**
+     * Awaitility feature to show the JettyHomeTester.Run logs if a timeout occurs.
+     * TODO: move this to org.eclipse.jetty.tests.testers and use in ProcessWrapper.awaitConsoleLogsFor too (in a different PR)
+     */
+    private record ShowLogOnTimeout<T>(JettyHomeTester.Run run) implements ConditionEvaluationListener<T>
+    {
+        @Override
+        public void conditionEvaluated(EvaluatedCondition<T> condition)
+        {
+            // do nothing
+        }
+
+        @Override
+        public void onTimeout(TimeoutEvent timeoutEvent)
+        {
+            System.err.println(String.join("\n", run.getLogs()));
         }
     }
 }
