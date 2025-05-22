@@ -246,6 +246,7 @@
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.17.0</jna.version>
+    <jnord.version>0.5.5</jnord.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.2</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
@@ -1481,6 +1482,11 @@
           <version>${license.maven.plugin.version}</version>
         </plugin>
         <plugin>
+          <groupId>eu.maveniverse.maven.plugins</groupId>
+          <artifactId>njord</artifactId>
+          <version>${jnord.version}</version>
+        </plugin>
+        <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
@@ -2196,7 +2202,7 @@
       <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension</artifactId>
-        <version>0.5.3</version>
+        <version>${jnord.version}</version>
       </extension>
       <extension>
         <groupId>org.apache.maven.extensions</groupId>
