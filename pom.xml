@@ -149,14 +149,12 @@
 
   <distributionManagement>
     <repository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Staging Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <id>sonatype-cp</id>
+      <url>https://jetty.org</url>
     </repository>
     <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
+      <id>sonatype-cp</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -267,7 +265,6 @@
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.3</mariadb.version>
-    <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.13.1</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
@@ -301,6 +298,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.1.4</mongodb.version>
     <netty.version>4.2.0.Final</netty.version>
+    <njord.version>0.5.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -326,7 +324,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
-    <project.build.outputTimestamp>2024-04-26T07:15:13Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-05-18T02:28:38Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settingsPath>src/it/settings.xml</settingsPath>
@@ -1475,13 +1473,17 @@
   </dependencies>
 
   <build>
-
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>${license.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>eu.maveniverse.maven.plugins</groupId>
+          <artifactId>njord</artifactId>
+          <version>${njord.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -2196,6 +2198,11 @@
       </plugin>
     </plugins>
     <extensions>
+      <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>${njord.version}</version>
+      </extension>
       <extension>
         <groupId>org.apache.maven.extensions</groupId>
         <artifactId>maven-build-cache-extension</artifactId>
