@@ -398,8 +398,12 @@ public class AsyncTest
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
         // Test async dispatch from context A to context B, which then does an
-        // async write, which creates a session (in context A) and completes outside of a
-        // dispatch
+        // async write, which creates a session and completes outside of a
+        // dispatch. Note that the session will be created in context B, because
+        // requests are immutable: the request that called startAsync retains its
+        // pathInContext etc. In earlier versions of the Servlet Spec, the request
+        // will have been mutated back to it's pre-async dispatch pathInContext
+        // etc after returning to the container and concluding the async dispatch.
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
@@ -436,11 +440,11 @@ public class AsyncTest
 
             assertNotNull(sessionCookie);
 
-            //session should now be evicted from the cache A after request exited
+            //session should now be evicted from the ctx B sessioncache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
             Awaitility.await().atMost(30, TimeUnit.SECONDS)
-                .until(() -> !contextA.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextA.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+                .until(() -> !contextB.getSessionHandler().getSessionCache().contains(id));
+            assertTrue(contextB.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
         finally
         {
@@ -519,6 +523,8 @@ public class AsyncTest
                     {
                         if (out.isReady())
                         {
+                            //This is a really BAD idea. You should not be creating a
+                            //new session when you are supposed to be producing output.
                             HttpSession s = request.getSession(true);
                             out.print("OK\n");
                             acontext.complete();

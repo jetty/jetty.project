@@ -510,6 +510,9 @@ public class AsyncTest
                     {
                         if (out.isReady())
                         {
+                            //This test is a really BAD idea - you should not be
+                            //creating a HttpSession in a thread that should merely
+                            //be performing writes on the response.
                             HttpSession s = request.getSession(true);
                             out.print("OK\n");
                             acontext.complete();
