@@ -270,20 +270,23 @@ public class CrossContextDispatcherFilterTest
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("Reached Service context"));
-
         assertTrue(filterCompleteLatch.await(5, TimeUnit.SECONDS));
+
+        //Note that events are in a different order than ee9: in ee10 and above the forward
+        //from the first context to the second context cannot complete until the async
+        //dispatch that is started within the second context has completed.
         List<String> expectedEvents = new ArrayList<>();
         expectedEvents.add("Reached Filter (context=, Dispatchertype=REQUEST)");
         expectedEvents.add("Filter Dispatcher Forward (context=, Dispatchertype=REQUEST)");
         expectedEvents.add(" + http.requestURI=/group/formal.hello");
         expectedEvents.add(" + http.requestURL=http://local/group/formal.hello");
         expectedEvents.add("Service Servlet GET (context=/service, Dispatchertype=FORWARD) startAsync");
+        expectedEvents.add("Async onTimeout predispatch");
+        expectedEvents.add("Async onTimeout postdispatch");
+        expectedEvents.add("Service Servlet GET (context=/service, DispatcherType=ASYNC) afterDispatch");
         expectedEvents.add("Filter Returned from Forward Dispatch (context=, Dispatchertype=REQUEST)");
         expectedEvents.add(" - http.requestURI=/group/formal.hello");
         expectedEvents.add(" - http.requestURL=http://local/group/formal.hello");
-        expectedEvents.add("Service Servlet GET (context=/service, DispatcherType=ASYNC) afterDispatch");
-        expectedEvents.add("Async onTimeout predispatch");
-        expectedEvents.add("Async onTimeout postdispatch");
 
         List<String> eventsInOrder = new ArrayList<>(events);
         assertThat(eventsInOrder, ordered(expectedEvents));

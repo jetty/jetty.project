@@ -1573,19 +1573,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             AsyncContextEvent event = HttpChannel.this.getState().getAsyncContextEvent();
 
-            //dispatch to the same context
+            //the user has dispatched to the same current context
             if (event == null || event.getDispatchContext() == null || event.getDispatchContext() == _contextHandler.getServletContext())
                 _contextHandler.handleAsync(HttpChannel.this);
             else
             {
-                //dispatch to different context (in same environment)
+                //the user has dispatched to a different context
                 if (event.getDispatchContext() instanceof CrossContextServletContext crossContextServletContext)
                 {
                    dispatchCrossContext(crossContextServletContext);
                 }
                 else
                 {
-                    //we are in a different context to the one that should be dispatched
+                    //the container has dispatched us to a different context
                     ServletContext targetContext = _contextHandler.getServletContext().getContext(event.getDispatchContext().getContextPath());
                     if (targetContext instanceof CrossContextServletContext crossContextServletContext)
                         dispatchCrossContext(crossContextServletContext);

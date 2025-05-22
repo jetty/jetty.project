@@ -227,7 +227,9 @@ public class CrossContextDispatcherFilterTest
                         public void onTimeout(AsyncEvent event)
                         {
                             // trigger redispatch back to this servlet
+                            events.add("Async onTimeout predispatch");
                             event.getAsyncContext().dispatch();
+                            events.add("Async onTimeout postdispatch");
                         }
 
                         @Override
@@ -279,6 +281,8 @@ public class CrossContextDispatcherFilterTest
         expectedEvents.add("Filter Returned from Forward Dispatch (context=)");
         expectedEvents.add(" - http.requestURI=/group/formal.hello");
         expectedEvents.add(" - http.requestURL=http://local/group/formal.hello");
+        expectedEvents.add("Async onTimeout predispatch");
+        expectedEvents.add("Async onTimeout postdispatch");
         expectedEvents.add("Service Servlet GET (context=/service) afterDispatch");
         List<String> eventsInOrder = new ArrayList<>(events);
         assertThat(eventsInOrder, ordered(expectedEvents));

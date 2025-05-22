@@ -1738,7 +1738,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         AsyncContextEvent event = channel.getState().getAsyncContextEvent();
 
-        //if dispatch to ee9, then we must mutate the request
+        // we must mutate the request
         Request request = event.getHttpChannelState().getBaseRequest();
         HttpURI baseUri = event.getBaseURI();
         APIContext oldContext = request.getContext();
@@ -1746,7 +1746,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         String oldPathInContext = request.getPathInContext();
         Fields oldQueryFields = request.getQueryFields();
 
-        //the path in the target context (encoded with possible query string)
+        //the path in the context (encoded with possible query string)
         String encodedPathQuery = event.getDispatchPath();
         if (encodedPathQuery == null && baseUri == null)
         {
