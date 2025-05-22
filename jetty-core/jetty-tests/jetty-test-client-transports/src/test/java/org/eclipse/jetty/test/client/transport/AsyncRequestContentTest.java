@@ -96,7 +96,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CompletableFuture<Result> clientResponseFuture = new CompletableFuture<>();
-        org.eclipse.jetty.client.Request request = client.POST(newURI(transport));
+        var request = client.POST(newURI(transport));
         request
             .body(content)
             .send(result ->
