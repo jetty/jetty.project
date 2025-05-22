@@ -307,10 +307,10 @@ public interface HttpURI
         private Immutable(String scheme, String host, int port, String path, String query, String fragment)
         {
             _uri = null;
-            _scheme = URIUtil.normalizeScheme(scheme);
+            _scheme = scheme;
             _user = null;
             _host = host;
-            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
+            _port = port;
             _path = path;
             _canonicalPath = path;
             _param = null;
