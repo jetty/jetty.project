@@ -64,7 +64,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
-    private long _stopTimeout = Long.MAX_VALUE;
+    private long _stopTimeout;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -394,9 +394,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     @Override
     protected void doStop() throws Exception
     {
-        if (getStopTimeout() > 0)
-            Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
-        super.doStop();
+        try
+        {
+            long stopTimeout = getStopTimeout();
+            if (stopTimeout > 0L)
+                Graceful.shutdown(this).get(stopTimeout, TimeUnit.MILLISECONDS);
+        }
+        finally
+        {
+            super.doStop();
+        }
     }
 
     @Override
