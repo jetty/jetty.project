@@ -222,6 +222,10 @@ public class ProxyServlet extends AbstractProxyServlet
         @Override
         public void onComplete(Result result)
         {
+            // XXX client request cannot be used here as it has been completed
+            if (request.getAttribute("org.eclipse.jetty.async.complete") == Boolean.TRUE)
+                return;
+
             if (result.isSucceeded())
                 onProxyResponseSuccess(request, response, result.getResponse());
             else

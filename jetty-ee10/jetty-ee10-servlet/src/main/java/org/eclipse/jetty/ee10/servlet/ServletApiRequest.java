@@ -819,6 +819,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Object getAttribute(String name)
     {
+        if ("org.eclipse.jetty.async.complete".equals(name))
+            return getRequest() == null;
+
         if (_async != null)
         {
             // This switch works by allowing the attribute to get underneath any dispatch wrapper.
