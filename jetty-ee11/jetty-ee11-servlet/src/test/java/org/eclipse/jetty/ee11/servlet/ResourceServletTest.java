@@ -69,7 +69,6 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -131,7 +130,7 @@ public class ResourceServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
+        Path extraJarResources = TestEeResources.getResourceAsPath(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
