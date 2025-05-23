@@ -181,7 +181,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
                 if (offline)
                 {
                     StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
-                    return false;
+                    throw new IllegalStateException("Maven is offline, but Local Maven Repo does not contain: %s%n".formatted(coords));
                 }
                 else
                 {
@@ -240,7 +240,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (offline)
             {
                 StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
-                return false;
+                throw new IllegalStateException("Maven is offline, but Local Maven Repo does not contain: %s%n".formatted(coords));
             }
             else
             {
@@ -264,7 +264,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (offline)
             {
                 StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
-                return null;
+                throw new IllegalStateException("Maven is offline, but Local Maven Repo does not contain: %s%n".formatted(coords));
             }
             download(coords, localFile);
             return localFile;
