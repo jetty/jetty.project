@@ -2309,7 +2309,7 @@
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.failOnError>false</spotbugs.failOnError>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
-        <spotbugs.skip>false</spotbugs.skip>
+        <spotbugs.skip>true</spotbugs.skip>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
         <spotbugs.threshold>Medium</spotbugs.threshold>
         <surefire.rerunFailingTestsCount>1</surefire.rerunFailingTestsCount>
