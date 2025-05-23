@@ -149,7 +149,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
-<<<<<<< HEAD
           sh "mkdir ~/.mimir"
           sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
           sh "cat ~/.mimir/daemon.properties"
