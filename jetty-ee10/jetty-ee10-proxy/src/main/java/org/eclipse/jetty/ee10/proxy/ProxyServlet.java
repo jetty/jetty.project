@@ -90,7 +90,14 @@ public class ProxyServlet extends AbstractProxyServlet
                     try
                     {
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
-                        Content.copy(content, delegate, Callback.from(delegate::close, x -> onClientRequestFailure(request, proxyRequest, response, x)));
+                        Content.copy(content, delegate, Callback.from(
+                            delegate::close,
+                            x ->
+                            {
+                                delegate.fail(x);
+                                onClientRequestFailure(request, proxyRequest, response, x);
+                            })
+                        );
                     }
                     catch (Throwable failure)
                     {
@@ -259,7 +266,6 @@ public class ProxyServlet extends AbstractProxyServlet
             {
                 if (!chunk.isLast())
                     fail(chunk.getFailure());
-                onClientRequestFailure(request, proxyRequest, response, chunk.getFailure());
             }
             else
             {

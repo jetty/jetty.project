@@ -662,15 +662,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onClientRequestFailure(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Throwable failure)
     {
-        proxyRequest.abort(failure).whenComplete((aborted, x) ->
-        {
-            // The variable 'aborted' could be null.
-            if (aborted == Boolean.FALSE)
-            {
-                int status = clientRequestStatus(failure);
-                sendProxyResponseError(clientRequest, proxyResponse, status);
-            }
-        });
+        proxyResponse.setStatus(clientRequestStatus(failure));
+        proxyRequest.abort(failure);
     }
 
     protected int clientRequestStatus(Throwable failure)
@@ -740,7 +733,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_log.isDebugEnabled())
             _log.debug(getRequestId(clientRequest) + " proxying failed", failure);
 
-        int status = proxyResponseStatus(failure);
+        int status = proxyResponse.getStatus();
+        if (!HttpStatus.isError(status))
+            status = proxyResponseStatus(failure);
         int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
         if (expects100Continue(clientRequest) && serverStatus >= HttpStatus.OK_200)
             status = serverStatus;
