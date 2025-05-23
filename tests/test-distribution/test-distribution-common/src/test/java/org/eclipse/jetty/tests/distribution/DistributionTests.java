@@ -428,7 +428,6 @@ public class DistributionTests extends AbstractJettyHomeTest
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitForJettyStart());
-
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
