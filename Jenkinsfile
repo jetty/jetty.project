@@ -157,14 +157,14 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
-          // temporary logs to remove
-          sh "ls -lrt ~/.mimir/"
         }
       }
     }
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      // temporary logs to remove
+      sh "ls -lrt ~/.mimir/"
     }
   }
 }
