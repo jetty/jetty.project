@@ -144,21 +144,19 @@ public interface HttpURI
     }
 
     /**
-     * <p>Creates a new unsafe {@code HttpURI} with the given arguments.</p>
+     * <p>Creates a new {@code HttpURI} with the given arguments.</p>
      *
-     * @param scheme the URI scheme
+     * @param scheme the URI scheme (normalized to lower-case)
      * @param host the URI host
      * @param port the URI port, or {@code -1} for no port
      * @param path the URI path
      * @param query the URI query
      * @param fragment the URI fragment
-     * @return a new unsafe {@code HttpURI}
-     * @deprecated use {@link Unsafe} instead
+     * @return a new {@code HttpURI}
      */
-    @Deprecated(since = "12.0.21", forRemoval = true)
     static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
     {
-        return new Unsafe(scheme, host, port, path, query, fragment);
+        return new Immutable(scheme, host, port, path, query, fragment, false);
     }
 
     Immutable asImmutable();
@@ -304,15 +302,15 @@ public interface HttpURI
                 _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
-        private Immutable(String scheme, String host, int port, String path, String query, String fragment)
+        private Immutable(String scheme, String host, int port, String path, String query, String fragment, boolean unsafe)
         {
             _uri = null;
-            _scheme = scheme;
+            _scheme = unsafe ? scheme : URIUtil.normalizeScheme(scheme);
             _user = null;
             _host = host;
-            _port = port;
+            _port = unsafe || port > 0 ? port : URIUtil.UNDEFINED_PORT;
             _path = path;
-            _canonicalPath = path;
+            _canonicalPath = unsafe || path == null ? path : URIUtil.canonicalPath(path);
             _param = null;
             _query = query;
             _fragment = fragment;
@@ -526,7 +524,7 @@ public interface HttpURI
          */
         public Unsafe(String scheme, String host, int port, String path, String query, String fragment)
         {
-            super(scheme, host, port, path, query, fragment);
+            super(scheme, host, port, path, query, fragment, true);
         }
     }
 

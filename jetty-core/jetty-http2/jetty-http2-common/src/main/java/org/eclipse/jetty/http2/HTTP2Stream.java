@@ -166,24 +166,20 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             LOG.debug("Resetting {} {}", frame, this);
 
         int flowControlLength;
-        boolean reset;
+        boolean reset = true;
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
             flowControlLength = drain();
-            reset = !isRemotelyClosed();
-            if (reset)
+            if (localReset)
             {
-                if (isReset())
-                {
-                    reset = false;
-                    resetFailure = failure;
-                }
-                else
-                {
-                    localReset = true;
-                    failure = new EOFException("reset");
-                }
+                reset = false;
+                resetFailure = failure;
+            }
+            else
+            {
+                localReset = true;
+                failure = new EOFException("reset");
             }
         }
 
