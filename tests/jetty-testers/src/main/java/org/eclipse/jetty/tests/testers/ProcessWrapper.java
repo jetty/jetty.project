@@ -193,7 +193,14 @@ public class ProcessWrapper implements AutoCloseable
 
     public boolean awaitForStart(long time, TimeUnit unit) throws InterruptedException
     {
-        getProcess().waitFor(time, unit);
+        try
+        {
+            getProcess().waitFor(time, unit);
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException(logs().get(), e);
+        }
         // assert no WARN in the logs
         assertThat(logs().get(), not(containsString("WARN  :")));
         return true;

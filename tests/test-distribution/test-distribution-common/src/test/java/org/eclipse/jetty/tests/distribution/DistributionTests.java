@@ -716,10 +716,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-log4j2"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS),
-                () -> String.join("\n", run1.getLogs()));
-            assertEquals(0, run1.getExitValue());
-
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
             Files.copy(Paths.get("src/test/resources/log4j2.xml"),
                 distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
                 StandardCopyOption.REPLACE_EXISTING);
@@ -753,8 +751,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-jul"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             Path julConfig = run1.getConfig().getJettyBase().resolve("resources/java-util-logging.properties");
             assertTrue(Files.exists(julConfig));
