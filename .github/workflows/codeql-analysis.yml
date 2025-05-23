@@ -45,7 +45,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-          cache: maven
 
       # Install and setup JDK 17
       - name: Setup JDK 17
@@ -57,7 +56,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: maven
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
@@ -71,16 +69,30 @@ jobs:
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
+      - name: Prepare Mimir
+        shell: bash
+        run: |
+          mkdir -p ~/.mimir
+          cp .github/ci-mimir-daemon.properties ~/.mimir/daemon.properties
+
+      - name: Handle Mimir caches
+        uses: actions/cache@v4
+        with:
+          path: ~/.mimir/local
+          key: mimir-codeql-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            mimir-codeql-
+            mimir-
 
       - name: Set up Maven
         run:
-          mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.1.0:wrapper "-Dmaven=3.9.9"
+          mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dmaven=3.9.9"
 
       - name: Clean install dependencies and build
         env:
           MAVEN_OPTS: "-Djava.awt.headless=true -client -Xmx4G -Xms4G"
         run:
-          ./mvnw clean install -DskipTests -B -V
+          ./mvnw clean install -P fast -B -V
 
 
       # ℹ️ Command-line programs to run using the OS shell.
