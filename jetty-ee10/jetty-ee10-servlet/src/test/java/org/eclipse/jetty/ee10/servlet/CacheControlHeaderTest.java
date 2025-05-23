@@ -96,7 +96,7 @@ public class CacheControlHeaderTest
         servletHolder.setServlet(new DefaultServlet());
         servletHolder.setInitParameter("cacheControl", "max-age=3600,public");
         Path resBase = TestEeResources.getResourceAsPathDir("/contextResources");
-        servletHolder.setInitParameter("resourceBase", resBase.toFile().toURI().toASCIIString());
+        servletHolder.setInitParameter("resourceBase", resBase.toUri().toASCIIString());
         context.addServlet(servletHolder, "/*");
         if (forceFilter)
         {

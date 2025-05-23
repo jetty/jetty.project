@@ -13,5 +13,6 @@
 
 module org.eclipse.jetty.ee.test.resources
 {
+    requires transitive org.eclipse.jetty.util;
     exports org.eclipse.jetty.ee.test.resources;
 }

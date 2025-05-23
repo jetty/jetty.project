@@ -8,4 +8,10 @@
   </parent>
   <artifactId>jetty-ee-test-resources</artifactId>
   <name>Core :: EE Common :: Test Resources</name>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+  </dependencies>
 </project>

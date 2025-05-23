@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.ee.test.resources;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 public class TestEeResources
 {
@@ -34,7 +41,40 @@ public class TestEeResources
     public static Path getResourceAsPath(String name)
     {
         URL url = TestEeResources.class.getResource(name);
-        return url == null ? null : Paths.get(url.getPath());
+        if (url == null)
+            return null;
+        try
+        {
+            URI uri = url.toURI();
+            // Handle resources from JAR
+            if ("jar".equals(uri.getScheme()))
+            {
+                try
+                {
+                    FileSystem fileSystem;
+                    try
+                    {
+                        fileSystem = FileSystems.getFileSystem(uri);
+                    }
+                    catch (FileSystemNotFoundException e)
+                    {
+                        fileSystem = FileSystems.newFileSystem(uri, Map.of());
+                    }
+                    String fullPath = uri.toString();
+                    String resourcePath = fullPath.substring(fullPath.indexOf("!/") + 2);
+                    return fileSystem.getPath(resourcePath).toAbsolutePath();
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException("Failed to access JAR resource", e);
+                }
+            }
+            return Paths.get(uri);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Path getResourceAsPathDir(String name)

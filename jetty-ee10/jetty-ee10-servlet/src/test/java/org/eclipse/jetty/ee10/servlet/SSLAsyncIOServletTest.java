@@ -217,7 +217,7 @@ public class SSLAsyncIOServletTest
             Path keystorePath = TestEeResources.getResourceAsPath("/keystore.p12");
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePath(keystorePath);
             sslContextFactory.setKeyStorePassword("storepwd");
 
             server = new Server();

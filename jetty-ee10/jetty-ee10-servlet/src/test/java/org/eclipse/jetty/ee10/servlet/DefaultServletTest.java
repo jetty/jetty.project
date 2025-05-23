@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,7 +125,8 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        Path extraJarResources = TestEeResources.getResourceAsPath(ODD_JAR);
+        Path extraJarResources = workDir.getPathFile("odd.jar");
+        Files.copy(Objects.requireNonNull(TestEeResources.getResourceAsPath(ODD_JAR)), extraJarResources);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
@@ -3408,20 +3410,20 @@ public class DefaultServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path docroot = TestEeResources.getResourceAsPath("/docroot");
+        Path docroot = Objects.requireNonNull(TestEeResources.getResourceAsPath("/docroot"));
 
         ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
         slashHolder.setInitParameter("welcomeServlets", "true");
-        slashHolder.setInitParameter("baseResource", docroot.toAbsolutePath().toString());
+        slashHolder.setInitParameter("baseResource", docroot.toUri().toString());
         context.addServlet(slashHolder, "/");
 
-        Path altroot = TestEeResources.getResourceAsPath("/altroot");
+        Path altroot = Objects.requireNonNull(TestEeResources.getResourceAsPath("/altroot"));
         ServletHolder rHolder = new ServletHolder("alt", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
         rHolder.setInitParameter("pathInfoOnly", "false");
-        rHolder.setInitParameter("baseResource", altroot.toAbsolutePath().toString());
+        rHolder.setInitParameter("baseResource", altroot.toUri().toString());
         context.addServlet(rHolder, "/all/*");
 
         server.stop();
@@ -3446,7 +3448,7 @@ public class DefaultServletTest
 
         Path suffixroot = TestEeResources.getResourceAsPath("/suffixroot");
         ResourceFactory resourceFactory = ResourceFactory.of(context);
-        context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
+        context.setBaseResource(resourceFactory.newResource(suffixroot));
 
         ServletHolder holderAlt = new ServletHolder("static-js", DefaultServlet.class);
         context.addServlet(holderAlt, "*.js");
