@@ -27,7 +27,10 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,21 +39,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RetryRequestTest extends AbstractClientServerTest
 {
-    @Test
-    public void testRetryRequest() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRetryRequest(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                stream.respond(new HeadersFrame(response, true));
+                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                 return null;
             }
         });
+
+        // Necessary to guarantee that the send() lambda is called from the
+        // selector thread to avoid reading the GOAWAY reply from the server.
+        httpClient.getHttpClientTransport().setInvocationType(Invocable.InvocationType.NON_BLOCKING);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         httpClient.newRequest("localhost", connector.getLocalPort())
@@ -60,7 +68,7 @@ public class RetryRequestTest extends AbstractClientServerTest
             .send(result ->
             {
                 // No HTTP/3 frames are processed until returning from this method.
-                serverSessionRef.get().goAway(false);
+                serverSessionRef.get().goAway(false, Promise.Invocable.noop());
                 // Send a second request, should be failed by the client.
                 httpClient.newRequest("localhost", connector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())

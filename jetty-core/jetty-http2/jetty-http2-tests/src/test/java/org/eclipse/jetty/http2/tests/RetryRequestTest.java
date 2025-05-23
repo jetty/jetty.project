@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -53,6 +54,10 @@ public class RetryRequestTest extends AbstractTest
                 return null;
             }
         });
+
+        // Necessary to guarantee that the send() lambda is called from the
+        // selector thread to avoid reading the GOAWAY reply from the server.
+        httpClient.getHttpClientTransport().setInvocationType(Invocable.InvocationType.NON_BLOCKING);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         httpClient.newRequest("localhost", connector.getLocalPort())
