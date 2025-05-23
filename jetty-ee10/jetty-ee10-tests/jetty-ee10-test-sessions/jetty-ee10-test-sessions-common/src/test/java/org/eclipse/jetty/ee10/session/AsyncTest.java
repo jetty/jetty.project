@@ -392,8 +392,6 @@ public class AsyncTest
         }   
     }
 
-
-
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
