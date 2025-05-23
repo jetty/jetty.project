@@ -34,6 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 /**
  * <p>A useful wrapper of {@link Process} instances.</p>
@@ -163,7 +166,7 @@ public class ProcessWrapper implements AutoCloseable
         {
             await()
                     //.conditionEvaluationListener(new ShowLogOnTimeout<>(this))
-                    .atMost(10, TimeUnit.SECONDS)
+                    .atMost(time, unit)
                     //.logging(s -> System.out.println("LOGS: " + logs().get()))
                     .until(() ->
                     {
@@ -178,6 +181,21 @@ public class ProcessWrapper implements AutoCloseable
             // as is surefire show logs from the run
             throw new RuntimeException(logs().get(), e);
         }
+        // assert no WARN in the logs
+        assertThat(logs().get(), not(containsString("WARN  :")));
+        return true;
+    }
+
+    public boolean awaitForStart() throws InterruptedException
+    {
+        return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    public boolean awaitForStart(long time, TimeUnit unit) throws InterruptedException
+    {
+        getProcess().waitFor(time, unit);
+        // assert no WARN in the logs
+        assertThat(logs().get(), not(containsString("WARN  :")));
         return true;
     }
 
