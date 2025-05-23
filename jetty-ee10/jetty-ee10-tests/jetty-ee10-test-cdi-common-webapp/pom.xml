@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10-tests</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-test-cdi-common-webapp</artifactId>
   <packaging>war</packaging>

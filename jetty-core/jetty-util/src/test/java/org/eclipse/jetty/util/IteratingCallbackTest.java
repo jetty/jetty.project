@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -502,5 +503,72 @@ public class IteratingCallbackTest
 
         assertThrows(IllegalStateException.class, icb::iterate);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAbortFromOnSuccessInProcess() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                count.incrementAndGet();
+                succeeded();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onSuccess()
+            {
+                abort(new IllegalStateException("abortFromOnSuccess"));
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                failure.set(cause);
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, count.get());
+        assertTrue(icb.isAborted());
+    }
+
+    @Test
+    public void testAbortFromOnSuccessAfterProcess() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                count.incrementAndGet();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onSuccess()
+            {
+                abort(new IllegalStateException("abortFromOnSuccess"));
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                failure.set(cause);
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, count.get());
+        icb.succeeded();
+        assertEquals(1, count.get());
+        assertTrue(icb.isAborted());
     }
 }

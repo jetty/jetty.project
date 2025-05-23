@@ -838,7 +838,7 @@ public class ResourceServlet extends HttpServlet
 
         private HttpServletRequest getServletRequest(Request request)
         {
-            ServletCoreRequest servletCoreRequest = Request.as(request, ServletCoreRequest.class);
+            ServletCoreRequest servletCoreRequest = Request.asInContext(request, ServletCoreRequest.class);
             if (servletCoreRequest != null)
                 return servletCoreRequest.getServletRequest();
 
@@ -851,11 +851,11 @@ public class ResourceServlet extends HttpServlet
 
         private HttpServletResponse getServletResponse(Response response)
         {
-            ServletCoreResponse servletCoreResponse = Response.as(response, ServletCoreResponse.class);
+            ServletCoreResponse servletCoreResponse = Response.asInContext(response, ServletCoreResponse.class);
             if (servletCoreResponse != null)
                 return servletCoreResponse.getServletResponse();
 
-            ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
+            ServletContextResponse servletContextResponse = Response.asInContext(response, ServletContextResponse.class);
             if (servletContextResponse != null)
                 return servletContextResponse.getServletApiResponse();
 

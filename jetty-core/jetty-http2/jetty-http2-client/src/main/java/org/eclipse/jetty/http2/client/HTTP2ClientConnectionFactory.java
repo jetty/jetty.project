@@ -42,8 +42,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionPromise";
 
-    private final Connection.Listener connectionListener = new ConnectionListener();
-
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
@@ -70,7 +68,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         context.put(HTTP2Connection.class.getName(), connection);
-        connection.addEventListener(connectionListener);
+        connection.addEventListener(client.getSessionContainer());
         client.getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
@@ -181,23 +179,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private static class ConnectionListener implements Connection.Listener
-    {
-        @Override
-        public void onOpened(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.addManaged(http2Connection.getSession());
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.removeBean(http2Connection.getSession());
         }
     }
 }

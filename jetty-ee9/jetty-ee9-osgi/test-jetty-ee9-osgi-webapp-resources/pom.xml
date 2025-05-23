@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9.osgi</groupId>
     <artifactId>jetty-ee9-osgi</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee9-osgi-webapp-resources</artifactId>
   <packaging>war</packaging>

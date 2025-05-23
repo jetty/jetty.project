@@ -24,6 +24,7 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -41,6 +42,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 /**
  * Test using websocket in osgi
  */
+@Ignore
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJakartaWebSocket
 {

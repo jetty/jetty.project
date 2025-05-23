@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.21-SNAPSHOT</version>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
 
   <artifactId>jetty-ee10-bom</artifactId>
@@ -19,132 +19,132 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-annotations</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-apache-jsp</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-cdi</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-fcgi-proxy</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-glassfish-jstl</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jaspi</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jndi</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-jspc-maven-plugin</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-maven-plugin</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-plus</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-proxy</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-quickstart</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-runner</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-servlet</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-servlets</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-webapp</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.osgi</groupId>
         <artifactId>jetty-ee10-osgi-alpn</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.osgi</groupId>
         <artifactId>jetty-ee10-osgi-boot</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.osgi</groupId>
         <artifactId>jetty-ee10-osgi-boot-jsp</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-client-webapp</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-client-webapp</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-servlet</artifactId>
-        <version>12.0.21-SNAPSHOT</version>
+        <version>12.0.22-SNAPSHOT</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

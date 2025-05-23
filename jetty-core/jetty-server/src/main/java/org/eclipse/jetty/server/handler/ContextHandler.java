@@ -116,7 +116,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public static ContextHandler getContextHandler(Request request)
     {
-        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        ContextRequest contextRequest = Request.asInContext(request, ContextRequest.class);
         if (contextRequest == null)
             return null;
         return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;

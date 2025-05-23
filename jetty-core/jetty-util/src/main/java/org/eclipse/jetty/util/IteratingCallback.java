@@ -229,10 +229,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
-            processing();
+            processing(true);
     }
 
-    private void processing()
+    private void processing(boolean processFirst)
     {
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
@@ -246,14 +246,17 @@ public abstract class IteratingCallback implements Callback
         {
             // Call process to get the action that we have to take.
             Action action = null;
-            try
+            if (processFirst)
             {
-                action = process();
-            }
-            catch (Throwable x)
-            {
-                failed(x);
-                // Fall through to possibly invoke onCompleteFailure().
+                try
+                {
+                    action = process();
+                }
+                catch (Throwable x)
+                {
+                    failed(x);
+                    // Fall through to possibly invoke onCompleteFailure().
+                }
             }
 
             boolean callOnSuccess = false;
@@ -335,7 +338,10 @@ public abstract class IteratingCallback implements Callback
             finally
             {
                 if (callOnSuccess)
+                {
                     onSuccess();
+                    processFirst = isProcessing();
+                }
             }
         }
 
@@ -389,7 +395,7 @@ public abstract class IteratingCallback implements Callback
         if (process)
         {
             onSuccess();
-            processing();
+            processing(isProcessing());
         }
     }
 
@@ -585,6 +591,17 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             return _state == State.SUCCEEDED;
+        }
+    }
+
+    /**
+     * @return {@code true} if the iterating callback is processing
+     */
+    private boolean isProcessing()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PROCESSING;
         }
     }
 
