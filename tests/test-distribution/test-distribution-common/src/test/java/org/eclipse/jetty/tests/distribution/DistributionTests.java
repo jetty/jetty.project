@@ -727,7 +727,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
                 await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                run2.awaitForJettyStart();
+                assertTrue(run2.awaitForJettyStart(), run2.logs());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
