@@ -779,7 +779,6 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
         finally
         {
-            // XXX client request gets completed here
             if (clientRequest.isAsyncStarted())
                 clientRequest.getAsyncContext().complete();
         }

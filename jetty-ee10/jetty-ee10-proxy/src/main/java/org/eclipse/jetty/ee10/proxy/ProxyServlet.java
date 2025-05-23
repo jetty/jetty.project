@@ -222,7 +222,6 @@ public class ProxyServlet extends AbstractProxyServlet
         @Override
         public void onComplete(Result result)
         {
-            // XXX client request is reused here even if it has been completed
             if (result.isSucceeded())
                 onProxyResponseSuccess(request, response, result.getResponse());
             else
