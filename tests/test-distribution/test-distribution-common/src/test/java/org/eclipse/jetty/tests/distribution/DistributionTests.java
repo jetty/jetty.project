@@ -429,8 +429,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                    () -> String.join("\n", run2.getLogs()));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -733,15 +732,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
                 await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                await()
-                    .conditionEvaluationListener(new ShowLogOnTimeout(run2))
-                    .atMost(10, TimeUnit.SECONDS).until(() ->
-                {
-                    try (Stream<String> lines = Files.lines(logFile))
-                    {
-                        return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
-                    }
-                });
+                run2.awaitForJettyStart();
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
@@ -2101,25 +2092,6 @@ public class DistributionTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, ee10Response.getStatus());
             }
-        }
-    }
-
-    /**
-     * Awaitility feature to show the JettyHomeTester.Run logs if a timeout occurs.
-     * TODO: move this to org.eclipse.jetty.tests.testers and use in ProcessWrapper.awaitConsoleLogsFor too (in a different PR)
-     */
-    private record ShowLogOnTimeout<T>(JettyHomeTester.Run run) implements ConditionEvaluationListener<T>
-    {
-        @Override
-        public void conditionEvaluated(EvaluatedCondition<T> condition)
-        {
-            // do nothing
-        }
-
-        @Override
-        public void onTimeout(TimeoutEvent timeoutEvent)
-        {
-            System.err.println(String.join("\n", run.getLogs()));
         }
     }
 }

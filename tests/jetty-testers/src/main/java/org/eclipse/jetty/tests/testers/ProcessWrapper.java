@@ -22,10 +22,18 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.ConditionTimeoutException;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * <p>A useful wrapper of {@link Process} instances.</p>
@@ -37,6 +45,8 @@ import org.slf4j.LoggerFactory;
 public class ProcessWrapper implements AutoCloseable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessWrapper.class);
+
+    public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
 
     private final Queue<String> logs = new ConcurrentLinkedQueue<>();
     private final Process process;
@@ -119,6 +129,56 @@ public class ProcessWrapper implements AutoCloseable
                 return true;
         }
         return false;
+    }
+
+    public boolean awaitForJettyStart()
+    {
+        return awaitForJettyStart(START_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    private record ShowLogOnTimeout<T>(ProcessWrapper run) implements ConditionEvaluationListener<T>
+    {
+        @Override
+        public void conditionEvaluated(EvaluatedCondition<T> condition)
+        {
+            // do nothing
+        }
+
+        @Override
+        public void onTimeout(TimeoutEvent timeoutEvent)
+        {
+            System.out.println("LOGS: " + String.join("\n", run.getLogs()));
+        }
+    }
+
+    public Supplier<String> logs()
+    {
+        return () -> String.join("\n", this.getLogs());
+    }
+
+    public boolean awaitForJettyStart(long time, TimeUnit unit)
+    {
+        // Started oejs.Server@
+        try
+        {
+            await()
+                    //.conditionEvaluationListener(new ShowLogOnTimeout<>(this))
+                    .atMost(10, TimeUnit.SECONDS)
+                    //.logging(s -> System.out.println("LOGS: " + logs().get()))
+                    .until(() ->
+                    {
+                        try (Stream<String> lines = getLogs().stream())
+                        {
+                            return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
+                        }
+                    });
+        }
+        catch (ConditionTimeoutException e)
+        {
+            // as is surefire show logs from the run
+            throw new RuntimeException(logs().get(), e);
+        }
+        return true;
     }
 
     public boolean awaitConsoleLogsFor(String txt, Duration duration) throws InterruptedException
