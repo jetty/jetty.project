@@ -1357,8 +1357,9 @@ public class ServletApiRequest implements HttpServletRequest
         ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
+
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, this, servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
+        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequestInfo.getServletChannel().getServletContextRequest().getServletApiRequest(), servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
         state.startAsync(event);
         return _async;
     }

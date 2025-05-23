@@ -862,7 +862,7 @@ public class ServletChannel
                 }
                 else
                 {
-                    //dispatch to original path in current context
+                    //dispatch to original path of event's request in current context
                     uri = asyncContextEvent.getBaseURI();
                     if (uri == null)
                     {

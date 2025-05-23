@@ -283,7 +283,7 @@ public class CrossContextDispatcherFilterTest
         expectedEvents.add("Service Servlet GET (context=/service, Dispatchertype=FORWARD) startAsync");
         expectedEvents.add("Async onTimeout predispatch");
         expectedEvents.add("Async onTimeout postdispatch");
-        expectedEvents.add("Service Servlet GET (context=/service, DispatcherType=ASYNC) afterDispatch");
+        expectedEvents.add("Service Servlet GET (context=/service, Dispatchertype=ASYNC) afterDispatch");
         expectedEvents.add("Filter Returned from Forward Dispatch (context=, Dispatchertype=REQUEST)");
         expectedEvents.add(" - http.requestURI=/group/formal.hello");
         expectedEvents.add(" - http.requestURL=http://local/group/formal.hello");
