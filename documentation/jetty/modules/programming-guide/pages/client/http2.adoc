@@ -237,6 +237,30 @@ If a client application does not want to handle a particular HTTP/2 push, it can
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=pushReset]
 ----
 
+[[goaway]]
+== Session Closing
+
+Once a `Session` has been established (see <<connect,here>>), it may be closed in the following way, providing an error code and a short textual reason:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=close]
+----
+
+Closing a `Session` will send a `GOAWAY` frame to the server.
+
+When the server closes the `Session`, the `GOAWAY` frame received by the client carries the identifier of the last stream that was processed by the server.
+Streams that have an identifier higher than the one specified in the `GOAWAY` frame are not processed by the server.
+
+A client application may be sending requests while the server is closing the `Session`, so it is possible that the client opens a stream that will not be processed by the server, because it has an identifier that is greater than the one specified in the `GOAWAY` frame sent by the server.
+
+In this case the stream is failed on the client with a `RetryableStreamException`, and client applications may decide whether to retry the request (if the request can be retried):
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=retryStream]
+----
+
 [[listeners]]
 == Listening to HTTP/2 Events
 

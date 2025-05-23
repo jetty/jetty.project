@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.RetryableStreamException;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
@@ -285,5 +286,48 @@ public class HTTP3ClientDocs
         // The client terminates this stream (for example, the user closed the application).
         stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException(), Promise.Invocable.noop());
         // end::terminate[]
+    }
+
+    public void close() throws Exception
+    {
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+        http3Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+
+        // tag::close[]
+        session.goAway(false, Promise.Invocable.noop());
+        // end::close[]
+    }
+
+    public void retryStream() throws Exception
+    {
+        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+        http3Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+        HeadersFrame headersFrame = new HeadersFrame(request, true);
+
+        // tag::retryStream[]
+        session.newRequest(headersFrame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                if (failure instanceof RetryableStreamException)
+                {
+                    // The request may be retried.
+                }
+                else
+                {
+                    // The request failed.
+                }
+            }
+        }, Promise.Invocable.noop());
+        // end::retryStream[]
     }
 }

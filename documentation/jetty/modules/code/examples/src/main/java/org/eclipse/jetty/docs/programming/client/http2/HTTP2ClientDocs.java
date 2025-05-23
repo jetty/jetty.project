@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.RetryableStreamException;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -417,6 +418,49 @@ public class HTTP2ClientDocs
             }
         });
         // end::pushReset[]
+    }
+
+    public void close() throws Exception
+    {
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
+        Session session = sessionCF.get();
+
+        // tag::close[]
+        session.close(ErrorCode.NO_ERROR.code, "close", Callback.NOOP);
+        // end::close[]
+    }
+
+    public void retryStream() throws Exception
+    {
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
+        Session session = sessionCF.get();
+
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        HeadersFrame headersFrame = new HeadersFrame(request, null, true);
+
+        // tag::retryStream[]
+        CompletableFuture<Stream> streamCF = session.newStream(headersFrame, new Stream.Listener()
+        {
+            @Override
+            public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+            {
+                if (failure instanceof RetryableStreamException)
+                {
+                    // The request may be retried.
+                }
+                else
+                {
+                    // The request failed.
+                }
+            }
+        });
+        // end::retryStream[]
     }
 
     public void listenerLifeCycle()

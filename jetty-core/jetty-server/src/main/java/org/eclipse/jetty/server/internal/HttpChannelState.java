@@ -385,9 +385,20 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 return new IdleTimeoutTask(() ->
                 {
-                    if (onIdleTimeout.test(t))
+                    boolean failure;
+                    try
                     {
-                        // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
+                        failure = onIdleTimeout.test(t);
+                    }
+                    catch (Throwable x)
+                    {
+                        ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                        failure = true;
+                    }
+                    if (failure)
+                    {
+                        // If the idle timeout listener(s) returns true or throws,
+                        // then we call onFailure and run any task it returns.
                         Runnable task = onFailure(t);
                         if (task != null)
                             task.run();
@@ -465,8 +476,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Consumer<Throwable> onFailure = _onFailure;
                 _onFailure = null;
 
+                boolean noFailureListener = onFailure == null;
                 boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
-                Runnable invokeOnFailureListeners = onFailure == null || skipListeners ? null : () ->
+                boolean readerOrWriterWaiting = invokeOnContentAvailable != null || invokeWriteFailure != null;
+                Runnable invokeOnFailureListeners = noFailureListener || readerOrWriterWaiting || skipListeners ? null : () ->
                 {
                     try
                     {

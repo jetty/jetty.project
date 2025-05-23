@@ -3,13 +3,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee10</groupId>
-    <artifactId>jetty-ee10-tests</artifactId>
-    <version>12.1.0-SNAPSHOT</version>
+    <groupId>org.eclipse.jetty.ee9</groupId>
+    <artifactId>jetty-ee9-tests</artifactId>
+    <version>12.0.22-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee10-test-jersey</artifactId>
+  <artifactId>jetty-ee9-test-jersey</artifactId>
   <packaging>jar</packaging>
-  <name>EE10 :: Tests :: Jersey</name>
+  <name>EE9 :: Tests :: Jersey</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jersey.tests</bundle-symbolic-name>
@@ -17,8 +17,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-webapp</artifactId>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -39,11 +43,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
