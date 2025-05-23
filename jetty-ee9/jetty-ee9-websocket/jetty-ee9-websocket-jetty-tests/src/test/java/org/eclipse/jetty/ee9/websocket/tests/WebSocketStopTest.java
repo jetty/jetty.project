@@ -70,6 +70,7 @@ public class WebSocketStopTest
         JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
 
         server.start();
+        client.setStopTimeout(5000);
         client.start();
     }
 

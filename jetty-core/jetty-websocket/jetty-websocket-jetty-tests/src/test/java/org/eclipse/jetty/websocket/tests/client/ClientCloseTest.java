@@ -96,6 +96,7 @@ public class ClientCloseTest
     {
         client = new WebSocketClient();
         client.setMaxTextMessageSize(1024);
+        client.setStopTimeout(5000);
         client.start();
     }
 
