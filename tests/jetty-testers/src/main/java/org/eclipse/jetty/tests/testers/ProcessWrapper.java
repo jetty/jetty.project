@@ -56,6 +56,8 @@ public class ProcessWrapper implements AutoCloseable
     private final ConsoleStreamer stdOut;
     private final ConsoleStreamer stdErr;
 
+    public static final String JETTY_START_SEARCH = "Started oejs.Server@";
+
     public ProcessWrapper(Process process)
     {
         this.process = process;
@@ -172,7 +174,7 @@ public class ProcessWrapper implements AutoCloseable
                     {
                         try (Stream<String> lines = getLogs().stream())
                         {
-                            return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
+                            return lines.anyMatch(line -> line.contains(JETTY_START_SEARCH));
                         }
                     });
         }

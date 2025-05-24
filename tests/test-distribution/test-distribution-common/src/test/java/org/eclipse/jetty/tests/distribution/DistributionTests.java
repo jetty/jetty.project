@@ -77,6 +77,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.tests.testers.ProcessWrapper.JETTY_START_SEARCH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -727,7 +728,9 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
                 await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                assertTrue(run2.awaitForJettyStart(), run2.logs());
+
+                await().atMost(10, TimeUnit.SECONDS)
+                        .until(() -> Files.readAllLines(logFile).stream().anyMatch(l -> l.contains(JETTY_START_SEARCH)));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
