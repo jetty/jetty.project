@@ -714,7 +714,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--debug", "--approve-all-licenses", "--add-modules=http,logging-log4j2"))
+        try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-log4j2"))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue(), run1.logs());

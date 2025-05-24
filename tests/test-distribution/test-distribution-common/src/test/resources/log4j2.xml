@@ -2,7 +2,7 @@
 <Configuration status="warn" name="Jetty" >
 
   <properties>
-    <property name="logging.dir">${sys:jetty.logging.dir:-target/logs}</property>
+    <property name="logging.dir">${sys:jetty.logging.dir:-logs}</property>
   </properties>
 
   <Appenders>
