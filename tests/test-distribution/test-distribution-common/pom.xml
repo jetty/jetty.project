@@ -138,41 +138,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>${log4j2.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${log4j2.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <version>${log4j2.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-jdk14</artifactId>
-      <version>${slf4j.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
@@ -315,6 +280,50 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>copy-fake-deps</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <version>${logback.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-core</artifactId>
+                  <version>${logback.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-api</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-core</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-slf4j2-impl</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-jdk14</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
           <execution>
             <id>unpack</id>
             <goals>
