@@ -576,8 +576,8 @@ public class DistributionTests extends AbstractJettyHomeTest
         );
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + mods))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWar(war, "proxy");
@@ -787,8 +787,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-jul-capture"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             //Path jettyBase = run1.getConfig().getJettyBase();
 
@@ -937,8 +937,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution1.start("--approve-all-licenses", "--add-modules=logging-logback,http"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             //Path jettyBase = run1.getConfig().getJettyBase();
 
