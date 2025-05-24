@@ -281,6 +281,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <!-- we want to be sure all dependencies are available in the local repo -->
             <id>copy-fake-deps</id>
             <goals>
               <goal>copy</goal>
