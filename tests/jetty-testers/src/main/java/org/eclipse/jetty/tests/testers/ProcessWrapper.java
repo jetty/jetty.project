@@ -199,7 +199,7 @@ public class ProcessWrapper implements AutoCloseable
         }
         catch (InterruptedException e)
         {
-            throw new RuntimeException(logs().get(), e);
+            throw new IllegalStateException(logs().get(), e);
         }
         // assert no WARN in the logs
         assertThat(logs().get(), not(containsString("WARN  :")));
