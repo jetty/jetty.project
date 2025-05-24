@@ -24,6 +24,7 @@ import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -223,6 +224,20 @@ public class JettyHomeTester
 
     private void init() throws Exception
     {
+        String jettyHomeStr = System.getProperty("jetty.home");
+        if (jettyHomeStr != null && !jettyHomeStr.isEmpty())
+        {
+            Path jettyHome = Paths.get(jettyHomeStr);
+            // test path exists
+            if (Files.exists(jettyHome))
+            {
+                config.jettyHome = jettyHome;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Ignore non existing Jetty home: " + jettyHomeStr);
+            }
+        }
         if (config.jettyHome == null)
             config.jettyHome = resolveHomeArtifact(config.getJettyVersion());
 
