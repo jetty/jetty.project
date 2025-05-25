@@ -38,7 +38,6 @@ import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -239,10 +238,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-osgi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-gzip").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-ee-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-servlets").versionAsInProject().start());
