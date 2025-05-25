@@ -130,7 +130,6 @@ public abstract class IteratingCallback implements Callback
     }
 
     private final AutoLock _lock = new AutoLock();
-    private final Runnable _onSuccess = this::onSuccess;
     private final Consumer<Throwable> _onCompleted = this::onCompleted;
     private State _state;
     private Throwable _failure;
@@ -269,7 +268,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doOnSuccessProcessing()
     {
-        ExceptionUtil.callAndThen(_onSuccess, () -> processing(isProcessing()));
+        ExceptionUtil.callAndThen(this::onSuccess, () -> processing(isProcessing()));
     }
 
     private void doCompleteSuccess()
@@ -497,7 +496,11 @@ public abstract class IteratingCallback implements Callback
                 if (callOnSuccess)
                 {
                     onSuccess();
-                    processFirst = isProcessing();
+                    if (isAborted())
+                    {
+                        onAbortedOnFailureOnCompleted = _failure;
+                        processFirst = false;
+                    }
                 }
             }
         }

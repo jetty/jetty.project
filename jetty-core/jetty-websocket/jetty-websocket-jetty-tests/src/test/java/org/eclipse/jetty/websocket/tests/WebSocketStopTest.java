@@ -56,6 +56,7 @@ public class WebSocketStopTest
         server.setHandler(wsHandler);
         server.start();
 
+        client.setStopTimeout(5000);
         client.start();
     }
 

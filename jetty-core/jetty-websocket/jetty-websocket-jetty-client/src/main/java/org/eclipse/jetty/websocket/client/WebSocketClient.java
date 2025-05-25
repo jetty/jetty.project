@@ -60,7 +60,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private boolean stopAtShutdown = false;
-    private long _stopTimeout = Long.MAX_VALUE;
+    private long _stopTimeout;
 
     /**
      * Instantiates a WebSocketClient with a default {@link HttpClient}.
@@ -398,9 +398,16 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     @Override
     protected void doStop() throws Exception
     {
-        if (getStopTimeout() > 0)
-            Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
-        super.doStop();
+        try
+        {
+            long stopTimeout = getStopTimeout();
+            if (stopTimeout > 0L)
+                Graceful.shutdown(this).get(stopTimeout, TimeUnit.MILLISECONDS);
+        }
+        finally
+        {
+            super.doStop();
+        }
     }
 
     @Override

@@ -923,12 +923,7 @@ public class ServletChannelState
                 case ASYNC:
                 {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
-                    {
-                        if (committed)
-                            return true;
-                        sendError(th);
                         return false;
-                    }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;
