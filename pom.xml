@@ -150,7 +150,7 @@
   <distributionManagement>
     <repository>
       <id>sonatype-cp</id>
-      <url>https://jetty.org</url>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
     <snapshotRepository>
       <id>sonatype-cp</id>
