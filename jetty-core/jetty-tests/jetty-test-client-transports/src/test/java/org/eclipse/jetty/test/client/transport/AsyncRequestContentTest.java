@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -54,6 +55,9 @@ public class AsyncRequestContentTest extends AbstractTest
     @MethodSource("transports")
     public void testEarlyEofWithDemand(TransportType transport) throws Exception
     {
+        // TODO #13131
+        Assumptions.assumeTrue(transport != TransportType.H3_QUICHE);
+
         CountDownLatch serverHandleLatch = new CountDownLatch(1);
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         AtomicReference<Throwable> failureRef = new AtomicReference<>();

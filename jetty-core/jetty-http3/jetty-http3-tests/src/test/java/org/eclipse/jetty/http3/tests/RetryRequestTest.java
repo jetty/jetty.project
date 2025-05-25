@@ -29,6 +29,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -43,6 +44,9 @@ public class RetryRequestTest extends AbstractClientServerTest
     @MethodSource("transports")
     public void testRetryRequest(TransportType transportType) throws Exception
     {
+        // TODO #13131
+        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
+
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         start(transportType, new Session.Server.Listener()
         {
