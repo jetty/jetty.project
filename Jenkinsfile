@@ -64,7 +64,7 @@ pipeline {
               checkout scm
               mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(),  javaDoc()], // errorProne(), spotBugs(),
+                            tools: [mavenConsole(), java(), checkStyle(),  javaDoc()], 
                             skipPublishingChecks: true, skipBlames: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
                              tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
