@@ -818,7 +818,7 @@ public class HttpChannelState
             if (_sendError)
             {
                 LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
-                return true;
+                return false;
             }
 
             // Check async state to determine type of handling
