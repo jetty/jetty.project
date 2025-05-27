@@ -163,6 +163,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         mvn clean deploy -Peclipse-release $DEPLOY_OPTS
+        mvn njord:publish -Ddrop=false $DEPLOY_OPTS
     fi
     if proceedyn "Update working directory for $VER_NEXT? (Y/n)" y; then
         echo "Update VERSION.txt for $VER_NEXT"
@@ -185,6 +186,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         git push $GIT_REMOTE_ID $GIT_BRANCH_ID
         git push $GIT_REMOTE_ID $TAG_NAME
     fi
+    echo "you can now eventually deploy to staging repo using mvn njord:publish  -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging"
 else
     echo "Not performing release"
 fi
