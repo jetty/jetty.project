@@ -65,16 +65,16 @@ public class FrameFlusher extends IteratingCallback
     private final int _bufferSize;
     private final Generator _generator;
     private final int _maxGather;
-    private final CyclicTimeouts<Entry> _cyclicTimeouts;
-    private final Deque<Entry> _queue = new ArrayDeque<>();
-    private final List<Entry> _currentEntries;
-    private final List<Entry> _completedEntries = new ArrayList<>();
+    private final CyclicTimeouts<FlusherEntry> _cyclicTimeouts;
+    private final Deque<FlusherEntry> _queue = new ArrayDeque<>();
+    private final List<FlusherEntry> _currentEntries;
+    private final List<FlusherEntry> _completedEntries = new ArrayList<>();
     private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
+    private long _currentMessageTimeout;
 
     private RetainableByteBuffer _batchBuffer;
     private boolean _canEnqueue = true;
     private Throwable _closedCause;
-    private long _frameTimeout;
     private boolean _useDirectByteBuffers;
 
     public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
@@ -90,7 +90,7 @@ public class FrameFlusher extends IteratingCallback
             private boolean _expired = false;
 
             @Override
-            protected boolean onExpired(Entry expirable)
+            protected boolean onExpired(FlusherEntry expirable)
             {
                 // This is called with lock held so we delay the abort until we exit the lock in iterate().
                 _expired = true;
@@ -98,7 +98,7 @@ public class FrameFlusher extends IteratingCallback
             }
 
             @Override
-            protected Iterator<Entry> iterator()
+            protected Iterator<FlusherEntry> iterator()
             {
                 return TypeUtil.concat(_currentEntries.iterator(), _queue.iterator());
             }
@@ -129,23 +129,28 @@ public class FrameFlusher extends IteratingCallback
         this._useDirectByteBuffers = useDirectByteBuffers;
     }
 
+    @Deprecated
+    public boolean enqueue(Frame frame, Callback callback, boolean batch)
+    {
+        return enqueue(new OutgoingEntry(frame, callback, batch));
+    }
+
     /**
      * Enqueue a Frame to be written to the endpoint.
      *
-     * @param frame The frame to queue
-     * @param callback The callback to call once the frame is sent
-     * @param batch True if batch mode is to be used
+     * @param outgoingEntry the outgoing entry containing the frame, callback, etc.
      * @return returns true if the frame was enqueued and iterate needs to be called, returns false if the
      * FrameFlusher was closed
      */
-    public boolean enqueue(Frame frame, Callback callback, boolean batch)
+    public boolean enqueue(OutgoingEntry outgoingEntry)
     {
-        Entry entry = new Entry(frame, callback, batch);
+        FlusherEntry entry = new FlusherEntry(outgoingEntry);
+        Frame frame = outgoingEntry.getFrame();
         byte opCode = frame.getOpCode();
 
         Throwable error = null;
         boolean abort = false;
-        List<Entry> failedEntries = null;
+        List<FlusherEntry> failedEntries = null;
         CloseStatus closeStatus = null;
 
         try (AutoLock l = _lock.lock())
@@ -202,7 +207,7 @@ public class FrameFlusher extends IteratingCallback
                     "Flusher received abnormal CloseFrame: " +
                         CloseStatus.codeString(closeStatus.getCode()), closeStatus.getCause());
 
-            for (Entry e : failedEntries)
+            for (FlusherEntry e : failedEntries)
             {
                 notifyCallbackFailure(e.getCallback(), failure);
             }
@@ -210,7 +215,7 @@ public class FrameFlusher extends IteratingCallback
 
         if (error != null)
         {
-            notifyCallbackFailure(callback, error);
+            notifyCallbackFailure(outgoingEntry.getCallback(), error);
             if (abort)
                 abort(error);
             return false;
@@ -244,7 +249,7 @@ public class FrameFlusher extends IteratingCallback
 
             while (!_queue.isEmpty() && _currentEntries.size() <= _maxGather)
             {
-                Entry entry = _queue.poll();
+                FlusherEntry entry = _queue.poll();
                 _currentEntries.add(entry);
                 if (entry.getFrame() == FLUSH_FRAME)
                 {
@@ -259,7 +264,7 @@ public class FrameFlusher extends IteratingCallback
         List<ByteBuffer> buffers = new ArrayList<>((_maxGather * 2) + 1);
         if (_batchBuffer != null)
             buffers.add(_batchBuffer.getByteBuffer());
-        for (Entry entry : _currentEntries)
+        for (FlusherEntry entry : _currentEntries)
         {
             if (entry.getFrame() == FLUSH_FRAME)
                 continue;
@@ -386,7 +391,7 @@ public class FrameFlusher extends IteratingCallback
             _currentEntries.clear();
         }
 
-        for (Entry entry : _completedEntries)
+        for (FlusherEntry entry : _completedEntries)
         {
             if (entry.getFrame().getOpCode() == OpCode.CLOSE)
                 _endPoint.shutdownOutput();
@@ -422,7 +427,7 @@ public class FrameFlusher extends IteratingCallback
             _cyclicTimeouts.destroy();
         }
 
-        for (Entry entry : _completedEntries)
+        for (FlusherEntry entry : _completedEntries)
         {
             notifyCallbackFailure(entry.getCallback(), failure);
         }
@@ -476,7 +481,8 @@ public class FrameFlusher extends IteratingCallback
 
     public void setFrameWriteTimeout(long idleTimeout)
     {
-        _frameTimeout = idleTimeout;
+        // TODO remove
+        throw new IllegalStateException();
     }
 
     public long getMessagesOut()
@@ -498,25 +504,65 @@ public class FrameFlusher extends IteratingCallback
             _batchBuffer);
     }
 
-    private class Entry extends OutgoingEntry implements CyclicTimeouts.Expirable
+    private class FlusherEntry implements CyclicTimeouts.Expirable
     {
+        OutgoingEntry _outgoingEntry;
         private final long _expiry;
 
-        private Entry(Frame frame, Callback callback, boolean batch)
+        public FlusherEntry(OutgoingEntry outgoingEntry)
         {
-            super(frame, callback, batch);
-
+            _outgoingEntry = outgoingEntry;
+            long frameTimeout = _outgoingEntry.getFrameTimeout();
+            long messageTimeout = _outgoingEntry.getMessageTimeout();
             long currentTime = NanoTime.now();
             long expiry = Long.MAX_VALUE;
-            if (_frameTimeout > 0)
-                expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(_frameTimeout);
+
+            if (frameTimeout > 0)
+                expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(frameTimeout);
+            if (messageTimeout > 0)
+            {
+                Frame frame = outgoingEntry.getFrame();
+                if (frame.isDataFrame())
+                {
+                    // If this is the first frame of the message remember the message timeout.
+                    if (frame.getOpCode() != OpCode.CONTINUATION)
+                        _currentMessageTimeout = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
+                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageTimeout : nanoTimeMin(expiry, _currentMessageTimeout);
+                }
+                else
+                {
+                    long messageExpiry = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
+                    expiry = (expiry == Long.MAX_VALUE) ? messageExpiry : nanoTimeMin(expiry, messageExpiry);
+                }
+            }
+
             _expiry = expiry;
+        }
+
+        public Frame getFrame()
+        {
+            return _outgoingEntry.getFrame();
+        }
+
+        public Callback getCallback()
+        {
+            return _outgoingEntry.getCallback();
+        }
+
+        public boolean isBatch()
+        {
+            return _outgoingEntry.isBatch();
+        }
+
+        public OutgoingEntry getOutgoingEntry()
+        {
+            return _outgoingEntry;
         }
 
         @Override
         public long getExpireNanoTime()
         {
-            return _expiry;
+            return 0;
         }
 
         public boolean isExpired()
@@ -524,10 +570,15 @@ public class FrameFlusher extends IteratingCallback
             return (_expiry != Long.MAX_VALUE) && NanoTime.until(_expiry) < 0;
         }
 
+        private static long nanoTimeMin(long nanoTime1, long nanoTime2)
+        {
+            return NanoTime.isBeforeOrSame(nanoTime1, nanoTime2) ? nanoTime1 : nanoTime2;
+        }
+
         @Override
         public String toString()
         {
-            return String.format("%s{%s,%s,batch=%b,expire=%s}", TypeUtil.toShortName(getClass()), getFrame(), getCallback(), isBatch(), NanoTime.millisUntil(_expiry));
+            return String.format("%s{entry=%b,expire=%s}", TypeUtil.toShortName(getClass()), _outgoingEntry, NanoTime.millisUntil(_expiry));
         }
     }
 }

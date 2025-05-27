@@ -20,12 +20,25 @@ public class OutgoingEntry
     private final Frame frame;
     private final Callback callback;
     private final boolean batch;
+    private final long frameTimeout;
+    private final long messageTimeout;
 
     public OutgoingEntry(Frame frame, Callback callback, boolean batch)
     {
         this.frame = frame;
         this.callback = callback;
         this.batch = batch;
+        this.frameTimeout = -1;
+        this.messageTimeout = -1;
+    }
+
+    public OutgoingEntry(Frame frame, Callback callback, boolean batch, long frameTimeout, long messageTimeout)
+    {
+        this.frame = frame;
+        this.callback = callback;
+        this.batch = batch;
+        this.frameTimeout = frameTimeout;
+        this.messageTimeout = messageTimeout;
     }
 
     public Frame getFrame()
@@ -41,6 +54,16 @@ public class OutgoingEntry
     public boolean isBatch()
     {
         return batch;
+    }
+
+    public long getFrameTimeout()
+    {
+        return frameTimeout;
+    }
+
+    public long getMessageTimeout()
+    {
+        return messageTimeout;
     }
 
     @Override
