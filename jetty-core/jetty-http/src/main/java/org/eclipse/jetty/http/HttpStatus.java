@@ -205,7 +205,7 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against a code to determine if it falls into the
+         * Tests whether the status code is of the
          * {@code Informational} message category as defined in
          * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
@@ -218,7 +218,7 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against a code to determine if it falls into the
+         * Tests whether the status code is of the
          * {@code Successful} message category as defined in
          * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
@@ -231,7 +231,7 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against a code to determine if it falls into the
+         * Tests whether the status code is of the
          * {@code Redirection} message category as defined in
          * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
@@ -244,7 +244,7 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against a code to determine if it falls into the
+         * Tests whether the status code is of the
          * {@code Client Error} message category as defined in
          * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
@@ -257,7 +257,7 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against a code to determine if it falls into the
+         * Tests whether the status code is of the
          * {@code Server Error} message category as defined in
          * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
@@ -315,7 +315,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against a code to determine if it falls into the
+     * Tests whether the status code is of the
      * {@code Informational} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
@@ -340,7 +340,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against a code to determine if it falls into the
+     * Tests whether the status code is of the
      * {@code Successful} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
@@ -354,7 +354,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against a code to determine if it falls into the
+     * Tests whether the status code is of the
      * {@code Redirection} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
@@ -381,7 +381,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against a code to determine if it falls into the
+     * Tests whether the status code is of the
      * {@code Client Error} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
@@ -395,7 +395,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against a code to determine if it falls into the
+     * Tests whether the status code is of the
      * {@code Server Error} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *

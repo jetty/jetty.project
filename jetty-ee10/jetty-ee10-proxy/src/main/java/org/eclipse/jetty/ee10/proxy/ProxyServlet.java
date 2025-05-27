@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 
 /**
  * <p>Servlet 3.0 asynchronous proxy servlet.</p>
@@ -92,12 +93,10 @@ public class ProxyServlet extends AbstractProxyServlet
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
                         Content.copy(content, delegate, Callback.from(
                             delegate::close,
-                            x ->
-                            {
-                                delegate.fail(x);
-                                onClientRequestFailure(request, proxyRequest, response, x);
-                            })
-                        );
+                            x -> ExceptionUtil.callAndThen(
+                                x, delegate::fail, t -> onClientRequestFailure(request, proxyRequest, response, t)
+                            )
+                        ));
                     }
                     catch (Throwable failure)
                     {
