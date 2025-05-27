@@ -67,6 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
+    private static final String PROXY_REQUEST_SENT_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".proxyRequestSent";
     private static final String PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".proxyRequestContentCommitted";
     private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
@@ -137,6 +138,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
         }
+    }
+
+    @Override
+    protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+    {
+        proxyRequest.attribute(PROXY_REQUEST_SENT_ATTRIBUTE, true);
+        super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
     }
 
     protected AsyncRequestContent newProxyRequestContent(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
@@ -304,6 +312,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             cleanup(clientRequest);
             onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, t);
+            if (!proxyRequest.getAttributes().containsKey(PROXY_REQUEST_SENT_ATTRIBUTE))
+                onProxyResponseFailure(clientRequest, proxyResponse, null, t);
         }
 
         @Override
