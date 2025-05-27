@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.EnhancedMalformedURLException;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -385,7 +386,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith("/"))
-            throw new MalformedURLException(pathInContext);
+            throw new EnhancedMalformedURLException(pathInContext);
 
         MalformedURLException mue = null;
         Resource resource = null;
@@ -1490,7 +1491,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw new MalformedURLException(path);
+                throw new EnhancedMalformedURLException(path, e);
             }
 
             // A Resource was returned, but did not exist
