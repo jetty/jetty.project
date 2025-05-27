@@ -334,9 +334,9 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         }
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
-            callback.succeeded();
+            entry.getCallback().succeeded();
         }
 
         @Override

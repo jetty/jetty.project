@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.slf4j.Logger;
@@ -203,7 +204,7 @@ public class FrameFlusher extends IteratingCallback
 
             for (Entry e : failedEntries)
             {
-                notifyCallbackFailure(e.callback, failure);
+                notifyCallbackFailure(e.getCallback(), failure);
             }
         }
 
@@ -245,7 +246,7 @@ public class FrameFlusher extends IteratingCallback
             {
                 Entry entry = _queue.poll();
                 _currentEntries.add(entry);
-                if (entry.frame == FLUSH_FRAME)
+                if (entry.getFrame() == FLUSH_FRAME)
                 {
                     flush = true;
                     break;
@@ -260,15 +261,15 @@ public class FrameFlusher extends IteratingCallback
             buffers.add(_batchBuffer.getByteBuffer());
         for (Entry entry : _currentEntries)
         {
-            if (entry.frame == FLUSH_FRAME)
+            if (entry.getFrame() == FLUSH_FRAME)
                 continue;
             _messagesOut.increment();
 
             int batchSpace = _batchBuffer == null ? _bufferSize : BufferUtil.space(_batchBuffer.getByteBuffer());
-            boolean batch = canBatch && entry.batch &&
-                !entry.frame.isControlFrame() &&
-                entry.frame.getPayloadLength() < _bufferSize / 4 &&
-                (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
+            boolean batch = canBatch && entry.isBatch() &&
+                !entry.getFrame().isControlFrame() &&
+                entry.getFrame().getPayloadLength() < _bufferSize / 4 &&
+                (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.getFrame().getPayloadLength();
 
             if (batch)
             {
@@ -280,34 +281,34 @@ public class FrameFlusher extends IteratingCallback
                 }
 
                 // Generate the frame into the batchBuffer.
-                _generator.generateWholeFrame(entry.frame, _batchBuffer.getByteBuffer());
+                _generator.generateWholeFrame(entry.getFrame(), _batchBuffer.getByteBuffer());
             }
             else
             {
                 if (canBatch && _batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
                 {
                     // Use the batch space for our header.
-                    _generator.generateHeader(entry.frame, _batchBuffer.getByteBuffer());
+                    _generator.generateHeader(entry.getFrame(), _batchBuffer.getByteBuffer());
                 }
                 else
                 {
                     // Add headers to the list of buffers.
                     RetainableByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
                     _releasableBuffers.add(headerBuffer);
-                    _generator.generateHeader(entry.frame, headerBuffer.getByteBuffer());
+                    _generator.generateHeader(entry.getFrame(), headerBuffer.getByteBuffer());
                     buffers.add(headerBuffer.getByteBuffer());
                 }
 
                 // Add the payload to the list of buffers.
-                ByteBuffer payload = entry.frame.getPayload();
+                ByteBuffer payload = entry.getFrame().getPayload();
                 if (BufferUtil.hasContent(payload))
                 {
-                    if (entry.frame.isMasked())
+                    if (entry.getFrame().isMasked())
                     {
-                        RetainableByteBuffer masked = acquireBuffer(entry.frame.getPayloadLength());
+                        RetainableByteBuffer masked = acquireBuffer(entry.getFrame().getPayloadLength());
                         payload = masked.getByteBuffer();
                         _releasableBuffers.add(masked);
-                        _generator.generatePayload(entry.frame, payload);
+                        _generator.generatePayload(entry.getFrame(), payload);
                     }
                     buffers.add(payload.slice());
                 }
@@ -387,9 +388,9 @@ public class FrameFlusher extends IteratingCallback
 
         for (Entry entry : _completedEntries)
         {
-            if (entry.frame.getOpCode() == OpCode.CLOSE)
+            if (entry.getFrame().getOpCode() == OpCode.CLOSE)
                 _endPoint.shutdownOutput();
-            notifyCallbackSuccess(entry.callback);
+            notifyCallbackSuccess(entry.getCallback());
         }
         _completedEntries.clear();
 
@@ -423,7 +424,7 @@ public class FrameFlusher extends IteratingCallback
 
         for (Entry entry : _completedEntries)
         {
-            notifyCallbackFailure(entry.callback, failure);
+            notifyCallbackFailure(entry.getCallback(), failure);
         }
         _completedEntries.clear();
 
@@ -497,7 +498,7 @@ public class FrameFlusher extends IteratingCallback
             _batchBuffer);
     }
 
-    private class Entry extends FrameEntry implements CyclicTimeouts.Expirable
+    private class Entry extends OutgoingEntry implements CyclicTimeouts.Expirable
     {
         private final long _expiry;
 
@@ -526,7 +527,7 @@ public class FrameFlusher extends IteratingCallback
         @Override
         public String toString()
         {
-            return String.format("%s{%s,%s,batch=%b,expire=%s}", TypeUtil.toShortName(getClass()), frame, callback, batch, NanoTime.millisUntil(_expiry));
+            return String.format("%s{%s,%s,batch=%b,expire=%s}", TypeUtil.toShortName(getClass()), getFrame(), getCallback(), isBatch(), NanoTime.millisUntil(_expiry));
         }
     }
 }

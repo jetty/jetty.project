@@ -242,13 +242,13 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
         if (outgoing == null)
             throw new IllegalStateException();
         if (LOG.isDebugEnabled())
-            LOG.debug("Extending out {} {} {}", frame, callback, batch);
-        outgoing.sendFrame(frame, callback, batch);
+            LOG.debug("Extending out {} {} {}", entry.getFrame(), entry.getCallback(), entry.isBatch());
+        outgoing.sendFrame(entry);
     }
 
     public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, CoreSession coreSession)

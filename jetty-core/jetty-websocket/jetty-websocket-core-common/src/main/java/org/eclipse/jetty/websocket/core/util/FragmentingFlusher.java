@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.FrameEntry;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +32,17 @@ public abstract class FragmentingFlusher extends TransformingFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
     private final Configuration configuration;
-    private FrameEntry current;
+    private OutgoingEntry current;
     private ByteBuffer payload;
 
     public FragmentingFlusher(Configuration configuration)
     {
         this.configuration = configuration;
+    }
+
+    public OutgoingEntry getCurrentEntry()
+    {
+        return current;
     }
 
     protected abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
@@ -52,7 +57,11 @@ public abstract class FragmentingFlusher extends TransformingFlusher
             return true;
         }
 
-        current = new FrameEntry(frame, callback, batch);
+        current = new OutgoingEntry.Builder(getCurrentEntry())
+            .frame(frame)
+            .callback(callback)
+            .batch(batch)
+            .build();
         payload = frame.getPayload().slice();
 
         boolean finished = fragment(callback, true);
@@ -78,7 +87,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
 
     private boolean fragment(Callback callback, boolean first)
     {
-        Frame frame = current.frame;
+        Frame frame = current.getFrame();
         int remaining = payload.remaining();
         long maxFrameSize = configuration.getMaxFrameSize();
         int fragmentSize = (int)Math.min(remaining, maxFrameSize);
@@ -92,7 +101,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         if (finished)
         {
             fragment.setPayload(payload);
-            forwardFrame(fragment, callback, current.batch);
+            forwardFrame(fragment, callback, current.isBatch());
             return true;
         }
 
@@ -107,7 +116,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         if (LOG.isDebugEnabled())
             LOG.debug("Fragmented {}->{}", frame, fragment);
 
-        forwardFrame(fragment, callback, current.batch);
+        forwardFrame(fragment, callback, current.isBatch());
         return false;
     }
 }

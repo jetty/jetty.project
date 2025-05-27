@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -85,10 +86,10 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
         // Compressed frames may increase in size so we need the flusher to fragment them.
-        outgoingFlusher.sendFrame(frame, callback, batch);
+        outgoingFlusher.sendFrame(entry);
     }
 
     @Override
@@ -241,14 +242,14 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
+    protected void nextOutgoingFrame(OutgoingEntry entry)
     {
-        if (frame.isFin() && !outgoingContextTakeover)
+        if (entry.getFrame().isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
             releaseDeflater();
         }
-        super.nextOutgoingFrame(frame, callback, batch);
+        super.nextOutgoingFrame(entry);
     }
 
     @Override
@@ -267,20 +268,23 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     {
         private boolean _first;
         private Frame _frame;
-        private boolean _batch;
 
         @Override
         protected boolean onFrame(Frame frame, Callback callback, boolean batch)
         {
             if (frame.isControlFrame())
             {
-                nextOutgoingFrame(frame, callback, batch);
+                OutgoingEntry entry = new OutgoingEntry.Builder(getCurrentEntry())
+                    .frame(frame)
+                    .callback(callback)
+                    .batch(batch)
+                    .build();
+                nextOutgoingFrame(entry);
                 return true;
             }
 
             _first = true;
             _frame = frame;
-            _batch = batch;
 
             // Provide the frames payload as input to the Deflater.
             getDeflater().setInput(frame.getPayload().slice());
@@ -364,7 +368,11 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
 
-            nextOutgoingFrame(chunk, callback, _batch);
+            OutgoingEntry entry = new OutgoingEntry.Builder(getCurrentEntry())
+                .frame(chunk)
+                .callback(callback)
+                .build();
+            nextOutgoingFrame(entry);
             return finished;
         }
     }

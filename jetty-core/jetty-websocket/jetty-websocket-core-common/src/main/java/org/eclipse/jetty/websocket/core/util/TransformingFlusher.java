@@ -21,7 +21,8 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.internal.FrameEntry;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,16 +33,22 @@ import org.slf4j.LoggerFactory;
  * true to indicate they are done processing the frame and are ready to receive a new one.
  * The {@link Callback} passed in to both these method must be succeeded in order to continue processing.
  */
-public abstract class TransformingFlusher
+public abstract class TransformingFlusher implements OutgoingFrames
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
     private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<FrameEntry> entries = new ArrayDeque<>();
+    private final Queue<OutgoingEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private boolean finished = true;
     private Throwable failure;
+    private OutgoingEntry current;
+
+    public OutgoingEntry getCurrentEntry()
+    {
+        return current;
+    }
 
     /**
      * Called when a frame is ready to be transformed.
@@ -61,9 +68,9 @@ public abstract class TransformingFlusher
      */
     protected abstract boolean transform(Callback callback);
 
-    public final void sendFrame(Frame frame, Callback callback, boolean batch)
+    @Override
+    public final void sendFrame(OutgoingEntry entry)
     {
-        FrameEntry entry = new FrameEntry(frame, callback, batch);
         if (log.isDebugEnabled())
             log.debug("Queuing {}", entry);
 
@@ -77,7 +84,7 @@ public abstract class TransformingFlusher
         if (enqueued)
             flusher.iterate();
         else
-            notifyCallbackFailure(callback, failure);
+            notifyCallbackFailure(entry.getCallback(), failure);
     }
 
     /**
@@ -120,12 +127,12 @@ public abstract class TransformingFlusher
                 failure = t;
         }
 
-        for (FrameEntry entry : entries)
-            notifyCallbackFailure(entry.callback, t);
+        for (OutgoingEntry entry : entries)
+            notifyCallbackFailure(entry.getCallback(), t);
         entries.clear();
     }
 
-    private FrameEntry pollEntry()
+    private OutgoingEntry pollEntry()
     {
         try (AutoLock l = lock.lock())
         {
@@ -135,8 +142,6 @@ public abstract class TransformingFlusher
 
     private class Flusher extends IteratingCallback implements Callback
     {
-        private FrameEntry current;
-
         @Override
         protected Action process() throws Throwable
         {
@@ -149,7 +154,7 @@ public abstract class TransformingFlusher
             if (finished)
             {
                 if (current != null)
-                    notifyCallbackSuccess(current.callback);
+                    notifyCallbackSuccess(current.getCallback());
 
                 current = pollEntry();
                 if (current == null)
@@ -158,7 +163,7 @@ public abstract class TransformingFlusher
                 if (log.isDebugEnabled())
                     log.debug("onFrame {}", current);
 
-                finished = onFrame(current.frame, this, current.batch);
+                finished = onFrame(current.getFrame(), this, current.isBatch());
                 return Action.SCHEDULED;
             }
 
@@ -177,7 +182,7 @@ public abstract class TransformingFlusher
 
             if (current != null)
             {
-                notifyCallbackFailure(current.callback, t);
+                notifyCallbackFailure(current.getCallback(), t);
                 current = null;
             }
             TransformingFlusher.this.onFailure(t);

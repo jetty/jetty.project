@@ -17,20 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.Callback;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {
     private final List<String> captured = new ArrayList<>();
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
-        String hexPayload = Hex.asHex(frame.getPayload());
+        String hexPayload = Hex.asHex(entry.getFrame().getPayload());
         captured.add(hexPayload);
-        if (callback != null)
+        if (entry.getCallback() != null)
         {
-            callback.succeeded();
+            entry.getCallback().succeeded();
         }
     }
 

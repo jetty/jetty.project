@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 @ManagedObject("Identity Extension")
@@ -47,10 +48,10 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
         // pass through
-        nextOutgoingFrame(frame, callback, batch);
+        nextOutgoingFrame(entry);
     }
 
     @Override

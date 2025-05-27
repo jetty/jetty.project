@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageOutputStream;
@@ -100,8 +101,9 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
+        Frame frame = entry.getFrame();
         if (frame.isDataFrame())
         {
             try
@@ -130,14 +132,14 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
             }
             catch (Throwable t)
             {
-                callback.failed(t);
+                entry.getCallback().failed(t);
                 return;
             }
         }
 
         try
         {
-            coreSession.sendFrame(frame, callback, batch);
+            coreSession.sendFrame(entry);
         }
         finally
         {

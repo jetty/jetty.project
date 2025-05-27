@@ -56,9 +56,9 @@ public class AbstractExtension implements Extension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
-        nextOutgoingFrame(frame, callback, batch);
+        nextOutgoingFrame(entry);
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -146,11 +146,11 @@ public class AbstractExtension implements Extension
         this.nextIncoming.onFrame(frame, callback);
     }
 
-    protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
+    protected void nextOutgoingFrame(OutgoingEntry entry)
     {
         if (log.isDebugEnabled())
-            log.debug("nextOutgoingFrame({})", frame);
-        this.nextOutgoing.sendFrame(frame, callback, batch);
+            log.debug("nextOutgoingFrame({})", entry.getFrame());
+        this.nextOutgoing.sendFrame(entry);
     }
 
     @Override

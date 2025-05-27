@@ -485,8 +485,11 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
+        Frame frame = entry.getFrame();
+        Callback callback = entry.getCallback();
+        boolean batch = entry.isBatch();
         if (maxOutgoingFrames > 0 && frame.isDataFrame())
         {
             // Increase the number of outgoing frames, will be decremented when callback is completed.
@@ -522,10 +525,12 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                     () -> closeConnection(sessionState.getCloseStatus(), c),
                     t -> closeConnection(sessionState.getCloseStatus(), Callback.from(c, t)));
 
+                // TODO: we can't do this otherwise the timeout information will be lost.
                 flusher.sendFrame(frame, closeConnectionCallback, false);
             }
             else
             {
+                // TODO: we can't do this otherwise the timeout information will be lost.
                 flusher.sendFrame(frame, callback, batch);
             }
         }
@@ -713,15 +718,15 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private class OutgoingAdaptor implements OutgoingFrames
     {
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
             try
             {
-                connection.enqueueFrame(frame, callback, batch);
+                connection.enqueueFrame(entry.getFrame(), entry.getCallback(), entry.isBatch());
             }
             catch (ProtocolException e)
             {
-                callback.failed(e);
+                entry.getCallback().failed(e);
             }
         }
     }
