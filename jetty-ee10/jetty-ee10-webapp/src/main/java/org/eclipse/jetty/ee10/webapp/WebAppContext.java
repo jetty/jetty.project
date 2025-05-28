@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.CausationMalformedURLException;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -356,7 +355,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith("/"))
-            throw new CausationMalformedURLException(pathInContext);
+            throw new MalformedURLException(pathInContext);
 
         MalformedURLException mue = null;
         Resource resource = null;
@@ -1503,7 +1502,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (Throwable e)
             {
-                throw new CausationMalformedURLException(path, e);
+                throw (MalformedURLException) new MalformedURLException(path).initCause(e);
             }
 
             // A Resource was returned, but did not exist

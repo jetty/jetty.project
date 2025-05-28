@@ -86,7 +86,6 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CausationMalformedURLException;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Loader;
@@ -1536,7 +1535,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith("/"))
-            throw new CausationMalformedURLException(pathInContext);
+            throw new MalformedURLException(pathInContext);
 
         Resource baseResource = _coreContextHandler.getBaseResource();
         if (baseResource == null)
@@ -1994,7 +1993,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     return null;
 
                 if (!canonicalPath.startsWith("/"))
-                    throw new CausationMalformedURLException(path);
+                    throw new MalformedURLException(path);
 
                 Resource resource = ContextHandler.this.getResource(canonicalPath);
                 if (resource != null && resource.exists())
@@ -2007,7 +2006,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw new CausationMalformedURLException(path, e);
+                throw (MalformedURLException) new MalformedURLException(path).initCause(e);
             }
             return null;
         }
