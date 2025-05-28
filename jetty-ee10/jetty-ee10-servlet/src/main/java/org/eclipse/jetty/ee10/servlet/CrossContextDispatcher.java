@@ -240,6 +240,7 @@ class CrossContextDispatcher implements RequestDispatcher
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
         AsyncRequest asyncRequest = new AsyncRequest(httpServletRequest);
+        // We must block when do a cross context async dispatch, as we cannot combine the state machines of the servletChannel from the source context and that of the target
         try (Blocker.Callback callback = Blocker.callback())
         {
             _targetContext.getTargetContext().getContextHandler().handle(asyncRequest, new ServletCoreResponse(asyncRequest, httpResponse, false), callback);
