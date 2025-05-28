@@ -377,9 +377,6 @@ public abstract class QuicheSession extends AbstractSession
         producer.offer(task);
         // Tasks may be offered when the production is idle, due to no
         // network traffic and with the DatagramChannel read interested.
-        // Call dispatch() to avoid blocking the caller.
-        // TODO: decide whether produce() or dispatch().
-//        strategy.dispatch();
         strategy.produce();
     }
 
