@@ -117,14 +117,19 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Process the request method, URI and headers.
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-
                 // Return a Stream.Server.Listener to handle the request events,
                 // for example request content events or request cancellation.
-                return new Stream.Server.Listener() {};
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Process the request method, URI and headers.
+                        MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                    }
+                };
             }
         };
         // end::request[]
@@ -136,17 +141,21 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Process the request method, URI and headers.
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-
-                // Demand to be called back when data is available.
-                stream.demand();
-
-                // Return a Stream.Server.Listener to handle the request content.
+                // Return a Stream.Server.Listener to handle the request.
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Process the request method, URI and headers.
+                        MetaData.Request request = (MetaData.Request)frame.getMetaData();
+
+                        // Demand to be called back when data is available.
+                        stream.demand();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -188,42 +197,47 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Send a response after reading the request.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if (frame.isLast())
+                return new Stream.Server.Listener()
                 {
-                    respond(stream, request);
-                    return null;
-                }
-                else
-                {
-                    // Demand to be called back when data is available.
-                    stream.demand();
-                    return new Stream.Server.Listener()
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
                     {
-                        @Override
-                        public void onDataAvailable(Stream.Server stream)
+                        // Send a response after reading the request.
+                        if (frame.isLast())
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
-                            {
-                                stream.demand();
-                            }
-                            else
-                            {
-                                // Consume the request content.
-                                chunk.release();
-
-                                if (chunk.isLast())
-                                    respond(stream, request);
-                                else
-                                    stream.demand();
-                            }
+                            // No request content, respond immediately.
+                            respond(stream, request);
                         }
-                    };
-                }
+                        else
+                        {
+                            // Demand to be called back when request content is available.
+                            stream.demand();
+                        }
+                    }
+
+                    @Override
+                    public void onDataAvailable(Stream.Server stream)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                        }
+                        else
+                        {
+                            // Consume the request content.
+                            chunk.release();
+
+                            if (chunk.isLast())
+                                respond(stream, request);
+                            else
+                                stream.demand();
+                        }
+                    }
+                };
             }
 
             private void respond(Stream.Server stream, MetaData.Request request)
@@ -273,22 +287,26 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                float requestRate = calculateRequestRate();
-
-                if (requestRate > maxRequestRate)
+                // Return a Stream.Server.Listener to handle the request events.
+                return new Stream.Server.Listener()
                 {
-                    stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException(), Promise.Invocable.noop());
-                    return null;
-                }
-                else
-                {
-                    // The request is accepted.
-                    MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                    // Return a Stream.Listener to handle the request events.
-                    return new Stream.Server.Listener() {};
-                }
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        float requestRate = calculateRequestRate();
+                        if (requestRate > maxRequestRate)
+                        {
+                            // The request is rejected.
+                            stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException(), Promise.Invocable.noop());
+                        }
+                        else
+                        {
+                            // The request is accepted.
+                        }
+                    }
+                };
             }
             // tag::exclude[]
 

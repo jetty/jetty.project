@@ -164,14 +164,20 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set((HTTP3Session)stream.getSession());
+                serverSessionRef.set((HTTP3Session)session);
                 serverRequestLatch.countDown();
-                // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                // Not interested in request data.
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Send the response.
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                        // Not interested in request data.
+                    }
+                };
             }
         });
 
@@ -213,13 +219,18 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Send the response.
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
+                        stream.demand();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -288,14 +299,19 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set((HTTP3Session)stream.getSession());
-                // Send the response headers.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
-                stream.demand();
+                serverSessionRef.set((HTTP3Session)session);
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Send the response headers.
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
+                        stream.demand();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -385,10 +401,16 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                    }
+                };
             }
         });
 
@@ -457,27 +479,33 @@ public class ClientServerTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set(stream.getSession());
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                if ("/large".equals(request.getHttpURI().getPath()))
+                serverSessionRef.set(session);
+                return new Stream.Server.Listener()
                 {
-                    HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true), new Promise.Invocable.NonBlocking<>()
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
                     {
-                        @Override
-                        public void failed(Throwable x)
+                        MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                        if ("/large".equals(request.getHttpURI().getPath()))
                         {
-                            responseFailureLatch.countDown();
+                            HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
+                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true), new Promise.Invocable.NonBlocking<>()
+                            {
+                                @Override
+                                public void failed(Throwable x)
+                                {
+                                    responseFailureLatch.countDown();
+                                }
+                            });
                         }
-                    });
-                }
-                else
-                {
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                }
-                return null;
+                        else
+                        {
+                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                        }
+                    }
+                };
             }
         });
         AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
@@ -537,12 +565,17 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
-                requestLatch.countDown();
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        stream.demand();
+                        requestLatch.countDown();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -582,7 +615,6 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         }, p));
 
-
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
@@ -599,41 +631,46 @@ public class ClientServerTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                requestLatch.countDown();
-
-                // This thread cannot be blocked otherwise we never
-                // read from the network what the client is sending.
-                // Therefore, spawn a new thread to read the content
-                // in a spin loop without calling demand().
-                new Thread(() -> readWithoutDemanding(stream)).start();
-                return null;
-            }
-
-            private void readWithoutDemanding(Stream.Server stream)
-            {
-                try
+                return new Stream.Server.Listener()
                 {
-                    while (true)
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        requestLatch.countDown();
+                        // This thread cannot be blocked otherwise we never
+                        // read from the network what the client is sending.
+                        // Therefore, spawn a new thread to read the content
+                        // in a spin loop without calling demand().
+                        new Thread(() -> readWithoutDemanding(stream)).start();
+                    }
+
+                    private void readWithoutDemanding(Stream.Server stream)
+                    {
+                        try
                         {
-                            Thread.sleep(100);
-                            continue;
+                            while (true)
+                            {
+                                Content.Chunk chunk = stream.read();
+                                if (chunk == null)
+                                {
+                                    Thread.sleep(100);
+                                    continue;
+                                }
+                                chunk.release();
+                                if (chunk.isLast())
+                                {
+                                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                                    break;
+                                }
+                            }
                         }
-                        chunk.release();
-                        if (chunk.isLast())
+                        catch (InterruptedException ignored)
                         {
-                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                            break;
                         }
                     }
-                }
-                catch (InterruptedException ignored)
-                {
-                }
+                };
             }
         });
 

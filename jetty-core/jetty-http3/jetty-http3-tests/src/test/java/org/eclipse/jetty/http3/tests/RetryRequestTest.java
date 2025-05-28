@@ -47,12 +47,18 @@ public class RetryRequestTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                return null;
+                serverSessionRef.set(session);
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                    }
+                };
             }
         });
 

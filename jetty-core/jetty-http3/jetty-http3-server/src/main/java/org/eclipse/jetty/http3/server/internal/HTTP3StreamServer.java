@@ -19,7 +19,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.HTTP3Stream;
-import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
@@ -40,6 +39,12 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
         super(session, endPoint, local);
     }
 
+    @Override
+    public HTTP3SessionServer getSession()
+    {
+        return (HTTP3SessionServer)super.getSession();
+    }
+
     private Listener getListener()
     {
         return listener;
@@ -50,22 +55,20 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
         validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER);
         onHeaders(frame);
         updateClose(frame.isLast(), false);
-        listener = notifyRequest(frame);
+        listener = getSession().notifyRequest(frame);
+        notifyRequest(frame);
     }
 
-    private Listener notifyRequest(HeadersFrame frame)
+    private void notifyRequest(HeadersFrame frame)
     {
-        Session.Server.Listener listener = (Session.Server.Listener)getSession().getListener();
+        Stream.Server.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            if (listener != null)
-                return listener.onRequest(this, frame);
-            return null;
+            listener.onRequest(this, frame);
         }
         catch (Throwable x)
         {
             LOG.info("failure notifying listener {}", listener, x);
-            return null;
         }
     }
 

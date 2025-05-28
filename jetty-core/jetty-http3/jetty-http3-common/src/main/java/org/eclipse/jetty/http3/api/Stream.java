@@ -176,7 +176,7 @@ public interface Stream
              * be content available.</p>
              * <p>A server application that wishes to handle request content
              * should typically call {@link Stream#demand()} from
-             * {@link Session.Server.Listener#onRequest(Server, HeadersFrame)}.</p>
+             * {@link Stream.Server.Listener#onRequest(Server, HeadersFrame)}.</p>
              * <p>A client application that wishes to handle response content
              * should typically call {@link Stream#demand()} from
              * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>
@@ -306,12 +306,43 @@ public interface Stream
         interface Listener
         {
             /**
+             * <p>Callback method invoked when a request is received.</p>
+             * <p>Applications should implement this method to process HTTP/3 requests,
+             * typically providing an HTTP/3 response via {@link #respond(HeadersFrame, Promise.Invocable)}:</p>
+             * <pre>{@code
+             * class MyStreamServerListener implements Stream.Server.Listener
+             * {
+             *     @Override
+             *     public void onRequest(Stream.Server stream, HeadersFrame frame)
+             *     {
+             *         // Send a response.
+             *         var response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+             *         stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+             *         if (!frame.isLast())
+             *             stream.demand();
+             *     }
+             * }
+             * }</pre>
+             * <p>If there is request content (indicated by the fact that the given HEADERS frame
+             * is not the last in the stream), then applications should call {@link Stream#demand()}
+             * to signal interest in receiving request content, and override
+             * {@link #onDataAvailable(Server)} to read and consume request content.</p>
+             *
+             * @param stream the stream
+             * @param frame the HEADERS frame containing the request headers
+             */
+            default void onRequest(Stream.Server stream, HeadersFrame frame)
+            {
+                stream.demand();
+            }
+
+            /**
              * <p>Callback method invoked if the application has expressed
              * {@link Stream#demand() demand} for content, and if there may
              * be content available.</p>
              * <p>A server application that wishes to handle request content
              * should typically call {@link Stream#demand()} from
-             * {@link Session.Server.Listener#onRequest(Server, HeadersFrame)}.</p>
+             * {@link #onRequest(Server, HeadersFrame)}.</p>
              * <p>A client application that wishes to handle response content
              * should typically call {@link Stream#demand()} from
              * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>

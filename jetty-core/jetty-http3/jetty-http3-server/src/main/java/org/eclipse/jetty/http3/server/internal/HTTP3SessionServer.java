@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.server.internal;
 
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -115,6 +116,20 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         catch (Throwable x)
         {
             LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    Stream.Server.Listener notifyRequest(HeadersFrame frame)
+    {
+        Server.Listener listener = getListener();
+        try
+        {
+            return listener.onRequest(this, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return null;
         }
     }
 }

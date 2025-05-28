@@ -157,11 +157,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                 // Notify the listener via onRequest()/onResponse().
                                 action.task().run();
 
-                                // Notify onDataAvailable() if the listener
-                                // demanded in onRequest()/onResponse().
-                                if (!interim)
-                                    stream.processData(false);
-
                                 yield interim;
                             }
                             case EOF ->
