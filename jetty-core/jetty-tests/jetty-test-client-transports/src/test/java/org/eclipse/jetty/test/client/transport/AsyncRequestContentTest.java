@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -46,6 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,9 +55,6 @@ public class AsyncRequestContentTest extends AbstractTest
     @MethodSource("transports")
     public void testEarlyEofWithDemand(TransportType transport) throws Exception
     {
-        // TODO #13131
-        Assumptions.assumeTrue(transport != TransportType.H3_QUICHE);
-
         CountDownLatch serverHandleLatch = new CountDownLatch(1);
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -68,6 +65,9 @@ public class AsyncRequestContentTest extends AbstractTest
             {
                 request.addFailureListener(x -> failureRef.compareAndExchange(null, x).addSuppressed(x));
 
+                Content.Chunk chunk = request.read();
+                assertNull(chunk);
+
                 request.demand(new Runnable()
                 {
                     @Override
@@ -75,10 +75,7 @@ public class AsyncRequestContentTest extends AbstractTest
                     {
                         Content.Chunk read = request.read();
                         if (read == null)
-                        {
-                            request.demand(this);
-                            return;
-                        }
+                            read = Content.Chunk.from(new AssertionError("Unexpected call to demand callback"));
 
                         chunks.add(read);
 
@@ -92,6 +89,7 @@ public class AsyncRequestContentTest extends AbstractTest
                             request.demand(this);
                     }
                 });
+
                 serverHandleLatch.countDown();
 
                 return true;
