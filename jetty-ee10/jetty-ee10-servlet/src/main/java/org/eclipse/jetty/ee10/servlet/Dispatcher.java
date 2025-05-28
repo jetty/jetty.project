@@ -756,8 +756,9 @@ public class Dispatcher implements RequestDispatcher
         }
 
         /**
-         * Get the parameters merged from the wrapped request, and the dispatch URI.
-         * If the dispatch URI is the same as the URI of the wrapped request, then
+         * Get the parameters merged from the request wrapped by this {@code AsyncRequest}
+         * and those in the {@code RequestDispatcher}.
+         * If the target path is the same as the request path, then
          * we do not want to re-extract the query string, as the wrapped request will
          * have already done the extraction.
          * @return the request parameters
