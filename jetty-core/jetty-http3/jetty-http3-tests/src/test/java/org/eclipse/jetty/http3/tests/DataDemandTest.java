@@ -577,12 +577,6 @@ public class DataDemandTest extends AbstractClientServerTest
                     private boolean firstData;
                     private boolean nullData;
 
-                    // TODO: alternative to simplify
-                    public void onRequest(Stream.Server stream, HeadersFrame frame)
-                    {
-                        stream.demand();
-                    }
-
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
