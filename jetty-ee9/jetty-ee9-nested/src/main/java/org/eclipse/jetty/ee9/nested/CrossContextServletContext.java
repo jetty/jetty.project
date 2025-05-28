@@ -37,7 +37,7 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.EnhancedMalformedURLException;
+import org.eclipse.jetty.util.CausationMalformedURLException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -153,7 +153,7 @@ class CrossContextServletContext implements ServletContext
         catch (Throwable e)
         {
             // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-            throw new EnhancedMalformedURLException(path, e);
+            throw new CausationMalformedURLException(path, e);
         }
     }
 

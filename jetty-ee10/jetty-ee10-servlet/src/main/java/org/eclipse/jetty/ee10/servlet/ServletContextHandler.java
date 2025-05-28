@@ -91,9 +91,9 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CausationMalformedURLException;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
-import org.eclipse.jetty.util.EnhancedMalformedURLException;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -768,7 +768,7 @@ public class ServletContextHandler extends ContextHandler
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith("/"))
-            throw new EnhancedMalformedURLException(pathInContext);
+            throw new CausationMalformedURLException(pathInContext);
 
         Resource baseResource = getBaseResource();
         if (baseResource == null)
@@ -2888,7 +2888,7 @@ public class ServletContextHandler extends ContextHandler
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw new EnhancedMalformedURLException(path, e);
+                throw new CausationMalformedURLException(path, e);
             }
 
             // No hits

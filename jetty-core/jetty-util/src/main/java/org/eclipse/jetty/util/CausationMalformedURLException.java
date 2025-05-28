@@ -16,16 +16,16 @@ package org.eclipse.jetty.util;
 import java.net.MalformedURLException;
 
 /**
- * Enhanced {@link MalformedURLException} that allows for causes.
+ * A {@link MalformedURLException} that allows for causes.
  */
-public class EnhancedMalformedURLException extends MalformedURLException
+public class CausationMalformedURLException extends MalformedURLException
 {
-    public EnhancedMalformedURLException(String msg)
+    public CausationMalformedURLException(String msg)
     {
         super(msg);
     }
 
-    public EnhancedMalformedURLException(String msg, Throwable cause)
+    public CausationMalformedURLException(String msg, Throwable cause)
     {
         super(msg);
         initCause(cause);
