@@ -25,7 +25,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@SuppressWarnings("serial")
 public abstract class AsyncScheduledDispatchWrite extends AbstractFileContentServlet
 {
     public static class Default extends AsyncScheduledDispatchWrite

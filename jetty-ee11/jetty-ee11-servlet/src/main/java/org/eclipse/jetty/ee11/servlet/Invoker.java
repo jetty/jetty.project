@@ -55,7 +55,6 @@ import org.slf4j.LoggerFactory;
  *
  * @version $Id: Invoker.java 4780 2009-03-17 15:36:08Z jesse $
  */
-@SuppressWarnings("serial")
 public class Invoker extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(Invoker.class);

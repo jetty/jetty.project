@@ -20,6 +20,7 @@
     <module>jetty-ee9-test-felix-webapp</module>
     <module>jetty-ee9-test-http2-webapp</module>
     <module>jetty-ee9-test-integration</module>
+    <module>jetty-ee9-test-jersey</module>
     <module>jetty-ee9-test-jmx</module>
     <module>jetty-ee9-test-jndi</module>
     <module>jetty-ee9-test-loginservice</module>

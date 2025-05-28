@@ -18,8 +18,6 @@ import java.util.Objects;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Source
- *
  * The source of a web artifact: servlet, filter, mapping etc
  */
 public class Source

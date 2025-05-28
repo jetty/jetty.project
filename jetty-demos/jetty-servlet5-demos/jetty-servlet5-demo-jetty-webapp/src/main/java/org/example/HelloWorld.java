@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Dump Servlet Request.
  */
-@SuppressWarnings("serial")
 public class HelloWorld extends HttpServlet
 {
 

@@ -412,6 +412,10 @@ public class StartArgs
 
                 for (Path libPath : baseHome.getPaths(lib))
                 {
+                    if (Files.notExists(libPath))
+                    {
+                        throw new IllegalArgumentException(libPath + " does not exist");
+                    }
                     environment.getClasspath().addComponent(libPath);
                 }
             }

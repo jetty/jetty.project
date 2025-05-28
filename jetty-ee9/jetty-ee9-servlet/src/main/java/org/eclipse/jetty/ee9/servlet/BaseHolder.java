@@ -29,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractHolder
- *
  * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter,
  * listener), and/or require metadata to be held regarding their origin
  * (web.xml, annotation, programmatic api etc).

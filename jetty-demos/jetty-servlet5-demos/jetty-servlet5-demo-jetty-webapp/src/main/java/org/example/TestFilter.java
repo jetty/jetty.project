@@ -29,8 +29,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 
 /**
- * TestFilter.
- *
  * This filter checks for a none local request, and if the init parameter
  * "remote" is not set to true, then all non local requests are forwarded
  * to /remote.html

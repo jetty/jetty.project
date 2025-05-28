@@ -106,11 +106,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ContextHandler.
- *
- * <p>
  * This handler wraps a call to handle by setting the context and servlet path, plus setting the context classloader.
- * </p>
  * <p>
  * If the context init parameter {@code org.eclipse.jetty.server.context.ManagedAttributes} is set to a comma separated list of names, then they are treated as
  * context attribute names, which if set as attributes are passed to the servers Container so that they may be managed with JMX.

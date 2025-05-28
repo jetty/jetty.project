@@ -25,7 +25,7 @@ import jakarta.security.auth.message.module.ServerAuthModule;
 
 /**
  * Simple bridge implementation of the Jakarta Authentication {@link ServerAuthContext} interface.
- *
+ * <p>
  * This implementation will only delegate to the provided {@link ServerAuthModule} implementation.
  */
 class SimpleServerAuthContext implements ServerAuthContext

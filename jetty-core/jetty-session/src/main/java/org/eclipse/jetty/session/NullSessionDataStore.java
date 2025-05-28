@@ -20,8 +20,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * NullSessionDataStore
- *
  * Does not actually store anything, useful for testing.
  */
 @ManagedObject

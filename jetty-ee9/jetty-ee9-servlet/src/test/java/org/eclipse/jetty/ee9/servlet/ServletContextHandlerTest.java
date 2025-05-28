@@ -1907,8 +1907,6 @@ public class ServletContextHandlerTest
 
     public static class HelloServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
@@ -1958,8 +1956,6 @@ public class ServletContextHandlerTest
     @SuppressWarnings("deprecation")
     public static class DecoratedObjectFactoryServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
@@ -2039,8 +2035,6 @@ public class ServletContextHandlerTest
 
     public static class TestSessionTimeoutServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
         {
@@ -2053,8 +2047,6 @@ public class ServletContextHandlerTest
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         public void destroy()
         {

@@ -17,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BundleFileLocatorHelperFactory
- *
  * Obtain a helper for locating files based on the bundle.
  */
 public class BundleFileLocatorHelperFactory

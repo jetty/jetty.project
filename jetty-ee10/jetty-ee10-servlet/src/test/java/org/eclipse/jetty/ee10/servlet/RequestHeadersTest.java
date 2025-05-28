@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.is;
 
 public class RequestHeadersTest
 {
-    @SuppressWarnings("serial")
     private static class RequestHeaderServlet extends HttpServlet
     {
         @Override

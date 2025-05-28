@@ -9,10 +9,7 @@ ee10
 [depends]
 ee10-apache-jsp
 
-[ini]
-ee10.jakarta.servlet.jsp.jstl.api.version?=@jakarta.servlet.jsp.jstl.api.version@
-ee10.jakarta.servlet.jsp.jstl.impl.version?=@jakarta.servlet.jsp.jstl.impl.version@
-
+# needed for JPMS and auto naming as glassfish jar doesn't have the JPMS metadata
 [lib]
-lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee10.jakarta.servlet.jsp.jstl.api.version}.jar
-lib/ee10-glassfish-jstl/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar
+lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
+lib/ee10-glassfish-jstl/org.glassfish.web.@org.glassfish.web:jakarta.servlet.jsp.jstl@

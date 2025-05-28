@@ -39,11 +39,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Convenience class to handle validation of certificates, aliases and keystores
- *
+ * <p>
  * Allows specifying Certificate Revocation List (CRL), as well as enabling
  * CRL Distribution Points Protocol (CRLDP) certificate extension support,
  * and also enabling On-Line Certificate Status Protocol (OCSP) support.
- *
+ * <p>
  * IMPORTANT: at least one of the above mechanisms *MUST* be configured and
  * operational, otherwise certificate validation *WILL FAIL* unconditionally.
  */

@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * AttributeNameTest
- *
  * Test that attribute names that have special characters with meaning to mongo (eg ".") are
  * properly escaped and not accidentally removed.
  * See bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=444595

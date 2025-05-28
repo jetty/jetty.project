@@ -20,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * TestSessionDataStore
- *
  * Make a fake session data store (non clustered!) that creates a new SessionData object
  * every time load(id) is called.
  */

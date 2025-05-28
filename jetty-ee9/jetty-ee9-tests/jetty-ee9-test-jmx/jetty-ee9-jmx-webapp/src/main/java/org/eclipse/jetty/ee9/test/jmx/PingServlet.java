@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Simple ping into this webapp to see if it is here.
  */
-@SuppressWarnings("serial")
 @ManagedObject("Ping Servlet")
 public class PingServlet extends HttpServlet
 {

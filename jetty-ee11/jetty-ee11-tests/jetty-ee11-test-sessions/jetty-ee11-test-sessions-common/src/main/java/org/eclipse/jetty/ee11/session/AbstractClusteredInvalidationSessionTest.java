@@ -39,8 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * AbstractClusteredInvalidationSessionTest
- *
  * <p>
  * Goal of the test is to be sure that invalidating a session on one node
  * result in the session being unavailable in the other node also. This
@@ -136,8 +134,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
     public static class TestServlet extends HttpServlet
     {
         @Serial
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

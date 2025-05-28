@@ -53,8 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * SessionInvalidateCreateScavengeTest
- *
  * This test verifies that invalidating an existing session and creating
  * a new session within the scope of a single request will expire the
  * newly created session correctly (removed from the server and session listeners called).
@@ -150,7 +148,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 
     public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
-        private static final long serialVersionUID = 1L;
         private boolean unbound = false;
 
         @Override
@@ -168,7 +165,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public MySessionBindingListener listener = new MySessionBindingListener();
 
         @Override

@@ -19,8 +19,6 @@ import java.nio.file.Path;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * ServerListener
- *
  * Listener to create a file that signals that the startup is completed.
  * Used by the JettyRunHome maven goal to determine that the child
  * process is started, and that jetty is ready.

@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * ClientCrossContextSessionTest
- *
  * Test that a client can create a session on one context and
  * then re-use that session id on a request to another context,
  * but the session contents are separate on each.
@@ -106,7 +104,6 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletA extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public String sessionId;
 
         @Override
@@ -130,7 +127,6 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletB extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
         public volatile String sessionId;
 
         @Override

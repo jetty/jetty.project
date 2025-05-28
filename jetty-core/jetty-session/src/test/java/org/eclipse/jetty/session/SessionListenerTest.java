@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * SessionListenerTest
- *
  * Test that session listeners are called.
  */
 public class SessionListenerTest

@@ -19,8 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * WebServletAnnotationHandler
- *
  * Process a WebServlet annotation on a class.
  */
 public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationHandler

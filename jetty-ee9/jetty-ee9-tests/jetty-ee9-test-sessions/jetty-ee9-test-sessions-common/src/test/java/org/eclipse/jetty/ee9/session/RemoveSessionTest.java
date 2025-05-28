@@ -41,8 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * RemoveSessionTest
- *
  * Test that invalidating a session does not return the session on the next request.
  */
 public class RemoveSessionTest
@@ -123,8 +121,6 @@ public class RemoveSessionTest
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String action = request.getParameter("action");

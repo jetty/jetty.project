@@ -152,8 +152,6 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 
-    private static final long serialVersionUID = 4930458713846881193L;
-
     private final ResourceService _resourceService;
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;

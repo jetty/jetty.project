@@ -39,15 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * AbstractClusteredInvalidationSessionTest
- *
- * <p>
  * Goal of the test is to be sure that invalidating a session on one node
  * result in the session being unavailable in the other node also. This
  * simulates an environment without a sticky load balancer. In this case,
  * you must use session eviction, to try to ensure that as the session
  * bounces around it gets a fresh load of data from the SessionDataStore.
- * </p>
  */
 public abstract class AbstractClusteredInvalidationSessionTest extends AbstractSessionTestBase
 {
@@ -136,8 +132,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
     public static class TestServlet extends HttpServlet
     {
         @Serial
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

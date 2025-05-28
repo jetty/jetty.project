@@ -29,8 +29,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * MavenServerConnector
- *
  * As the ServerConnector class does not have a no-arg constructor, and moreover requires
  * the server instance passed in to all its constructors, it cannot
  * be referenced in the pom.xml. This class wraps a ServerConnector, delaying setting the

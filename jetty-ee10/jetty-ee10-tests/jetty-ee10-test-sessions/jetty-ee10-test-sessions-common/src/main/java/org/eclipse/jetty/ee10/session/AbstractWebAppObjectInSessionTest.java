@@ -36,12 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * AbstractWebAppObjectInSessionTest
- *
  * Target of this test is to check that when a webapp on nodeA puts in the session
  * an object of a class loaded from the war (and hence with a WebAppClassLoader),
  * the same webapp on nodeB is able to load that object from the session.
- *
+ * <p>
  * This test is only appropriate for clustered session managers.
  */
 public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionTestBase

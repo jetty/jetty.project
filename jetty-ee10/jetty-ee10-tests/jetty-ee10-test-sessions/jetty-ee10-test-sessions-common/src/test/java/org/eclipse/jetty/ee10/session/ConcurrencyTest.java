@@ -39,8 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * ConcurrencyTest
- *
  * This test performs multiple concurrent requests from different clients
  * for the same session on the same node.
  */
@@ -180,8 +178,6 @@ public class ConcurrencyTest
     public static class TestServlet
         extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException

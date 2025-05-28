@@ -47,8 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MongoSessionDataStore
- *
  * The document model is an outer object that contains the elements:
  * <ul>
  * <li>"id"      : session_id </li>

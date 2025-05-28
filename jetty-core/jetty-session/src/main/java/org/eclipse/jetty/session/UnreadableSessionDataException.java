@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.session;
 
+import java.io.Serial;
+
 /**
  * UnreadableSessionDataException
  */
 public class UnreadableSessionDataException extends Exception
 {
-    /**
-     *
-     */
+    @Serial
     private static final long serialVersionUID = 1806303483488966566L;
     private String _id;
     private SessionContext _sessionContext;

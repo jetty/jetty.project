@@ -26,8 +26,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
- * MavenResource
- *
  * A helper class to allow Resources to be used in maven pom.xml configuration by
  * providing a no-arg constructor and a setter that accepts a simple string as a
  * file location. This class delegates to a real Resource obtained using a

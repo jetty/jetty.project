@@ -32,10 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DatabaseAdaptor
- *
  * Handles differences between databases.
- *
+ * <p>
  * Postgres uses the getBytes and setBinaryStream methods to access
  * a "bytea" datatype, which can be up to 1Gb of binary data. MySQL
  * is happy to use the "blob" type and getBlob() methods instead.

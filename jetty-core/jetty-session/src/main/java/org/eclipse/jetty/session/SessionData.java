@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
@@ -27,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SessionData
- *
  * The data associated with a session. A Session object has a 1:1 relationship
  * with a SessionData object. The behaviour of sessions is implemented in the
  * Session object (eg calling listeners, keeping timers etc). A Session's
@@ -37,8 +36,6 @@ import org.slf4j.LoggerFactory;
 public class SessionData implements Serializable
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionData.class);
-
-    private static final long serialVersionUID = 1L;
 
     protected String _id;
     protected String _contextPath;
@@ -467,6 +464,7 @@ public class SessionData implements Serializable
         _maxInactiveMs = maxInactive;
     }
 
+    @Serial
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {
         out.writeUTF(_id); //session id
@@ -482,6 +480,7 @@ public class SessionData implements Serializable
         serializeAttributes(this, out);
     }
 
+    @Serial
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         _id = in.readUTF();

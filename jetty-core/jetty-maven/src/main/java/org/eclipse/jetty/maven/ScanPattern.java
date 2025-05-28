@@ -17,8 +17,6 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * ScanPattern
- *
  * Ant-style pattern of includes and excludes.
  */
 public class ScanPattern

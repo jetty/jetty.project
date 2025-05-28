@@ -61,8 +61,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * AbstractWebAppMojo
- *
  * Base class for common behaviour of jetty mojos.
  */
 public abstract class AbstractWebAppMojo extends AbstractMojo

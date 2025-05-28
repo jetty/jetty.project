@@ -103,7 +103,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${jakarta.servlet.api.version}</versionString>
+              <versionString>${ee11.jakarta.servlet.api.version}</versionString>
               <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>

@@ -40,8 +40,6 @@ import org.slf4j.LoggerFactory;
 // @checkstyle-disable-check : TypeNameCheck
 
 /**
- * localContext
- *
  * Implementation of the delegate for InitialContext for the local namespace.
  */
 public class localContextRoot implements Context

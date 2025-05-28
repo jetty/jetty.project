@@ -31,8 +31,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
- * ServerSupport
- *
  * Helps configure the Server instance.
  */
 public class ServerSupport

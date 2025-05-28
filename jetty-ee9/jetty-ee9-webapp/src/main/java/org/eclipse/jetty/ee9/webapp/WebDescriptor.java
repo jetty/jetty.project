@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Descriptor
- *
  * A web descriptor (web.xml/web-defaults.xml/web-overrides.xml).
  */
 public class WebDescriptor extends Descriptor

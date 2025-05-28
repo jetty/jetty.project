@@ -24,6 +24,8 @@ import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -226,6 +228,21 @@ public class JettyHomeTester
 
     private void init() throws Exception
     {
+        String jettyHomeStr = System.getProperty("jetty.home");
+        if (jettyHomeStr != null && !jettyHomeStr.isEmpty())
+        {
+           Path jettyHome = Paths.get(jettyHomeStr);
+           // test path exists
+           if (Files.exists(jettyHome))
+           {
+               config.jettyHome = jettyHome;
+           }
+           else
+           {
+               throw new IllegalArgumentException("Ignore non existing Jetty home: " + jettyHomeStr);
+           }
+        }
+
         if (config.jettyHome == null)
             config.jettyHome = resolveHomeArtifact(config.getJettyVersion());
 
@@ -246,7 +263,7 @@ public class JettyHomeTester
 
     public static void unzip(Path archive, Path outputDir) throws IOException
     {
-        if (!Files.exists(outputDir))
+        if (Files.notExists(outputDir))
             throw new FileNotFoundException("Directory does not exist: " + outputDir);
 
         if (!Files.isDirectory(outputDir))
@@ -277,12 +294,13 @@ public class JettyHomeTester
                     Path outputPath = Path.of(outputPathURI);
                     if (Files.isDirectory(path))
                     {
-                        if (!Files.exists(outputPath))
+                        if (Files.notExists(outputPath))
                             Files.createDirectory(outputPath);
                     }
                     else
                     {
-                        Files.copy(path, outputPath);
+                        if (Files.notExists(outputPath))
+                            Files.copy(path, outputPath);
                     }
                 }
             }

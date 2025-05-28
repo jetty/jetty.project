@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+    <!-- Workstation wide caching: just nuke your local repository and rebuild -->
+    <extension>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.7.6</version>
+    </extension>
+</extensions>

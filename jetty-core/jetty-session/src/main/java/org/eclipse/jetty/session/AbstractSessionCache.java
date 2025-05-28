@@ -30,19 +30,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractSessionCache
- *
  * A base implementation of the {@link SessionCache} interface for managing a set of
  * Session objects pertaining to a context in memory.
- *
+ * <p>
  * This implementation ensures that multiple requests for the same session id
  * always return the same Session object.
- *
+ * <p>
  * It will delay writing out a session to the SessionDataStore until the
  * last request exits the session. If the SessionDataStore supports passivation
  * then the session passivation and activation listeners are called appropriately as
  * the session is written.
- *
+ * <p>
  * This implementation also supports evicting idle Session objects. An idle Session
  * is one that is still valid, has not expired, but has not been accessed by a
  * request for a configurable amount of time.  An idle session will be first

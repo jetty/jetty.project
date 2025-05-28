@@ -12,12 +12,23 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <bundle.debug>false</bundle.debug>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>biz.aQute.bnd</groupId>
+      <artifactId>biz.aQute.bnd.util</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.osgi</groupId>
+          <artifactId>org.osgi.core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
@@ -43,9 +54,12 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-keystore</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
@@ -253,13 +267,6 @@
       <artifactId>jetty-alpn-server</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--
-    <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-simple</artifactId>
-       <scope>test</scope>
-     </dependency>
-     -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
@@ -268,7 +275,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -519,7 +525,13 @@
       <artifactId>asm-util</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Jetty OSGi Deps -->
+    <dependency>
+      <!-- https://github.com/ops4j/org.ops4j.pax.url/issues/454 -->
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -532,8 +544,8 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
+              <bundle.debug></bundle.debug>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>

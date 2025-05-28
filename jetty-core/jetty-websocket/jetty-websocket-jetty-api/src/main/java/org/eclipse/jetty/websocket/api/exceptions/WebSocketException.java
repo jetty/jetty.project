@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.api.exceptions;
 /**
  * A recoverable exception within the websocket framework.
  */
-@SuppressWarnings("serial")
 public class WebSocketException extends RuntimeException
 {
     public WebSocketException()

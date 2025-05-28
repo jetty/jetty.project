@@ -18,29 +18,24 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>${ee9.jakarta.annotation.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>${ee9.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
-      <version>${ee9.jakarta.transaction-api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -171,7 +166,6 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
                   <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-                  <version>${project.version}</version>
                   <type>jar</type>
                   <includes>**</includes>
                   <overWrite>true</overWrite>

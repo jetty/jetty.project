@@ -17,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BundleClassLoaderHelperFactory
- *
  * Get a class loader helper adapted for the particular osgi environment.
  */
 public class BundleClassLoaderHelperFactory

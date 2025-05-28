@@ -26,13 +26,13 @@ import java.util.TimeZone;
  * Computes String representations of Dates and caches
  * the results so that subsequent requests within the same second
  * will be fast.
- *
+ * <p>
  * Only format strings that contain either "ss".  Sub second formatting is
  * not handled.
- *
+ * <p>
  * The timezone of the date may be included as an ID with the "zzz"
  * format string or as an offset with the "ZZZ" format string.
- *
+ * <p>
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
  */

@@ -16,25 +16,21 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>${ee9.jakarta.annotation.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>${ee9.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp</groupId>
       <artifactId>jakarta.servlet.jsp-api</artifactId>
-      <version>${ee9.jakarta.servlet.jsp.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-      <version>${ee9.jakarta.servlet.jsp.jstl.api.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>

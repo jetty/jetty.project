@@ -35,11 +35,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SameContextForwardedSessionTest
- *
  * Test that creating a session inside a forward on the same context works, and that
  * attributes set after the forward returns are preserved.
  */
@@ -98,8 +95,6 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet1 extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -119,8 +114,6 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet2 extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -139,8 +132,6 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet3 extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -158,8 +149,6 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet4 extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

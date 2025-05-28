@@ -24,8 +24,6 @@ import org.eclipse.jetty.server.Session.API;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * TestSessionHandler
- *
  * For testing convenience.
  */
 public class TestableSessionManager extends AbstractSessionManager

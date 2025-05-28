@@ -22,8 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractForker
- *
  * Base class for forking jetty.
  */
 public abstract class AbstractForker extends AbstractLifeCycle

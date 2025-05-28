@@ -46,8 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * NonClusteredSessionScavengingTest
- *
  * Create a session, wait for it to be scavenged, re-present the cookie and check that  a
  * new session is created.
  */

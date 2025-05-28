@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee11.maven.plugin;
 import org.eclipse.jetty.maven.AbstractServerForker;
 
 /**
- * JettyForker
- *
  * Uses quickstart to generate a webapp and forks a process to run it.
  */
 public class JettyForker extends AbstractServerForker

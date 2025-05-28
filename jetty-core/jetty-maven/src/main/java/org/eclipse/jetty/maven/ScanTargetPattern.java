@@ -22,14 +22,12 @@ import java.util.List;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 
 /**
- * ScanTargetPattern
- *
  * Utility class to provide the ability for the mvn jetty:run
  * mojo to be able to specify filesets of extra files to
  * regularly scan for changes in order to redeploy the webapp.
- *
+ * <p>
  * For example:
- *
+ * <pre>
  * &lt;scanTargetPattern&gt;
  * &lt;directory&gt;/some/place&lt;/directory&gt;
  * &lt;includes&gt;
@@ -41,6 +39,7 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
  * &lt;exclude&gt;some ant pattern here &lt;/exclude&gt;
  * &lt;/excludes&gt;
  * &lt;/scanTargetPattern&gt;
+ * </pre>
  */
 public class ScanTargetPattern
 {

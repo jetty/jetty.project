@@ -26,8 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * InitialContextFactory.java
- *
  * Factory for the default InitialContext.
  * Created: Tue Jul  1 19:08:08 2003
  *

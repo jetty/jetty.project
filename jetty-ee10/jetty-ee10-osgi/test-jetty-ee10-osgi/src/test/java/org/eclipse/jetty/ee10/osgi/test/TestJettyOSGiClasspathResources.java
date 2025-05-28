@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.jar.JarInputStream;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
@@ -29,8 +30,8 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -38,10 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
-/**
- * TestJettyOSGiClasspathResources
- *
- */
 @RunWith(PaxExam.class)
 public class TestJettyOSGiClasspathResources
 {
@@ -66,8 +63,8 @@ public class TestJettyOSGiClasspathResources
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
-        //Note: we have to back down the version of bnd used here because tinybundles expects only this version
-        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
+        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").versionAsInProject().start());
+        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bnd.util").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
@@ -108,10 +105,10 @@ public class TestJettyOSGiClasspathResources
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
         File warFile = new File("target/test-jetty-ee10-osgi-webapp-resources.war");
         TinyBundle tiny = TinyBundles.bundle();
-        tiny.read(new FileInputStream(warFile));
-        tiny.set(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
-        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee10.osgi.webapp.resources.alt");
-        InputStream is = tiny.build(TinyBundles.withBnd());
+        tiny.readIn(new JarInputStream(new FileInputStream(warFile)));
+        tiny.setHeader(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
+        tiny.setHeader(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee10.osgi.webapp.resources.alt");
+        InputStream is = tiny.build(TinyBundles.bndBuilder());
         bundleContext.installBundle("dummyAltLocation", is);
 
         webappBundle.stop();

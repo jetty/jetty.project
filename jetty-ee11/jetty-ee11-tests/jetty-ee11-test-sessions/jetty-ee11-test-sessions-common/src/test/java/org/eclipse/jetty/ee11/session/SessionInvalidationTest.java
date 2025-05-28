@@ -41,8 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * SessionInvalidationTest
- *
  * Test that various methods on sessions can't be accessed after invalidation
  */
 public class SessionInvalidationTest
@@ -157,8 +155,6 @@ public class SessionInvalidationTest
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

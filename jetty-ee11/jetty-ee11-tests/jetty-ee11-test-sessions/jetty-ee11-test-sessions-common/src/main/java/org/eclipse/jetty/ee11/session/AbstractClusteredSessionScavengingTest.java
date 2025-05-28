@@ -49,8 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * AbstractClusteredSessionScavengingTest
- *
  * Test that a session that was live on node1, but then more
  * recently used on node2 does not expire over on node1.
  */
@@ -226,8 +224,6 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
     public static class TestServlet extends HttpServlet
     {
         @Serial
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

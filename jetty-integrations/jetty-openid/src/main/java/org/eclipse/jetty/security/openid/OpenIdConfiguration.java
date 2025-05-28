@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Holds the configuration for an OpenID Connect service.
- *
+ * <p>
  * This uses the OpenID Provider URL with the path {@link #CONFIG_PATH} to discover
  * the required information about the OIDC service.
  */

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.openid;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
 import java.time.Instant;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 public class OpenIdCredentials implements Serializable
 {
     private static final Logger LOG = LoggerFactory.getLogger(OpenIdCredentials.class);
+    @Serial
     private static final long serialVersionUID = 4766053233370044796L;
 
     private final String redirectUri;

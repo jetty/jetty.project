@@ -20,7 +20,6 @@ import org.eclipse.jetty.ee9.websocket.api.StatusCode;
  *
  * @see StatusCode#POLICY_VIOLATION
  */
-@SuppressWarnings("serial")
 public class PolicyViolationException extends CloseException
 {
     public PolicyViolationException(String message)

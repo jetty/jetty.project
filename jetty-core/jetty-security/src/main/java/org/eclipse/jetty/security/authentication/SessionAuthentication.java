@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.io.Serializable;
 
 import org.eclipse.jetty.security.Authenticator;
@@ -27,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SessionAuthentication
- *
  * When a user has been successfully authenticated with some types
  * of Authenticator, the Authenticator stashes a SessionAuthentication
  * into an HttpSession to remember that the user is authenticated.
@@ -38,6 +37,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionAuthentication.class);
 
+    @Serial
     private static final long serialVersionUID = -4643200685888258706L;
 
     public static final String AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.UserIdentity";
@@ -61,6 +61,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
         return super.getUserIdentity();
     }
 
+    @Serial
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {

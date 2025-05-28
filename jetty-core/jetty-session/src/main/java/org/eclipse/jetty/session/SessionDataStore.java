@@ -16,8 +16,6 @@ package org.eclipse.jetty.session;
 import java.util.Set;
 
 /**
- * SessionDataStore
- *
  * A store for the data contained in a Session object. The store
  * would usually be persistent.
  */

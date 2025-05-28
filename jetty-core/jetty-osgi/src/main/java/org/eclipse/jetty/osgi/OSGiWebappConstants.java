@@ -14,9 +14,6 @@
 package org.eclipse.jetty.osgi;
 
 /**
- * OSGiWebappConstants
- *
- *
  * Constants (MANIFEST headers, service properties etc) associated with deploying
  * webapps into OSGi via Jetty.
  */

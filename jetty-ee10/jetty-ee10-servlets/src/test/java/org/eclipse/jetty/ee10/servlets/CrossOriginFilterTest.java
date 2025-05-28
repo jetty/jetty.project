@@ -650,7 +650,6 @@ public class CrossOriginFilterTest
     public static class ResourceServlet extends HttpServlet
     {
         @Serial
-        private static final long serialVersionUID = 1L;
         private final CountDownLatch latch;
 
         public ResourceServlet(CountDownLatch latch)

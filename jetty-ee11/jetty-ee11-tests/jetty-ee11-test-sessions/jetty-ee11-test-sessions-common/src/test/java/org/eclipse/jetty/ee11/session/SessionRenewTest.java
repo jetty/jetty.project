@@ -55,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SessionRenewTest
- *
  * Test that changes the session id during a request.
  */
 public class SessionRenewTest
@@ -300,8 +298,6 @@ public class SessionRenewTest
 
     public static class TestServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

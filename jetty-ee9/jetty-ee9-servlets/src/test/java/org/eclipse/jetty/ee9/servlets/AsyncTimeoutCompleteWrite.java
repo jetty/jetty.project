@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.nullValue;
  *   5) AsyncContext.complete()
  * </pre>
  */
-@SuppressWarnings("serial")
 public abstract class AsyncTimeoutCompleteWrite extends AbstractFileContentServlet implements AsyncListener
 {
     public static class Default extends AsyncTimeoutCompleteWrite

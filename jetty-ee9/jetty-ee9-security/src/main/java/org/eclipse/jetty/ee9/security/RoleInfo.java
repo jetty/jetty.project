@@ -17,8 +17,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * RoleInfo
- *
  * Badly named class that holds the role and user data constraint info for a
  * path/http method combination, extracted and combined from security
  * constraints.

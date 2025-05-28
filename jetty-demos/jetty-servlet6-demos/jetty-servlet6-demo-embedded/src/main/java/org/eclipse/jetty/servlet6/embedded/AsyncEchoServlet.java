@@ -27,8 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class AsyncEchoServlet extends HttpServlet
 {
-    private static final long serialVersionUID = 1L;
-
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
     {

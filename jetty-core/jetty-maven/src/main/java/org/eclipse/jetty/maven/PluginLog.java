@@ -16,8 +16,6 @@ package org.eclipse.jetty.maven;
 import org.apache.maven.plugin.logging.Log;
 
 /**
- * PluginLog
- *
  * Convenience class to provide access to the plugin
  * Log for non-mojo classes.
  */

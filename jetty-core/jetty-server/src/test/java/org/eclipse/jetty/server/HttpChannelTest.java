@@ -1170,6 +1170,75 @@ public class HttpChannelTest
     }
 
     @Test
+    public void testOnFailureDoesNotCallFailureListenersWhenDemandIsPending() throws Exception
+    {
+        AtomicReference<Response> handling = new AtomicReference<>();
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        Handler handler = new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                handling.set(response);
+                request.addFailureListener(t -> error.set(new Throwable("WRONG")));
+                callbackRef.set(callback);
+                return true;
+            }
+        };
+        _server.setHandler(handler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel, false);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
+        Runnable onRequest = channel.onRequest(request);
+        onRequest.run();
+
+        // Check we are handling.
+        assertNotNull(handling.get());
+        assertThat(stream.isComplete(), is(false));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), nullValue());
+
+        // Demand.
+        CountDownLatch demand = new CountDownLatch(1);
+        handling.get().getRequest().demand(demand::countDown);
+
+        // Demand is not serviced immediately.
+        assertThat(demand.getCount(), is(1L));
+
+        // Failure happens.
+        IOException failure = new IOException("Testing");
+        Runnable onFailure = channel.onFailure(failure);
+        assertNotNull(onFailure);
+
+        // Run the onFailure task.
+        onFailure.run();
+
+        // Demand callback was called.
+        assertTrue(demand.await(5, TimeUnit.SECONDS));
+
+        // onFailure listeners were not called by the onFailure task.
+        assertThat(error.get(), nullValue());
+
+        // Complete the request.
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            callbackRef.get().failed(new Throwable("FAILED"));
+        }
+
+        // Request handling was completed.
+        assertTrue(stream.isComplete());
+
+        // onFailure listeners were not called by the callback's failed().
+        assertThat(error.get(), nullValue());
+    }
+
+    @Test
     public void testOnFailure() throws Exception
     {
         AtomicReference<Response> handling = new AtomicReference<>();

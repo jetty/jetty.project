@@ -20,8 +20,6 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.UserIdentity;
 
 /**
- * LoggedOutAuthentication
- *
  * An Authentication indicating that a user has been previously, but is not currently logged in,
  * but may be capable of logging in after a call to Request.login(String,String)
  */

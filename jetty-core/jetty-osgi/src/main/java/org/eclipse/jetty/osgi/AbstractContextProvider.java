@@ -19,18 +19,12 @@ import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.ServiceReference;
 
 /**
- * AbstractContextProvider
- *
- * <p>
  * Base class for deployers that can deploy ContextHandlers into
  * Jetty that have been discovered via OSGI either as bundles or services.
- * </p>
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle
 {

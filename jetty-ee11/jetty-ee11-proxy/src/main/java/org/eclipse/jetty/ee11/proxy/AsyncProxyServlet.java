@@ -123,14 +123,12 @@ public class AsyncProxyServlet extends ProxyServlet
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final HttpServletRequest request;
-        private final HttpServletResponse response;
         private final Request proxyRequest;
         private final AsyncRequestContent content;
 
         protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, AsyncRequestContent content)
         {
             this.request = request;
-            this.response = response;
             this.proxyRequest = proxyRequest;
             this.content = content;
         }
@@ -152,7 +150,7 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onError(Throwable t)
         {
-            onClientRequestFailure(request, proxyRequest, response, t);
+            content.fail(t);
         }
 
         @Override

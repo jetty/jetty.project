@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Collection;
@@ -29,11 +28,11 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Http URI.
- *
+ * A HTTP URI.
+ * <p>
  * Both {@link Mutable} and {@link Immutable} implementations are available
  * via the static methods such as {@link #build()} and {@link #from(String)}.
- *
+ * <p>
  * A URI such as
  * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar%20bob;param2?query#fragment}
  * is split into the following optional elements:<ul>
@@ -269,9 +268,6 @@ public interface HttpURI
 
     class Immutable implements HttpURI, Serializable
     {
-        @Serial
-        private static final long serialVersionUID = 2245620284548399386L;
-
         private final String _scheme;
         private final String _user;
         private final String _host;

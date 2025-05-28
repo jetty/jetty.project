@@ -37,8 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SelectiveJarResource
- *
  * Selectively copies resources from a jar file based on includes/excludes.
  * TODO: investigate if copyTo() can instead have an IncludeExcludeSet as a parameter?
  * TODO: or have a smaller ResourceWrapper jetty-core class that can be overridden for specific behavior like in this class

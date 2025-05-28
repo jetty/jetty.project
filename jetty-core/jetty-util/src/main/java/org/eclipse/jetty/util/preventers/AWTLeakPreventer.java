@@ -16,13 +16,10 @@ package org.eclipse.jetty.util.preventers;
 import java.awt.Toolkit;
 
 /**
- * AWTLeakPreventer
- *
- * See https://issues.jboss.org/browse/AS7-3733
- *
  * The java.awt.Toolkit class has a static field that is the default toolkit.
  * Creating the default toolkit causes the creation of an EventQueue, which has a
  * classloader field initialized by the thread context class loader.
+ * @see <a href="https://issues.jboss.org/browse/AS7-3733">AS7-3733</a>
  */
 public class AWTLeakPreventer extends AbstractLeakPreventer
 {

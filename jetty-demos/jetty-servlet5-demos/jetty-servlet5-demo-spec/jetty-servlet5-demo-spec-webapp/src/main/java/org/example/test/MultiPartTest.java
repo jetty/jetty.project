@@ -26,11 +26,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 
 /**
- * MultiPartTest
- *
  * Test Servlet 3.0 MultiPart Mime handling.
  */
-
 @MultipartConfig(location = "foo/bar", maxFileSize = 10240, maxRequestSize = -1, fileSizeThreshold = 2048)
 public class MultiPartTest extends HttpServlet
 {

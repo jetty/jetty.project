@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Use the {@link #shouldFilter(HttpServletRequest, HttpServletResponse)} method to determine if a request/response should be filtered. If mime types are used,
  * it should be called after {@link jakarta.servlet.FilterChain#doFilter(jakarta.servlet.ServletRequest, jakarta.servlet.ServletResponse)} since the mime type may not
  * be written until then.
- *
+ * <p>
  * Supported init params:
  * <ul>
  * <li><code>includedPaths</code> - CSV of path specs to include</li>

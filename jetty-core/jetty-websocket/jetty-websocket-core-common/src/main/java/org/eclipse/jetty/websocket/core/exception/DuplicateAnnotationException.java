@@ -18,7 +18,6 @@ import java.lang.reflect.Method;
 
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
-@SuppressWarnings("serial")
 public class DuplicateAnnotationException extends InvalidWebSocketException
 {
     public static DuplicateAnnotationException build(Class<?> pojo, Class<? extends Annotation> annoClass, Method... methods)

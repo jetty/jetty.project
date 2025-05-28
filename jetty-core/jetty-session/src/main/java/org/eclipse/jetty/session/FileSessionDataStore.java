@@ -20,8 +20,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -41,8 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * FileSessionDataStore
- *
  * A file-based store of session data.
  */
 @ManagedObject

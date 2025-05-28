@@ -26,8 +26,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 /**
- * InfinispanSessionData
- *
  * Specialization of SessionData to hold the attributes as a serialized byte
  * array. This is necessary because to deserialize the attributes correctly, we
  * need to know which classloader to use, which is normally provided as the

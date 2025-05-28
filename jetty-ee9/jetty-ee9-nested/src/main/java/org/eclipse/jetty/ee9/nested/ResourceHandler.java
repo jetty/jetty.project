@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Resource Handler.
- *
+ * <p>
  * This handle will serve static content and handle If-Modified-Since headers. No caching is done. Requests for resources that do not exist are let pass (Eg no
  * 404's).
  */
