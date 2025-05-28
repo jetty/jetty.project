@@ -697,6 +697,16 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     {
         int error = ErrorCode.CANCEL_STREAM_ERROR.code;
         Throwable failure = toFailure(error, reason);
+        failStreams(matcher, error, failure, reset);
+    }
+
+    private void failStreams(Predicate<Stream> matcher, Throwable failure, boolean reset)
+    {
+        failStreams(matcher, ErrorCode.CANCEL_STREAM_ERROR.code, failure, reset);
+    }
+
+    private void failStreams(Predicate<Stream> matcher, int error, Throwable failure, boolean reset)
+    {
         for (Stream stream : getStreams())
         {
             if (stream.isClosed())
@@ -705,7 +715,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 continue;
             if (LOG.isDebugEnabled())
                 LOG.debug("Failing stream {} of {}", stream, this);
-            failStream(stream, error, reason, failure, Callback.NOOP);
+            failStream(stream, error, failure.getMessage(), failure, Callback.NOOP);
             if (reset)
                 stream.reset(new ResetFrame(stream.getId(), error), Callback.NOOP);
         }
@@ -2072,7 +2082,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 // The lastStreamId carried by the GOAWAY is that of a local stream,
                 // so the lastStreamId must be compared only to local streams ids.
                 Predicate<Stream> failIf = stream -> stream.isLocal() && stream.getId() > frame.getLastStreamId();
-                failStreams(failIf, "closing", false);
+                failStreams(failIf, new RetryableStreamException(), false);
             }
 
             if (tryRunZeroStreamsAction)

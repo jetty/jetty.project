@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.io.EOFException;
 
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpResponse;
@@ -22,6 +23,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.RetryableStreamException;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
@@ -167,7 +169,10 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
 
     Runnable onFailure(Throwable failure)
     {
-        Runnable task = () -> responseFailure(failure, Promise.noop());
+        if (failure instanceof RetryableStreamException)
+            failure = new RetryableRequestException(failure);
+        Throwable f = failure;
+        Runnable task = () -> responseFailure(f, Promise.noop());
         return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 }

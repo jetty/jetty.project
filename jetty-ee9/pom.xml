@@ -42,12 +42,15 @@
   <properties>
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
     <ee9.jakarta.inject.api.version>2.0.1</ee9.jakarta.inject.api.version>
+    <ee9.jakarta.json.api.version>2.0.2</ee9.jakarta.json.api.version>
     <ee9.jakarta.mail.api.version>2.0.1</ee9.jakarta.mail.api.version>
     <ee9.jakarta.servlet.jsp.api.version>3.0.0</ee9.jakarta.servlet.jsp.api.version>
     <ee9.jakarta.servlet.jsp.jstl.impl.version>2.0.0</ee9.jakarta.servlet.jsp.jstl.impl.version>
+    <ee9.jakarta.validation.api.version>3.0.2</ee9.jakarta.validation.api.version>
     <ee9.jakarta.websocket.api.version>2.0.0</ee9.jakarta.websocket.api.version>
     <ee9.jakarta.xml.bind.impl.version>3.0.2</ee9.jakarta.xml.bind.impl.version>
     <ee9.jakarta.xml.jaxws.impl.version>3.0.2</ee9.jakarta.xml.jaxws.impl.version>
+    <ee9.jersey.version>3.0.17</ee9.jersey.version>
     <!-- FIXME we need a separate property for this one -->
     <ee9.jetty.servlet.api.version>5.0.2</ee9.jetty.servlet.api.version>
     <ee9.jsp.impl.version>10.0.27</ee9.jsp.impl.version>
@@ -77,6 +80,16 @@
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
         <version>${ee9.jakarta.inject.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.json</groupId>
+        <artifactId>jakarta.json-api</artifactId>
+        <version>${ee9.jakarta.json.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
+        <version>${ee9.jakarta.validation.api.version}</version>
       </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
@@ -254,6 +267,27 @@
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
         <version>${ee9.jakarta.xml.bind.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.containers</groupId>
+        <artifactId>jersey-container-servlet</artifactId>
+        <version>${ee9.jersey.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.inject</groupId>
+        <artifactId>jersey-hk2</artifactId>
+        <version>${ee9.jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-json-binding</artifactId>
+        <version>${ee9.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
