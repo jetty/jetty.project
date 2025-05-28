@@ -1502,7 +1502,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (Throwable e)
             {
-                throw (MalformedURLException) new MalformedURLException(path).initCause(e);
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
             }
 
             // A Resource was returned, but did not exist

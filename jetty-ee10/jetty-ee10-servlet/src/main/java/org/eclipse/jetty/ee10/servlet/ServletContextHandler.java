@@ -2887,7 +2887,7 @@ public class ServletContextHandler extends ContextHandler
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw (MalformedURLException) new MalformedURLException(path).initCause(e);
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
             }
 
             // No hits
