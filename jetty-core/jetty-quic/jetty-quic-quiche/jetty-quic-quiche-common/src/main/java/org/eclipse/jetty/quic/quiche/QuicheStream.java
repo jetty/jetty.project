@@ -107,7 +107,7 @@ public class QuicheStream extends AbstractStream
 
         if (hasDemand && resetFailure == null)
             notifyDataAvailable();
-        else
+        else if (resetFailure != null)
             notifyFailure(resetFailure);
     }
 
