@@ -323,7 +323,7 @@ public class MultiAuthenticator extends LoginAuthenticator
         @Override
         public AuthenticationState validateRequest(Request request, Response response, Callback callback)
         {
-            if (_loginPath != null)
+            if (_loginPath != null && !response.isCommitted())
             {
                 String loginPath = URIUtil.addPaths(request.getContext().getContextPath(), _loginPath);
                 if (_dispatch)
