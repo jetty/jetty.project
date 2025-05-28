@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
@@ -606,7 +607,7 @@ public class AnnotationParser
 
             try
             {
-                parseClass(handlers, dirResource, candidate.getPath());
+                parseClass(handlers, dirResource, candidate);
             }
             catch (Exception ex)
             {
@@ -629,9 +630,6 @@ public class AnnotationParser
         if (jarResource == null)
             return;
 
-        /*        if (!FileID.isJavaArchive(jarResource.getPath()))
-            return;*/
-
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning jar {}", jarResource);
 
@@ -649,27 +647,60 @@ public class AnnotationParser
      * @param containingResource the dir or jar that the class is contained within, can be null if not known
      * @param classFile the class file to parse
      * @throws IOException if unable to parse
+     * @deprecated use {@link #parseClass(Set, Resource, Resource)} instead (which uses {@link Resource} instead of {@link Path})
      */
+    @Deprecated(since = "12.0.21", forRemoval = true)
     protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile) throws IOException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Parse class from {}", classFile.toUri());
-
-        URI location = classFile.toUri();
-
-        try (InputStream in = Files.newInputStream(classFile))
+        try (InputStream inputStream = Files.newInputStream(classFile))
         {
-            ClassReader reader = new ClassReader(in);
+            parseClass(handlers, containingResource, classFile.toUri(), inputStream);
+        }
+    }
+
+    /**
+     * Use ASM on a class
+     *
+     * @param handlers the handlers to look for classes in
+     * @param containingResource the dir or jar that the class is contained within, can be null if not known
+     * @param classFile the class file to parse
+     * @throws IOException if unable to parse
+     */
+    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Resource classFile) throws IOException
+    {
+        try (InputStream inputStream = IOResources.asInputStream(classFile))
+        {
+            parseClass(handlers, containingResource, classFile.getURI(), inputStream);
+        }
+    }
+
+    /**
+     * Use ASM on a class
+     *
+     * @param handlers the handlers to look for classes in
+     * @param containingResource the dir or jar that the class is contained within, can be null if not known
+     * @param classFileRef the URI reference to the classfile location
+     * @param inputStream the class file contents to parse
+     * @throws IOException if unable to parse
+     */
+    private void parseClass(Set<? extends Handler> handlers, Resource containingResource, URI classFileRef, InputStream inputStream) throws IOException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parse class from {}", classFileRef);
+
+        try
+        {
+            ClassReader reader = new ClassReader(inputStream);
             reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
             String classname = normalize(reader.getClassName());
-            URI existing = _parsedClassNames.putIfAbsent(classname, location);
+            URI existing = _parsedClassNames.putIfAbsent(classname, classFileRef);
             if (existing != null)
-                LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
+                LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, classFileRef);
         }
         catch (IllegalArgumentException | IOException e)
         {
-            throw new IOException("Unable to parse class: " + classFile.toUri(), e);
+            throw new IOException("Unable to parse class: " + classFileRef, e);
         }
     }
     
