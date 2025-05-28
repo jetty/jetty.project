@@ -22,10 +22,21 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.ConditionTimeoutException;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 /**
  * <p>A useful wrapper of {@link Process} instances.</p>
@@ -38,10 +49,14 @@ public class ProcessWrapper implements AutoCloseable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessWrapper.class);
 
+    public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
+
     private final Queue<String> logs = new ConcurrentLinkedQueue<>();
     private final Process process;
     private final ConsoleStreamer stdOut;
     private final ConsoleStreamer stdErr;
+
+    public static final String JETTY_START_SEARCH = "Started oejs.Server@";
 
     public ProcessWrapper(Process process)
     {
@@ -119,6 +134,78 @@ public class ProcessWrapper implements AutoCloseable
                 return true;
         }
         return false;
+    }
+
+    public boolean awaitForJettyStart()
+    {
+        return awaitForJettyStart(START_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    private record ShowLogOnTimeout<T>(ProcessWrapper run) implements ConditionEvaluationListener<T>
+    {
+        @Override
+        public void conditionEvaluated(EvaluatedCondition<T> condition)
+        {
+            // do nothing
+        }
+
+        @Override
+        public void onTimeout(TimeoutEvent timeoutEvent)
+        {
+            System.out.println("LOGS: " + String.join("\n", run.getLogs()));
+        }
+    }
+
+    public Supplier<String> logs()
+    {
+        return () -> String.join("\n", this.getLogs());
+    }
+
+    public boolean awaitForJettyStart(long time, TimeUnit unit)
+    {
+        // Started oejs.Server@
+        try
+        {
+            await()
+                    //.conditionEvaluationListener(new ShowLogOnTimeout<>(this))
+                    .atMost(time, unit)
+                    //.logging(s -> System.out.println("LOGS: " + logs().get()))
+                    .until(() ->
+                    {
+                        try (Stream<String> lines = getLogs().stream())
+                        {
+                            return lines.anyMatch(line -> line.contains(JETTY_START_SEARCH));
+                        }
+                    });
+        }
+        catch (ConditionTimeoutException e)
+        {
+            // as is surefire show logs from the run
+            throw new RuntimeException(logs().get(), e);
+        }
+        // assert no WARN in the logs
+        assertThat(logs().get(), not(containsString("WARN  :")));
+        return true;
+    }
+
+    public boolean awaitForStart() throws InterruptedException
+    {
+        return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    public boolean awaitForStart(long time, TimeUnit unit) throws InterruptedException
+    {
+        try
+        {
+            getProcess().waitFor(time, unit);
+        }
+        catch (InterruptedException e)
+        {
+            throw new IllegalStateException(logs().get(), e);
+        }
+        // assert no WARN in the logs
+        assertThat(logs().get(), not(containsString("WARN  :")));
+        return true;
     }
 
     public boolean awaitConsoleLogsFor(String txt, Duration duration) throws InterruptedException

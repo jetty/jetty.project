@@ -243,6 +243,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+
     @Test
     @Tag("external")
     public void testDownload() throws Exception
@@ -282,8 +283,8 @@ public class DistributionTests extends AbstractJettyHomeTest
         );
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + mods))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWar(war, "proxy");
