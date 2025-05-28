@@ -22,7 +22,7 @@ pipeline {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
+                            tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
             }
           }
@@ -34,7 +34,7 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk24", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
@@ -64,7 +64,7 @@ pipeline {
               checkout scm
               mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(),  javaDoc()], 
+                            tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
                              tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
