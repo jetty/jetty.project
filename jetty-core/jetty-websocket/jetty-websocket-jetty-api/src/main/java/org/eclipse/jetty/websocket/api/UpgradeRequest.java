@@ -83,8 +83,6 @@ public interface UpgradeRequest
     /**
      * The HTTP version used for this Upgrade Request
      * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always
-     * {@code HTTP/1.1}
      *
      * @return the HTTP Version used
      */
@@ -93,7 +91,6 @@ public interface UpgradeRequest
     /**
      * The HTTP method for this Upgrade Request.
      * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
      *
      * @return the HTTP method used
      */

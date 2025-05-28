@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
@@ -49,6 +50,11 @@ public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
             setExtensions(request.getExtensions().stream()
                 .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
                 .collect(Collectors.toList()));
+
+            // Copy the HttpVersion if it exists.
+            String httpVersionString = request.getHttpVersion();
+            if (httpVersionString != null)
+                setVersion(HttpVersion.fromString(httpVersionString));
 
             timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         }

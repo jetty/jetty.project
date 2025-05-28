@@ -128,6 +128,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         return request.getVersion();
     }
 
+    public void setVersion(HttpVersion httpVersion)
+    {
+        request.version(httpVersion);
+    }
+
     public void listener(Request.Listener listener)
     {
         request.onRequestListener(listener);
