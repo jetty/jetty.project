@@ -180,12 +180,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return useInputDirectByteBuffers;
     }
 
-    @Deprecated(since = "12.0.21", forRemoval = true)
-    public void setWriteTimeout(long writeTimeout)
-    {
-        flusher.setFrameWriteTimeout(writeTimeout);
-    }
-
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
@@ -601,20 +595,18 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     /**
      * Enqueue a Frame to be sent.
      *
-     * @param frame The frame to queue
-     * @param callback The callback to call once the frame is sent
-     * @param batch True if batch mode is to be used
+     * @param outgoingEntry The entry to queue
      */
-    public void enqueueFrame(Frame frame, Callback callback, boolean batch)
+    public void enqueueFrame(OutgoingEntry outgoingEntry)
     {
         if (coreSession.getBehavior() == Behavior.CLIENT)
         {
             byte[] mask = new byte[4];
             random.nextBytes(mask);
-            frame.setMask(mask);
+            outgoingEntry.getFrame().setMask(mask);
         }
 
-        if (flusher.enqueue(frame, callback, batch))
+        if (flusher.enqueue(outgoingEntry))
             flusher.iterate();
     }
 

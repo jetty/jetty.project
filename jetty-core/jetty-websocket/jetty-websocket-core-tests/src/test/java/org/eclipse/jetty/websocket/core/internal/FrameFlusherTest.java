@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.junit.jupiter.api.AfterEach;
@@ -86,8 +87,8 @@ public class FrameFlusherTest
         FutureCallback closeCallback = new FutureCallback();
         FutureCallback textFrameCallback = new FutureCallback();
 
-        assertTrue(frameFlusher.enqueue(closeFrame, closeCallback, false));
-        assertFalse(frameFlusher.enqueue(textFrame, textFrameCallback, false));
+        assertTrue(frameFlusher.enqueue(new OutgoingEntry(closeFrame, closeCallback, false)));
+        assertFalse(frameFlusher.enqueue(new OutgoingEntry(textFrame, textFrameCallback, false)));
         frameFlusher.iterate();
 
         closeCallback.get(5, TimeUnit.SECONDS);
@@ -138,7 +139,7 @@ public class FrameFlusherTest
                     {
                         frame = new Frame(OpCode.TEXT).setPayload("Short Message: " + i).setFin(true);
                     }
-                    frameFlusher.enqueue(frame, callback, false);
+                    frameFlusher.enqueue(new OutgoingEntry(frame, callback, false));
                     frameFlusher.iterate();
                     callback.get();
                 }
@@ -174,11 +175,10 @@ public class FrameFlusherTest
             }
         };
 
-        frameFlusher.setFrameWriteTimeout(100);
         endPoint.setBlockTime(200);
 
         Frame frame = new Frame(OpCode.TEXT).setPayload("message").setFin(true);
-        frameFlusher.enqueue(frame, Callback.NOOP, false);
+        frameFlusher.enqueue(new OutgoingEntry(frame, Callback.NOOP, false, 100, -1));
         frameFlusher.iterate();
 
         assertTrue(flusherFailure.await(2, TimeUnit.SECONDS));
@@ -201,7 +201,7 @@ public class FrameFlusherTest
         Callback callbackFrame1 = Callback.from(() ->
         {
         }, t -> failedFrame1.countDown());
-        assertTrue(frameFlusher.enqueue(frame1, callbackFrame1, false));
+        assertTrue(frameFlusher.enqueue(new OutgoingEntry(frame1, callbackFrame1, false)));
 
         // Enqueue the close frame which should fail the previous frame as it is still in the queue.
         Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
@@ -209,7 +209,7 @@ public class FrameFlusherTest
         Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t ->
         {
         });
-        assertTrue(frameFlusher.enqueue(closeFrame, closeFrameCallback, false));
+        assertTrue(frameFlusher.enqueue(new OutgoingEntry(closeFrame, closeFrameCallback, false)));
         assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
 
         // Any frames enqueued after this should fail.
@@ -218,7 +218,7 @@ public class FrameFlusherTest
         Callback callbackFrame2 = Callback.from(() ->
         {
         }, t -> failedFrame2.countDown());
-        assertFalse(frameFlusher.enqueue(frame2, callbackFrame2, false));
+        assertFalse(frameFlusher.enqueue(new OutgoingEntry(frame2, callbackFrame2, false)));
         assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
 
         // Iterating should succeed the close callback.

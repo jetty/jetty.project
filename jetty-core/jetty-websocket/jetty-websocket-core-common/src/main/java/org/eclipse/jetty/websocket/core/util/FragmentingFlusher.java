@@ -19,7 +19,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,6 @@ public abstract class FragmentingFlusher extends TransformingFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
     private final Configuration configuration;
-    private OutgoingEntry current;
     private ByteBuffer payload;
 
     public FragmentingFlusher(Configuration configuration)
@@ -40,34 +38,24 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         this.configuration = configuration;
     }
 
-    public OutgoingEntry getCurrentEntry()
-    {
-        return current;
-    }
-
     protected abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
 
     @Override
     protected boolean onFrame(Frame frame, Callback callback, boolean batch)
     {
+        payload = frame.getPayload().slice();
+
         long maxFrameSize = configuration.getMaxFrameSize();
         if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
         {
             forwardFrame(frame, callback, batch);
+            payload = null;
             return true;
         }
-
-        current = new OutgoingEntry.Builder(getCurrentEntry())
-            .frame(frame)
-            .callback(callback)
-            .batch(batch)
-            .build();
-        payload = frame.getPayload().slice();
 
         boolean finished = fragment(callback, true);
         if (finished)
         {
-            current = null;
             payload = null;
         }
         return finished;
@@ -79,7 +67,6 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         boolean finished = fragment(callback, false);
         if (finished)
         {
-            current = null;
             payload = null;
         }
         return finished;
@@ -87,7 +74,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
 
     private boolean fragment(Callback callback, boolean first)
     {
-        Frame frame = current.getFrame();
+        Frame frame = getCurrentEntry().getFrame();
         int remaining = payload.remaining();
         long maxFrameSize = configuration.getMaxFrameSize();
         int fragmentSize = (int)Math.min(remaining, maxFrameSize);
@@ -101,7 +88,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         if (finished)
         {
             fragment.setPayload(payload);
-            forwardFrame(fragment, callback, current.isBatch());
+            forwardFrame(fragment, callback, getCurrentEntry().isBatch());
             return true;
         }
 
@@ -116,7 +103,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
         if (LOG.isDebugEnabled())
             LOG.debug("Fragmented {}->{}", frame, fragment);
 
-        forwardFrame(fragment, callback, current.isBatch());
+        forwardFrame(fragment, callback, getCurrentEntry().isBatch());
         return false;
     }
 }

@@ -37,18 +37,19 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
     protected JakartaWebSocketAsyncRemote(JakartaWebSocketSession session, CoreSession coreSession)
     {
         super(session, coreSession);
+        messageWriteTimeout = session.getContainer().getDefaultAsyncSendTimeout();
     }
 
     @Override
     public long getSendTimeout()
     {
-        return getWriteTimeout();
+        return messageWriteTimeout;
     }
 
     @Override
     public void setSendTimeout(long timeoutmillis)
     {
-        setWriteTimeout(timeoutmillis);
+        messageWriteTimeout = timeoutmillis;
     }
 
     @Override

@@ -18,6 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
@@ -89,14 +90,15 @@ public class WriteTimeoutTest
     {
         EventSocket clientEndpoint = new EventSocket();
         Session session = client.connectToServer(clientEndpoint, server.getWsUri());
-        session.getAsyncRemote().setSendTimeout(1000);
+        RemoteEndpoint.Async asyncRemote = session.getAsyncRemote();
+        asyncRemote.setSendTimeout(1000);
 
-        // Keep sending messages until one times out.
+        // Keep sending messages until one times out because the server is not reading and blocked on the countdown latch.
         Exception exception = assertThrows(Exception.class, () ->
         {
             while (session.isOpen())
             {
-                session.getBasicRemote().sendText("x".repeat(1024));
+                asyncRemote.sendText("x".repeat(1024)).get();
             }
         });
         assertThat(exception.getCause(), instanceOf(WebSocketWriteTimeoutException.class));

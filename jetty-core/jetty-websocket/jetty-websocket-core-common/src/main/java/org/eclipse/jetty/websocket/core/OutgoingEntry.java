@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class OutgoingEntry
 {
@@ -69,7 +70,9 @@ public class OutgoingEntry
     @Override
     public String toString()
     {
-        return frame.toString();
+        return String.format("%s{messageTimeout=%s, frameTimeout=%s, frame=%s, callback=%s, batch=%s}",
+            TypeUtil.toShortName(getClass()), messageTimeout, frameTimeout, frame, callback, batch);
+
     }
 
     public static class Builder
@@ -77,12 +80,16 @@ public class OutgoingEntry
         private Frame _frame;
         private Callback _callback;
         private boolean _batch;
+        private long _frameTimeout;
+        private long _messageTimeout;
 
         public Builder(OutgoingEntry outgoingEntry)
         {
             _frame = outgoingEntry.getFrame();
             _callback = outgoingEntry.getCallback();
             _batch = outgoingEntry.isBatch();
+            _frameTimeout = outgoingEntry.getFrameTimeout();
+            _messageTimeout = outgoingEntry.getMessageTimeout();
         }
 
         public Builder frame(Frame frame)
@@ -103,9 +110,21 @@ public class OutgoingEntry
             return this;
         }
 
+        public Builder frameTimeout(long frameTimeout)
+        {
+            _frameTimeout = frameTimeout;
+            return this;
+        }
+
+        public Builder messageTimeout(long messageTimeout)
+        {
+            _messageTimeout = messageTimeout;
+            return this;
+        }
+
         public OutgoingEntry build()
         {
-            return new OutgoingEntry(_frame, _callback, _batch);
+            return new OutgoingEntry(_frame, _callback, _batch, _frameTimeout, _messageTimeout);
         }
     }
 }

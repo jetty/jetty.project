@@ -42,6 +42,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
     protected final SessionTracker sessionTracker = new SessionTracker();
     protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     protected final WebSocketComponents components;
+    private long defaultAsyncSendTimeout = -1;
 
     public JakartaWebSocketContainer(WebSocketComponents components)
     {
@@ -76,7 +77,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
 
     public long getDefaultAsyncSendTimeout()
     {
-        return defaultCustomizer.getWriteTimeout().toMillis();
+        return defaultAsyncSendTimeout;
     }
 
     @Override
@@ -106,7 +107,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
     @Override
     public void setAsyncSendTimeout(long ms)
     {
-        defaultCustomizer.setWriteTimeout(Duration.ofMillis(ms));
+        defaultAsyncSendTimeout = ms;
     }
 
     @Override

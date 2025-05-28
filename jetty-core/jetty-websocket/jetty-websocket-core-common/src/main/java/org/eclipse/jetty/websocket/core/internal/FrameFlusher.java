@@ -70,7 +70,7 @@ public class FrameFlusher extends IteratingCallback
     private final List<FlusherEntry> _currentEntries;
     private final List<FlusherEntry> _completedEntries = new ArrayList<>();
     private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
-    private long _currentMessageTimeout;
+    private long _currentMessageExpiry;
 
     private RetainableByteBuffer _batchBuffer;
     private boolean _canEnqueue = true;
@@ -114,7 +114,7 @@ public class FrameFlusher extends IteratingCallback
 
                 // Abort the flusher if any entries have timed out.
                 if (_expired)
-                    abort(new WebSocketWriteTimeoutException("FrameFlusher Frame Write Timeout"));
+                    abort(new WebSocketWriteTimeoutException("FrameFlusher Write Timeout"));
             }
         };
     }
@@ -127,12 +127,6 @@ public class FrameFlusher extends IteratingCallback
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
         this._useDirectByteBuffers = useDirectByteBuffers;
-    }
-
-    @Deprecated
-    public boolean enqueue(Frame frame, Callback callback, boolean batch)
-    {
-        return enqueue(new OutgoingEntry(frame, callback, batch));
     }
 
     /**
@@ -185,7 +179,7 @@ public class FrameFlusher extends IteratingCallback
                         {
                             // For DATA frames there is a possibility that the message timeout has already expired in the
                             // case of a partial message. In this case do not even add it to the queue and abort the connection.
-                            error = new WebSocketWriteTimeoutException("FrameFlusher Frame Write Timeout");
+                            error = new WebSocketWriteTimeoutException("FrameFlusher Write Timeout");
                             abort = true;
                         }
                         else
@@ -479,12 +473,6 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    public void setFrameWriteTimeout(long idleTimeout)
-    {
-        // TODO remove
-        throw new IllegalStateException();
-    }
-
     public long getMessagesOut()
     {
         return _messagesOut.longValue();
@@ -519,17 +507,19 @@ public class FrameFlusher extends IteratingCallback
 
             if (frameTimeout > 0)
                 expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(frameTimeout);
-            if (messageTimeout > 0)
+
+            Frame frame = outgoingEntry.getFrame();
+            if (frame.isDataFrame())
             {
-                Frame frame = outgoingEntry.getFrame();
-                if (frame.isDataFrame())
-                {
-                    // If this is the first frame of the message remember the message timeout.
-                    if (frame.getOpCode() != OpCode.CONTINUATION)
-                        _currentMessageTimeout = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
-                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageTimeout : nanoTimeMin(expiry, _currentMessageTimeout);
-                }
-                else
+                // If this is the first frame of the message remember the message timeout.
+                if (frame.getOpCode() != OpCode.CONTINUATION)
+                    _currentMessageExpiry = (messageTimeout > 0) ? currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout) : Long.MAX_VALUE;
+                if (_currentMessageExpiry != Long.MAX_VALUE)
+                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageExpiry : nanoTimeMin(expiry, _currentMessageExpiry);
+            }
+            else
+            {
+                if (messageTimeout > 0)
                 {
                     long messageExpiry = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
                     expiry = (expiry == Long.MAX_VALUE) ? messageExpiry : nanoTimeMin(expiry, messageExpiry);
@@ -554,15 +544,10 @@ public class FrameFlusher extends IteratingCallback
             return _outgoingEntry.isBatch();
         }
 
-        public OutgoingEntry getOutgoingEntry()
-        {
-            return _outgoingEntry;
-        }
-
         @Override
         public long getExpireNanoTime()
         {
-            return 0;
+            return _expiry;
         }
 
         public boolean isExpired()

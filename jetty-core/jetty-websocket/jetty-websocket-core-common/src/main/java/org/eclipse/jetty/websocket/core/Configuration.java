@@ -27,29 +27,11 @@ public interface Configuration
     Duration getIdleTimeout();
 
     /**
-     * Get the Write Timeout
-     *
-     * @return the write timeout
-     * @deprecated no replacement, applications should not call this method.
-     */
-    @Deprecated(since = "12.0.21", forRemoval = true)
-    Duration getWriteTimeout();
-
-    /**
      * Set the Idle Timeout.
      *
      * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
      */
     void setIdleTimeout(Duration timeout);
-
-    /**
-     * Set the Frame Write Timeout.
-     *
-     * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
-     * @deprecated no replacement, applications should not call this method.
-     */
-    @Deprecated(since = "12.0.21", forRemoval = true)
-    void setWriteTimeout(Duration timeout);
 
     boolean isAutoFragment();
 
@@ -105,7 +87,6 @@ public interface Configuration
     class ConfigurationCustomizer implements Configuration, Customizer
     {
         private Duration idleTimeout;
-        private Duration frameTimeout;
         private Boolean autoFragment;
         private Long maxFrameSize;
         private Integer outputBufferSize;
@@ -121,21 +102,9 @@ public interface Configuration
         }
 
         @Override
-        public Duration getWriteTimeout()
-        {
-            return frameTimeout == null ? WebSocketConstants.DEFAULT_WRITE_TIMEOUT : frameTimeout;
-        }
-
-        @Override
         public void setIdleTimeout(Duration timeout)
         {
             this.idleTimeout = timeout;
-        }
-
-        @Override
-        public void setWriteTimeout(Duration timeout)
-        {
-            this.frameTimeout = timeout;
         }
 
         @Override
@@ -227,8 +196,6 @@ public interface Configuration
         {
             if (idleTimeout != null)
                 configurable.setIdleTimeout(idleTimeout);
-            if (frameTimeout != null)
-                configurable.setWriteTimeout(frameTimeout);
             if (autoFragment != null)
                 configurable.setAutoFragment(autoFragment);
             if (maxFrameSize != null)
@@ -248,10 +215,10 @@ public interface Configuration
         @Override
         public String toString()
         {
-            return String.format("%s@%x{idleTimeout=%s, frameWriteTimeout=%s, autoFragment=%s, maxFrameSize=%s, " +
+            return String.format("%s@%x{idleTimeout=%s, autoFragment=%s, maxFrameSize=%s, " +
                     "inputBufferSize=%s, outputBufferSize=%s, maxBinaryMessageSize=%s, maxTextMessageSize=%s, maxOutgoingFrames=%s}",
                 TypeUtil.toShortName(getClass()), hashCode(),
-                idleTimeout, frameTimeout, autoFragment, maxFrameSize, inputBufferSize, outputBufferSize,
+                idleTimeout, autoFragment, maxFrameSize, inputBufferSize, outputBufferSize,
                 maxBinaryMessageSize, maxTextMessageSize, maxOutgoingFrames);
         }
     }

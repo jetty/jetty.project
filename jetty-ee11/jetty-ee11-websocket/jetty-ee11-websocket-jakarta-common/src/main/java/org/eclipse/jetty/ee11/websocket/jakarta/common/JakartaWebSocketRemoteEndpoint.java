@@ -41,6 +41,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     private final CoreSession coreSession;
     protected boolean batch = false;
     protected byte messageType = -1;
+    protected long messageWriteTimeout = -1;
 
     protected JakartaWebSocketRemoteEndpoint(JakartaWebSocketSession session, CoreSession coreSession)
     {
@@ -90,14 +91,10 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         coreSession.setIdleTimeout(Duration.ofMillis(ms));
     }
 
-    public long getWriteTimeout()
+    @Override
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        return coreSession.getWriteTimeout().toMillis();
-    }
-
-    public void setWriteTimeout(long ms)
-    {
-        coreSession.setWriteTimeout(Duration.ofMillis(ms));
+        sendFrame(new OutgoingEntry(frame, callback, batch, -1, messageWriteTimeout));
     }
 
     @Override
