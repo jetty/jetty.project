@@ -136,11 +136,6 @@ public class ProcessWrapper implements AutoCloseable
         return false;
     }
 
-    public boolean awaitForJettyStart()
-    {
-        return awaitForJettyStart(START_TIMEOUT, TimeUnit.SECONDS);
-    }
-
     private record ShowLogOnTimeout<T>(ProcessWrapper run) implements ConditionEvaluationListener<T>
     {
         @Override
@@ -161,7 +156,22 @@ public class ProcessWrapper implements AutoCloseable
         return () -> String.join("\n", this.getLogs());
     }
 
+    public boolean awaitForJettyStart(boolean ignoreWarn)
+    {
+        return awaitForJettyStart(START_TIMEOUT, TimeUnit.SECONDS, ignoreWarn);
+    }
+
+    public boolean awaitForJettyStart()
+    {
+        return awaitForJettyStart(START_TIMEOUT, TimeUnit.SECONDS);
+    }
+
     public boolean awaitForJettyStart(long time, TimeUnit unit)
+    {
+        return awaitForJettyStart(time, unit, false);
+    }
+
+    public boolean awaitForJettyStart(long time, TimeUnit unit, boolean ignoreWarn)
     {
         // Started oejs.Server@
         try
@@ -183,8 +193,10 @@ public class ProcessWrapper implements AutoCloseable
             // as is surefire show logs from the run
             throw new RuntimeException(logs().get(), e);
         }
-        // assert no WARN in the logs
-        assertThat(logs().get(), not(containsString("WARN  :")));
+        if (!ignoreWarn)
+        {
+            assertThat(logs().get(), not(containsString("WARN  :")));
+        }
         return true;
     }
 
@@ -193,7 +205,17 @@ public class ProcessWrapper implements AutoCloseable
         return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS);
     }
 
+    public boolean awaitForStart(boolean ignoreWarn) throws InterruptedException
+    {
+        return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS, false);
+    }
+
     public boolean awaitForStart(long time, TimeUnit unit) throws InterruptedException
+    {
+        return awaitForStart(time, unit, false);
+    }
+
+    public boolean awaitForStart(long time, TimeUnit unit, boolean ignoreWarn) throws InterruptedException
     {
         try
         {
@@ -203,8 +225,10 @@ public class ProcessWrapper implements AutoCloseable
         {
             throw new IllegalStateException(logs().get(), e);
         }
-        // assert no WARN in the logs
-        // assertThat(logs().get(), not(containsString("WARN  :")));
+        if (!ignoreWarn)
+        {
+            assertThat(logs().get(), not(containsString("WARN  :")));
+        }
         return true;
     }
 

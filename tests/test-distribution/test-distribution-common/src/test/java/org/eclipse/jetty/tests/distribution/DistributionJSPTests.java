@@ -118,7 +118,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
