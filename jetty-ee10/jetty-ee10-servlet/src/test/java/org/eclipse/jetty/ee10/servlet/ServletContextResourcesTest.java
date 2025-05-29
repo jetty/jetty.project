@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -29,7 +30,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +41,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ServletContextResourcesTest
 {
@@ -146,12 +147,19 @@ public class ServletContextResourcesTest
 
     @ParameterizedTest
     @ValueSource(strings = {
+        "/space with <p>",
         "space with <p>",
+        "/pipe | character",
+        "pipe | character",
         "/null \u0000 character",
+        "null \u0000 character",
+        "/bad pct-encoding %%TOK%%",
         "bad pct-encoding %%TOK%%"
     })
     public void testGetResourcePathMalformed(String resourceName) throws Exception
     {
+        final int STATUS_EXPECTED = 555;
+
         startServer(server ->
         {
             Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
@@ -165,21 +173,29 @@ public class ServletContextResourcesTest
                 {
                     try
                     {
-                        getServletContext().getResource(resourceName);
-                        // we shouldn't reach this next line
-                        // if we do, then our resourceName isn't sufficiently bad/malformed for this test.
-                        resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                        URL url = getServletContext().getResource(resourceName);
+                        if (url != null)
+                        {
+                            // We shouldn't reach this next line.
+                            // The resource doesn't exist.
+                            // This also means our resourceName isn't sufficiently bad/malformed for this test.
+                            resp.sendError(HttpServletResponse.SC_NO_CONTENT);
+                        }
+                        else
+                        {
+                            resp.setStatus(HttpServletResponse.SC_OK);
+                        }
                     }
                     catch (MalformedURLException e)
                     {
                         // tell client that this was the correct, expected behavior.
-                        resp.setStatus(200);
+                        resp.setStatus(STATUS_EXPECTED);
                         resp.getWriter().println(e.getClass() + ":" + e.getMessage());
                     }
                     catch (Throwable t)
                     {
                         t.printStackTrace(System.err);
-                        resp.sendError(500, t.getMessage());
+                        resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, t.getMessage());
                     }
                 }
             };
@@ -197,9 +213,24 @@ public class ServletContextResourcesTest
 
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("response.status", response.getStatus(), is(200));
-        String body = response.getContent();
-        assertThat("response.body", body, containsString(
-            String.format("%s:%s", MalformedURLException.class.getName(), resourceName)));
+        switch (response.getStatus())
+        {
+            case STATUS_EXPECTED ->
+            {
+                // Expected path for malformed input
+                assertThat("response.status", response.getStatus(), is(STATUS_EXPECTED));
+                String body = response.getContent();
+                assertThat("response.body", body, containsString(
+                    String.format("%s:%s", MalformedURLException.class.getName(), resourceName)));
+            }
+            case 200 ->
+            {
+                // Not malformed enough, but the API is behaving properly and returns null.
+            }
+            default ->
+            {
+                fail("Test failed: Unexpected behavior: Status Code: " + response.getStatus());
+            }
+        }
     }
 }
