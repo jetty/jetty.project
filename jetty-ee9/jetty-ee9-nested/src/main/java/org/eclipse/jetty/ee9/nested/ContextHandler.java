@@ -1732,6 +1732,75 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
     }
 
+    /** A request has come in via an async dispatch from a different context.
+     *
+     * @param channel the HttpChannel associated with the request
+     * @throws IOException
+     * @throws ServletException
+     */
+    public void handleCrossContextAsync(HttpChannel channel) throws IOException, ServletException
+    {
+        AsyncContextEvent event = channel.getState().getAsyncContextEvent();
+
+        // we must mutate the request
+        Request request = event.getHttpChannelState().getBaseRequest();
+        HttpURI baseUri = event.getBaseURI();
+        APIContext oldContext = request.getContext();
+        HttpURI oldURI = request.getHttpURI();
+        String oldPathInContext = request.getPathInContext();
+        Fields oldQueryFields = request.getQueryFields();
+
+        //the path in the context (encoded with possible query string)
+        String encodedPathQuery = event.getDispatchPath();
+        if (encodedPathQuery == null && baseUri == null)
+        {
+            //TODO - what would this mean?
+        }
+        else
+        {
+            try
+            {
+                if (encodedPathQuery == null)
+                {
+                    request.setHttpURI(baseUri);
+                }
+                else
+                {
+                    String encodedContextPath = URIUtil.encodePath(getContextPath());
+                    if (!StringUtil.isEmpty(encodedContextPath))
+                    {
+                        encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        if (encodedPathQuery == null)
+                            throw new BadMessageException(500, "Bad dispatch path");
+                    }
+
+                    if (baseUri == null)
+                        baseUri = request.getHttpURI();
+                    HttpURI.Mutable builder = HttpURI.build(baseUri, encodedPathQuery);
+
+                    if (StringUtil.isEmpty(builder.getParam()))
+                        builder.param(baseUri.getParam());
+                    if (StringUtil.isEmpty(builder.getQuery()))
+                        builder.query(baseUri.getQuery());
+
+                    request.setHttpURI(builder);
+
+                    if (baseUri.getQuery() != null && request.getQueryString() != null)
+                        request.mergeQueryParameters(request.getHttpURI().getQuery(), request.getQueryString());
+                }
+
+                request.setContext(_apiContext, event.getDispatchPath());
+                handleAsync(channel, event, request);
+            }
+            finally
+            {
+                request.setContext(oldContext, oldPathInContext);
+                request.setHttpURI(oldURI);
+                request.setQueryFields(oldQueryFields);
+            }
+        }
+    }
+
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
      * or after the entire request has been received (for short requests of known length), or
