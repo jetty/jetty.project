@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -685,7 +686,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         private FailureTask(Runnable task, Callback callback)
         {
             this.task = task;
-            this.callback = callback;
+            this.callback = Objects.requireNonNull(callback);
         }
 
         @Override

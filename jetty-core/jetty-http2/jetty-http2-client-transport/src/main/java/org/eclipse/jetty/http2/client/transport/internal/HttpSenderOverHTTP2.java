@@ -73,7 +73,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         {
             String path = relativize(request.getPath());
             // URI validations already performed by using the java.net.URI class.
-            HttpURI uri = new HttpURI.Unsafe(request.getScheme(), request.getHost(), request.getPort(), path, request.getQuery(), null);
+            HttpURI uri = HttpURI.from(request.getScheme(), request.getHost(), request.getPort(), path, request.getQuery(), null);
             metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailersSupplier());
         }
 

@@ -69,7 +69,7 @@ public class HttpSenderOverHTTP extends HttpSender
             Content.Source requestContent = request.getBody();
             long contentLength = requestContent == null ? -1 : requestContent.getLength();
             // URI validations already performed by using the java.net.URI class.
-            HttpURI uri = new HttpURI.Unsafe(null, null, -1, request.getPath(), request.getQuery(), null);
+            HttpURI uri = HttpURI.from(null, null, -1, request.getPath(), request.getQuery(), null);
             metaData = new MetaData.Request(request.getMethod(), uri, request.getVersion(), request.getHeaders(), contentLength, request.getTrailersSupplier());
             if (LOG.isDebugEnabled())
                 LOG.debug("Sending headers with content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());

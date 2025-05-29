@@ -509,6 +509,8 @@ public interface HttpURI
 
     /**
      * <p>An unsafe {@link HttpURI} that accepts URI parts without checking whether they are valid.</p>
+     * <p>This class should be primarily used for testing, since possibly invalid URI may break
+     * arbitrary code.</p>
      */
     class Unsafe extends Immutable
     {

@@ -405,7 +405,7 @@ public class MetaData implements Iterable<HttpField>
         private FailedMetaDataRequest(HttpVersion httpVersion, Throwable failure)
         {
             super("GET", HttpURI.build(), httpVersion, HttpFields.EMPTY);
-            this.failure = failure;
+            this.failure = Objects.requireNonNull(failure);
         }
 
         @Override
@@ -422,7 +422,7 @@ public class MetaData implements Iterable<HttpField>
         private FailedMetaDataResponse(HttpVersion httpVersion, Throwable failure)
         {
             super(0, null, httpVersion, HttpFields.EMPTY);
-            this.failure = failure;
+            this.failure = Objects.requireNonNull(failure);
         }
 
         @Override
@@ -439,7 +439,7 @@ public class MetaData implements Iterable<HttpField>
         private FailedMetaData(HttpVersion httpVersion, Throwable failure)
         {
             super(httpVersion, HttpFields.EMPTY);
-            this.failure = failure;
+            this.failure = Objects.requireNonNull(failure);
         }
 
         @Override
