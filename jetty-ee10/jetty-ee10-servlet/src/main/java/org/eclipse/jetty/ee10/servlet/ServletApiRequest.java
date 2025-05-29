@@ -1358,6 +1358,8 @@ public class ServletApiRequest implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
 
+        // We must remember the request as last dispatched by the container so that we can use its uri for
+        // possible subsequent dispatch
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
         AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequestInfo.getServletChannel().getServletContextRequest().getServletApiRequest(), servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
         state.startAsync(event);
@@ -1372,6 +1374,7 @@ public class ServletApiRequest implements HttpServletRequest
         ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
+        //We must remember the request and response passed in for use in a possible subsequent dispatch
         AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequest, servletResponse);
         state.startAsync(event);
         return _async;

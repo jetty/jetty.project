@@ -828,6 +828,11 @@ public class ServletChannel
         }
     }
 
+    /**
+     * An AsyncContext dispatch method was called. We may need to dispatch to
+     * a different context.
+     * @throws Exception
+     */
     public void dispatchAsync() throws Exception
     {
         ServletContextHandler targetContextHandler = getServletContextHandler();
@@ -897,6 +902,15 @@ public class ServletChannel
         }
     }
 
+    /**
+     * Async has been started, but dispatched to a different context. This can happen
+     * either via application code calling {@link jakarta.servlet.AsyncContext#dispatch(ServletContext, String)}
+     * or the container dispatching after application code returns without having performed a dispatch or otherwise
+     * completed async.
+     * @param crossContextServletContext the special context containing both the origin context and the destination context
+     * @throws ServletException
+     * @throws IOException
+     */
     private void dispatchCrossContextAsync(CrossContextServletContext crossContextServletContext) throws ServletException, IOException
     {
         HttpURI uri;
