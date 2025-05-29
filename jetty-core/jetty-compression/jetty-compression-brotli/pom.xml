@@ -13,7 +13,6 @@
   <description>Jetty Core Compression :: Brotli Support</description>
 
   <properties>
-    <brotli4j.version>1.17.0</brotli4j.version>
     <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>
   </properties>
 

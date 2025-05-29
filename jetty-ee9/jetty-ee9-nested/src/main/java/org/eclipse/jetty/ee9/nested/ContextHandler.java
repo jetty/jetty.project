@@ -1999,7 +1999,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 if (!path.startsWith("/"))
                     throw new MalformedURLException(path);
 
-                Resource resource = ContextHandler.this.getResource(canonicalPath);
+                Resource resource = ContextHandler.this.getResource(path);
                 if (resource != null && resource.exists())
                     return resource.getURI().toURL();
             }

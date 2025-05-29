@@ -50,20 +50,20 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .jettyBase(jettyBase)
-            .build();
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+                .build();
 
         String mods = String.join(",",
-            "resources", "server", "http", "jmx",
-            toEnvironment("webapp", env),
-            toEnvironment("deploy", env),
-            toEnvironment("apache-jsp", env),
-            toEnvironment("glassfish-jstl", env)
+                "resources", "server", "http", "jmx",
+                toEnvironment("webapp", env),
+                toEnvironment("deploy", env),
+                toEnvironment("apache-jsp", env),
+                toEnvironment("glassfish-jstl", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--create-start-ini", "--approve-all-licenses", "--add-modules=" + mods))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             // Verify that --create-start-ini works
@@ -75,12 +75,11 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
-
-                assertEquals(HttpStatus.OK_200, response.getStatus(), logs(run2));
+                assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
@@ -93,29 +92,25 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
     {
         // Testing with env=ee9 is not possible because jakarta.transaction:1.x
         // does not have a proper module-info.java, so JPMS resolution will fail.
-        // For env>=ee10, jakarta.transaction:2.x has a proper module-info.java.
+        // For env=ee10, jakarta.transaction:2.x has a proper module-info.java.
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .jettyBase(jettyBase)
-            .build();
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+                .build();
 
         String mods = String.join(",",
-            "resources", "server", "http", "jmx", "logging-log4j2",
-            toEnvironment("webapp", env),
-            toEnvironment("deploy", env),
-            toEnvironment("glassfish-jstl", env),
-            toEnvironment("apache-jsp", env)
+                "resources", "server", "http", "jmx",
+                toEnvironment("webapp", env),
+                toEnvironment("deploy", env),
+                toEnvironment("glassfish-jstl", env),
+                toEnvironment("apache-jsp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
-
-            Files.copy(Paths.get("src/test/resources/log4j2-debug.xml"),
-                    distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
-                    StandardCopyOption.REPLACE_EXISTING);
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
@@ -123,7 +118,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart(true));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -132,7 +127,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), not(containsString("<%")));
 
                 response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), logs(run2));
+                assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<c:")));
             }
@@ -201,21 +196,22 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .jettyBase(jettyBase)
-            .build();
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+                .build();
 
         String mods = String.join(",",
-            "resources", "server", "http", "logging-log4j2",
-            toEnvironment("webapp", env),
-            toEnvironment("deploy", env),
-            toEnvironment("apache-jsp", env),
-            toEnvironment("servlet", env)
+                "resources", "server", "http", "logging-log4j2",
+                toEnvironment("webapp", env),
+                toEnvironment("deploy", env),
+                toEnvironment("apache-jsp", env),
+                toEnvironment("servlet", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
+            LOG.atInfo().setMessage(run1.logs().get()).log();
             assertTrue(Files.exists(distribution.getJettyBase().resolve("resources/log4j2.xml")));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
@@ -224,8 +220,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
-
+                assertTrue(run2.awaitForJettyStart());
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());

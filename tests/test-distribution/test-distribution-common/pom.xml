@@ -411,6 +411,26 @@
                   <artifactId>slf4j-jdk14</artifactId>
                   <version>${slf4j.version}</version>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>brotli4j</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>service</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>native-linux-x86_64</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>native-windows-x86_64</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
