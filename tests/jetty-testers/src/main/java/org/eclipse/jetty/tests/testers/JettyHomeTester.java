@@ -25,7 +25,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -156,6 +155,10 @@ public class JettyHomeTester
             mavenLocalRepository = System.getProperty("mavenRepoPath");
         if (StringUtils.isNotBlank(mavenLocalRepository))
             args.add("maven.local.repo=" + mavenLocalRepository);
+
+        String mavenOffline = System.getProperty("maven.offline", "false");
+        if (StringUtils.isNotBlank(mavenOffline))
+            args.add("maven.offline=" + mavenOffline);
 
         // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
         String remoteRepoUri = System.getProperty("maven.repo.uri");
