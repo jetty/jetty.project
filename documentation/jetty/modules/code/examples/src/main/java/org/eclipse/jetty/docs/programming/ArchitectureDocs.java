@@ -21,6 +21,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
@@ -29,6 +30,23 @@ import org.eclipse.jetty.util.thread.VirtualThreadPool;
 @SuppressWarnings("unused")
 public class ArchitectureDocs
 {
+    public void threadPoolBudget()
+    {
+        // tag::threadPoolBudget[]
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        // Configure the number of reserved threads.
+        int reservedThreads = 2;
+        threadPool.setReservedThreads(reservedThreads);
+
+        Server server = new Server(threadPool);
+
+        int acceptors = 1;
+        int selectors = 3;
+        ServerConnector connector = new ServerConnector(server, acceptors, selectors);
+        server.addConnector(connector);
+        // end::threadPoolBudget[]
+    }
+
     public void queuedVirtualThreads()
     {
         // tag::queuedVirtual[]
