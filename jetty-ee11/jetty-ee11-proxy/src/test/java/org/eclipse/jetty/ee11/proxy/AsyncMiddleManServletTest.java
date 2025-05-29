@@ -190,7 +190,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -245,7 +245,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
 
@@ -279,7 +279,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
 
@@ -320,7 +320,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
 
@@ -366,7 +366,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
 
         String expectedStr = "<a href=\"http://webtide.com/\">Webtide</a>";
         byte[] expected = expectedStr.getBytes(StandardCharsets.UTF_8);
@@ -415,7 +415,7 @@ public class AsyncMiddleManServletTest
         content.close();
 
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
 
@@ -456,7 +456,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
 
@@ -500,7 +500,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(0, response.getContent().length);
     }
 
@@ -529,7 +529,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-            assertEquals(500, response.getStatus());
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
         }
     }
 
@@ -567,7 +567,7 @@ public class AsyncMiddleManServletTest
                 .body(content)
                 .send(result ->
                 {
-                    if (result.isSucceeded() && result.getResponse().getStatus() == 502)
+                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                         latch.countDown();
                 });
 
@@ -647,7 +647,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-            assertEquals(502, response.getStatus());
+            assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
         }
     }
 
@@ -788,7 +788,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -812,7 +812,7 @@ public class AsyncMiddleManServletTest
             .send(result ->
             {
                 System.err.println(result);
-                if (result.getResponse().getStatus() == 500)
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });
         content.write(ByteBuffer.allocate(512), Callback.NOOP);
@@ -848,7 +848,7 @@ public class AsyncMiddleManServletTest
             .body(content)
             .send(result ->
             {
-                if (result.getResponse().getStatus() == 502)
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });
         content.write(ByteBuffer.allocate(512), Callback.NOOP);
@@ -903,7 +903,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(502, response.getStatus());
+        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 
     @Test
@@ -954,7 +954,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
         assertNotNull(obj);
@@ -1087,7 +1087,7 @@ public class AsyncMiddleManServletTest
                 .timeout(15, TimeUnit.SECONDS)
                 .send();
 
-            assertEquals(200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
             @SuppressWarnings("unchecked")
             Map<String, Object> obj = (Map<String, Object>)new JSON().fromJSON(response.getContentAsString());
             assertNotNull(obj);
@@ -1331,7 +1331,7 @@ public class AsyncMiddleManServletTest
             .timeout(10, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
         assertNotNull(obj);
@@ -1553,7 +1553,7 @@ public class AsyncMiddleManServletTest
             {
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
-                resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
+                resp.setStatus(target.equals(req.getRequestURI()) ? HttpStatus.OK_200 : HttpStatus.NOT_FOUND_404);
             }
         });
         String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
@@ -1575,7 +1575,7 @@ public class AsyncMiddleManServletTest
             .path(target)
             .timeout(5, TimeUnit.SECONDS)
             .send();
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
@@ -1639,7 +1639,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
 
         ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(response.getContent()));
         ZipEntry zipEntry1 = zipIn.getNextEntry();

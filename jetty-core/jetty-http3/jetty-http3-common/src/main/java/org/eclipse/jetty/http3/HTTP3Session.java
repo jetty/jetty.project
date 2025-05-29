@@ -532,7 +532,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             // The other peer sent us a GOAWAY with the last processed streamId,
             // so we must fail the streams that have a bigger streamId.
             Predicate<HTTP3Stream> predicate = stream -> stream.isLocal() && stream.getId() > frame.getLastId();
-            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new EofException());
+            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new RetryableStreamException());
         }
 
         tryRunZeroStreamsAction();

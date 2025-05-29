@@ -59,7 +59,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertThat(run1.getExitValue(), is(0));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
@@ -100,7 +100,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertThat(run1.getExitValue(), is(0));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
@@ -112,7 +112,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
@@ -144,7 +144,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertThat(run1.getExitValue(), is(0));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
@@ -153,7 +153,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 //ContentResponse response = client.GET("http://localhost:" + port + "/badapp/bad/x");
@@ -189,7 +189,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(run1));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue(), logs(run1));
             Path badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
             distribution.installWar(badWebApp, "test");
@@ -199,7 +199,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), logs(run2));
+                assertTrue(run2.awaitForJettyStart());
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();

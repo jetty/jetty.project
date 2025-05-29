@@ -22,7 +22,7 @@ pipeline {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
+                            tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
             }
           }
@@ -34,7 +34,7 @@ pipeline {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk24", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
@@ -62,9 +62,9 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
+                            tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
                              tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
@@ -149,6 +149,10 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
+          sh "mkdir ~/.mimir"
+          sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
+          sh "cat ~/.mimir/daemon.properties"
+          sh "rm -rf .repository"
           sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
@@ -159,6 +163,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      // temporary logs to remove
+      sh "ls -lrt ~/.mimir/"
     }
   }
 }

@@ -22,6 +22,7 @@ import java.nio.channels.WritePendingException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,7 +71,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
-    private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
+    private Duration frameWriteTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private ClassLoader classLoader;
     private Predicate<WebSocketTimeoutException> _onIdleTimeout;
 
@@ -146,15 +147,16 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public Duration getWriteTimeout()
     {
-        return writeTimeout;
+        return frameWriteTimeout;
     }
 
     @Override
     public void setWriteTimeout(Duration timeout)
     {
-        writeTimeout = timeout;
-        if (getConnection() != null)
-            getConnection().setWriteTimeout(timeout.toMillis());
+        frameWriteTimeout = Objects.requireNonNull(timeout);
+        WebSocketConnection connection = getConnection();
+        if (connection != null)
+            connection.setWriteTimeout(timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -191,7 +193,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
-        connection.setWriteTimeout(writeTimeout.toMillis());
+        connection.setWriteTimeout(frameWriteTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }

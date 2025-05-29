@@ -25,13 +25,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.StaticException;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -55,60 +55,77 @@ public class FrameFlusher extends IteratingCallback
     };
 
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
-    private static final Throwable CLOSED_CHANNEL = new StaticException("Closed");
 
-    private final AutoLock lock = new AutoLock();
-    private final LongAdder messagesOut = new LongAdder();
-    private final LongAdder bytesOut = new LongAdder();
-    private final ByteBufferPool bufferPool;
-    private final EndPoint endPoint;
-    private final int bufferSize;
-    private final Generator generator;
-    private final int maxGather;
-    private final Deque<Entry> queue = new ArrayDeque<>();
-    private final List<ByteBuffer> buffers;
-    private final CyclicTimeout cyclicTimeout;
-    private final List<Entry> entries;
-    private final List<Entry> previousEntries;
-    private final List<Entry> failedEntries;
+    private final AutoLock _lock = new AutoLock();
+    private final LongAdder _messagesOut = new LongAdder();
+    private final LongAdder _bytesOut = new LongAdder();
+    private final ByteBufferPool _bufferPool;
+    private final EndPoint _endPoint;
+    private final int _bufferSize;
+    private final Generator _generator;
+    private final int _maxGather;
+    private final CyclicTimeouts<Entry> _cyclicTimeouts;
+    private final Deque<Entry> _queue = new ArrayDeque<>();
+    private final List<Entry> _currentEntries;
+    private final List<Entry> _completedEntries = new ArrayList<>();
+    private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
 
-    private List<RetainableByteBuffer> releasableBuffers = new ArrayList<>();
-    private RetainableByteBuffer batchBuffer;
-    private boolean canEnqueue = true;
-    private boolean flushed = true;
-    private Throwable closedCause;
-    private long idleTimeout;
-    private boolean useDirectByteBuffers;
+    private RetainableByteBuffer _batchBuffer;
+    private boolean _canEnqueue = true;
+    private Throwable _closedCause;
+    private long _frameTimeout;
+    private boolean _useDirectByteBuffers;
 
     public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
-        this.bufferPool = bufferPool;
-        this.endPoint = endPoint;
-        this.bufferSize = bufferSize;
-        this.generator = Objects.requireNonNull(generator);
-        this.maxGather = maxGather;
-        this.entries = new ArrayList<>(maxGather);
-        this.previousEntries = new ArrayList<>(maxGather);
-        this.failedEntries = new ArrayList<>(maxGather);
-        this.buffers = new ArrayList<>((maxGather * 2) + 1);
-        this.cyclicTimeout = new CyclicTimeout(scheduler)
+        _bufferPool = bufferPool;
+        _endPoint = endPoint;
+        _bufferSize = bufferSize;
+        _generator = Objects.requireNonNull(generator);
+        _maxGather = maxGather;
+        _currentEntries = new ArrayList<>(maxGather);
+        _cyclicTimeouts = new CyclicTimeouts<>(scheduler)
         {
+            private boolean _expired = false;
+
             @Override
-            public void onTimeoutExpired()
+            protected boolean onExpired(Entry expirable)
             {
-                timeoutExpired();
+                // This is called with lock held so we delay the abort until we exit the lock in iterate().
+                _expired = true;
+                return false;
+            }
+
+            @Override
+            protected Iterator<Entry> iterator()
+            {
+                return TypeUtil.concat(_currentEntries.iterator(), _queue.iterator());
+            }
+
+            @Override
+            protected void iterate()
+            {
+                // We need to acquire the lock before we can iterate over the queue and entries.
+                try (AutoLock l = _lock.lock())
+                {
+                    super.iterate();
+                }
+
+                // Abort the flusher if any entries have timed out.
+                if (_expired)
+                    abort(new WebSocketWriteTimeoutException("FrameFlusher Frame Write Timeout"));
             }
         };
     }
 
     public boolean isUseDirectByteBuffers()
     {
-        return useDirectByteBuffers;
+        return _useDirectByteBuffers;
     }
 
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        this.useDirectByteBuffers = useDirectByteBuffers;
+        this._useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**
@@ -125,52 +142,55 @@ public class FrameFlusher extends IteratingCallback
         Entry entry = new Entry(frame, callback, batch);
         byte opCode = frame.getOpCode();
 
-        Throwable dead;
+        Throwable error = null;
+        boolean abort = false;
         List<Entry> failedEntries = null;
         CloseStatus closeStatus = null;
 
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            if (canEnqueue)
+            if (!_canEnqueue || _closedCause != null)
             {
-                dead = closedCause;
-                if (dead == null)
-                {
-                    switch (opCode)
-                    {
-                        case OpCode.CLOSE:
-                            closeStatus = CloseStatus.getCloseStatus(frame);
-                            if (closeStatus.isAbnormal())
-                            {
-                                //fail all existing entries in the queue, and enqueue the error close
-                                failedEntries = new ArrayList<>(queue);
-                                queue.clear();
-                            }
-                            queue.offerLast(entry);
-                            this.canEnqueue = false;
-                            break;
-
-                        case OpCode.PING:
-                        case OpCode.PONG:
-                            queue.offerFirst(entry);
-                            break;
-
-                        default:
-                            queue.offerLast(entry);
-                            break;
-                    }
-
-                    /* If the queue was empty then no timeout has been set, so we set a timeout to check the current
-                    entry when it expires. When the timeout expires we will go over entries in the queue and
-                    entries list to see if any of them have expired, it will then reset the timeout for the frame
-                    with the soonest expiry time. */
-                    if ((idleTimeout > 0) && (queue.size() == 1) && entries.isEmpty())
-                        cyclicTimeout.schedule(idleTimeout, TimeUnit.MILLISECONDS);
-                }
+                error = (_closedCause == null) ? new ClosedChannelException() : _closedCause;
             }
             else
             {
-                dead = new ClosedChannelException();
+                switch (opCode)
+                {
+                    case OpCode.CLOSE:
+                        closeStatus = CloseStatus.getCloseStatus(frame);
+                        if (closeStatus.isAbnormal())
+                        {
+                            //fail all existing entries in the queue, and enqueue the error close
+                            failedEntries = new ArrayList<>(_queue);
+                            _queue.clear();
+                        }
+                        _queue.offerLast(entry);
+                        this._canEnqueue = false;
+                        break;
+
+                    case OpCode.PING:
+                    case OpCode.PONG:
+                        _queue.offerFirst(entry);
+                        break;
+
+                    default:
+                        if (entry.isExpired())
+                        {
+                            // For DATA frames there is a possibility that the message timeout has already expired in the
+                            // case of a partial message. In this case do not even add it to the queue and abort the connection.
+                            error = new WebSocketWriteTimeoutException("FrameFlusher Frame Write Timeout");
+                            abort = true;
+                        }
+                        else
+                        {
+                            _queue.offerLast(entry);
+                        }
+                        break;
+                }
+
+                if (!abort)
+                    _cyclicTimeouts.schedule(entry);
             }
         }
 
@@ -187,25 +207,26 @@ public class FrameFlusher extends IteratingCallback
             }
         }
 
-        if (dead == null)
+        if (error != null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Enqueued {} to {}", entry, this);
-
-            return true;
+            notifyCallbackFailure(callback, error);
+            if (abort)
+                abort(error);
+            return false;
         }
 
-        notifyCallbackFailure(callback, dead);
-        return false;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Enqueued {} to {}", entry, this);
+        return true;
     }
 
     public void onClose(Throwable cause)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            closedCause = cause == null ? CLOSED_CHANNEL : cause;
+            _closedCause = cause == null ? new ClosedChannelException() : cause;
         }
-        iterate();
+        abort(_closedCause);
     }
 
     @Override
@@ -215,120 +236,104 @@ public class FrameFlusher extends IteratingCallback
             LOG.debug("Flushing {}", this);
 
         boolean flush = false;
-        Callback releasingCallback = this;
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            if (closedCause != null)
-                throw closedCause;
+            if (_closedCause != null)
+                throw _closedCause;
 
-            // Remember entries to succeed from previous process
-            previousEntries.addAll(entries);
-            entries.clear();
-
-            if (flushed && batchBuffer != null)
-                batchBuffer.clear();
-
-            while (!queue.isEmpty() && entries.size() <= maxGather)
+            while (!_queue.isEmpty() && _currentEntries.size() <= _maxGather)
             {
-                Entry entry = queue.poll();
-                entries.add(entry);
+                Entry entry = _queue.poll();
+                _currentEntries.add(entry);
                 if (entry.frame == FLUSH_FRAME)
                 {
                     flush = true;
                     break;
                 }
+            }
+        }
 
-                messagesOut.increment();
+        // Process the entries outside the lock, as inside the ICB we only need the lock to modify _entries but not iterate it.
+        boolean canBatch = true;
+        List<ByteBuffer> buffers = new ArrayList<>((_maxGather * 2) + 1);
+        if (_batchBuffer != null)
+            buffers.add(_batchBuffer.getByteBuffer());
+        for (Entry entry : _currentEntries)
+        {
+            if (entry.frame == FLUSH_FRAME)
+                continue;
+            _messagesOut.increment();
 
-                int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer.getByteBuffer());
+            int batchSpace = _batchBuffer == null ? _bufferSize : BufferUtil.space(_batchBuffer.getByteBuffer());
+            boolean batch = canBatch && entry.batch &&
+                !entry.frame.isControlFrame() &&
+                entry.frame.getPayloadLength() < _bufferSize / 4 &&
+                (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
-                boolean batch = entry.batch &&
-                    !entry.frame.isControlFrame() &&
-                    entry.frame.getPayloadLength() < bufferSize / 4 &&
-                    (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
-
-                if (batch)
+            if (batch)
+            {
+                // Acquire a batchBuffer if we don't have one.
+                if (_batchBuffer == null)
                 {
-                    // Acquire a batchBuffer if we don't have one.
-                    if (batchBuffer == null)
-                    {
-                        batchBuffer = acquireBuffer(bufferSize);
-                        buffers.add(batchBuffer.getByteBuffer());
-                    }
+                    _batchBuffer = acquireBuffer(_bufferSize);
+                    buffers.add(_batchBuffer.getByteBuffer());
+                }
 
-                    // Generate the frame into the batchBuffer.
-                    generator.generateWholeFrame(entry.frame, batchBuffer.getByteBuffer());
+                // Generate the frame into the batchBuffer.
+                _generator.generateWholeFrame(entry.frame, _batchBuffer.getByteBuffer());
+            }
+            else
+            {
+                if (canBatch && _batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
+                {
+                    // Use the batch space for our header.
+                    _generator.generateHeader(entry.frame, _batchBuffer.getByteBuffer());
                 }
                 else
                 {
-                    if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
-                    {
-                        // Use the batch space for our header.
-                        generator.generateHeader(entry.frame, batchBuffer.getByteBuffer());
-                    }
-                    else
-                    {
-                        // Add headers to the list of buffers.
-                        RetainableByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
-                        releasableBuffers.add(headerBuffer);
-                        generator.generateHeader(entry.frame, headerBuffer.getByteBuffer());
-                        buffers.add(headerBuffer.getByteBuffer());
-                    }
-
-                    // Add the payload to the list of buffers.
-                    ByteBuffer payload = entry.frame.getPayload();
-                    if (BufferUtil.hasContent(payload))
-                    {
-                        if (entry.frame.isMasked())
-                        {
-                            RetainableByteBuffer masked = acquireBuffer(entry.frame.getPayloadLength());
-                            payload = masked.getByteBuffer();
-                            releasableBuffers.add(masked);
-                            generator.generatePayload(entry.frame, payload);
-                        }
-                        buffers.add(payload.slice());
-                    }
-                    flush = true;
+                    // Add headers to the list of buffers.
+                    RetainableByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
+                    _releasableBuffers.add(headerBuffer);
+                    _generator.generateHeader(entry.frame, headerBuffer.getByteBuffer());
+                    buffers.add(headerBuffer.getByteBuffer());
                 }
 
-                flushed = flush;
-            }
+                // Add the payload to the list of buffers.
+                ByteBuffer payload = entry.frame.getPayload();
+                if (BufferUtil.hasContent(payload))
+                {
+                    if (entry.frame.isMasked())
+                    {
+                        RetainableByteBuffer masked = acquireBuffer(entry.frame.getPayloadLength());
+                        payload = masked.getByteBuffer();
+                        _releasableBuffers.add(masked);
+                        _generator.generatePayload(entry.frame, payload);
+                    }
+                    buffers.add(payload.slice());
+                }
 
-            // If we are going to flush we should release any buffers we have allocated after the callback completes.
-            if (flush)
-            {
-                List<RetainableByteBuffer> callbackBuffers = releasableBuffers;
-                releasableBuffers = new ArrayList<>();
-                releasingCallback = Callback.from(releasingCallback, () -> callbackBuffers.forEach(RetainableByteBuffer::release));
+                // Once we have added another buffer we cannot add to the batch buffer again.
+                canBatch = false;
+                flush = true;
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} processed {} entries flush={} batch={}: {}",
+            LOG.debug("{} processed {} entries flush={}: {}",
                 this,
-                entries.size(),
+                _currentEntries.size(),
                 flush,
-                batchBuffer,
-                entries);
-
-        // succeed previous entries
-        for (Entry entry : previousEntries)
-        {
-            if (entry.frame.getOpCode() == OpCode.CLOSE)
-                endPoint.shutdownOutput();
-            notifyCallbackSuccess(entry.callback);
-        }
-        previousEntries.clear();
-
-        // If we did not get any new entries go to IDLE state
-        if (entries.isEmpty())
-        {
-            releaseAggregate();
-            return Action.IDLE;
-        }
+                _currentEntries);
 
         if (flush)
         {
+            // If we're flushing we should release the batch buffer upon completion.
+            if (_batchBuffer != null)
+            {
+                _releasableBuffers.add(_batchBuffer);
+                _batchBuffer = null;
+            }
+
             int i = 0;
             int bytes = 0;
             ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
@@ -337,12 +342,19 @@ public class FrameFlusher extends IteratingCallback
                 bytes += bb.limit() - bb.position();
                 bufferArray[i++] = bb;
             }
-            bytesOut.add(bytes);
-            endPoint.write(releasingCallback, bufferArray);
+            _bytesOut.add(bytes);
+            _endPoint.write(this, bufferArray);
             buffers.clear();
         }
         else
         {
+            // If we did not get any new entries go to IDLE state
+            if (_currentEntries.isEmpty())
+            {
+                releaseAggregateIfEmpty();
+                return Action.IDLE;
+            }
+
             // We just aggregated the entries, so we need to succeed their callbacks.
             succeeded();
         }
@@ -352,111 +364,80 @@ public class FrameFlusher extends IteratingCallback
 
     private RetainableByteBuffer acquireBuffer(int capacity)
     {
-        return bufferPool.acquire(capacity, isUseDirectByteBuffers());
+        return _bufferPool.acquire(capacity, isUseDirectByteBuffers());
     }
 
     private int getQueueSize()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            return queue.size();
+            return _queue.size();
         }
-    }
-
-    private void timeoutExpired()
-    {
-        boolean failed = false;
-        try (AutoLock l = lock.lock())
-        {
-            if (closedCause != null)
-                return;
-
-            long currentTime = System.currentTimeMillis();
-            long expiredIfCreatedBefore = currentTime - idleTimeout;
-            long earliestEntry = currentTime;
-
-            /* Iterate through entries in both the queue and entries list.
-            If any entry has expired then we fail the FrameFlusher.
-            Otherwise we will try to schedule a new timeout. */
-            Iterator<Entry> iterator = TypeUtil.concat(entries.iterator(), queue.iterator());
-            while (iterator.hasNext())
-            {
-                Entry entry = iterator.next();
-
-                if (entry.getTimeOfCreation() <= expiredIfCreatedBefore)
-                {
-                    LOG.warn("FrameFlusher write timeout on entry: {}", entry);
-                    failed = true;
-                    canEnqueue = false;
-                    closedCause = new WebSocketWriteTimeoutException("FrameFlusher Write Timeout");
-                    failedEntries.addAll(entries);
-                    failedEntries.addAll(queue);
-                    entries.clear();
-                    queue.clear();
-                    break;
-                }
-
-                if (entry.getTimeOfCreation() < earliestEntry)
-                    earliestEntry = entry.getTimeOfCreation();
-            }
-
-            // if a timeout is set schedule a new timeout if we haven't failed and still have entries
-            if (!failed && idleTimeout > 0 && !(entries.isEmpty() && queue.isEmpty()))
-            {
-                long nextTimeout = earliestEntry + idleTimeout - currentTime;
-                cyclicTimeout.schedule(nextTimeout, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        if (failed)
-            this.iterate();
     }
 
     @Override
-    public void onFailure(Throwable failure)
+    protected void onSuccess()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            failedEntries.addAll(queue);
-            queue.clear();
-
-            failedEntries.addAll(entries);
-            entries.clear();
-
-            if (closedCause == null)
-                closedCause = failure;
-            else if (closedCause != failure)
-                closedCause.addSuppressed(failure);
+            assert _completedEntries.isEmpty();
+            _completedEntries.addAll(_currentEntries);
+            _currentEntries.clear();
         }
 
-        for (Entry entry : failedEntries)
+        for (Entry entry : _completedEntries)
+        {
+            if (entry.frame.getOpCode() == OpCode.CLOSE)
+                _endPoint.shutdownOutput();
+            notifyCallbackSuccess(entry.callback);
+        }
+        _completedEntries.clear();
+
+        _releasableBuffers.forEach(RetainableByteBuffer::release);
+        _releasableBuffers.clear();
+        super.onSuccess();
+    }
+
+    @Override
+    public void onCompleteFailure(Throwable failure)
+    {
+        if (_batchBuffer != null)
+            _batchBuffer.clear();
+        releaseAggregateIfEmpty();
+        try (AutoLock l = _lock.lock())
+        {
+            // Ensure no more entries can be enqueued.
+            _canEnqueue = false;
+            if (_closedCause == null)
+                _closedCause = failure;
+            else if (_closedCause != failure)
+                _closedCause.addSuppressed(failure);
+
+            assert _completedEntries.isEmpty();
+            _completedEntries.addAll(_queue);
+            _completedEntries.addAll(_currentEntries);
+            _queue.clear();
+            _currentEntries.clear();
+            _cyclicTimeouts.destroy();
+        }
+
+        for (Entry entry : _completedEntries)
         {
             notifyCallbackFailure(entry.callback, failure);
         }
+        _completedEntries.clear();
 
-        failedEntries.clear();
-        endPoint.close(closedCause);
+        _releasableBuffers.forEach(RetainableByteBuffer::release);
+        _releasableBuffers.clear();
+        _endPoint.close(_closedCause);
     }
 
-    @Override
-    protected void onCompleteFailure(Throwable cause)
+    private void releaseAggregateIfEmpty()
     {
-        if (batchBuffer != null)
-            batchBuffer.clear();
-        releaseAggregate();
-        try (AutoLock l = lock.lock())
+        if (_batchBuffer != null && !_batchBuffer.hasRemaining())
         {
-            releasableBuffers.forEach(RetainableByteBuffer::release);
-            releasableBuffers.clear();
-        }
-    }
-
-    private void releaseAggregate()
-    {
-        if (batchBuffer != null && batchBuffer.isEmpty())
-        {
-            batchBuffer.release();
-            batchBuffer = null;
+            _batchBuffer.release();
+            _batchBuffer = null;
         }
     }
 
@@ -492,24 +473,19 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    public void setIdleTimeout(long idleTimeout)
+    public void setFrameWriteTimeout(long idleTimeout)
     {
-        this.idleTimeout = idleTimeout;
-    }
-
-    public long getIdleTimeout()
-    {
-        return idleTimeout;
+        _frameTimeout = idleTimeout;
     }
 
     public long getMessagesOut()
     {
-        return messagesOut.longValue();
+        return _messagesOut.longValue();
     }
 
     public long getBytesOut()
     {
-        return bytesOut.longValue();
+        return _bytesOut.longValue();
     }
 
     @Override
@@ -518,27 +494,39 @@ public class FrameFlusher extends IteratingCallback
         return String.format("%s[queueSize=%d,aggregate=%s]",
             super.toString(),
             getQueueSize(),
-            batchBuffer);
+            _batchBuffer);
     }
 
-    private static class Entry extends FrameEntry
+    private class Entry extends FrameEntry implements CyclicTimeouts.Expirable
     {
-        private final long timeOfCreation = System.currentTimeMillis();
+        private final long _expiry;
 
         private Entry(Frame frame, Callback callback, boolean batch)
         {
             super(frame, callback, batch);
+
+            long currentTime = NanoTime.now();
+            long expiry = Long.MAX_VALUE;
+            if (_frameTimeout > 0)
+                expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(_frameTimeout);
+            _expiry = expiry;
         }
 
-        private long getTimeOfCreation()
+        @Override
+        public long getExpireNanoTime()
         {
-            return timeOfCreation;
+            return _expiry;
+        }
+
+        public boolean isExpired()
+        {
+            return (_expiry != Long.MAX_VALUE) && NanoTime.until(_expiry) < 0;
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s{%s,%s,%b}", TypeUtil.toShortName(getClass()), frame, callback, batch);
+            return String.format("%s{%s,%s,batch=%b,expire=%s}", TypeUtil.toShortName(getClass()), frame, callback, batch, NanoTime.millisUntil(_expiry));
         }
     }
 }
