@@ -28,7 +28,7 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee.test.resources.TestEeResources;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -214,7 +214,7 @@ public class SSLAsyncIOServletTest
 
         public void start(HttpServlet servlet) throws Exception
         {
-            Path keystorePath = TestEeResources.getResourceAsPath("/keystore.p12");
+            Path keystorePath = TestEEResources.getResourceAsPath("/keystore.p12");
 
             sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath);

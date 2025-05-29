@@ -50,7 +50,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
-import org.eclipse.jetty.ee.test.resources.TestEeResources;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -132,18 +132,18 @@ public class CrossContextDispatcherTest
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
-        _contextHandler.setBaseResourceAsPath(TestEeResources.getResourceAsPathDir("/contextResources"));
+        _contextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/contextResources"));
         _contextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_contextHandler);
 
         _targetServletContextHandler = new ServletContextHandler();
         _targetServletContextHandler.setContextPath("/foreign");
-        _targetServletContextHandler.setBaseResourceAsPath(TestEeResources.getResourceAsPathDir("/dispatchResourceTest"));
+        _targetServletContextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/dispatchResourceTest"));
         _targetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_targetServletContextHandler);
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(TestEeResources.getResourceAsPathDir("/dispatchResourceTest")));
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(TestEEResources.getResourceAsPathDir("/dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         resourceContextHandler.setCrossContextDispatchSupported(true);
@@ -151,7 +151,7 @@ public class CrossContextDispatcherTest
 
         _rootContextHandler = new ServletContextHandler();
         _rootContextHandler.setContextPath("/");
-        _rootContextHandler.setBaseResourceAsPath(TestEeResources.getResourceAsPathDir("/docroot"));
+        _rootContextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/docroot"));
         _rootContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_rootContextHandler);
 

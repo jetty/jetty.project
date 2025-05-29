@@ -51,7 +51,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee.test.resources.TestEeResources;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -133,7 +133,7 @@ public class ResourceServletTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         Path extraJarResources = workDir.getPathFile("odd.jar");
-        Files.copy(Objects.requireNonNull(TestEeResources.getResourceAsPath(ODD_JAR)), extraJarResources);
+        Files.copy(Objects.requireNonNull(TestEEResources.getResourceAsPath(ODD_JAR)), extraJarResources);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
@@ -357,7 +357,7 @@ public class ResourceServletTest
         Path path = docRoot.resolve("keystore.p12");
         byte[] originalBytes;
 
-        try (InputStream is = TestEeResources.getResourceAsStream("/keystore.p12");
+        try (InputStream is = TestEEResources.getResourceAsStream("/keystore.p12");
              ByteArrayOutputStream baos = new ByteArrayOutputStream();
              OutputStream fos = Files.newOutputStream(path))
         {
@@ -3551,7 +3551,7 @@ public class ResourceServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path docroot = Objects.requireNonNull(TestEeResources.getResourceAsPath("/docroot"));
+        Path docroot = Objects.requireNonNull(TestEEResources.getResourceAsPath("/docroot"));
 
         ServletHolder slashHolder = new ServletHolder("default", new ResourceServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
@@ -3559,7 +3559,7 @@ public class ResourceServletTest
         slashHolder.setInitParameter("baseResource", docroot.toUri().toString());
         context.addServlet(slashHolder, "/");
 
-        Path altroot = Objects.requireNonNull(TestEeResources.getResourceAsPath("/altroot"));
+        Path altroot = Objects.requireNonNull(TestEEResources.getResourceAsPath("/altroot"));
         ServletHolder rHolder = new ServletHolder("alt", new ResourceServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
@@ -3587,7 +3587,7 @@ public class ResourceServletTest
     {
         server.stop();
 
-        Path suffixroot = TestEeResources.getResourceAsPath("/suffixroot");
+        Path suffixroot = TestEEResources.getResourceAsPath("/suffixroot");
         assertNotNull(suffixroot);
         ResourceFactory resourceFactory = ResourceFactory.of(context);
         context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
@@ -3606,7 +3606,7 @@ public class ResourceServletTest
     @Test
     public void testMemoryResourceRange() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(new ServletHolder(resourceServlet), "/");
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3627,7 +3627,7 @@ public class ResourceServletTest
     @Test
     public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(new ServletHolder(resourceServlet), "/");
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3648,7 +3648,7 @@ public class ResourceServletTest
     @Test
     public void testMemoryResourceMultipleRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(new ServletHolder(resourceServlet), "/");
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3672,7 +3672,7 @@ public class ResourceServletTest
     @Test
     public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(new ServletHolder(resourceServlet), "/");
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3696,7 +3696,7 @@ public class ResourceServletTest
     @Test
     public void testNotAcceptRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(new ServletHolder(resourceServlet), "/");
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
@@ -3733,7 +3733,7 @@ public class ResourceServletTest
 
         ResourceServlet resourceServlet = new ResourceServlet();
         context.addServlet(resourceServlet, "/*");
-        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEeResources.getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(TestEEResources.getResource("/contextResources/test.txt"));
         resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""

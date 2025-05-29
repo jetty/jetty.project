@@ -26,7 +26,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee.test.resources.TestEeResources;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -95,7 +95,7 @@ public class CacheControlHeaderTest
         ServletHolder servletHolder = new ServletHolder();
         servletHolder.setServlet(new DefaultServlet());
         servletHolder.setInitParameter("cacheControl", "max-age=3600,public");
-        Path resBase = TestEeResources.getResourceAsPathDir("/contextResources");
+        Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
         servletHolder.setInitParameter("resourceBase", resBase.toUri().toASCIIString());
         context.addServlet(servletHolder, "/*");
         if (forceFilter)

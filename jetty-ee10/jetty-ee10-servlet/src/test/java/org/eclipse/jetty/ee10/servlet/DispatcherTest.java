@@ -45,7 +45,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee.test.resources.TestEeResources;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -90,7 +90,7 @@ public class DispatcherTest
 
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
-        _contextHandler.setBaseResourceAsPath(TestEeResources.getResourceAsPathDir("/contextResources"));
+        _contextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/contextResources"));
         _server.setHandler(_contextHandler);
         _server.addConnector(_connector);
 

@@ -26,21 +26,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
-public class TestEeResources
+public class TestEEResources
 {
+    public static final String CONTEXT_RESOURCES = "/contextResources";
+
     public static URL getResource(String name)
     {
-        return TestEeResources.class.getResource(name);
+        return TestEEResources.class.getResource(name);
     }
 
     public static InputStream getResourceAsStream(String name)
     {
-        return TestEeResources.class.getResourceAsStream(name);
+        return TestEEResources.class.getResourceAsStream(name);
     }
 
     public static Path getResourceAsPath(String name)
     {
-        URL url = TestEeResources.class.getResource(name);
+        URL url = TestEEResources.class.getResource(name);
         if (url == null)
             return null;
         try
@@ -58,6 +60,7 @@ public class TestEeResources
                     }
                     catch (FileSystemNotFoundException e)
                     {
+                        // Since this is for testing, this file system is never closed and lives as longs as the JVM.
                         fileSystem = FileSystems.newFileSystem(uri, Map.of());
                     }
                     String fullPath = uri.toString();
