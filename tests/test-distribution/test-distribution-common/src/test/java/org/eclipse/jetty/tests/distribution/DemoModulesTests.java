@@ -489,7 +489,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitForJettyStart());
+                assertTrue(runStart.awaitForJettyStart(true));
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/hello");

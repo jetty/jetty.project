@@ -84,7 +84,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
         try (JettyHomeTester.Run run1 = jettyHomeTester.start(argsStart))
         {
-            assertTrue(run1.awaitForStart());
+            assertTrue(run1.awaitForStart(true));
             assertEquals(0, run1.getExitValue());
 
             Path war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." +  environment +
@@ -101,7 +101,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
@@ -122,7 +122,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
 
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                 assertEquals(HttpStatus.OK_200, response.getStatus());

@@ -207,7 +207,7 @@ public class ProcessWrapper implements AutoCloseable
 
     public boolean awaitForStart(boolean ignoreWarn) throws InterruptedException
     {
-        return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS, false);
+        return awaitForStart(START_TIMEOUT, TimeUnit.SECONDS, ignoreWarn);
     }
 
     public boolean awaitForStart(long time, TimeUnit unit) throws InterruptedException

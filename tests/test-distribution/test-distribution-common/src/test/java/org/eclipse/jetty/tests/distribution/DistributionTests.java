@@ -282,7 +282,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         );
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + mods))
         {
-            assertTrue(run1.awaitForStart());
+            assertTrue(run1.awaitForStart(true));
             assertEquals(0, run1.getExitValue(), run1.logs());
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-proxy-webapp:war:" + jettyVersion);
@@ -306,7 +306,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/jetty-12/index.html");
@@ -472,7 +472,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains("Forking")));
             }
@@ -613,7 +613,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains(reason)));
             }
@@ -668,7 +668,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-to-start=server,logging-jetty"))
         {
-            assertTrue(run1.awaitForStart());
+            assertTrue(run1.awaitForStart(true));
             assertEquals(0, run1.getExitValue());
 
             try (JettyHomeTester.Run run2 = distribution.start("--dry-run"))
@@ -1447,7 +1447,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         });
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
         {
-            assertTrue(run1.awaitForStart());
+            assertTrue(run1.awaitForStart(true));
             assertEquals(0, run1.getExitValue());
 
             int httpPort = Tester.freePort();
@@ -1458,7 +1458,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 args.add("--jpms");
             try (JettyHomeTester.Run run2 = distribution.start(args))
             {
-                assertTrue(run2.awaitForJettyStart());
+                assertTrue(run2.awaitForJettyStart(true));
 
                 startHttpClient();
 
