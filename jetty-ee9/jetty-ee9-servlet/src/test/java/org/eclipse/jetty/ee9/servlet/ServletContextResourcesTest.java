@@ -25,11 +25,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -102,7 +102,7 @@ public class ServletContextResourcesTest
     {
         startServer(server ->
         {
-            Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
+            Path resBase = MavenPaths.findTestResourceDir("contextResources");
             ServletContextHandler context = new ServletContextHandler();
             context.setContextPath("/context");
             context.setBaseResourceAsPath(resBase);
@@ -126,7 +126,7 @@ public class ServletContextResourcesTest
     {
         startServer(server ->
         {
-            Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
+            Path resBase = MavenPaths.findTestResourceDir("contextResources");
             ServletContextHandler context = new ServletContextHandler();
             context.setContextPath("/context");
             context.setBaseResourceAsPath(resBase);
@@ -162,7 +162,7 @@ public class ServletContextResourcesTest
 
         startServer(server ->
         {
-            Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
+            Path resBase = MavenPaths.findTestResourceDir("contextResources");
             ServletContextHandler context = new ServletContextHandler();
             context.setContextPath("/context");
             context.setBaseResourceAsPath(resBase);

@@ -59,11 +59,6 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee</groupId>
-      <artifactId>jetty-ee-test-resources</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
