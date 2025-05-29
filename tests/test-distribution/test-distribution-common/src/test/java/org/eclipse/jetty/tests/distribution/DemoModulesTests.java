@@ -68,7 +68,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart =
@@ -79,7 +79,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump/auth/admin/info");
@@ -112,12 +112,12 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue(), "Exit value");
 
             try (JettyHomeTester.Run runListConfig = distribution.start("--list-config"))
             {
-                assertTrue(runListConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runListConfig.awaitForStart());
                 assertEquals(0, runListConfig.getExitValue(), "Exit value");
                 // Example of what we expect
                 // jetty.webapp.addHiddenClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
@@ -156,7 +156,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -166,7 +166,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump.jsp");
@@ -202,7 +202,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -212,7 +212,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump.jsp");
@@ -248,7 +248,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = 
@@ -259,7 +259,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/auth.html");
@@ -295,7 +295,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -305,7 +305,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/jstl.jsp");
@@ -344,7 +344,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -354,7 +354,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response;
@@ -398,7 +398,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue(), logs(runConfig));
 
             String[] argsStart = {
@@ -408,8 +408,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                    () -> String.join("\n", runStart.getLogs()));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
 
@@ -479,7 +478,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart =
@@ -490,7 +489,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/hello");
@@ -523,7 +522,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), logs(runConfig));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue(), logs(runConfig));
 
             int httpPort = Tester.freePort();
@@ -534,7 +533,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), logs(runStart));
+                assertTrue(runStart.awaitForJettyStart());
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -589,7 +588,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = Tester.freePort();
@@ -601,8 +600,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                    "LOGS: " + String.join("\n", runStart.getLogs()));
+                assertTrue(runStart.awaitForJettyStart());
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -638,7 +636,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -648,7 +646,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI);
@@ -680,7 +678,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart =
@@ -690,7 +688,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
                 startHttpClient();
 
                 String rootURI = "http://localhost:%d".formatted(httpPort);
@@ -741,7 +739,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -752,7 +750,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
                 startHttpClient();
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -784,7 +782,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitForStart());
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
@@ -795,7 +793,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitForJettyStart());
                 startHttpClient();
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 

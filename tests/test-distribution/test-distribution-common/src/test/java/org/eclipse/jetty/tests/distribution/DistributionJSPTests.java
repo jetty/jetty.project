@@ -69,7 +69,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             // Verify that --create-start-ini works
             assertTrue(Files.exists(distribution.getJettyBase().resolve("start.ini")));
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();
@@ -112,7 +112,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();
@@ -214,7 +214,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
             LOG.atInfo().setMessage(run1.logs().get()).log();
             assertTrue(Files.exists(distribution.getJettyBase().resolve("resources/log4j2.xml")));
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();
