@@ -1987,15 +1987,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-normalized paths.
-            // Thus, we normalize here, to avoid the enforcement of normalized paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.normalizePath(path);
-            if (path == null)
-                return null;
-            Resource resource = ContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
-                return resource.getURI().toURL();
+            try
+            {
+                // This is an API call from the application which may pass non-normalized paths.
+                // Thus, we normalize here, to avoid the enforcement of normalized paths in
+                // ContextHandler.this.getResource(path).
+                path = URIUtil.normalizePath(path);
+                if (path == null)
+                    return null;
+
+                if (!path.startsWith("/"))
+                    throw new MalformedURLException(path);
+
+                Resource resource = ContextHandler.this.getResource(canonicalPath);
+                if (resource != null && resource.exists())
+                    return resource.getURI().toURL();
+            }
+            catch (MalformedURLException e)
+            {
+                throw e;
+            }
+            catch (Throwable e)
+            {
+                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+            }
             return null;
         }
 
@@ -2013,8 +2029,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     return null;
                 return IOResources.asInputStream(r);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
+                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
                 LOG.trace("IGNORED", e);
                 return null;
             }

@@ -141,7 +141,19 @@ class CrossContextServletContext implements ServletContext
     @Override
     public URL getResource(String path) throws MalformedURLException
     {
-        return _targetContext.getBaseResource().resolve(path).getURI().toURL();
+        try
+        {
+            return _targetContext.getBaseResource().resolve(path).getURI().toURL();
+        }
+        catch (MalformedURLException e)
+        {
+            throw e;
+        }
+        catch (Throwable e)
+        {
+            // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
+            throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+        }
     }
 
     @Override
