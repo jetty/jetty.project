@@ -2895,8 +2895,8 @@ public class ServletContextHandler extends ContextHandler
                 // If a WAR file is mounted, or is extracted to a temp directory,
                 // then the first entry of the resource base must be the WAR file.
                 Resource resource = ServletContextHandler.this.getResource(path);
-//                if (!Resources.exists(resource))
-//                    return null;
+                if (!Resources.exists(resource))
+                    return null;
 
                 for (Resource r : resource)
                 {
