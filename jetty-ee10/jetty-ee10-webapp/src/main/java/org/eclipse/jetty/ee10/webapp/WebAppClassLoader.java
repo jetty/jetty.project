@@ -30,22 +30,22 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
  * <p>
  * Java compliant loading, where the parent loader always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)} method.
- * @deprecated use the core {@link org.eclipse.jetty.ee.WebAppClassLoader} directly instead.
+ * @deprecated use the core {@link org.eclipse.jetty.ee.webapp.WebAppClassLoader} directly instead.
  */
 @Deprecated(since = "12.0.0", forRemoval = true)
-public class WebAppClassLoader extends org.eclipse.jetty.ee.WebAppClassLoader
+public class WebAppClassLoader extends org.eclipse.jetty.ee.webapp.WebAppClassLoader
 {
     static
     {
         registerAsParallelCapable();
     }
 
-    public WebAppClassLoader(org.eclipse.jetty.ee.WebAppClassLoader.Context context)
+    public WebAppClassLoader(org.eclipse.jetty.ee.webapp.WebAppClassLoader.Context context)
     {
         super(context);
     }
 
-    public WebAppClassLoader(ClassLoader parent, org.eclipse.jetty.ee.WebAppClassLoader.Context context)
+    public WebAppClassLoader(ClassLoader parent, org.eclipse.jetty.ee.webapp.WebAppClassLoader.Context context)
     {
         super(parent, context);
     }
@@ -59,11 +59,11 @@ public class WebAppClassLoader extends org.eclipse.jetty.ee.WebAppClassLoader
      * @param <T> the type of PrivilegedExceptionAction and the type returned by the action
      * @return The return from the action
      * @throws Exception if thrown by the action
-     * @deprecated use {@link org.eclipse.jetty.ee.WebAppClassLoader#runWithHiddenClassAccess(PrivilegedExceptionAction)} instead
+     * @deprecated use {@link org.eclipse.jetty.ee.webapp.WebAppClassLoader#runWithHiddenClassAccess(PrivilegedExceptionAction)} instead
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
     {
-        return org.eclipse.jetty.ee.WebAppClassLoader.runWithHiddenClassAccess(action);
+        return org.eclipse.jetty.ee.webapp.WebAppClassLoader.runWithHiddenClassAccess(action);
     }
 }

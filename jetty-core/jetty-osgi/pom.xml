@@ -24,11 +24,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ee</artifactId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>

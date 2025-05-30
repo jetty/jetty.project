@@ -49,10 +49,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ee</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-ethereum</artifactId>
     </dependency>
     <dependency>
@@ -267,6 +263,10 @@
       <classifier>config</classifier>
       <type>jar</type>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
     </dependency>
     <!-- EE10 -->
 

@@ -68,6 +68,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-test-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>jetty-test-multipart</artifactId>
       <version>${project.version}</version>

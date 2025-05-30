@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -7,54 +7,14 @@
     <artifactId>jetty-core</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
+  <groupId>org.eclipse.jetty.ee</groupId>
   <artifactId>jetty-ee</artifactId>
-  <name>Core :: EE Common</name>
+  <packaging>pom</packaging>
+  <name>Core :: EE</name>
 
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.ee</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.*</spotbugs.onlyAnalyze>
-  </properties>
+  <modules>
+    <module>jetty-ee-webapp</module>
+    <module>jetty-ee-test-resources</module>
+  </modules>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-test-multipart</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee=org.eclipse.jetty.logging</argLine>
-          <excludes>
-            <!-- This class modifies internal JVM statics, and causes problems in parallel testing -->
-            <exclude>org.eclipse.jetty.ee.WebAppClassLoaderUrlStreamTest</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

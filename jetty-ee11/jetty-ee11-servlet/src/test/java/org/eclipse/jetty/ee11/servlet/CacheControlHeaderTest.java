@@ -26,12 +26,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -95,8 +95,8 @@ public class CacheControlHeaderTest
         ServletHolder servletHolder = new ServletHolder();
         servletHolder.setServlet(new DefaultServlet());
         servletHolder.setInitParameter("cacheControl", "max-age=3600,public");
-        Path resBase = MavenTestingUtils.getTestResourcePathDir("contextResources");
-        servletHolder.setInitParameter("resourceBase", resBase.toFile().toURI().toASCIIString());
+        Path resBase = TestEEResources.getResourceAsPathDir("/contextResources");
+        servletHolder.setInitParameter("resourceBase", resBase.toUri().toASCIIString());
         context.addServlet(servletHolder, "/*");
         if (forceFilter)
         {

@@ -45,12 +45,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -90,7 +90,7 @@ public class DispatcherTest
 
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
-        _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
+        _contextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/contextResources"));
         _server.setHandler(_contextHandler);
         _server.addConnector(_connector);
 
