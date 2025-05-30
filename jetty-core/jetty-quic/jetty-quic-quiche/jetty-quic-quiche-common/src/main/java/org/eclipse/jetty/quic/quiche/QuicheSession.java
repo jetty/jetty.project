@@ -162,8 +162,9 @@ public abstract class QuicheSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Stream.Listener listener = notifyNewStream(stream);
+        Stream.Listener listener = notifyNewStream();
         stream.setListener(listener);
+        stream.onNewStream();
 
         if (LOG.isDebugEnabled())
             LOG.debug("created remote {} on {}", stream, this);

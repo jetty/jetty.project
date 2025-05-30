@@ -517,6 +517,26 @@ public class QuicheStream extends AbstractStream
         write(current);
     }
 
+    void onNewStream()
+    {
+        notifyNewStream();
+    }
+
+    private void notifyNewStream()
+    {
+        Stream.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                // No frame available from Quiche.
+                listener.onNewStream(this, null);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
+    }
+
     private void notifyDataAvailable()
     {
         Stream.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
