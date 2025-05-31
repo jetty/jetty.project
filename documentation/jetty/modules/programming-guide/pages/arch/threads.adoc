@@ -208,7 +208,7 @@ There are better strategies to limit the number of concurrent requests, discusse
 
 `QueuedThreadPool` can be configured with a `maxThreads` value.
 
-However, some of the Jetty components (such as the xref:arch/io.adoc#selector-manager[selectors]) permanently borrow threads for their internal use, or rather `QueuedThreadPool` leases some threads to these components.
+However, some of the Jetty components (such as the xref:arch/io.adoc#selector-manager[selectors]) steal threads for their internal use, or rather `QueuedThreadPool` leases some threads to these components.
 These threads are reported by `QueuedThreadPool.leasedThreads` and are not available to run application code.
 
 `QueuedThreadPool` can be configured with a `reservedThreads` value.
@@ -246,8 +246,15 @@ You have to try and benchmark what is the best configuration for your use case.
 `QueuedThreadPool` always maintains the number of threads between `QueuedThreadPool.minThreads` and `QueuedThreadPool.maxThreads`; during load spikes the number of thread grows to meet the load demand, and when the load on the system diminishes or the system goes idle, the number of threads shrinks.
 
 The number of leased threads must be taken into account to configure `QueuedThreadPool.maxThreads`.
-During `Server` startup, `QueuedThreadPool` leases threads to the Jetty components, and there must be enough threads for the leased components, and at least `1` more thread to handle requests.
+During `Server` startup, `QueuedThreadPool` leases threads to the Jetty components, and there must be enough threads for these components, and at least `1` more thread to handle requests.
 In the example above, `QueuedThreadPool.maxThreads` must be set to `7` or more.
+
+An alternative to explicitly setting the configuration of the Jetty components to which threads are leased, you can leave their configuration at default so that it is calculated by internal Jetty heuristics, and then adjust `QueuedThreadPool.maxThreads` afterwards:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=maxThreadsAfterStart]
+----
 
 [WARNING]
 ====
@@ -255,7 +262,9 @@ Do not try to reduce the value of `QueuedThreadPool.maxThreads` to the minimum p
 
 Jetty may require threads to run internal tasks, and if no threads are available, because they are leased or busy handling requests, the server performance may degrade.
 
-`QueuedThreadPool` can shrink the number of threads when they are not used, as explained below, so it is typically safe to leave `QueuedThreadPool.maxThreads` to its default, or to a value calculated using the number of leased threads `L`, plus the number of concurrent threads to handle requests `H`, plus a generous amount in case of load spikes (for example, `QueuedThreadPool.maxThreads=L+H+H`).
+`QueuedThreadPool` can shrink the number of threads when they are not used, as explained below, so it is typically safe to leave `QueuedThreadPool.maxThreads` to its default, or to a value calculated using the max number of leased threads `L`, plus the number of concurrent threads to handle requests `H`, so that `QueuedThreadPool.maxThreads=L+H`.
+
+Consider to choose a generous value for `H`, for example one that takes into account load spikes, since `QueuedThreadPool` shrinking will eventually remove threads that are unused.
 ====
 
 Shrinking `QueuedThreadPool` is important in particular in containerized environments, where typically you want to return the memory occupied by the threads to the operative system.

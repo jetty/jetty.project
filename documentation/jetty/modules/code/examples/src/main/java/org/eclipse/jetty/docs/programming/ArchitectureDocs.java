@@ -47,6 +47,31 @@ public class ArchitectureDocs
         // end::threadPoolBudget[]
     }
 
+    public void maxThreadsAfterStart() throws Exception
+    {
+        // tag::maxThreadsAfterStart[]
+        // Use the default thread pool configuration.
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        Server server = new Server(threadPool);
+        // Use the default ServerConnector configuration.
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+        // Start the server, so threads are leased to components
+        // following the heuristics based on configuration and hardware.
+        server.start();
+
+        // Calculate a new maxThreads for the thread pool.
+
+        // Retrieve the number of leased threads.
+        int maxLeasedThreads = threadPool.getMaxLeasedThreads();
+        // Choose the number of threads available to run application code.
+        int availableThreads = 42;
+        // The new value for maxThreads.
+        int maxThreads = maxLeasedThreads + availableThreads;
+        threadPool.setMaxThreads(maxThreads);
+        // end::maxThreadsAfterStart[]
+    }
+
     public void queuedVirtualThreads()
     {
         // tag::queuedVirtual[]
