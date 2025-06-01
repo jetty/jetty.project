@@ -2037,7 +2037,6 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         Logger.getAnonymousLogger().info("Uncovered method for /specific/method is expected");
         _server.start();
-        _security.dumpStdErr();
 
         assertThat(_security.getPathsWithUncoveredHttpMethods(), contains("/specific/method"));
 
