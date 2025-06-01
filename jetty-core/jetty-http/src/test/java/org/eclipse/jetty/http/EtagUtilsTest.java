@@ -44,7 +44,7 @@ public class EtagUtilsTest
     {
         Path tmpPath = workDir.getEmptyPathDir();
         Path testFile = tmpPath.resolve("test.dat");
-        System.out.println("testFile" + testFile.toString());
+        // System.out.println("testFile" + testFile.toString());
         Files.writeString(testFile, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
         String weakEtag = EtagUtils.computeWeakEtag(testFile);

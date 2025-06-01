@@ -144,7 +144,7 @@ public class HuffmanTest
         assertThat(HuffmanEncoder.octetsNeeded(s), greaterThan(0));
         ByteBuffer buffer = encode(s);
         String decode = decode(buffer);
-        System.err.println("decoded: " + decode);
+        // System.err.println("decoded: " + decode);
         assertThat(decode, equalTo(expected));
     }
 

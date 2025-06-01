@@ -223,7 +223,7 @@ public class XmlConfigurationTest
 
         if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
         {
-            System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
+            // System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
         }
     }
 

@@ -157,7 +157,7 @@ public class HugeResourceTest
             return;
         }
 
-        System.err.printf("Creating %,d byte file: %s ...%n", size, staticFile.getFileName());
+        // System.err.printf("Creating %,d byte file: %s ...%n", size, staticFile.getFileName());
         try (SeekableByteChannel channel = Files.newByteChannel(staticFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
         {
             long remaining = size;
@@ -175,7 +175,7 @@ public class HugeResourceTest
                 remaining -= len;
             }
         }
-        System.err.println(" Done");
+        // System.err.println(" Done");
     }
 
     @BeforeEach

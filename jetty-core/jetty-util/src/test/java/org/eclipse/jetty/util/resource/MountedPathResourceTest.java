@@ -220,7 +220,7 @@ public class MountedPathResourceTest
             assertTrue(resource.exists());
 
             String dump = FileSystemPool.INSTANCE.dump();
-            System.out.println(dump);
+            // System.out.println(dump);
             assertThat(dump, containsString("FileSystemPool"));
             assertThat(dump, containsString("buckets size=1"));
             assertThat(dump, containsString(testZip + "#1"));

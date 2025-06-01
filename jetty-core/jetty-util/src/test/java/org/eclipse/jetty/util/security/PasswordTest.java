@@ -87,7 +87,7 @@ public class PasswordTest
             }
             else
             {
-                System.out.println(output);
+                // System.out.println(output);
                 passwordProcess.destroy();
                 fail("Process didn't exit properly (was forcibly destroyed)");
             }

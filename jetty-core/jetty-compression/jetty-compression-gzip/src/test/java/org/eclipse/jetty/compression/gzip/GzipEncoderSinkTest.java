@@ -64,12 +64,12 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
         Path outputTestFile = outputPath.resolve("%s.test.%s".formatted(textResourceName, gzip.getFileExtensionNames().get(0)));
         FS.ensureDirExists(outputTestFile.getParent());
         Files.write(outputTestFile, compressed, CREATE, WRITE);
-        System.out.println("Saved: " + outputTestFile);
+        // System.out.println("Saved: " + outputTestFile);
         Path outputDefaultFile = outputPath.resolve("%s.default.%s".formatted(textResourceName, gzip.getFileExtensionNames().get(0)));
         FS.ensureDirExists(outputDefaultFile.getParent());
         byte[] defcompressed = compress(Files.readString(uncompressed));
         Files.write(outputDefaultFile, defcompressed, CREATE, WRITE);
-        System.out.println("Saved: " + outputDefaultFile);
+        // System.out.println("Saved: " + outputDefaultFile);
 
         // Verify contents
         String decompressed = new String(decompress(compressed), UTF_8);
