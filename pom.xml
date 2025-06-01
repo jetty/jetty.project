@@ -296,13 +296,13 @@
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
-    <maven.clean.plugin.version>3.4.1</maven.clean.plugin.version>
+    <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.8.1</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.5.0</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.5.1</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.7</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.9.0</maven.invoker.plugin.version>
@@ -340,7 +340,7 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.21.0</testcontainers.version>
+    <testcontainers.version>1.21.1</testcontainers.version>
     <versions.maven.plugin.version>2.18.0</versions.maven.plugin.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
@@ -1805,7 +1805,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.44.4</version>
+        <version>2.44.5</version>
         <configuration>
           <pom>
             <includes>
