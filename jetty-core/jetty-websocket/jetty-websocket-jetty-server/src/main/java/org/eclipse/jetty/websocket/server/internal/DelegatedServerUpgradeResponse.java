@@ -22,9 +22,9 @@ import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-public class NegotiationServerUpgradeResponse extends Response.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeResponse
+public class DelegatedServerUpgradeResponse extends Response.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeResponse
 {
-    public NegotiationServerUpgradeResponse(ServerUpgradeRequest request, ServerUpgradeResponse wrapped)
+    public DelegatedServerUpgradeResponse(ServerUpgradeRequest request, ServerUpgradeResponse wrapped)
     {
         super(request, wrapped);
     }
