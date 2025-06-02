@@ -146,7 +146,6 @@ public class MimeTypesTest
     @MethodSource("mimeTypesGetBaseTypeCases")
     public void testMimeTypesGetBaseType(String contentTypeWithCharset, MimeTypes.Type expectedType)
     {
-        MimeTypes.CACHE.keySet().forEach(System.err::println);
         assertThat(MimeTypes.getBaseType(contentTypeWithCharset), is(expectedType));
     }
 }
