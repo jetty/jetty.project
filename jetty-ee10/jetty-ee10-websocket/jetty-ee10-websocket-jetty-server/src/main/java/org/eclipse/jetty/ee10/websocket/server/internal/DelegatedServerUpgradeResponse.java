@@ -32,97 +32,95 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
 {
-    private final ServerUpgradeResponse upgradeResponse;
-    private final HttpServletResponse httpServletResponse;
-    private final Map<String, List<String>> headers;
+    private final ServerUpgradeResponse _upgradeResponse;
+    private final HttpServletResponse _httpServletResponse;
+    private final HttpFields.Mutable _httpFields;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
-        upgradeResponse = response;
-        ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
-        this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
+        _upgradeResponse = response;
+        // Use the HttpFields from the UpgradeResponse because it specially handles websocket headers.
+        _httpFields = _upgradeResponse.getHeaders();
+        _httpServletResponse = (HttpServletResponse)Response.as(response, ServletContextResponse.class).getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
-        this.headers = HttpFields.asMap(upgradeResponse.getHeaders());
     }
 
     @Override
     public void addHeader(String name, String value)
     {
-        // TODO: This should go to the httpServletResponse for headers but then it won't do interception of the websocket headers
-        //  which are done through the jetty-core Response wrapping ServerUpgradeResponse done by websocket-core.
-        upgradeResponse.getHeaders().add(name, value);
+        _httpFields.add(name, value);
     }
 
     @Override
     public void setHeader(String name, String value)
     {
-        headers.put(name, List.of(value));
+        _httpFields.put(name, List.of(value));
     }
 
     @Override
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name, values);
+        _httpFields.put(name, values);
     }
 
     @Override
     public String getAcceptedSubProtocol()
     {
-        return upgradeResponse.getAcceptedSubProtocol();
+        return _upgradeResponse.getAcceptedSubProtocol();
     }
 
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return upgradeResponse.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
+        return _upgradeResponse.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
     }
 
     @Override
     public String getHeader(String name)
     {
-        return upgradeResponse.getHeaders().get(name);
+        return _httpFields.get(name);
     }
 
     @Override
     public Set<String> getHeaderNames()
     {
-        return upgradeResponse.getHeaders().getFieldNamesCollection();
+        return _httpFields.getFieldNamesCollection();
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return headers;
+        return HttpFields.asMap(_httpFields);
     }
 
     @Override
     public List<String> getHeaders(String name)
     {
-        return upgradeResponse.getHeaders().getValuesList(name);
+        return _httpFields.getValuesList(name);
     }
 
     @Override
     public int getStatusCode()
     {
-        return httpServletResponse.getStatus();
+        return _httpServletResponse.getStatus();
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        httpServletResponse.sendError(HttpStatus.FORBIDDEN_403, message);
+        _httpServletResponse.sendError(HttpStatus.FORBIDDEN_403, message);
     }
 
     @Override
     public void setAcceptedSubProtocol(String protocol)
     {
-        upgradeResponse.setAcceptedSubProtocol(protocol);
+        _upgradeResponse.setAcceptedSubProtocol(protocol);
     }
 
     @Override
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        upgradeResponse.setExtensions(configs.stream()
+        _upgradeResponse.setExtensions(configs.stream()
             .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
             .collect(Collectors.toList()));
     }
@@ -130,18 +128,18 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setStatusCode(int statusCode)
     {
-        httpServletResponse.setStatus(statusCode);
+        _httpServletResponse.setStatus(statusCode);
     }
 
     @Override
     public boolean isCommitted()
     {
-        return httpServletResponse.isCommitted();
+        return _httpServletResponse.isCommitted();
     }
 
     @Override
     public void sendError(int statusCode, String message) throws IOException
     {
-        httpServletResponse.sendError(statusCode, message);
+        _httpServletResponse.sendError(statusCode, message);
     }
 }

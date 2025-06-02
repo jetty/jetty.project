@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
@@ -94,10 +93,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     public String getHttpVersion()
     {
         return delegate.getVersion().toString();
-    }
-
-    public void configure(EndPoint endpoint)
-    {
     }
 
     @Override
