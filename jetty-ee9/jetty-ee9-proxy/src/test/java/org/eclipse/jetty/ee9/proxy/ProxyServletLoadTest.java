@@ -189,7 +189,7 @@ public class ProxyServletLoadTest
         public void run()
         {
             String threadName = Thread.currentThread().getName();
-            LOG.info("Starting thread {}", threadName);
+            LOG.debug("Starting thread {}", threadName);
             try
             {
                 while (success.get())
@@ -221,7 +221,7 @@ public class ProxyServletLoadTest
             }
             finally
             {
-                LOG.info("Shutting down thread {}", threadName);
+                LOG.debug("Shutting down thread {}", threadName);
                 active.countDown();
             }
         }
