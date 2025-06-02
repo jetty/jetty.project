@@ -21,129 +21,142 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
-class UpgradeRequestDelegate implements UpgradeRequest
+class CompletedUpgradeRequest implements UpgradeRequest
 {
-    private final ServerUpgradeRequest request;
-    private final Map<String, List<String>> headers;
+    private final HttpFields _httpFields;
+    private final List<HttpCookie> _cookies;
+    private final List<ExtensionConfig> _extensions;
+    private final HttpURI _httpURI;
+    private final String _httpVersion;
+    private final String _method;
+    private final List<String> _subProtocols;
+    private final Map<String, List<String>> _queryParams;
+    private final boolean _secure;
+    private final String _protocolVersion;
 
-    UpgradeRequestDelegate(ServerUpgradeRequest request)
+    CompletedUpgradeRequest(ServerUpgradeRequest request)
     {
-        this.request = request;
-        this.headers = HttpFields.asMap(request.getHeaders());
+        _httpFields = request.getHeaders().asImmutable();
+        _httpURI = request.getHttpURI();
+        _method = request.getMethod();
+        _httpVersion = request.getConnectionMetaData().getHttpVersion().asString();
+        _subProtocols = request.getSubProtocols();
+        _secure = request.isSecure();
+        _protocolVersion = request.getProtocolVersion();
+        _cookies = Request.getCookies(request).stream()
+            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
+            .toList();
+        _extensions = request.getExtensions().stream()
+            .map(JettyExtensionConfig::new)
+            .collect(Collectors.toList());
+
+        // Extract query parameters from the request
+        _queryParams = new LinkedHashMap<>();
+        Request.extractQueryParameters(request).forEach(f -> _queryParams.put(f.getName(), f.getValues()));
     }
 
     @Override
     public List<HttpCookie> getCookies()
     {
-        return Request.getCookies(request).stream()
-            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
-            .toList();
+        return _cookies;
     }
 
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return request.getExtensions().stream()
-            .map(JettyExtensionConfig::new)
-            .collect(Collectors.toList());
+        return _extensions;
     }
 
     @Override
     public String getHeader(String name)
     {
-        return request.getHeaders().get(name);
+        return _httpFields.get(name);
     }
 
     @Override
     public int getHeaderInt(String name)
     {
-        return (int)request.getHeaders().getLongField(name);
+        HttpField field = _httpFields.getField(name);
+        return field == null ? -1 : field.getIntValue();
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return headers;
+        return HttpFields.asMap(_httpFields);
     }
 
     @Override
     public List<String> getHeaders(String name)
     {
-        return request.getHeaders().getValuesList(name);
+        return _httpFields.getValuesList(name);
     }
 
     @Override
     public String getHost()
     {
-        return request.getHttpURI().getHost();
+        return _httpURI.getHost();
     }
 
     @Override
     public String getHttpVersion()
     {
-        return request.getConnectionMetaData().getHttpVersion().asString();
+        return _httpVersion;
     }
 
     @Override
     public String getMethod()
     {
-        return request.getMethod();
+        return _method;
     }
 
     @Override
     public String getOrigin()
     {
-        return request.getHeaders().get(HttpHeader.ORIGIN);
+        return _httpFields.get(HttpHeader.ORIGIN);
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        Fields fields = Request.extractQueryParameters(request);
-        for (Fields.Field field : fields)
-        {
-            result.put(field.getName(), field.getValues());
-        }
-        return result;
+        return _queryParams;
     }
 
     @Override
     public String getProtocolVersion()
     {
-        return request.getProtocolVersion();
+        return _protocolVersion;
     }
 
     @Override
     public String getQueryString()
     {
-        return request.getHttpURI().getQuery();
+        return _httpURI.getQuery();
     }
 
     @Override
     public URI getRequestURI()
     {
-        HttpURI httpURI = request.getHttpURI();
-        HttpURI.Mutable wsURI = HttpURI.build(httpURI);
-        wsURI.scheme(HttpScheme.isSecure(httpURI.getScheme()) ? HttpScheme.WSS : HttpScheme.WS);
+        HttpURI.Mutable wsURI = HttpURI.build(_httpURI);
+        wsURI.scheme(HttpScheme.isSecure(_httpURI.getScheme()) ? HttpScheme.WSS : HttpScheme.WS);
         return wsURI.toURI();
     }
 
     @Override
     public List<String> getSubProtocols()
     {
-        return request.getSubProtocols();
+        return _subProtocols;
     }
 
     @Override
@@ -156,12 +169,12 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public boolean hasSubProtocol(String subProtocol)
     {
-        return request.hasSubProtocol(subProtocol);
+        return _subProtocols.stream().anyMatch(s -> s.equalsIgnoreCase(subProtocol));
     }
 
     @Override
     public boolean isSecure()
     {
-        return request.isSecure();
+        return _secure;
     }
 }

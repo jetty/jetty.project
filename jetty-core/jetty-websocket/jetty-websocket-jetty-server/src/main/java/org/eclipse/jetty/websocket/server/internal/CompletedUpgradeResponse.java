@@ -24,58 +24,64 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-class UpgradeResponseDelegate implements UpgradeResponse
+class CompletedUpgradeResponse implements UpgradeResponse
 {
-    private final ServerUpgradeResponse response;
-    private final Map<String, List<String>> headers;
+    private final HttpFields _httpFields;
+    private final Map<String, List<String>> _headers;
+    private final List<ExtensionConfig> _negotiatedExtensions;
+    private final int _status;
+    private final String _acceptedSubProtocol;
 
-    UpgradeResponseDelegate(ServerUpgradeResponse response)
+    CompletedUpgradeResponse(ServerUpgradeResponse response)
     {
-        this.response = response;
-        this.headers = HttpFields.asMap(response.getHeaders());
-    }
-
-    @Override
-    public String getAcceptedSubProtocol()
-    {
-        return response.getAcceptedSubProtocol();
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return response.getExtensions().stream()
+        _httpFields = response.getHeaders().asImmutable();
+        _headers = HttpFields.asMap(response.getHeaders());
+        _status = response.getStatus();
+        _acceptedSubProtocol = response.getAcceptedSubProtocol();
+        _negotiatedExtensions = response.getExtensions().stream()
             .map(JettyExtensionConfig::new)
             .collect(Collectors.toList());
     }
 
     @Override
+    public String getAcceptedSubProtocol()
+    {
+        return _acceptedSubProtocol;
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        return _negotiatedExtensions;
+    }
+
+    @Override
     public String getHeader(String name)
     {
-        return response.getHeaders().get(name);
+        return _httpFields.get(name);
     }
 
     @Override
     public Set<String> getHeaderNames()
     {
-        return response.getHeaders().getFieldNamesCollection();
+        return _httpFields.getFieldNamesCollection();
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return headers;
+        return _headers;
     }
 
     @Override
     public List<String> getHeaders(String name)
     {
-        return response.getHeaders().getValuesList(name);
+        return _httpFields.getValuesList(name);
     }
 
     @Override
     public int getStatusCode()
     {
-        return response.getStatus();
+        return _status;
     }
 }

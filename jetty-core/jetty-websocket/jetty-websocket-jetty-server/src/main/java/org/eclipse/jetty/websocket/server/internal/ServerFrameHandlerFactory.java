@@ -33,8 +33,8 @@ public class ServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory
     public FrameHandler newFrameHandler(Object webSocketEndPoint, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         JettyWebSocketFrameHandler frameHandler = newJettyFrameHandler(webSocketEndPoint);
-        frameHandler.setUpgradeRequest(new UpgradeRequestDelegate(upgradeRequest));
-        frameHandler.setUpgradeResponse(new UpgradeResponseDelegate(upgradeResponse));
+        frameHandler.setUpgradeRequest(new CompletedUpgradeRequest(upgradeRequest));
+        frameHandler.setUpgradeResponse(new CompletedUpgradeResponse(upgradeResponse));
         return frameHandler;
     }
 }
