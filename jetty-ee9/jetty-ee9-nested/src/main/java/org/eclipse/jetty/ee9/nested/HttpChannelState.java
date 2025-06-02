@@ -749,6 +749,7 @@ public class HttpChannelState
                     break;
 
                 case COMPLETE:
+                case COMPLETED:
                     return;
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
