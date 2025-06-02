@@ -16,35 +16,22 @@ package org.eclipse.jetty.websocket.server.internal;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
-import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.ServerUpgradeRequest;
 
-public class ServerUpgradeResponseDelegate extends Response.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeResponse
+public class NegotiationServerUpgradeRequest extends Request.Wrapper implements ServerUpgradeRequest
 {
-    public ServerUpgradeResponseDelegate(ServerUpgradeRequest request, ServerUpgradeResponse wrapped)
+    public NegotiationServerUpgradeRequest(org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest wrapped)
     {
-        super(request, wrapped);
+        super(wrapped);
     }
 
     @Override
-    public ServerUpgradeResponse getWrapped()
+    public org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest getWrapped()
     {
-        return (ServerUpgradeResponse)super.getWrapped();
-    }
-
-    @Override
-    public String getAcceptedSubProtocol()
-    {
-        return getWrapped().getAcceptedSubProtocol();
-    }
-
-    @Override
-    public void setAcceptedSubProtocol(String protocol)
-    {
-        getWrapped().setAcceptedSubProtocol(protocol);
+        return (org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest)super.getWrapped();
     }
 
     @Override
@@ -56,10 +43,14 @@ public class ServerUpgradeResponseDelegate extends Response.Wrapper implements o
     }
 
     @Override
-    public void setExtensions(List<ExtensionConfig> configs)
+    public List<String> getSubProtocols()
     {
-        getWrapped().setExtensions(configs.stream()
-            .map(apiExt -> org.eclipse.jetty.websocket.core.ExtensionConfig.parse(apiExt.getParameterizedName()))
-            .collect(Collectors.toList()));
+        return getWrapped().getSubProtocols();
+    }
+
+    @Override
+    public boolean hasSubProtocol(String subProtocol)
+    {
+        return getWrapped().hasSubProtocol(subProtocol);
     }
 }

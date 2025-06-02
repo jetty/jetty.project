@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-class CompletedUpgradeResponse implements UpgradeResponse
+public class CompletedUpgradeResponse implements UpgradeResponse
 {
     private final HttpFields _httpFields;
     private final Map<String, List<String>> _headers;
@@ -32,7 +32,7 @@ class CompletedUpgradeResponse implements UpgradeResponse
     private final int _status;
     private final String _acceptedSubProtocol;
 
-    CompletedUpgradeResponse(ServerUpgradeResponse response)
+    public CompletedUpgradeResponse(ServerUpgradeResponse response)
     {
         _httpFields = response.getHeaders().asImmutable();
         _headers = HttpFields.asMap(response.getHeaders());

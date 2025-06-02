@@ -41,9 +41,9 @@ import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
+import org.eclipse.jetty.websocket.server.internal.NegotiationServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.internal.NegotiationServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.internal.ServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.server.internal.ServerUpgradeRequestDelegate;
-import org.eclipse.jetty.websocket.server.internal.ServerUpgradeResponseDelegate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -359,7 +359,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         {
             try
             {
-                return creator.createWebSocket(new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
+                return creator.createWebSocket(new NegotiationServerUpgradeRequest(rq), new NegotiationServerUpgradeResponse(rq, rs), cb);
             }
             catch (Throwable x)
             {

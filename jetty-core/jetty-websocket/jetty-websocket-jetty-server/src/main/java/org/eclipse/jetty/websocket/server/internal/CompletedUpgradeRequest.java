@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
-class CompletedUpgradeRequest implements UpgradeRequest
+public class CompletedUpgradeRequest implements UpgradeRequest
 {
     private final HttpFields _httpFields;
     private final List<HttpCookie> _cookies;
@@ -45,7 +45,7 @@ class CompletedUpgradeRequest implements UpgradeRequest
     private final boolean _secure;
     private final String _protocolVersion;
 
-    CompletedUpgradeRequest(ServerUpgradeRequest request)
+    public CompletedUpgradeRequest(ServerUpgradeRequest request)
     {
         _httpFields = request.getHeaders().asImmutable();
         _httpURI = request.getHttpURI();
