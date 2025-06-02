@@ -26,12 +26,16 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee10.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee10.servlet.ServletCoreResponse;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -157,11 +161,11 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
+        Request coreRequest = ServletCoreRequest.wrap((HttpServletRequest)request);
+        Response coreResponse = ServletCoreResponse.wrap(coreRequest, (HttpServletResponse)response, false);
 
         // Do preliminary check before proceeding to attempt an upgrade.
-        if (mappings.getHandshaker().isWebSocketUpgradeRequest(servletContextRequest))
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(coreRequest))
         {
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             FutureCallback callback = new FutureCallback();
@@ -169,10 +173,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-                servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+                coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+                coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-                if (mappings.upgrade(servletContextRequest, servletContextResponse, callback, defaultCustomizer))
+                if (mappings.upgrade(coreRequest, coreResponse, callback, defaultCustomizer))
                 {
                     callback.block();
                     return;
@@ -180,8 +184,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             }
             finally
             {
-                servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-                servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+                coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 
