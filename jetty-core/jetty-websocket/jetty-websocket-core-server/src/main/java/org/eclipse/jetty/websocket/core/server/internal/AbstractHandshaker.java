@@ -78,6 +78,7 @@ public abstract class AbstractHandshaker implements Handshaker
         {
             if (!offeredProtocols.contains(protocol))
                 throw new WebSocketException("not upgraded: selected a protocol not present in offered protocols");
+            response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
         }
 
         // validate negotiated extensions
@@ -131,8 +132,6 @@ public abstract class AbstractHandshaker implements Handshaker
         prepareResponse(response, negotiation);
 
         request.setAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE, connection);
-
-        negotiation.getRequest().upgrade(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
