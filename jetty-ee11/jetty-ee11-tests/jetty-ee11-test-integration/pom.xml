@@ -68,11 +68,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-apache-jsp</artifactId>
       <scope>test</scope>
     </dependency>
@@ -144,6 +139,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
