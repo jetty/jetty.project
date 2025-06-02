@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -660,8 +662,12 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)
     {
-        System.out.printf("  %s %d %s%n", response.getVersion(), response.getStatus(), response.getReason());
-        response.getHeaders().forEach((field) -> System.out.printf("  %s%n", field));
+        Logger logger = LoggerFactory.getLogger(CompressionHandler.class);
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("{} {} {}", response.getVersion(), response.getStatus(), response.getReason());
+            response.getHeaders().forEach((field) -> logger.debug("{}", field));
+        }
     }
 
     private void startServer(Handler rootHandler) throws Exception
