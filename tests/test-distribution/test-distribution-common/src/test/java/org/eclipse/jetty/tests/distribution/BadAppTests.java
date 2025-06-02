@@ -26,7 +26,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -151,7 +150,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             distribution.installWar(war, "badapp");
 
             int port = Tester.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=false"))
             {
                 assertTrue(run2.awaitForJettyStart());
 

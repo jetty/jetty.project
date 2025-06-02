@@ -17,7 +17,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ByteBufferRequestContent;
@@ -745,7 +744,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
                 "jetty.ssl.port=" + sslPort,
-                "jetty.server.dumpAfterStart=true"
+                "jetty.server.dumpAfterStart=false"
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -788,7 +787,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
                 "jetty.ssl.port=" + sslPort,
-                "jetty.server.dumpAfterStart=true"
+                "jetty.server.dumpAfterStart=false"
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))

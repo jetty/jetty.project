@@ -71,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.tests.testers.ProcessWrapper.JETTY_START_SEARCH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -305,7 +304,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(loggingProps, loggingConfig, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
 
             int port = Tester.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
+            try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=false"))
             {
                 assertTrue(run2.awaitForJettyStart(true));
 
@@ -1414,7 +1413,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
 
         // Verify that the empty.jar is listed as being on the classpath
-        try (JettyHomeTester.Run run = distribution.start(" jetty.server.dumpAfterStart=true"))
+        try (JettyHomeTester.Run run = distribution.start(" jetty.server.dumpAfterStart=false"))
         {
             assertThat(run.awaitForJettyStart(), is(true));
             run.stop();
