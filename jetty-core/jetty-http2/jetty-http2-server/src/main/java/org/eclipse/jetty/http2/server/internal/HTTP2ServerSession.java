@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -114,12 +115,22 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                             }
                         }
 
-                        stream.process(frame, Callback.NOOP);
-                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-                        Stream.Listener listener = notifyNewStream(stream, frame);
-                        stream.setListener(listener);
-                        if (closed)
-                            removeStream(stream);
+                        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                        if (metaDataFailure != null)
+                        {
+                            // It's a bad request, request content will be dropped.
+                            stream.updateClose(true, CloseState.Event.RECEIVED);
+                            notifyStreamFailure(stream, new BadMessageException(metaDataFailure.getMessage(), metaDataFailure), Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.process(frame, Callback.NOOP);
+                            boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                            Stream.Listener listener = notifyNewStream(stream, frame);
+                            stream.setListener(listener);
+                            if (closed)
+                                removeStream(stream);
+                        }
                     }
                 }
             }
@@ -168,6 +179,25 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
     }
 
+    private void notifyStreamFailure(Stream stream, Throwable failure, Callback callback)
+    {
+        if (listener instanceof Listener l)
+        {
+            try
+            {
+                l.onStreamFailure(stream, failure, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
+        }
+        else
+        {
+            onStreamFailure(stream, ErrorCode.CANCEL_STREAM_ERROR.code, failure.getMessage(), failure, callback);
+        }
+    }
+
     @Override
     public void onFrame(Frame frame)
     {
@@ -190,5 +220,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     public void standardUpgrade()
     {
         getParser().standardUpgrade();
+    }
+
+    public interface Listener extends ServerSessionListener
+    {
+        void onStreamFailure(Stream stream, Throwable failure, Callback callback);
     }
 }
