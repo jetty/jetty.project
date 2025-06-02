@@ -341,6 +341,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
                     Runnable task = isUpgrade || isTunnel ? null : this.receiveNext;
                     responseSuccess(exchange, task);
+                    chunk = Content.Chunk.EOF;
 
                     // Connection upgrade, bail out.
                     if (isUpgrade || isTunnel)
