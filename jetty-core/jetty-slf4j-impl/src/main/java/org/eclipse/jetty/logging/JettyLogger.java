@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.logging;
 
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,7 @@ import org.slf4j.spi.LocationAwareLogger;
 
 public class JettyLogger implements LocationAwareLogger, Logger
 {
+    private static final Set<StacklessLogging> stacklessLoggers = new CopyOnWriteArraySet<>();
     private final JettyLoggerFactory factory;
     private final String name;
     private final String condensedName;
@@ -87,6 +90,34 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return b.toString();
     }
 
+    public static boolean isStackHidden(JettyLogger logger)
+    {
+        if (logger == null)
+            return false;
+
+        if (logger.isHideStacks())
+            return true;
+
+        for (StacklessLogging stacklessLogging : stacklessLoggers)
+            if (stacklessLogging.isHiding(logger))
+                return true;
+
+        Boolean hidden = JettyLoggerFactory.walkParentLoggerNames(logger.getName(), name ->
+        {
+            JettyLogger l = logger.factory.getJettyLogger(name, false);
+            if (l == null)
+                return null;
+            if (l.isHideStacks())
+                return true;
+            for (StacklessLogging stacklessLogging : stacklessLoggers)
+                if (stacklessLogging.isHiding(l))
+                    return true;
+            return null;
+        });
+
+        return Boolean.TRUE.equals(hidden);
+    }
+
     public JettyAppender getAppender()
     {
         return appender;
@@ -124,9 +155,16 @@ public class JettyLogger implements LocationAwareLogger, Logger
     public void setHideStacks(boolean hideStacks)
     {
         this.hideStacks = hideStacks;
+    }
 
-        // apply setHideStacks to children too.
-        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
+    static void add(StacklessLogging stacklessLogging)
+    {
+        stacklessLoggers.add(stacklessLogging);
+    }
+
+    static void remove(StacklessLogging stacklessLogging)
+    {
+        stacklessLoggers.remove(stacklessLogging);
     }
 
     @Override

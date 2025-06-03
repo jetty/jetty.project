@@ -172,14 +172,10 @@ public class StdErrAppender implements JettyAppender
         // Throwable
         if (cause != null)
         {
-            if (logger.isHideStacks())
-            {
+            if (JettyLogger.isStackHidden(logger))
                 builder.append(": ").append(cause);
-            }
             else
-            {
                 appendCause(builder, cause, "", Collections.newSetFromMap(new IdentityHashMap<>()));
-            }
         }
     }
 
