@@ -694,7 +694,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     public void testAsyncCompleteAfterChannelAbortDoesNotThrow() throws Exception
     {
         AtomicReference<Throwable> failureRef = new AtomicReference<>();
-        startServer(new AbstractHandler() {
+        startServer(new AbstractHandler()
+        {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
