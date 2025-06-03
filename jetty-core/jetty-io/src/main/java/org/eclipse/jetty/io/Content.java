@@ -272,7 +272,7 @@ public class Content
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
+         * @param length The number of bytes to read from the source, or -1 for the full length.
          * @return A {@code Content.Source}
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
@@ -293,10 +293,17 @@ public class Content
 
                     if (toRead == 0)
                         return -1;
+
+                    if (toRead < 0)
+                        return inputStream.read(buffer, 0, buffer.length);
+
                     int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
                     int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
                     int read = inputStream.read(buffer, 0, len);
-                    toRead -= read;
+
+                    if (read > 0)
+                        toRead -= read;
+
                     return read;
                 }
             };
