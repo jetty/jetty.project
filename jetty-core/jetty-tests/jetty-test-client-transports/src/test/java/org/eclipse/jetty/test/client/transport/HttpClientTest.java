@@ -81,6 +81,54 @@ public class HttpClientTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
+    public void testClientUseContentSourceInSpawnedThread(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                return true;
+            }
+        });
+
+        var response = new Response.Listener()
+        {
+            final CompletableFuture<String> body = new CompletableFuture<>();
+
+            @Override
+            public void onContentSource(Response response, Content.Source contentSource)
+            {
+                new Thread(() ->
+                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                        return;
+                    }
+
+                    chunk.release();
+
+                    if (!chunk.isLast())
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                    else
+                        body.complete("");
+                }
+                ).start();
+            }
+        };
+
+        client.newRequest(server.getURI())
+            .method("POST")
+            .send(response);
+
+        response.body.get(5, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
     public void testRequestWithoutResponseContent(Transport transport) throws Exception
     {
         final int status = HttpStatus.NO_CONTENT_204;
