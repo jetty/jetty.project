@@ -127,10 +127,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
                "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
-        [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
-          configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
-          //sh "cp $MVN_BUILD_CACHE_CONFIG .mvn/maven-build-cache-config.xml"
-          //-Dmaven.build.cache.configPath=$MVN_BUILD_CACHE_CONFIG
+        [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
           def buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
@@ -151,8 +148,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           sh "mkdir ~/.mimir"
           sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
-          sh "cat ~/.mimir/daemon.properties"
-          sh "rm -rf .repository"
           sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
