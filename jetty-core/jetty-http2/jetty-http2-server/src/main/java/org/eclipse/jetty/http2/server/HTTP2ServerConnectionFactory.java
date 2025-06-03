@@ -28,6 +28,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerSession;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.QuietException;
@@ -76,7 +77,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return acceptable;
     }
 
-    protected class HTTPServerSessionListener implements ServerSessionListener, Stream.Listener
+    protected class HTTPServerSessionListener implements HTTP2ServerSession.Listener, Stream.Listener
     {
         private final EndPoint endPoint;
 
@@ -128,6 +129,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             getConnection().onSessionFailure(failure, callback);
+        }
+
+        @Override
+        public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
+        {
+            onFailure(stream, failure, callback);
         }
 
         @Override

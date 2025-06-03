@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 public class HeaderBlockParser
 {
-    public static final MetaData STREAM_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
-    public static final MetaData SESSION_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
@@ -57,9 +55,8 @@ public class HeaderBlockParser
      * @param buffer the buffer to parse
      * @param blockLength the length of the HPACK block
      * @return null, if the buffer contains less than {@code blockLength} bytes;
-     * {@link #STREAM_FAILURE} if parsing the HPACK block produced a stream failure;
-     * {@link #SESSION_FAILURE} if parsing the HPACK block produced a session failure;
-     * a valid MetaData object if the parsing was successful.
+     * an instance of {@link MetaData.Failed} if parsing the HPACK block produced a failure;
+     * an instance of {@link MetaData} if the parsing was successful.
      */
     public MetaData parse(ByteBuffer buffer, int blockLength)
     {
@@ -106,22 +103,25 @@ public class HeaderBlockParser
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
-                notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
-                return STREAM_FAILURE;
+                if (x.isRequest())
+                    return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_2, x);
+                if (x.isResponse())
+                    return MetaData.Failed.newFailedMetaDataResponse(HttpVersion.HTTP_2, x);
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
-                return SESSION_FAILURE;
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
-                return SESSION_FAILURE;
+                return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             finally
             {

@@ -20,6 +20,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -40,6 +42,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -807,52 +810,154 @@ public class ServletChannel
         }
     }
 
+    /**
+     * An AsyncContext dispatch method was called. We may need to dispatch to
+     * a different context.
+     * @throws Exception
+     */
     public void dispatchAsync() throws Exception
     {
-        ServletContextHandler servletContextHandler = getServletContextHandler();
+        ServletContextHandler targetContextHandler = getServletContextHandler();
         ServletContextRequest servletContextRequest = getServletContextRequest();
         ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
         try
         {
-            servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
-
-            HttpURI uri;
-            String pathInContext;
             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
             String dispatchString = asyncContextEvent.getDispatchPath();
-            if (dispatchString != null)
+
+            if (asyncContextEvent.getDispatchContext() instanceof CrossContextServletContext crossContextServletContext)
             {
-                String contextPath = _context.getContextPath();
-                HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
-                uri = HttpURI.build(servletContextRequest.getHttpURI())
-                    .path(URIUtil.addPaths(contextPath, pathInContext))
-                    .query(dispatchUri.getQuery());
+                dispatchCrossContextAsync(crossContextServletContext);
             }
-            else
+            else if (asyncContextEvent.getDispatchContext() == null)
             {
-                uri = asyncContextEvent.getBaseURI();
-                if (uri == null)
+                //the user dispatched to the current context
+                targetContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+
+                String pathInContext;
+                HttpURI uri;
+
+                if (dispatchString != null)
                 {
-                    uri = servletContextRequest.getHttpURI();
-                    pathInContext = Request.getPathInContext(servletContextRequest);
+                    //dispatch to different path in current context
+                    String contextPath = _context.getContextPath();
+                    HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
+                    pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
+                    uri = HttpURI.build(servletContextRequest.getHttpURI())
+                        .path(URIUtil.addPaths(contextPath, pathInContext))
+                        .query(dispatchUri.getQuery());
                 }
                 else
                 {
-                    pathInContext = uri.getCanonicalPath();
-                    int length = _context.getContextPath().length();
-                    if (length > 1)
-                        pathInContext = pathInContext.substring(length);
+                    //dispatch to original path of event's request in current context
+                    uri = asyncContextEvent.getBaseURI();
+                    if (uri == null)
+                    {
+                        uri = servletContextRequest.getHttpURI();
+                        pathInContext = Request.getPathInContext(servletContextRequest);
+                    }
+                    else
+                    {
+                        pathInContext = uri.getCanonicalPath();
+                        int length = _context.getContextPath().length();
+                        if (length > 1)
+                            pathInContext = pathInContext.substring(length);
+                    }
                 }
+
+                // We first worked with the core pathInContext above, but now need to convert to servlet style
+                String decodedPathInContext = URIUtil.decodePath(pathInContext);
+                Dispatcher dispatcher = new Dispatcher(targetContextHandler, uri, decodedPathInContext);
+                dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
             }
-            // We first worked with the core pathInContext above, but now need to convert to servlet style
-            String decodedPathInContext = URIUtil.decodePath(pathInContext);
-            Dispatcher dispatcher = new Dispatcher(servletContextHandler, uri, decodedPathInContext);
-            dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
+            else
+            {
+                //the container has dispatched to a different context
+                ServletContext targetContext = getServletContextHandler().getServletContext().getContext(asyncContextEvent.getDispatchContext().getContextPath());
+                if (targetContext instanceof CrossContextServletContext crossContextServletContext)
+                    dispatchCrossContextAsync(crossContextServletContext);
+            }
         }
         finally
         {
-            servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+            targetContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
         }
+    }
+
+    /**
+     * Async has been started, but dispatched to a different context. This can happen
+     * either via application code calling {@link jakarta.servlet.AsyncContext#dispatch(ServletContext, String)}
+     * or the container dispatching after application code returns without having performed a dispatch or otherwise
+     * completed async.
+     * @param crossContextServletContext the special context containing both the origin context and the destination context
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void dispatchCrossContextAsync(CrossContextServletContext crossContextServletContext) throws ServletException, IOException
+    {
+        HttpURI uri;
+        ServletContextHandler targetContextHandler = crossContextServletContext.getTargetContext().getContextHandler();
+        AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
+        String dispatchPathInContext = asyncContextEvent.getDispatchPath();
+
+        if (dispatchPathInContext != null)
+        {
+            //dispatch is to a specific path
+            String encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(targetContextHandler.getContextPath(), dispatchPathInContext));
+            if (encodedPathQuery == null)
+                throw new BadMessageException(500, "Bad dispatch path");
+
+            //Add in any query params
+            if (asyncContextEvent.getBaseURI() != null)
+            {
+                HttpURI.Mutable builder = HttpURI.build(asyncContextEvent.getBaseURI(), encodedPathQuery);
+                if (StringUtil.isEmpty(builder.getParam()))
+                    builder.param(asyncContextEvent.getBaseURI().getParam());
+                if (StringUtil.isEmpty(builder.getQuery()))
+                    builder.query(asyncContextEvent.getBaseURI().getQuery());
+
+                uri = builder.asImmutable();
+                dispatchPathInContext = uri.getPathQuery();
+            }
+            else
+            {
+                //no base request URI, do our best with the context and dispatch path
+                HttpURI.Mutable mutableHttpURI = HttpURI.build(dispatchPathInContext);
+
+                String targetContextPath = targetContextHandler.getContextPath();
+                if (!StringUtil.isEmpty(targetContextPath) && !targetContextPath.equals("/"))
+                {
+                    mutableHttpURI.path(URIUtil.addPaths(targetContextPath, mutableHttpURI.getPath()));
+                }
+                uri = mutableHttpURI.asImmutable();
+            }
+        }
+        else
+        {
+            //no dispatch path, assume path as at time of start async
+            uri = asyncContextEvent.getBaseURI();
+            String contextPath;
+            if (uri == null)
+            {
+                //use the current request's uri and the current context path to extract just the servlet path
+                uri = getServletContextRequest().getHttpURI();
+                contextPath = getContext().getContextPath();
+            }
+            else
+            {
+                //use the context path at the time of start async to extract just the servlet path
+                contextPath = asyncContextEvent.getContext().getContextPath();
+            }
+            dispatchPathInContext = uri.getCanonicalPath();
+            int length = contextPath.length();
+            if (length > 1)
+                dispatchPathInContext = dispatchPathInContext.substring(length);
+            HttpURI.Mutable mutableHttpURI = HttpURI.build(dispatchPathInContext);
+            mutableHttpURI.path(URIUtil.addPaths(targetContextHandler.getContextPath(), dispatchPathInContext));
+            uri = mutableHttpURI.asImmutable();
+        }
+
+        CrossContextDispatcher dispatcher = new CrossContextDispatcher(crossContextServletContext, uri, dispatchPathInContext);
+        dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
     }
 }

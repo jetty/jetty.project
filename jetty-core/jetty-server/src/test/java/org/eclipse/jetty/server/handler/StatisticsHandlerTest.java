@@ -798,8 +798,6 @@ public class StatisticsHandlerTest
             assertEquals(0, _statsHandler.getHandleActive());
             assertEquals(1, _statsHandler.getResponses2xx());
 
-            _statsHandler.dumpStdErr();
-
             // TODO currently the wasted time is included in the request time and the accepted time, because those
             //      timers are stopped in the stream completion (rather than the callback completion), which is
             //      serialized on the return of the call to handle.   Perhaps we should wrap the callback for

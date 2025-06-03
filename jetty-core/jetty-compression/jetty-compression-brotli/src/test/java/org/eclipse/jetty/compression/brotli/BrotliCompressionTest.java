@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
-import org.eclipse.jetty.toolchain.test.Hex;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +45,7 @@ public class BrotliCompressionTest extends AbstractBrotliTest
             encodingStream.write("World".getBytes(StandardCharsets.UTF_8));
             encodingStream.flush();
             encodingStream.close();
-            System.out.println("Hex: " + Hex.asHex(baos.toByteArray()));
+            // System.out.println("Hex: " + Hex.asHex(baos.toByteArray()));
         }
     }
 }

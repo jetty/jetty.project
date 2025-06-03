@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -638,22 +639,43 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     /**
      * @param keyStorePath The file or URL of the SSL Key store.
      */
-    public void setKeyStorePath(String keyStorePath)
+    public void setKeyStorePath(Path keyStorePath)
     {
-        if (StringUtil.isBlank(keyStorePath))
+        if (keyStorePath == null)
         {
             // allow user to unset variable
-            _keyStoreResource = null;
+            setKeyStoreResource(null);
             return;
         }
 
         Resource res = ResourceFactory.of(this).newResource(keyStorePath);
         if (!Resources.isReadableFile(res))
         {
-            _keyStoreResource = null;
+            setKeyStoreResource(null);
             throw new IllegalArgumentException("KeyStore Path not accessible: " + keyStorePath);
         }
-        _keyStoreResource = res;
+        setKeyStoreResource(res);
+    }
+
+    /**
+     * @param keyStorePath The file or URL of the SSL Key store.
+     */
+    public void setKeyStorePath(String keyStorePath)
+    {
+        if (StringUtil.isBlank(keyStorePath))
+        {
+            // allow user to unset variable
+            setKeyStoreResource(null);
+            return;
+        }
+
+        Resource res = ResourceFactory.of(this).newResource(keyStorePath);
+        if (!Resources.isReadableFile(res))
+        {
+            setKeyStoreResource(null);
+            throw new IllegalArgumentException("KeyStore Path not accessible: " + keyStorePath);
+        }
+        setKeyStoreResource(res);
     }
 
     /**

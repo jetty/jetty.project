@@ -21,6 +21,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
@@ -29,6 +30,48 @@ import org.eclipse.jetty.util.thread.VirtualThreadPool;
 @SuppressWarnings("unused")
 public class ArchitectureDocs
 {
+    public void threadPoolBudget()
+    {
+        // tag::threadPoolBudget[]
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        // Configure the number of reserved threads.
+        int reservedThreads = 2;
+        threadPool.setReservedThreads(reservedThreads);
+
+        Server server = new Server(threadPool);
+
+        int acceptors = 1;
+        int selectors = 3;
+        ServerConnector connector = new ServerConnector(server, acceptors, selectors);
+        server.addConnector(connector);
+        // end::threadPoolBudget[]
+    }
+
+    public void maxThreadsAfterStart() throws Exception
+    {
+        // tag::maxThreadsAfterStart[]
+        // Use the default thread pool configuration.
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        Server server = new Server(threadPool);
+        // Use the default ServerConnector configuration.
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+        // Start the server, so threads are leased to components
+        // following the heuristics based on configuration and hardware.
+        server.start();
+
+        // Calculate a new maxThreads for the thread pool.
+
+        // Retrieve the number of leased threads.
+        int maxLeasedThreads = threadPool.getMaxLeasedThreads();
+        // Choose the number of threads available to run application code.
+        int availableThreads = 42;
+        // The new value for maxThreads.
+        int maxThreads = maxLeasedThreads + availableThreads;
+        threadPool.setMaxThreads(maxThreads);
+        // end::maxThreadsAfterStart[]
+    }
+
     public void queuedVirtualThreads()
     {
         // tag::queuedVirtual[]

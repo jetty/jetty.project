@@ -150,7 +150,7 @@ public class IncludedServletTest
     public void testTopWithIncludedHeader() throws IOException
     {
         URI uri = baseUri.resolve("/top");
-        System.out.println("GET (String): " + uri.toASCIIString());
+        // System.out.println("GET (String): " + uri.toASCIIString());
 
         InputStream in = null;
         InputStreamReader reader = null;

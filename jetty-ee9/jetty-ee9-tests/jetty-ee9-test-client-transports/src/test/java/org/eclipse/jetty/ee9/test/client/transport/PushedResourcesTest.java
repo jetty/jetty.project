@@ -149,7 +149,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error empty push builder");
+                        // System.err.println("Expected error empty push builder");
                     }
 
                     PushBuilder pb1 = request.newPushBuilder();
@@ -165,7 +165,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error no path reset");
+                        // System.err.println("Expected error no path reset");
                     }
 
                     PushBuilder pb3 = request.newPushBuilder();
@@ -175,7 +175,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error null method");
+                        // System.err.println("Expected error null method");
                     }
 
                     String[] methods = {
@@ -192,7 +192,7 @@ public class PushedResourcesTest extends AbstractTest
                         }
                         catch (Exception e)
                         {
-                            System.err.println("Pass " + m);
+                            // System.err.println("Pass " + m);
                         }
                     }
                     response.getOutputStream().write(bytes);
@@ -253,7 +253,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error empty push builder");
+                        // System.err.println("Expected error empty push builder");
                     }
 
                     PushBuilder pb1 = request.newPushBuilder();
@@ -266,7 +266,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error no path reset");
+                        // System.err.println("Expected error no path reset");
                     }
 
                     PushBuilder pb3 = request.newPushBuilder();
@@ -276,7 +276,7 @@ public class PushedResourcesTest extends AbstractTest
                     }
                     catch (Exception e)
                     {
-                        System.err.println("Expected error null method");
+                        // System.err.println("Expected error null method");
                     }
 
                     String[] methods = {
@@ -293,7 +293,7 @@ public class PushedResourcesTest extends AbstractTest
                         }
                         catch (Exception e)
                         {
-                            System.err.println("Pass " + m);
+                            // System.err.println("Pass " + m);
                         }
                     }
                     response.getWriter().println("TEST FINISHED");

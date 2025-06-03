@@ -1231,9 +1231,14 @@ public class HttpChannelState
     {
         if (event != null)
         {
-            ContextHandler.APIContext context = ((ContextHandler.APIContext)event.getServletContext());
-            if (context != null)
-                return context.getContextHandler();
+            ServletContext servletContext = event.getServletContext();
+            if (servletContext instanceof CrossContextServletContext crossContextServletContext)
+            {
+                if (crossContextServletContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
+                    return  coreContextHandler.getContextHandler();
+            }
+            if (servletContext instanceof ContextHandler.APIContext apiContext)
+                return apiContext.getContextHandler();
         }
         return null;
     }

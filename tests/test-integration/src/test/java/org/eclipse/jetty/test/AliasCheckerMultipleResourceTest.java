@@ -97,7 +97,7 @@ public class AliasCheckerMultipleResourceTest extends AliasCheckerTestBase
     public void testMultipleResourceBases() throws Exception
     {
         Path webRootPath = getResource("webroot");
-        System.err.println(webRootPath);
+        // System.err.println(webRootPath);
 
         // Create a sibling to webroot containing a symlink to file1.
         Path baseResource = webRootPath.resolve("../altDir1").toAbsolutePath();

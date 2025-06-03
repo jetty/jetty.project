@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
@@ -68,7 +69,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
 
         // Add WEB-INF classes and lib classpaths
-        if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof org.eclipse.jetty.ee.WebAppClassLoader webAppClassLoader)
+        if (webInf != null && webInf.isDirectory() && context.getClassLoader() instanceof WebAppClassLoader webAppClassLoader)
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");

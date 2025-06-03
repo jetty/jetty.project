@@ -328,7 +328,7 @@ public class PropertyPassingTest
         int exitCode = pid.waitFor();
         if (exitCode != 0)
         {
-            System.out.println("Command line: " + cline);
+            // System.out.println("Command line: " + cline);
             System.out.printf("STDERR: [" + stdErrPump.getConsoleOutput() + "]%n");
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
             assertThat("Exit code", exitCode, is(0));

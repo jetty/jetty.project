@@ -183,7 +183,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -348,7 +347,91 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <!-- we want to be sure all dependencies are available in the local repo -->
+            <id>copy-fake-deps</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <version>${logback.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-core</artifactId>
+                  <version>${logback.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-api</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-core</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-slf4j2-impl</artifactId>
+                  <version>${log4j2.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-jdk14</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>brotli4j</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>service</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>native-linux-x86_64</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.aayushatharva.brotli4j</groupId>
+                  <artifactId>native-windows-x86_64</artifactId>
+                  <version>${brotli4j.version}</version>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <ignorePermissions>true</ignorePermissions>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${jetty.home}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-jetty-home</id>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -368,7 +451,6 @@
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

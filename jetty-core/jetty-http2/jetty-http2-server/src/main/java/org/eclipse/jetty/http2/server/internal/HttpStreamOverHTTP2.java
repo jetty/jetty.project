@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -609,33 +610,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         boolean remote = failure instanceof EOFException;
-        Runnable runnable = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
-
-        class FailureTask implements Runnable
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    if (runnable != null)
-                        runnable.run();
-                    callback.succeeded();
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
-            }
-
-            @Override
-            public String toString()
-            {
-                return "%s[%s]".formatted(TypeUtil.toShortName(getClass()), runnable);
-            }
-        }
-
-        return new FailureTask();
+        Runnable task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
+        return new FailureTask(task, callback);
     }
 
     @Override
@@ -718,6 +694,39 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         public EndPoint getEndPoint()
         {
             return endPoint;
+        }
+    }
+
+    private static class FailureTask implements Runnable
+    {
+        private final Runnable task;
+        private final Callback callback;
+
+        private FailureTask(Runnable task, Callback callback)
+        {
+            this.task = task;
+            this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                if (task != null)
+                    task.run();
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s[%s]".formatted(TypeUtil.toShortName(getClass()), task);
         }
     }
 }

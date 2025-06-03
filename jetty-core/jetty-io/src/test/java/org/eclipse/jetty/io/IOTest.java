@@ -596,9 +596,9 @@ public class IOTest
         assumeTrue(symlinkSupported, "Symlink not supported");
         Path targPath = linkPath.toRealPath();
 
-        System.err.printf("realPath = %s%n", realPath);
-        System.err.printf("linkPath = %s%n", linkPath);
-        System.err.printf("targPath = %s%n", targPath);
+        // System.err.printf("realPath = %s%n", realPath);
+        // System.err.printf("linkPath = %s%n", linkPath);
+        // System.err.printf("targPath = %s%n", targPath);
 
         assertFalse(Files.isSymbolicLink(realPath));
         assertTrue(Files.isSymbolicLink(linkPath));
@@ -636,9 +636,9 @@ public class IOTest
         Path linkPath = linkDirPath.resolve("file");
         Path targPath = linkPath.toRealPath();
 
-        System.err.printf("realPath = %s%n", realPath);
-        System.err.printf("linkPath = %s%n", linkPath);
-        System.err.printf("targPath = %s%n", targPath);
+        // System.err.printf("realPath = %s%n", realPath);
+        // System.err.printf("linkPath = %s%n", linkPath);
+        // System.err.printf("targPath = %s%n", targPath);
 
         assertFalse(Files.isSymbolicLink(realPath));
         assertFalse(Files.isSymbolicLink(linkPath));

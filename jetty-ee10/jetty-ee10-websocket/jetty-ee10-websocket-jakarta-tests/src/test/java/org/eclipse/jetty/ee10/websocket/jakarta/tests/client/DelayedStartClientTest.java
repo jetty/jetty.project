@@ -93,7 +93,7 @@ public class DelayedStartClientTest
             }
             else
             {
-                System.err.println("### Executor: " + executor);
+                // System.err.println("### Executor: " + executor);
             }
         }
 

@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
@@ -209,7 +210,7 @@ public class MetaDataBuilder
 
     protected void streamException(String messageFormat, Object... args)
     {
-        QpackException.StreamException stream = new QpackException.StreamException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format(messageFormat, args));
+        QpackException.StreamException stream = new QpackException.StreamException(_request, _response, QpackException.QPACK_DECOMPRESSION_FAILED, String.format(messageFormat, args));
         if (_streamException == null)
             _streamException = stream;
         else
@@ -238,7 +239,7 @@ public class MetaDataBuilder
         }
 
         if (_request && _response)
-            throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
+            throw new QpackException.StreamException(true, true, H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
 
         HttpFields.Mutable fields = _fields;
         try
@@ -246,14 +247,14 @@ public class MetaDataBuilder
             if (_request)
             {
                 if (_method == null)
-                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Method");
+                    throw new QpackException.StreamException(true, false, H3_GENERAL_PROTOCOL_ERROR, "No Method");
                 boolean isConnect = HttpMethod.CONNECT.is(_method);
                 if (!isConnect || _protocol != null)
                 {
                     if (_scheme == null)
-                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Scheme");
+                        throw new QpackException.StreamException(true, false, H3_GENERAL_PROTOCOL_ERROR, "No Scheme");
                     if (_path == null)
-                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Path");
+                        throw new QpackException.StreamException(true, false, H3_GENERAL_PROTOCOL_ERROR, "No Path");
                 }
                 long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
                 _beginNanoTime = Long.MIN_VALUE;
@@ -263,9 +264,7 @@ public class MetaDataBuilder
                     return new MetaData.Request(
                         nanoTime,
                         _method,
-                        _scheme.asString(),
-                        _authority,
-                        _path,
+                        newHttpURI(),
                         HttpVersion.HTTP_3,
                         fields,
                         _contentLength);
@@ -273,7 +272,7 @@ public class MetaDataBuilder
             if (_response)
             {
                 if (_status == null)
-                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Status");
+                    throw new QpackException.StreamException(false, true, H3_GENERAL_PROTOCOL_ERROR, "No Status");
                 return new MetaData.Response(_status, null, HttpVersion.HTTP_3, fields, _contentLength);
             }
 
@@ -292,6 +291,22 @@ public class MetaDataBuilder
             _protocol = null;
             _size = 0;
             _contentLength = -1;
+        }
+    }
+
+    private HttpURI newHttpURI() throws QpackException.StreamException
+    {
+        try
+        {
+            return HttpURI.build()
+                .scheme(_scheme)
+                .host(_authority == null ? null : _authority.getHost())
+                .port(_authority == null ? -1 : _authority.getPort())
+                .pathQuery(_path);
+        }
+        catch (Throwable x)
+        {
+            throw new QpackException.StreamException(true, false, QpackException.QPACK_DECODER_STREAM_ERROR, "Invalid URI");
         }
     }
 }

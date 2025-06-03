@@ -163,12 +163,18 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Resetting {} {}", frame, this);
+
         int flowControlLength;
+        boolean reset = true;
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
+            flowControlLength = drain();
             if (localReset)
             {
+                reset = false;
                 resetFailure = failure;
             }
             else
@@ -176,20 +182,24 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 localReset = true;
                 failure = new EOFException("reset");
             }
-            flowControlLength = drain();
         }
+
         session.dataConsumed(this, flowControlLength);
-        if (resetFailure != null)
+
+        if (reset)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failing callback immediately as stream {} already is locally reset", this, resetFailure);
-            close();
-            session.removeStream(this);
-            callback.failed(resetFailure);
+            session.reset(this, frame, callback);
         }
         else
         {
-            session.reset(this, frame, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream {} already reset", this);
+            close();
+            session.removeStream(this);
+            if (resetFailure == null)
+                callback.succeeded();
+            else
+                callback.failed(resetFailure);
         }
     }
 

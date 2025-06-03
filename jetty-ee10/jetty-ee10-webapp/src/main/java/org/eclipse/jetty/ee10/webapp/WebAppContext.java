@@ -38,8 +38,8 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee.WebAppClassLoader;
-import org.eclipse.jetty.ee.WebAppClassLoading;
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee.webapp.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -386,6 +386,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
+            }
+            catch (Throwable t)
+            {
+                if (mue == null)
+                    mue = new MalformedURLException(pathInContext);
             }
         }
 
@@ -1543,21 +1548,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            if (path == null)
-                return null;
-
-            // Assumption is that the resource base has been properly setup.
-            // Spec requirement is that the WAR file is interrogated first.
-            // If a WAR file is mounted, or is extracted to a temp directory,
-            // then the first entry of the resource base must be the WAR file.
-            Resource resource = WebAppContext.this.getResource(path);
-            if (Resources.missing(resource))
-                return null;
-
-            for (Resource r: resource)
+            try
             {
-                // return first entry
-                return r.getURI().toURL();
+                if (path == null)
+                    return null;
+
+                // Assumption is that the resource base has been properly setup.
+                // Spec requirement is that the WAR file is interrogated first.
+                // If a WAR file is mounted, or is extracted to a temp directory,
+                // then the first entry of the resource base must be the WAR file.
+                Resource resource = WebAppContext.this.getResource(path);
+                if (Resources.missing(resource))
+                    return null;
+
+                for (Resource r : resource)
+                {
+                    // return first entry
+                    return r.getURI().toURL();
+                }
+            }
+            catch (MalformedURLException e)
+            {
+                throw e;
+            }
+            catch (Throwable e)
+            {
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
             }
 
             // A Resource was returned, but did not exist

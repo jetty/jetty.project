@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
@@ -28,10 +29,10 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -135,13 +136,13 @@ public class SSLAsyncIOServletTest
                     "Connection: close\r\n" +
                     "\r\n";
             OutputStream output = client.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream inputStream = client.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(inputStream);
             assertEquals(200, response.getStatus());
-            assertArrayEquals(content, response.getContent().getBytes("UTF-8"));
+            assertArrayEquals(content, response.getContent().getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -214,10 +215,10 @@ public class SSLAsyncIOServletTest
 
         public void start(HttpServlet servlet) throws Exception
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+            Path keystorePath = TestEEResources.getResourceAsPath("/keystore.p12");
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePath(keystorePath);
             sslContextFactory.setKeyStorePassword("storepwd");
 
             server = new Server();

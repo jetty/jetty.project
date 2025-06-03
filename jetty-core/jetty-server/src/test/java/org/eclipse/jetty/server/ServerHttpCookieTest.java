@@ -97,6 +97,12 @@ public class ServerHttpCookieTest
         return Stream.of(
             Arguments.of(RFC6265_STRICT, "Cookie: name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
 
+            // LEGACY Test
+            Arguments.of(RFC2965, "Cookie: c=A==,b==,c/u==,z=f", 200, "Version=", List.of("[c=A==]", "[b==]").toArray(new String[0])),
+            Arguments.of(RFC2965_LEGACY, "Cookie: c=A==,b==,c/u==,z=f", 200, "Version=", List.of("[c=A==]", "[b==]", "[z=f]").toArray(new String[0])),
+            Arguments.of(RFC6265, "Cookie: c/u=v", 200, "Version=", new String[0]),
+            Arguments.of(RFC6265_LEGACY, "Cookie: c/u=v", 200, "Version=", new String[0]),
+
             // Attribute tests
             Arguments.of(RFC6265_STRICT, "Cookie:  $version=1; name=value", 200, "Version=", List.of("[$version=1]", "[name=value]").toArray(new String[0])),
             Arguments.of(RFC6265, "Cookie: $version=1; name=value", 200, "Version=", List.of("[$version=1]", "[name=value]").toArray(new String[0])),

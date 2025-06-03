@@ -190,7 +190,7 @@ public class HpackEncoder
                     String name = field.getName();
                     char firstChar = name.charAt(0);
                     if (firstChar <= ' ' || firstChar == ':')
-                        throw new HpackException.StreamException("Invalid header name: '%s'", name);
+                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", name);
                 }
             }
 

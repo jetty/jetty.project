@@ -85,6 +85,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -1150,7 +1151,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
 
-        try
+        try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.Response.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)

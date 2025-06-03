@@ -26,7 +26,12 @@ public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance, String... headers)
     {
-        TestCutter cutter = new TestCutter(compliance, null);
+        return parseCookieHeaders(compliance, null, headers);
+    }
+
+    private Cookie[] parseCookieHeaders(CookieCompliance compliance, ComplianceViolation.Listener listener, String... headers)
+    {
+        TestCutter cutter = new TestCutter(compliance, listener);
         for (String header : headers)
         {
             cutter.parseFields(header);
@@ -44,6 +49,20 @@ public class CookieCutterTest
         assertThat(prefix + ".value", cookie.getValue(), is(expectedValue));
         assertThat(prefix + ".version", cookie.getVersion(), is(expectedVersion));
         assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
+    }
+
+    /**
+     * Example from RFC2109 and RFC2965
+     */
+    @Test
+    public void testLEGACY()
+    {
+        String rawCookie = "a=A=,b=B=,c/u=CU=,d=D=";
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965_LEGACY, rawCookie);
+        assertThat(cookies.length, is(3));
+        assertCookie("0", cookies[0], "a", "A=", 0, null);
+        assertCookie("1", cookies[1], "b", "B=", 0, null);
+        assertCookie("2", cookies[2], "d", "D=", 0, null);
     }
 
     /**
@@ -282,6 +301,12 @@ public class CookieCutterTest
         public String getComment()
         {
             return comment;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Cookie: " + name + " = " + value;
         }
     }
 

@@ -68,6 +68,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-test-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>jetty-test-multipart</artifactId>
       <version>${project.version}</version>
@@ -81,7 +86,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.ee10.servlet=org.eclipse.jetty.util.ajax
             --add-reads org.eclipse.jetty.ee10.servlet=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>

@@ -46,10 +46,10 @@ public class HttpTesterTest
             socket.getOutputStream().write(output.array(), output.arrayOffset() + output.position(), output.remaining());
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
-            System.err.printf("%s %s %s%n", response.getVersion(), response.getStatus(), response.getReason());
+            // System.err.printf("%s %s %s%n", response.getVersion(), response.getStatus(), response.getReason());
             for (HttpField field : response)
             {
-                System.err.printf("%s: %s%n", field.getName(), field.getValue());
+                // System.err.printf("%s: %s%n", field.getName(), field.getValue());
             }
             System.err.printf("%n%s%n", response.getContent());
         }

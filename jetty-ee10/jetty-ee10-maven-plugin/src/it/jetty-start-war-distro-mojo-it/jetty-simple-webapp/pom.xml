@@ -132,7 +132,7 @@
               <jettyBase>${basedir}/src/base</jettyBase>
               <javaPath>${java.home}/bin/java</javaPath>
               <jettyProperties>
-                <jetty.server.dumpAfterStart>true</jetty.server.dumpAfterStart>
+                <jetty.server.dumpAfterStart>false</jetty.server.dumpAfterStart>
                 <jetty.port.file>${jetty.port.file}</jetty.port.file>
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>

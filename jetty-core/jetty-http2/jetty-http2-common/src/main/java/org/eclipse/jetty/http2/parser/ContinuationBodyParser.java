@@ -20,6 +20,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public class ContinuationBodyParser extends BodyParser
@@ -119,18 +120,16 @@ public class ContinuationBodyParser extends BodyParser
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
         headerBlockFragments.reset();
 
-        if (metaData == HeaderBlockParser.SESSION_FAILURE)
+        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+        if (metaDataFailure instanceof HpackException.SessionException)
             return false;
 
-        if (metaData != HeaderBlockParser.STREAM_FAILURE)
-        {
-            notifyHeaders(frame);
-        }
-        else
+        if (metaDataFailure != null)
         {
             if (!rateControlOnEvent(frame))
                 return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
         }
+        notifyHeaders(frame);
         return true;
     }
 
