@@ -63,26 +63,16 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, long offset, long length)
     {
-        this.inputStream = Objects.requireNonNull(inputStream);
-        this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
-        skipToOffset(inputStream, offset, length);
-        this.toRead = length;
-    }
-
-    private static void skipToOffset(InputStream inputStream, long offset, long length)
-    {
-        if (offset > 0L && length != 0L)
+        try
         {
-            try
-            {
-                inputStream.skip(offset - 1);
-                if (inputStream.read() == -1)
-                    throw new IllegalArgumentException("Offset out of range");
-            }
-            catch (IOException e)
-            {
-                throw new UncheckedIOException(e);
-            }
+            this.inputStream = Objects.requireNonNull(inputStream);
+            this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+            inputStream.skipNBytes(offset);
+            this.toRead = length;
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
         }
     }
 
@@ -101,7 +91,7 @@ public class InputStreamContentSource implements Content.Source
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();
-            int read = fillBufferFromInputStream(inputStream, buffer.array());
+            int read = fillBufferFromInputStream(inputStream, buffer.array(), buffer.arrayOffset());
             if (read < 0)
             {
                 streamBuffer.release();
@@ -121,14 +111,16 @@ public class InputStreamContentSource implements Content.Source
         }
     }
 
-    protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+    protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer, int offset) throws IOException
     {
         if (toRead == 0L)
             return -1;
-        int toReadInt = toRead >= Integer.MAX_VALUE || toRead < 0L ? -1 : (int)toRead;
-        int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
-        int read = inputStream.read(buffer, 0, len);
-        toRead -= read;
+        int space = buffer.length - offset;
+        int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+        int len = toReadInt > 0 ? Math.min(toReadInt, space) : space;
+        int read = inputStream.read(buffer, offset, len);
+        if (read > 0)
+            toRead -= read;
         return read;
     }
 
