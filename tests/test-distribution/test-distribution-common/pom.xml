@@ -347,32 +347,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>unpack</id>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <phase>process-test-resources</phase>
-            <configuration>
-              <ignorePermissions>true</ignorePermissions>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-home</artifactId>
-                  <type>zip</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${jetty.home}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
             <!-- we want to be sure all dependencies are available in the local repo -->
             <id>copy-fake-deps</id>
             <goals>
@@ -439,6 +413,25 @@
           </execution>
           <execution>
             <id>unpack</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <ignorePermissions>true</ignorePermissions>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${jetty.home}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-jetty-home</id>
             <goals>
               <goal>unpack</goal>
             </goals>
