@@ -833,7 +833,7 @@ public class AsyncMiddleManServletTest
             .body(content)
             .send(result ->
             {
-                System.err.println(result);
+                // System.err.println(result);
                 if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });

@@ -829,7 +829,7 @@ public class HttpGeneratorServerTest
         HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, false);
         assertSame(HttpGenerator.Result.FLUSH, result);
         String headers = BufferUtil.toString(header);
-        System.err.println(headers);
+        // System.err.println(headers);
         assertThat(headers, not(containsString("keep-alive")));
     }
 

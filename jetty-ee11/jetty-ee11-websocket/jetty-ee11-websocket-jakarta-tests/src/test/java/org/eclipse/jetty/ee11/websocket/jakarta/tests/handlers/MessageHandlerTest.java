@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.tests.handlers;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -78,11 +77,11 @@ public class MessageHandlerTest
             Stream<Arguments> argumentsStream = Stream.concat(getBinaryHandlers(), getTextHandlers());
             for (Class<?> c : getClassListFromArguments(argumentsStream))
             {
-                System.err.println("deploying " + "/" + c.getSimpleName());
+                // System.err.println("deploying " + "/" + c.getSimpleName());
                 container.addEndpoint(ServerEndpointConfig.Builder.create(c, "/" + c.getSimpleName()).build());
             }
 
-            System.err.println("deploying " + "/" + LongMessageHandler.class.getSimpleName());
+            // System.err.println("deploying " + "/" + LongMessageHandler.class.getSimpleName());
             container.addEndpoint(ServerEndpointConfig.Builder.create(LongMessageHandler.class,
                 "/" + LongMessageHandler.class.getSimpleName()).build());
         });

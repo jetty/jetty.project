@@ -223,7 +223,7 @@ public class XmlConfigurationTest
 
         if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
         {
-            System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
+            // System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
         }
     }
 
@@ -2155,7 +2155,7 @@ public class XmlConfigurationTest
                 .filter(m -> !m.getName().equals("foo"))
                 .sorted(EXECUTABLE_COMPARATOR)
                 .map(Executable::toGenericString)
-                .forEach(System.out::println);
+                .forEach(System.err::println);
         }
 
         List<Method> methods = Arrays.asList(Arrays.stream(XmlConfigurationTest.class.getMethods())
@@ -2212,7 +2212,6 @@ public class XmlConfigurationTest
             .sorted(EXECUTABLE_COMPARATOR)
             .map(Executable::toGenericString)
             .collect(Collectors.toList());
-        orderedMethodIds.stream().forEach(System.err::println);
 
         String[] expectedOrder = {
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$Example.foo()",
@@ -2237,7 +2236,7 @@ public class XmlConfigurationTest
         Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
         if (slf4jLogger.isDebugEnabled())
         {
-            orderedMethodIds.forEach(System.out::println);
+            orderedMethodIds.forEach(System.err::println);
         }
 
         String[] expectedOrder = {

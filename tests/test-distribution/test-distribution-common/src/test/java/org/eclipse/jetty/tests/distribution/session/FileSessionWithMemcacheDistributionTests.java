@@ -33,7 +33,7 @@ public class FileSessionWithMemcacheDistributionTests extends AbstractSessionDis
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSessionWithMemcacheDistributionTests.class);
     private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.memcached");
 
-    private GenericContainer memcached;
+    private GenericContainer<?> memcached;
 
     private String host;
     private int port;

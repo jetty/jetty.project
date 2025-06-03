@@ -208,7 +208,7 @@ There are better strategies to limit the number of concurrent requests, discusse
 
 `QueuedThreadPool` can be configured with a `maxThreads` value.
 
-However, some of the Jetty components (such as the xref:arch/io.adoc#selector-manager[selectors]) permanently steal threads for their internal use, or rather `QueuedThreadPool` leases some threads to these components.
+However, some of the Jetty components (such as the xref:arch/io.adoc#selector-manager[selectors]) steal threads for their internal use, or rather `QueuedThreadPool` leases some threads to these components.
 These threads are reported by `QueuedThreadPool.leasedThreads` and are not available to run application code.
 
 `QueuedThreadPool` can be configured with a `reservedThreads` value.
@@ -216,7 +216,56 @@ This value represents the maximum number of threads that can be reserved and use
 A negative value for `QueuedThreadPool.reservedThreads` means that the actual value will be heuristically derived from the number of CPU cores and `QueuedThreadPool.maxThreads`.
 A value of zero for `QueuedThreadPool.reservedThreads` means that reserved threads are disabled, and therefore the <<execution-strategy-epc,`Execute-Produce-Consume` mode>> is never used -- the <<execution-strategy-pec,`Produce-Execute-Consume` mode>> is always used instead.
 
+`QueuedThreadPool` leases threads to the following Jetty components:
+
+* The xref:server/http.adoc#connector[`Connector`]s; for each connector a thread is leased for each xref:server/http.adoc#connector-acceptors[acceptor] and each xref:server/http.adoc#connector-selectors[selector].
+* The `TryExecutor` implementation; for the default implementation `ReservedThreadExecutor`, `QueuedThreadPool.reservedThreads` are leased.
+
+To carefully control the minimum number of threads in `QueuedThreadPool`, you must explicitly specify the number of selectors and the number of acceptors for each `Connector`, and the number of reserved threads.
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=threadPoolBudget]
+----
+
+In the example above, `6` threads will be leased: `2` reserved threads, `1` acceptor thread and `3` selector threads.
+
+To reduce the number of leased threads, you can configure the acceptors to `0`, the selectors to `1` and the reserved threads to `0`.
+
+[WARNING]
+====
+Setting the acceptors to `0` results in TCP connections being accepted in non-blocking mode, which may increase the load on the selector, and possibly in increased latency.
+
+Setting the reserved threads to `0` results in the <<execution-strategy-pec,`Produce-Execute-Consume` mode>> to be used instead of the <<execution-strategy-epc,`Execute-Produce-Consume` mode>>.
+
+You have to try and benchmark what is the best configuration for your use case.
+====
+
 `QueuedThreadPool` always maintains the number of threads between `QueuedThreadPool.minThreads` and `QueuedThreadPool.maxThreads`; during load spikes the number of thread grows to meet the load demand, and when the load on the system diminishes or the system goes idle, the number of threads shrinks.
+
+The number of leased threads must be taken into account to configure `QueuedThreadPool.maxThreads`.
+During `Server` startup, `QueuedThreadPool` leases threads to the Jetty components, and there must be enough threads for these components, and at least `1` more thread to handle requests.
+In the example above, `QueuedThreadPool.maxThreads` must be set to `7` or more.
+
+An alternative to explicitly setting the configuration of the Jetty components to which threads are leased, you can leave their configuration at default so that it is calculated by internal Jetty heuristics, and then adjust `QueuedThreadPool.maxThreads` afterwards:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=maxThreadsAfterStart]
+----
+
+[WARNING]
+====
+Do not try to reduce the value of `QueuedThreadPool.maxThreads` to the minimum possible.
+
+Jetty may require threads to run internal tasks, and if no threads are available, because they are leased or busy handling requests, the server performance may degrade.
+
+`QueuedThreadPool` can shrink the number of threads when they are not used, as explained below, so it is typically safe to leave `QueuedThreadPool.maxThreads` to its default, or to a value calculated using the max number of leased threads `L`, plus the number of concurrent threads to handle requests `H`, so that `QueuedThreadPool.maxThreads=L+H`.
+
+Consider to choose a generous value for `H`, for example one that takes into account load spikes, since `QueuedThreadPool` shrinking will eventually remove threads that are unused.
+====
 
 Shrinking `QueuedThreadPool` is important in particular in containerized environments, where typically you want to return the memory occupied by the threads to the operative system.
 The shrinking of the `QueuedThreadPool` is controlled by two parameters: `QueuedThreadPool.idleTimeout` and `QueuedThreadPool.maxEvictCount`.
@@ -281,7 +330,12 @@ Furthermore, you can configure it to track virtual threads so that a xref:troubl
 
 Even when using virtual threads, Jetty uses non-blocking I/O, and dedicates a thread to each `java.nio.channels.Selector` to perform the `Selector.select()` operation.
 
-Currently (up to Java 22), calling `Selector.select()` from a virtual thread *pins* the carrier thread.
+Up to Java 23, calling `Selector.select()` from a virtual thread *pins* the carrier thread.
+
+Since Java 24, calling `Selector.select()` from a virtual thread does *not* pin the carrier thread.
+
+[[thread-pool-virtual-threads-pinning-java23]]
+===== Virtual Threads Pinning with Java 19 to 23
 
 If you configure a server-side `Connector`, or Jetty's `HttpClient` with `N` selectors, then `N` carrier threads will be pinned by the virtual threads calling `Selector.select()`.
 

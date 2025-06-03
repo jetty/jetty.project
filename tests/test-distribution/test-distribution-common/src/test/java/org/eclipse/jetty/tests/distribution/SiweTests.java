@@ -79,7 +79,7 @@ public class SiweTests extends AbstractJettyHomeTest
             String[] args2 = {
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
-                "jetty.server.dumpAfterStart=true",
+                "jetty.server.dumpAfterStart=false",
                 "jetty.httpConfig.relativeRedirectAllowed=false"
             };
 

@@ -331,4 +331,121 @@ public class MetaData implements Iterable<HttpField>
             return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), headers.size(), getContentLength());
         }
     }
+
+    /**
+     * <p>Marker interface to signal that a {@link MetaData} could not be created,
+     * for example due to an invalid URI or invalid headers.</p>
+     */
+    public interface Failed
+    {
+        /**
+         * <p>Inspects the given {@link MetaData}, and if it is an instance
+         * of this interface return its failure, otherwise returns {@code null}.</p>
+         *
+         * @param metaData the {@link MetaData} to inspect
+         * @return the failure if the given {@link MetaData} is an instance of this
+         * interface, otherwise {@code null}
+         */
+        static Throwable getFailure(MetaData metaData)
+        {
+            return metaData instanceof Failed f ? f.getFailure() : null;
+        }
+
+        /**
+         * <p>Creates a new failed {@link MetaData.Request}, with method {@code GET},
+         * empty {@link HttpURI} and empty {@link HttpFields}, with the given
+         * {@link HttpVersion} and failure.</p>
+         *
+         * @param httpVersion the HTTP version
+         * @param failure the failure cause
+         * @return a new failed  {@link MetaData.Request}
+         */
+        static MetaData.Request newFailedMetaDataRequest(HttpVersion httpVersion, Throwable failure)
+        {
+            return new FailedMetaDataRequest(httpVersion, failure);
+        }
+
+        /**
+         * <p>Creates a new failed {@link MetaData.Response}, with status {@code 0},
+         * no reason, empty {@link HttpFields}, with the given {@link HttpVersion}
+         * and failure.</p>
+         *
+         * @param httpVersion the HTTP version
+         * @param failure the failure cause
+         * @return a new failed  {@link MetaData.Response}
+         */
+        static MetaData.Response newFailedMetaDataResponse(HttpVersion httpVersion, Throwable failure)
+        {
+            return new FailedMetaDataResponse(httpVersion, failure);
+        }
+
+        /**
+         * <p>Creates a new failed {@link MetaData}, with empty {@link HttpFields},
+         * with the given {@link HttpVersion} and failure.</p>
+         *
+         * @param httpVersion the HTTP version
+         * @param failure the failure cause
+         * @return a new failed  {@link MetaData}
+         */
+        static MetaData newFailedMetaData(HttpVersion httpVersion, Throwable failure)
+        {
+            return new FailedMetaData(httpVersion, failure);
+        }
+
+        /**
+         * @return the failure cause
+         */
+        Throwable getFailure();
+    }
+
+    private static class FailedMetaDataRequest extends MetaData.Request implements Failed
+    {
+        private final Throwable failure;
+
+        private FailedMetaDataRequest(HttpVersion httpVersion, Throwable failure)
+        {
+            super("GET", HttpURI.build(), httpVersion, HttpFields.EMPTY);
+            this.failure = Objects.requireNonNull(failure);
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
+        }
+    }
+
+    private static class FailedMetaDataResponse extends MetaData.Response implements Failed
+    {
+        private final Throwable failure;
+
+        private FailedMetaDataResponse(HttpVersion httpVersion, Throwable failure)
+        {
+            super(0, null, httpVersion, HttpFields.EMPTY);
+            this.failure = Objects.requireNonNull(failure);
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
+        }
+    }
+
+    private static class FailedMetaData extends MetaData implements Failed
+    {
+        private final Throwable failure;
+
+        private FailedMetaData(HttpVersion httpVersion, Throwable failure)
+        {
+            super(httpVersion, HttpFields.EMPTY);
+            this.failure = Objects.requireNonNull(failure);
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return failure;
+        }
+    }
 }

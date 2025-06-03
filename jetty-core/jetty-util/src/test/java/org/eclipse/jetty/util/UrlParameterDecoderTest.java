@@ -184,7 +184,7 @@ public class UrlParameterDecoderTest
             CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
             UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
             decoder.parse(input);
-            System.out.println("fields=" + fields);
+            // System.out.println("fields=" + fields);
         });
     }
 

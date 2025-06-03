@@ -22,6 +22,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class AsyncContextState implements AsyncContext
 {
@@ -157,6 +158,12 @@ public class AsyncContextState implements AsyncContext
     public HttpChannelState getHttpChannelState()
     {
         return state();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h(state=%s,channel=%s)", TypeUtil.toShortName(AsyncContextState.class), hashCode(), _state, _channel);
     }
 
     public static class WrappedAsyncListener implements AsyncListener

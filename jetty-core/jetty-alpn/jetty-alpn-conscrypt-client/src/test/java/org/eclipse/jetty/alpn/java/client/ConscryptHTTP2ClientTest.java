@@ -75,7 +75,7 @@ public class ConscryptHTTP2ClientTest
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)
                 {
-                    System.err.println(frame);
+                    // System.err.println(frame);
                     if (frame.isEndStream())
                         latch.countDown();
                     stream.demand();
@@ -85,7 +85,7 @@ public class ConscryptHTTP2ClientTest
                 public void onDataAvailable(Stream stream)
                 {
                     Stream.Data data = stream.readData();
-                    System.err.println(data);
+                    // System.err.println(data);
                     data.release();
                     if (data.frame().isEndStream())
                         latch.countDown();

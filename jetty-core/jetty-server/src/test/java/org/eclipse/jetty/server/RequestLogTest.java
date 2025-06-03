@@ -42,7 +42,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -327,11 +326,10 @@ public class RequestLogTest
                         // This shouldn't change the status for the RequestLog output
                         response.setStatus(204);
                         // attempting to set a response header after commit shouldn't be possible
-                        UnsupportedOperationException unsupported = assertThrows(UnsupportedOperationException.class, () ->
-                        {
-                            response.getHeaders().put("X-Name", "post-commit");
-                        });
-                        assertThat(unsupported.getMessage(), is("Read Only"));
+
+                        response.getHeaders().put("X-Name", "post-commit");
+                        assertThat(response.getHeaders().get("X-Name"), is("actual"));
+
                         // finish response
                         response.write(true, null, callback);
                     });

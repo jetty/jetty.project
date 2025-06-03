@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.logging;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 
 import org.slf4j.ILoggerFactory;
@@ -59,7 +59,7 @@ public class StacklessLogging implements AutoCloseable
         loggerFactory = jettyLoggerFactory;
     }
 
-    private final Set<JettyLogger> squelched = new HashSet<>();
+    private final Set<JettyLogger> squelched = new CopyOnWriteArraySet<>();
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {

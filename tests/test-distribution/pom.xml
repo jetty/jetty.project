@@ -112,6 +112,7 @@
               <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
               <home.start.timeout>${home.start.timeout}</home.start.timeout>
               <mariadb.version>${mariadb.version}</mariadb.version>
+              <maven.offline>true</maven.offline>
               <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
               <environmentsToTest>${environmentsToTest}</environmentsToTest>
             </systemPropertyVariables>

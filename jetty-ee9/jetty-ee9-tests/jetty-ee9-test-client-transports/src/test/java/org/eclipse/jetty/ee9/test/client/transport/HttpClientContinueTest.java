@@ -741,7 +741,7 @@ public class HttpClientContinueTest extends AbstractTest
         try (ServerSocket server = new ServerSocket())
         {
             server.bind(new InetSocketAddress("localhost", 0));
-            System.err.println("server listening on localhost:" + server.getLocalPort());
+            // System.err.println("server listening on localhost:" + server.getLocalPort());
 
             byte[] bytes = new byte[1024];
             new Random().nextBytes(bytes);

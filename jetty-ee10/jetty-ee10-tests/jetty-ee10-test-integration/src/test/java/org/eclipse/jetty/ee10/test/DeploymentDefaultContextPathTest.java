@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,7 @@ public class DeploymentDefaultContextPathTest
         deploymentScanner.addWebappsDirectory(webappsDir);
         deploymentScanner.setScanInterval(1);
 
+        Environment.ensure("ee10", WebAppContext.class);
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee10");
         environmentConfig.setDefaultContextHandlerClass(WebAppContext.class.getName());
 

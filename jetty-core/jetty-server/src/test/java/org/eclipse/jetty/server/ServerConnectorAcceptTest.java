@@ -125,9 +125,9 @@ public class ServerConnectorAcceptTest
         assertTrue(latch.await(15, TimeUnit.SECONDS));
 
         Collection<ManagedSelector> selectors = connector.getSelectorManager().getBeans(ManagedSelector.class);
-        selectors.stream()
-            .map(s -> String.format("avg selected keys = %.3f, selects = %d", s.getAverageSelectedKeys(), s.getSelectCount()))
-            .forEach(System.err::println);
+        // selectors.stream()
+        //    .map(s -> String.format("avg selected keys = %.3f, selects = %d", s.getAverageSelectedKeys(), s.getSelectCount()))
+        //    .forEach(System.err::println);
         selectors.forEach(ManagedSelector::resetStats);
     }
 

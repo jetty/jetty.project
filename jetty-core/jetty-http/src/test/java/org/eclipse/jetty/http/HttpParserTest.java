@@ -656,15 +656,7 @@ public class HttpParserTest
                 "Authorization:" + scenario.eol +
                 scenario.eol);
 
-        HttpParser.RequestHandler handler = new Handler()
-        {
-            @Override
-            public void badMessage(HttpException failure)
-            {
-                ((Throwable)failure).printStackTrace();
-                super.badMessage(failure);
-            }
-        };
+        HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.setHeaderCacheSize(1024);
         parseAll(parser, buffer);

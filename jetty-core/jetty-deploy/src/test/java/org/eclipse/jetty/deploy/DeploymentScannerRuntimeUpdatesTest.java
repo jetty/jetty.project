@@ -73,7 +73,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         Path tmpBase = jetty.getJettyBasePath().resolve("tmp");
         FS.ensureDirExists(tmpBase);
         jetty.setProperty("test.tmpBase", tmpBase.toFile().getAbsolutePath());
-        System.err.println(tmpBase.toFile().getAbsolutePath());
+        // System.err.println(tmpBase.toFile().getAbsolutePath());
 
         Files.writeString(resourceBase.resolve("text.txt"), "This is the resourceBase text");
 
