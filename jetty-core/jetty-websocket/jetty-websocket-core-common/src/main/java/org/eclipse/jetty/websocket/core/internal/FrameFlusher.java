@@ -494,7 +494,7 @@ public class FrameFlusher extends IteratingCallback
 
     private class FlusherEntry implements CyclicTimeouts.Expirable
     {
-        OutgoingEntry _outgoingEntry;
+        private final OutgoingEntry _outgoingEntry;
         private final long _expiry;
 
         public FlusherEntry(OutgoingEntry outgoingEntry)
@@ -515,14 +515,14 @@ public class FrameFlusher extends IteratingCallback
                 if (frame.getOpCode() != OpCode.CONTINUATION)
                     _currentMessageExpiry = (messageTimeout > 0) ? currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout) : Long.MAX_VALUE;
                 if (_currentMessageExpiry != Long.MAX_VALUE)
-                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageExpiry : nanoTimeMin(expiry, _currentMessageExpiry);
+                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageExpiry : minNanoTime(expiry, _currentMessageExpiry);
             }
             else
             {
                 if (messageTimeout > 0)
                 {
                     long messageExpiry = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
-                    expiry = (expiry == Long.MAX_VALUE) ? messageExpiry : nanoTimeMin(expiry, messageExpiry);
+                    expiry = (expiry == Long.MAX_VALUE) ? messageExpiry : minNanoTime(expiry, messageExpiry);
                 }
             }
 
@@ -555,7 +555,7 @@ public class FrameFlusher extends IteratingCallback
             return (_expiry != Long.MAX_VALUE) && NanoTime.until(_expiry) < 0;
         }
 
-        private static long nanoTimeMin(long nanoTime1, long nanoTime2)
+        private static long minNanoTime(long nanoTime1, long nanoTime2)
         {
             return NanoTime.isBeforeOrSame(nanoTime1, nanoTime2) ? nanoTime1 : nanoTime2;
         }
