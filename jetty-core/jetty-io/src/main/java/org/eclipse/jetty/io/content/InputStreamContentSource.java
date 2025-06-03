@@ -50,7 +50,7 @@ public class InputStreamContentSource implements Content.Source
     /**
      * @deprecated Use {@link #InputStreamContentSource(InputStream, ByteBufferPool.Sized)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public InputStreamContentSource(InputStream inputStream)
     {
         this(inputStream, null);
@@ -63,16 +63,26 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, long offset, long length)
     {
+        this.inputStream = Objects.requireNonNull(inputStream);
+        this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+        if (length != 0)
+            skipToOffset(inputStream, offset);
+        this.toRead = length;
+    }
+
+    private static void skipToOffset(InputStream inputStream, long offset)
+    {
+        if (offset <= 0L)
+            return;
         try
         {
-            this.inputStream = Objects.requireNonNull(inputStream);
-            this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
-            inputStream.skipNBytes(offset);
-            this.toRead = length;
+            inputStream.skipNBytes(offset - 1);
+            if (inputStream.read() == -1)
+                throw new IllegalArgumentException("Offset out of range");
         }
-        catch (IOException x)
+        catch (IOException e)
         {
-            throw new UncheckedIOException(x);
+            throw new UncheckedIOException(e);
         }
     }
 
