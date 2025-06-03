@@ -44,6 +44,7 @@ public class CompletedUpgradeRequest implements UpgradeRequest
     private final Map<String, List<String>> _queryParams;
     private final boolean _secure;
     private final String _protocolVersion;
+    private final Principal _userPrincipal;
 
     public CompletedUpgradeRequest(ServerUpgradeRequest request)
     {
@@ -60,6 +61,10 @@ public class CompletedUpgradeRequest implements UpgradeRequest
         _extensions = request.getExtensions().stream()
             .map(JettyExtensionConfig::new)
             .collect(Collectors.toList());
+
+        // Get the user principal from the request's authentication state.
+        Request.AuthenticationState authState = Request.getAuthenticationState(request);
+        _userPrincipal = authState != null ? authState.getUserPrincipal() : null;
 
         // Extract query parameters from the request
         _queryParams = new LinkedHashMap<>();
@@ -162,8 +167,7 @@ public class CompletedUpgradeRequest implements UpgradeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO: no Principal concept in Jetty core.
-        return null;
+        return _userPrincipal;
     }
 
     @Override

@@ -20,11 +20,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -41,7 +39,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         _upgradeResponse = response;
         // Use the HttpFields from the UpgradeResponse because it specially handles websocket headers.
         _httpFields = _upgradeResponse.getHeaders();
-        _httpServletResponse = (HttpServletResponse)Response.as(response, ServletContextResponse.class).getRequest()
+        _httpServletResponse = (HttpServletResponse)response.getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
     }
 
@@ -102,7 +100,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public int getStatusCode()
     {
-        return _httpServletResponse.getStatus();
+        return _upgradeResponse.getStatus();
     }
 
     @Override
@@ -128,13 +126,13 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setStatusCode(int statusCode)
     {
-        _httpServletResponse.setStatus(statusCode);
+        _upgradeResponse.setStatus(statusCode);
     }
 
     @Override
     public boolean isCommitted()
     {
-        return _httpServletResponse.isCommitted();
+        return _upgradeResponse.isCommitted();
     }
 
     @Override
