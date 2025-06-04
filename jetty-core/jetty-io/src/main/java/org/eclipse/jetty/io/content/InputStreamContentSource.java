@@ -129,7 +129,7 @@ public class InputStreamContentSource implements Content.Source
         int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
         int len = toReadInt > 0 ? Math.min(toReadInt, space) : space;
         int read = inputStream.read(buffer, offset, len);
-        if (read > 0)
+        if (read > 0 && toRead > 0)
             toRead -= read;
         return read;
     }
