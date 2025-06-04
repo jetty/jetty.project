@@ -14,6 +14,8 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
@@ -59,8 +61,28 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class CompactPathRule extends Rule
 {
+    public record CompactedEvent(Handler input, String changedPath, String message, CompactPathRule rule)
+    {
+    }
+
+    public interface Listener
+    {
+        void onCompactedEvent(CompactedEvent event);
+    }
+
+    private List<Listener> listeners = new ArrayList<>();
     private boolean decoding = false;
     private boolean canonicalizing = false;
+
+    public void addListener(Listener listener)
+    {
+        listeners.add(listener);
+    }
+
+    public boolean removeListener(Listener listener)
+    {
+        return listeners.remove(listener);
+    }
 
     public boolean isCanonicalizing()
     {
@@ -130,6 +152,10 @@ public class CompactPathRule extends Rule
 
     private void notifyPathCompaction(Handler input, String cleanedPath, String message)
     {
-        // TODO: notify listener of event
+        CompactedEvent event = new CompactedEvent(input, cleanedPath, message, this);
+        for (Listener listener : listeners)
+        {
+            listener.onCompactedEvent(event);
+        }
     }
 }
