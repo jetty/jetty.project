@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -141,25 +140,9 @@ public class MultiPartByteRanges
      */
     public static class InputStreamContentSource extends org.eclipse.jetty.io.content.InputStreamContentSource
     {
-        private long toRead;
-
-        public InputStreamContentSource(InputStream inputStream, ByteRange byteRange) throws IOException
+        public InputStreamContentSource(InputStream inputStream, ByteRange byteRange)
         {
-            super(inputStream);
-            inputStream.skipNBytes(byteRange.first());
-            this.toRead = byteRange.getLength();
-        }
-
-        @Override
-        protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
-        {
-            if (toRead == 0)
-                return -1;
-            int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
-            int len = Math.min(toReadInt, buffer.length);
-            int read = inputStream.read(buffer, 0, len);
-            toRead -= read;
-            return read;
+            super(inputStream, null, byteRange.first(), byteRange.getLength());
         }
     }
 
