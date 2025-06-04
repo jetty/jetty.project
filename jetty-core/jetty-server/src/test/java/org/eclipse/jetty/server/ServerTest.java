@@ -153,7 +153,7 @@ public class ServerTest
         String dump = _server.dump();
         assertThat(dump, containsString("oejs.Server@"));
         assertThat(dump, containsString("oejut.QueuedThreadPool"));
-        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString("+= oejut.QueuedThreadPool$ReservedThreadExecutor@"));
         assertThat(dump, containsString("oeji.ArrayByteBufferPool@"));
         assertThat(dump, containsString("+- System Properties size="));
         assertThat(dump, containsString("+> java.home: "));
