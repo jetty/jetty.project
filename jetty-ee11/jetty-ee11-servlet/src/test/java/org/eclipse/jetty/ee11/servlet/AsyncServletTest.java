@@ -573,7 +573,7 @@ public class AsyncServletTest
     {
         String response = process("fwd", "start=10000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        _history.forEach(System.out::println);
+        // _history.forEach(System.err::println);
         assertThat(_history, contains(
             "REQUEST >>> FwdServlet /ctx/fwd/info?start=10000&dispatch=100",
             "FORWARD >>> PathServlet /ctx/path1?forward=true",
@@ -621,7 +621,7 @@ public class AsyncServletTest
     {
         String response = process("fwd", "wrap=true&start=1000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        _history.forEach(System.out::println);
+        // _history.forEach(System.err::println);
         assertThat(_history, contains(
             "REQUEST >>> FwdServlet /ctx/fwd/info?wrap=true&start=1000&dispatch=100",
             "FORWARD >>> PathServlet /ctx/path1?forward=true",
@@ -762,7 +762,7 @@ public class AsyncServletTest
         String response = process("forwarder", "name=orig&one=1", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
-        _history.forEach(System.err::println);
+        // _history.forEach(System.err::println);
 
         assertThat(_history, contains(
             "REQUEST >>> TestServletA /ctx/forwarder/info?name=orig&one=1",

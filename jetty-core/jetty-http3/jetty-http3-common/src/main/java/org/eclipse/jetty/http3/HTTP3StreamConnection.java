@@ -107,6 +107,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         processFrames(null);
     }
 
+    @Override
+    public void onFillInterestedFailed(Throwable cause)
+    {
+        long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+        parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, cause);
+    }
+
     private void processFrames(ParseResult result)
     {
         if (LOG.isDebugEnabled())

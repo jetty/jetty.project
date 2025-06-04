@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.logging;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
@@ -44,6 +47,8 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.hideStacks = hideStacks;
     }
 
+    private static final Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
+
     /**
      * Condenses a classname by stripping down the package name to just the first character of each package name
      * segment.Configured
@@ -62,46 +67,24 @@ public class JettyLogger implements LocationAwareLogger, Logger
         if (classname == null || classname.isEmpty())
             return "";
 
-        int rawLen = classname.length();
-        StringBuilder dense = new StringBuilder(rawLen);
-        boolean foundStart = false;
-        boolean hasPackage = false;
-        int startIdx = -1;
-        int endIdx = -1;
-        for (int i = 0; i < rawLen; i++)
-        {
-            char c = classname.charAt(i);
-            if (!foundStart)
-            {
-                foundStart = Character.isJavaIdentifierStart(c);
-                if (foundStart)
-                {
-                    if (startIdx >= 0)
-                    {
-                        dense.append(classname.charAt(startIdx));
-                        hasPackage = true;
-                    }
-                    startIdx = i;
-                }
-            }
+        int lastDot = classname.lastIndexOf('.');
+        if (lastDot <= 0)
+            return classname;
 
-            if (foundStart)
-            {
-                if (Character.isJavaIdentifierPart(c))
-                    endIdx = i;
-                else
-                    foundStart = false;
-            }
-        }
-        // append remaining from startIdx
-        if ((startIdx >= 0) && (endIdx >= startIdx))
+        // This is copied from TypeUtil.toShortName
+        StringBuilder b = new StringBuilder();
+        String p = classname.substring(0, lastDot);
+        String[] ss = p.split("\\.");
+        for (String s : ss)
         {
-            if (hasPackage)
-                dense.append('.');
-            dense.append(classname, startIdx, endIdx + 1);
+            b.append(s.charAt(0));
+            Matcher matcher = TRAILING_DIGITS.matcher(s);
+            if (matcher.matches())
+                b.append(matcher.group(1));
         }
-
-        return dense.toString();
+        b.append('.');
+        b.append(classname.substring(lastDot + 1));
+        return b.toString();
     }
 
     public JettyAppender getAppender()

@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.TopologicalSort;
 
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  * for ordering.
  * </p>
  * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getHiddenClasses()} and
- * {@link #getProtectedClasses()} to configure the {@link org.eclipse.jetty.ee.WebAppClassLoader} for each context.
+ * {@link #getProtectedClasses()} to configure the {@link WebAppClassLoader} for each context.
  * </p>
  */
 public interface Configuration

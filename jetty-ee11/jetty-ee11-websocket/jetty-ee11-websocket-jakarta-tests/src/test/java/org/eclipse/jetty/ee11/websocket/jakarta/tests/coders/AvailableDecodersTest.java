@@ -35,11 +35,9 @@ import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AvailableDecodersTest
 {
@@ -324,7 +322,7 @@ public class AvailableDecodersTest
     public void testCustomDecoderRegisterDuplicate()
     {
         init(BadDualDecoder.class);
-        System.err.println(availableDecoders);
+        // System.err.println(availableDecoders);
 
         List<RegisteredDecoder> binaryDecoders = availableDecoders.getBinaryDecoders(Fruit.class);
         assertThat(binaryDecoders.size(), is(1));

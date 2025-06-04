@@ -1943,6 +1943,8 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, this, getResponse());
+        //Note that we do not remember the context, httpuri or the path, as null values for these are used by
+        //ContextHandler.handleAsync to recognize a non-cross context async dispatch
         state.startAsync(event);
         return _async;
     }
@@ -1956,6 +1958,7 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
+        event.setDispatchPath(URIUtil.encodePath(Request.getBaseRequest(servletRequest).getPathInContext()));
         event.setDispatchContext(getServletContext());
         state.startAsync(event);
         return _async;

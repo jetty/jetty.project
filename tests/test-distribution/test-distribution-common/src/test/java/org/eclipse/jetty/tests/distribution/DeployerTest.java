@@ -62,7 +62,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path baseResourcePath = jettyBase.resolve("work/test");
@@ -90,7 +90,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
@@ -112,7 +112,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path nominatedDir = jettyBase.resolve("webapps").resolve("test.d");
@@ -127,7 +127,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
@@ -149,7 +149,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path nominatedDir = jettyBase.resolve("webapps").resolve("test");
@@ -164,7 +164,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
@@ -186,7 +186,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path testDir = jettyBase.resolve("webapps").resolve("test");
@@ -210,7 +210,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS), () -> String.join(System.lineSeparator(), run2.getLogs()));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 String uri = "http://localhost:" + httpPort + "/demo/test.txt";
@@ -250,7 +250,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,static-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path staticDir = jettyBase.resolve("webapps/test");
@@ -262,7 +262,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
@@ -284,7 +284,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,static-deploy")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path outputJar = jettyBase.resolve("webapps/test.jar");
@@ -303,7 +303,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");
@@ -330,7 +330,7 @@ public class DeployerTest extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(argsConfig))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path wars = jettyBase.resolve("wars");
@@ -358,7 +358,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/test.txt");

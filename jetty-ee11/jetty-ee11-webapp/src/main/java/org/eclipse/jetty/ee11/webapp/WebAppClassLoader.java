@@ -29,10 +29,10 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
  * Java compliant loading, where the parent loader always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)} method.
  *
- * @deprecated use the core {@link org.eclipse.jetty.ee.WebAppClassLoader} directly instead.
+ * @deprecated use the core {@link org.eclipse.jetty.ee.webapp.WebAppClassLoader} directly instead.
  */
 @Deprecated(since = "12.0.0", forRemoval = true)
-public class WebAppClassLoader extends org.eclipse.jetty.ee.WebAppClassLoader
+public class WebAppClassLoader extends org.eclipse.jetty.ee.webapp.WebAppClassLoader
 {
     static
     {

@@ -103,7 +103,7 @@ public class CDITests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-" + integration + "-cdi-webapp:war:" + jettyVersion);
@@ -116,7 +116,7 @@ public class CDITests extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/demo/greetings");

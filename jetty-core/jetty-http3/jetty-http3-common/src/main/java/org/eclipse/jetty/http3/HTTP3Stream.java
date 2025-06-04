@@ -313,7 +313,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         disconnect(error, failure, Promise.Invocable.noop());
     }
 
-    protected abstract void notifyFailure(long error, Throwable failure);
+    public abstract void notifyFailure(long error, Throwable failure);
 
     protected void validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {

@@ -342,13 +342,20 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 === Acceptors
 
 The _acceptors_ are threads (typically only one) that compete to accept TCP socket connections.
-The connectors for the QUIC or HTTP/3 protocol, based on UDP, have no acceptors.
+The connectors for the QUIC or HTTP/3 protocol, based on UDP, have zero acceptors.
 
-When a TCP connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:arch/io.adoc#selector-manager[`SelectorManager`].
+When a TCP connection is accepted by a `ServerSocketChannel`, `ServerConnector` wraps the accepted `SocketChannel` and registers it to the xref:arch/io.adoc#selector-manager[`SelectorManager`].
 Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
 Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `acceptQueueSize` parameter.
 
 If your application must withstand a very high rate of connection opening, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
+
+The number of acceptors may be set to `0`.
+In this case, the `ServerSocketChannel` will be configured in non-blocking mode, and registered in the `SelectorManager`.
+
+New connections will be accepted in non-blocking mode by the `SelectorManager`, and when the connection is completely established, the accepted `SocketChannel` is wrapped and registered in the `SelectorManager` as before.
+
+Configuring `0` acceptors uses fewer threads, but may result in increased latency, since accepting connections is now competing with established connections in the Java NIO mechanism.
 
 [[connector-selectors]]
 === Selectors

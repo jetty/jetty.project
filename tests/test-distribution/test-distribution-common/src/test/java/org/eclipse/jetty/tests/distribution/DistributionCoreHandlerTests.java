@@ -373,8 +373,8 @@ public class DistributionCoreHandlerTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + String.join(",", modules)))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
-            assertEquals(0, run1.getExitValue());
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue(), run1.logs());
 
             Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
             String loggingConfig = """

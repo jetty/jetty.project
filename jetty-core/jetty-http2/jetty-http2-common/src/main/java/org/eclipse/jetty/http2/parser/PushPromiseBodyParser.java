@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 
 public class PushPromiseBodyParser extends BodyParser
 {
@@ -120,23 +120,29 @@ public class PushPromiseBodyParser extends BodyParser
                     if (maxLength > 0 && length > maxLength)
                         return connectionFailure(buffer, ErrorCode.REFUSED_STREAM_ERROR.code, "invalid_headers_frame");
 
-                    MetaData.Request metaData = (MetaData.Request)headerBlockParser.parse(buffer, length);
-                    if (metaData == HeaderBlockParser.SESSION_FAILURE)
+                    MetaData metaData = headerBlockParser.parse(buffer, length);
+
+                    // Not enough bytes to parse the MetaData.
+                    if (metaData == null)
+                        break;
+
+                    Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                    if (metaDataFailure instanceof HpackException.SessionException)
                         return false;
-                    if (metaData != null)
+
+                    state = State.PADDING;
+                    loop = paddingLength == 0;
+
+                    if (metaDataFailure != null)
                     {
-                        state = State.PADDING;
-                        loop = paddingLength == 0;
-                        if (metaData != HeaderBlockParser.STREAM_FAILURE)
-                        {
-                            onPushPromise(streamId, metaData);
-                        }
-                        else
-                        {
-                            HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
-                            if (!rateControlOnEvent(frame))
-                                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
-                        }
+                        PushPromiseFrame frame = new PushPromiseFrame(getStreamId(), streamId, (MetaData.Request)metaData);
+                        if (!rateControlOnEvent(frame))
+                            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_push_promise_frame_rate");
+                        onPushPromise(frame);
+                    }
+                    else
+                    {
+                        onPushPromise((MetaData.Request)metaData);
                     }
                     break;
                 }
@@ -161,9 +167,14 @@ public class PushPromiseBodyParser extends BodyParser
         return false;
     }
 
-    private void onPushPromise(int streamId, MetaData.Request metaData)
+    private void onPushPromise(MetaData.Request metaData)
     {
         PushPromiseFrame frame = new PushPromiseFrame(getStreamId(), streamId, metaData);
+        onPushPromise(frame);
+    }
+
+    private void onPushPromise(PushPromiseFrame frame)
+    {
         notifyPushPromise(frame);
     }
 

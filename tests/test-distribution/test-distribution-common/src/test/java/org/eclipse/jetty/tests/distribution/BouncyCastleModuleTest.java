@@ -41,13 +41,13 @@ public class BouncyCastleModuleTest
 
         try (JettyHomeTester.Run configRun = distribution.start("--approve-all-licenses", "--add-modules=https,bouncycastle,test-keystore"))
         {
-            assertTrue(configRun.awaitFor(30, TimeUnit.SECONDS));
+            assertTrue(configRun.awaitForStart());
             assertEquals(0, configRun.getExitValue());
 
             int httpsPort = Tester.freePort();
             try (JettyHomeTester.Run startRun = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + httpsPort)))
             {
-                assertTrue(startRun.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+                assertTrue(startRun.awaitForJettyStart());
                 assertTrue(startRun.getLogs().stream().anyMatch(line -> line.contains("provider=BCJSSE")));
 
                 try (HttpClient httpClient = new HttpClient())

@@ -1204,7 +1204,7 @@ public class AsyncIOServletTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("Service " + request);
+                // System.err.println("Service " + request);
 
                 HttpInput httpInput = ((org.eclipse.jetty.ee9.nested.Request)request).getHttpInput();
                 httpInput.addInterceptor(new HttpInput.Interceptor()
@@ -1375,7 +1375,7 @@ public class AsyncIOServletTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("service " + request);
+                // System.err.println("service " + request);
 
                 AsyncContext asyncContext = request.startAsync();
                 ServletInputStream input = request.getInputStream();
@@ -1555,7 +1555,7 @@ public class AsyncIOServletTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("Service " + request);
+                // System.err.println("Service " + request);
 
                 HttpInput httpInput = ((org.eclipse.jetty.ee9.nested.Request)request).getHttpInput();
                 httpInput.addInterceptor(chunk ->

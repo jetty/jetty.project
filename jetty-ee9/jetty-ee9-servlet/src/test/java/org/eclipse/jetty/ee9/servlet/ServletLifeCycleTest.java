@@ -131,7 +131,6 @@ public class ServletLifeCycleTest
         server.start();
         context.addEventListener(new EventListener() {});
         listeners = context.getEventListeners();
-        listeners.forEach(System.err::println);
         assertThat(listeners.size(), greaterThanOrEqualTo(3));
 
         server.stop();
