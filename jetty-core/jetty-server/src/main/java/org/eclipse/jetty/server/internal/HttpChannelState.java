@@ -331,6 +331,8 @@ public class HttpChannelState implements HttpChannel, Components
             onContent = _onContentAvailable;
             _onContentAvailable = null;
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("onContentAvailable {} {}", onContent, this);
         return _readInvoker.offer(onContent);
     }
 

@@ -241,7 +241,7 @@ public class StreamEndPoint implements EndPoint
             fillInterest = null;
         }
         if (callback != null)
-            callback.succeeded();
+            callback.failed(failure);
         else
             protocolSession.onStreamFailure(stream.getId(), failure);
     }
