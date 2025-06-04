@@ -735,7 +735,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("number of threads executing internal and unleased jobs")
     public int getBusyThreads()
     {
-        return getThreads() - getCurrentReservedThreads() - getIdleThreads();
+        return getThreads() - getIdleThreads() - getCurrentReservedThreads();
     }
 
     /**
