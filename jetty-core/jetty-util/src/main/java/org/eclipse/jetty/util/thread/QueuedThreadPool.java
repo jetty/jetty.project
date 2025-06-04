@@ -44,43 +44,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A thread pool with a queue of jobs to execute.</p>
- * <p>The queue of jobs should be unbounded, because critical jobs that have been submitted for
+ * A thread pool with a queue of jobs to execute.
+ * <p>
+ * The queue of jobs should be unbounded, because critical jobs that have been submitted for
  * execution cannot be rejected due to the queue bound limit.
  * The queue might be temporarily full due to a job submission spike.
  * Furthermore, the same HTTP request may be handled by different jobs, and would be non-optimal
  * to reject a job of a request that is already being handled in favor of a job for a new
- * concurrent request that is not yet handled by the application.</p>
- * <p>Jetty components that need threads (such as network acceptors and selector) may lease threads
+ * concurrent request that is not yet handled by the application.
+ * <p>
+ * Jetty components that need threads (such as network acceptors and selector) may lease threads
  * from this thread pool using a {@link ThreadPoolBudget}; these threads are "active" from the point
- * of view of the thread pool, but not available to run <em>transient</em> jobs such as processing
- * an HTTP request or a WebSocket frame.</p>
- * <p>QueuedThreadPool has a {@link ReservedThreadExecutor} which leases threads from this pool,
- * but makes them available as if they are "idle" threads.</p>
- * <p>QueuedThreadPool therefore has the following <em>fundamental</em> values:</p>
+ * of view of the thread pool, but not available to run <em>unleased</em> jobs such as processing
+ * an HTTP request or a WebSocket frame.
+ * <p>
+ * QueuedThreadPool has a {@link ReservedThreadExecutor} which leases threads from this pool to be
+ * used by the {@link #tryExecute(Runnable)} method.  This allows some key optimizations in the
+ * {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy}.  The pool will avoid
+ * reserving new threads if there are jobs queued.
+ * <p>
+ * QueuedThreadPool has the following <em>fundamental</em> values:
  * <ul>
  *   <li>{@link #getThreads() threads}: the current number of threads. These threads may execute
- *   a job (either internal or transient), or may be ready to run (either idle or reserved).
+ *   a job (either internal or unleased), or may be ready to run (either idle or reserved).
  *   This number may grow or shrink as the thread pool grows or shrinks.</li>
- *   <li>{@link #getReadyThreads() readyThreads}: the current number of threads that are ready to
- *   run transient jobs.
- *   This number may grow or shrink as the thread pool grows or shrinks.</li>
- *   <li>{@link #getLeasedThreads() leasedThreads}: the number of threads that run internal jobs.
+ *   <li>{@link #getLeasedThreads() leasedThreads}: the number of threads that may be needed
+ *   to run internal jobs or be reserved for internal jobs. A pool should always be configured
+ *   with more threads than the number of leased threads.
  *   This number is typically constant after this thread pool is {@link #start() started}.</li>
+ *   <li>{@link #getCurrentReservedThreads()}: the number of threads that have been reserved
+ *   for #tryExecute(Runnable) jobs.</li>
+ *   <li>{@link #getIdleThreads()}: the number of threads that are currently waiting for a job.</li>
+ *   <li>{@link #getQueueSize()}: the number of jobs, queued waiting for a thread.</li>
  * </ul>
- * <p>Given the definitions above, the most interesting definitions are:</p>
+ * <p>Given the definitions above, values derived from combinations of fundamental values include:</p>
  * <ul>
- *   <li>{@link #getThreads() threads} = {@link #getReadyThreads() readyThreads} + {@link #getLeasedThreads() leasedThreads} + {@link #getUtilizedThreads() utilizedThreads}</li>
- *   <li>readyThreads = {@link #getIdleThreads() idleThreads} + {@link #getAvailableReservedThreads() availableReservedThreads}</li>
- *   <li>{@link #getMaxAvailableThreads() maxAvailableThreads} = {@link #getMaxThreads() maxThreads} - leasedThreads</li>
- *   <li>{@link #getUtilizationRate() utilizationRate} = utilizedThreads / maxAvailableThreads</li>
- * </ul>
- * <p>Other definitions, typically less interesting because they take into account threads that
- * execute internal jobs, or because they don't take into account available reserved threads
- * (that are essentially ready to execute transient jobs), are:</p>
- * <ul>
- *   <li>{@link #getBusyThreads() busyThreads} = utilizedThreads + leasedThreads</li>
- *   <li>{@link #getIdleThreads() idleThreads} = readyThreads - availableReservedThreads</li>
+ *     <li>{@link #getBusyThreads()}: the number threads executing tasks.</li>
+ *     <li>{@link #getUtilizedThreads()}: the number threads executing unleased tasks.</li>
  * </ul>
  */
 @ManagedObject("A thread pool")
@@ -229,7 +229,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             else
             {
-                ReservedThreadExecutor rte = new ReservedThreadExecutor(this, _reservedThreads);
+                ReservedThreadExecutor rte = newReservedThreadExecutor();
                 rte.setIdleTimeout(_idleTimeout, TimeUnit.MILLISECONDS);
                 _tryExecutor = rte;
             }
@@ -242,6 +242,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
         _counts.set(0, 0); // threads, idle
         ensureThreads();
+    }
+
+    protected ReservedThreadExecutor newReservedThreadExecutor()
+    {
+        return new ReservedThreadExecutor();
     }
 
     @Override
@@ -265,8 +270,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             // Fill the job queue with noop jobs to wakeup idle threads.
             for (int i = 0; i < threads; ++i)
+            {
                 if (!jobs.offer(NOOP))
                     break;
+            }
 
             // try to let jobs complete naturally for half our stop time
             joinThreads(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
@@ -297,7 +304,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 {
                     StringBuilder dmp = new StringBuilder();
                     for (StackTraceElement element : unstopped.getStackTrace())
+                    {
                         dmp.append(System.lineSeparator()).append("\tat ").append(element);
+                    }
                     stack = dmp.toString();
                 }
 
@@ -337,7 +346,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private void joinThreads(long stopByNanos)
     {
-        loop : while (true)
+        loop:
+        while (true)
         {
             for (Thread thread : _threads)
             {
@@ -448,6 +458,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Set number of reserved threads or -1 for heuristically determined.
+     *
      * @param reservedThreads number of reserved threads or -1 for heuristically determined
      */
     public void setReservedThreads(int reservedThreads)
@@ -489,6 +500,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Set the priority of the pool threads.
+     *
      * @param priority the priority of the pool threads
      */
     public void setThreadsPriority(int priority)
@@ -598,7 +610,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the maximum number (capacity) of reserved threads
+     * @return the maximum number (capacity) of reserved threads that have actually been reserved.
+     * The value will always be less than or equal to {@link #getReservedThreads()}.
      * @see ReservedThreadExecutor#getCapacity()
      */
     @ManagedAttribute("maximum number (capacity) of reserved threads")
@@ -611,11 +624,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the number of available reserved threads
+     * @return the number of available reserved threads that are currently reserved
      * @see ReservedThreadExecutor#getAvailable()
      */
     @ManagedAttribute("number of available reserved threads")
-    public int getAvailableReservedThreads()
+    public int getCurrentReservedThreads()
     {
         TryExecutor tryExecutor = _tryExecutor;
         if (tryExecutor instanceof ReservedThreadExecutor reserved)
@@ -624,13 +637,25 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>The <em>fundamental</em> value that represents the number of threads currently known by this thread pool.</p>
-     * <p>This value includes threads that have been leased to internal components, idle threads, reserved threads
-     * and threads that are executing transient jobs.</p>
+     * @return the number of available reserved threads that are currently reserved
+     * @see #getCurrentReservedThreads()
+     * @deprecated use {@link #getCurrentReservedThreads()} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
+    @ManagedAttribute("number of available reserved threads")
+    public int getAvailableReservedThreads()
+    {
+        return getCurrentReservedThreads();
+    }
+
+    /**
+     * <p>The number of threads currently started by this thread pool.</p>
+     * <p>This value includes threads that have been leased threads, idle threads, reserved threads
+     * and threads that are executing unleased jobs.</p>
      *
      * @return the number of threads currently known to the pool
-     * @see #getReadyThreads()
-     * @see #getLeasedThreads()
+     * @see #getIdleThreads()
+     * @see #getCurrentReservedThreads()
      */
     @Override
     @ManagedAttribute("number of threads in the pool")
@@ -641,31 +666,33 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>The <em>fundamental</em> value that represents the number of threads ready to execute transient jobs.</p>
+     * <p>The number of threads ready to execute unleased jobs.</p>
      *
-     * @return the number of threads ready to execute transient jobs
+     * @return the number of threads ready to execute unleased jobs
      * @see #getThreads()
      * @see #getLeasedThreads()
      * @see #getUtilizedThreads()
+     * @deprecated The combination of idle and reserved threads is essentially meaningless.
      */
-    @ManagedAttribute("number of threads ready to execute transient jobs")
+    @Deprecated(forRemoval = true, since = "12.1.0")
+    @ManagedAttribute("number of threads ready to execute unleased jobs")
     public int getReadyThreads()
     {
-        return getIdleThreads() + getAvailableReservedThreads();
+        return getIdleThreads() + getCurrentReservedThreads();
     }
 
     /**
-     * <p>The <em>fundamental</em> value that represents the number of threads that are leased
-     * to internal components, and therefore cannot be used to execute transient jobs.</p>
+     * <p>The number of threads that are leased, and therefore cannot be used to execute unleased jobs.</p>
      *
      * @return the number of threads currently used by internal components
      * @see #getThreads()
      * @see #getReadyThreads()
      */
-    @ManagedAttribute("number of threads used by internal components")
+    @ManagedAttribute("number of threads leased for use by jetty components")
     public int getLeasedThreads()
     {
-        return getMaxLeasedThreads() - getMaxReservedThreads();
+        ThreadPoolBudget budget = _budget;
+        return budget == null ? 0 : budget.getLeasedThreads();
     }
 
     /**
@@ -674,21 +701,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      *
      * @return the maximum number of threads leased by internal components
      * @see #getLeasedThreads()
+     * @deprecated use {@link #getLeasedThreads()}
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     @ManagedAttribute("maximum number of threads leased to internal components")
     public int getMaxLeasedThreads()
     {
-        ThreadPoolBudget budget = _budget;
-        return budget == null ? 0 : budget.getLeasedThreads();
+        return getLeasedThreads();
     }
 
     /**
-     * <p>The number of idle threads, but without including reserved threads.</p>
-     * <p>Prefer {@link #getReadyThreads()} for a better representation of
-     * "threads ready to execute transient jobs".</p>
+     * <p>The number of idle threads, waiting for tasks to be submitted to {@link #execute(Runnable)}.</p>
+     * <p>Note that {@link #getCurrentReservedThreads()} are not counted as idle threads.</p>
      *
-     * @return the number of idle threads but not reserved
-     * @see #getReadyThreads()
+     * @return the number of idle threads
      */
     @Override
     @ManagedAttribute("number of idle threads but not reserved")
@@ -699,37 +725,40 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * <p>The number of threads executing internal and transient jobs.</p>
-     * <p>Prefer {@link #getUtilizedThreads()} for a better representation of
-     * "threads executing transient jobs".</p>
+     * <p>The number of threads executing leased and unleased jobs.</p>
+     * <p>Prefer {@link #getUtilizedThreads()} for a representation of
+     * "threads executing unleased jobs".</p>
      *
-     * @return the number of threads executing internal and transient jobs
+     * @return the number of threads executing internal and unleased jobs
      * @see #getUtilizedThreads()
      */
-    @ManagedAttribute("number of threads executing internal and transient jobs")
+    @ManagedAttribute("number of threads executing internal and unleased jobs")
     public int getBusyThreads()
     {
-        return getThreads() - getReadyThreads();
+        return getThreads() - getCurrentReservedThreads() - getIdleThreads();
     }
 
     /**
-     * <p>The number of threads executing transient jobs.</p>
+     * <p>The number of threads executing unleased tasks.</p>
      *
-     * @return the number of threads executing transient jobs
+     * @return the number of threads executing unleased tasks
      * @see #getReadyThreads()
      */
-    @ManagedAttribute("number of threads executing transient jobs")
+    @ManagedAttribute("number of threads executing unleased jobs")
     public int getUtilizedThreads()
     {
-        return getThreads() - getLeasedThreads() - getReadyThreads();
+        return getThreads() - getIdleThreads() - getLeasedThreads() + getReservedThreads() - getCurrentReservedThreads();
     }
 
     /**
-     * <p>The maximum number of threads available to run transient jobs.</p>
+     * <p>The maximum number of threads available to run unleased jobs.</p>
      *
-     * @return the maximum number of threads available to run transient jobs
+     * @return the maximum number of threads available to run unleased jobs
+     * @deprecated The term available can be applied to either idle or reserved threads, but not both.
+     * Use {@link #getCurrentReservedThreads()} or {@link #getIdleThreads()} instead.
      */
-    @ManagedAttribute("maximum number of threads available to run transient jobs")
+    @ManagedAttribute("maximum number of threads available to run unleased jobs (deprecated")
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public int getMaxAvailableThreads()
     {
         return getMaxThreads() - getLeasedThreads();
@@ -740,21 +769,21 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * and the maximum number of {@link #getMaxAvailableThreads() utilizable threads}.</p>
      * <p>A value of {@code 0.0D} means that the thread pool is not utilized, while a
      * value of {@code 1.0D} means that the thread pool is fully utilized to execute
-     * transient jobs.</p>
+     * unleased jobs.</p>
      *
-     * @return the utilization rate of threads executing transient jobs
+     * @return the utilization rate of threads executing unleased jobs
      */
-    @ManagedAttribute("utilization rate of threads executing transient jobs")
+    @ManagedAttribute("utilization rate of threads executing unleased jobs")
     public double getUtilizationRate()
     {
-        return (double)getUtilizedThreads() / getMaxAvailableThreads();
+        return (double)getUtilizedThreads() / (getMaxThreads() - getLeasedThreads());
     }
 
     /**
      * <p>Returns whether this thread pool is low on threads.</p>
      * <p>The current formula is:</p>
      * <pre>
-     * maxThreads - threads + readyThreads - queueSize &lt;= lowThreadsThreshold
+     * maxThreads - threads + idleThreads - queueSize &lt;= lowThreadsThreshold
      * </pre>
      *
      * @return whether the pool is low on threads
@@ -764,7 +793,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute(value = "thread pool is low on threads", readonly = true)
     public boolean isLowOnThreads()
     {
-        return getMaxThreads() - getThreads() + getReadyThreads() - getQueueSize() <= getLowThreadsThreshold();
+        return getMaxThreads() - getThreads() + getIdleThreads() - getQueueSize() <= getLowThreadsThreshold();
     }
 
     @Override
@@ -812,7 +841,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         // Start a thread if one was needed
         while (startThread-- > 0)
+        {
             startThread();
+        }
     }
 
     @Override
@@ -964,7 +995,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
                 return "SELECTING";
             if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
-                return  "ACCEPTING";
+                return "ACCEPTING";
         }
         return "";
     }
@@ -1118,7 +1149,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%dms,q=%d}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d/%d,t=%dms,q=%d}[%s]",
             TypeUtil.toShortName(getClass()),
             _name,
             hashCode(),
@@ -1127,6 +1158,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             threads,
             getMaxThreads(),
             idle,
+            getCurrentReservedThreads(),
             getReservedThreads(),
             NanoTime.millisUntil(_evictThreshold.get()),
             queue,
@@ -1220,6 +1252,36 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 // Clear any thread interrupted status.
                 Thread.interrupted();
             }
+        }
+    }
+
+    protected class ReservedThreadExecutor extends org.eclipse.jetty.util.thread.ReservedThreadExecutor
+    {
+        public ReservedThreadExecutor()
+        {
+            super(QueuedThreadPool.this, QueuedThreadPool.this._reservedThreads);
+        }
+
+        public ReservedThreadExecutor(Executor executor, int capacity, int minSize, int maxPending)
+        {
+            super(executor, capacity, minSize, maxPending);
+        }
+
+        @Override
+        protected void startReservedThread()
+        {
+            // If we have more jobs queued than the number of pending reserved threads,
+            // then we have some real jobs in the queue.
+            // So we will not start a reserved thread as it may stop a real job from being executed.
+            if (isTaskWaiting())
+                return;
+            super.startReservedThread();
+        }
+
+        @Override
+        protected boolean isTaskWaiting()
+        {
+            return getQueueSize() > getPending();
         }
     }
 }

@@ -149,11 +149,10 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         return _threads.size();
     }
 
-    @ManagedAttribute(value = "pending reserved threads (deprecated)", readonly = true)
-    @Deprecated
+    @ManagedAttribute(value = "pending reserved threads", readonly = true)
     public int getPending()
     {
-        return 0;
+        return _pending.getOpaque();
     }
 
     @ManagedAttribute(value = "idle timeout in ms", readonly = true)
@@ -225,9 +224,9 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         return false;
     }
 
-    private void startReservedThread()
+    protected void startReservedThread()
     {
-        if (_maxPending > 0 && _pending.incrementAndGet() >= _maxPending)
+        if (_maxPending > 0 && _pending.incrementAndGet() > _maxPending)
         {
             _pending.decrementAndGet();
             return;
@@ -321,7 +320,10 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                         // clear interrupted status between reserved thread iterations
                         if (Thread.interrupted() && LOG.isDebugEnabled())
                             LOG.debug("{} was interrupted", _thread);
+
                     }
+                    if (isTaskWaiting())
+                        return;
                 }
             }
             catch (Throwable t)
@@ -385,5 +387,15 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                 hashCode(),
                 _thread);
         }
+    }
+
+    /**
+     * Is there a better task to do than reserved thread a thread?
+     *
+     * @return true if a thread could be used to do something better than be reserved.
+     */
+    protected boolean isTaskWaiting()
+    {
+        return false;
     }
 }

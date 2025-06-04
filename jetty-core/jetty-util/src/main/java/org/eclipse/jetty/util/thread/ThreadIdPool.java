@@ -247,9 +247,10 @@ public class ThreadIdPool<E> implements Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{capacity=%d}",
+        return String.format("%s@%x{size=%d/%d}",
             TypeUtil.toShortName(getClass()),
             hashCode(),
+            size(),
             capacity());
     }
 }

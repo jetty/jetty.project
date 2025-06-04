@@ -165,10 +165,10 @@ public class BlockedWritesWithSmallThreadPoolTest
         Thread.sleep(1000);
 
         // Make sure there is a reserved thread.
-        if (serverThreads.getAvailableReservedThreads() != 1)
+        if (serverThreads.getCurrentReservedThreads() != 1)
         {
             assertFalse(serverThreads.tryExecute(() -> {}));
-            await().atMost(5, SECONDS).until(() -> serverThreads.getAvailableReservedThreads() == 1);
+            await().atMost(5, SECONDS).until(() -> serverThreads.getCurrentReservedThreads() == 1);
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
         long delaySeconds = 10;
@@ -273,10 +273,10 @@ public class BlockedWritesWithSmallThreadPoolTest
         });
 
         // Make sure there is a reserved thread.
-        if (serverThreads.getAvailableReservedThreads() != 1)
+        if (serverThreads.getCurrentReservedThreads() != 1)
         {
             assertFalse(serverThreads.tryExecute(() -> {}));
-            await().atMost(5, SECONDS).until(() -> serverThreads.getAvailableReservedThreads() == 1);
+            await().atMost(5, SECONDS).until(() -> serverThreads.getCurrentReservedThreads() == 1);
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
         CountDownLatch reservedBlockLatch = new CountDownLatch(1);
@@ -390,10 +390,10 @@ public class BlockedWritesWithSmallThreadPoolTest
         // Make sure the application thread is blocked.
         clientThreads.execute(() -> await().until(() -> clientBlockLatch.await(15, SECONDS), b -> true));
         // Make sure the reserved thread is blocked.
-        if (clientThreads.getAvailableReservedThreads() != 1)
+        if (clientThreads.getCurrentReservedThreads() != 1)
         {
             assertFalse(clientThreads.tryExecute(() -> {}));
-            await().atMost(5, SECONDS).until(() -> clientThreads.getAvailableReservedThreads() == 1);
+            await().atMost(5, SECONDS).until(() -> clientThreads.getCurrentReservedThreads() == 1);
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
         long delaySeconds = 10;

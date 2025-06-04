@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -790,13 +791,13 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         String dump = pool.dump();
         // TODO use hamcrest 2.0 regex matcher
         assertThat(dump, containsString("STOPPED"));
-        assertThat(dump, containsString(",3<=0<=4,i=0,r=-1,"));
+        assertThat(dump, containsString(",3<=0<=4,i=0,r=0/-1,"));
         assertThat(dump, containsString("[NO_TRY]"));
 
         pool.setReservedThreads(2);
         dump = pool.dump();
         assertThat(dump, containsString("STOPPED"));
-        assertThat(dump, containsString(",3<=0<=4,i=0,r=2,"));
+        assertThat(dump, containsString(",3<=0<=4,i=0,r=0/2,"));
         assertThat(dump, containsString("[NO_TRY]"));
 
         pool.start();
@@ -804,8 +805,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
-        assertThat(dump, containsString(",3<=3<=4,i=3,r=2,"));
-        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString(",3<=3<=4,i=3,r=0/2,"));
+        assertThat(dump, containsString("+= oejut.QueuedThreadPool$ReservedThreadExecutor"));
 
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch waiting = new CountDownLatch(1);
@@ -826,15 +827,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
-        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=1/2,"));
+        assertThat(dump, containsString("+= oejut.QueuedThreadPool$ReservedThreadExecutor@"));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(0));
 
         pool.setDetailedDump(true);
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
-        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=1/2,"));
+        assertThat(dump, containsString("+= oejut.QueuedThreadPool$ReservedThreadExecutor@"));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -852,8 +853,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(3));
-        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=0/2,"));
+        assertThat(dump, containsString("+= oejut.QueuedThreadPool$ReservedThreadExecutor@"));
         assertThat(count(dump, "> ReservedThread@"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(2));
         latch.countDown();
@@ -938,11 +939,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         try
         {
             assertThat(tp.getMaxReservedThreads(), Matchers.equalTo(reservedThreads));
-            assertThat(tp.getLeasedThreads(), Matchers.equalTo(leasedThreads));
-            assertThat(tp.getReadyThreads(), Matchers.equalTo(tp.getIdleThreads() + tp.getAvailableReservedThreads()));
+            assertThat(tp.getLeasedThreads(), Matchers.equalTo(leasedThreads + reservedThreads));
             assertThat(tp.getUtilizedThreads(), Matchers.equalTo(transientJobs));
-            assertThat(tp.getThreads(), Matchers.equalTo(tp.getReadyThreads() + tp.getLeasedThreads() + tp.getUtilizedThreads()));
-            assertThat(tp.getBusyThreads(), Matchers.equalTo(tp.getUtilizedThreads() + tp.getLeasedThreads()));
+            assertThat(tp.getBusyThreads(), Matchers.equalTo(transientJobs + tp.getCurrentReservedThreads() + leasedThreads));
         }
         finally
         {
@@ -1156,6 +1155,163 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
         }
         qtp.stop();
+    }
+
+    @Test
+    public void testReluctantReserved() throws Exception
+    {
+        QueuedThreadPool qtp = new QueuedThreadPool(4, 1)
+        {
+            @Override
+            protected ReservedThreadExecutor newReservedThreadExecutor()
+            {
+                return new ReservedThreadExecutor(this, getReservedThreads(), -1, 1);
+            }
+        };
+        qtp.setIdleTimeout(Integer.MAX_VALUE);
+        qtp.setReservedThreads(2);
+        qtp.setDetailedDump(true);
+        qtp.start();
+
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getIdleThreads() == 1);
+        assertThat(qtp.getThreads(), is(1));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        BlockingJob job1 = new BlockingJob("job1");
+        qtp.execute(job1::await);
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getIdleThreads() == 0);
+        assertThat(qtp.getThreads(), is(1));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Try and fail a tryExecute, should start a reserved thread
+        BlockingJob job2 = new BlockingJob("job2");
+        assertFalse(qtp.tryExecute(job2::await));
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getCurrentReservedThreads() == 1);
+        assertThat(qtp.getThreads(), is(2));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(1));
+
+        // Execute job2
+        qtp.execute(job2::await);
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getThreads() == 3);
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(1));
+
+        // execute jobs 3 and 4
+        BlockingJob job3 = new BlockingJob("job3");
+        qtp.execute(job3::await);
+        BlockingJob job4 = new BlockingJob("job4");
+        qtp.execute(job4::await);
+
+        // We should now have 3 running jobs, 1 reserved thread and 1 queued job
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getQueueSize() == 1);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(1));
+
+        // Try execute job5, will succeed, using the available reserved thread
+        BlockingJob job5 = new BlockingJob("job5");
+        assertTrue(qtp.tryExecute(job5::await));
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getCurrentReservedThreads() == 0);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getQueueSize(), is(1));
+
+        // Try execute job6, will fail, as we have no available reserved threads, and it will not start a reserved thread
+        // as there are jobs waiting
+        BlockingJob job6 = new BlockingJob("job6");
+        assertFalse(qtp.tryExecute(job6::await));
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getQueueSize(), is(1));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Execute job6
+        qtp.execute(job6::await);
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getQueueSize() == 2);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Complete job 5 (which is using an ex-reserved thread).  It should not become reserved again,
+        // because there are queued jobs. Instead a job from the queue should be consumed.
+        job5.countDown();
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getQueueSize() == 1);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Complete jobs 1, whose thread will be used for job6
+        job1.countDown();
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getQueueSize() == 0);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Complete jobs 2, which will become idle
+        job2.countDown();
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getIdleThreads() == 1);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getCurrentReservedThreads(), is(0));
+
+        // Try execute job7, will fail, as we have no available reserved threads, but it will start a reserved thread
+        // as there are no jobs waiting
+        BlockingJob job7 = new BlockingJob("job7");
+        assertFalse(qtp.tryExecute(job7::await));
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getCurrentReservedThreads() == 1);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+
+        // Try execute job7 again, will succeed, as we have an available reserved thread
+        assertTrue(qtp.tryExecute(job7::await));
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getCurrentReservedThreads() == 0);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+
+        // complete job7, which will return to be a reserved thread as there are no queued jobs
+        job7.countDown();
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getCurrentReservedThreads() == 1);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getIdleThreads(), is(0));
+
+        // complete the remaining jobs, which should now be idle
+        job3.countDown();
+        job4.countDown();
+        job5.countDown();
+        job6.countDown();
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> qtp.getIdleThreads() == 3);
+        assertThat(qtp.getThreads(), is(4));
+        assertThat(qtp.getCurrentReservedThreads(), is(1));
+    }
+
+    private static class BlockingJob extends CountDownLatch
+    {
+        private final String _id;
+
+        public BlockingJob(String id)
+        {
+            super(1);
+            _id = id;
+        }
+
+        @Override
+        public void await()
+        {
+            try
+            {
+                super.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%d}".formatted(_id, hashCode(), super.getCount());
+        }
     }
 
     Runnable job(CountDownLatch started, int duration)
