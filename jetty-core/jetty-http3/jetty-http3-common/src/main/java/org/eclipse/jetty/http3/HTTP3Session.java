@@ -348,56 +348,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return settings;
     }
 
-    private Map<Long, Long> notifyPreface()
-    {
-        try
-        {
-            return listener.onPreface(this);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return null;
-        }
-    }
-
-    private void notifySettings(SettingsFrame frame)
-    {
-        try
-        {
-            listener.onSettings(this, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
-
-    private void notifyGoAway(GoAwayFrame frame)
-    {
-        try
-        {
-            listener.onGoAway(this, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
-
-    private boolean notifyIdleTimeout()
-    {
-        try
-        {
-            return listener.onIdleTimeout(this);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return true;
-        }
-    }
-
     protected void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         MetaData metaData = frame.getMetaData();
@@ -802,11 +752,73 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         disconnect(error, reason, Promise.Invocable.noop());
     }
 
-    private void notifyDisconnect(long error, String reason)
+    private Map<Long, Long> notifyPreface()
     {
+        Session.Listener listener = getListener();
         try
         {
-            listener.onDisconnect(this, error, reason);
+            if (listener != null)
+                return listener.onPreface(this);
+            return null;
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return null;
+        }
+    }
+
+    private void notifySettings(SettingsFrame frame)
+    {
+        Session.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onSettings(this, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    private void notifyGoAway(GoAwayFrame frame)
+    {
+        Session.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onGoAway(this, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    private boolean notifyIdleTimeout()
+    {
+        Session.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                return listener.onIdleTimeout(this);
+            return true;
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return true;
+        }
+    }
+
+    private void notifyDisconnect(long error, String reason)
+    {
+        Session.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onDisconnect(this, error, reason);
         }
         catch (Throwable x)
         {
@@ -816,9 +828,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
     private void notifyFailure(long error, String reason, Throwable failure)
     {
+        Session.Listener listener = getListener();
         try
         {
-            listener.onFailure(this, error, reason, failure);
+            if (listener != null)
+                listener.onFailure(this, error, reason, failure);
         }
         catch (Throwable x)
         {

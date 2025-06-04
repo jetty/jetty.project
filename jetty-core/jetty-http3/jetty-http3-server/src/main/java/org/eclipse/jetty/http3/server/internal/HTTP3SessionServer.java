@@ -126,7 +126,8 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         Server.Listener listener = getListener();
         try
         {
-            listener.onAccept(this);
+            if (listener != null)
+                listener.onAccept(this);
         }
         catch (Throwable x)
         {
@@ -139,7 +140,9 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         Server.Listener listener = getListener();
         try
         {
-            return listener.onRequest(this, frame);
+            if (listener != null)
+                return listener.onRequest(this, frame);
+            return null;
         }
         catch (Throwable x)
         {

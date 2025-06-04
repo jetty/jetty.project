@@ -48,7 +48,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private long expireNanoTime = Long.MAX_VALUE;
     private Object attachment;
     private boolean dataDemand;
-    private boolean dataStalled;
+    private boolean dataStalled = true;
     private boolean dataLast;
     private boolean dataAvailable;
 
@@ -58,7 +58,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         this.endPoint = endPoint;
         this.local = local;
         this.invoker = new SerializedInvoker(TypeUtil.toShortName(getClass()), session.getProtocolSession().getExecutor());
-        this.dataStalled = true;
     }
 
     public StreamEndPoint getStreamEndPoint()

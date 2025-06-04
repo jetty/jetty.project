@@ -496,9 +496,10 @@ public class DataDemandTest extends AbstractClientServerTest
             @Override
             public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                Semaphore semaphore = new Semaphore(0);
                 return new Stream.Server.Listener()
                 {
+                    private final Semaphore semaphore = new Semaphore(0);
+
                     @Override
                     public void onRequest(Stream.Server stream, HeadersFrame frame)
                     {

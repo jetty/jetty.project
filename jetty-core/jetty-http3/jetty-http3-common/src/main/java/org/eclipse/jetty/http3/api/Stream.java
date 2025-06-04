@@ -167,7 +167,8 @@ public interface Stream
              */
             default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                stream.demand();
+                if (!frame.isLast())
+                    stream.demand();
             }
 
             /**
@@ -333,7 +334,8 @@ public interface Stream
              */
             default void onRequest(Stream.Server stream, HeadersFrame frame)
             {
-                stream.demand();
+                if (!frame.isLast())
+                    stream.demand();
             }
 
             /**
