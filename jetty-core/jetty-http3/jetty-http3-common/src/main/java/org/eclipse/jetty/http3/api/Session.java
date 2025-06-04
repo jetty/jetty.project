@@ -113,7 +113,7 @@ public interface Session
 
     /**
      * <p>The server-side HTTP/3 API representing a connection with a client.</p>
-     * <p>To receive HTTP/3 request events, see {@link Session.Server.Listener#onRequest(Stream.Server, HeadersFrame)}.</p>
+     * <p>To receive HTTP/3 request events, see {@link Session.Server.Listener#onRequest(Session.Server, HeadersFrame)}.</p>
      */
     public interface Server extends Session
     {
@@ -132,40 +132,17 @@ public interface Session
             }
 
             /**
-             * <p>Callback method invoked when a request is received.</p>
-             * <p>Applications should implement this method to process HTTP/3 requests,
-             * typically providing an HTTP/3 response via {@link Stream.Server#respond(HeadersFrame, Promise.Invocable)}:</p>
-             * <pre>
-             * class MyServer implements Session.Server.Listener
-             * {
-             *     &#64;Override
-             *     public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
-             *     {
-             *         // Send a response.
-             *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
-             *         stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-             *         if (!frame.isLast())
-             *             stream.demand();
-             *         return null;
-             *     }
-             * }
-             * </pre>
-             * <p>If there is request content (indicated by the fact that the HEADERS frame
-             * is not the last in the stream), then applications either:</p>
-             * <ul>
-             *     <li>return {@code null} to indicate that they are not interested in
-             *     reading the content</li>
-             *     <li><em>must</em> call {@link Stream#demand()} and return a {@link Stream.Server.Listener}
-             *     that overrides {@link Stream.Server.Listener#onDataAvailable(Stream.Server)} that reads
-             *     and consumes the content.</li>
-             * </ul>
+             * <p>Callback method invoked when a request is received to create a new {@link Stream.Server.Listener}.</p>
+             * <p>Applications should implement this method return {@link Stream.Server.Listener}s that process
+             * HTTP/3 requests, in particular via the {@link Stream.Server.Listener#onRequest(Stream.Server, HeadersFrame)}
+             * and {@link Stream.Server.Listener#onDataAvailable(Stream.Server)} methods.</p>
              *
-             * @param stream the stream associated with the request
+             * @param session the session
              * @param frame the HEADERS frame containing the request headers
              * @return a {@link Stream.Server.Listener} that will be notified of stream events
-             * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+             * @see Stream.Server.Listener#onRequest(Stream.Server, HeadersFrame)
              */
-            public default Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public default Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
                 return null;
             }

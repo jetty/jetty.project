@@ -17,32 +17,68 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.util.Promise;
 
-public class ProtocolStreamListener implements Stream.Listener
+public abstract class ProtocolStreamListener implements Stream.Listener
 {
-    private final Supplier<StreamEndPoint> endPoint;
-
-    public ProtocolStreamListener(Supplier<StreamEndPoint> endPoint)
-    {
-        this.endPoint = endPoint;
-    }
+    protected abstract StreamEndPoint getStreamEndPoint();
 
     @Override
     public void onDataAvailable(Stream stream)
     {
-        endPoint.get().fillable();
+        getStreamEndPoint().fillable();
     }
 
     @Override
     public void onIdleTimeout(Stream stream, TimeoutException failure, Promise.Invocable<Boolean> promise)
     {
-        endPoint.get().onIdleTimeout(failure, promise);
+        getStreamEndPoint().onIdleTimeout(failure, promise);
     }
 
     @Override
     public void onFailure(Stream stream, Throwable failure)
     {
-        endPoint.get().onFailure(failure);
+        getStreamEndPoint().onFailure(failure);
+    }
+
+    public static class Client extends ProtocolStreamListener
+    {
+        private final Supplier<StreamEndPoint> endPoint;
+
+        public Client(Supplier<StreamEndPoint> endPoint)
+        {
+            this.endPoint = endPoint;
+        }
+
+        @Override
+        protected StreamEndPoint getStreamEndPoint()
+        {
+            return endPoint.get();
+        }
+    }
+
+    public static class Server extends ProtocolStreamListener
+    {
+        private final ProtocolSession protocolSession;
+        private StreamEndPoint endPoint;
+
+        public Server(ProtocolSession protocolSession)
+        {
+            this.protocolSession = protocolSession;
+        }
+
+        @Override
+        protected StreamEndPoint getStreamEndPoint()
+        {
+            return endPoint;
+        }
+
+        @Override
+        public void onNewStream(Stream stream, Frame.WithStreamId frame)
+        {
+            endPoint = protocolSession.createStreamEndPoint(stream, protocolSession::openStreamEndPoint);
+            super.onNewStream(stream, frame);
+        }
     }
 }

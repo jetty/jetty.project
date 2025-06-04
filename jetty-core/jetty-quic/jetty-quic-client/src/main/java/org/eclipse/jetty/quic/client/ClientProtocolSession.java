@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.client;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -54,8 +55,9 @@ public class ClientProtocolSession extends ProtocolSession
             // Create a single bidirectional, client-initiated,
             // QUIC stream that plays the role of the TCP stream.
             long streamId = getSession().newStreamId(true);
-            Stream stream = getSession().newStream(streamId, new ProtocolStreamListener(() -> getStreamEndPoint(streamId)));
-            createStreamEndPoint(stream, this::openStreamEndPoint);
+            AtomicReference<StreamEndPoint> endPointRef = new AtomicReference<>();
+            Stream stream = getSession().newStream(streamId, new ProtocolStreamListener.Client(endPointRef::get));
+            endPointRef.set(createStreamEndPoint(stream, this::openStreamEndPoint));
         }
         catch (Throwable x)
         {

@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
-import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.quiche.server.internal.ServerQuicheSession;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
@@ -101,12 +101,9 @@ public class QuicheServerConnectionFactory extends AbstractQuicheServerConnectio
         }
 
         @Override
-        public Stream.Listener onNewStream(Stream stream)
+        public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            // TODO: catch exception and abort.
-            ProtocolSession pSession = protocolSession.get();
-            StreamEndPoint endPoint = pSession.createStreamEndPoint(stream, pSession::openStreamEndPoint);
-            return new ProtocolStreamListener(() -> endPoint);
+            return new ProtocolStreamListener.Server(protocolSession.get());
         }
 
         @Override

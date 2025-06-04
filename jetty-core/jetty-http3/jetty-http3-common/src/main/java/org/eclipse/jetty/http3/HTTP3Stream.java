@@ -48,7 +48,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private long expireNanoTime = Long.MAX_VALUE;
     private Object attachment;
     private boolean dataDemand;
-    private boolean dataStalled;
+    private boolean dataStalled = true;
     private boolean dataLast;
     private boolean dataAvailable;
 
@@ -186,16 +186,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public void demand()
     {
-        // On the server, the first demand typically comes from
-        // Session.Server.Listener.onRequest(), but cannot notify
-        // onDataAvailable() until onRequest() has returned the
-        // Stream.Server.Listener instance, so initially dataStalled=false.
-        // This is not strictly necessary on the client because
-        // the Stream.Client.Listener is already available, but
-        // the mechanism is implemented in this common class for
-        // simplicity, and it is more symmetric since onDataAvailable()
-        // is only called after returning from onResponse().
-
         boolean needsFillInterest;
         boolean process = false;
         try (AutoLock ignored = lock.lock())
