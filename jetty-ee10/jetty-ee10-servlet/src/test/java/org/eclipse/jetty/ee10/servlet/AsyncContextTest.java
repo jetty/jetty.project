@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -44,6 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -736,6 +738,60 @@ public class AsyncContextTest
         assertThat("error servlet", responseBody, containsString("ERROR: /error"));
         assertThat("error servlet", responseBody, containsString("PathInfo= /500"));
         assertThat("error servlet", responseBody, not(containsString("EXCEPTION: ")));
+    }
+
+    @Test
+    public void testAsyncCompleteAfterChannelAbortDoesNotThrow() throws Exception
+    {
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        startServer((context) ->
+        {
+            HttpServlet asyncServlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                {
+                    try
+                    {
+                        AsyncContext asyncContext = request.startAsync();
+                        try
+                        {
+                            ((ServletApiResponse)response).getServletChannel().abort(new BadMessageException(488));
+                        }
+                        finally
+                        {
+                            asyncContext.complete();
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        failureRef.set(x);
+                    }
+                }
+            };
+
+            _contextHandler.addServlet(asyncServlet, "/async/*");
+            _contextHandler.addServlet(new ErrorServlet(), "/error/*");
+
+            ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
+            errorHandler.setUnwrapServletException(false);
+            _contextHandler.setErrorHandler(errorHandler);
+            errorHandler.addErrorPage(500, "/error/500");
+        });
+
+        String request = """
+            GET /ctx/async HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: application/x-www-form-urlencoded\r
+            Connection: close\r
+            \r
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+
+        assertThat(response, notNullValue());
+        assertThat(response.getStatus(), is(488));
+        assertThat(failureRef.get(), nullValue());
     }
 
     private class DispatchingRunnable implements Runnable
