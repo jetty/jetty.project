@@ -168,13 +168,13 @@ public class CompactPathRuleTest extends AbstractRuleTest
     @ParameterizedTest
     @CsvSource(delimiter = '|',
         textBlock = """
-        # decoding | canonicalizing | inputPath
-        false | false | /../context/
-        false | false | /%2e./context/
-        false | false | /.%2e/context/
-        false | false | /%2e%2e/context/
-        true | false | /..%2fcontext/
-        """)
+            # decoding | canonicalizing | inputPath
+            false | false | /../context/
+            false | false | /%2e./context/
+            false | false | /.%2e/context/
+            false | false | /%2e%2e/context/
+            true | false | /..%2fcontext/
+            """)
     public void testCompactPathRuleResultsInBadMessage(boolean decoding, boolean canonicalizing, String inputPath) throws Exception
     {
         _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
@@ -187,7 +187,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response,true, "Shouldn't reach here", callback);
+                Content.Sink.write(response, true, "Shouldn't reach here", callback);
                 return true;
             }
         });
