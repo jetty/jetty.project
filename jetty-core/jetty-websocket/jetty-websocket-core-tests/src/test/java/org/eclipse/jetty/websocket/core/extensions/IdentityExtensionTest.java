@@ -76,7 +76,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
-        ext.sendFrame(frame, null, false);
+        ext.sendFrame(frame, Callback.NOOP, false);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
