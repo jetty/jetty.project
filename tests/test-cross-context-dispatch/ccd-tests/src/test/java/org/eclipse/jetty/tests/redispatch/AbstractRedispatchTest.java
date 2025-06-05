@@ -76,8 +76,8 @@ public abstract class AbstractRedispatchTest
 
             try (JettyHomeTester.Run runConfig = distribution.start(configList))
             {
-                assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-                assertEquals(0, runConfig.getExitValue());
+                assertTrue(runConfig.awaitForStart());
+                assertEquals(0, runConfig.getExitValue(), runConfig.logs());
 
                 Path libDir = jettyBase.resolve("lib");
                 FS.ensureDirExists(libDir);
