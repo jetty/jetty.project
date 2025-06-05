@@ -14,6 +14,7 @@
 package org.eclipse.jetty.logging;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -58,7 +59,7 @@ public class StacklessLogging implements AutoCloseable
         loggerFactory = jettyLoggerFactory;
     }
 
-    private final List<JettyLogger> squelched = new ArrayList<>();
+    private final List<JettyLogger> squelched;
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {
@@ -85,16 +86,19 @@ public class StacklessLogging implements AutoCloseable
     public StacklessLogging(Logger... logs)
     {
         if (loggerFactory == null)
+        {
+            squelched = Collections.emptyList();
             return;
+        }
 
+        List<JettyLogger> stackless = new ArrayList<>();
         for (Logger log : logs)
         {
             if (log instanceof JettyLogger jettyLogger && !jettyLogger.isDebugEnabled())
-            {
-                jettyLogger.add(this);
-                squelched.add(jettyLogger);
-            }
+                stackless.add(jettyLogger);
         }
+        squelched = List.of(stackless.toArray(new JettyLogger[0]));
+
         JettyLogger.add(this);
     }
 

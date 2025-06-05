@@ -27,6 +27,7 @@ import org.slf4j.spi.LocationAwareLogger;
 
 public class JettyLogger implements LocationAwareLogger, Logger
 {
+    private static final Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
     private static final Set<StacklessLogging> stacklessLoggers = new CopyOnWriteArraySet<>();
     private final JettyLoggerFactory factory;
     private final String name;
@@ -49,8 +50,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.level = level;
         this.hideStacks = hideStacks;
     }
-
-    private static final Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
 
     /**
      * Condenses a classname by stripping down the package name to just the first character of each package name
