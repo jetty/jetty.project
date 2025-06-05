@@ -121,8 +121,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     protected void doStart() throws Exception
     {
         initWebApp();
-        if (_classLoaderResourceFactory != null)
-            addManaged(_classLoaderResourceFactory);
         super.doStart();
     }
 
@@ -133,7 +131,8 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         setClassLoader(_previousClassLoader);
         _previousClassLoader = null;
         super.doStop();
-        _classLoaderResourceFactory = null;
+        if (_classLoaderResourceFactory != null)
+            removeBean(_classLoaderResourceFactory);
     }
 
     protected void initWebApp() throws IOException
@@ -183,7 +182,9 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         {
             case CLASSLOADER_RESOURCE_FACTORY ->
             {
+                // Grab the ResourceFactory that was created by CoreContextClassLoaderFactory for lifecycle reasons.
                 _classLoaderResourceFactory = (ResourceFactory.LifeCycle)value;
+                addManaged(_classLoaderResourceFactory);
             }
             case Deployable.DIR_ALLOWED ->
             {
@@ -289,12 +290,11 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         Attributes attributes = new Attributes.Mapped();
         attributes.setAttribute(TEMP_DIR, getTempDirectory());
         CoreContextClassLoaderFactory classLoaderFactory = new CoreContextClassLoaderFactory();
-        ClassLoader classLoader = classLoaderFactory.newClassLoader(attributes,
+
+        return classLoaderFactory.newClassLoader(attributes,
             ResourceFactory.of(this),
             baseResource,
             parentClassLoader);
-
-        return classLoader;
     }
 
     private void setDirAllowed(Boolean bool)
@@ -310,8 +310,40 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
     }
 
+    /**
+     * <p>
+     * {@link org.eclipse.jetty.server.Deployable.ClassLoaderFactory} responsible for creating a {@link ClassLoader}
+     * that is suitable for a {@link CoreContextHandler}.
+     * </p>
+     *
+     * <p>
+     *     This will be a {@link URLClassLoader} that has the following entries.
+     * </p>
+     * <dl>
+     *     <dt>{@code ${baseResource}/lib/*.jar}</dt>
+     *     <dd>(optional) every JAR file found in the lib directory will become an entry in the resulting {@link URLClassLoader}</dd>
+     *     <dt>{@code ${baseResource}/classes/}</dt>
+     *     <dd>(optional) the classes directory is its own entry on the resulting {@link URLClassLoader}</dd>
+     *     <dt>{@code ${extraClasspath}</dt>
+     *     <dd>(optional) the each entry in the extraClasspath will be its own entry on the resulting {@link URLClassLoader}</dd>
+     * </dl>
+     *
+     * <p>
+     *     The {@code ${baseResource}} can be either a directory, or an archive file.
+     * </p>
+     * <p>
+     *     The {@code ${extraClasspath}} is an arbitrary list of extra classpath entries that are not present in the base resource.
+     * </p>
+     */
     public static class CoreContextClassLoaderFactory implements Deployable.ClassLoaderFactory
     {
+        /**
+         * Entry point from a tool that uses {@link Deployable}, information comes from deployable Attributes.
+         *
+         * @param attributes the deployable attributes
+         * @return the ClassLoader
+         * @throws IOException if unable to create the classloader
+         */
         @Override
         public ClassLoader newClassLoader(Attributes attributes) throws IOException
         {
@@ -330,6 +362,26 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             return newClassLoader(attributes, resourceFactory, baseResource, parent);
         }
 
+        /**
+         * Create a new ClassLoader.
+         *
+         * <p>
+         *     The Deployable {@link Attributes} supported keys.
+         * </p>
+         * <dl>
+         *     <dt>{@link Deployable#TEMP_DIR}</dt>
+         *     <dd>(optional) - points to a valid temp directory (whatever {@link IO#asFile(Object)} supports)</dd>
+         *     <dt>{@link #EXTRA_CLASSPATH}</dt>
+         *     <dd>(optional) - delimited string of classpath entries (whatever {@link ResourceFactory#split(String)} supports)</dd>
+         * </dl>
+         *
+         * @param attributes the deployable attributes.
+         * @param resourceFactory the resource factory to base any new Resource's from.
+         * @param baseResource the base resource for this classloader.
+         * @param parent the parent classloader.
+         * @return the new classloader.
+         * @throws IOException if unable to create classloader.
+         */
         protected ClassLoader newClassLoader(Attributes attributes, ResourceFactory resourceFactory, Resource baseResource, ClassLoader parent) throws IOException
         {
             if (baseResource == null)
@@ -358,7 +410,11 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             if (environment == null)
                 throw new IllegalStateException("Could not find environment [core]");
 
-            return newClassLoader(resourceFactory, attributes, baseResource, environment.getClassLoader());
+            ClassLoader parentClassLoader = parent;
+            if (parentClassLoader == null)
+                parentClassLoader = environment.getClassLoader();
+
+            return newClassLoader(resourceFactory, attributes, baseResource, parentClassLoader);
         }
 
         private Path findMainPath(Attributes attributes)
@@ -379,6 +435,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                     }
                     case Deployable.OTHER_PATHS ->
                     {
+                        //noinspection unchecked
                         java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)attributes.getAttribute(Deployable.OTHER_PATHS);
 
                         for (Path path : deployablePaths)

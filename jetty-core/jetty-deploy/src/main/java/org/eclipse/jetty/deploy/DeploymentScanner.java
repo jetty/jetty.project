@@ -1193,7 +1193,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          *
          * <p>
          * This is the class used to create a ClassLoader for the environment before
-         * any XML files are loaded to configure the context.
+         * any XML files are loaded to create/configure the {@link ContextHandler}.
          * </p>
          *
          * @param classname the classname for this environment's classloader factory.
@@ -1207,7 +1207,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
         /**
          * The name of the default class that this environment uses to create {@link ContextHandler}
-         * instances (supports a class that implements {@code java.util.function.Supplier<Handler>} as well).
+         * instances (supports a class that implements {@code java.util.function.Supplier<ContextHandler>} as well).
          *
          * <p>
          * This is the fallback class used, if the context class itself isn't defined by
