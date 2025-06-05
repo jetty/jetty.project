@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -81,7 +82,7 @@ public class HttpClientTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testClientUseContentSourceInSpawnedThread(Transport transport) throws Exception
+    public void testClientUseContentSourceInSpawnedThreadEmptyResponseContent(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
         {
@@ -89,6 +90,110 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                return true;
+            }
+        });
+
+        var response = new Response.Listener()
+        {
+            final CompletableFuture<String> body = new CompletableFuture<>();
+
+            @Override
+            public void onContentSource(Response response, Content.Source contentSource)
+            {
+                new Thread(() ->
+                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                        return;
+                    }
+
+                    chunk.release();
+
+                    if (!chunk.isLast())
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                    else
+                        body.complete("");
+                }
+                ).start();
+            }
+        };
+
+        client.newRequest(server.getURI())
+            .method("POST")
+            .send(response);
+
+        response.body.get(5, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientUseContentSourceInSpawnedThreadWithResponseContent(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                return true;
+            }
+        });
+
+        var response = new Response.Listener()
+        {
+            final CompletableFuture<String> body = new CompletableFuture<>();
+
+            @Override
+            public void onContentSource(Response response, Content.Source contentSource)
+            {
+                new Thread(() ->
+                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                        return;
+                    }
+
+                    chunk.release();
+
+                    if (!chunk.isLast())
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                    else
+                        body.complete("");
+                }
+                ).start();
+            }
+        };
+
+        client.newRequest(server.getURI())
+            .method("POST")
+            .send(response);
+
+        response.body.get(5, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientUseContentSourceInSpawnedThreadWithTrailer(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws IOException
+            {
+                response.setTrailersSupplier(() -> HttpFields.build().add("X-Trailer-test", "foobar"));
+                // start chunked mode
+                try (Blocker.Callback blocker = Blocker.callback())
+                {
+                    response.write(false, BufferUtil.EMPTY_BUFFER, blocker);
+                    blocker.block();
+                }
+
+                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
                 return true;
             }
         });
