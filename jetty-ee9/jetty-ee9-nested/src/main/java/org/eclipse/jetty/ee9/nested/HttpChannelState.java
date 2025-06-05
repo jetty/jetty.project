@@ -1019,7 +1019,7 @@ public class HttpChannelState
                 LOG.debug("completed {}", toStringLocked());
 
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked());
+                throw new IllegalStateException(this.getStatusStringLocked(), failure);
 
             if (_event == null)
             {
