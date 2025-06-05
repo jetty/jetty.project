@@ -730,7 +730,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("number of threads executing internal and unleased jobs")
     public int getBusyThreads()
     {
-        return getThreads() - getIdleThreads() - getCurrentReservedThreads();
+        return Math.max(0, getThreads() - getIdleThreads() - getCurrentReservedThreads());
     }
 
     /**
@@ -742,7 +742,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("number of threads executing unleased jobs")
     public int getUtilizedThreads()
     {
-        return getThreads() - getIdleThreads() - getLeasedThreads() + getReservedThreads() - getCurrentReservedThreads();
+        return Math.max(0, getThreads() - getIdleThreads() - getLeasedThreads() + getReservedThreads() - getCurrentReservedThreads());
     }
 
     /**
@@ -752,8 +752,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * @deprecated The term available can be applied to either idle or reserved threads, but not both.
      * Use {@link #getCurrentReservedThreads()} or {@link #getIdleThreads()} instead.
      */
-    @ManagedAttribute("maximum number of threads available to run unleased jobs (deprecated")
-    @Deprecated(forRemoval = true, since = "12.1.0")
+    @ManagedAttribute("maximum number of threads available to run unleased jobs")
     public int getMaxAvailableThreads()
     {
         return getMaxThreads() - getLeasedThreads();
@@ -771,7 +770,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("utilization rate of threads executing unleased jobs")
     public double getUtilizationRate()
     {
-        return (double)getUtilizedThreads() / (getMaxThreads() - getLeasedThreads());
+        int maxAvailableThreads = getMaxAvailableThreads();
+        if (maxAvailableThreads <= 0)
+            return 0.0D;
+        return (double)getUtilizedThreads() / maxAvailableThreads;
     }
 
     /**
