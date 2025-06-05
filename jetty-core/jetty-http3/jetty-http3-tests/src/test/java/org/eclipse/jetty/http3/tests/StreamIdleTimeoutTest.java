@@ -72,16 +72,21 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("/idle".equals(request.getHttpURI().getPath()))
                 {
                     assertFalse(frame.isLast());
-                    // Do not demand, so the failure is delivered
-                    // to onFailure() rather than through read().
                     return new Stream.Server.Listener()
                     {
+                        @Override
+                        public void onRequest(Stream.Server stream, HeadersFrame frame)
+                        {
+                            // Do not demand, so the failure is delivered
+                            // to onFailure() rather than through read().
+                        }
+
                         @Override
                         public void onFailure(Stream.Server stream, long error, Throwable failure)
                         {
@@ -91,9 +96,15 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                    return null;
+                    return new Stream.Server.Listener()
+                    {
+                        @Override
+                        public void onRequest(Stream.Server stream, HeadersFrame frame)
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                            stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                        }
+                    };
                 }
             }
         });
@@ -156,7 +167,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("/idle".equals(request.getHttpURI().getPath()))
@@ -173,9 +184,15 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                    return null;
+                    return new Stream.Server.Listener()
+                    {
+                        @Override
+                        public void onRequest(Stream.Server stream, HeadersFrame frame)
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                            stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                        }
+                    };
                 }
             }
         });

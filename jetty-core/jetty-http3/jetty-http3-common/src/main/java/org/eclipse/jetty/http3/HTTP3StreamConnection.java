@@ -107,6 +107,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         processFrames(null);
     }
 
+    @Override
+    public void onFillInterestedFailed(Throwable cause)
+    {
+        long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+        parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, cause);
+    }
+
     private void processFrames(ParseResult result)
     {
         if (LOG.isDebugEnabled())
@@ -156,11 +163,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                                 // Notify the listener via onRequest()/onResponse().
                                 action.task().run();
-
-                                // Notify onDataAvailable() if the listener
-                                // demanded in onRequest()/onResponse().
-                                if (!interim)
-                                    stream.processData(false);
 
                                 yield interim;
                             }

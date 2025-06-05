@@ -117,11 +117,12 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected Stream.Listener notifyNewStream(Stream stream)
+    protected Stream.Listener notifyNewStream()
     {
         try
         {
-            return listener.onNewStream(stream);
+            // The frame is not available from Quiche.
+            return listener.onNewStream(this, null);
         }
         catch (Throwable x)
         {

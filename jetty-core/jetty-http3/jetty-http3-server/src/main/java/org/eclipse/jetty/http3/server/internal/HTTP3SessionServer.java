@@ -126,11 +126,28 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         Server.Listener listener = getListener();
         try
         {
-            listener.onAccept(this);
+            if (listener != null)
+                listener.onAccept(this);
         }
         catch (Throwable x)
         {
             LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    Stream.Server.Listener notifyRequest(HeadersFrame frame)
+    {
+        Server.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                return listener.onRequest(this, frame);
+            return null;
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return null;
         }
     }
 

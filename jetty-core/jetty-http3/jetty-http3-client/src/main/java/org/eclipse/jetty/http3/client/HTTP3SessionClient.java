@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.client;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.HTTP3Session;
@@ -24,8 +26,6 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.quic.common.AbstractStream;
-import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -98,16 +98,16 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     @Override
     public void newRequest(HeadersFrame frame, Stream.Client.Listener listener, Promise.Invocable<Stream> promise)
     {
-        var quicSession = getProtocolSession().getSession();
+        ClientHTTP3Session protocolSession = getProtocolSession();
+        var quicSession = protocolSession.getSession();
         long streamId = quicSession.newStreamId(true);
-        var quicStream = quicSession.newStream(streamId, null);
+        AtomicReference<StreamEndPoint> endPointRef = new AtomicReference<>();
+        var quicStream = quicSession.newStream(streamId, new ProtocolStreamListener.Client(endPointRef::get));
+        StreamEndPoint endPoint = protocolSession.createStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
+        endPointRef.set(endPoint);
 
         if (LOG.isDebugEnabled())
             LOG.debug("new request {} with {} on {}", quicStream, frame, this);
-
-        ProtocolSession session = getProtocolSession();
-        StreamEndPoint endPoint = session.createStreamEndPoint(quicStream, session::openStreamEndPoint);
-        ((AbstractStream)quicStream).setListener(new ProtocolStreamListener(() -> endPoint));
 
         HTTP3StreamClient stream;
         try

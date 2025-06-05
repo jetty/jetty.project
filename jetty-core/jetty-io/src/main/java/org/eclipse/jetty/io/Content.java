@@ -276,7 +276,7 @@ public class Content
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
+         * @param length The number of bytes to read from the source, or -1 to read to the end of the stream
          * @return A {@code Content.Source}
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
