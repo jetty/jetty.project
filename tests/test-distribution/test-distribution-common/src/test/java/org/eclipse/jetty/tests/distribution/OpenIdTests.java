@@ -56,9 +56,11 @@ public class OpenIdTests extends AbstractJettyHomeTest
     private static final String lastName = "Doe";
     private static final String email = "jetty@jetty.org";
 
-    private final KeycloakContainer keycloakContainer = new KeycloakContainer(){
+    private final KeycloakContainer keycloakContainer = new KeycloakContainer()
+    {
         @Override
-        protected Logger logger() {
+        protected Logger logger()
+        {
             return KEYCLOACK_LOGGER;
         }
     };
