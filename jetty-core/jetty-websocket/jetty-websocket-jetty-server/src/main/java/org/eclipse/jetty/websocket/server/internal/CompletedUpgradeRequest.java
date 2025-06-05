@@ -16,10 +16,11 @@ package org.eclipse.jetty.websocket.server.internal;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
@@ -55,20 +57,34 @@ public class CompletedUpgradeRequest implements UpgradeRequest
         _subProtocols = request.getSubProtocols();
         _secure = request.isSecure();
         _protocolVersion = request.getProtocolVersion();
-        _cookies = Request.getCookies(request).stream()
-            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
-            .toList();
-        _extensions = request.getExtensions().stream()
-            .map(JettyExtensionConfig::new)
-            .collect(Collectors.toList());
+
+        // Convert Jetty Cookies to java.net.HttpCookie.
+        List<HttpCookie> cookies = new ArrayList<>();
+        for (org.eclipse.jetty.http.HttpCookie cookie : Request.getCookies(request))
+        {
+            cookies.add(org.eclipse.jetty.http.HttpCookie.asJavaNetHttpCookie(cookie));
+        }
+        _cookies = Collections.unmodifiableList(cookies);
+
+        // Convert Core Extensions to Jetty API Extensions.
+        List<ExtensionConfig> extensions = new ArrayList<>();
+        for (org.eclipse.jetty.websocket.core.ExtensionConfig extension : request.getExtensions())
+        {
+            extensions.add(new JettyExtensionConfig(extension));
+        }
+        _extensions = Collections.unmodifiableList(extensions);
 
         // Get the user principal from the request's authentication state.
         Request.AuthenticationState authState = Request.getAuthenticationState(request);
         _userPrincipal = authState != null ? authState.getUserPrincipal() : null;
 
-        // Extract query parameters from the request
-        _queryParams = new LinkedHashMap<>();
-        Request.extractQueryParameters(request).forEach(f -> _queryParams.put(f.getName(), f.getValues()));
+        // Extract query parameters from the request.
+        Map<String, List<String>> queryParams = new LinkedHashMap<>();
+        for (Fields.Field field : Request.extractQueryParameters(request))
+        {
+            queryParams.put(field.getName(), field.getValues());
+        }
+        _queryParams = Collections.unmodifiableMap(queryParams);
     }
 
     @Override
