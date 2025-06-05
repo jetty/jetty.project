@@ -324,7 +324,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
      *     <dd>(optional) every JAR file found in the lib directory will become an entry in the resulting {@link URLClassLoader}</dd>
      *     <dt>{@code ${baseResource}/classes/}</dt>
      *     <dd>(optional) the classes directory is its own entry on the resulting {@link URLClassLoader}</dd>
-     *     <dt>{@code ${extraClasspath}</dt>
+     *     <dt>{@code ${extraClasspath}}</dt>
      *     <dd>(optional) the each entry in the extraClasspath will be its own entry on the resulting {@link URLClassLoader}</dd>
      * </dl>
      *
@@ -369,7 +369,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
          *     The Deployable {@link Attributes} supported keys.
          * </p>
          * <dl>
-         *     <dt>{@link Deployable#TEMP_DIR}</dt>
+         *     <dt>{@link Deployable#TEMP_DIR TEMP_DIR}</dt>
          *     <dd>(optional) - points to a valid temp directory (whatever {@link IO#asFile(Object)} supports)</dd>
          *     <dt>{@link #EXTRA_CLASSPATH}</dt>
          *     <dd>(optional) - delimited string of classpath entries (whatever {@link ResourceFactory#split(String)} supports)</dd>
