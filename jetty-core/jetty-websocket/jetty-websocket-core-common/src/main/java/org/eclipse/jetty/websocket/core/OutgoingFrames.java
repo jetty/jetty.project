@@ -35,7 +35,7 @@ public interface OutgoingFrames
      */
     default void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        sendFrame(new OutgoingEntry(frame, callback, batch));
+        sendFrame(new OutgoingEntry.Builder(frame, callback).batch(batch).build());
     }
 
     /**

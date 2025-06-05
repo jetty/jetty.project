@@ -509,7 +509,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
 
                 flusher.sendFrame(new OutgoingEntry.Builder(entry)
                     .callback(closeConnectionCallback)
-                    .batch(batch)
                     .build());
             }
             else

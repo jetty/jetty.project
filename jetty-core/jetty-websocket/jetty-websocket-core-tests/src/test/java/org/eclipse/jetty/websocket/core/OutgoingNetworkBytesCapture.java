@@ -62,9 +62,6 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
         ByteBuffer buf = BufferUtil.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength());
         generator.generateWholeFrame(frame, buf);
         captured.add(buf);
-        if (callback != null)
-        {
-            callback.succeeded();
-        }
+        callback.succeeded();
     }
 }

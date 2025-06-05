@@ -49,9 +49,9 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
     }
 
     @Override
-    public void setSendTimeout(long timeoutmillis)
+    public void setSendTimeout(long timeoutMillis)
     {
-        messageWriteTimeout = timeoutmillis;
+        messageWriteTimeout = timeoutMillis;
     }
 
     @Override

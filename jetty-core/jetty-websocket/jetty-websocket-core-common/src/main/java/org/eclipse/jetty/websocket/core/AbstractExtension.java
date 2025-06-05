@@ -149,7 +149,7 @@ public class AbstractExtension implements Extension
     protected void nextOutgoingFrame(OutgoingEntry entry)
     {
         if (log.isDebugEnabled())
-            log.debug("nextOutgoingFrame({})", entry.getFrame());
+            log.debug("nextOutgoingFrame({})", entry);
         this.nextOutgoing.sendFrame(entry);
     }
 

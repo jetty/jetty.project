@@ -43,21 +43,17 @@ public abstract class FragmentingFlusher extends TransformingFlusher
     @Override
     protected boolean onFrame(Frame frame, Callback callback, boolean batch)
     {
-        payload = frame.getPayload().slice();
-
         long maxFrameSize = configuration.getMaxFrameSize();
         if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
         {
             forwardFrame(frame, callback, batch);
-            payload = null;
             return true;
         }
 
+        payload = frame.getPayload().slice();
         boolean finished = fragment(callback, true);
         if (finished)
-        {
             payload = null;
-        }
         return finished;
     }
 
@@ -66,9 +62,7 @@ public abstract class FragmentingFlusher extends TransformingFlusher
     {
         boolean finished = fragment(callback, false);
         if (finished)
-        {
             payload = null;
-        }
         return finished;
     }
 

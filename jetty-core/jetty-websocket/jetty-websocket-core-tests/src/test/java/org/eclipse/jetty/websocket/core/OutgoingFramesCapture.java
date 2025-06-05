@@ -71,9 +71,6 @@ public class OutgoingFramesCapture implements OutgoingFrames
         ByteBuffer payload = frame.getPayload();
         payload.position(payload.limit());
         // notify callback
-        if (callback != null)
-        {
-            callback.succeeded();
-        }
+        callback.succeeded();
     }
 }

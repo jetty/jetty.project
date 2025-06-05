@@ -22,12 +22,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -38,10 +38,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteTimeoutTest
 {
-    private static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(1);
-
     public static class ServerSocket implements FrameHandler
     {
+        private final CountDownLatch _messageLatch = new CountDownLatch(1);
+
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
@@ -54,7 +54,7 @@ public class WriteTimeoutTest
         {
             try
             {
-                assertTrue(MESSAGE_LATCH.await(10, TimeUnit.SECONDS));
+                assertTrue(_messageLatch.await(10, TimeUnit.SECONDS));
             }
             catch (InterruptedException e)
             {
@@ -71,14 +71,18 @@ public class WriteTimeoutTest
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
         }
+
+        public void unblock()
+        {
+            _messageLatch.countDown();
+        }
     }
 
     private Server server;
     private WebSocketCoreClient client;
     private ServerConnector connector;
 
-    @BeforeEach
-    public void start() throws Exception
+    public void start(FrameHandler serverEndpoint) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -86,7 +90,7 @@ public class WriteTimeoutTest
 
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server);
         WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(components);
-        wsHandler.addMapping("/", (req, resp, cb) -> new ServerSocket());
+        wsHandler.addMapping("/", (req, resp, cb) -> serverEndpoint);
         wsHandler.getConfiguration().setIdleTimeout(Duration.ZERO);
         server.setHandler(wsHandler);
 
@@ -99,13 +103,15 @@ public class WriteTimeoutTest
     @AfterEach
     public void stop() throws Exception
     {
-        client.stop();
-        server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
     }
 
     @Test
     public void testFrameTimeoutFromSlowReads() throws Exception
     {
+        ServerSocket serverEndpoint = new ServerSocket();
+        start(serverEndpoint);
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
         TestMessageHandler clientEndpoint = new TestMessageHandler();
         client.connect(clientEndpoint, uri).get();
@@ -119,7 +125,7 @@ public class WriteTimeoutTest
                 try (Blocker.Callback callback = Blocker.callback())
                 {
                     Frame frame = new Frame(OpCode.TEXT, true, "x".repeat(1024));
-                    session.sendFrame(new OutgoingEntry(frame, callback, false, 1000, -1));
+                    session.sendFrame(new OutgoingEntry.Builder(frame, callback).frameTimeout(1000).build());
                     callback.block();
                 }
             }
@@ -129,7 +135,7 @@ public class WriteTimeoutTest
         assertThat(exception.getMessage(), containsString("FrameFlusher Write Timeout"));
 
         // Unblock the thread in onMessage() on the server endpoint.
-        MESSAGE_LATCH.countDown();
+        serverEndpoint.unblock();
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
@@ -139,29 +145,32 @@ public class WriteTimeoutTest
     @Test
     public void testMessageTimeout() throws Exception
     {
+        ServerSocket serverEndpoint = new ServerSocket();
+        serverEndpoint.unblock();
+        start(serverEndpoint);
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
         TestMessageHandler clientEndpoint = new TestMessageHandler();
         client.connect(clientEndpoint, uri).get();
         CoreSession session = clientEndpoint.getCoreSession();
-        MESSAGE_LATCH.countDown();
 
         // Send the first frame of the message with a 1-second timeout.
+        long messageWriteTimeout = 1000;
         try (Blocker.Callback callback = Blocker.callback())
         {
             Frame frame = new Frame(OpCode.TEXT, false, "hello");
-            session.sendFrame(new OutgoingEntry(frame, callback, false, -1, 1000));
+            session.sendFrame(new OutgoingEntry.Builder(frame, callback).messageTimeout(messageWriteTimeout).build());
             callback.block();
         }
 
-        // The next frame of the message should fail because we waited over a second.
-        Thread.sleep(1100);
+        // The next frame of the message should fail because we waited half a second over the write timeout.
+        Thread.sleep(messageWriteTimeout + 500);
         Exception exception = assertThrows(Exception.class, () ->
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
                 // The message timeout is not relevant here because it is not the first frame of the message.
                 Frame frame = new Frame(OpCode.CONTINUATION, true, " world");
-                session.sendFrame(new OutgoingEntry(frame, callback, false, -1, -1));
+                session.sendFrame(new OutgoingEntry.Builder(frame, callback).build());
                 callback.block();
             }
         });

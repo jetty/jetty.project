@@ -13,9 +13,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 
+/**
+ * An entry for an outgoing WebSocket Frame, consisting of a {@link Frame}, a {@link Callback}
+ * as well as some additional configuration including write timeouts and batch mode.
+ */
 public class OutgoingEntry
 {
     private final Frame frame;
@@ -24,19 +30,10 @@ public class OutgoingEntry
     private final long frameTimeout;
     private final long messageTimeout;
 
-    public OutgoingEntry(Frame frame, Callback callback, boolean batch)
+    private OutgoingEntry(Frame frame, Callback callback, boolean batch, long frameTimeout, long messageTimeout)
     {
-        this.frame = frame;
-        this.callback = callback;
-        this.batch = batch;
-        this.frameTimeout = -1;
-        this.messageTimeout = -1;
-    }
-
-    public OutgoingEntry(Frame frame, Callback callback, boolean batch, long frameTimeout, long messageTimeout)
-    {
-        this.frame = frame;
-        this.callback = callback;
+        this.frame = Objects.requireNonNull(frame);
+        this.callback = Objects.requireNonNull(callback);
         this.batch = batch;
         this.frameTimeout = frameTimeout;
         this.messageTimeout = messageTimeout;
@@ -82,6 +79,16 @@ public class OutgoingEntry
         private boolean _batch;
         private long _frameTimeout;
         private long _messageTimeout;
+
+        public Builder()
+        {
+        }
+
+        public Builder(Frame frame, Callback callback)
+        {
+            _frame = frame;
+            _callback = callback;
+        }
 
         public Builder(OutgoingEntry outgoingEntry)
         {

@@ -94,7 +94,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        sendFrame(new OutgoingEntry(frame, callback, batch, -1, messageWriteTimeout));
+        sendFrame(new OutgoingEntry.Builder(frame, callback).batch(batch).messageTimeout(messageWriteTimeout).build());
     }
 
     @Override

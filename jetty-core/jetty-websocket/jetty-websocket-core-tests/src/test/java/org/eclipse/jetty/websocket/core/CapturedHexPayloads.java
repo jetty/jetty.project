@@ -27,10 +27,7 @@ public class CapturedHexPayloads implements OutgoingFrames
     {
         String hexPayload = Hex.asHex(entry.getFrame().getPayload());
         captured.add(hexPayload);
-        if (entry.getCallback() != null)
-        {
-            entry.getCallback().succeeded();
-        }
+        entry.getCallback().succeeded();
     }
 
     public List<String> getCaptured()

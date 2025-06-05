@@ -247,7 +247,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         if (outgoing == null)
             throw new IllegalStateException();
         if (LOG.isDebugEnabled())
-            LOG.debug("Extending out {} {} {}", entry.getFrame(), entry.getCallback(), entry.isBatch());
+            LOG.debug("Extending out {}", entry);
         outgoing.sendFrame(entry);
     }
 
