@@ -150,26 +150,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(resourceFactory.newResource(xml), null, asProperties(attributes))
-            {
-                @Override
-                public void initializeDefaults(Object context)
-                {
-                    super.initializeDefaults(context);
-                    ContextHandler contextHandler = getContextHandler(context);
-                    if (contextHandler == null)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Not a ContextHandler: Not initializing Context {}", context);
-                    }
-                    else
-                    {
-                        StandardContextHandlerFactory.this.initializeContextPath(contextHandler, xml, attributes);
-                        StandardContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
-                    }
-                }
-            };
-
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(resourceFactory.newResource(xml), null, asProperties(attributes));
             xmlConfiguration.getIdMap().put("Environment", environment.getName());
             xmlConfiguration.setJettyStandardIdsAndProperties(server, xml);
 
