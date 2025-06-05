@@ -66,6 +66,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -415,7 +417,7 @@ public class WebSocketOverHTTP2Test
 
         CountDownLatch latch = new CountDownLatch(2);
         onComplete = latch::countDown;
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/version");
 
         // Connect with HTTP/1.1 and verify version in the Session's UpgradeRequest.
         EventSocket wsEndPoint = new EventSocket();
@@ -423,6 +425,7 @@ public class WebSocketOverHTTP2Test
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_1_1.asString());
         Session session = wsClient.connect(wsEndPoint, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
         assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_1_1.asString()));
+        assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_1_1.asString()));
 
         // Verify we can do a normal close of the websocket connection.
         session.close(StatusCode.NORMAL, "normal close from test", Callback.NOOP);
@@ -436,6 +439,7 @@ public class WebSocketOverHTTP2Test
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
         session = wsClient.connect(wsEndPoint, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
         assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
+        assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_2.asString()));
 
         // Verify we can do a normal close of the websocket connection.
         session.close(StatusCode.NORMAL, "normal close from test", Callback.NOOP);
@@ -447,12 +451,23 @@ public class WebSocketOverHTTP2Test
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    @WebSocket
+    public static class VersionServerEndpoint
+    {
+        @OnWebSocketOpen
+        public void onOpen(Session session)
+        {
+            session.sendText("version: " + session.getUpgradeRequest().getHttpVersion(), Callback.NOOP);
+        }
+    }
+
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
     {
         @Override
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
+            factory.addMapping("/ws/version", (request, response) -> new VersionServerEndpoint());
             factory.addMapping("/ws/echo/query", (request, response) ->
             {
                 assertNotNull(request.getQueryString());

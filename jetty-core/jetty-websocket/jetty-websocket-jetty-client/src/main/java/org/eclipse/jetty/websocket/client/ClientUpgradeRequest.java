@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -38,12 +39,26 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     private final List<ExtensionConfig> extensions = new ArrayList<>(1);
     private final List<HttpCookie> cookies = new ArrayList<>(1);
     private final Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final URI requestURI;
     private long timeout;
     private String httpVersion;
 
     public ClientUpgradeRequest()
     {
         /* anonymous, no requestURI, upgrade request */
+        this.requestURI = null;
+    }
+
+    /**
+     * @deprecated use {@link #ClientUpgradeRequest()} instead.
+     */
+    @Deprecated
+    public ClientUpgradeRequest(URI uri)
+    {
+        this.requestURI = uri;
+        String scheme = uri.getScheme();
+        if (!HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
+            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
     }
 
     @Override
@@ -103,7 +118,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getHost()
     {
-        return null;
+        return (requestURI == null) ? null : requestURI.getHost();
     }
 
     @Override
@@ -134,13 +149,13 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getQueryString()
     {
-        return null;
+        return requestURI == null ? null : requestURI.getQuery();
     }
 
     @Override
     public URI getRequestURI()
     {
-        return null;
+        return requestURI;
     }
 
     @Override
@@ -289,8 +304,6 @@ public final class ClientUpgradeRequest implements UpgradeRequest
 
     /**
      * Set the HTTP Version to use for the websocket upgrade.
-     * <p>
-     * Currently only HTTP/1.1 (with RFC6455) and HTTP/2 (with RFC8441) are supported.
      *
      * @param httpVersion the HTTP version to use.
      */
