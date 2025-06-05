@@ -390,7 +390,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     }
 
     /**
-     * Is there a better task to do than reserved thread a thread?
+     * Test if there is a better task for a thread to do other than to become a reserved thread?
      *
      * @return true if a thread could be used to do something better than be reserved.
      */

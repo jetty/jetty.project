@@ -624,10 +624,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the number of available reserved threads that are currently reserved
+     * @return the number of threads currently reserved
      * @see ReservedThreadExecutor#getAvailable()
      */
-    @ManagedAttribute("number of available reserved threads")
+    @ManagedAttribute("number of currently reserved threads")
     public int getCurrentReservedThreads()
     {
         TryExecutor tryExecutor = _tryExecutor;
