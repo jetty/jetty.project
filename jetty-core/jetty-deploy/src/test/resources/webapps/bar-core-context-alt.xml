@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+<Configure class="org.eclipse.jetty.deploy.BarContextHandler">
   <Set name="contextPath">/bar</Set>
   <Set name="baseResourceAsString"><Property name="test.bar.resourceBase.alt" /></Set>
   <Set name="handler">

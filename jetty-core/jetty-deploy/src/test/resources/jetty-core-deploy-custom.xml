@@ -4,8 +4,11 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>core</Arg>
-      <Set name="contextHandlerClass">
-        <Property name="contextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />
+      <Set name="classLoaderFactoryClass">
+        <Property name="classLoaderFactoryClass" default="org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory" />
+      </Set>
+      <Set name="defaultContextHandlerClass">
+        <Property name="defaultContextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />
       </Set>
       <Call name="loadPropertiesFromPathName">
         <Arg>

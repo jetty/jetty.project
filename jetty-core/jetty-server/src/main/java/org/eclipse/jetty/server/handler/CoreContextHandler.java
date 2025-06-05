@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -21,16 +22,16 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -61,9 +62,12 @@ import org.slf4j.LoggerFactory;
 public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
-    private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.webapp.originalBaseResource";
+    private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.core.originalBaseResource";
+    private static final String EXTRA_CLASSPATH = "org.eclipse.jetty.core.extraClassPath";
+    private static final String CLASSLOADER_RESOURCE_FACTORY = "org.eclipse.jetty.core.classloaderResourceFactory";
     private boolean _initialized = false;
-    private List<Resource> _extraClasspath;
+    // The ResourceFactory in use by the ClassLoader
+    private ResourceFactory.LifeCycle _classLoaderResourceFactory;
     private ClassLoader _previousClassLoader;
     private Boolean deferredDirAllowed;
 
@@ -79,13 +83,97 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             setContextPath(contextPath);
     }
 
-    /**
-     * @return List of Resources that each will represent a new classpath entry
-     */
-    @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public List<Resource> getExtraClasspath()
+    public ResourceFactory getResourceFactory()
     {
-        return _extraClasspath == null ? Collections.emptyList() : _extraClasspath;
+        return ResourceFactory.of(this);
+    }
+
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
+            {
+                // convert to "jar:file:" resource
+                Resource jarResource = getResourceFactory().newJarFileResource(uri);
+                super.setBaseResource(jarResource);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignored base resource: {}", baseResource);
+            }
+            return;
+        }
+
+        super.setBaseResource(baseResource);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        initWebApp();
+        if (_classLoaderResourceFactory != null)
+            addManaged(_classLoaderResourceFactory);
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        _initialized = false;
+        setClassLoader(_previousClassLoader);
+        _previousClassLoader = null;
+        super.doStop();
+        _classLoaderResourceFactory = null;
+    }
+
+    protected void initWebApp() throws IOException
+    {
+        if (_initialized)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Already initialized, not initializing again");
+            return;
+        }
+
+        _initialized = true;
+
+        Resource baseResource = getBaseResource();
+        if (baseResource == null)
+            return;
+
+        Resource staticDir = baseResource.resolve("static");
+        if (Resources.isDirectory(staticDir))
+        {
+            if (!isResourceHandlerAlreadyPresent(staticDir))
+            {
+                ResourceHandler resourceHandler = new ResourceHandler();
+                resourceHandler.setBaseResource(staticDir);
+                if (deferredDirAllowed != null)
+                    resourceHandler.setDirAllowed(deferredDirAllowed);
+                setHandler(resourceHandler);
+            }
+        }
+
+        Environment environment = Environment.get("core");
+        if (environment == null)
+            throw new IllegalStateException("Could not find environment [core]");
+
+        // Don't override the user provided ClassLoader.
+        ClassLoader classLoader = getClassLoader();
+        _previousClassLoader = classLoader;
+        if (classLoader == null)
+            classLoader = environment.getClassLoader();
+        setClassLoader(newClassLoader(baseResource, classLoader));
     }
 
     @Override
@@ -93,6 +181,10 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         switch (keyName)
         {
+            case CLASSLOADER_RESOURCE_FACTORY ->
+            {
+                _classLoaderResourceFactory = (ResourceFactory.LifeCycle)value;
+            }
             case Deployable.DIR_ALLOWED ->
             {
                 if (value instanceof String str)
@@ -145,19 +237,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
     }
 
-    private void setDirAllowed(Boolean bool)
-    {
-        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
-        if (resourceHandler != null)
-        {
-            resourceHandler.setDirAllowed(bool);
-        }
-        else
-        {
-            deferredDirAllowed = bool;
-        }
-    }
-
     @Override
     protected void initializeDefaultsComplete()
     {
@@ -172,169 +251,11 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
     }
 
-    /**
-     * Set the Extra ClassPath via delimited String.
-     * <p>
-     * This is a convenience method for {@link #setExtraClasspath(List)}
-     * </p>
-     *
-     * @param extraClasspath Comma or semicolon separated path of filenames or URLs
-     * pointing to directories or jar files. Directories should end
-     * with '/'.
-     * @see #setExtraClasspath(List)
-     */
-    public void setExtraClasspath(String extraClasspath)
-    {
-        setExtraClasspath(getResourceFactory().split(extraClasspath));
-    }
-
-    public void setExtraClasspath(List<Resource> extraClasspath)
-    {
-        _extraClasspath = extraClasspath;
-    }
-
-    public ResourceFactory getResourceFactory()
-    {
-        return ResourceFactory.of(this);
-    }
-
-    @Override
-    public void setBaseResource(Resource baseResource)
-    {
-        if (baseResource == null || Resources.isDirectory(baseResource))
-        {
-            super.setBaseResource(baseResource);
-            return;
-        }
-
-        if (Resources.isReadableFile(baseResource))
-        {
-            URI uri = baseResource.getURI();
-            if (FileID.isArchive(uri))
-            {
-                // convert to "jar:file:" resource
-                Resource jarResource = getResourceFactory().newJarFileResource(uri);
-                super.setBaseResource(jarResource);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Ignored base resource: {}", baseResource);
-            }
-            return;
-        }
-
-        super.setBaseResource(baseResource);
-    }
-
     protected Resource unpack(Resource dir) throws IOException
     {
         Path tempDir = getTempDirectory().toPath();
         dir.copyTo(tempDir);
         return ResourceFactory.of(this).newResource(tempDir);
-    }
-
-    protected ClassLoader newClassLoader(Resource base, ClassLoader parentClassLoader) throws IOException
-    {
-        List<URL> urls = new ArrayList<>();
-
-        if (Resources.isDirectory(base))
-        {
-            Resource libDir = base.resolve("lib");
-            if (Resources.isDirectory(libDir))
-            {
-                for (Resource entry : libDir.list())
-                {
-                    URI uri = entry.getURI();
-                    if (FileID.isJavaArchive(uri))
-                        urls.add(uri.toURL());
-                }
-            }
-
-            Resource classesDir = base.resolve("classes");
-            if (Resources.isDirectory(classesDir))
-            {
-                urls.add(classesDir.getURI().toURL());
-            }
-        }
-
-        List<Resource> extraEntries = getExtraClasspath();
-        if (extraEntries != null && !extraEntries.isEmpty())
-        {
-            for (Resource entry : extraEntries)
-            {
-                urls.add(entry.getURI().toURL());
-            }
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Core webapp classloader: {}", urls);
-
-        if (urls.isEmpty())
-            return parentClassLoader;
-
-        return new URLClassLoader(urls.toArray(URL[]::new), parentClassLoader);
-    }
-
-    protected void initWebApp() throws IOException
-    {
-        if (_initialized)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Already initialized, not initializing again");
-            return;
-        }
-
-        _initialized = true;
-
-        Resource baseResource = getBaseResource();
-        if (baseResource == null)
-            return;
-
-        if (!Resources.isDirectory(baseResource))
-        {
-            // see if we can unpack this reference.
-            if (FileID.isArchive(baseResource.getURI()))
-            {
-                // We have an archive that needs to be unpacked
-                setAttribute(ORIGINAL_BASE_RESOURCE, baseResource.getURI());
-                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-                {
-                    URI archiveURI = URIUtil.toJarFileUri(baseResource.getURI());
-                    Resource mountedArchive = resourceFactory.newResource(archiveURI);
-                    baseResource = unpack(mountedArchive);
-                    setBaseResource(baseResource);
-                }
-            }
-            else
-            {
-                throw new IllegalArgumentException("Unrecognized non-directory base resource type: " + baseResource);
-            }
-        }
-
-        Resource staticDir = baseResource.resolve("static");
-        if (Resources.isDirectory(staticDir))
-        {
-            if (!isResourceHandlerAlreadyPresent(staticDir))
-            {
-                ResourceHandler resourceHandler = new ResourceHandler();
-                resourceHandler.setBaseResource(staticDir);
-                if (deferredDirAllowed != null)
-                    resourceHandler.setDirAllowed(deferredDirAllowed);
-                setHandler(resourceHandler);
-            }
-        }
-
-        Environment environment = Environment.get("core");
-        if (environment == null)
-            throw new IllegalStateException("Could not find environment [core]");
-
-        // Don't override the user provided ClassLoader.
-        ClassLoader classLoader = getClassLoader();
-        _previousClassLoader = classLoader;
-        if (classLoader == null)
-            classLoader = environment.getClassLoader();
-        setClassLoader(newClassLoader(baseResource, classLoader));
     }
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
@@ -357,19 +278,202 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         return false;
     }
 
-    @Override
-    protected void doStart() throws Exception
+    /**
+     * Create a ClassLoader from the baseResource.
+     * @param baseResource the base resource
+     * @param parentClassLoader the parent classloader
+     * @return the new classloader
+     */
+    private ClassLoader newClassLoader(Resource baseResource, ClassLoader parentClassLoader) throws IOException
     {
-        initWebApp();
-        super.doStart();
+        Attributes attributes = new Attributes.Mapped();
+        attributes.setAttribute(TEMP_DIR, getTempDirectory());
+        CoreContextClassLoaderFactory classLoaderFactory = new CoreContextClassLoaderFactory();
+        ClassLoader classLoader = classLoaderFactory.newClassLoader(attributes,
+            ResourceFactory.of(this),
+            baseResource,
+            parentClassLoader);
+
+        return classLoader;
     }
 
-    @Override
-    protected void doStop() throws Exception
+    private void setDirAllowed(Boolean bool)
     {
-        _initialized = false;
-        setClassLoader(_previousClassLoader);
-        _previousClassLoader = null;
-        super.doStop();
+        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
+        if (resourceHandler != null)
+        {
+            resourceHandler.setDirAllowed(bool);
+        }
+        else
+        {
+            deferredDirAllowed = bool;
+        }
+    }
+
+    public static class CoreContextClassLoaderFactory implements Deployable.ClassLoaderFactory
+    {
+        @Override
+        public ClassLoader newClassLoader(Attributes attributes) throws IOException
+        {
+            // Create temporary ResourceFactory
+            Path mainPath = findMainPath(attributes);
+            if (mainPath == null)
+                return null;
+
+            ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
+            attributes.setAttribute(CLASSLOADER_RESOURCE_FACTORY, resourceFactory);
+            Resource baseResource = resourceFactory.newResource(mainPath);
+
+            ClassLoader parent = Thread.currentThread().getContextClassLoader();
+            if (parent == null)
+                parent = this.getClass().getClassLoader();
+            return newClassLoader(attributes, resourceFactory, baseResource, parent);
+        }
+
+        protected ClassLoader newClassLoader(Attributes attributes, ResourceFactory resourceFactory, Resource baseResource, ClassLoader parent) throws IOException
+        {
+            if (baseResource == null)
+                return null;
+
+            if (!Resources.isDirectory(baseResource))
+            {
+                // see if we can unpack this reference.
+                if (FileID.isArchive(baseResource.getURI()))
+                {
+                    // We have an archive that needs to be unpacked
+                    attributes.setAttribute(ORIGINAL_BASE_RESOURCE, baseResource.getURI());
+
+                    URI archiveURI = URIUtil.toJarFileUri(baseResource.getURI());
+                    Resource mountedArchive = resourceFactory.newResource(archiveURI);
+                    baseResource = unpack(attributes, resourceFactory, mountedArchive);
+                    attributes.setAttribute(Deployable.BASE_RESOURCE, baseResource);
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Unrecognized non-directory base resource type: " + baseResource);
+                }
+            }
+
+            Environment environment = Environment.get("core");
+            if (environment == null)
+                throw new IllegalStateException("Could not find environment [core]");
+
+            return newClassLoader(resourceFactory, attributes, baseResource, environment.getClassLoader());
+        }
+
+        private Path findMainPath(Attributes attributes)
+        {
+            Path mainPath = null;
+
+            for (String keyName : attributes.getAttributeNameSet())
+            {
+                switch (keyName)
+                {
+                    case Deployable.MAIN_PATH ->
+                    {
+                        Path path = (Path)attributes.getAttribute(keyName);
+                        if (Files.isDirectory(path) || FileID.isArchive(path))
+                        {
+                            mainPath = path;
+                        }
+                    }
+                    case Deployable.OTHER_PATHS ->
+                    {
+                        java.util.Collection<Path> deployablePaths = (java.util.Collection<Path>)attributes.getAttribute(Deployable.OTHER_PATHS);
+
+                        for (Path path : deployablePaths)
+                        {
+                            if (Files.isDirectory(path))
+                            {
+                                if (mainPath == null)
+                                {
+                                    mainPath = path;
+                                }
+                                else
+                                {
+                                    throw new IllegalArgumentException("More than one directory is not supported: " +
+                                        deployablePaths.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]")));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return mainPath;
+        }
+
+        private List<Resource> getExtraClasspath(ResourceFactory resourceFactory, Attributes attributes)
+        {
+            Object extraClassPath = attributes.getAttribute(EXTRA_CLASSPATH);
+            if (extraClassPath == null)
+                return List.of();
+
+            if (extraClassPath instanceof String extraClasspathStr)
+            {
+                return resourceFactory.split(extraClasspathStr);
+            }
+
+            throw new IllegalArgumentException("Unrecognized type (%s) on attribute %s"
+                .formatted(extraClassPath.getClass().getName(), EXTRA_CLASSPATH));
+        }
+
+        private Path getTempDirectory(Attributes attributes) throws IOException
+        {
+            File tempDir = IO.asFile(attributes.getAttribute(Deployable.TEMP_DIR));
+            if (tempDir != null)
+                return tempDir.toPath();
+
+            return Files.createTempDirectory("core-context");
+        }
+
+        private ClassLoader newClassLoader(ResourceFactory resourceFactory, Attributes attributes, Resource base, ClassLoader parentClassLoader) throws IOException
+        {
+            List<URL> urls = new ArrayList<>();
+
+            if (Resources.isDirectory(base))
+            {
+                Resource libDir = base.resolve("lib");
+                if (Resources.isDirectory(libDir))
+                {
+                    for (Resource entry : libDir.list())
+                    {
+                        URI uri = entry.getURI();
+                        if (FileID.isJavaArchive(uri))
+                            urls.add(uri.toURL());
+                    }
+                }
+
+                Resource classesDir = base.resolve("classes");
+                if (Resources.isDirectory(classesDir))
+                {
+                    urls.add(classesDir.getURI().toURL());
+                }
+            }
+
+            List<Resource> extraEntries = getExtraClasspath(resourceFactory, attributes);
+            if (extraEntries != null && !extraEntries.isEmpty())
+            {
+                for (Resource entry : extraEntries)
+                {
+                    urls.add(entry.getURI().toURL());
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Core webapp classloader: {}", urls);
+
+            if (urls.isEmpty())
+                return parentClassLoader;
+
+            return new URLClassLoader(urls.toArray(URL[]::new), parentClassLoader);
+        }
+
+        private Resource unpack(Attributes attributes, ResourceFactory resourceFactory, Resource dir) throws IOException
+        {
+            Path tempDir = getTempDirectory(attributes);
+            dir.copyTo(tempDir);
+            return resourceFactory.newResource(tempDir);
+        }
     }
 }

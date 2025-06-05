@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -182,4 +183,19 @@ public interface Deployable
     String OTHER_PATHS = "jetty.deploy.paths.other";
 
     void initializeDefaults(Attributes attributes);
+
+    /**
+     * Create a ClassLoader from the provided Attributes.
+     */
+    interface ClassLoaderFactory
+    {
+        /**
+         * Create a new ClassLoader from the provided attributes.
+         *
+         * @param attributes the deployable attributes
+         * @return the new classloader
+         * @throws IOException if unable to create the classloader.
+         */
+        ClassLoader newClassLoader(Attributes attributes) throws IOException;
+    }
 }

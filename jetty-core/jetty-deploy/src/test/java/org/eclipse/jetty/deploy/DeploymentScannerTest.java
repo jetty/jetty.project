@@ -436,7 +436,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
 
             Environment.ensure("static", ContextHandler.class);
             DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("static");
-            coreConfig.setContextHandlerClass(StaticContextHandler.class.getName());
+            coreConfig.setDefaultContextHandlerClass(StaticContextHandler.class.getName());
 
             server.addBean(deploymentScanner);
             server.start();
@@ -449,7 +449,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             assertThat(dump, containsString("enabledEnvironments size=1"));
             assertThat(dump, containsString(" +> static"));
             assertThat(dump, containsString("environmentAttributes size=1"));
-            assertThat(dump, containsString("jetty.deploy.contextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler"));
+            assertThat(dump, containsString("jetty.deploy.default.contextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler"));
         }
         finally
         {

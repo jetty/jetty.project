@@ -164,7 +164,7 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
         jetty.copyWebapp("bar-core-context.properties", "bar.properties");
         startJetty();
 
-        //test that the context was deployed as expected and that the non-applicable properties files were ignored
+        // test that the context was deployed as expected and that the non-applicable properties files were ignored
         ContextHandler context = jetty.getContextHandler("/bar");
         assertNotNull(context);
         assertThat(context, instanceOf(BarContextHandler.class));

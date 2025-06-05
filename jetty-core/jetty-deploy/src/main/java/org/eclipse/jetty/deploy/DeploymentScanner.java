@@ -779,6 +779,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         try
         {
+            if (!Files.exists(dirA) || !Files.exists(dirB))
+                return false;
+
             return Files.isSameFile(dirA, dirB);
         }
         catch (IOException e)
@@ -1185,20 +1188,21 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
 
         /**
-         * The name of the class that this environment uses to create {@link ContextHandler}
-         * instances (supports a class that implements {@code java.util.function.Supplier<Handler>} as well).
+         * The name of the class that this environment uses to create {@link Deployable.ClassLoaderFactory}
+         * instances.
          *
          * <p>
-         * This is the class used to create a ContextHandler for the environment before
+         * This is the class used to create a ClassLoader for the environment before
          * any XML files are loaded to configure the context.
          * </p>
          *
-         * @param classname the classname for this environment's context deployable.
-         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_ATTRIBUTE
+         * @param classname the classname for this environment's classloader factory.
+         * @see StandardContextHandlerFactory#CLASSLOADER_FACTORY_ATTRIBUTE
+         * @see org.eclipse.jetty.server.Deployable.ClassLoaderFactory
          */
-        public void setContextHandlerClass(String classname)
+        public void setClassLoaderFactoryClass(String classname)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_ATTRIBUTE, classname);
+            _environment.setAttribute(ContextHandlerFactory.CLASSLOADER_FACTORY_ATTRIBUTE, classname);
         }
 
         /**
