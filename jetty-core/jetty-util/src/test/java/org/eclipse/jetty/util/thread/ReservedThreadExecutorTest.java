@@ -127,16 +127,18 @@ public class ReservedThreadExecutorTest
             assertFalse(_reservedExecutor.tryExecute(NOOP));
         }
         assertThat(_executor._queue.size(), is(SIZE));
+        assertThat(_reservedExecutor.getPending(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
         {
             // start executor threads, which should be 2 reserved thread jobs
             _executor.startThread();
         }
-        assertThat(_executor._queue.size(), is(0));
 
         // check that the reserved thread pool grows to 2 threads
         waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
+        assertThat(_executor._queue.size(), is(0));
+        assertThat(_reservedExecutor.getPending(), is(0));
 
         Task[] tasks = new Task[SIZE];
         for (int i = 0; i < SIZE; i++)
@@ -159,7 +161,6 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.getAvailable(), is(0));
 
         // Complete the jobs
-
         for (int i = 0; i < SIZE; i++)
         {
             // wait for the job to run

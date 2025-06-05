@@ -1281,7 +1281,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         @Override
         protected boolean isTaskWaiting()
         {
-            return getQueueSize() > getPending();
+            long counts = _counts.get();
+            int threads = Math.max(0, AtomicBiInteger.getHi(counts));
+            if (threads < getMaxThreads())
+                return false;
+            int queueSize = Math.max(0, -AtomicBiInteger.getLo(counts));
+            int pending = getPending();
+            return pending >= 0 && queueSize > pending;
         }
     }
 }

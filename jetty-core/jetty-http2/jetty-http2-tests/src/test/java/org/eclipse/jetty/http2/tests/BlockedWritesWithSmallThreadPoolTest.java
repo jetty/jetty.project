@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -259,7 +260,7 @@ public class BlockedWritesWithSmallThreadPoolTest
 
         // Handler.handle() should have returned, make sure we block that thread.
         long delaySeconds = 10;
-        await().atMost(5, SECONDS).until(() -> serverThreads.getIdleThreads() == 1);
+        await().atMost(5, SECONDS).until(serverThreads::getIdleThreads, Matchers.equalTo(1));
         CountDownLatch serverBlockLatch = new CountDownLatch(1);
         serverThreads.execute(() ->
         {
@@ -276,7 +277,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         if (serverThreads.getCurrentReservedThreads() != 1)
         {
             assertFalse(serverThreads.tryExecute(() -> {}));
-            await().atMost(5, SECONDS).until(() -> serverThreads.getCurrentReservedThreads() == 1);
+            await().atMost(5, SECONDS).until(serverThreads::getCurrentReservedThreads, Matchers.equalTo(1));
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
         CountDownLatch reservedBlockLatch = new CountDownLatch(1);
