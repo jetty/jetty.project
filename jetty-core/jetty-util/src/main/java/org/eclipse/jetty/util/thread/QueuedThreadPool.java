@@ -304,9 +304,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 {
                     StringBuilder dmp = new StringBuilder();
                     for (StackTraceElement element : unstopped.getStackTrace())
-                    {
                         dmp.append(System.lineSeparator()).append("\tat ").append(element);
-                    }
                     stack = dmp.toString();
                 }
 
@@ -346,8 +344,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private void joinThreads(long stopByNanos)
     {
-        loop:
-        while (true)
+        loop : while (true)
         {
             for (Thread thread : _threads)
             {
@@ -458,7 +455,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Set number of reserved threads or -1 for heuristically determined.
-     *
      * @param reservedThreads number of reserved threads or -1 for heuristically determined
      */
     public void setReservedThreads(int reservedThreads)
@@ -500,7 +496,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     /**
      * Set the priority of the pool threads.
-     *
      * @param priority the priority of the pool threads
      */
     public void setThreadsPriority(int priority)
@@ -841,9 +836,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         // Start a thread if one was needed
         while (startThread-- > 0)
-        {
             startThread();
-        }
     }
 
     @Override
@@ -1255,6 +1248,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
     }
 
+    /**
+     * A ReservedThreadExecutor that will not reserve a thread if the QTP has jobs waiting
+     */
     protected class ReservedThreadExecutor extends org.eclipse.jetty.util.thread.ReservedThreadExecutor
     {
         public ReservedThreadExecutor()
