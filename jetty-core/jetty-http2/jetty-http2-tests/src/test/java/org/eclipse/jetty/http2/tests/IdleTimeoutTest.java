@@ -666,6 +666,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerIdleTimeoutIsEnforcedForQueuedRequest() throws Exception
     {
+        // This test is fragile with regards to reserved thread strategies.
+
         long idleTimeout = 750;
         // Use a small thread pool to cause request queueing.
         QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
@@ -755,9 +757,9 @@ public class IdleTimeoutTest extends AbstractTest
 
         // Wait for the server to finish serving requests.
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
-        assertThat(requests.get(), is(count - 1));
+        assertThat(requests.get(), is(count));
 
-        // The first 2 requests are handled normally and responded with 200, the last 2 are
+        // The first 3 requests are handled normally and responded with 200, the last one is
         // not handled due to timeout while queued, but they are responded anyway with a 500.
         await().atMost(5, TimeUnit.SECONDS).until(responses::get, is(count + 1));
     }
