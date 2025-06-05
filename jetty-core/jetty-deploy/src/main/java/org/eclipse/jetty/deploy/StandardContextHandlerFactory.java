@@ -366,8 +366,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
      * The search order is:
      * </p>
      * <ol>
-     * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS_ATTRIBUTE} is specified, use it, and initialize context</li>
-     * <li>If app deployable path is XML, apply XML {@code <Configuration>}</li>
+     * <li>If app attribute {@link #CLASSLOADER_FACTORY_ATTRIBUTE} is specified, use it, and initialize {@link ClassLoader}.</li>
+     * <li>If app deployable path is XML, apply XML {@code <Configuration>}.</li>
      * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}, and initialize context.</li>
      * </ol>
      *
