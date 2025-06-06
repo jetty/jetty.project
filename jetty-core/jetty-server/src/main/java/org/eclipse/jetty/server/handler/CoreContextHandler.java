@@ -84,98 +84,6 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             setContextPath(contextPath);
     }
 
-    public ResourceFactory getResourceFactory()
-    {
-        return ResourceFactory.of(this);
-    }
-
-    @Override
-    public void setBaseResource(Resource baseResource)
-    {
-        if (baseResource == null || Resources.isDirectory(baseResource))
-        {
-            super.setBaseResource(baseResource);
-            return;
-        }
-
-        if (Resources.isReadableFile(baseResource))
-        {
-            URI uri = baseResource.getURI();
-            if (FileID.isArchive(uri))
-            {
-                // convert to "jar:file:" resource
-                Resource jarResource = getResourceFactory().newJarFileResource(uri);
-                super.setBaseResource(jarResource);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Ignored base resource: {}", baseResource);
-            }
-            return;
-        }
-
-        super.setBaseResource(baseResource);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        initWebApp();
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        _initialized = false;
-        setClassLoader(_previousClassLoader);
-        _previousClassLoader = null;
-        super.doStop();
-        if (_classLoaderResourceFactory != null)
-            removeBean(_classLoaderResourceFactory);
-    }
-
-    protected void initWebApp() throws IOException
-    {
-        if (_initialized)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Already initialized, not initializing again");
-            return;
-        }
-
-        _initialized = true;
-
-        Resource baseResource = getBaseResource();
-        if (baseResource == null)
-            return;
-
-        Resource staticDir = baseResource.resolve("static");
-        if (Resources.isDirectory(staticDir))
-        {
-            if (!isResourceHandlerAlreadyPresent(staticDir))
-            {
-                ResourceHandler resourceHandler = new ResourceHandler();
-                resourceHandler.setBaseResource(staticDir);
-                if (deferredDirAllowed != null)
-                    resourceHandler.setDirAllowed(deferredDirAllowed);
-                setHandler(resourceHandler);
-            }
-        }
-
-        Environment environment = Environment.get("core");
-        if (environment == null)
-            throw new IllegalStateException("Could not find environment [core]");
-
-        // Don't override the user provided ClassLoader.
-        ClassLoader classLoader = getClassLoader();
-        _previousClassLoader = classLoader;
-        if (classLoader == null)
-            classLoader = environment.getClassLoader();
-        setClassLoader(newClassLoader(baseResource, classLoader));
-    }
-
     @Override
     protected void initializeDefault(String keyName, Object value)
     {
@@ -239,6 +147,19 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
     }
 
+    private void setDirAllowed(Boolean bool)
+    {
+        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
+        if (resourceHandler != null)
+        {
+            resourceHandler.setDirAllowed(bool);
+        }
+        else
+        {
+            deferredDirAllowed = bool;
+        }
+    }
+
     @Override
     protected void initializeDefaultsComplete()
     {
@@ -253,11 +174,103 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         }
     }
 
+    public ResourceFactory getResourceFactory()
+    {
+        return ResourceFactory.of(this);
+    }
+
+    @Override
+    public void setBaseResource(Resource baseResource)
+    {
+        if (baseResource == null || Resources.isDirectory(baseResource))
+        {
+            super.setBaseResource(baseResource);
+            return;
+        }
+
+        if (Resources.isReadableFile(baseResource))
+        {
+            URI uri = baseResource.getURI();
+            if (FileID.isArchive(uri))
+            {
+                // convert to "jar:file:" resource
+                Resource jarResource = getResourceFactory().newJarFileResource(uri);
+                super.setBaseResource(jarResource);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignored base resource: {}", baseResource);
+            }
+            return;
+        }
+
+        super.setBaseResource(baseResource);
+    }
+
     protected Resource unpack(Resource dir) throws IOException
     {
         Path tempDir = getTempDirectory().toPath();
         dir.copyTo(tempDir);
         return ResourceFactory.of(this).newResource(tempDir);
+    }
+
+    /**
+     * Create a ClassLoader from the baseResource.
+     * @param baseResource the base resource
+     * @param parentClassLoader the parent classloader
+     * @return the new classloader
+     */
+    private ClassLoader newClassLoader(Resource baseResource, ClassLoader parentClassLoader) throws IOException
+    {
+        Attributes attributes = new Attributes.Mapped();
+        attributes.setAttribute(TEMP_DIR, getTempDirectory());
+        CoreContextClassLoaderFactory classLoaderFactory = new CoreContextClassLoaderFactory();
+
+        return classLoaderFactory.newClassLoader(attributes,
+            ResourceFactory.of(this),
+            baseResource,
+            parentClassLoader);
+    }
+
+    protected void initWebApp() throws IOException
+    {
+        if (_initialized)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Already initialized, not initializing again");
+            return;
+        }
+
+        _initialized = true;
+
+        Resource baseResource = getBaseResource();
+        if (baseResource == null)
+            return;
+
+        Resource staticDir = baseResource.resolve("static");
+        if (Resources.isDirectory(staticDir))
+        {
+            if (!isResourceHandlerAlreadyPresent(staticDir))
+            {
+                ResourceHandler resourceHandler = new ResourceHandler();
+                resourceHandler.setBaseResource(staticDir);
+                if (deferredDirAllowed != null)
+                    resourceHandler.setDirAllowed(deferredDirAllowed);
+                setHandler(resourceHandler);
+            }
+        }
+
+        Environment environment = Environment.get("core");
+        if (environment == null)
+            throw new IllegalStateException("Could not find environment [core]");
+
+        // Don't override the user provided ClassLoader.
+        ClassLoader classLoader = getClassLoader();
+        _previousClassLoader = classLoader;
+        if (classLoader == null)
+            classLoader = environment.getClassLoader();
+        setClassLoader(newClassLoader(baseResource, classLoader));
     }
 
     private boolean isResourceHandlerAlreadyPresent(Resource staticDir)
@@ -280,35 +293,22 @@ public class CoreContextHandler extends ContextHandler implements Deployable
         return false;
     }
 
-    /**
-     * Create a ClassLoader from the baseResource.
-     * @param baseResource the base resource
-     * @param parentClassLoader the parent classloader
-     * @return the new classloader
-     */
-    private ClassLoader newClassLoader(Resource baseResource, ClassLoader parentClassLoader) throws IOException
+    @Override
+    protected void doStart() throws Exception
     {
-        Attributes attributes = new Attributes.Mapped();
-        attributes.setAttribute(TEMP_DIR, getTempDirectory());
-        CoreContextClassLoaderFactory classLoaderFactory = new CoreContextClassLoaderFactory();
-
-        return classLoaderFactory.newClassLoader(attributes,
-            ResourceFactory.of(this),
-            baseResource,
-            parentClassLoader);
+        initWebApp();
+        super.doStart();
     }
 
-    private void setDirAllowed(Boolean bool)
+    @Override
+    protected void doStop() throws Exception
     {
-        ResourceHandler resourceHandler = getBean(ResourceHandler.class);
-        if (resourceHandler != null)
-        {
-            resourceHandler.setDirAllowed(bool);
-        }
-        else
-        {
-            deferredDirAllowed = bool;
-        }
+        _initialized = false;
+        setClassLoader(_previousClassLoader);
+        _previousClassLoader = null;
+        super.doStop();
+        if (_classLoaderResourceFactory != null)
+            removeBean(_classLoaderResourceFactory);
     }
 
     /**
