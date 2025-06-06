@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Deployable;
@@ -345,7 +346,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
          * @throws IOException if unable to create the classloader
          */
         @Override
-        public ClassLoader newClassLoader(Attributes attributes) throws IOException
+        public ClassLoader newClassLoader(Attributes attributes, Environment environment) throws IOException
         {
             // Create temporary ResourceFactory
             Path mainPath = findMainPath(attributes);
@@ -355,11 +356,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
             attributes.setAttribute(CLASSLOADER_RESOURCE_FACTORY, resourceFactory);
             Resource baseResource = resourceFactory.newResource(mainPath);
-
-            ClassLoader parent = Thread.currentThread().getContextClassLoader();
-            if (parent == null)
-                parent = this.getClass().getClassLoader();
-            return newClassLoader(attributes, resourceFactory, baseResource, parent);
+            return newClassLoader(attributes, resourceFactory, baseResource, environment.getClassLoader());
         }
 
         /**
@@ -387,6 +384,10 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             if (baseResource == null)
                 return null;
 
+            Objects.requireNonNull(attributes);
+            Objects.requireNonNull(resourceFactory);
+            Objects.requireNonNull(parent);
+
             if (!Resources.isDirectory(baseResource))
             {
                 // see if we can unpack this reference.
@@ -406,15 +407,14 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                 }
             }
 
-            Environment environment = Environment.get("core");
-            if (environment == null)
-                throw new IllegalStateException("Could not find environment [core]");
+            List<URL> urls = findClassLoaderURLs(resourceFactory, attributes, baseResource);
+            if (urls.isEmpty())
+                return null; // No custom ClassLoader is necessary
 
-            ClassLoader parentClassLoader = parent;
-            if (parentClassLoader == null)
-                parentClassLoader = environment.getClassLoader();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Core webapp classloader: {}", urls);
 
-            return newClassLoader(resourceFactory, attributes, baseResource, parentClassLoader);
+            return new URLClassLoader(urls.toArray(URL[]::new), parent);
         }
 
         private Path findMainPath(Attributes attributes)
@@ -484,7 +484,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             return Files.createTempDirectory("core-context");
         }
 
-        private ClassLoader newClassLoader(ResourceFactory resourceFactory, Attributes attributes, Resource base, ClassLoader parentClassLoader) throws IOException
+        private List<URL> findClassLoaderURLs(ResourceFactory resourceFactory, Attributes attributes, Resource base) throws IOException
         {
             List<URL> urls = new ArrayList<>();
 
@@ -517,13 +517,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
                 }
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Core webapp classloader: {}", urls);
-
-            if (urls.isEmpty())
-                return parentClassLoader;
-
-            return new URLClassLoader(urls.toArray(URL[]::new), parentClassLoader);
+            return urls;
         }
 
         private Resource unpack(Attributes attributes, ResourceFactory resourceFactory, Resource dir) throws IOException

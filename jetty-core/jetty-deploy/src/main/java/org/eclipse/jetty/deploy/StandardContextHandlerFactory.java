@@ -298,7 +298,9 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
     {
         if (context instanceof Deployable.ClassLoaderFactory classLoaderFactory)
         {
-            return classLoaderFactory.newClassLoader(attributes);
+            ClassLoader cl = classLoaderFactory.newClassLoader(attributes, environment);
+            if (cl != null)
+                return cl;
         }
 
         ContextHandler contextHandler = getContextHandler(context);

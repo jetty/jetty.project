@@ -18,6 +18,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -190,12 +191,13 @@ public interface Deployable
     interface ClassLoaderFactory
     {
         /**
-         * Create a new ClassLoader from the provided attributes.
+         * Create a new {@link ClassLoader}.
          *
          * @param attributes the deployable attributes
-         * @return the new classloader
+         * @param environment the environment being used
+         * @return the new classloader, or {@code null} to indicate that no custom {@link ClassLoader} was necessary.
          * @throws IOException if unable to create the classloader.
          */
-        ClassLoader newClassLoader(Attributes attributes) throws IOException;
+        ClassLoader newClassLoader(Attributes attributes, Environment environment) throws IOException;
     }
 }
