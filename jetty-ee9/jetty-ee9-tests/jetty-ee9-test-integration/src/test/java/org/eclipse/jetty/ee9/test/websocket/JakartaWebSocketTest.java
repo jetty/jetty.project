@@ -45,7 +45,7 @@ public class JakartaWebSocketTest
         server.addXmlConfiguration("login-service.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployer-standard.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployment-scanner.xml");
-        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee10-deploy.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee9-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
         server.addWebApp("servlet4-demo-jakarta-websocket.war");
