@@ -48,7 +48,7 @@ public class JakartaWebSocketTest
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee9-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
-        server.addWebApp("servlet4-demo-jakarta-websocket.war");
+        server.addWebApp("servlet5-demo-jakarta-websocket.war");
 
         server.load();
         server.start();
