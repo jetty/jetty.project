@@ -826,6 +826,8 @@ public class ServletChannelState
                     break;
 
                 case COMPLETE:
+                case COMPLETING:
+                case COMPLETED:
                     return;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());

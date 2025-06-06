@@ -17,37 +17,43 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class JettyWebSocketTest
 {
-    private static XmlBasedJettyServer server;
+    public WorkDir workDir;
+    private XmlBasedJettyServer server;
 
-    @BeforeAll
-    public static void setUpServer() throws Exception
+    @BeforeEach
+    public void setUpServer() throws Exception
     {
-        server = new XmlBasedJettyServer();
-        server.setScheme(HttpScheme.HTTP.asString());
+        server = new XmlBasedJettyServer(workDir);
         server.addXmlConfiguration("basic-server.xml");
         server.addXmlConfiguration("login-service.xml");
-        server.addXmlConfiguration("deploy.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployer-standard.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployment-scanner.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee10-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
+        server.addWebApp("jetty-ee10-demo-jetty-websocket.war");
+
         server.load();
-        // server.getServer().setDumpAfterStart(true);
         server.start();
     }
 
-    @AfterAll
-    public static void tearDownServer() throws Exception
+    @AfterEach
+    public void tearDownServer() throws Exception
     {
         server.stop();
     }
