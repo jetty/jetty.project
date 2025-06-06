@@ -41,6 +41,14 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
     </dependency>
@@ -79,6 +87,14 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -169,6 +185,20 @@
               </artifactItems>
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>expand-config-jars</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <includeScope>test</includeScope>
+              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.ee10</includeGroupIds>
+              <classifier>config</classifier>
+              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
+              <outputDirectory>${project.build.directory}/configs</outputDirectory>
             </configuration>
           </execution>
         </executions>

@@ -22,34 +22,40 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
-import org.eclipse.jetty.http.HttpScheme;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class JakartaWebSocketTest
 {
-    private static XmlBasedJettyServer server;
+    public WorkDir workDir;
+    private XmlBasedJettyServer server;
 
-    @BeforeAll
-    public static void setUpServer() throws Exception
+    @BeforeEach
+    public void setUpServer() throws Exception
     {
-        server = new XmlBasedJettyServer();
-        server.setScheme(HttpScheme.HTTP.asString());
+        server = new XmlBasedJettyServer(workDir);
         server.addXmlConfiguration("basic-server.xml");
         server.addXmlConfiguration("login-service.xml");
-        // server.addXmlConfiguration("configurations-addknown-all.xml");
-        server.addXmlConfiguration("deploy.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployer-standard.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployment-scanner.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee10-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
+
+        server.addWebApp("servlet4-demo-jakarta-websocket.war");
 
         server.load();
         server.start();
     }
 
-    @AfterAll
-    public static void tearDownServer() throws Exception
+    @AfterEach
+    public void tearDownServer() throws Exception
     {
         server.stop();
     }

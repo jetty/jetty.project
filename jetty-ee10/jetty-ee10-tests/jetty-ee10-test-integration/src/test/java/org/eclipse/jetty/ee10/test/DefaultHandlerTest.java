@@ -17,21 +17,22 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLConnection;
 
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,16 +44,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Tests against the facilities within the TestSuite to ensure that the various
  * org.eclipse.jetty.test.support.* classes do what they are supposed to.
  */
+@ExtendWith(WorkDirExtension.class)
 public class DefaultHandlerTest
 {
-    private static XmlBasedJettyServer server;
-    private int serverPort;
+    public WorkDir workDir;
+    private XmlBasedJettyServer server;
 
-    @BeforeAll
-    public static void setUpServer() throws Exception
+    @BeforeEach
+    public void setUpServer() throws Exception
     {
-        server = new XmlBasedJettyServer();
-        server.setScheme(HttpScheme.HTTP.asString());
+        server = new XmlBasedJettyServer(workDir);
         server.addXmlConfiguration("DefaultHandler.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
@@ -60,14 +61,8 @@ public class DefaultHandlerTest
         server.start();
     }
 
-    @BeforeEach
-    public void testInit()
-    {
-        serverPort = server.getServerPort();
-    }
-
-    @AfterAll
-    public static void tearDownServer() throws Exception
+    @AfterEach
+    public void tearDownServer() throws Exception
     {
         server.stop();
     }
@@ -75,8 +70,8 @@ public class DefaultHandlerTest
     @Test
     public void testGetURL() throws Exception
     {
-        URL url = new URL("http://localhost:" + serverPort + "/tests/alpha.txt");
-        URLConnection conn = url.openConnection();
+        URI uri = server.getServerURI().resolve("/tests/alpha.txt");
+        URLConnection conn = uri.toURL().openConnection();
         conn.connect();
 
         InputStream in = conn.getInputStream();
@@ -96,7 +91,7 @@ public class DefaultHandlerTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        Socket sock = new Socket(InetAddress.getLocalHost(), serverPort);
+        Socket sock = new Socket(InetAddress.getLocalHost(), server.getServerURI().getPort());
         sock.setSoTimeout(5000); // 5 second timeout;
 
         InputStream in = new ByteArrayInputStream(rawRequest.toString().getBytes());
@@ -122,7 +117,7 @@ public class DefaultHandlerTest
         request.put("Connection", "close");
         // request.setContent(null);
 
-        HttpTesting testing = new HttpTesting(new HttpSocketImpl(), serverPort);
+        HttpTesting testing = new HttpTesting(new HttpSocketImpl(), server.getServerURI().getPort());
         HttpTester.Response response = testing.request(request);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
