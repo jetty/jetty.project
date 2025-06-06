@@ -23,24 +23,25 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 public class JakartaWebSocketTest
 {
-    private static XmlBasedJettyServer server;
+    private XmlBasedJettyServer server;
 
-    @BeforeAll
-    public static void setUpServer() throws Exception
+    @BeforeEach
+    public void setUpServer() throws Exception
     {
         server = new XmlBasedJettyServer();
         server.setScheme(HttpScheme.HTTP.asString());
         server.addXmlConfiguration("basic-server.xml");
         server.addXmlConfiguration("login-service.xml");
-        // server.addXmlConfiguration("configurations-addknown-all.xml");
         server.addXmlConfiguration("deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
@@ -49,8 +50,8 @@ public class JakartaWebSocketTest
         server.start();
     }
 
-    @AfterAll
-    public static void tearDownServer() throws Exception
+    @AfterEach
+    public void tearDownServer() throws Exception
     {
         server.stop();
     }
