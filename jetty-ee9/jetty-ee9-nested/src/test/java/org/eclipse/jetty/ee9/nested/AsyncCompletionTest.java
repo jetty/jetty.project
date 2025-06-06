@@ -31,6 +31,7 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
@@ -39,6 +40,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
@@ -53,6 +55,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -684,6 +687,51 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             assertThat(response.getStatus(), is(200));
             String content = response.getContent();
             assertThat(content, containsString(handler.getExpectedMessage()));
+        }
+    }
+
+    @Test
+    public void testAsyncCompleteAfterChannelAbortDoesNotThrow() throws Exception
+    {
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        startServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                try
+                {
+                    AsyncContext asyncContext = baseRequest.startAsync();
+                    try
+                    {
+                        baseRequest.getHttpChannel().abort(new BadMessageException(488));
+                    }
+                    finally
+                    {
+                        asyncContext.complete();
+                    }
+                }
+                catch (Throwable x)
+                {
+                    failureRef.set(x);
+                }
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            InputStream in = client.getInputStream();
+
+            // write the request
+            os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Check we got a response!
+            HttpTester.Response response = HttpTester.parseResponse(in);
+            assertThat(response, Matchers.notNullValue());
+            assertThat(response.getStatus(), is(488));
+            assertThat(failureRef.get(), Matchers.nullValue());
         }
     }
 
