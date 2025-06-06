@@ -939,7 +939,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         {
             assertThat(tp.getMaxReservedThreads(), Matchers.equalTo(reservedThreads));
             assertThat(tp.getLeasedThreads(), Matchers.equalTo(leasedThreads));
-            assertThat(tp.getReadyThreads(), Matchers.equalTo(tp.getIdleThreads() + tp.getCurrentReservedThreads()));
+            assertThat(tp.getReadyThreads(), Matchers.equalTo(tp.getIdleThreads() + tp.getAvailableReservedThreads()));
             assertThat(tp.getUtilizedThreads(), Matchers.equalTo(transientJobs));
             assertThat(tp.getThreads(), Matchers.equalTo(tp.getReadyThreads() + tp.getLeasedThreads() + tp.getUtilizedThreads()));
             assertThat(tp.getBusyThreads(), Matchers.equalTo(tp.getUtilizedThreads() + tp.getLeasedThreads()));
