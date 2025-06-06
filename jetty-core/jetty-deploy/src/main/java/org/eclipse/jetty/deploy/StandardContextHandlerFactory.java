@@ -304,7 +304,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         }
 
         ContextHandler contextHandler = getContextHandler(context);
-        if (context != null)
+        if (contextHandler != null)
         {
             ClassLoader classLoader = contextHandler.getClassLoader();
             if (classLoader != null)
