@@ -436,7 +436,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
 
             Environment.ensure("static", ContextHandler.class);
             DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("static");
-            coreConfig.setDefaultContextHandlerClass(StaticContextHandler.class.getName());
+            coreConfig.setDefaultContextHandlerClassName(StaticContextHandler.class.getName());
 
             server.addBean(deploymentScanner);
             server.start();

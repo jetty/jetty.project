@@ -132,7 +132,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.addWebappsDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         server.start();
         deploymentScanner.start();
@@ -189,7 +189,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.addWebappsDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         server.start();
         deploymentScanner.start();
@@ -245,7 +245,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         server.setDumpAfterStart(true);
         server.start();
@@ -316,7 +316,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         deploymentScanner.setEnvironmentsDirectory(environments);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         server.start();
         deploymentScanner.start();
@@ -380,7 +380,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
@@ -439,7 +439,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         DeploymentScanner scanner = new DeploymentScanner(server);
         scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(
             // screwy name courtesy of SerializedInvoker.onError() logic
@@ -503,7 +503,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         DeploymentScanner scanner = new DeploymentScanner(server);
         scanner.addWebappsDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClass(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, StandardDeployer.class))
         {
