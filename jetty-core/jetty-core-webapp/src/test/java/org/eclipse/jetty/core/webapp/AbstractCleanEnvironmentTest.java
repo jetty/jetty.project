@@ -11,10 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.test;
+package org.eclipse.jetty.core.webapp;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.component.Environment;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.parallel.Isolated;
 
-public class TestContextHandler extends ContextHandler
+/**
+ * Ensure that each test is using a clean (empty) Environment,
+ * by running isolated.
+ */
+@Isolated
+public abstract class AbstractCleanEnvironmentTest
 {
+    @AfterEach
+    public void removeAllEnvironments()
+    {
+        Environment.removeAll();
+    }
 }

@@ -23,7 +23,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -198,7 +197,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             String testXmlStr = """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
                   <Set name="contextPath">/demo</Set>
                   <Set name="handler">
                     <New class="org.example.ExampleHandler" />

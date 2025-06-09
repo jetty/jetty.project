@@ -1,0 +1,18 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the "core" environment deployment defaults            -->
+<!-- =============================================================== -->
+<Configure>
+  <Ref refid="deploymentScanner">
+    <Call name="configureEnvironment">
+      <Arg>core</Arg>
+      <Set name="classLoaderFactoryClassName">
+        <Property name="jetty.deploy.classLoaderFactoryClass" default="org.eclipse.jetty.core.webapp.CoreContextHandler$CoreContextClassLoaderFactory" />
+      </Set>
+      <Set name="defaultContextHandlerClassName">
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.core.webapp.CoreContextHandler" />
+      </Set>
+    </Call>
+  </Ref>
+</Configure>

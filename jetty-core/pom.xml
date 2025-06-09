@@ -17,6 +17,8 @@
     <module>jetty-bom</module>
     <module>jetty-client</module>
     <module>jetty-compression</module>
+    <module>jetty-core-test-webapps</module>
+    <module>jetty-core-webapp</module>
     <module>jetty-deploy</module>
     <module>jetty-ee</module>
     <module>jetty-fcgi</module>

@@ -935,7 +935,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
@@ -1362,7 +1362,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(webapps.resolve(name + ".xml"), """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
                   <Set name="contextPath">/test</Set>
                   <Set name="handler">
                     <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
+  <Set name="contextPath">/demo</Set>
+  <Set name="handler">
+    <New class="org.example.ExampleHandler" />
+  </Set>
+</Configure>
