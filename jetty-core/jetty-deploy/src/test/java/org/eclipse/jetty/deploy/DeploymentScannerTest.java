@@ -449,7 +449,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             assertThat(dump, containsString("enabledEnvironments size=1"));
             assertThat(dump, containsString(" +> static"));
             assertThat(dump, containsString("environmentAttributes size=1"));
-            assertThat(dump, containsString("jetty.deploy.default.contextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler"));
+            assertThat(dump, containsString(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE + "=org.eclipse.jetty.server.handler.StaticContextHandler"));
         }
         finally
         {
