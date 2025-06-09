@@ -8,7 +8,7 @@
     <Call name="configureEnvironment">
       <Arg>core</Arg>
       <Set name="classLoaderFactoryClassName">
-        <Property name="classLoaderFactoryClass" default="org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory" />
+        <Property name="jetty.deploy.classLoaderFactoryClass" default="org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory" />
       </Set>
       <Set name="defaultContextHandlerClassName">
         <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />

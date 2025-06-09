@@ -17,9 +17,10 @@ deployment-scanner
 etc/jetty-core-deploy.xml
 
 [ini-template]
-## ClassLoaderFactory class for "core" environment deployments
-# classLoaderFactoryClass=org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory
+## ClassLoaderFactory class for core environment deployments
+# jetty.deploy.classLoaderFactoryClass=org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory
 
-[ini]
-jetty.deploy.defaultContextHandlerClass?=org.eclipse.jetty.server.handler.CoreContextHandler
+## Default ContextHandler class for core environment deployments
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.server.handler.CoreContextHandler
+
 

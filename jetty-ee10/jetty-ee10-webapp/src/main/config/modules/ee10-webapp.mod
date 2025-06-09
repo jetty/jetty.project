@@ -35,7 +35,7 @@ lib/jetty-ee10-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addProtectedClasses+=,org.example.
 #jetty.webapp.addHiddenClasses+=,org.example.
-# end::ini-template[]
 
-[ini]
-jetty.deploy.defaultContextHandlerClass?=org.eclipse.jetty.ee10.webapp.WebAppContext
+## Default ContextHandler class for ee10 environment deployments
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee10.webapp.WebAppContext
+# end::ini-template[]
