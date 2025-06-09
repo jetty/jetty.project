@@ -70,12 +70,9 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionListener.class);
 
         @Override
-        public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+        public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
         {
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            HTTP3StreamListener listener = new HTTP3StreamListener(http3Stream);
-            listener.onRequest(stream, frame);
-            return listener;
+            return new HTTP3StreamListener();
         }
 
         @Override
@@ -113,21 +110,13 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
 
     private static class HTTP3StreamListener implements Stream.Server.Listener, Invocable
     {
-        private final HTTP3Stream stream;
+        private HTTP3Stream http3Stream;
 
-        private HTTP3StreamListener(HTTP3Stream stream)
-        {
-            this.stream = stream;
-        }
-
-        private ServerHTTP3StreamConnection getConnection()
-        {
-            return (ServerHTTP3StreamConnection)stream.getStreamEndPoint().getConnection();
-        }
-
-        public void onRequest(Stream stream, HeadersFrame frame)
+        @Override
+        public void onRequest(Stream.Server stream, HeadersFrame frame)
         {
             HTTP3StreamServer http3Stream = (HTTP3StreamServer)stream;
+            this.http3Stream = http3Stream;
             getConnection().onRequest(http3Stream, frame);
         }
 
@@ -135,7 +124,6 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onDataAvailable(Stream.Server stream)
         {
             ServerHTTP3StreamConnection connection = getConnection();
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
             connection.onDataAvailable(http3Stream);
         }
 
@@ -143,14 +131,12 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onTrailer(Stream.Server stream, HeadersFrame frame)
         {
             ServerHTTP3StreamConnection connection = getConnection();
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
             connection.onTrailer(http3Stream, frame);
         }
 
         @Override
         public void onIdleTimeout(Stream.Server stream, TimeoutException timeout, Promise<Boolean> promise)
         {
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
             getConnection().onIdleTimeout(http3Stream, timeout, (task, timedOut) ->
             {
                 if (task == null)
@@ -177,7 +163,6 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         @Override
         public void onFailure(Stream.Server stream, long error, Throwable failure)
         {
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onFailure(http3Stream, failure);
             Executor executor = http3Stream.getSession().getProtocolSession().getExecutor();
             ThreadPool.executeImmediately(executor, task);
@@ -186,8 +171,13 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         @Override
         public InvocationType getInvocationType()
         {
-            HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+            HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)http3Stream.getAttachment();
             return httpStream.getHttpChannel().getInvocationType();
+        }
+
+        private ServerHTTP3StreamConnection getConnection()
+        {
+            return (ServerHTTP3StreamConnection)http3Stream.getStreamEndPoint().getConnection();
         }
     }
 }

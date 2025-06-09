@@ -68,9 +68,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     @Override
@@ -130,12 +129,17 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set(stream);
+                        stream.demand();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -208,9 +212,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     @Override
@@ -282,9 +285,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     @Override
@@ -317,9 +319,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     @Override
@@ -375,9 +376,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     @Override
@@ -434,13 +434,18 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
-                serverRequestLatch.countDown();
-                // Do not demand here.
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set(stream);
+                        serverRequestLatch.countDown();
+                        // Do not demand here.
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -489,48 +494,53 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
-
-                // Simulate a thread dispatched to read the request content with blocking I/O.
-                Semaphore semaphore = new Semaphore(0);
-                new Thread(() ->
-                {
-                    try
-                    {
-                        // Wait for onDataAvailable() to be called before start reading.
-                        semaphore.acquire();
-                        while (true)
-                        {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk != null)
-                            {
-                                // Consume the chunk.
-                                chunk.release();
-                                if (chunk.isLast())
-                                {
-                                    dataLatch.countDown();
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                // Demand and block.
-                                stream.demand();
-                                blockLatch.countDown();
-                                semaphore.acquire();
-                            }
-                        }
-                    }
-                    catch (InterruptedException x)
-                    {
-                        x.printStackTrace();
-                    }
-                }).start();
-
                 return new Stream.Server.Listener()
                 {
+                    private final Semaphore semaphore = new Semaphore(0);
+
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        stream.demand();
+
+                        // Simulate a thread dispatched to read the request content with blocking I/O.
+                        new Thread(() ->
+                        {
+                            try
+                            {
+                                // Wait for onDataAvailable() to be called before start reading.
+                                semaphore.acquire();
+                                while (true)
+                                {
+                                    Content.Chunk chunk = stream.read();
+                                    if (chunk != null)
+                                    {
+                                        // Consume the chunk.
+                                        chunk.release();
+                                        if (chunk.isLast())
+                                        {
+                                            dataLatch.countDown();
+                                            return;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Demand and block.
+                                        stream.demand();
+                                        blockLatch.countDown();
+                                        semaphore.acquire();
+                                    }
+                                }
+                            }
+                            catch (InterruptedException x)
+                            {
+                                x.printStackTrace();
+                            }
+                        }).start();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -569,9 +579,8 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                stream.demand();
                 return new Stream.Server.Listener()
                 {
                     private boolean firstData;
@@ -698,19 +707,25 @@ public class DataDemandTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Send the response.
-                HeadersFrame responseFrame = new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false);
-                stream.respond(responseFrame, new Promise.Invocable.NonBlocking<>()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void succeeded(Stream result)
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
                     {
-                        result.data(new DataFrame(ByteBuffer.allocate(1024), true), Promise.Invocable.noop());
+                        // Send the response.
+                        HeadersFrame responseFrame = new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false);
+                        stream.respond(responseFrame, new Promise.Invocable.NonBlocking<>()
+                        {
+                            @Override
+                            public void succeeded(Stream result)
+                            {
+                                result.data(new DataFrame(ByteBuffer.allocate(1024), true), Promise.Invocable.noop());
+                            }
+                        });
                     }
-                });
-                return null;
+                };
             }
         });
 

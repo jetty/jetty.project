@@ -162,8 +162,9 @@ public abstract class QuicheSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Stream.Listener listener = notifyNewStream(stream);
+        Stream.Listener listener = notifyNewStream();
         stream.setListener(listener);
+        stream.onNewStream();
 
         if (LOG.isDebugEnabled())
             LOG.debug("created remote {} on {}", stream, this);
@@ -377,8 +378,7 @@ public abstract class QuicheSession extends AbstractSession
         producer.offer(task);
         // Tasks may be offered when the production is idle, due to no
         // network traffic and with the DatagramChannel read interested.
-        // Call dispatch() to avoid blocking the caller.
-        strategy.dispatch();
+        strategy.produce();
     }
 
     boolean isFinished(QuicheStream stream)
@@ -598,42 +598,29 @@ public abstract class QuicheSession extends AbstractSession
             if (task != null)
                 return task;
 
-            while (true)
+            List<Long> writable = quiche.writableStreamIds();
+            if (LOG.isDebugEnabled())
+                LOG.debug("writable stream ids: {} on {}", writable, QuicheSession.this);
+            // Unfortunately, Quiche does not mark a stream as writable if it
+            // has a pending write and received a STOP_SENDING, so we try to
+            // complete the pending write by failing it if the conditions apply.
+            for (QuicheStream stream : streams.values())
             {
-                List<Long> writable = quiche.writableStreamIds();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("writable stream ids: {} on {}", writable, QuicheSession.this);
-                // Unfortunately, Quiche does not mark a stream as writable if it
-                // has a pending write and received a STOP_SENDING, so we try to
-                // complete the pending write by failing it if the conditions apply.
-                for (QuicheStream stream : streams.values())
-                {
-                    if (writable.contains(stream.getId()))
-                        stream.resumeWrite();
-                    else
-                        stream.tryFailWrite();
-                }
+                if (writable.contains(stream.getId()))
+                    stream.resumeWrite();
+                else
+                    stream.tryFailWrite();
+            }
 
-                List<Long> readable = quiche.readableStreamIds();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("readable stream ids: {} on {}", readable, QuicheSession.this);
-                // Unfortunately, Quiche does not mark a stream as readable
-                // if it received a RESET_STREAM, so try to figure out whether
-                // there is an existing stream that has been reset.
-                boolean process = false;
-                for (QuicheStream stream : streams.values())
-                {
-                    boolean removed = readable.remove(stream.getId());
-                    process |= stream.readable(removed);
-                }
-                for (long streamId : readable)
-                {
-                    QuicheStream stream = createRemoteStream(streamId);
-                    process |= stream.readable(true);
-                }
-
-                if (!process)
-                    break;
+            List<Long> readable = quiche.readableStreamIds();
+            if (LOG.isDebugEnabled())
+                LOG.debug("readable stream ids: {} on {}", readable, QuicheSession.this);
+            for (Long streamId : readable)
+            {
+                QuicheStream stream = streams.get(streamId);
+                if (stream == null)
+                    stream = createRemoteStream(streamId);
+                stream.readable();
             }
 
             task = poll();

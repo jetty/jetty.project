@@ -90,33 +90,25 @@ public class QuicheStream extends AbstractStream
         return session;
     }
 
-    boolean readable(boolean notify)
+    void readable()
     {
         boolean hasDemand;
         try (AutoLock ignored = lock.lock())
         {
             hasDemand = dataDemand;
-            if (notify)
-                dataDemand = false;
+            dataDemand = false;
         }
+
+        boolean streamFinished = session.isFinished(this);
+        Throwable resetFailure = streamFinished ? isReset() : null;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("readable demand={} {} on {}", hasDemand, this, session);
+            LOG.debug("readable demand={} finished={} reset={} {} on {}", hasDemand, streamFinished, resetFailure != null, this, session);
 
-        if (hasDemand && notify)
-        {
+        if (hasDemand && resetFailure == null)
             notifyDataAvailable();
-            return true;
-        }
-
-        // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
-        if (session.isFinished(this))
-        {
-            Throwable failure = isReset();
-            if (failure != null)
-                notifyFailure(failure);
-        }
-        return false;
+        else if (resetFailure != null)
+            notifyFailure(resetFailure);
     }
 
     private Throwable isReset()
@@ -515,6 +507,26 @@ public class QuicheStream extends AbstractStream
         if (LOG.isDebugEnabled())
             LOG.debug("failing write pending for {}", this);
         write(current);
+    }
+
+    void onNewStream()
+    {
+        notifyNewStream();
+    }
+
+    private void notifyNewStream()
+    {
+        Stream.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                // No frame available from Quiche.
+                listener.onNewStream(this, null);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
     }
 
     private void notifyDataAvailable()

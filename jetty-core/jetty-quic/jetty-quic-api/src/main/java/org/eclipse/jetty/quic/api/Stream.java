@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
@@ -228,11 +229,23 @@ public interface Stream
     interface Listener extends EventListener
     {
         /**
+         * <p>Callback method invoked when receiving a frame that causes
+         * the creation of a new stream.</p>
+         *
+         * @param stream the newly created stream
+         * @param frame the frame that caused the creation of the stream
+         */
+        default void onNewStream(Stream stream, Frame.WithStreamId frame)
+        {
+            stream.demand();
+        }
+
+        /**
          * <p>Callback method invoked when the application has expressed
          * {@link Stream#demand() demand} for data carried by STREAM frames,
          * and there are STREAM frames available.</p>
          * <p>Server applications should typically demand from
-         * {@link Session.Listener#onNewStream(Stream)}
+         * {@link Stream.Listener#onNewStream(Stream, Frame.WithStreamId)}
          * (upon receiving the first stream frame), while client applications
          * should typically demand after obtaining a {@link Stream} via
          * {@link Session#newStream(long, Listener)}.</p>

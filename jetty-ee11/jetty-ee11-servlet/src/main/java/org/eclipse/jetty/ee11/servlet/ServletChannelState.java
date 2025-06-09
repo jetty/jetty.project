@@ -696,8 +696,10 @@ public class ServletChannelState
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
 
+            //the context will be null if {@link AsyncContext#dispatch()} or {@link AsyncContext#dispatch(String)} were called
             if (context != null)
                 _event.setDispatchContext(context);
+            //the path will be null if {@link AsyncContext#dispatch()} was called
             if (path != null)
                 _event.setDispatchPath(path);
 
@@ -824,6 +826,8 @@ public class ServletChannelState
                     break;
 
                 case COMPLETE:
+                case COMPLETING:
+                case COMPLETED:
                     return;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());

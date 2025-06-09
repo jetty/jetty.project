@@ -64,12 +64,18 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set((HTTP3SessionServer)stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                return null;
+                serverSessionRef.set((HTTP3SessionServer)session);
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                        stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -149,11 +155,17 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                        stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -241,12 +253,18 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                return null;
+                serverSessionRef.set(session);
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                        stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -321,16 +339,19 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
-                Session session = stream.getSession();
                 serverSessionRef.set(session);
-
-                // Send a graceful GOAWAY while processing a stream.
-                session.goAway(true, Promise.Invocable.noop());
-
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set(stream);
+                        // Send a graceful GOAWAY while processing a stream.
+                        session.goAway(true, Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -425,11 +446,17 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
-                serverStreamLatch.countDown();
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set(stream);
+                        serverStreamLatch.countDown();
+                    }
+                };
             }
 
             @Override
@@ -509,15 +536,19 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
-                serverStreamLatch.countDown();
-
-                // Send a graceful GOAWAY while processing a stream.
-                stream.getSession().goAway(true, Promise.Invocable.noop());
-
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set(stream);
+                        serverStreamLatch.countDown();
+                        // Send a graceful GOAWAY while processing a stream.
+                        session.goAway(true, Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -602,13 +633,18 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server serverStream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set(serverStream);
-                serverStream.demand();
-                serverRequestLatch.countDown();
                 return new Stream.Server.Listener()
                 {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        stream.demand();
+                        serverStreamRef.set(stream);
+                        serverRequestLatch.countDown();
+                    }
+
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
@@ -618,7 +654,7 @@ public class GoAwayTest extends AbstractClientServerTest
                         if (chunk != null && chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                            serverStream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                            stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                         }
                         else
                         {
@@ -924,11 +960,17 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                // Send a graceful GOAWAY.
-                stream.getSession().goAway(true, Promise.Invocable.noop());
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Send a graceful GOAWAY.
+                        session.goAway(true, Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -1018,7 +1060,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
                 serverRequestLatch.countDown();
                 return null;
@@ -1089,12 +1131,18 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverSessionRef.set(stream.getSession());
-                // Don't reply, don't reset the stream, just send the GOAWAY.
-                stream.getSession().goAway(false, Promise.Invocable.noop());
-                return null;
+                serverSessionRef.set(session);
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        // Don't reply, don't reset the stream, just send the GOAWAY.
+                        session.goAway(false, Promise.Invocable.noop());
+                    }
+                };
             }
 
             @Override
@@ -1266,11 +1314,17 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set((HTTP3Stream)stream);
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set((HTTP3Stream)stream);
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
+                    }
+                };
             }
         });
 
@@ -1331,11 +1385,17 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
-            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
             {
-                serverStreamRef.set((HTTP3Stream)stream);
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
-                return null;
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        serverStreamRef.set((HTTP3Stream)stream);
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
+                    }
+                };
             }
         });
 
