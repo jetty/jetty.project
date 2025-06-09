@@ -55,7 +55,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private Content.Chunk chunk;
     private boolean shutdown;
     private boolean disposed;
-    private Runnable completionTask;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -127,7 +126,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (LOG.isDebugEnabled())
             LOG.debug("ParseAndFill needFillInterest {} in {}", needFillInterest, this);
         chunk = consumeChunk();
-        runCompletionTaskIfAny();
+        if (state == State.COMPLETE)
+            responseSuccess(getHttpExchange(), receiveNext);
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
@@ -341,12 +341,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     boolean isUpgrade = status == HttpStatus.SWITCHING_PROTOCOLS_101;
                     boolean isTunnel = getHttpChannel().isTunnel(method, status);
 
-                    Runnable task = isUpgrade || isTunnel ? null : this.receiveNext;
-
                     // Connection upgrade, bail out.
                     if (isUpgrade || isTunnel)
                     {
-                        responseSuccess(exchange, task);
+                        responseSuccess(exchange, null);
                         return true;
                     }
 
@@ -367,9 +365,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     }
 
                     if (notifyContentAvailable)
-                        responseSuccess(exchange, task);
-                    else
-                        completionTask = () -> responseSuccess(exchange, task);
+                        responseSuccess(exchange, receiveNext);
+                    // else: Let read(boolean) call responseSuccess() so it gets a chance to read this.chunk before
+                    // responseSuccess() resets it to null.
 
                     // Continue to read from the network.
                     return false;
@@ -388,14 +386,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             // and it is now driving the parsing.
             return true;
         }
-    }
-
-    void runCompletionTaskIfAny()
-    {
-        Runnable task = completionTask;
-        completionTask = null;
-        if (task != null)
-            task.run();
     }
 
     protected void fillInterested()

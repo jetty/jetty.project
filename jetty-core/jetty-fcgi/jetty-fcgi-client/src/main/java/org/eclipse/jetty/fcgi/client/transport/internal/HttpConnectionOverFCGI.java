@@ -70,7 +70,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private State state = State.STATUS;
     private long idleTimeout;
     private boolean shutdown;
-    private Runnable completionTask;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, Destination destination, Promise<Connection> promise)
     {
@@ -251,7 +250,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 // with zero or not enough bytes, so the state is reset
                 // here to avoid calling responseSuccess() again.
                 state = State.STATUS;
-                completionTask = channel::responseSuccess;
+                // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean) a chance to read
+                // the chunk field before channel.responseSuccess() resets it to null.
             }
             default -> throw new IllegalStateException("Invalid state " + state);
         }
@@ -259,12 +259,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return handle;
     }
 
-    void runCompletionTaskIfAny()
+    void channelResponseSuccess()
     {
-        Runnable task = completionTask;
-        completionTask = null;
-        if (task != null)
-            task.run();
+        channel.responseSuccess();
     }
 
     private void shutdown()

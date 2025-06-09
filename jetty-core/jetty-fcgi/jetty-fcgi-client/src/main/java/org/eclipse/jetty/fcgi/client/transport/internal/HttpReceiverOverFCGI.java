@@ -88,7 +88,8 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean needFillInterest = httpConnection.parseAndFill(false);
         chunk = consumeChunk();
-        httpConnection.runCompletionTaskIfAny();
+        if (chunk != null && chunk.isLast())
+            httpConnection.channelResponseSuccess();
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
