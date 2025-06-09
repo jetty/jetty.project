@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,11 +50,17 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 @ExtendWith(WorkDirExtension.class)
-public class StaticContextHandlerTest
+public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir workDir;
     private Server server;
     private LocalConnector localConnector;
+
+    @BeforeEach
+    public void ensureCoreEnvironment()
+    {
+        Environment.ensure("static", StaticContextHandler.class);
+    }
 
     @AfterEach
     public void stopServer()
@@ -73,7 +80,6 @@ public class StaticContextHandlerTest
         StandardDeployer deployer = new StandardDeployer(contextHandlerCollection);
         server.addBean(deployer);
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
-        Environment.ensure("static", StaticContextHandler.class);
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("static");
         environmentConfig.setDefaultContextHandlerClass(StaticContextHandler.class);
         server.addBean(deploymentScanner);

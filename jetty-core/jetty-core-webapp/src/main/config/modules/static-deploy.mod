@@ -10,6 +10,9 @@ static
 [depend]
 deployment-scanner
 
+[lib]
+lib/jetty-core-webapp-${jetty.version}.jar
+
 [xml]
 etc/jetty-static-deploy.xml
 

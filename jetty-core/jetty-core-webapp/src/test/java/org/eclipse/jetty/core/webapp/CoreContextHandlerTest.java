@@ -15,7 +15,6 @@ package org.eclipse.jetty.core.webapp;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -26,14 +25,17 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -48,7 +50,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,34 +64,64 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 {
-    public WorkDir workDir;
-    private final Server server = new Server();
-    private final ContextHandlerCollection contexts = new ContextHandlerCollection();
     private static final String EXPECTED_MESSAGE_FROM_TEST_WEBAPP = "On the other side of the screen, it all looks so easy.";
+    public WorkDir workDir;
+    private Server server;
+    private LocalConnector localConnector;
 
     @BeforeEach
     public void ensureCoreEnvironment()
     {
-        Environment.ensure("core", Environment.class);
+        Environment.ensure("core", CoreContextHandler.class);
     }
 
-    public void startServer(Object... beans) throws Exception
+    private void startServer(Consumer<Server> serverConsumer) throws Exception
     {
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
-        server.setHandler(contexts);
-        for (Object bean : beans)
-            server.addBean(bean);
+        server = new Server();
+        localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        if (serverConsumer != null)
+            serverConsumer.accept(server);
+
         server.start();
     }
 
+    private void startServerWithDeploy(Path webappsDir, Path environmentsDir) throws Exception
+    {
+        Objects.requireNonNull(webappsDir);
+
+        startServer((server) ->
+        {
+            ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+            server.setHandler(contextHandlerCollection);
+
+            StandardDeployer deployer = new StandardDeployer(contextHandlerCollection);
+            server.addBean(deployer);
+
+            DeploymentScanner deploymentScanner = new DeploymentScanner(server);
+            deploymentScanner.addWebappsDirectory(webappsDir);
+
+            if (environmentsDir != null)
+            {
+                assertTrue(Files.isDirectory(environmentsDir), "Environments Dir invalid: " + environmentsDir);
+                deploymentScanner.setEnvironmentsDirectory(environmentsDir);
+            }
+
+            server.addBean(deploymentScanner);
+
+            DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
+            coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        });
+    }
+
     @AfterEach
-    public void stopServer()
+    public void stopAll()
     {
         LifeCycle.stop(server);
     }
@@ -131,28 +162,61 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        server.setHandler(contexts);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
+        startServerWithDeploy(webapps, null);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addWebappsDirectory(webapps);
-        server.addBean(deploymentScanner);
-        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        server.start();
-        deploymentScanner.start();
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        URI destURI = server.getURI().resolve("/demo/");
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
-        assertThat(responseBody, containsString(destURI.getPath()));
+        assertThat(responseBody, containsString("/demo/"));
         assertThat(responseBody, containsString("messages.size=1"));
         assertThat(responseBody, containsString(EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
+    }
+
+    @Test
+    public void testDeployArbitraryHandler() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoXml = webapps.resolve("moved.xml");
+        String demoXmlStr = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+            
+            <!-- Simple handler to redirect from old path to new -->
+            <Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
+              <Set name="contextPath">/documentation</Set>
+              <Set name="redirectURI">https://jetty.org/docs/</Set>
+              <Set name="statusCode">302</Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        startServerWithDeploy(webapps, null);
+
+        String rawRequest = """
+            GET /documentation/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(302));
+        assertThat(response.get("Location"), is("https://jetty.org/docs/"));
     }
 
     @Test
@@ -189,24 +253,19 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """.formatted(demobase.toString());
         Files.writeString(demoXml, demoXmlStr);
 
-        server.setHandler(contexts);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
+        startServerWithDeploy(webapps, null);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addWebappsDirectory(webapps);
-        server.addBean(deploymentScanner);
-        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        server.start();
-        deploymentScanner.start();
-
-        URI destURI = server.getURI().resolve("/demo/");
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString("demobase index"));
     }
 
@@ -244,26 +303,19 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        server.setHandler(contexts);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
+        startServerWithDeploy(webapps, environments);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addWebappsDirectory(webapps);
-        deploymentScanner.setEnvironmentsDirectory(environments);
-        server.addBean(deploymentScanner);
-        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        server.setDumpAfterStart(true);
-        server.start();
-        deploymentScanner.start();
-
-        URI destURI = server.getURI().resolve("/demo/");
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the static index.html"));
 
         ContextHandlerCollection contextHandlerCollection = (ContextHandlerCollection)server.getHandler();
@@ -286,7 +338,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
               <Call name="addVirtualHosts">
                 <Arg>
                   <Array type="string">
-                    <Item>localhost</Item>
+                    <Item>local</Item>
                   </Array>
                 </Arg>
               </Call>
@@ -315,26 +367,19 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        server.setHandler(contexts);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
+        startServerWithDeploy(webapps, environments);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addWebappsDirectory(webapps);
-        deploymentScanner.setEnvironmentsDirectory(environments);
-        server.addBean(deploymentScanner);
-        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        server.start();
-        deploymentScanner.start();
-
-        URI destURI = server.getURI().resolve("/demo/");
-        Assumptions.assumeTrue(destURI.getHost().equals("localhost"));
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the static index.html"));
 
         ContextHandlerCollection contextHandlerCollection = (ContextHandlerCollection)server.getHandler();
@@ -343,7 +388,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         List<String> virtualHosts = coreContextHandler.getVirtualHosts();
         assertNotNull(virtualHosts);
         assertThat(virtualHosts.size(), is(1));
-        assertThat(virtualHosts, contains("localhost"));
+        assertThat(virtualHosts, contains("local"));
     }
 
     /**
@@ -384,20 +429,17 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
               </Set>
             </Configure>
             """;
-        DeploymentScanner scanner = new DeploymentScanner(server);
         Files.writeString(demoXml, demoXmlStr);
-
-        scanner.addWebappsDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
+            {
                 throwable = throwable.getCause();
+            }
 
             // Verify that we saw the message
             assertThat(throwable, instanceOf(ClassNotFoundException.class));
@@ -445,11 +487,6 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addWebappsDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
-
         try (StacklessLogging ignore = new StacklessLogging(
             // screwy name courtesy of SerializedInvoker.onError() logic
             "org.eclipse.jetty.server.handler.ContextHandlerCollection$1",
@@ -457,11 +494,13 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             DeploymentScanner.class.getName(),
             Scanner.class.getName()))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
+            {
                 throwable = throwable.getCause();
+            }
 
             // Verify that we saw the message
             assertThat(throwable, instanceOf(RuntimeException.class));
@@ -509,14 +548,9 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentScanner scanner = new DeploymentScanner(server);
-        scanner.addWebappsDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
-
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, StandardDeployer.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable instanceof ExecutionException ee)
@@ -585,26 +619,21 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         props.setProperty("jetty.deploy.core.extraClassPath", extraJar.toString());
         saveProperties(props, demoProperties);
 
-        server.setHandler(contexts);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
+        startServerWithDeploy(webapps, null);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
-        deploymentScanner.addWebappsDirectory(webapps);
-        server.addBean(deploymentScanner);
-        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-        coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        server.start();
-        deploymentScanner.start();
-
-        URI destURI = server.getURI().resolve("/demo/");
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
-        assertThat(responseBody, containsString(destURI.getPath()));
+        assertThat(responseBody, containsString("/demo/"));
         assertThat(responseBody, containsString("messages.size=2"));
         assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
         assertThat(responseBody, containsString("]=" + testFileContent));
@@ -644,29 +673,39 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         // it should only exist in the jar file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
-        URL[] extraClassPath = new URL[] {
+        URL[] extraClassPath = new URL[]{
             extraJar.toUri().toURL()
         };
         //noinspection resource
         URLClassLoader classLoader = new URLClassLoader(extraClassPath);
 
-        CoreContextHandler contextHandler = new CoreContextHandler();
-        contextHandler.setClassLoader(classLoader);
-        ResourceFactory resourceFactory = contextHandler.getResourceFactory();
-        Resource baseResource = resourceFactory.newResource(webappZip);
-        contextHandler.setBaseResource(baseResource);
+        startServer((server) ->
+        {
+            ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+            server.setHandler(contextHandlerCollection);
 
-        contexts.addHandler(contextHandler);
+            CoreContextHandler contextHandler = new CoreContextHandler();
+            contextHandler.setClassLoader(classLoader);
+            ResourceFactory resourceFactory = contextHandler.getResourceFactory();
+            Resource baseResource = resourceFactory.newResource(webappZip);
+            contextHandler.setBaseResource(baseResource);
 
-        server.setDumpAfterStart(true);
-        startServer();
+            contextHandlerCollection.addHandler(contextHandler);
+        });
 
-        URI destURI = server.getURI().resolve("/demo/");
-        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        String responseBody = IO.toString(http.getInputStream());
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
-        assertThat(responseBody, containsString(destURI.getPath()));
+        assertThat(responseBody, containsString("/demo/"));
         assertThat(responseBody, containsString("messages.size=2"));
         assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
         assertThat(responseBody, containsString("]=" + testFileContent));
