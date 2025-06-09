@@ -370,7 +370,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
      * <ol>
      * <li>If app attribute {@link #CLASSLOADER_FACTORY_ATTRIBUTE} is specified, use it, and initialize {@link ClassLoader}.</li>
      * <li>If app deployable path is XML, apply XML {@code <Configuration>}.</li>
-     * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}, and initialize context.</li>
+     * <li>Fallback to environment attribute {@link #DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE}, and initialize context.</li>
      * </ol>
      *
      * @param environment the environment context applies to
@@ -402,7 +402,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         }
 
         // fallback to default from environment.
-        Object context = newInstance((String)environment.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE));
+        Object context = newInstance((String)environment.getAttribute(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);

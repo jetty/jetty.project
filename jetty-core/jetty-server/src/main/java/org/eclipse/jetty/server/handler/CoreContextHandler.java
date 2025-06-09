@@ -65,7 +65,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
     private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.core.originalBaseResource";
     private static final String EXTRA_CLASSPATH = "org.eclipse.jetty.core.extraClassPath";
-    private static final String CLASSLOADER_RESOURCE_FACTORY = "org.eclipse.jetty.core.classloaderResourceFactory";
+    private static final String CLASSLOADER_RESOURCE_FACTORY = "org.eclipse.jetty.core.classLoaderResourceFactory";
     private boolean _initialized = false;
     // The ResourceFactory in use by the ClassLoader
     private ResourceFactory.LifeCycle _classLoaderResourceFactory;

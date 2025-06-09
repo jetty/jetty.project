@@ -35,7 +35,7 @@ public interface ContextHandlerFactory
     /**
      * The attribute name for the value holding the default class to used for creating {@link ContextHandler} in the environment
      */
-    String CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE = "jetty.deploy.default.contextHandlerClass";
+    String DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE = "jetty.deploy.defaultContextHandlerClass";
     /**
      * The attribute name for the environment name.
      */
@@ -56,7 +56,7 @@ public interface ContextHandlerFactory
      *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <ul>
      *                             <li>Attributes defined in {@link org.eclipse.jetty.server.Deployable}</li>
      *                             <li>{@link #CLASSLOADER_FACTORY_ATTRIBUTE}</li>
-     *                             <li>{@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}</li>
+     *                             <li>{@link #DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE}</li>
      *                             <li>{@link #ENVIRONMENT_ATTRIBUTE}</li>
      *                             <li>{@link #ENVIRONMENT_XML_PATHS_ATTRIBUTE}</li>
      *                         </ul>

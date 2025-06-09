@@ -1232,7 +1232,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param contextHandlerClass the default class for this environment's ContextHandler.
-         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
+         * @see StandardContextHandlerFactory#DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
         public void setDefaultContextHandlerClass(Class<? extends ContextHandler> contextHandlerClass)
         {
@@ -1249,11 +1249,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * </p>
          *
          * @param className the default class name for this environment's context deployable.
-         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
+         * @see StandardContextHandlerFactory#DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
         public void setDefaultContextHandlerClassName(String className)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE, className);
+            _environment.setAttribute(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE, className);
         }
 
         /**
