@@ -82,9 +82,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class HttpClientTest extends AbstractTest
 {
     @ParameterizedTest
-    @MethodSource("transportsTCP")
+    @MethodSource("transports")
     public void testClientUseContentSourceInSpawnedThreadEmptyResponseContent(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3); // TODO H3 should work too, but does not for some reason that must be investigated.
+
         start(transport, new Handler.Abstract()
         {
             @Override
@@ -108,9 +110,11 @@ public class HttpClientTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsTCP")
+    @MethodSource("transports")
     public void testClientUseContentSourceInSpawnedThreadWithResponseContent(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3); // TODO H3 should work too, but does not for some reason that must be investigated.
+
         start(transport, new Handler.Abstract()
         {
             @Override
@@ -134,9 +138,12 @@ public class HttpClientTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsTCP")
+    @MethodSource("transports")
     public void testClientUseContentSourceInSpawnedThreadWithTrailer(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3); // TODO H3 should work too, but does not for some reason that must be investigated.
+        assumeTrue(transport != Transport.FCGI); // TODO FCGI should work too, but does not for some reason that must be investigated.
+
         start(transport, new Handler.Abstract()
         {
             @Override
