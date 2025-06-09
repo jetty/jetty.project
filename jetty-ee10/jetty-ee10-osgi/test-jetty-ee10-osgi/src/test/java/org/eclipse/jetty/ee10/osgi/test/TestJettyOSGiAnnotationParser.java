@@ -51,6 +51,7 @@ public class TestJettyOSGiAnnotationParser
     public static Option[] configure() throws IOException
     {
         ArrayList<Option> options = new ArrayList<>();
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         TestOSGiUtil.coreJettyDependencies(options);

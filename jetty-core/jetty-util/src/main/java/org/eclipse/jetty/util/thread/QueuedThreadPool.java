@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy}.  The pool will avoid
  * reserving new threads if there are jobs queued.
  * <p>
- * QueuedThreadPool has the following <em>fundamental</em> values:
+ * QueuedThreadPool has getters to take a snapshot of the following <em>fundamental</em> values:
  * <ul>
  *   <li>{@link #getThreads() threads}: the current number of threads. These threads may execute
  *   a job (either internal or unleased), or may be ready to run (either idle or reserved).
@@ -619,10 +619,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the number of threads currently reserved
+     * @return the number of available reserved threads that are currently reserved
      * @see ReservedThreadExecutor#getAvailable()
      */
-    @ManagedAttribute("number of currently reserved threads")
+    @ManagedAttribute("number of current reserved threads")
     public int getCurrentReservedThreads()
     {
         TryExecutor tryExecutor = _tryExecutor;
