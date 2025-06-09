@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.deploy.test.TestContextHandler;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -53,9 +54,9 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
     private XmlConfiguredJetty jetty;
 
     @BeforeEach
-    public void ensureCoreEnvironment()
+    public void ensureTestEnvironment()
     {
-        Environment.ensure("core", Environment.class);
+        Environment.ensure("test", TestContextHandler.class);
     }
 
     @AfterEach
@@ -75,10 +76,10 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployer-standard.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
-        jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
+        jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-test-deploy-custom.xml"));
 
         // Put a context into the base
-        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
+        jetty.copyWebapp("bar-test-context.xml", "bar.xml");
 
         // Setup /bar resourceBase
         Path resourceBase = jetty.getJettyBasePath().resolve("resourceBase");

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.deploy.test.TestContextHandler;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -57,9 +58,9 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     private int _providerCount;
 
     @BeforeEach
-    public void ensureCoreEnvironment()
+    public void ensureTestEnvironment()
     {
-        Environment.ensure("core", Environment.class);
+        Environment.ensure("test", TestContextHandler.class);
     }
 
     public void createJettyBase(Path testdir) throws Exception
@@ -90,7 +91,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployer-standard.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
-        jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
+        jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-test-deploy-custom.xml"));
 
         // Should not throw an Exception
         jetty.load();
@@ -203,7 +204,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         Path environments = jetty.getJettyBasePath().resolve("environments");
         FS.ensureDirExists(environments);
 
-        Environment.get("core").setAttribute("testname", "Initial");
+        Environment.get("test").setAttribute("testname", "Initial");
 
         // Setup initial webapp, with XML
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
@@ -211,7 +212,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         jetty.copyWebapp("simple.xml", "simple.xml");
         Files.writeString(jetty.getJettyBasePath().resolve("webapps/simple.properties"),
             """
-                environment=core
+                environment=test
                 """
         );
 
@@ -225,8 +226,8 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         assertThat("displayname", contextHandler.getDisplayName(), is("Simple Initial"));
 
         // Add environment configuration
-        Path coreProp = environments.resolve("core.properties");
-        Files.writeString(coreProp, "testname=New EnvConfig");
+        Path testProp = environments.resolve("test.properties");
+        Files.writeString(testProp, "testname=New EnvConfig");
 
         waitForDirectoryScan();
         contextHandler = jetty.getContextHandler("/simple");
@@ -246,7 +247,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         createJettyBase(testdir);
         startJetty();
 
-        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
+        jetty.copyWebapp("bar-test-context.xml", "bar.xml");
         waitForDirectoryScan();
         jetty.assertContextHandlerExists("/bar");
     }
@@ -263,7 +264,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         createJettyBase(testdir);
         startJetty();
 
-        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
+        jetty.copyWebapp("bar-test-context.xml", "bar.xml");
         waitForDirectoryScan();
         jetty.assertContextHandlerExists("/bar");
 
@@ -285,7 +286,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
 
         startJetty();
 
-        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
+        jetty.copyWebapp("bar-test-context.xml", "bar.xml");
 
         waitForDirectoryScan();
 
@@ -297,7 +298,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         waitForDirectoryScan();
 
         // Replace the existing bar.xml being replaced with the new bar.xml pointing to different resourceBase
-        jetty.copyWebapp("bar-core-context-alt.xml", "bar.xml");
+        jetty.copyWebapp("bar-test-context-alt.xml", "bar.xml");
 
         waitForDirectoryScan();
 

@@ -3,12 +3,12 @@
 <Configure>
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
-      <Arg>core</Arg>
+      <Arg>test </Arg>
       <Set name="classLoaderFactoryClassName">
-        <Property name="jetty.deploy.classLoaderFactoryClass" default="org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory" />
+        <Property name="jetty.deploy.classLoaderFactoryClass" default="org.eclipse.jetty.deploy.test.TestClassLoaderFactory" />
       </Set>
       <Set name="defaultContextHandlerClassName">
-        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.server.handler.CoreContextHandler" />
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.deploy.test.TestContextHandler" />
       </Set>
       <Call name="loadPropertiesFromPathName">
         <Arg>
