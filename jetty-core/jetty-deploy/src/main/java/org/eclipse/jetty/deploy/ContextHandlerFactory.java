@@ -31,7 +31,7 @@ public interface ContextHandlerFactory
     /**
      * The attribute name for the value holding the specific class to used to create a {@link org.eclipse.jetty.server.Deployable.ClassLoaderFactory}
      */
-    String CLASSLOADER_FACTORY_ATTRIBUTE = "jetty.deploy.classloaderFactoryClass";
+    String CLASSLOADER_FACTORY_ATTRIBUTE = "jetty.deploy.classLoaderFactoryClass";
     /**
      * The attribute name for the value holding the default class to used for creating {@link ContextHandler} in the environment
      */

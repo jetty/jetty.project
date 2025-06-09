@@ -38,4 +38,4 @@ lib/jetty-ee11-webapp-${jetty.version}.jar
 # end::ini-template[]
 
 [ini]
-contextHandlerClass?=org.eclipse.jetty.ee11.webapp.WebAppContext
+jetty.deploy.defaultContextHandlerClass?=org.eclipse.jetty.ee11.webapp.WebAppContext

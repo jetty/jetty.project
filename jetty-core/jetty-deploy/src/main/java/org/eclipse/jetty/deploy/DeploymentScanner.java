@@ -1195,7 +1195,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * any XML files are loaded to create/configure the {@link ContextHandler}.
          * </p>
          *
-         * @param classLoaderFactoryClass the class for this environment's classloader factory.
+         * @param classLoaderFactoryClass the class for this environment's class loader factory.
          * @see StandardContextHandlerFactory#CLASSLOADER_FACTORY_ATTRIBUTE
          * @see org.eclipse.jetty.server.Deployable.ClassLoaderFactory
          */
@@ -1213,13 +1213,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * any XML files are loaded to create/configure the {@link ContextHandler}.
          * </p>
          *
-         * @param classname the classname for this environment's classloader factory.
+         * @param className the class name for this environment's class loader factory.
          * @see StandardContextHandlerFactory#CLASSLOADER_FACTORY_ATTRIBUTE
          * @see org.eclipse.jetty.server.Deployable.ClassLoaderFactory
          */
-        public void setClassLoaderFactoryClassName(String classname)
+        public void setClassLoaderFactoryClassName(String className)
         {
-            _environment.setAttribute(ContextHandlerFactory.CLASSLOADER_FACTORY_ATTRIBUTE, classname);
+            _environment.setAttribute(ContextHandlerFactory.CLASSLOADER_FACTORY_ATTRIBUTE, className);
         }
 
         /**
@@ -1228,7 +1228,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          *
          * <p>
          * This is the fallback class used, if the context class itself isn't defined by
-         * the web application being deployed. (such as from an XML definition)
+         * the web application being deployed (such as from a Jetty XML).
          * </p>
          *
          * @param contextHandlerClass the default class for this environment's ContextHandler.
@@ -1248,12 +1248,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          * the web application being deployed. (such as from an XML definition)
          * </p>
          *
-         * @param classname the default classname for this environment's context deployable.
+         * @param className the default class name for this environment's context deployable.
          * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
          */
-        public void setDefaultContextHandlerClassName(String classname)
+        public void setDefaultContextHandlerClassName(String className)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE, classname);
+            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE, className);
         }
 
         /**

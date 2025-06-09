@@ -19,3 +19,7 @@ etc/jetty-core-deploy.xml
 [ini-template]
 ## ClassLoaderFactory class for "core" environment deployments
 # classLoaderFactoryClass=org.eclipse.jetty.server.handler.CoreContextHandler$CoreContextClassLoaderFactory
+
+[ini]
+jetty.deploy.defaultContextHandlerClass?=org.eclipse.jetty.server.handler.CoreContextHandler
+

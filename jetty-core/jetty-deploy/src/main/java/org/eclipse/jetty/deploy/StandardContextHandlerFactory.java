@@ -170,7 +170,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
                         xmlConfiguration.getProperties().put(k, asPropertyValue(v));
                 });
 
-            // Run configure against appropriate classloader.
+            // Run configure against appropriate class loader.
             ClassLoader xmlClassLoader = getClassLoader(context, attributes, environment);
             ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(xmlClassLoader);

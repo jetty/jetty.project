@@ -15,4 +15,4 @@ etc/jetty-static-deploy.xml
 
 [ini-template]
 ## Default ContextHandler class for "static" environment deployments
-# defaultContextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler

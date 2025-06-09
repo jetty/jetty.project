@@ -100,7 +100,7 @@ public class DeploymentErrorTest
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
         assertNotNull(ServletContextHandler.ENVIRONMENT, "Expected environment does not exist");
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
-        envConfig.setDefaultContextHandlerClassName("org.eclipse.jetty.ee11.webapp.WebAppContext");
+        envConfig.setDefaultContextHandlerClass(WebAppContext.class);
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addWebappsDirectory(docroots);
         server.addBean(deploymentScanner);
