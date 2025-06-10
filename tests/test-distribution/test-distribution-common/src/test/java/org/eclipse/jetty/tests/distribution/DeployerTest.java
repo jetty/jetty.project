@@ -218,7 +218,7 @@ public class DeployerTest extends AbstractJettyHomeTest
                         containsString("Server.info=jetty/" + Jetty.VERSION),
                         containsString("request.uri=" + uri),
                         containsString("messages.size=1"),
-                        containsString("message=On the other side of the screen, it all looks so easy.")
+                        containsString("message[0]=On the other side of the screen, it all looks so easy.")
                     ));
             }
         }
