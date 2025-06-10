@@ -191,7 +191,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             Path testDir = jettyBase.resolve("webapps").resolve("test");
             FS.ensureEmpty(testDir);
 
-            Path testWebAppPath = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-core-example-webapp:zip:core-webapp:" + jettyVersion);
+            Path testWebAppPath = distribution.resolveArtifact("org.eclipse.jetty.tests:jetty-core-demo-webapp:zip:core-webapp:" + jettyVersion);
             unpack(testWebAppPath, testDir);
 
             String testXmlStr = """
@@ -199,9 +199,7 @@ public class DeployerTest extends AbstractJettyHomeTest
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
                 <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
                   <Set name="contextPath">/demo</Set>
-                  <Set name="handler">
-                    <New class="org.example.ExampleHandler" />
-                  </Set>
+                  <Set name="displayName">Demo of Core Deploy WebApp</Set>
                 </Configure>
                 """;
             Files.writeString(jettyBase.resolve("webapps/test.xml"), testXmlStr);
@@ -219,6 +217,7 @@ public class DeployerTest extends AbstractJettyHomeTest
                     allOf(
                         containsString("Server.info=jetty/" + Jetty.VERSION),
                         containsString("request.uri=" + uri),
+                        containsString("messages.size=1"),
                         containsString("message=On the other side of the screen, it all looks so easy.")
                     ));
             }
