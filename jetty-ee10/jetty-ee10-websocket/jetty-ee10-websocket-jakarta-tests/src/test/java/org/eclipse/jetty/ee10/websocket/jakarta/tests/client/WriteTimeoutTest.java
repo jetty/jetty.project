@@ -21,13 +21,13 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -37,11 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteTimeoutTest
 {
-    private static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(1);
-
     @ServerEndpoint("/")
     public static class ServerSocket extends EventSocket
     {
+        private final CountDownLatch messageLatch = new CountDownLatch(1);
+
         @Override
         public void onOpen(Session session, EndpointConfig endpointConfig)
         {
@@ -55,24 +55,38 @@ public class WriteTimeoutTest
         {
             try
             {
-                assertTrue(MESSAGE_LATCH.await(10, TimeUnit.SECONDS));
+                assertTrue(messageLatch.await(10, TimeUnit.SECONDS));
             }
             catch (InterruptedException e)
             {
                 throw new RuntimeException(e);
             }
         }
+
+        public void unblock()
+        {
+            messageLatch.countDown();
+        }
     }
 
     private LocalServer server;
     private JakartaWebSocketContainer client;
 
-    @BeforeEach
-    public void start() throws Exception
+    @SuppressWarnings("unchecked")
+    public void start(ServerSocket serverEndpoint) throws Exception
     {
         server = new LocalServer();
         server.start();
-        server.getServerContainer().addEndpoint(ServerSocket.class);
+        server.getServerContainer().addEndpoint(ServerEndpointConfig.Builder
+            .create(serverEndpoint.getClass(), "/")
+            .configurator(new ServerEndpointConfig.Configurator()
+            {
+                @Override
+                public <T> T getEndpointInstance(Class<T> endpointClass)
+                {
+                    return (T)serverEndpoint;
+                }
+            }).build());
 
         client = new JakartaWebSocketClientContainer();
         client.start();
@@ -88,6 +102,8 @@ public class WriteTimeoutTest
     @Test
     public void testTimeoutFromSlowReads() throws Exception
     {
+        ServerSocket serverEndpoint = new ServerSocket();
+        start(serverEndpoint);
         EventSocket clientEndpoint = new EventSocket();
         Session session = client.connectToServer(clientEndpoint, server.getWsUri());
         RemoteEndpoint.Async asyncRemote = session.getAsyncRemote();
@@ -104,7 +120,7 @@ public class WriteTimeoutTest
         assertThat(exception.getCause(), instanceOf(WebSocketWriteTimeoutException.class));
 
         // Unblock the thread in onMessage() on the server endpoint.
-        MESSAGE_LATCH.countDown();
+        serverEndpoint.unblock();
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
