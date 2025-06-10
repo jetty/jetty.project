@@ -16,8 +16,11 @@ package org.eclipse.jetty.util.thread.strategy.jmh;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import org.HdrHistogram.ConcurrentHistogram;
 import org.HdrHistogram.Histogram;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -44,46 +47,64 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class AESLimit
 {
-    private AdaptiveExecutionStrategy aes;
     private List<Histogram> histograms;
-    private QueuedThreadPool qtp;
+    private List<AdaptiveExecutionStrategy> strategies;
+    private List<QueuedThreadPool> threadPools;
+    private ThreadLocal<AdaptiveExecutionStrategy> aesTl;
 
     @Setup(Level.Trial)
     public void setup() throws Exception
     {
+        threadPools = new CopyOnWriteArrayList<>();
         histograms = new CopyOnWriteArrayList<>();
-        ThreadLocal<Histogram> histogramTl = ThreadLocal.withInitial(() ->
+        strategies = new CopyOnWriteArrayList<>();
+        aesTl = ThreadLocal.withInitial(() ->
         {
-            Histogram histogram = new Histogram(3);
+            QueuedThreadPool qtp = new QueuedThreadPool(2);
+            qtp.setStopTimeout(10_000);
+            LifeCycle.start(qtp);
+            threadPools.add(qtp);
+
+            Histogram histogram = new ConcurrentHistogram(new Histogram(3));
             histograms.add(histogram);
-            return histogram;
-        });
 
-        qtp = new QueuedThreadPool(4);
-        qtp.setStopTimeout(10_000);
-        aes = new AdaptiveExecutionStrategy(() ->
-        {
-            if (qtp.getQueueSize() > 100_000)
-                throw new RuntimeException(Thread.currentThread().getName() + " made queue too large");
-            return new Runnable()
+            AdaptiveExecutionStrategy aes = new AdaptiveExecutionStrategy(new ExecutionStrategy.Producer()
             {
-                final long before = System.nanoTime();
-
+                boolean produceNull = false;
                 @Override
-                public void run()
+                public Runnable produce()
                 {
-                    histogramTl.get().recordValue(NanoTime.now() - before);
+                    if (produceNull)
+                    {
+                        produceNull = false;
+                        return null;
+                    }
+                    produceNull = true;
+
+                    return new Runnable()
+                    {
+                        final long before = System.nanoTime();
+
+                        @Override
+                        public void run()
+                        {
+                            histogram.recordValue(NanoTime.now() - before);
+                        }
+                    };
                 }
-            };
-        }, qtp);
-        aes.start();
+            }, qtp);
+            LifeCycle.start(aes);
+            strategies.add(aes);
+
+            return aes;
+        });
     }
 
     @TearDown(Level.Trial)
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        System.out.println("Waiting for " + qtp.getQueueSize() + " entries in job queue to be consumed...");
-        aes.stop();
+        strategies.forEach(strategy -> LifeCycle.stop(strategy));
+        threadPools.forEach(threadPool -> LifeCycle.stop(threadPool));
 
         System.out.println();
         Histogram combined = new Histogram(3);
@@ -92,20 +113,21 @@ public class AESLimit
             combined.add(histogram);
         }
         combined.outputPercentileDistribution(System.out, 1000.0);
-        System.out.println(aes.toString());
+        strategies.forEach(System.out::println);
     }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     public void test()
     {
-        aes.produce();
+        aesTl.get().produce();
     }
 
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
             .include(AESLimit.class.getSimpleName())
+//             .addProfiler(AsyncProfiler.class, "dir=/tmp/AESLimit;output=flamegraph;event=cpu;interval=500000;libPath=/home/lorban/work/tools/async-profiler/4.0/lib/libasyncProfiler.so")
             // .addProfiler(GCProfiler.class)
             .build();
 
