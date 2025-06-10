@@ -9,7 +9,8 @@
 
   <artifactId>jetty-core-bad-init-webapp</artifactId>
   <packaging>jar</packaging>
-  <name>Core WebApps :: Tests :: Bad Init WebApp</name>
+  <name>Core WebApp :: Tests :: Bad Init WebApp</name>
+  <description>Jetty Core WebApp :: Test WebApps :: Bad Init WebApp</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -9,7 +9,8 @@
 
   <artifactId>jetty-core-demo-webapp</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Tests :: Core WebApp Example</name>
+  <name>Core WebApp :: Tests :: Demo WebApp</name>
+  <description>Jetty Core WebApp :: Test WebApps :: Demo WebApp</description>
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

@@ -12,7 +12,7 @@
   <artifactId>jetty-core-test-webapps</artifactId>
   <packaging>pom</packaging>
 
-  <name>Core :: WebApp :: Test WebApps</name>
+  <name>Core WebApp :: Test WebApps</name>
   <description>Jetty Core WebApp :: Test WebApps</description>
 
   <modules>

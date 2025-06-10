@@ -34,6 +34,7 @@ import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -92,12 +93,14 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         server.start();
     }
 
-    private void startServerWithDeploy(Path webappsDir, Path environmentsDir) throws Exception
+    private void startServerWithDeploy(Path jettyBase, Path webappsDir, Path environmentsDir) throws Exception
     {
         Objects.requireNonNull(webappsDir);
 
         startServer((server) ->
         {
+            System.setProperty("jetty.base", jettyBase.toString());
+
             ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
             server.setHandler(contextHandlerCollection);
 
@@ -116,7 +119,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             server.addBean(deploymentScanner);
 
             DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
-            coreConfig.setClassLoaderFactoryClassName(CoreContextHandler.CoreContextClassLoaderFactory.class.getName());
+            coreConfig.setDefaultContextHandlerClass(CoreContextHandler.class);
         });
     }
 
@@ -145,24 +148,11 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
         unpack(srcZip, demoDir);
 
-        // ensure that demo jar isn't in our test/server classpath.
-        // it should only exist in the jar file on disk.
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
-        Path demoXml = webapps.resolve("demo.xml");
-        String demoXmlStr = """
-            <?xml version="1.0"?>
-            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
-              <Set name="contextPath">/demo</Set>
-              <Set name="handler">
-                <New class="org.example.ExampleHandler" />
-              </Set>
-            </Configure>
-            """;
-        Files.writeString(demoXml, demoXmlStr);
-
-        startServerWithDeploy(webapps, null);
+        startServerWithDeploy(baseDir, webapps, null);
 
         String rawRequest = """
             GET /demo/ HTTP/1.1
@@ -204,7 +194,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        startServerWithDeploy(webapps, null);
+        startServerWithDeploy(baseDir, webapps, null);
 
         String rawRequest = """
             GET /documentation/ HTTP/1.1
@@ -239,7 +229,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
+            <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/demo</Set>
               <Set name="baseResourceAsPath">
                 <Call class="java.nio.file.Path" name="of">
@@ -253,7 +243,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """.formatted(demobase.toString());
         Files.writeString(demoXml, demoXmlStr);
 
-        startServerWithDeploy(webapps, null);
+        startServerWithDeploy(demobase, webapps, null);
 
         String rawRequest = """
             GET /demo/ HTTP/1.1
@@ -303,7 +293,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        startServerWithDeploy(webapps, environments);
+        startServerWithDeploy(root, webapps, environments);
 
         String rawRequest = """
             GET /demo/ HTTP/1.1
@@ -367,7 +357,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        startServerWithDeploy(webapps, environments);
+        startServerWithDeploy(root, webapps, environments);
 
         String rawRequest = """
             GET /demo/ HTTP/1.1
@@ -433,7 +423,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(baseDir, webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
@@ -470,11 +460,11 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
         unpack(srcZip, demoDir);
 
-        // ensure that demo jar isn't in our test/server classpath.
-        // it should only exist in the jar file on disk.
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
-        Path demoXml = webapps.resolve("demo.xml");
+        Path demoXml = demoDir.resolve("jetty-web.xml");
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
@@ -494,7 +484,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             DeploymentScanner.class.getName(),
             Scanner.class.getName()))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(baseDir, webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
@@ -531,11 +521,11 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
         unpack(srcZip, demoDir);
 
-        // ensure that demo jar isn't in our test/server classpath.
-        // it should only exist in the jar file on disk.
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
-        Path demoXml = webapps.resolve("demo.xml");
+        Path demoXml = demoDir.resolve("jetty-web.xml");
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
@@ -550,7 +540,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, StandardDeployer.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(webapps, null));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServerWithDeploy(baseDir, webapps, null));
 
             // unwrap any ExecutionExceptions
             while (throwable instanceof ExecutionException ee)
@@ -562,6 +552,96 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             assertThat(throwable, instanceOf(RuntimeException.class));
             assertThat(throwable.getMessage(), is("Example of failing startup"));
         }
+    }
+
+    @Test
+    public void testDeployPropertiesSetsContextPath() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoDir = webapps.resolve("demo");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-core-demo-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        Properties props = new Properties();
+        props.setProperty(Deployable.CONTEXT_PATH, "/alt-demo");
+        saveProperties(props, webapps.resolve("demo.properties"));
+
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        startServerWithDeploy(baseDir, webapps, null);
+
+        String rawRequest = """
+            GET /alt-demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(Server.getVersion()));
+        assertThat(responseBody, containsString("/alt-demo/"));
+        assertThat(responseBody, containsString("messages.size=1"));
+        assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
+    }
+
+    @Test
+    public void testDeployXmlConfiguresContextPath() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoDir = webapps.resolve("demo");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-core-demo-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        Path demoXml = webapps.resolve("demo.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
+              <Set name="contextPath">/alt-demo</Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        startServerWithDeploy(baseDir, webapps, null);
+
+        String rawRequest = """
+            GET /alt-demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(Server.getVersion()));
+        assertThat(responseBody, containsString("/alt-demo/"));
+        assertThat(responseBody, containsString("messages.size=1"));
+        assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
     }
 
     @Test
@@ -597,8 +677,8 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
         unpack(srcZip, demoDir);
 
-        // ensure that demo jar isn't in our test/server classpath.
-        // it should only exist in the jar file on disk.
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
         Path demoXml = webapps.resolve("demo.xml");
@@ -607,19 +687,14 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
             <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
               <Set name="contextPath">/demo</Set>
-              <Set name="handler">
-                <New class="org.example.ExampleHandler" />
-              </Set>
+              <Call name="setExtraClassPath">
+                <Arg type="String"><Property name="jetty.base"/>/extra-lib/extra.jar</Arg>
+              </Call>
             </Configure>
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        Path demoProperties = webapps.resolve("demo.properties");
-        Properties props = new Properties();
-        props.setProperty("jetty.deploy.core.extraClassPath", extraJar.toString());
-        saveProperties(props, demoProperties);
-
-        startServerWithDeploy(webapps, null);
+        startServerWithDeploy(baseDir, webapps, null);
 
         String rawRequest = """
             GET /demo/ HTTP/1.1
@@ -669,8 +744,8 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
         Path webappZip = Files.copy(srcZip, webapps.resolve(srcZip.getFileName()));
 
-        // ensure that demo jar isn't in our test/server classpath.
-        // it should only exist in the jar file on disk.
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
         URL[] extraClassPath = new URL[]{

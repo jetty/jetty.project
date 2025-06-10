@@ -27,14 +27,18 @@ import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +72,17 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         LifeCycle.stop(server);
     }
 
-    private void startServer(Consumer<DeploymentScanner> deploymentScannerConsumer) throws Exception
+    private void startServer(Handler handler) throws Exception
+    {
+        server = new Server();
+        localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        server.setHandler(handler);
+        server.start();
+    }
+
+    private void startServerWithDeploy(Consumer<DeploymentScanner> deploymentScannerConsumer) throws Exception
     {
         server = new Server();
         localConnector = new LocalConnector(server);
@@ -91,7 +105,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testDefaultEmptyDir() throws Exception
+    public void testDeployDefaultEmptyDir() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -99,7 +113,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
@@ -117,7 +131,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testStaticDir() throws Exception
+    public void testDeployStaticDir() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -126,7 +140,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         FS.ensureEmpty(staticDir);
         Files.writeString(staticDir.resolve("hello.txt"), "Hello from TEXT");
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/hello.txt HTTP/1.1
@@ -140,7 +154,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testStaticJar() throws Exception
+    public void testDeployStaticJar() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -158,7 +172,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             Files.writeString(root.resolve("hello.txt"), testFileContent, StandardOpenOption.CREATE);
         }
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /test/hello.txt HTTP/1.1
@@ -173,7 +187,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
 
     @ParameterizedTest
     @ValueSource(strings = {"other", "dnd"})
-    public void testDefaultToUnknownEnvironment(String unknownEnvName) throws Exception
+    public void testDeployDefaultToUnknownEnvironment(String unknownEnvName) throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -188,13 +202,13 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         try (StacklessLogging ignored = new StacklessLogging(DeploymentScanner.class))
         {
             Assertions.assertThrows(IllegalStateException.class, () ->
-                startServer(ds -> ds.addWebappsDirectory(webapps))
+                startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps))
             );
         }
     }
 
     @Test
-    public void testDefaultWithContent() throws Exception
+    public void testDeployDefaultWithContent() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -203,7 +217,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         FS.ensureEmpty(staticDir);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -231,7 +245,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testCustomResourceHandlerXML() throws Exception
+    public void testDeployCustomResourceHandlerXML() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -253,7 +267,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             </Configure>
             """);
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -281,7 +295,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testCustomResourceHandlerPropertiesDirAllowedFalse() throws Exception
+    public void testDeployCustomResourceHandlerPropertiesDirAllowedFalse() throws Exception
     {
         Path webapps = workDir.getEmptyPathDir().resolve("webapps");
         FS.ensureEmpty(webapps);
@@ -293,7 +307,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             """);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -321,7 +335,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testCustomResourceHandlerPropertiesBaseResourceAlt() throws Exception
+    public void testDeployCustomResourceHandlerPropertiesBaseResourceAlt() throws Exception
     {
         Path root = workDir.getEmptyPathDir();
         Path webapps = root.resolve("webapps");
@@ -337,7 +351,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             """.formatted(staticDir.toString()));
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -365,7 +379,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testStaticWithDirectoryWithPropertyBaseResource() throws Exception
+    public void testDeployStaticWithDirectoryWithPropertyBaseResource() throws Exception
     {
         Path root = workDir.getEmptyPathDir();
 
@@ -384,7 +398,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             jetty.deploy.baseResource=%s
             """.formatted(alt.toString()));
 
-        startServer(ds -> ds.addWebappsDirectory(webapps));
+        startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -404,5 +418,104 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("Hello from alt"));
+    }
+
+    @Test
+    public void testEmbeddedDefaultNoBase() throws Exception
+    {
+        StaticContextHandler staticContextHandler = new StaticContextHandler();
+        staticContextHandler.setContextPath("/static");
+
+        startServer(staticContextHandler);
+
+        String rawResponse = localConnector.getResponse("""
+            GET /static/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+    }
+
+    @Test
+    public void testEmbeddedDefaultWithContent() throws Exception
+    {
+        Path basedir = workDir.getEmptyPathDir();
+
+        Files.writeString(basedir.resolve("test.txt"), "TEST TEXT");
+
+        StaticContextHandler staticContextHandler = new StaticContextHandler();
+        staticContextHandler.setContextPath("/static");
+        staticContextHandler.setBaseResourceAsPath(basedir);
+
+        startServer(staticContextHandler);
+
+        String rawResponse = localConnector.getResponse("""
+            GET /static/test.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), is("TEST TEXT"));
+
+        // Directory listing (by default it is enabled)
+        rawResponse = localConnector.getResponse("""
+            GET /static/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), allOf(
+            containsString("Directory: /static/"),
+            containsString("<table class=\"listing\">")
+        ));
+    }
+
+    @Test
+    public void testEmbeddedDefaultCustomResourceHandler() throws Exception
+    {
+        Path basedir = workDir.getEmptyPathDir();
+
+        Files.writeString(basedir.resolve("test.txt"), "TEST TEXT");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            ResourceHandler resourceHandler = new ResourceHandler();
+            Resource resource = resourceFactory.newResource(basedir);
+            resourceHandler.setBaseResource(resource);
+            resourceHandler.setDirAllowed(false);
+
+            StaticContextHandler staticContextHandler = new StaticContextHandler("/static", resourceHandler);
+            startServer(staticContextHandler);
+
+            String rawResponse = localConnector.getResponse("""
+                GET /static/test.txt HTTP/1.1
+                Host: local
+                Connection: close
+                
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), is("TEST TEXT"));
+
+            // Directory listing (turned off in this configuration)
+            rawResponse = localConnector.getResponse("""
+                GET /static/ HTTP/1.1
+                Host: local
+                Connection: close
+                
+                """);
+            response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(403));
+            assertThat(response.getContent(), allOf(
+                not(containsString("Directory: /static/")),
+                not(containsString("<table class=\"listing\">"))
+            ));
+        }
     }
 }

@@ -4,9 +4,6 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>test </Arg>
-      <Set name="classLoaderFactoryClassName">
-        <Property name="jetty.deploy.classLoaderFactoryClass" default="org.eclipse.jetty.deploy.test.TestClassLoaderFactory" />
-      </Set>
       <Set name="defaultContextHandlerClassName">
         <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.deploy.test.TestContextHandler" />
       </Set>

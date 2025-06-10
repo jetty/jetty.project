@@ -1188,41 +1188,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
 
         /**
-         * The class that this environment uses to create {@link Deployable.ClassLoaderFactory} instances.
-         *
-         * <p>
-         * This is the class used to create a ClassLoader for the environment before
-         * any XML files are loaded to create/configure the {@link ContextHandler}.
-         * </p>
-         *
-         * @param classLoaderFactoryClass the class for this environment's class loader factory.
-         * @see StandardContextHandlerFactory#CLASSLOADER_FACTORY_ATTRIBUTE
-         * @see org.eclipse.jetty.server.Deployable.ClassLoaderFactory
-         */
-        public void setClassLoaderFactoryClass(Class<? extends Deployable.ClassLoaderFactory> classLoaderFactoryClass)
-        {
-            setClassLoaderFactoryClassName(classLoaderFactoryClass.getName());
-        }
-
-        /**
-         * The name of the class that this environment uses to create {@link Deployable.ClassLoaderFactory}
-         * instances.
-         *
-         * <p>
-         * This is the class used to create a ClassLoader for the environment before
-         * any XML files are loaded to create/configure the {@link ContextHandler}.
-         * </p>
-         *
-         * @param className the class name for this environment's class loader factory.
-         * @see StandardContextHandlerFactory#CLASSLOADER_FACTORY_ATTRIBUTE
-         * @see org.eclipse.jetty.server.Deployable.ClassLoaderFactory
-         */
-        public void setClassLoaderFactoryClassName(String className)
-        {
-            _environment.setAttribute(ContextHandlerFactory.CLASSLOADER_FACTORY_ATTRIBUTE, className);
-        }
-
-        /**
          * The default class that this environment uses to create {@link ContextHandler}
          * instances (supports a class that implements {@code java.util.function.Supplier<ContextHandler>} as well).
          *

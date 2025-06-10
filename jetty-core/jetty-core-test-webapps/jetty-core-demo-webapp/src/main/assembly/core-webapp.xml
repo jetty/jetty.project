@@ -12,14 +12,14 @@
         <include>**/*.*</include>
       </includes>
       <excludes>
-        <exclude>jetty-core.xml</exclude>
+        <exclude>jetty-web.xml</exclude>
       </excludes>
     </fileSet>
     <fileSet>
       <directory>${basedir}/${project.build.outputDirectory}</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>jetty-core.xml</include>
+        <include>jetty-web.xml</include>
       </includes>
     </fileSet>
     <fileSet>

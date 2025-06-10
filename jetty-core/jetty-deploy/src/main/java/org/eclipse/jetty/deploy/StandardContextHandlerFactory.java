@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -171,7 +170,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
                 });
 
             // Run configure against appropriate class loader.
-            ClassLoader xmlClassLoader = getClassLoader(context, attributes, environment);
+            ClassLoader xmlClassLoader = getClassLoader(context, environment);
             ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(xmlClassLoader);
 
@@ -294,15 +293,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         return true;
     }
 
-    private ClassLoader getClassLoader(Object context, Attributes attributes, Environment environment) throws IOException
+    private ClassLoader getClassLoader(Object context, Environment environment)
     {
-        if (context instanceof Deployable.ClassLoaderFactory classLoaderFactory)
-        {
-            ClassLoader cl = classLoaderFactory.newClassLoader(attributes, environment);
-            if (cl != null)
-                return cl;
-        }
-
         ContextHandler contextHandler = getContextHandler(context);
         if (contextHandler != null)
         {
@@ -368,7 +360,6 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
      * The search order is:
      * </p>
      * <ol>
-     * <li>If app attribute {@link #CLASSLOADER_FACTORY_ATTRIBUTE} is specified, use it, and initialize {@link ClassLoader}.</li>
      * <li>If app deployable path is XML, apply XML {@code <Configuration>}.</li>
      * <li>Fallback to environment attribute {@link #DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE}, and initialize context.</li>
      * </ol>
@@ -385,12 +376,10 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);
 
-        Object factoryObj = newInstance((String)attributes.getAttribute(ContextHandlerFactory.CLASSLOADER_FACTORY_ATTRIBUTE));
-
         if (FileID.isXml(path))
         {
             // track if context is created from XML or an existing one is just being configured by XML
-            Object context = applyXml(server, factoryObj, path, environment, attributes);
+            Object context = applyXml(server, null, path, environment, attributes);
             ContextHandler contextHandler = getContextHandler(context);
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
