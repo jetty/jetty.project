@@ -39,13 +39,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK24 Javadoc") {
+        stage("Build / Test - JDK22 Javadoc") {
           agent { node { label 'linux-light' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              withEnv(["JAVA_HOME=${ tool 'jdk24' }",
-                       "PATH+MAVEN=${ tool 'jdk24' }/bin:${tool 'maven3'}/bin",
+              withEnv(["JAVA_HOME=${ tool 'jdk22' }",
+                       "PATH+MAVEN=${ tool 'jdk22' }/bin:${tool 'maven3'}/bin",
                        "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
@@ -124,8 +124,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
   script {
     try {
       withEnv(["JDK_HOME=${ tool "$jdk" }",
-               "JAVA_HOME=${ tool "jdk23"}",
-               "PATH+MAVEN=${ tool "jdk23" }/bin:${tool "$mvnName"}/bin",
+               "JAVA_HOME=${ tool "jdk22"}",
+               "PATH+MAVEN=${ tool "jdk22" }/bin:${tool "$mvnName"}/bin",
                "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
