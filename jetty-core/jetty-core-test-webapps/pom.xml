@@ -18,6 +18,7 @@
   <modules>
     <module>jetty-core-bad-init-webapp</module>
     <module>jetty-core-demo-webapp</module>
+    <module>jetty-core-http2-client-webapp</module>
   </modules>
 
   <properties>

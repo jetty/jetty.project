@@ -275,6 +275,15 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- Using as ZIP to avoid having classes and dependencies live in test classloader -->
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-core-http2-client-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>core-webapp</classifier>
+      <type>zip</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <scope>test</scope>
