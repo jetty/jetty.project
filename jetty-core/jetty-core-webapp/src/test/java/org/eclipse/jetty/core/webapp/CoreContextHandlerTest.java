@@ -645,7 +645,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
-    public void testDeployExtraClassPath() throws Exception
+    public void testDeployExtraClassPathViaXml() throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();
 
@@ -693,6 +693,67 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             </Configure>
             """;
         Files.writeString(demoXml, demoXmlStr);
+
+        startServerWithDeploy(baseDir, webapps, null);
+
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(Server.getVersion()));
+        assertThat(responseBody, containsString("/demo/"));
+        assertThat(responseBody, containsString("messages.size=2"));
+        assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
+        assertThat(responseBody, containsString("]=" + testFileContent));
+    }
+
+    @Test
+    public void testDeployExtraClassPathViaProperty() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path lib = baseDir.resolve("extra-lib"); // this is the $JETTY_BASE/extra-lib
+        FS.ensureDirExists(lib);
+        Path extraJar = lib.resolve("extra.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        String testFileContent = "Hello from TEXT";
+        URI uri = URI.create("jar:" + extraJar.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("org/example");
+            Files.createDirectories(dir);
+            Properties props = new Properties();
+            props.setProperty("message", testFileContent);
+            saveProperties(props, dir.resolve("example.properties"));
+        }
+
+        Path demoDir = webapps.resolve("demo");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-core-demo-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        Properties props = new Properties();
+        props.setProperty("jetty.deploy.core.extraClassPath", extraJar.toString());
+        saveProperties(props, webapps.resolve("demo.properties"));
 
         startServerWithDeploy(baseDir, webapps, null);
 
