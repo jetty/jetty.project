@@ -69,7 +69,8 @@ import org.slf4j.LoggerFactory;
 public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
-    private static final String ORIGINAL_BASE_RESOURCE = "jetty.deploy.core.originalBaseResource";
+    private static final String ORIGINAL_BASE_RESOURCE_ATTRIBUTE = "jetty.deploy.core.originalBaseResource";
+    private static final String EXTRA_CLASS_PATH_ATTRIBUTE = "jetty.deploy.core.extraClassPath";
     private static final String JETTY_WEB_XML = "jetty-web.xml";
     private boolean initialized = false;
     private List<Resource> extraClassPath;
@@ -102,6 +103,11 @@ public class CoreContextHandler extends ContextHandler implements Deployable
     {
         switch (keyName)
         {
+            case EXTRA_CLASS_PATH_ATTRIBUTE ->
+            {
+                if (value instanceof String str)
+                    setExtraClassPath(str);
+            }
             case Deployable.DIR_ALLOWED ->
             {
                 if (value instanceof String str)
@@ -282,7 +288,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
             if (FileID.isArchive(baseResource.getURI()))
             {
                 // We have an archive that needs to be unpacked
-                attributes.setAttribute(ORIGINAL_BASE_RESOURCE, baseResource.getURI());
+                attributes.setAttribute(ORIGINAL_BASE_RESOURCE_ATTRIBUTE, baseResource.getURI());
 
                 URI archiveURI = URIUtil.toJarFileUri(baseResource.getURI());
 
