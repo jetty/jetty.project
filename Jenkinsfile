@@ -39,13 +39,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17 Javadoc") {
+        stage("Build / Test - JDK24 Javadoc") {
           agent { node { label 'linux-light' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              withEnv(["JAVA_HOME=${ tool 'jdk17' }",
-                       "PATH+MAVEN=${ tool 'jdk17' }/bin:${tool 'maven3'}/bin",
+              withEnv(["JAVA_HOME=${ tool 'jdk24' }",
+                       "PATH+MAVEN=${ tool 'jdk24' }/bin:${tool 'maven3'}/bin",
                        "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
@@ -123,8 +123,9 @@ def slackNotif() {
 def mavenBuild(jdk, cmdline, mvnName) {
   script {
     try {
-      withEnv(["JAVA_HOME=${ tool "$jdk" }",
-               "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
+      withEnv(["JDK_HOME=${ tool "$jdk" }",
+               "JAVA_HOME=${ tool "jdk23"}",
+               "PATH+MAVEN=${ tool "jdk23" }/bin:${tool "$mvnName"}/bin",
                "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
@@ -148,7 +149,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           sh "mkdir ~/.mimir"
           sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
-          sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          sh "mvn $extraArgs -Djvm=$JDK_HOME/bin/java $dashProfile -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
