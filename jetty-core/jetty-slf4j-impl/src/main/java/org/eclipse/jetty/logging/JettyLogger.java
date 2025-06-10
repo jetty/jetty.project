@@ -98,8 +98,10 @@ public class JettyLogger implements LocationAwareLogger, Logger
             return true;
 
         for (StacklessLogging stacklessLogging : stacklessLoggers)
+        {
             if (stacklessLogging.isHiding(logger))
                 return true;
+        }
 
         Boolean hidden = JettyLoggerFactory.walkParentLoggerNames(logger.getName(), name ->
         {
@@ -109,8 +111,10 @@ public class JettyLogger implements LocationAwareLogger, Logger
             if (l.isHideStacks())
                 return true;
             for (StacklessLogging stacklessLogging : stacklessLoggers)
+            {
                 if (stacklessLogging.isHiding(l))
                     return true;
+            }
             return null;
         });
 
