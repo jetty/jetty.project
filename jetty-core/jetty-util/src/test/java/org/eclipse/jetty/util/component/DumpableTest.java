@@ -26,20 +26,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DumpableTest
 {
-    public static final String EXPECTED = """
-        A size=3
-        +> B size=4
-        |  +> si
-        |  +> see
-        |  +> sea
-        |  +> C size=3
-        |     +> ay
-        |     +>@ A size=3
-        |     +> ai
-        +> be
-        +> bee
-        """;
-
     @Test
     public void testNullDumpableCollection() throws Exception
     {
@@ -66,6 +52,20 @@ public class DumpableTest
     @Test
     public void testDumpableCollectionWithCycle() throws Exception
     {
+        final String EXPECTED = """
+        A size=3
+        +> B size=4
+        |  +> si
+        |  +> see
+        |  +> sea
+        |  +> C size=3
+        |     +> ay
+        |     +>@ A size=3
+        |     +> ai
+        +> be
+        +> bee
+        """;
+
         List<Object> listC = new ArrayList<>();
         DumpableCollection c = new DumpableCollection("C", listC);
         DumpableCollection b = new DumpableCollection("B", List.of("si", "see", "sea", c));
