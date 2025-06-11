@@ -129,6 +129,9 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         LifeCycle.stop(server);
     }
 
+    /**
+     * Test of unpacked core webapp archive, but in two different directory names.
+     */
     @ParameterizedTest
     @ValueSource(strings = {
         "demo.d", // nominated dir (backward compat)
@@ -172,6 +175,9 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString(EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
     }
 
+    /**
+     * Test of an arbitrary ContextHandler using classes present in the "core" environment classloader.
+     */
     @Test
     public void testDeployArbitraryHandler() throws Exception
     {
@@ -209,6 +215,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(response.get("Location"), is("https://jetty.org/docs/"));
     }
 
+    /**
+     * Test of an arbitrary ContextHandler using classes present in the "core" environment classloader,
+     * but setting the base resource of the ContextHandler to a location outside the $JETTY_BASE/webapps tree
+     */
     @Test
     public void testDeployBaseResourceInXmlPointingOutsideWebappsDir() throws Exception
     {
@@ -259,6 +269,92 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString("demobase index"));
     }
 
+    /**
+     * Test of an CoreContextHandler which has a static directory,
+     * Also testing that the jetty-web.xml is not accessible.
+     */
+    @Test
+    public void testDeployCoreDirStaticDir() throws Exception
+    {
+        Path root = workDir.getEmptyPathDir();
+
+        Path webapps = Files.createDirectory(root.resolve("webapps"));
+        Files.createDirectory(webapps.resolve("demo"));
+        Files.createDirectory(webapps.resolve("demo/static"));
+        Files.writeString(webapps.resolve("demo/static/index.html"), "This is the static index.html");
+        Files.writeString(webapps.resolve("demo/static/test.txt"), "This is the test TXT");
+
+        Path demoXml = webapps.resolve("demo/jetty-web.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
+              <Set name="contextPath">/demo</Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        startServerWithDeploy(root, webapps, null);
+
+        // Request static file via directory (which results in ResourceHandler welcomeFiles logic returning index.html)
+        String rawResponse = localConnector.getResponse("""
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("This is the static index.html"));
+
+        // Request specific static file
+        rawResponse = localConnector.getResponse("""
+            GET /demo/test.txt HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        responseBody = response.getContent();
+        assertThat(responseBody, containsString("This is the test TXT"));
+
+        // Request specific static file that doesn't exist
+        rawResponse = localConnector.getResponse("""
+            GET /demo/bogus.png HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+
+        // Request jetty-web.xml
+        rawResponse = localConnector.getResponse("""
+            GET /demo/jetty-web.xml HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+
+        // Request jetty-web.xml in different way
+        rawResponse = localConnector.getResponse("""
+            GET /demo/../jetty-web.xml HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(404));
+    }
+
+    /**
+     * Test of an CoreContextHandler where the display name is influenced
+     * by a properties file in the $JETTY_BASE/environments/ directory.
+     */
     @Test
     public void testDeployCoreDirWithEnvironmentsProps() throws Exception
     {
@@ -314,6 +410,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertEquals("Customized Demo", coreContextHandler.getDisplayName());
     }
 
+    /**
+     * Test of an CoreContextHandler where the virtual hosts is set
+     * by an XML file in the $JETTY_BASE/environments/ directory.
+     */
     @Test
     public void testDeployCoreDirWithEnvironmentsXml() throws Exception
     {
@@ -324,7 +424,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Files.writeString(environments.resolve("core.xml"), """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
+            <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
               <Call name="addVirtualHosts">
                 <Arg>
                   <Array type="string">
@@ -554,6 +654,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         }
     }
 
+    /**
+     * Test of a directory containing an unpacked core webapp archive,
+     * where the context-path is set via a {@code $JETTY_BASE/<name>.properties} file.
+     */
     @Test
     public void testDeployPropertiesSetsContextPath() throws Exception
     {
@@ -596,6 +700,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
     }
 
+    /**
+     * Test of a directory containing an unpacked core webapp archive,
+     * where the context-path is set via a {@code $JETTY_BASE/<name>.xml} file.
+     */
     @Test
     public void testDeployXmlConfiguresContextPath() throws Exception
     {
@@ -644,6 +752,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
     }
 
+    /**
+     * Test of a directory containing an unpacked core webapp archive,
+     * where the context-path is set via a {@code $JETTY_BASE/<name>.xml} file.
+     */
     @Test
     public void testDeployExtraClassPathViaXml() throws Exception
     {
@@ -714,6 +826,10 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString("]=" + testFileContent));
     }
 
+    /**
+     * Test of a directory containing an unpacked core webapp archive,
+     * where the core webapp has extra class-path entries set via a {@code $JETTY_BASE/<name>.properties} file.
+     */
     @Test
     public void testDeployExtraClassPathViaProperty() throws Exception
     {
@@ -722,6 +838,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         Path webapps = baseDir.resolve("webapps");
         FS.ensureDirExists(webapps);
 
+        // Crete a JAR file to add to the extra class-path of the core webapp
         Path lib = baseDir.resolve("extra-lib"); // this is the $JETTY_BASE/extra-lib
         FS.ensureDirExists(lib);
         Path extraJar = lib.resolve("extra.jar");
@@ -732,6 +849,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         // Use ZipFS so that we can create paths that are just "/"
         try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
         {
+            // Create a file in the jar that the core webapp org.example.ExampleHandler will look for
             Path root = zipfs.getPath("/");
             Path dir = root.resolve("org/example");
             Files.createDirectories(dir);
@@ -751,6 +869,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         // it should only exist in the demo zip file on disk.
         assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
 
+        // The specific detail this testcase is testing
         Properties props = new Properties();
         props.setProperty("jetty.deploy.core.extraClassPath", extraJar.toString());
         saveProperties(props, webapps.resolve("demo.properties"));
@@ -775,8 +894,12 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         assertThat(responseBody, containsString("]=" + testFileContent));
     }
 
+    /**
+     * Test of an embedded setup of a CoreContextHandler, pointing to a core webapp archive,
+     * with an extra JAR introduced via a CoreContextHandler.setClassLoader()
+     */
     @Test
-    public void testEmbeddedExtraClassPath() throws Exception
+    public void testEmbeddedCustomClassLoader() throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();
 
@@ -822,6 +945,76 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
             CoreContextHandler contextHandler = new CoreContextHandler();
             contextHandler.setClassLoader(classLoader);
+            ResourceFactory resourceFactory = contextHandler.getResourceFactory();
+            Resource baseResource = resourceFactory.newResource(webappZip);
+            contextHandler.setBaseResource(baseResource);
+
+            contextHandlerCollection.addHandler(contextHandler);
+        });
+
+        String rawRequest = """
+            GET /demo/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(Server.getVersion()));
+        assertThat(responseBody, containsString("/demo/"));
+        assertThat(responseBody, containsString("messages.size=2"));
+        assertThat(responseBody, containsString("]=" + EXPECTED_MESSAGE_FROM_TEST_WEBAPP));
+        assertThat(responseBody, containsString("]=" + testFileContent));
+    }
+
+    /**
+     * Test of an embedded setup of a CoreContextHandler, pointing to a core webapp archive,
+     * with an extra jar introduced via CoreContextHandler.setExtraClassPath(String)
+     */
+    @Test
+    public void testEmbeddedSetExtraClassPath() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path lib = baseDir.resolve("extra-lib"); // this is the $JETTY_BASE/extra-lib
+        FS.ensureDirExists(lib);
+        Path extraJar = lib.resolve("extra.jar");
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        String testFileContent = "Hello from TEXT";
+        URI uri = URI.create("jar:" + extraJar.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("org/example");
+            Files.createDirectories(dir);
+            Properties props = new Properties();
+            props.setProperty("message", testFileContent);
+            saveProperties(props, dir.resolve("example.properties"));
+        }
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-core-demo-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        Path webappZip = Files.copy(srcZip, webapps.resolve(srcZip.getFileName()));
+
+        // ensure that demo zip classes are not in our test/server classpath.
+        // it should only exist in the demo zip file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        startServer((server) ->
+        {
+            ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+            server.setHandler(contextHandlerCollection);
+
+            CoreContextHandler contextHandler = new CoreContextHandler();
+            contextHandler.setExtraClassPath(extraJar.toString());
             ResourceFactory resourceFactory = contextHandler.getResourceFactory();
             Resource baseResource = resourceFactory.newResource(webappZip);
             contextHandler.setBaseResource(baseResource);
