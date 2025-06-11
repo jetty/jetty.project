@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,12 +77,12 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
-        saveFrame(frame, true);
+        saveFrame(entry.getFrame(), true);
         try
         {
-            nextOutgoingFrame(frame, callback, batch);
+            nextOutgoingFrame(entry);
         }
         catch (Throwable t)
         {

@@ -28,9 +28,8 @@ import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContai
 import org.eclipse.jetty.ee9.websocket.tests.util.FutureWriteCallback;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
@@ -96,13 +95,13 @@ public class MaxOutgoingFramesTest
         }
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
             try
             {
                 firstFrameBlocked.countDown();
                 outgoingBlocked.await();
-                super.sendFrame(frame, callback, batch);
+                super.sendFrame(entry);
             }
             catch (InterruptedException e)
             {

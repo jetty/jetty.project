@@ -22,7 +22,6 @@ import java.nio.channels.WritePendingException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +70,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
-    private Duration frameWriteTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private ClassLoader classLoader;
     private Predicate<WebSocketTimeoutException> _onIdleTimeout;
 
@@ -144,21 +142,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             connection.getEndPoint().setIdleTimeout(timeout.toMillis());
     }
 
-    @Override
-    public Duration getWriteTimeout()
-    {
-        return frameWriteTimeout;
-    }
-
-    @Override
-    public void setWriteTimeout(Duration timeout)
-    {
-        frameWriteTimeout = Objects.requireNonNull(timeout);
-        WebSocketConnection connection = getConnection();
-        if (connection != null)
-            connection.setWriteTimeout(timeout.toMillis());
-    }
-
     public SocketAddress getLocalAddress()
     {
         return getConnection().getEndPoint().getLocalSocketAddress();
@@ -193,7 +176,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
-        connection.setWriteTimeout(frameWriteTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
@@ -485,8 +467,11 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
+        Frame frame = entry.getFrame();
+        Callback callback = entry.getCallback();
+        boolean batch = entry.isBatch();
         if (maxOutgoingFrames > 0 && frame.isDataFrame())
         {
             // Increase the number of outgoing frames, will be decremented when callback is completed.
@@ -522,11 +507,15 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                     () -> closeConnection(sessionState.getCloseStatus(), c),
                     t -> closeConnection(sessionState.getCloseStatus(), Callback.from(c, t)));
 
-                flusher.sendFrame(frame, closeConnectionCallback, false);
+                flusher.sendFrame(new OutgoingEntry.Builder(entry)
+                    .callback(closeConnectionCallback)
+                    .build());
             }
             else
             {
-                flusher.sendFrame(frame, callback, batch);
+                flusher.sendFrame(new OutgoingEntry.Builder(entry)
+                    .callback(callback)
+                    .build());
             }
         }
         catch (Throwable t)
@@ -713,15 +702,15 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private class OutgoingAdaptor implements OutgoingFrames
     {
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
             try
             {
-                connection.enqueueFrame(frame, callback, batch);
+                connection.enqueueFrame(entry);
             }
             catch (ProtocolException e)
             {
-                callback.failed(e);
+                entry.getCallback().failed(e);
             }
         }
     }
@@ -808,7 +797,12 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         @Override
         protected void forwardFrame(Frame frame, Callback callback, boolean batch)
         {
-            negotiated.getExtensions().sendFrame(frame, callback, batch);
+            OutgoingEntry currentEntry = new OutgoingEntry.Builder(getCurrentEntry())
+                .frame(frame)
+                .callback(callback)
+                .batch(batch)
+                .build();
+            negotiated.getExtensions().sendFrame(currentEntry);
         }
     }
 }

@@ -21,6 +21,7 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.util.DemandChain;
 import org.eclipse.jetty.websocket.core.util.DemandingFlusher;
@@ -46,7 +47,12 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
             @Override
             protected void forwardFrame(Frame frame, Callback callback, boolean batch)
             {
-                nextOutgoingFrame(frame, callback, batch);
+                OutgoingEntry entry = new OutgoingEntry.Builder(getCurrentEntry())
+                    .frame(frame)
+                    .callback(callback)
+                    .batch(batch)
+                    .build();
+                nextOutgoingFrame(entry);
             }
         };
 
@@ -78,9 +84,9 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
-        outgoingFlusher.sendFrame(frame, callback, batch);
+        outgoingFlusher.sendFrame(entry);
     }
 
     @Override

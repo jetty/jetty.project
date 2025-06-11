@@ -178,7 +178,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (String section : quote)
         {
             Frame frame = new Frame(OpCode.TEXT).setPayload(section);
-            ext.sendFrame(frame, null, false);
+            ext.sendFrame(frame, Callback.NOOP, false);
         }
 
         // Expected Frames
@@ -250,7 +250,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (String section : quote)
         {
             Frame frame = new Frame(OpCode.TEXT).setPayload(section);
-            ext.sendFrame(frame, null, false);
+            ext.sendFrame(frame, Callback.NOOP, false);
         }
 
         // Expected Frames
@@ -307,7 +307,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         String payload = "Are you there?";
         Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
-        ext.sendFrame(ping, null, false);
+        ext.sendFrame(ping, Callback.NOOP, false);
 
         capture.assertFrameCount(1);
 

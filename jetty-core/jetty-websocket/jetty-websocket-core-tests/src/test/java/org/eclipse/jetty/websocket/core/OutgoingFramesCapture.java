@@ -62,16 +62,15 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
+        Frame frame = entry.getFrame();
+        Callback callback = entry.getCallback();
         frames.add(Frame.copy(frame));
         // Consume bytes
         ByteBuffer payload = frame.getPayload();
         payload.position(payload.limit());
         // notify callback
-        if (callback != null)
-        {
-            callback.succeeded();
-        }
+        callback.succeeded();
     }
 }

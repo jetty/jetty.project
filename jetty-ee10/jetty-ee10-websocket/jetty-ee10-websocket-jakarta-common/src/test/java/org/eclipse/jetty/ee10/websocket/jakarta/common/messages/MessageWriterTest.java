@@ -21,11 +21,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.messages.MessageWriter;
 import org.junit.jupiter.api.Test;
@@ -149,10 +149,10 @@ public class MessageWriterTest
         public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
-            frames.offer(Frame.copy(frame));
-            callback.succeeded();
+            frames.offer(Frame.copy(entry.getFrame()));
+            entry.getCallback().succeeded();
         }
     }
 
@@ -163,8 +163,9 @@ public class MessageWriterTest
         private Utf8StringBuilder activeMessage;
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, boolean batch)
+        public void sendFrame(OutgoingEntry entry)
         {
+            Frame frame = entry.getFrame();
             if (frame.getOpCode() == OpCode.TEXT)
                 activeMessage = new Utf8StringBuilder();
 
@@ -175,7 +176,7 @@ public class MessageWriterTest
                 messages.offer(activeMessage.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
                 activeMessage = null;
             }
-            callback.succeeded();
+            entry.getCallback().succeeded();
         }
     }
 }
