@@ -138,11 +138,10 @@ public class HttpClientTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoFCGI")
     public void testClientUseContentSourceInSpawnedThreadWithTrailer(Transport transport) throws Exception
     {
         assumeTrue(transport != Transport.H3); // TODO H3 should work too, but does not for some reason that must be investigated.
-        assumeTrue(transport != Transport.FCGI); // TODO FCGI should work too, but does not for some reason that must be investigated.
 
         start(transport, new Handler.Abstract()
         {
