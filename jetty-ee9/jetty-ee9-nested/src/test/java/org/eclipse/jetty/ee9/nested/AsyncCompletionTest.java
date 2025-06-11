@@ -40,6 +40,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -69,8 +70,8 @@ import static org.hamcrest.Matchers.is;
  */
 public class AsyncCompletionTest extends HttpServerTestFixture
 {
-    private static final int POLL = 10; // milliseconds
-    private static final int WAIT = 10; // seconds
+    private static final int POLL = 5; // milliseconds
+    private static final int WAIT = 5; // seconds
     private static final String SMALL = "Now is the time for all good men to come to the aid of the party. ";
     private static final String LARGE = SMALL + SMALL + SMALL + SMALL + SMALL;
     private static final int BUFFER_SIZE = SMALL.length() * 3 / 2;
@@ -203,7 +204,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         startServer(handler);
 
-        int base = _threadPool.getBusyThreads();
+        int base = _threadPool.getUtilizedThreads();
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
@@ -229,13 +230,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 }
 
                 // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are async.
-                long start = NanoTime.now();
-                while (delay != null && _threadPool.getBusyThreads() > base)
-                {
-                    if (NanoTime.secondsSince(start) > WAIT)
-                        throw new TimeoutException();
-                    Thread.sleep(POLL);
-                }
+                Awaitility.await().atMost(WAIT, TimeUnit.SECONDS).until(_threadPool::getUtilizedThreads, is(base));
 
                 // handle any callback written so far
                 while (delay != null)
@@ -640,7 +635,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         startServer(handler);
 
-        int base = _threadPool.getBusyThreads();
+        int base = _threadPool.getUtilizedThreads();
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
@@ -652,16 +647,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             handler.wait4handle();
 
-            long start = NanoTime.now();
-            while (_threadPool.getBusyThreads() != base)
-            {
-                if (NanoTime.secondsSince(start) > WAIT)
-                    throw new TimeoutException();
-                Thread.sleep(POLL);
-            }
+            Awaitility.await().atMost(WAIT, TimeUnit.SECONDS).until(_threadPool::getUtilizedThreads, is(base));
 
             // Wait for full completion
-            start = NanoTime.now();
+            long start = NanoTime.now();
             while (!__transportComplete.get())
             {
                 if (NanoTime.secondsSince(start) > WAIT)
