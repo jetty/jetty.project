@@ -364,10 +364,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                         }
                     }
 
+                    // When notifyContentAvailable==false, this method is called from read(boolean),
+                    // and the call to responseSuccess() is performed by read().
                     if (notifyContentAvailable)
                         responseSuccess(exchange, receiveNext);
-                    // else: Let read(boolean) call responseSuccess() so it gets a chance to read this.chunk before
-                    // responseSuccess() resets it to null.
 
                     // Continue to read from the network.
                     return false;
