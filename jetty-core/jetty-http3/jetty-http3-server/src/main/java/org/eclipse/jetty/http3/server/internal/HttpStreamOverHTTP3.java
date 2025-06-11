@@ -398,7 +398,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 {
                     if (hasContent)
                     {
-                        callback.completeWith(sendDataFrame(content, lastContent, false)
+                        callback.completeWith(sendDataFrame(content, false, false)
                             .thenCompose(s -> sendTrailerFrame(trailers)));
                     }
                     else

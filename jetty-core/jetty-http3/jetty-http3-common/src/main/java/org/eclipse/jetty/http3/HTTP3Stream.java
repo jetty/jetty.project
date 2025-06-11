@@ -362,6 +362,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         {
             notIdle();
             notifyTrailer(frame);
+            dataRef.set(Data.EOF);
             updateClose(frame.isLast(), false);
         }
     }
