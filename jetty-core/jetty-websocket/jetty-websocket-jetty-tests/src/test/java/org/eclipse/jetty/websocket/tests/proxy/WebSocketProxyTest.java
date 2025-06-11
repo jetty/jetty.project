@@ -148,12 +148,12 @@ public class WebSocketProxyTest
     public void testFailServerUpgrade() throws Exception
     {
         EventSocket clientSocket = new EventSocket();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(proxyUri);
         upgradeRequest.setSubProtocols("fail");
 
         try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class, Response.class))
         {
-            client.connect(clientSocket, proxyUri, upgradeRequest);
+            client.connect(clientSocket, upgradeRequest);
             assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 

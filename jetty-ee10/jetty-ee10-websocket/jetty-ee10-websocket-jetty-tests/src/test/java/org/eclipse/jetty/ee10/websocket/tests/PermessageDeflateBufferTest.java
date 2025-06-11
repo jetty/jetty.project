@@ -146,11 +146,10 @@ public class PermessageDeflateBufferTest
     public void testPermessageDeflateAggregation() throws Exception
     {
         EventSocket socket = new EventSocket();
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         String s = randomText();
         session.sendText(s, Callback.NOOP);
@@ -165,11 +164,10 @@ public class PermessageDeflateBufferTest
     public void testPermessageDeflateFragmentedBinaryMessage() throws Exception
     {
         EventSocket socket = new EventSocket();
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         ByteBuffer message = randomBytes(1024);
         session.setMaxFrameSize(64);
@@ -187,12 +185,11 @@ public class PermessageDeflateBufferTest
         Duration idleTimeout = Duration.ofMillis(1000);
         serverContainer.setIdleTimeout(idleTimeout);
 
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
-        EventSocket socket = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        EventSocket socket = new EventSocket();
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         session.sendPartialText("partial", false, Callback.NOOP);
 
@@ -210,12 +207,11 @@ public class PermessageDeflateBufferTest
     @Test
     public void testClientPartialMessageThenClientClose() throws Exception
     {
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
-        PartialTextSocket socket = new PartialTextSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        PartialTextSocket socket = new PartialTextSocket();
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         session.sendPartialText("partial", false, Callback.NOOP);
         // Wait for the server to process the partial message.
@@ -241,12 +237,11 @@ public class PermessageDeflateBufferTest
         Duration idleTimeout = Duration.ofMillis(1000);
         serverContainer.setIdleTimeout(idleTimeout);
 
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
-        EventSocket socket = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        EventSocket socket = new EventSocket();
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         session.sendText("hello", Callback.NOOP);
 
@@ -264,12 +259,11 @@ public class PermessageDeflateBufferTest
     @Test
     public void testServerPartialMessageThenClientClose() throws Exception
     {
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
-        clientUpgradeRequest.addExtensions("permessage-deflate");
-
-        PartialTextSocket socket = new PartialTextSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/outgoingFail");
-        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+        PartialTextSocket socket = new PartialTextSocket();
+        Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         session.sendText("hello", Callback.NOOP);
         // Wait for the server to process the message.

@@ -271,11 +271,11 @@ public class ClientDemo
     private void open() throws Exception
     {
         client.setIdleTimeout(Duration.ofMillis(timeout));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = new URI("ws://" + host + ":" + port + "/");
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols(protocol);
         socket = new TestSocket();
-        URI wsUri = new URI("ws://" + host + ":" + port + "/");
-        client.connect(socket, wsUri, request).get(10, TimeUnit.SECONDS);
+        client.connect(socket, request).get(10, TimeUnit.SECONDS);
     }
 
     private void send(byte op, byte[] data, int fragment)

@@ -84,7 +84,7 @@ public class ConnectionHeaderTest
         };
 
         EventSocket clientEndpoint = new EventSocket();
-        try (Session session = client.connect(clientEndpoint, uri, null, upgradeListener).get(5, TimeUnit.SECONDS))
+        try (Session session = client.connect(clientEndpoint, uri, upgradeListener).get(5, TimeUnit.SECONDS))
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

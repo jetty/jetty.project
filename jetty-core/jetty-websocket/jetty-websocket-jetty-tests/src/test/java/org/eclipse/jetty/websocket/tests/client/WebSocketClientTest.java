@@ -169,14 +169,14 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
         request.addExtensions("x-bad");
 
         assertThrows(IllegalArgumentException.class, () ->
         {
             // Should trigger failure on bad extension
-            client.connect(cliSock, wsUri, request);
+            client.connect(cliSock, request);
         });
     }
 
@@ -188,9 +188,9 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(30, TimeUnit.SECONDS))
         {
@@ -218,9 +218,9 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(30, TimeUnit.SECONDS))
         {
@@ -250,9 +250,9 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(30, TimeUnit.SECONDS))
         {
@@ -303,9 +303,9 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(5, TimeUnit.SECONDS))
         {
@@ -360,9 +360,9 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session ignored = future.get(5, TimeUnit.SECONDS))
         {
@@ -430,8 +430,8 @@ public class WebSocketClientTest
         client.setIdleTimeout(Duration.ofSeconds(10));
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/get-params?snack=cashews&amount=handful&brand=off"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(5, TimeUnit.SECONDS))
         {

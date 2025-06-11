@@ -90,7 +90,7 @@ public class ClientResponseTest
 
         EchoSocket clientEndpoint = new EchoSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
 
         CompletableFuture<Response> responseFuture = new CompletableFuture<>();
         CompletableFuture<String> contentFuture = new CompletableFuture<>();
@@ -111,7 +111,7 @@ public class ClientResponseTest
         };
 
         Throwable t = assertThrows(Throwable.class, () ->
-            _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
+            _client.connect(clientEndpoint, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
         assertThat(t, instanceOf(ExecutionException.class));
         assertThat(t.getCause(), instanceOf(UpgradeException.class));
         assertThat(t.getCause().getMessage(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 418"));
@@ -135,7 +135,7 @@ public class ClientResponseTest
 
         EchoSocket clientEndpoint = new EchoSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
 
         CompletableFuture<Void> onHandShakeRequest = new CompletableFuture<>();
         CompletableFuture<Void> onHandShakeResponse = new CompletableFuture<>();
@@ -155,7 +155,7 @@ public class ClientResponseTest
         };
 
         Throwable t = assertThrows(Throwable.class, () ->
-            _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
+            _client.connect(clientEndpoint, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
         assertThat(t, instanceOf(ExecutionException.class));
         assertThat(t.getCause(), instanceOf(EOFException.class));
 

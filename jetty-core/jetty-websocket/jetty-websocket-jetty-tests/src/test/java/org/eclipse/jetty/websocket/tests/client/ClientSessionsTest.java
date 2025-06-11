@@ -99,9 +99,9 @@ public class ClientSessionsTest
             client.setIdleTimeout(Duration.ofSeconds(10));
 
             URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
             request.setSubProtocols("echo");
-            Future<Session> future = client.connect(cliSock, wsUri, request);
+            Future<Session> future = client.connect(cliSock, request);
 
             try (Session sess = future.get(30000, TimeUnit.MILLISECONDS))
             {

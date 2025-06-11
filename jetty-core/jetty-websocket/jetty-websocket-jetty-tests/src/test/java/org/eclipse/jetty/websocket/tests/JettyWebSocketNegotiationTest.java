@@ -77,10 +77,10 @@ public class JettyWebSocketNegotiationTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.addExtensions("permessage-deflate;invalidParameter");
 
-        CompletableFuture<Session> connect = client.connect(socket, uri, upgradeRequest);
+        CompletableFuture<Session> connect = client.connect(socket, upgradeRequest);
         Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
         assertThat(t.getMessage(), containsString("Failed to upgrade to websocket:"));
         assertThat(t.getMessage(), containsString("400 Bad Request"));
@@ -126,7 +126,7 @@ public class JettyWebSocketNegotiationTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
         AtomicReference<Response> responseReference = new AtomicReference<>();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.addExtensions("permessage-deflate;client_no_context_takeover");
         JettyUpgradeListener upgradeListener = new JettyUpgradeListener()
         {
@@ -137,7 +137,7 @@ public class JettyWebSocketNegotiationTest
             }
         };
 
-        client.connect(socket, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS);
+        client.connect(socket, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS);
         Response response = responseReference.get();
         String extensions = response.getHeaders().get("Sec-WebSocket-Extensions");
         assertThat(extensions, is("permessage-deflate"));

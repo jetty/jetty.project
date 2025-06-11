@@ -92,9 +92,9 @@ public class TestJettyOSGiBootWithWebSocket
         {
             client.start();
             SimpleEchoSocket socket = new SimpleEchoSocket();
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            ClientUpgradeRequest request = new ClientUpgradeRequest(uri);
             request.setSubProtocols("chat");
-            client.connect(socket, uri, request);
+            client.connect(socket, request);
             // wait for closed socket connection.
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
         }

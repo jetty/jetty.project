@@ -186,8 +186,8 @@ public class ConnectFutureTest
         };
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(WSURI.toWebsocket(server.getURI()));
+        Future<Session> connect = client.connect(clientSocket, upgradeRequest, upgradeListener);
 
         // Abort after handshake response, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));

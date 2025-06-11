@@ -94,9 +94,9 @@ public class WebSocketStopTest
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket clientSocket = new EventSocket();
 
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.addExtensions("permessage-deflate");
-        Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
+        Session session = client.connect(clientSocket, upgradeRequest).get(5, TimeUnit.SECONDS);
         clientSocket.session.sendText("init deflater", Callback.NOOP);
         assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
         session.close(StatusCode.NORMAL, null, Callback.NOOP);

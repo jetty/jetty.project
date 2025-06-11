@@ -151,7 +151,7 @@ public class WebSocketClientDocs
         URI serverURI = URI.create("ws://domain.com/path");
 
         // Create a custom HTTP request.
-        ClientUpgradeRequest customRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest customRequest = new ClientUpgradeRequest(serverURI);
         // Specify a cookie.
         customRequest.getCookies().add(new HttpCookie("name", "value"));
         // Specify a custom header.
@@ -160,7 +160,7 @@ public class WebSocketClientDocs
         customRequest.setSubProtocols("chat");
 
         // Connect the client EndPoint to the server with a custom HTTP request.
-        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI, customRequest);
+        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, customRequest);
         // end::customHTTPRequest[]
     }
 
@@ -184,7 +184,7 @@ public class WebSocketClientDocs
         };
 
         // Connect the client EndPoint to the server with a custom HTTP request.
-        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI, null, listener);
+        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI, listener);
         // end::inspectHTTPResponse[]
     }
 
