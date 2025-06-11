@@ -339,10 +339,10 @@ class UrlParameterDecoder
 
     private void onNewField(String name, String value)
     {
-        if (name == null || name.isEmpty())
+        if (name == null && value == null)
             return;
         keyCount++;
-        newFieldAdder.accept(name, value);
+        newFieldAdder.accept(name == null ? "" : name, value == null ? "" : value);
         if (maxKeys >= 0 && keyCount > maxKeys)
             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", keyCount, maxKeys));
     }

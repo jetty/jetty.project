@@ -106,6 +106,42 @@ public class UrlParameterDecoderTest
     }
 
     @Test
+    public void testEmptyKeyName()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "=";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        assertEquals("", fields.getValue(""));
+    }
+
+    @Test
+    public void testDualEmptyKeyName()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "=&=";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(2));
+        assertEquals("", values.get(0));
+        assertEquals("", values.get(1));
+    }
+
+    @Test
     public void testManyPctEncoding()
         throws Exception
     {
@@ -303,10 +339,10 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%£", "other", "foo")));
 
         // Extra ampersands
-        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
-        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa", "", "")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa", "", "")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo", "", "")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo", "", "")));
 
         // Encoded ampersands
         cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
@@ -382,10 +418,10 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
 
         // Extra ampersands
-        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
-        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa", "", "")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa", "", "")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo", "", "")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo", "", "")));
 
         // Encoded ampersands
         cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
