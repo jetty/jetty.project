@@ -19,6 +19,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -84,9 +85,56 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
         installBean(sessionTracker);
     }
 
+    /**
+     * Connect to remote websocket endpoint
+     *
+     * @param websocket the websocket object
+     * @param toUri the websocket uri to connect to
+     * @return the future for the session, available on success of connect
+     * @throws IOException if unable to connect
+     */
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
     {
-        return connect(websocket, toUri, null);
+        return connect(websocket, toUri, (JettyUpgradeListener)null);
+    }
+
+    /**
+     * Connect to remote websocket endpoint
+     *
+     * @param websocket the websocket object
+     * @param toUri the websocket uri to connect to
+     * @return the future for the session, available on success of connect
+     * @throws IOException if unable to connect
+     */
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, JettyUpgradeListener upgradeListener) throws IOException
+    {
+        return connect(websocket, toUri, null, upgradeListener);
+    }
+
+    /**
+     * Connect to remote websocket endpoint
+     *
+     * @param websocket the websocket object
+     * @param request the upgrade request information
+     * @return the future for the session, available on success of connect
+     * @throws IOException if unable to connect
+     */
+    public CompletableFuture<Session> connect(Object websocket, ClientUpgradeRequest request) throws IOException
+    {
+        return connect(websocket, request, null);
+    }
+
+    /**
+     * Connect to remote websocket endpoint
+     *
+     * @param websocket the websocket object
+     * @param request the upgrade request information
+     * @return the future for the session, available on success of connect
+     * @throws IOException if unable to connect
+     */
+    public CompletableFuture<Session> connect(Object websocket, ClientUpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
+    {
+        return connect(websocket, Objects.requireNonNull(request).getRequestURI(), request, upgradeListener);
     }
 
     /**
@@ -98,6 +146,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
     {
         return connect(websocket, toUri, request, null);
@@ -112,7 +161,9 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
      * @param upgradeListener the upgrade listener
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
+     * @deprecated use {@link #connect(Object, ClientUpgradeRequest, JettyUpgradeListener)} or {@link #connect(Object, URI, JettyUpgradeListener)}.
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
