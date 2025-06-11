@@ -58,7 +58,18 @@ public class DigestAuthenticator extends LoginAuthenticator
     private final ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
     private long _maxNonceAgeMs = 60 * 1000;
     private int _maxNC = 1024;
+    private String algorithm = "MD5";
+    
+    public void setAlgorithm(String a)
+    {
+        algorithm = a;
+    }
 
+    public String getAlgorithm()
+    {
+        return algorithm;
+    }
+    
     @Override
     public void setConfiguration(Configuration configuration)
     {
@@ -108,7 +119,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Credentials: {}", credentials);
-            final Digest digest = new Digest(req.getMethod());
+            final Digest digest = new Digest(req.getMethod(), this.getAlgorithm());
             String last = null;
             String name = null;
 
@@ -177,7 +188,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
                     "\", nonce=\"" + newNonce(req) +
-                    "\", algorithm=MD5" +
+                    "\", algorithm=" + getAlgorithm() +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
 
@@ -286,6 +297,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         @Serial
         private static final long serialVersionUID = -2484639019549527724L;
+        private String algorithm;
         final String method;
         String username = "";
         String realm = "";
@@ -300,18 +312,29 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             method = m;
         }
-
+        
+        Digest(String m, String a)
+        {
+            method = m;
+            algorithm = a;
+        }
+        
+        private String getAlgorithm()
+        {
+            return algorithm;
+        }
+        
         @Override
         public boolean check(Object credentials)
-        {
+        {            
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
             String password = (credentials instanceof String) ? (String)credentials : credentials.toString();
-
+            
             try
             {
                 // MD5 required by the specification
-                MessageDigest md = MessageDigest.getInstance("MD5");
+                MessageDigest md = MessageDigest.getInstance(getAlgorithm());
                 byte[] ha1;
                 if (credentials instanceof MD5)
                 {
@@ -355,19 +378,18 @@ public class DigestAuthenticator extends LoginAuthenticator
                 md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte)':');
                 md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
-                byte[] digest = md.digest();
-
+                
                 // check digest
-                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
-            }
-            catch (Exception e)
+                return stringEquals(TypeUtil.toString(md.digest(), 16).toLowerCase(), response == null ? null : response.toLowerCase());
+                
+            } 
+            catch (Exception e) 
             {
                 LOG.warn("Unable to process digest", e);
             }
-
-            return false;
+                return false;
         }
-
+        
         @Override
         public String toString()
         {
