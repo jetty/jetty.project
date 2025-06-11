@@ -185,6 +185,7 @@ public interface Dumpable
      */
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
+        out = DumpAppendable.ensure(out);
         dumpObject(out, object);
 
         if (DumpAppendable.hasVisited(out, object))
@@ -240,6 +241,7 @@ public interface Dumpable
     
     static void dumpContainer(Appendable out, String indent, Container object, boolean last) throws IOException
     {
+        out = DumpAppendable.ensure(out);
         Container container = object;
         ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
         for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext(); )
@@ -284,6 +286,7 @@ public interface Dumpable
 
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
+        out = DumpAppendable.ensure(out);
         for (Iterator<?> i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
@@ -301,6 +304,7 @@ public interface Dumpable
 
     static void dumpMapEntries(Appendable out, String indent, Map<?, ?> map, boolean last) throws IOException
     {
+        out = DumpAppendable.ensure(out);
         for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext(); )
         {
             Map.Entry entry = i.next();

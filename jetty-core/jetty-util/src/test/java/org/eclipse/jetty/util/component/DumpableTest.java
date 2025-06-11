@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +26,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DumpableTest
 {
+    public static final String EXPECTED = """
+        A size=3
+        +> B size=4
+        |  +> si
+        |  +> see
+        |  +> sea
+        |  +> C size=3
+        |     +> ay
+        |     +>@ A size=3
+        |     +> ai
+        +> be
+        +> bee
+        """;
+
     @Test
     public void testNullDumpableCollection() throws Exception
     {
@@ -59,19 +75,10 @@ public class DumpableTest
         listC.add("ai");
 
         String dump = a.dump();
-        assertThat(dump, Matchers.startsWith("""
-            A size=3
-            +> B size=4
-            |  +> si
-            |  +> see
-            |  +> sea
-            |  +> C size=3
-            |     +> ay
-            |     +>@ A size=3
-            |     +> ai
-            +> be
-            +> bee
-            legend: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @ visited
-            JVM:"""));
+        assertThat(dump, Matchers.startsWith(EXPECTED));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        a.dump(new PrintStream(baos), "");
+        assertThat(baos.toString(), Matchers.startsWith(EXPECTED));
     }
 }
