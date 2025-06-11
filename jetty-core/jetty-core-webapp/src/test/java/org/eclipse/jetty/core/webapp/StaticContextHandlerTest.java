@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -123,7 +124,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // should see a directory listing (as directory listing is enabled by default)
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), allOf(
             containsString("Directory: /static/"),
             containsString("<table class=\"listing\">")
@@ -149,7 +150,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("Hello from TEXT"));
     }
 
@@ -181,7 +182,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("Hello from TEXT"));
     }
 
@@ -226,7 +227,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (by default it is enabled)
@@ -237,7 +238,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), allOf(
             containsString("Directory: /static/"),
             containsString("<table class=\"listing\">")
@@ -276,7 +277,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
@@ -287,7 +288,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(403));
+        assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
         assertThat(response.getContent(), allOf(
             not(containsString("Directory: /static/")),
             not(containsString("<table class=\"listing\">"))
@@ -316,7 +317,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
@@ -327,7 +328,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(403));
+        assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
         assertThat(response.getContent(), allOf(
             not(containsString("Directory: /static/")),
             not(containsString("<table class=\"listing\">"))
@@ -360,7 +361,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
@@ -371,7 +372,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(403));
+        assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
         assertThat(response.getContent(), allOf(
             not(containsString("Directory: /static/")),
             not(containsString("<table class=\"listing\">"))
@@ -416,7 +417,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("Hello from alt"));
     }
 
@@ -458,7 +459,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (by default it is enabled)
@@ -469,7 +470,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), allOf(
             containsString("Directory: /static/"),
             containsString("<table class=\"listing\">")
@@ -500,7 +501,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
                 
                 """);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat(response.getStatus(), is(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("TEST TEXT"));
 
             // Directory listing (turned off in this configuration)
@@ -511,7 +512,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
                 
                 """);
             response = HttpTester.parseResponse(rawResponse);
-            assertThat(response.getStatus(), is(403));
+            assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             assertThat(response.getContent(), allOf(
                 not(containsString("Directory: /static/")),
                 not(containsString("<table class=\"listing\">"))

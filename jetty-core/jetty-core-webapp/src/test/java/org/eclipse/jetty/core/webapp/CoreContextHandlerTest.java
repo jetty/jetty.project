@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Deployable;
@@ -167,7 +168,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/demo/"));
@@ -195,7 +196,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             <Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
               <Set name="contextPath">/documentation</Set>
               <Set name="redirectURI">https://jetty.org/docs/</Set>
-              <Set name="statusCode">302</Set>
+              <Set name="statusCode">HttpStatus.MOVED_TEMPORARILY_302</Set>
             </Configure>
             """;
         Files.writeString(demoXml, demoXmlStr);
@@ -211,7 +212,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get("Location"), is("https://jetty.org/docs/"));
     }
 
@@ -264,7 +265,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("demobase index"));
     }
@@ -304,7 +305,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the static index.html"));
 
@@ -316,7 +317,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the test TXT"));
 
@@ -328,7 +329,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(404));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         // Request jetty-web.xml
         rawResponse = localConnector.getResponse("""
@@ -338,7 +339,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(404));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         // Request jetty-web.xml in different way
         rawResponse = localConnector.getResponse("""
@@ -348,7 +349,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(404));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 
     /**
@@ -400,7 +401,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the static index.html"));
 
@@ -468,7 +469,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("This is the static index.html"));
 
@@ -692,7 +693,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/alt-demo/"));
@@ -744,7 +745,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/alt-demo/"));
@@ -817,7 +818,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/demo/"));
@@ -885,7 +886,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/demo/"));
@@ -961,7 +962,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/demo/"));
@@ -1031,7 +1032,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString("/demo/"));
