@@ -2140,6 +2140,7 @@
         <configuration>
           <excludes>
             <!-- build tools -->
+            <exclude>**/META-INF/**</exclude>
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
             <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
