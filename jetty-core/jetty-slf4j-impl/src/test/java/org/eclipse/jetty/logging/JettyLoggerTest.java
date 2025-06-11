@@ -652,6 +652,23 @@ public class JettyLoggerTest
         output.assertContains("\t|\t|java.lang.Exception: branch0");
     }
 
+    @Test
+    public void testConcurrentIsStackHidden()
+    {
+        JettyLoggerFactory factory = new JettyLoggerFactory(new JettyLoggerConfiguration());
+        JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
+
+        // Simulate two concurrent threads adding a StacklessLogging instance for the same logger.
+        StacklessLogging stacklessLogging1 = new StacklessLogging(log);
+        StacklessLogging stacklessLogging2 = new StacklessLogging(log);
+
+        assertThat(JettyLogger.isStackHidden(log), is(true));
+        stacklessLogging1.close();
+        assertThat(JettyLogger.isStackHidden(log), is(true));
+        stacklessLogging2.close();
+        assertThat(JettyLogger.isStackHidden(log), is(false));
+    }
+
     private void assertLevel(JettyLogger log, JettyLevel expectedLevel)
     {
         assertThat("Log[" + log.getName() + "].level",

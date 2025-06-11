@@ -58,8 +58,6 @@ public class StdErrAppenderTest
         long timestamp = 1581966695563L;
 
         appender.emit(logger, Level.INFO, timestamp, threadName, null, "testing:{},{}", "test", "format1");
-
-        System.err.println(output);
         output.assertContains("2020-02-17 19:11:35.563:INFO :oejl.LogTest:tname: testing:test,format1");
     }
 }
