@@ -106,7 +106,7 @@ public class UrlParameterDecoderTest
     }
 
     @Test
-    public void testEmptyKeyName()
+    public void testEmptyKeyAndEmptyValue()
         throws Exception
     {
         Fields fields = new Fields();
@@ -118,11 +118,33 @@ public class UrlParameterDecoderTest
         decoder.parse(input);
 
         assertThat(fields.getSize(), is(1));
-        assertEquals("", fields.getValue(""));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(1));
+        assertEquals("", values.get(0));
     }
 
     @Test
-    public void testDualEmptyKeyName()
+    public void testEmptyKeyWithValue()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "=foo";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(1));
+        assertEquals("foo", values.get(0));
+    }
+
+    @Test
+    public void testDualEmptyKeysAndEmptyValues()
         throws Exception
     {
         Fields fields = new Fields();
@@ -139,6 +161,89 @@ public class UrlParameterDecoderTest
         assertThat(values.size(), is(2));
         assertEquals("", values.get(0));
         assertEquals("", values.get(1));
+    }
+
+    @Test
+    public void testDualEmptyKeysWithValues()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "=foo&=bar";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(2));
+        assertEquals("foo", values.get(0));
+        assertEquals("bar", values.get(1));
+    }
+
+    @Test
+    public void testOneAmpersand()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "&";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(1));
+        assertEquals("", values.get(0));
+    }
+
+    @Test
+    public void testTwoAmpersands()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "&&";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(1));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(2));
+        assertEquals("", values.get(0));
+        assertEquals("", values.get(1));
+    }
+
+    @Test
+    public void testValueBetweenTwoAmpersands()
+        throws Exception
+    {
+        Fields fields = new Fields();
+
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        String input = "&foo&";
+        decoder.parse(input);
+
+        assertThat(fields.getSize(), is(2));
+        List<String> values = fields.getValues("");
+        assertNotNull(values);
+        assertThat(values.size(), is(1));
+        assertEquals("", values.get(0));
+
+        values = fields.getValues("foo");
+        assertNotNull(values);
+        assertThat(values.size(), is(1));
+        assertEquals("", values.get(0));
     }
 
     @Test
