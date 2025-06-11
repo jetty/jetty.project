@@ -12,7 +12,6 @@
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
-    <jacoco.skip>true</jacoco.skip>
     <jetty.jvmArgs></jetty.jvmArgs>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
@@ -24,22 +23,16 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-tools-api</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.annotation</groupId>
-          <artifactId>javax.annotation-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-xml</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.apache.maven</groupId>
           <artifactId>maven-api-xml</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.maven</groupId>
+          <artifactId>maven-xml</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.maven</groupId>
@@ -199,6 +192,17 @@
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-tools-api</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.annotation</groupId>
+          <artifactId>javax.annotation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>

@@ -23,27 +23,19 @@
   <Put name="NullTrim">
   </Put>
 
-  <Put name="Object"><New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-  </New></Put>
+  <Put name="Object"><Call name="parseDouble" class="java.lang.Double" arg="1.2345"/></Put>
  
   <Put name="ObjectTrim">
-    <New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-    </New>
+    <Call name="parseDouble" class="java.lang.Double" arg="1.2345"/>
   </Put>
 
-  <Put name="Objects"><New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New class="java.lang.String">
+  <Put name="Objects"><Call name="parseInt" class="java.lang.Integer" arg="-1"/><New class="java.lang.String">
       <Arg>String</Arg>
   </New></Put>
 
 
   <Put name="ObjectsTrim">
-    <New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New class="java.lang.String">
+    <Call name="parseInt" class="java.lang.Integer" arg="-1"/><New class="java.lang.String">
       <Arg>String</Arg>
   </New></Put>
 
@@ -58,23 +50,16 @@
   </Put>
 
   <Put name="ObjectString" type="String">
-    <New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-    </New>
+    <Call name="parseDouble" class="java.lang.Double" arg="1.2345"/>
   </Put>
 
-  <Put name="ObjectsString" type="String"><New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New>
+  <Put name="ObjectsString" type="String"><Call name="parseInt" class="java.lang.Integer" arg="-1"/><New>
       <Class>java.lang.String</Class>
       <Arg>String</Arg>
   </New></Put>
 
   <Put name="ObjectsWhiteString">
-    <New>
-      <Class>java.lang.Integer</Class>
-      <Arg>-1</Arg>
-  </New>
+    <Call name="parseInt" class="java.lang.Integer" arg="-1"/>
   <New>
       <Class>java.lang.String</Class>
       <Arg>String</Arg>
@@ -155,7 +140,7 @@
     <Arg><Array type="java.lang.Object">
       <Item>Blah</Item>
       <Item type="String">1.2.3.4:5678</Item>
-      <Item><New class="java.lang.Double"><Arg>1.2345</Arg></New></Item>
+      <Item><Call name="parseDouble" class="java.lang.Double" arg="1.2345"/></Item>
       <Item></Item>
     </Array></Arg>
   </Call>

@@ -149,6 +149,11 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-jetty-server</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-component-annotations</artifactId>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
