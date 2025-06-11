@@ -196,7 +196,7 @@ public class CoreContextHandlerTest extends AbstractCleanEnvironmentTest
             <Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
               <Set name="contextPath">/documentation</Set>
               <Set name="redirectURI">https://jetty.org/docs/</Set>
-              <Set name="statusCode">HttpStatus.MOVED_TEMPORARILY_302</Set>
+              <Set name="statusCode">302</Set>
             </Configure>
             """;
         Files.writeString(demoXml, demoXmlStr);
