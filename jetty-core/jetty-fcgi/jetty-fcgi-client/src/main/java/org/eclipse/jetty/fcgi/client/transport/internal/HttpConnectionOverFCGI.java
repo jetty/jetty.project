@@ -267,11 +267,25 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 if (notifyContentAvailable)
                     channel.responseContentAvailable();
             }
-            case COMPLETE -> channel.responseSuccess();
+            case COMPLETE ->
+            {
+                // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean) a chance to read
+                // the chunk field before channel.responseSuccess() resets it to null.
+            }
             default -> throw new IllegalStateException("Invalid state " + state);
         }
 
         return true;
+    }
+
+    boolean isComplete()
+    {
+        return state == State.COMPLETE;
+    }
+
+    void complete()
+    {
+        channel.responseSuccess();
     }
 
     private void shutdown()
