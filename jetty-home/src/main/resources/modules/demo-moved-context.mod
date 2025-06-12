@@ -10,7 +10,7 @@ core
 demo
 
 [depends]
-core-deploy
+coreapp-deploy
 
 [files]
 basehome:modules/demo.d/demo-moved-context.xml|webapps/demo-moved-context.xml

@@ -10,7 +10,7 @@ ee10
 [before]
 ee9-deploy
 ee8-deploy
-core-deploy
+coreapp-deploy
 static-deploy
 
 [depend]

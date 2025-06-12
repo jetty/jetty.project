@@ -59,7 +59,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,coreapp-deploy")))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
@@ -109,7 +109,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,coreapp-deploy")))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
@@ -146,7 +146,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,coreapp-deploy")))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
@@ -183,7 +183,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,core-deploy")))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,coreapp-deploy")))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());

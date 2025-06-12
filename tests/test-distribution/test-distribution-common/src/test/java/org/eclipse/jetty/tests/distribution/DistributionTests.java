@@ -783,7 +783,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,fcgi,fcgi-proxy,core-deploy")))
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,fcgi,fcgi-proxy,coreapp-deploy")))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
@@ -888,7 +888,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .build();
 
         String mods = String.join(",",
-            "resources", "http", "fcgi", "core-deploy",
+            "resources", "http", "fcgi", "coreapp-deploy",
             toEnvironment("deploy", env),
             toEnvironment("fcgi-proxy", env)
         );
@@ -1351,7 +1351,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,core-deploy"))
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,coreapp-deploy"))
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());

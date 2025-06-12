@@ -27,7 +27,7 @@ This means that you can simultaneously deploy an old Java EE 8 web application, 
 For each specific environment there is a specific deploy module that must be enabled:
 
 * For Jetty Static, xref:modules/standard.adoc#static-deploy[`static-deploy`]
-* For Jetty Core, xref:modules/standard.adoc#core-deploy[`core-deploy`]
+* For Jetty Core, xref:modules/standard.adoc#coreapp-deploy[`coreapp-deploy`]
 * For Java EE 8, xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`]
 * For Jakarta EE 9 up to Jakarta {ee-current-caps}, the corresponding xref:modules/standard.adoc#eeN-deploy[`ee<N>-deploy`]
 
@@ -258,10 +258,10 @@ TIP: It is good practice to always specify the web application <<web-application
 If multiple deployer modules are enabled, then the default environment is (in order):
 
 * The most recent Jakarta EE environment of the `{ee-all}-deploy` modules that are enabled, if any.
-* Otherwise, the `core` environment, if the `core-deploy` module is enabled.
+* Otherwise, the `core` environment, if the `coreapp-deploy` module is enabled.
 * Otherwise, the `static` environment, if the `static-deploy` module is enabled.
 
-For example, if `core-deploy`, `ee9-deploy` and the `{ee-current}-deploy` modules are enabled, then `{ee-current}` is the default environment, to which applications will be deployed unless otherwise configured (see below).
+For example, if `coreapp-deploy`, `ee9-deploy` and the `{ee-current}-deploy` modules are enabled, then `{ee-current}` is the default environment, to which applications will be deployed unless otherwise configured (see below).
 
 To configure a specific environment for an application, you add a web application <<web-application-files,properties file>> and specify the `environment` property.
 

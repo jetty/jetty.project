@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DeployModulesTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
-    @ValueSource(strings = {"static-deploy", "core-deploy", "ee8-deploy", "ee9-deploy", "ee10-deploy"})
+    @ValueSource(strings = {"static-deploy", "coreapp-deploy", "ee8-deploy", "ee9-deploy", "ee10-deploy"})
     public void testDeployModulesOrder(String deployModule) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
