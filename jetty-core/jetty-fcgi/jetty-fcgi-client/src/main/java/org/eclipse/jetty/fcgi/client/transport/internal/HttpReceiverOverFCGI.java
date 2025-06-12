@@ -133,9 +133,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         chunk = Content.Chunk.EOF;
     }
 
-    void responseSuccess(HttpExchange exchange)
+    void responseSuccess()
     {
-        super.responseSuccess(exchange, this::receiveNext);
+        responseSuccess(this::receiveNext);
     }
 
     private void receiveNext()

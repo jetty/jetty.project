@@ -94,7 +94,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         }
         else
         {
-            responseSuccess(getHttpExchange(), null);
+            responseSuccess(null);
             return Content.Chunk.EOF;
         }
     }
