@@ -45,6 +45,7 @@
     <ee10.jakarta.servlet.jsp.jstl.impl.version>3.0.1</ee10.jakarta.servlet.jsp.jstl.impl.version>
     <ee10.jakarta.transaction-api.version>2.0.1</ee10.jakarta.transaction-api.version>
     <ee10.jakarta.websocket.api.version>2.1.1</ee10.jakarta.websocket.api.version>
+    <ee10.jakarta.xml.bind.api.version>4.0.2</ee10.jakarta.xml.bind.api.version>
     <ee10.jakarta.xml.bind.impl.version>4.0.5</ee10.jakarta.xml.bind.impl.version>
     <ee10.jakarta.xml.jaxws.impl.version>4.0.2</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jersey.version>3.1.10</ee10.jersey.version>
@@ -108,6 +109,11 @@
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-client-api</artifactId>
         <version>${ee10.jakarta.websocket.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${ee10.jakarta.xml.bind.api.version}</version>
       </dependency>
       <!-- Jetty EE10 Dependencies -->
       <dependency>

@@ -22,17 +22,16 @@
   <Put name="NullTrim">
   </Put>
 
-  <Put name="Object"><New class="java.lang.Double" arg="1.2345"/></Put>
+  <Put name="Object"><Call name="parseDouble" class="java.lang.Double" arg="1.2345"/></Put>
  
   <Put name="ObjectTrim">
-    <New class="java.lang.Double" arg="1.2345"/>
+    <Call name="parseDouble" class="java.lang.Double" arg="1.2345"/>
   </Put>
 
-  <Put name="Objects"><New class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
+  <Put name="Objects"><Call name="parseInt" class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
 
   <Put name="ObjectsTrim">
-    <New class="java.lang.Integer" arg="-1">
-  </New><New class="java.lang.String" arg="String">
+    <Call name="parseInt" class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String">
   </New></Put>
 
   <Put name="String" type="String">
@@ -45,16 +44,13 @@
   </Put>
 
   <Put name="ObjectString" type="String">
-    <New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-    </New>
+    <Call name="parseDouble" class="java.lang.Double" arg="1.2345"/>
   </Put>
 
-  <Put name="ObjectsString" type="String"><New class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
+  <Put name="ObjectsString" type="String"><Call name="parseInt" class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
 
   <Put name="ObjectsWhiteString">
-    <New class="java.lang.Integer" arg="-1">
-  </New>
+    <Call name="parseInt" class="java.lang.Integer" arg="-1"/>
   <New class="java.lang.String" arg="String">
   </New></Put>
 
@@ -104,7 +100,7 @@
       <Type>java.lang.Object</Type>
       <Item>Blah</Item>
       <Item type="String">1.2.3.4:5678</Item>
-      <Item><New class="java.lang.Double"><Arg>1.2345</Arg></New></Item>
+      <Item><Call name="parseDouble" class="java.lang.Double" arg="1.2345"/></Item>
       <Item></Item>
     </Array></Arg>
   </Call>

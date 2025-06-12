@@ -162,7 +162,7 @@ public class ErrorPageTest
         rawRequest.append("\r\n");
 
         String rawResponse = _connector.getResponse(rawRequest.toString());
-        System.out.println(rawResponse);
+        LOG.debug(rawResponse);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));
@@ -847,14 +847,14 @@ public class ErrorPageTest
             final Thread existing = dispatches.putIfAbsent(key, current);
             if (existing != null && existing != current)
             {
-                System.err.println("DOUBLE DISPATCH OF REQUEST!!!!!!!!!!!!!!!!!!");
-                System.err.println("Thread " + existing + " :");
+                LOG.error("DOUBLE DISPATCH OF REQUEST!!!!!!!!!!!!!!!!!!");
+                LOG.error("Thread " + existing + " :");
                 for (StackTraceElement element : existing.getStackTrace())
                 {
-                    System.err.println("\tat " + element);
+                    LOG.error("\tat " + element);
                 }
                 IllegalStateException ex = new IllegalStateException();
-                ex.printStackTrace();
+                LOG.error("", ex);
                 response.flushBuffer();
                 throw ex;
             }

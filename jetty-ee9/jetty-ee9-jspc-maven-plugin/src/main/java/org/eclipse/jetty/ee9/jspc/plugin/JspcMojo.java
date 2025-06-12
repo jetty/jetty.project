@@ -45,7 +45,6 @@ import org.apache.maven.project.MavenProject;
 import org.apache.tomcat.JarScanner;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -304,8 +303,7 @@ public class JspcMojo extends AbstractMojo
         Set<URL> providedJars = getProvidedScopeJars(pluginJars);
 
         //Make a classloader so provided jars will be on the classpath
-        List<URL> sysUrls = new ArrayList<>();
-        sysUrls.addAll(providedJars);
+        List<URL> sysUrls = new ArrayList<>(providedJars);
         URLClassLoader sysClassLoader = new URLClassLoader(sysUrls.toArray(new URL[0]), currentClassLoader);
 
         //make a classloader with the webapp classpath
@@ -371,7 +369,7 @@ public class JspcMojo extends AbstractMojo
         throws Exception
     {
         List<String> fileNames = FileUtils.getFileNames(new File(webAppSourceDirectory), includes, excludes, false);
-        return StringUtils.join(fileNames.toArray(new String[0]), ",");
+        return String.join(",", fileNames);
     }
 
     /**
@@ -390,9 +388,7 @@ public class JspcMojo extends AbstractMojo
             if (generatedClassesDir.exists() && generatedClassesDir.isDirectory())
             {
                 delete(generatedClassesDir, pathname ->
-                {
-                    return pathname.isDirectory() || pathname.getName().endsWith(".java");
-                });
+                        pathname.isDirectory() || pathname.getName().endsWith(".java"));
             }
         }
     }
@@ -432,7 +428,7 @@ public class JspcMojo extends AbstractMojo
 
             if (!webXml.exists())
             {
-                getLog().info(webXml.toString() + " does not exist, cannot merge with generated fragment");
+                getLog().info(webXml + " does not exist, cannot merge with generated fragment");
                 return;
             }
 
@@ -461,7 +457,7 @@ public class JspcMojo extends AbstractMojo
                         String line = webXmlReader.readLine();
                         if (line == null)
                             atEOF = true;
-                        else if (line.indexOf(marker) >= 0)
+                        else if (line.contains(marker))
                         {
                             atInsertPoint = true;
                         }
@@ -515,7 +511,7 @@ public class JspcMojo extends AbstractMojo
     private List<URL> setUpWebAppClassPath() throws Exception
     {
         //add any classes from the webapp
-        List<URL> urls = new ArrayList<URL>();
+        List<URL> urls = new ArrayList<>();
         urls.add(classesDirectory.toURI().toURL());
 
         if (getLog().isDebugEnabled())

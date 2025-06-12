@@ -20,10 +20,15 @@ import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameParser;
 
+import jakarta.mail.Session;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class TestMailSessionReference
 {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TestMailSessionReference.class);
+
     @Test
     public void testMailSessionReference() throws Exception
     {
@@ -41,17 +49,23 @@ public class TestMailSessionReference
         sref.setPassword("OBF:1xmk1w261z0f1w1c1xmq");
         Properties props = new Properties();
         props.put("mail.smtp.host", "xxx");
-        props.put("mail.debug", "true");
+        props.put("mail.debug", Boolean.toString(LOG.isDebugEnabled()));
         sref.setProperties(props);
         NamingUtil.bind(icontext, "mail/Session", sref);
         Object x = icontext.lookup("mail/Session");
         assertNotNull(x);
-        assertTrue(x instanceof jakarta.mail.Session);
+        assertInstanceOf(Session.class, x);
         jakarta.mail.Session session = (jakarta.mail.Session)x;
         Properties sessionProps = session.getProperties();
         assertEquals(props, sessionProps);
-        assertTrue(session.getDebug());
-
+        if (LOG.isDebugEnabled())
+        {
+            assertTrue(session.getDebug());
+        }
+        else
+        {
+            assertFalse(session.getDebug());
+        }
         Context foo = icontext.createSubcontext("foo");
         NameParser parser = icontext.getNameParser("");
         Name objectNameInNamespace = parser.parse(icontext.getNameInNamespace());
@@ -63,7 +77,14 @@ public class TestMailSessionReference
         assertNotNull(o);
         jakarta.mail.Session fooSession = (jakarta.mail.Session)o;
         assertEquals(props, fooSession.getProperties());
-        assertTrue(fooSession.getDebug());
+        if (LOG.isDebugEnabled())
+        {
+            assertTrue(session.getDebug());
+        }
+        else
+        {
+            assertFalse(session.getDebug());
+        }
 
         icontext.destroySubcontext("mail");
         icontext.destroySubcontext("foo");

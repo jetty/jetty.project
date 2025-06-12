@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
+    private static final Logger KEYCLOACK_LOGGER = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.keycloak.logs");
     private static final String clientId = "jetty-api";
     private static final String clientSecret = "JettyRocks!";
     private static final String userName = "jetty";
@@ -55,7 +56,14 @@ public class OpenIdTests extends AbstractJettyHomeTest
     private static final String lastName = "Doe";
     private static final String email = "jetty@jetty.org";
 
-    private final KeycloakContainer keycloakContainer = new KeycloakContainer();
+    private final KeycloakContainer keycloakContainer = new KeycloakContainer()
+    {
+        @Override
+        protected Logger logger()
+        {
+            return KEYCLOACK_LOGGER;
+        }
+    };
     private String userId;
 
     @BeforeEach

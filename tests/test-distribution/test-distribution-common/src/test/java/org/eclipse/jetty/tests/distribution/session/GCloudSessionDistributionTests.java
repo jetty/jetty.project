@@ -32,7 +32,7 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionDistributionTests.class);
-    private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.gcloudLogs");
+    private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.gcloud.logs");
 
     public DatastoreEmulatorContainer emulator =
             new DatastoreEmulatorContainer(DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators"))

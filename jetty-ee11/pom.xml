@@ -43,6 +43,8 @@
     <ee11.jakarta.servlet.api.version>6.1.0</ee11.jakarta.servlet.api.version>
     <ee11.jakarta.servlet.jsp.api.version>4.0.0</ee11.jakarta.servlet.jsp.api.version>
     <ee11.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee11.jakarta.servlet.jsp.jstl.impl.version>
+    <ee11.jakarta.xml.bind.api.version>4.0.2</ee11.jakarta.xml.bind.api.version>
+    <ee11.jakarta.xml.bind.impl.version>4.0.5</ee11.jakarta.xml.bind.impl.version>
     <ee11.jakarta.xml.jaxws.impl.version>4.0.2</ee11.jakarta.xml.jaxws.impl.version>
     <ee11.jersey.version>4.0.0-M2</ee11.jersey.version>
     <ee11.jsp.impl.version>11.0.7</ee11.jsp.impl.version>
@@ -68,6 +70,11 @@
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>{ee11.jakarta.xml.jaxws.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${ee11.jakarta.xml.bind.api.version}</version>
       </dependency>
       <!-- Jetty EE11 Dependencies -->
       <dependency>
