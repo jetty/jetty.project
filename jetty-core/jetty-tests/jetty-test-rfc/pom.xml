@@ -3,7 +3,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
+    <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>jetty-tests</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
@@ -11,7 +11,7 @@
   <name>Core :: Tests :: RFC</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.tests.rfc</bundle-symbolic-name>
     <h3.test.enabled>false</h3.test.enabled>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

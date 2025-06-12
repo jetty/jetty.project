@@ -935,7 +935,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                <Configure class="org.eclipse.jetty.core.webapp.CoreContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
@@ -1344,9 +1344,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testHTTP2ClientInCoreWebAppProvidedByServer() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,core-deploy"))
@@ -1356,18 +1358,11 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             String name = "test-webapp";
             Path webapps = distribution.getJettyBase().resolve("webapps");
-            Path webAppDirLib = webapps.resolve(name + ".d").resolve("lib");
-            Path webAppJar = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-http2-client-transport-provided-webapp:jar:" + jettyVersion);
-            Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
-            Files.writeString(webapps.resolve(name + ".xml"), """
-                <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
-                  <Set name="contextPath">/test</Set>
-                  <Set name="handler">
-                    <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />
-                  </Set>
-                </Configure>
+            Path webAppZip = distribution.resolveArtifact("org.eclipse.jetty.tests:jetty-core-http2-client-webapp:zip:core-webapp:" + jettyVersion);
+            Files.copy(webAppZip, webapps.resolve(name + ".jar"));
+
+            Files.writeString(webapps.resolve(name + ".properties"), """
+                jetty.deploy.contextPath=/test
                 """);
 
             int port = Tester.freePort();

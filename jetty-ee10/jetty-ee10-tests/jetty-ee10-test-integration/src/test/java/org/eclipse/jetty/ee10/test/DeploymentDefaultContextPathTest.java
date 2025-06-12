@@ -39,11 +39,13 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@Isolated
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentDefaultContextPathTest
 {
@@ -69,7 +71,7 @@ public class DeploymentDefaultContextPathTest
 
         Environment.ensure("ee10", WebAppContext.class);
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee10");
-        environmentConfig.setDefaultContextHandlerClass(WebAppContext.class.getName());
+        environmentConfig.setDefaultContextHandlerClass(WebAppContext.class);
 
         server.addBean(deploymentScanner);
 

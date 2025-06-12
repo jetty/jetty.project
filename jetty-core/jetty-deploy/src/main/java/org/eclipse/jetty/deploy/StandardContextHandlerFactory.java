@@ -169,7 +169,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
                         xmlConfiguration.getProperties().put(k, asPropertyValue(v));
                 });
 
-            // Run configure against appropriate classloader.
+            // Run configure against appropriate class loader.
             ClassLoader xmlClassLoader = getClassLoader(context, environment);
             ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(xmlClassLoader);
@@ -177,9 +177,9 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
             try
             {
                 // Create or configure the context
-                if (context == null)
+                ContextHandler contextHandler = getContextHandler(context);
+                if (contextHandler == null)
                     return xmlConfiguration.configure();
-
                 return xmlConfiguration.configure(context);
             }
             finally
@@ -255,7 +255,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         if (contextPath.charAt(0) != '/')
             contextPath = "/" + contextPath;
 
-        contextHandler.setDisplayName(basename);
+        if (contextHandler.getDisplayName() == null)
+            contextHandler.setDisplayName(basename);
 
         // Set this via initializeDeployable to avoid default-context-path state changes.
         attributes.setAttribute(Deployable.DEFAULT_CONTEXT_PATH, contextPath);
@@ -295,7 +296,7 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
     private ClassLoader getClassLoader(Object context, Environment environment)
     {
         ContextHandler contextHandler = getContextHandler(context);
-        if (context != null)
+        if (contextHandler != null)
         {
             ClassLoader classLoader = contextHandler.getClassLoader();
             if (classLoader != null)
@@ -326,8 +327,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
             return provider.get();
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Not a context {}", context);
+        if (LOG.isTraceEnabled())
+            LOG.trace("Not a ContextHandler ({}): {}", context.getClass().getName(), context);
         return null;
     }
 
@@ -359,9 +360,8 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
      * The search order is:
      * </p>
      * <ol>
-     * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS_ATTRIBUTE} is specified, use it, and initialize context</li>
-     * <li>If app deployable path is XML, apply XML {@code <Configuration>}</li>
-     * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE}, and initialize context.</li>
+     * <li>If app deployable path is XML, apply XML {@code <Configuration>}.</li>
+     * <li>Fallback to environment attribute {@link #DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE}, and initialize context.</li>
      * </ol>
      *
      * @param environment the environment context applies to
@@ -376,45 +376,22 @@ public class StandardContextHandlerFactory implements ContextHandlerFactory
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);
 
-        Object context = newInstance((String)attributes.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_ATTRIBUTE));
-        if (context != null)
+        if (FileID.isXml(path))
         {
+            // track if context is created from XML or an existing one is just being configured by XML
+            Object context = applyXml(server, null, path, environment, attributes);
             ContextHandler contextHandler = getContextHandler(context);
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
 
             initializeContextPath(contextHandler, path, attributes);
             initializeContextHandler(contextHandler, path, attributes);
-
-            // Allow context created from CONTEXT_HANDLER_CLASS to be initialized
-            // before the XML executes, and possibly references content that only
-            // the context will know about (such as from a classloader)
             initializeDeployable(context, attributes);
-        }
-
-        if (FileID.isXml(path))
-        {
-            // track if context is created from XML or an existing one is just being configured by XML
-            boolean createdContext = (context == null);
-            context = applyXml(server, context, path, environment, attributes);
-            ContextHandler contextHandler = getContextHandler(context);
-            if (contextHandler == null)
-                throw new IllegalStateException("Unknown context type of " + context);
-
-            if (createdContext)
-            {
-                initializeContextPath(contextHandler, path, attributes);
-                initializeContextHandler(contextHandler, path, attributes);
-                initializeDeployable(context, attributes);
-            }
             return context;
         }
-
-        if (context != null)
-            return context;
 
         // fallback to default from environment.
-        context = newInstance((String)environment.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE));
+        Object context = newInstance((String)environment.getAttribute(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);
