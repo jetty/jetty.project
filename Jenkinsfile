@@ -163,8 +163,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      // temporary logs to remove
-      sh "ls -lrt ~/.mimir/"
     }
   }
 }
