@@ -14,7 +14,7 @@ static-deploy
 deployment-scanner
 
 [lib]
-lib/jetty-core-webapp-${jetty.version}.jar
+lib/jetty-coreapp-${jetty.version}.jar
 
 [xml]
 etc/jetty-coreapp-deploy.xml
