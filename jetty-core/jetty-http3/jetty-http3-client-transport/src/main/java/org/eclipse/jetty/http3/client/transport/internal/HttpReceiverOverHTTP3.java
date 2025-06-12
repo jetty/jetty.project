@@ -76,7 +76,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         }
         else
         {
-            responseSuccess(getHttpExchange(), null);
+            responseSuccess(null);
             return Content.Chunk.EOF;
         }
     }
@@ -151,7 +151,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         HttpFields trailers = frame.getMetaData().getHttpFields();
         trailers.forEach(exchange.getResponse()::trailer);
 
-        Runnable task = () -> responseSuccess(exchange, null);
+        Runnable task = () -> responseSuccess(null);
         return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 

@@ -135,9 +135,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected void responseSuccess()
     {
-        HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            receiver.responseSuccess(exchange);
+        receiver.responseSuccess();
     }
 
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)

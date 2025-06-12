@@ -129,7 +129,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             LOG.debug("ParseAndFill needFillInterest {} in {}", needFillInterest, this);
         chunk = consumeChunk();
         if (state == State.COMPLETE)
-            responseSuccess(getHttpExchange(), receiveNext);
+            responseSuccess(receiveNext);
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
@@ -346,7 +346,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     // Connection upgrade, bail out.
                     if (isUpgrade || isTunnel)
                     {
-                        responseSuccess(exchange, null);
+                        responseSuccess(null);
                         return true;
                     }
 
@@ -369,7 +369,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     // When notifyContentAvailable==false, this method is called from read(boolean),
                     // and the call to responseSuccess() is performed by read().
                     if (notifyContentAvailable)
-                        responseSuccess(exchange, receiveNext);
+                        responseSuccess(receiveNext);
 
                     // Reading the next response will
                     // be performed by receivedNext().
