@@ -27,7 +27,6 @@ import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
 import org.eclipse.jetty.deploy.test.TestContextHandler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -434,7 +433,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             deploymentScanner.addWebappsDirectory(webapps);
             deploymentScanner.setEnvironmentsDirectory(environments);
 
-            Environment.ensure("test", ContextHandler.class);
+            Environment.ensure("test", TestContextHandler.class);
             DeploymentScanner.EnvironmentConfig testConfig = deploymentScanner.configureEnvironment("test");
             testConfig.setDefaultContextHandlerClass(TestContextHandler.class);
 
