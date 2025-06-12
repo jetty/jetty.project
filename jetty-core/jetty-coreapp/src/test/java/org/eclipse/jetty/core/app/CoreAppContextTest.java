@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class CoreAppContextTest
+public class CoreAppContextTest extends AbstractCleanEnvironmentTest
 {
     private static final String EXPECTED_MESSAGE_FROM_TEST_WEBAPP = "On the other side of the screen, it all looks so easy.";
     public WorkDir workDir;
@@ -80,12 +80,6 @@ public class CoreAppContextTest
     public void ensureCoreEnvironment()
     {
         Environment.ensure("core", CoreAppContext.class);
-    }
-
-    @AfterEach
-    public void removeAllEnvironments()
-    {
-        Environment.removeAll();
     }
 
     private void startServer(Consumer<Server> serverConsumer) throws Exception
