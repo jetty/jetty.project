@@ -7,23 +7,20 @@
     <version>12.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jetty-core-http2-client-webapp</artifactId>
-  <name>Core WebApp :: Tests :: Demo WebApp</name>
-  <description>Jetty Core WebApp :: Test WebApps :: Demo WebApp</description>
+  <artifactId>jetty-core-bad-init-webapp</artifactId>
+  <packaging>jar</packaging>
+  <name>Core WebApp :: Tests :: Bad Init WebApp</name>
+  <description>Jetty Core WebApp :: Test WebApps :: Bad Init WebApp</description>
 
   <properties>
-    <maven.deploy.skip>true</maven.deploy.skip>
+    <bundle-symbolic-name>${project.groupId}.tests.coreapp.badinit</bundle-symbolic-name>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-client-transport</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -50,5 +47,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

@@ -13,6 +13,7 @@
   <description>Jetty Core WebApp :: Test WebApps :: Demo WebApp</description>
 
   <properties>
+    <bundle-symbolic-name>${project.groupId}.tests.coreapp.demo</bundle-symbolic-name>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 

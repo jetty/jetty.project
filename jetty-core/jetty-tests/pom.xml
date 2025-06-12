@@ -7,11 +7,14 @@
     <artifactId>jetty-core</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
+  <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>jetty-tests</artifactId>
+  <version>12.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Core :: Tests</name>
 
   <modules>
+    <module>jetty-core-test-webapps</module>
     <module>jetty-test-rfc</module>
     <module>jetty-test-client-transports</module>
     <module>jetty-test-jmx</module>
