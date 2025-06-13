@@ -22,10 +22,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
-public class HttpResponse implements Response
+public class HttpResponse extends AbstractResponse
 {
     private final HttpFields.Mutable headers = HttpFields.build();
-    private final Request request;
     private HttpVersion version;
     private int status;
     private String reason;
@@ -33,13 +32,18 @@ public class HttpResponse implements Response
 
     public HttpResponse(Request request)
     {
-        this.request = request;
+        super(request);
     }
 
     @Override
-    public Request getRequest()
+    public Response withRequest(Request request)
     {
-        return request;
+        return new HttpResponse(request)
+            .version(getVersion())
+            .status(getStatus())
+            .reason(getReason())
+            .headers(headers)
+            .trailers(trailers);
     }
 
     @Override
@@ -101,6 +105,12 @@ public class HttpResponse implements Response
         return this;
     }
 
+    private HttpResponse headers(HttpFields.Mutable headers)
+    {
+        this.headers.add(headers);
+        return this;
+    }
+
     @Override
     public HttpFields getTrailers()
     {
@@ -115,10 +125,16 @@ public class HttpResponse implements Response
         return this;
     }
 
+    private HttpResponse trailers(HttpFields.Mutable trailers)
+    {
+        this.trailers = trailers == null ? null : HttpFields.build().add(trailers);
+        return this;
+    }
+
     @Override
     public CompletableFuture<Boolean> abort(Throwable cause)
     {
-        return request.abort(cause);
+        return getRequest().abort(cause);
     }
 
     @Override

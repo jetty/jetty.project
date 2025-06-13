@@ -76,11 +76,10 @@ public abstract class HttpConnection implements IConnection, Attachable
     {
         HttpRequest httpRequest = (HttpRequest)request;
 
-        ResponseListeners responseListeners = httpRequest.getResponseListeners();
-
         httpRequest.sent();
-        if (listener != null)
-            responseListeners.addCompleteListener(listener, true);
+
+        ResponseListeners responseListeners = httpRequest.getResponseListeners();
+        responseListeners.addCompleteListener(listener, true);
 
         HttpExchange exchange = new HttpExchange(getHttpDestination(), httpRequest);
 

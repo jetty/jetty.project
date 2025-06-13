@@ -162,11 +162,11 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
         // Create a fake conversation, as the previous exchange received a 101 response.
         // The new exchange simulates a request, but receives the HTTP/2 response.
-        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
+        HttpExchange exchange = request.getConversation().lastExchange();
         // Since we reuse the original request (with its response listeners)
         // for the second exchange in the conversation, we use empty response
         // listeners so that they are not notified twice.
-        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), request, new ResponseListeners());
+        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), request, new ResponseListeners(request));
         http2Channel.associate(newExchange);
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.

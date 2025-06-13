@@ -132,7 +132,7 @@ public class ExternalSiteTest
     @Test
     public void testExternalSiteRedirect() throws Exception
     {
-        String host = "twitter.com";
+        String host = "bugs.cometd.org";
         int port = 443;
 
         // Verify that we have connectivity
@@ -140,7 +140,6 @@ public class ExternalSiteTest
 
         ContentResponse response = client.newRequest(host, port)
             .scheme(HttpScheme.HTTPS.asString())
-            .path("/twitter")
             .timeout(15, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());

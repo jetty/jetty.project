@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 
 /**
  * <p>A {@link RetainingResponseListener} that sends a {@link Request}

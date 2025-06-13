@@ -48,7 +48,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         this.listeners = listeners;
         this.response = new HttpResponse(request);
         HttpConversation conversation = request.getConversation();
-        conversation.getExchanges().offer(this);
+        conversation.offerExchange(this);
         conversation.updateResponseListeners(null);
     }
 
@@ -310,9 +310,9 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     private void notifyFailureComplete(Throwable failure)
     {
         request.notifyFailure(failure);
-        ResponseListeners listeners = getConversation().getResponseListeners();
-        listeners.notifyFailure(response, failure);
-        listeners.notifyComplete(new Result(request, failure, response, failure));
+        HttpConversation conversation = getConversation();
+        conversation.notifyFailure(response, failure);
+        conversation.notifyComplete(new Result(request, failure, response, failure));
     }
 
     public void resetResponse()

@@ -68,18 +68,27 @@ public interface Request
     /**
      * @return the URI scheme of this request, such as "http" or "https"
      */
-    String getScheme();
+    default String getScheme()
+    {
+        return null;
+    }
 
     /**
      * @param scheme the URI scheme of this request, such as "http" or "https"
      * @return this request object
      */
-    Request scheme(String scheme);
+    default Request scheme(String scheme)
+    {
+        return this;
+    }
 
     /**
      * @return the URI host of this request, such as "127.0.0.1" or "google.com"
      */
-    String getHost();
+    default String getHost()
+    {
+        return null;
+    }
 
     /**
      * @param host the URI host of this request, such as "127.0.0.1" or "google.com"
@@ -93,22 +102,16 @@ public interface Request
     /**
      * @return the URI port of this request such as 80 or 443
      */
-    int getPort();
+    default int getPort()
+    {
+        return 0;
+    }
 
     /**
      * @param port the URI port of this request such as 80 or 443
      * @return this request object
      */
     default Request port(int port)
-    {
-        return this;
-    }
-
-    /**
-     * @param transport the {@link Transport} of this request
-     * @return this request object
-     */
-    default Request transport(Transport transport)
     {
         return this;
     }
@@ -122,27 +125,48 @@ public interface Request
     }
 
     /**
+     * @param transport the {@link Transport} of this request
+     * @return this request object
+     */
+    default Request transport(Transport transport)
+    {
+        return this;
+    }
+
+    /**
      * @return the method of this request, such as GET or POST, as a String
      */
-    String getMethod();
+    default String getMethod()
+    {
+        return null;
+    }
 
     /**
      * @param method the method of this request, such as GET or POST
      * @return this request object
      */
-    Request method(HttpMethod method);
+    default Request method(HttpMethod method)
+    {
+        return method(method.asString());
+    }
 
     /**
      * @param method the method of this request, such as GET or POST
      * @return this request object
      */
-    Request method(String method);
+    default Request method(String method)
+    {
+        return this;
+    }
 
     /**
      * @return the URI path of this request, such as "/" or "/path" - without the query
      * @see #getQuery()
      */
-    String getPath();
+    default String getPath()
+    {
+        return null;
+    }
 
     /**
      * Specifies the URI path - and possibly the query - of this request.
@@ -155,35 +179,53 @@ public interface Request
      * @param path the URI path of this request, such as "/" or "/path?param=1"
      * @return this request object
      */
-    Request path(String path);
+    default Request path(String path)
+    {
+        return this;
+    }
 
     /**
      * @return the URI query string of this request such as "param=1"
      * @see #getPath()
      * @see #getParams()
      */
-    String getQuery();
+    default String getQuery()
+    {
+        return null;
+    }
 
     /**
      * @return the full URI of this request such as {@code https://host:port/path?param=1}
      */
-    URI getURI();
+    default URI getURI()
+    {
+        return null;
+    }
 
     /**
      * @return the HTTP version of this request, such as "HTTP/1.1"
      */
-    HttpVersion getVersion();
+    default HttpVersion getVersion()
+    {
+        return null;
+    }
 
     /**
      * @param version the HTTP version of this request, such as "HTTP/1.1"
      * @return this request object
      */
-    Request version(HttpVersion version);
+    default Request version(HttpVersion version)
+    {
+        return this;
+    }
 
     /**
      * @return the URI query parameters of this request
      */
-    Fields getParams();
+    default Fields getParams()
+    {
+        return null;
+    }
 
     /**
      * Adds a URI query parameter with the given name and value.
@@ -193,12 +235,18 @@ public interface Request
      * @param value the value of the query parameter
      * @return this request object
      */
-    Request param(String name, String value);
+    default Request param(String name, String value)
+    {
+        return this;
+    }
 
     /**
      * @return the headers of this request
      */
-    HttpFields getHeaders();
+    default HttpFields getHeaders()
+    {
+        return null;
+    }
 
     /**
      * Modifies the headers of this request.
@@ -206,12 +254,18 @@ public interface Request
      * @param consumer the code that modifies the headers of this request
      * @return this request object
      */
-    Request headers(Consumer<HttpFields.Mutable> consumer);
+    default Request headers(Consumer<HttpFields.Mutable> consumer)
+    {
+        return this;
+    }
 
     /**
      * @return the supplier of the trailers of this request
      */
-    Supplier<HttpFields> getTrailersSupplier();
+    default Supplier<HttpFields> getTrailersSupplier()
+    {
+        return null;
+    }
 
     /**
      * Provides the trailers of this request.
@@ -219,18 +273,35 @@ public interface Request
      * @param trailers the supplier of the trailers of this request
      * @return this request object
      */
-    Request trailersSupplier(Supplier<HttpFields> trailers);
+    default Request trailersSupplier(Supplier<HttpFields> trailers)
+    {
+        return this;
+    }
 
     /**
      * @return the cookies associated with this request
      */
-    List<HttpCookie> getCookies();
+    default List<HttpCookie> getCookies()
+    {
+        return List.of();
+    }
 
     /**
      * @param cookie a cookie for this request
      * @return this request object
      */
-    Request cookie(HttpCookie cookie);
+    default Request cookie(HttpCookie cookie)
+    {
+        return this;
+    }
+
+    /**
+     * @return the metadata this request has been tagged with
+     */
+    default Object getTag()
+    {
+        return null;
+    }
 
     /**
      * <p>Tags this request with the given metadata tag.</p>
@@ -247,35 +318,45 @@ public interface Request
      * @param tag the metadata to tag the request with
      * @return this request object
      */
-    Request tag(Object tag);
+    default Request tag(Object tag)
+    {
+        return this;
+    }
 
     /**
-     * @return the metadata this request has been tagged with
+     * @return the attributes of this request
      */
-    Object getTag();
+    default Map<String, Object> getAttributes()
+    {
+        return Map.of();
+    }
 
     /**
      * @param name the name of the attribute
      * @param value the value of the attribute
      * @return this request object
      */
-    Request attribute(String name, Object value);
-
-    /**
-     * @return the attributes of this request
-     */
-    Map<String, Object> getAttributes();
+    default Request attribute(String name, Object value)
+    {
+        return this;
+    }
 
     /**
      * @return the request content of this request
      */
-    Content getBody();
+    default Content getBody()
+    {
+        return null;
+    }
 
     /**
      * @param content the request content of this request
      * @return this request object
      */
-    Request body(Content content);
+    default Request body(Content content)
+    {
+        return this;
+    }
 
     /**
      * Shortcut method to specify a file as a content for this request, with the default content type of
@@ -285,7 +366,10 @@ public interface Request
      * @return this request object
      * @throws IOException if the file does not exist or cannot be read
      */
-    Request file(Path file) throws IOException;
+    default Request file(Path file) throws IOException
+    {
+        return this;
+    }
 
     /**
      * Shortcut method to specify a file as a content for this request, with the given content type.
@@ -295,43 +379,64 @@ public interface Request
      * @return this request object
      * @throws IOException if the file does not exist or cannot be read
      */
-    Request file(Path file, String contentType) throws IOException;
+    default Request file(Path file, String contentType) throws IOException
+    {
+        return this;
+    }
 
     /**
      * @return the user agent for this request
      */
-    String getAgent();
+    default String getAgent()
+    {
+        return null;
+    }
 
     /**
      * @param agent the user agent for this request (corresponds to the {@code User-Agent} header)
      * @return this request object
      */
-    Request agent(String agent);
+    default Request agent(String agent)
+    {
+        return this;
+    }
 
     /**
      * @param accepts the media types that are acceptable in the response, such as
      * "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
      * @return this request object
      */
-    Request accept(String... accepts);
+    default Request accept(String... accepts)
+    {
+        return this;
+    }
 
     /**
      * @return the idle timeout for this request, in milliseconds
      */
-    long getIdleTimeout();
+    default long getIdleTimeout()
+    {
+        return 0;
+    }
 
     /**
      * @param timeout the idle timeout for this request
      * @param unit the idle timeout unit
      * @return this request object
      */
-    Request idleTimeout(long timeout, TimeUnit unit);
+    default Request idleTimeout(long timeout, TimeUnit unit)
+    {
+        return this;
+    }
 
     /**
      * @return the total timeout for this request, in milliseconds;
      * zero or negative if the timeout is disabled
      */
-    long getTimeout();
+    default long getTimeout()
+    {
+        return 0;
+    }
 
     /**
      * @param timeout the total timeout for the request/response conversation;
@@ -339,18 +444,27 @@ public interface Request
      * @param unit the timeout unit
      * @return this request object
      */
-    Request timeout(long timeout, TimeUnit unit);
+    default Request timeout(long timeout, TimeUnit unit)
+    {
+        return this;
+    }
 
     /**
      * @return whether this request follows redirects
      */
-    boolean isFollowRedirects();
+    default boolean isFollowRedirects()
+    {
+        return false;
+    }
 
     /**
      * @param follow whether this request follows redirects
      * @return this request object
      */
-    Request followRedirects(boolean follow);
+    default Request followRedirects(boolean follow)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request events
@@ -376,43 +490,64 @@ public interface Request
      * @param listener a listener for request queued event
      * @return this request object
      */
-    Request onRequestQueued(QueuedListener listener);
+    default Request onRequestQueued(QueuedListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request begin event
      * @return this request object
      */
-    Request onRequestBegin(BeginListener listener);
+    default Request onRequestBegin(BeginListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request headers event
      * @return this request object
      */
-    Request onRequestHeaders(HeadersListener listener);
+    default Request onRequestHeaders(HeadersListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request commit event
      * @return this request object
      */
-    Request onRequestCommit(CommitListener listener);
+    default Request onRequestCommit(CommitListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request content events
      * @return this request object
      */
-    Request onRequestContent(ContentListener listener);
+    default Request onRequestContent(ContentListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request success event
      * @return this request object
      */
-    Request onRequestSuccess(SuccessListener listener);
+    default Request onRequestSuccess(SuccessListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for request failure event
      * @return this request object
      */
-    Request onRequestFailure(FailureListener listener);
+    default Request onRequestFailure(FailureListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for all response events
@@ -427,13 +562,19 @@ public interface Request
      * @param listener a listener for response begin event
      * @return this request object
      */
-    Request onResponseBegin(Response.BeginListener listener);
+    default Request onResponseBegin(Response.BeginListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for response header event
      * @return this request object
      */
-    Request onResponseHeader(Response.HeaderListener listener);
+    default Request onResponseHeader(Response.HeaderListener listener)
+    {
+        return this;
+    }
 
     /**
      * <p>Registers a listener for the headers event.</p>
@@ -445,37 +586,55 @@ public interface Request
      * @param listener a listener for response headers event
      * @return this request object
      */
-    Request onResponseHeaders(Response.HeadersListener listener);
+    default Request onResponseHeaders(Response.HeadersListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a consuming listener for response content events
      * @return this request object
      */
-    Request onResponseContent(Response.ContentListener listener);
+    default Request onResponseContent(Response.ContentListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener an asynchronous listener for response content events
      * @return this request object
      */
-    Request onResponseContentAsync(Response.AsyncContentListener listener);
+    default Request onResponseContentAsync(Response.AsyncContentListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
      * @return this request object
      */
-    Request onResponseContentSource(Response.ContentSourceListener listener);
+    default Request onResponseContentSource(Response.ContentSourceListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for response success event
      * @return this request object
      */
-    Request onResponseSuccess(Response.SuccessListener listener);
+    default Request onResponseSuccess(Response.SuccessListener listener)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for response failure event
      * @return this request object
      */
-    Request onResponseFailure(Response.FailureListener listener);
+    default Request onResponseFailure(Response.FailureListener listener)
+    {
+        return this;
+    }
 
     /**
      * <p>Sets a handler for pushed resources.</p>
@@ -491,13 +650,19 @@ public interface Request
      * @param pushHandler a handler for pushed resource events
      * @return this request object
      */
-    Request onPush(BiFunction<Request, Request, Response.CompleteListener> pushHandler);
+    default Request onPush(BiFunction<Request, Request, Response.CompleteListener> pushHandler)
+    {
+        return this;
+    }
 
     /**
      * @param listener a listener for complete event
      * @return this request object
      */
-    Request onComplete(Response.CompleteListener listener);
+    default Request onComplete(Response.CompleteListener listener)
+    {
+        return this;
+    }
 
     /**
      * Sends this request and returns the response.
@@ -517,7 +682,10 @@ public interface Request
      * @throws ExecutionException if execution fails
      * @see Response.CompleteListener#onComplete(Result)
      */
-    ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
+    default ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
+    {
+        return null;
+    }
 
     /**
      * <p>Sends this request and asynchronously notifies the given listener for response events.</p>
@@ -529,7 +697,9 @@ public interface Request
      *
      * @param listener the listener that receives response events
      */
-    void send(Response.CompleteListener listener);
+    default void send(Response.CompleteListener listener)
+    {
+    }
 
     /**
      * Attempts to abort the send of this request.
@@ -537,13 +707,19 @@ public interface Request
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    CompletableFuture<Boolean> abort(Throwable cause);
+    default CompletableFuture<Boolean> abort(Throwable cause)
+    {
+        return CompletableFuture.completedFuture(false);
+    }
 
     /**
      * @return the abort cause passed to {@link #abort(Throwable)},
      * or null if this request has not been aborted
      */
-    Throwable getAbortCause();
+    default Throwable getAbortCause()
+    {
+        return null;
+    }
 
     /**
      * Common, empty, super-interface for request listeners.

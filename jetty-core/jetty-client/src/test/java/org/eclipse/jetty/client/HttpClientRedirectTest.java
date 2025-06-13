@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,12 +62,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     {
         start(scenario, new RedirectHandler());
 
-        Response response = client.newRequest("localhost", connector.getLocalPort())
+        var request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/303/localhost/done")
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+            .timeout(5, TimeUnit.SECONDS);
+        Response response = request.send();
         assertNotNull(response);
+        assertSame(request, response.getRequest());
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
@@ -77,12 +79,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     {
         start(scenario, new RedirectHandler());
 
-        Response response = client.newRequest("localhost", connector.getLocalPort())
+        var request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/303/localhost/302/localhost/done")
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+            .timeout(5, TimeUnit.SECONDS);
+        Response response = request.send();
         assertNotNull(response);
+        assertSame(request, response.getRequest());
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
@@ -311,7 +314,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
+            protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
                 response.setStatus(303);
                 response.getHeaders().put("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
@@ -482,7 +485,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
@@ -518,7 +521,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
+            protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
                 response.setStatus(HttpStatus.SEE_OTHER_303);
                 response.getHeaders().put(HttpHeader.LOCATION, request.getHttpURI().asString());
@@ -540,7 +543,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
+            protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
                 try
                 {

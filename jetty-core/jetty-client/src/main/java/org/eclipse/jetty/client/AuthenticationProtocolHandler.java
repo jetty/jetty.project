@@ -24,10 +24,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.Authentication.HeaderInfo;
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -265,20 +264,18 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            ResponseListeners responseListeners = conversation.getResponseListeners();
-            responseListeners.emitSuccessComplete(new Result(request, response));
+            conversation.emitSuccessComplete(new Result(request, response));
         }
 
         private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
-            ResponseListeners responseListeners = conversation.getResponseListeners();
+            Result result = new Result(request, requestFailure, response, responseFailure);
             if (responseFailure == null)
-                responseListeners.emitSuccess(response);
+                conversation.emitSuccessComplete(result);
             else
-                responseListeners.emitFailure(response, responseFailure);
-            responseListeners.notifyComplete(new Result(request, requestFailure, response, responseFailure));
+                conversation.emitFailureComplete(result);
         }
 
         private List<Authentication.HeaderInfo> parseAuthenticateHeader(Response response, HttpHeader header)

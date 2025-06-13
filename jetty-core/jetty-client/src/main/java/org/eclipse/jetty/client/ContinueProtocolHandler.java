@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -79,8 +78,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Reset the conversation listeners, since we are going to receive another response code
             conversation.updateResponseListeners(null);
 
-            HttpExchange exchange = conversation.getExchanges().peekLast();
-            assert exchange != null;
+            HttpExchange exchange = conversation.lastExchange();
 
             if (response.getStatus() == HttpStatus.CONTINUE_100)
             {
@@ -96,9 +94,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 // Server either does not support 100 Continue,
                 // or it does and wants to refuse the request content,
                 // or we got some other HTTP status code like a redirect.
-                ResponseListeners listeners = exchange.getResponseListeners();
                 HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-                listeners.emitSuccess(contentResponse);
+                conversation.emitSuccess(contentResponse);
                 exchange.proceed(null, new HttpRequestException("Expectation failed", request));
             }
         }
@@ -114,11 +111,9 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Reset the conversation listeners to allow the conversation to be completed
             conversation.updateResponseListeners(null);
 
-            HttpExchange exchange = conversation.getExchanges().peekLast();
-            assert exchange.getResponse() == response;
-            ResponseListeners listeners = exchange.getResponseListeners();
+            HttpExchange exchange = conversation.lastExchange();
             HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-            listeners.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
+            conversation.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
         }
 
         @Override

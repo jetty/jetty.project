@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
@@ -41,7 +42,9 @@ import org.slf4j.LoggerFactory;
 public class ResponseListeners
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseListeners.class);
+    private static final String RESPONSE_ATTRIBUTE = ResponseListeners.class.getName() + ".response";
 
+    private final Request request;
     private Response.BeginListener beginListener;
     private Response.HeaderListener headerListener;
     private Response.HeadersListener headersListener;
@@ -50,12 +53,14 @@ public class ResponseListeners
     private Response.FailureListener failureListener;
     private Response.CompleteListener completeListener;
 
-    public ResponseListeners()
+    public ResponseListeners(Request request)
     {
+        this.request = Objects.requireNonNull(request);
     }
 
-    public ResponseListeners(Response.Listener listener)
+    public ResponseListeners(Request request, Response.Listener listener)
     {
+        this(request);
         beginListener = listener;
         headerListener = listener;
         headersListener = listener;
@@ -65,15 +70,17 @@ public class ResponseListeners
         completeListener = listener;
     }
 
-    public ResponseListeners(ResponseListeners that)
+    public ResponseListeners copy()
     {
-        beginListener = that.beginListener;
-        headerListener = that.headerListener;
-        headersListener = that.headersListener;
-        contentSourceListener = that.contentSourceListener;
-        successListener = that.successListener;
-        failureListener = that.failureListener;
-        completeListener = that.completeListener;
+        ResponseListeners copy = new ResponseListeners(request);
+        copy.beginListener = beginListener;
+        copy.headerListener = headerListener;
+        copy.headersListener = headersListener;
+        copy.contentSourceListener = contentSourceListener;
+        copy.successListener = successListener;
+        copy.failureListener = failureListener;
+        copy.completeListener = completeListener;
+        return copy;
     }
 
     public boolean addBeginListener(Response.BeginListener listener)
@@ -206,23 +213,9 @@ public class ResponseListeners
     public void notifyContentSource(Response response, Content.Source contentSource)
     {
         if (hasContentSourceListeners())
-        {
-            if (contentSourceListener instanceof ContentSourceDemultiplexer demultiplexer)
-            {
-                // More than 1 ContentSourceListeners -> notify the demultiplexer.
-                notifyContentSource(demultiplexer, response, contentSource);
-            }
-            else
-            {
-                // Exactly 1 ContentSourceListener -> notify it directly.
-                notifyContentSource(contentSourceListener, response, contentSource);
-            }
-        }
+            notifyContentSource(contentSourceListener, response, contentSource);
         else
-        {
-            // No ContentSourceListener -> consume the content.
             notifyContentSource((r, c) -> consume(c), response, contentSource);
-        }
     }
 
     private static void consume(Content.Source contentSource)
@@ -371,16 +364,15 @@ public class ResponseListeners
                addCompleteListener(listener, false);
     }
 
-    public boolean addResponseListeners(ResponseListeners listeners)
+    public void combine(ResponseListeners that)
     {
-        // Use binary OR to avoid short-circuit.
-        return addBeginListener(listeners.beginListener) |
-               addHeaderListener(listeners.headerListener) |
-               addHeadersListener(listeners.headersListener) |
-               addContentSourceListener(listeners.contentSourceListener) |
-               addSuccessListener(listeners.successListener) |
-               addFailureListener(listeners.failureListener) |
-               addCompleteListener(listeners.completeListener, false);
+        addBeginListener(that.beginListener == null ? null : r -> that.beginListener.onBegin(that.contextResponse(r)));
+        addHeaderListener(that.headerListener == null ? null : (r, f) -> that.headerListener.onHeader(that.contextResponse(r), f));
+        addHeadersListener(that.headersListener == null ? null : r -> that.headersListener.onHeaders(that.contextResponse(r)));
+        addContentSourceListener(that.contentSourceListener == null ? null : (r, s) -> that.contentSourceListener.onContentSource(that.contextResponse(r), s));
+        addSuccessListener(that.successListener == null ? null : r -> that.successListener.onSuccess(that.contextResponse(r)));
+        addFailureListener(that.failureListener == null ? null : (r, f) -> that.failureListener.onFailure(that.contextResponse(r), f));
+        addCompleteListener(that.completeListener == null ? null : r -> that.completeListener.onComplete(that.contextResult(r)), false);
     }
 
     private void emitEvents(Response response)
@@ -426,6 +418,28 @@ public class ResponseListeners
     {
         emitFailure(result.getResponse(), result.getFailure());
         notifyComplete(completeListener, result);
+    }
+
+    private Response contextResponse(Response response)
+    {
+        if (response.getRequest() == request)
+            return response;
+
+        Response contextResponse = (Response)request.getAttributes().get(RESPONSE_ATTRIBUTE);
+        if (contextResponse != null)
+            return contextResponse;
+
+        contextResponse = ((AbstractResponse)response).withRequest(request);
+        request.attribute(RESPONSE_ATTRIBUTE, contextResponse);
+        return contextResponse;
+    }
+
+    private Result contextResult(Result result)
+    {
+        Response response = result.getResponse();
+        if (result.getRequest() == request && response.getRequest() == request)
+            return result;
+        return new Result(request, result.getRequestFailure(), contextResponse(response), result.getResponseFailure());
     }
 
     private static class ContentSourceDemultiplexer implements Response.ContentSourceListener

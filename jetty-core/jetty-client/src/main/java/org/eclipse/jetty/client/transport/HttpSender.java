@@ -280,7 +280,7 @@ public abstract class HttpSender
                 channel.exchangeTerminated(exchange, result);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
-            exchange.getConversation().getResponseListeners().notifyComplete(result);
+            exchange.getConversation().notifyComplete(result);
             if (ordered)
                 channel.exchangeTerminated(exchange, result);
         }

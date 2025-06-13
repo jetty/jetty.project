@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -63,8 +62,7 @@ public class ProcessingProtocolHandler implements ProtocolHandler
             // Reset the conversation listeners, since we are going to receive another response code.
             conversation.updateResponseListeners(null);
 
-            HttpExchange exchange = conversation.getExchanges().peekLast();
-            assert exchange != null;
+            HttpExchange exchange = conversation.lastExchange();
 
             HttpFields responseHeaders = HttpFields.build(response.getHeaders());
             exchange.resetResponse();
@@ -80,13 +78,9 @@ public class ProcessingProtocolHandler implements ProtocolHandler
             // Reset the conversation listeners to allow the conversation to be completed.
             conversation.updateResponseListeners(null);
 
-            HttpExchange exchange = conversation.getExchanges().peekLast();
-            if (exchange != null)
-            {
-                ResponseListeners listeners = exchange.getResponseListeners();
-                HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-                listeners.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
-            }
+            HttpExchange exchange = conversation.lastExchange();
+            HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
+            conversation.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
         }
 
         @Override

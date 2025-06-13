@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpHeader;
@@ -331,7 +331,7 @@ public class HttpRedirector
                     LOG.debug("Could not redirect to {}, request body is not reproducible", location);
                 HttpConversation conversation = httpRequest.getConversation();
                 conversation.updateResponseListeners(null);
-                conversation.getResponseListeners().emitSuccessComplete(new Result(httpRequest, response));
+                conversation.emitSuccessComplete(new Result(httpRequest, response));
                 return null;
             }
 
@@ -377,6 +377,6 @@ public class HttpRedirector
     {
         HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
-        conversation.getResponseListeners().emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
+        conversation.emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
     }
 }

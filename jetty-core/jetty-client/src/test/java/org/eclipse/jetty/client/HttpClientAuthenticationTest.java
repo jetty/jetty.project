@@ -54,6 +54,7 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
@@ -170,6 +171,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
+        assertSame(request, response.getRequest());
         assertEquals(401, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().removeListener(requestListener);
@@ -191,6 +193,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
+        assertSame(request, response.getRequest());
         assertEquals(200, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().removeListener(requestListener);
@@ -211,6 +214,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
+        assertSame(request, response.getRequest());
         assertEquals(200, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().removeListener(requestListener);
@@ -694,7 +698,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("apps", headerInfos.get(0).getParameter("realm"));
         assertEquals("1", headerInfos.get(0).getParameter("type"));
 
-        assertEquals(headerInfos.get(0).getParameter("title"), "Login to \"apps\"");
+        assertEquals("Login to \"apps\"", headerInfos.get(0).getParameter("title"));
 
         assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Basic"));
         assertEquals("simple", headerInfos.get(1).getParameter("realm"));
@@ -726,13 +730,13 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("value2", headerInfo.getParameter("other"));
 
         headerInfos = aph.getHeaderInfo(", , , ,  ,,,Scheme name=value, ,,Scheme2   name=value2,,  ,,");
-        assertEquals(headerInfos.size(), 2);
+        assertEquals(2, headerInfos.size());
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme"));
         assertEquals("value", headerInfos.get(0).getParameter("nAmE"));
         assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
 
         headerInfos = aph.getHeaderInfo("Scheme name=value, Scheme2   name=value2");
-        assertEquals(headerInfos.size(), 2);
+        assertEquals(2, headerInfos.size());
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme"));
         assertEquals("value", headerInfos.get(0).getParameter("nAmE"));
         assertThat(headerInfos.get(1).getType(), equalToIgnoringCase("Scheme2"));
@@ -740,7 +744,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("value2", headerInfos.get(1).getParameter("nAmE"));
 
         headerInfos = aph.getHeaderInfo("Scheme ,   ,, ,, name=value, Scheme2 name=value2");
-        assertEquals(headerInfos.size(), 2);
+        assertEquals(2, headerInfos.size());
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme"));
         assertEquals("value", headerInfos.get(0).getParameter("name"));
         assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
@@ -807,7 +811,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         assertEquals(",Digest realm=hello", headerInfo.getParameter("qop"));
         assertEquals("thermostat", headerInfo.getParameter("realm"));
-        assertEquals(headerInfo.getParameter("nonce"), "1523430383=");
+        assertEquals("1523430383=", headerInfo.getParameter("nonce"));
     }
 
     private static class GeneratingRequestContent implements Request.Content

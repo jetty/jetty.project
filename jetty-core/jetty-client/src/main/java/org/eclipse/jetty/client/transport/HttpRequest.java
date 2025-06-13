@@ -70,7 +70,7 @@ public class HttpRequest implements Request
 
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
-    private final ResponseListeners responseListeners = new ResponseListeners();
+    private final ResponseListeners responseListeners = new ResponseListeners(this);
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
@@ -125,9 +125,7 @@ public class HttpRequest implements Request
     public HttpRequest copy(URI newURI)
     {
         if (newURI == null)
-        {
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
-        }
 
         HttpRequest newRequest = copyInstance(newURI);
         newRequest.method(getMethod())

@@ -94,6 +94,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -806,8 +807,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertThrows(IOException.class, () ->
         {
-            Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(host, port), 1000);
+            try (Socket socket = new Socket())
+            {
+                socket.connect(new InetSocketAddress(host, port), 1000);
+            }
         }, "Host must not be resolvable");
 
         start(scenario, new EmptyServerHandler());
@@ -818,7 +821,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 assertTrue(result.isFailed());
                 Throwable failure = result.getFailure();
-                assertTrue(failure instanceof UnknownHostException);
+                assertInstanceOf(UnknownHostException.class, failure);
                 latch.countDown();
             });
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -1011,89 +1014,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int expectedEventsTriggeredByOnRequestXXXListeners = 5;
         int expectedEventsTriggeredByListener = 5;
         int expected = expectedEventsTriggeredByOnRequestXXXListeners + expectedEventsTriggeredByListener;
-        assertEquals(expected, counter.get());
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testResponseListenerForMultipleEventsIsInvokedOncePerEvent(Scenario scenario) throws Exception
-    {
-        start(scenario, new EmptyServerHandler());
-
-        AtomicInteger counter = new AtomicInteger();
-        CountDownLatch latch = new CountDownLatch(2);
-        Response.Listener listener = new Response.Listener()
-        {
-            @Override
-            public void onBegin(Response response)
-            {
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public boolean onHeader(Response response, HttpField field)
-            {
-                // Number of header may vary, so don't count
-                return true;
-            }
-
-            @Override
-            public void onHeaders(Response response)
-            {
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                // Should not be invoked
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
-            {
-                // Should not be invoked
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public void onSuccess(Response response)
-            {
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-                // Should not be invoked
-                counter.incrementAndGet();
-            }
-
-            @Override
-            public void onComplete(Result result)
-            {
-                assertEquals(200, result.getResponse().getStatus());
-                counter.incrementAndGet();
-                latch.countDown();
-            }
-        };
-        client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .onResponseBegin(listener)
-            .onResponseHeader(listener)
-            .onResponseHeaders(listener)
-            .onResponseContent(listener)
-            .onResponseContentAsync(listener)
-            .onResponseSuccess(listener)
-            .onResponseFailure(listener)
-            .onComplete(listener)
-            .send(listener);
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        int expectedEventsTriggeredByResponseListeners = 4;
-        int expectedEventsTriggeredBySendListener = 4;
-        int expected = expectedEventsTriggeredByResponseListeners + expectedEventsTriggeredBySendListener;
         assertEquals(expected, counter.get());
     }
 
@@ -1549,9 +1469,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // HTTP/1.0 response, the client must not close the connection.
-                String httpResponse =
-                    "HTTP/1.0 200 OK\r\n" +
-                        "\r\n";
+                String httpResponse = """
+                    HTTP/1.0 200 OK\r
+                    \r
+                    """;
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
@@ -1575,10 +1496,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                httpResponse = """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    \r
+                    """;
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
@@ -1719,10 +1641,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // Send a bad response.
-                String httpResponse =
-                    "HTTP/1.1 204 No Content\r\n" +
-                        "\r\n" +
-                        "No Content";
+                String httpResponse = """
+                    HTTP/1.1 204 No Content\r
+                    \r
+                    No Content""";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
@@ -1742,10 +1664,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                httpResponse = """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    \r
+                    """;
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
@@ -1809,11 +1732,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testUnsolicitedResponseBytesFromServer(Scenario scenario) throws Exception
     {
-        String response = "" +
-            "HTTP/1.1 408 Request Timeout\r\n" +
-            "Content-Length: 0\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+        String response = """
+            HTTP/1.1 408 Request Timeout\r
+            Content-Length: 0\r
+            Connection: close\r
+            \r
+            """;
         testUnsolicitedBytesFromServer(scenario, response);
     }
 
@@ -2062,7 +1986,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 int capacity = (int)request.getHeaders().getLongField("X-Capacity");
                 // Overflow the max request headers size, should generate a 500.

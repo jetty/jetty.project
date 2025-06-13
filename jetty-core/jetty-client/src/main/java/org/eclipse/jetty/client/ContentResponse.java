@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.client.transport.HttpContentResponse;
 
 /**
  * A specialized {@link Response} that can hold a limited content in memory.

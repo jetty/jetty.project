@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.internal;
+package org.eclipse.jetty.client.transport;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
-public class HttpContentResponse implements ContentResponse
+public class HttpContentResponse extends AbstractResponse implements ContentResponse
 {
     private final Response response;
     private final byte[] content;
@@ -33,6 +33,12 @@ public class HttpContentResponse implements ContentResponse
 
     public HttpContentResponse(Response response, byte[] content, String mediaType, String encoding)
     {
+        this(response.getRequest(), response, content, mediaType, encoding);
+    }
+
+    public HttpContentResponse(Request request, Response response, byte[] content, String mediaType, String encoding)
+    {
+        super(request);
         this.response = response;
         this.content = content;
         this.mediaType = mediaType;
@@ -40,9 +46,9 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public Request getRequest()
+    public Response withRequest(Request request)
     {
-        return response.getRequest();
+        return new HttpContentResponse(request, this, getContent(), getMediaType(), getEncoding());
     }
 
     @Override

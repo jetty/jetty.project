@@ -38,22 +38,34 @@ public interface Response
     /**
      * @return the request associated with this response
      */
-    Request getRequest();
+    default Request getRequest()
+    {
+        return null;
+    }
 
     /**
      * @return the HTTP version of this response, such as "HTTP/1.1"
      */
-    HttpVersion getVersion();
+    default HttpVersion getVersion()
+    {
+        return null;
+    }
 
     /**
      * @return the HTTP status code of this response, such as 200 or 404
      */
-    int getStatus();
+    default int getStatus()
+    {
+        return 0;
+    }
 
     /**
      * @return the HTTP reason associated to the {@link #getStatus}
      */
-    String getReason();
+    default String getReason()
+    {
+        return null;
+    }
 
     /**
      * <p>Returns the headers of this response.</p>
@@ -70,20 +82,29 @@ public interface Response
      *
      * @return the headers of this response
      */
-    HttpFields getHeaders();
+    default HttpFields getHeaders()
+    {
+        return null;
+    }
 
     /**
      * @return the trailers of this response
      */
-    HttpFields getTrailers();
+    default HttpFields getTrailers()
+    {
+        return null;
+    }
 
     /**
      * Attempts to abort the receive of this response.
      *
      * @param cause the abort cause, must not be null
-     * @return whether the abort succeeded
+     * @return a {@link CompletableFuture} that eventually reports whether the abort succeeded
      */
-    CompletableFuture<Boolean> abort(Throwable cause);
+    default CompletableFuture<Boolean> abort(Throwable cause)
+    {
+        return CompletableFuture.completedFuture(false);
+    }
 
     /**
      * Common, empty, super-interface for response listeners

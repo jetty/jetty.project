@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
@@ -49,7 +49,9 @@ public class ResponseListenersTest
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
 
-        ResponseListeners responseListeners = new ResponseListeners();
+        Request request = new TestRequest();
+
+        ResponseListeners responseListeners = new ResponseListeners(request);
         Response.ContentSourceListener contentSourceListener = (r, source) ->
         {
             Runnable runnable = new Runnable()
@@ -74,7 +76,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
 
         assertThat("Chunks: " + chunks, chunks.size(), is(6));
         assertThat(chunks.get(0).isLast(), is(false));
@@ -107,8 +109,10 @@ public class ResponseListenersTest
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
         );
 
+        Request request = new TestRequest();
+
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
-        ResponseListeners responseListeners = new ResponseListeners();
+        ResponseListeners responseListeners = new ResponseListeners(request);
         Response.ContentSourceListener contentSourceListener = (r, source) ->
         {
             Runnable runnable = new Runnable()
@@ -135,7 +139,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
 
         assertThat(chunks.size(), is(8));
         assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
@@ -177,8 +181,10 @@ public class ResponseListenersTest
             Content.Chunk.from(new ArithmeticException(), true)
         );
 
+        Request request = new TestRequest();
+
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
-        ResponseListeners responseListeners = new ResponseListeners();
+        ResponseListeners responseListeners = new ResponseListeners(request);
         Response.ContentSourceListener contentSourceListener = (r, source) ->
         {
             Runnable runnable = new Runnable()
@@ -205,7 +211,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
 
         assertThat(chunks.size(), is(6));
         assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
@@ -235,7 +241,8 @@ public class ResponseListenersTest
     @Test
     public void testEmitEventsInvokesContentSourceListenerForNoContent()
     {
-        ResponseListeners responseListeners = new ResponseListeners();
+        TestRequest request = new TestRequest();
+        ResponseListeners responseListeners = new ResponseListeners(request);
         List<String> events = new ArrayList<>();
         responseListeners.addListener(new Response.Listener()
         {
@@ -270,7 +277,7 @@ public class ResponseListenersTest
             }
         });
 
-        Response response = new HttpResponse(null).addHeader(HttpFields.CONTENT_LENGTH_0);
+        Response response = new HttpResponse(request).addHeader(HttpFields.CONTENT_LENGTH_0);
         Response contentResponse = new HttpContentResponse(response, BufferUtil.EMPTY_BYTES, null, null);
         responseListeners.emitSuccess(contentResponse);
 
@@ -300,6 +307,24 @@ public class ResponseListenersTest
                 }
                 chunks = null;
             }
+        }
+    }
+
+    private static class TestRequest implements Request
+    {
+    }
+
+    private static class TestResponse extends AbstractResponse
+    {
+        private TestResponse(Request request)
+        {
+            super(request);
+        }
+
+        @Override
+        public Response withRequest(Request request)
+        {
+            return new TestResponse(request);
         }
     }
 }

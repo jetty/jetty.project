@@ -172,7 +172,7 @@ public abstract class HttpReceiver implements Invocable
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response begin for {} on {}", exchange, this);
-            conversation.getResponseListeners().notifyBegin(response);
+            conversation.notifyBegin(response);
         });
     }
 
@@ -204,7 +204,7 @@ public abstract class HttpReceiver implements Invocable
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response header {} for {} on {}", field, exchange, this);
-            boolean process = exchange.getConversation().getResponseListeners().notifyHeader(response, field);
+            boolean process = exchange.getConversation().notifyHeader(response, field);
             if (LOG.isDebugEnabled())
                 LOG.debug("Notified response header {}, processing {}", field, (process ? "needed" : "skipped"));
             if (process)
@@ -291,8 +291,8 @@ public abstract class HttpReceiver implements Invocable
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response headers for {} on {}", exchange, this);
-            ResponseListeners responseListeners = exchange.getConversation().getResponseListeners();
-            responseListeners.notifyHeaders(response);
+            HttpConversation conversation = exchange.getConversation();
+            conversation.notifyHeaders(response);
 
             if (exchange.isResponseCompleteOrTerminated())
                 return;
@@ -321,7 +321,7 @@ public abstract class HttpReceiver implements Invocable
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response content {} for {} on {}", contentSource, exchange, this);
-            responseListeners.notifyContentSource(response, contentSource);
+            conversation.notifyContentSource(response, contentSource);
         });
     }
 
@@ -383,7 +383,7 @@ public abstract class HttpReceiver implements Invocable
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response success for {} on {}", exchange, this);
-            exchange.getConversation().getResponseListeners().notifySuccess(response);
+            exchange.getConversation().notifySuccess(response);
 
             // Interim responses do not terminate the exchange.
             if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
@@ -449,7 +449,7 @@ public abstract class HttpReceiver implements Invocable
                 channel.exchangeTerminated(exchange, result);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
-            exchange.getConversation().getResponseListeners().notifyComplete(result);
+            exchange.getConversation().notifyComplete(result);
             if (ordered)
                 channel.exchangeTerminated(exchange, result);
         }
@@ -525,7 +525,7 @@ public abstract class HttpReceiver implements Invocable
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
                 LOG.debug("Notifying response failure {} for {} on {}", failure, exchange, this);
-            exchange.getConversation().getResponseListeners().notifyFailure(response, failure);
+            exchange.getConversation().notifyFailure(response, failure);
 
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
