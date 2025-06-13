@@ -8,7 +8,7 @@
     <Call name="configureEnvironment">
       <Arg>core</Arg>
       <Set name="defaultContextHandlerClassName">
-        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.core.app.CoreContextHandler" />
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.core.app.CoreAppContext" />
       </Set>
     </Call>
   </Ref>
