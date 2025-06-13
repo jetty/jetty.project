@@ -105,145 +105,60 @@ public class UrlParameterDecoderTest
         assertEquals("d", fields.getValue("c"));
     }
 
-    @Test
-    public void testEmptyKeyAndEmptyValue()
-        throws Exception
+    /**
+     * List of parsing behaviors from Browser {@code URLSearchParams} implementations.
+     * @see <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams">URLSearchParams</a>
+     */
+    public static Stream<Arguments> browserParsingCases()
     {
-        Fields fields = new Fields();
+        List<Arguments> cases = new ArrayList<>();
 
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        cases.add(Arguments.of("a=b&c=d", Map.of("a", List.of("b"), "c", List.of("d"))));
+        cases.add(Arguments.of("a=b?c=d", Map.of("a", List.of("b?c=d"))));
+        cases.add(Arguments.of("=", Map.of("", List.of(""))));
+        cases.add(Arguments.of("a=b&a=c&a=d", Map.of("a", List.of("b", "c", "d"))));
+        cases.add(Arguments.of("&", Map.of()));
+        cases.add(Arguments.of("&&&", Map.of()));
+        cases.add(Arguments.of("a=b&&&", Map.of("a", List.of("b"))));
+        cases.add(Arguments.of("&&&a=b", Map.of("a", List.of("b"))));
+        cases.add(Arguments.of("=&=", Map.of("", List.of("", ""))));
+        cases.add(Arguments.of("&=&", Map.of("", List.of(""))));
+        cases.add(Arguments.of("foo", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("foo&bar", Map.of("foo", List.of(""), "bar", List.of(""))));
+        cases.add(Arguments.of("foo=", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("foo=&", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("=foo", Map.of("", List.of("foo"))));
+        cases.add(Arguments.of("=foo&=bar", Map.of("", List.of("foo", "bar"))));
+        cases.add(Arguments.of("foo==", Map.of("foo", List.of("="))));
+        cases.add(Arguments.of("foo===", Map.of("foo", List.of("=="))));
+        cases.add(Arguments.of("a===b", Map.of("a", List.of("==b"))));
+        cases.add(Arguments.of("a=\"b\"", Map.of("a", List.of("\"b\""))));
+        cases.add(Arguments.of("\"a=b\"", Map.of("\"a", List.of("b\""))));
+        cases.add(Arguments.of("a=b& =foo", Map.of("a", List.of("b"), " ", List.of("foo"))));
+        cases.add(Arguments.of("===foo", Map.of("", List.of("==foo"))));
 
-        String input = "=";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(1));
-        assertEquals("", values.get(0));
+        return cases.stream();
     }
 
-    @Test
-    public void testEmptyKeyWithValue()
-        throws Exception
+    @ParameterizedTest
+    @MethodSource("browserParsingCases")
+    public void testBrowserParsingBehavior(String input, Map<String, List<String>> expectedParams) throws IOException
     {
         Fields fields = new Fields();
-
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
-        String input = "=foo";
         decoder.parse(input);
 
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(1));
-        assertEquals("foo", values.get(0));
-    }
+        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
 
-    @Test
-    public void testDualEmptyKeysAndEmptyValues()
-        throws Exception
-    {
-        Fields fields = new Fields();
-
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-
-        String input = "=&=";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(2));
-        assertEquals("", values.get(0));
-        assertEquals("", values.get(1));
-    }
-
-    @Test
-    public void testDualEmptyKeysWithValues()
-        throws Exception
-    {
-        Fields fields = new Fields();
-
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-
-        String input = "=foo&=bar";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(2));
-        assertEquals("foo", values.get(0));
-        assertEquals("bar", values.get(1));
-    }
-
-    @Test
-    public void testOneAmpersand()
-        throws Exception
-    {
-        Fields fields = new Fields();
-
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-
-        String input = "&";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(1));
-        assertEquals("", values.get(0));
-    }
-
-    @Test
-    public void testTwoAmpersands()
-        throws Exception
-    {
-        Fields fields = new Fields();
-
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-
-        String input = "&&";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(1));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(2));
-        assertEquals("", values.get(0));
-        assertEquals("", values.get(1));
-    }
-
-    @Test
-    public void testValueBetweenTwoAmpersands()
-        throws Exception
-    {
-        Fields fields = new Fields();
-
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-
-        String input = "&foo&";
-        decoder.parse(input);
-
-        assertThat(fields.getSize(), is(2));
-        List<String> values = fields.getValues("");
-        assertNotNull(values);
-        assertThat(values.size(), is(1));
-        assertEquals("", values.get(0));
-
-        values = fields.getValues("foo");
-        assertNotNull(values);
-        assertThat(values.size(), is(1));
-        assertEquals("", values.get(0));
+        for (String key : expectedParams.keySet())
+        {
+            Fields.Field field = fields.get(key);
+            String message = "Fields[%s]".formatted(key);
+            assertNotNull(field, message);
+            assertEquals(expectedParams.get(key), field.getValues(), message);
+        }
     }
 
     @Test
@@ -444,10 +359,10 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%£", "other", "foo")));
 
         // Extra ampersands
-        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa", "", "")));
-        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa", "", "")));
-        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo", "", "")));
-        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo", "", "")));
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
 
         // Encoded ampersands
         cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
@@ -523,10 +438,10 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
 
         // Extra ampersands
-        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa", "", "")));
-        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa", "", "")));
-        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo", "", "")));
-        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo", "", "")));
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
 
         // Encoded ampersands
         cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));

@@ -37,6 +37,7 @@ class UrlParameterDecoder
     private final boolean allowTruncatedEncoding;
     private final CharsetStringBuilder builder;
     private String name;
+    private boolean seenEqualsDelim;
     private int keyCount;
     private int charCount;
 
@@ -182,20 +183,24 @@ class UrlParameterDecoder
             case '&' ->
             {
                 String str = takeBuiltString();
-                if (name == null)
-                {
-                    onNewField(str, "");
-                }
-                else
+                if (seenEqualsDelim)
                 {
                     onNewField(name, str);
                     name = null;
                 }
+                else if (!StringUtil.isEmpty(str))
+                {
+                    onNewField(str, "");
+                }
+                seenEqualsDelim = false;
             }
             case '=' ->
             {
                 if (name == null)
+                {
                     name = takeBuiltString();
+                    seenEqualsDelim = true;
+                }
                 else
                     builder.append(c);
             }
@@ -295,7 +300,7 @@ class UrlParameterDecoder
 
     private void complete() throws CharacterCodingException
     {
-        if (name != null)
+        if (seenEqualsDelim)
         {
             String value = takeBuiltString();
             onNewField(name, value);
@@ -303,8 +308,10 @@ class UrlParameterDecoder
         else if (builder.length() > 0)
         {
             name = takeBuiltString();
-            onNewField(name, "");
+            if (!StringUtil.isEmpty(name))
+                onNewField(name, "");
         }
+        seenEqualsDelim = false;
     }
 
     private String notValidPctEncoding(char hi, char lo)
