@@ -21,6 +21,10 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
+/**
+ * Internal implementation of the {@link ServerUpgradeResponse} interface.
+ * @see ServerUpgradeResponse
+ */
 public class ServerUpgradeResponseImpl extends Response.Wrapper implements ServerUpgradeResponse
 {
     private final Response response;

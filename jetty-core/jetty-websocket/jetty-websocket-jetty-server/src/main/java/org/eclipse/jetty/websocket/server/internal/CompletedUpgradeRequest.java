@@ -34,19 +34,26 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
+/**
+ * Internal implementation of the {@link UpgradeRequest} interface.
+ * This takes a {@link ServerUpgradeRequest} instance and copies all required information after the WebSocket upgrade,
+ * to store for the duration of the WebSocket connection, past the end of the HTTP request lifecycle.
+ */
 public class CompletedUpgradeRequest implements UpgradeRequest
 {
     private final HttpFields _httpFields;
-    private final List<HttpCookie> _cookies;
     private final List<ExtensionConfig> _extensions;
     private final HttpURI _httpURI;
     private final String _httpVersion;
     private final String _method;
     private final List<String> _subProtocols;
-    private final Map<String, List<String>> _queryParams;
     private final boolean _secure;
     private final String _protocolVersion;
     private final Principal _userPrincipal;
+    private List<org.eclipse.jetty.http.HttpCookie> _jettyCookies;
+    private List<HttpCookie> _cookies;
+    private Fields _queryFields;
+    private Map<String, List<String>> _queryParams;
 
     public CompletedUpgradeRequest(ServerUpgradeRequest request)
     {
@@ -57,14 +64,8 @@ public class CompletedUpgradeRequest implements UpgradeRequest
         _subProtocols = request.getSubProtocols();
         _secure = request.isSecure();
         _protocolVersion = request.getProtocolVersion();
-
-        // Convert Jetty Cookies to java.net.HttpCookie.
-        List<HttpCookie> cookies = new ArrayList<>();
-        for (org.eclipse.jetty.http.HttpCookie cookie : Request.getCookies(request))
-        {
-            cookies.add(org.eclipse.jetty.http.HttpCookie.asJavaNetHttpCookie(cookie));
-        }
-        _cookies = Collections.unmodifiableList(cookies);
+        _jettyCookies = Request.getCookies(request);
+        _queryFields = Request.extractQueryParameters(request);
 
         // Convert Core Extensions to Jetty API Extensions.
         List<ExtensionConfig> extensions = new ArrayList<>();
@@ -77,19 +78,22 @@ public class CompletedUpgradeRequest implements UpgradeRequest
         // Get the user principal from the request's authentication state.
         Request.AuthenticationState authState = Request.getAuthenticationState(request);
         _userPrincipal = authState != null ? authState.getUserPrincipal() : null;
-
-        // Extract query parameters from the request.
-        Map<String, List<String>> queryParams = new LinkedHashMap<>();
-        for (Fields.Field field : Request.extractQueryParameters(request))
-        {
-            queryParams.put(field.getName(), field.getValues());
-        }
-        _queryParams = Collections.unmodifiableMap(queryParams);
     }
 
     @Override
     public List<HttpCookie> getCookies()
     {
+        if (_cookies == null)
+        {
+            // Convert Jetty Cookies to java.net.HttpCookie.
+            List<HttpCookie> cookies = new ArrayList<>();
+            for (org.eclipse.jetty.http.HttpCookie cookie : _jettyCookies)
+            {
+                cookies.add(org.eclipse.jetty.http.HttpCookie.asJavaNetHttpCookie(cookie));
+            }
+            _cookies = Collections.unmodifiableList(cookies);
+            _jettyCookies = null;
+        }
         return _cookies;
     }
 
@@ -151,6 +155,17 @@ public class CompletedUpgradeRequest implements UpgradeRequest
     @Override
     public Map<String, List<String>> getParameterMap()
     {
+        if (_queryParams == null)
+        {
+            // Extract query parameters from the request.
+            Map<String, List<String>> queryParams = new LinkedHashMap<>();
+            for (Fields.Field field : _queryFields)
+            {
+                queryParams.put(field.getName(), field.getValues());
+            }
+            _queryParams = Collections.unmodifiableMap(queryParams);
+            _queryFields = null;
+        }
         return _queryParams;
     }
 

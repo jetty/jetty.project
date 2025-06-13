@@ -23,6 +23,10 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
+/**
+ * Internal implementation of the {@link ServerUpgradeRequest} interface.
+ * @see ServerUpgradeRequest
+ */
 public class ServerUpgradeRequestImpl extends Request.Wrapper implements ServerUpgradeRequest
 {
     private final Request request;

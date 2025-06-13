@@ -21,6 +21,11 @@ import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
+/**
+ * Internal implementation of the {@link org.eclipse.jetty.websocket.server.ServerUpgradeRequest} interface
+ * which delegates to the websocket-core {@link ServerUpgradeRequest}.
+ * @see org.eclipse.jetty.websocket.server.ServerUpgradeRequest
+ */
 public class DelegatedServerUpgradeRequest extends Request.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeRequest
 {
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest wrapped)

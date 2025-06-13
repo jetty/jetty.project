@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
@@ -24,6 +25,11 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
+/**
+ * Internal implementation of the {@link UpgradeResponse} interface.
+ * This takes a {@link ServerUpgradeResponse} instance and copies all required information after the WebSocket upgrade,
+ * to store for the duration of the WebSocket connection, past the end of the HTTP request lifecycle.
+ */
 public class CompletedUpgradeResponse implements UpgradeResponse
 {
     private final HttpFields _httpFields;
@@ -38,9 +44,13 @@ public class CompletedUpgradeResponse implements UpgradeResponse
         _headers = HttpFields.asMap(response.getHeaders());
         _status = response.getStatus();
         _acceptedSubProtocol = response.getAcceptedSubProtocol();
-        _negotiatedExtensions = response.getExtensions().stream()
-            .map(JettyExtensionConfig::new)
-            .collect(Collectors.toList());
+
+        List<ExtensionConfig> extensionConfigs = new ArrayList<>();
+        for (org.eclipse.jetty.websocket.core.ExtensionConfig extensionConfig : response.getExtensions())
+        {
+            extensionConfigs.add(new JettyExtensionConfig(extensionConfig));
+        }
+        _negotiatedExtensions = Collections.unmodifiableList(extensionConfigs);
     }
 
     @Override
