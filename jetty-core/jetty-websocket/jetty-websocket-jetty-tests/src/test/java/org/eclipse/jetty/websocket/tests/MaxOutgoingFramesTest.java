@@ -137,9 +137,9 @@ public class MaxOutgoingFramesTest
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket socket = new EventSocket();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.addExtensions(BlockingOutgoingExtension.class.getName());
-        client.connect(socket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
+        client.connect(socket, upgradeRequest).get(5, TimeUnit.SECONDS);
         assertTrue(socket.openLatch.await(5, TimeUnit.SECONDS));
 
         int numFrames = 30;

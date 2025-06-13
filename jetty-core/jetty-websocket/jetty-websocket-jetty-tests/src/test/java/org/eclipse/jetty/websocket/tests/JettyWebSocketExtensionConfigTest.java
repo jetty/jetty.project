@@ -95,7 +95,7 @@ public class JettyWebSocketExtensionConfigTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(uri);
         request.addExtensions(ExtensionConfig.parse("permessage-deflate"));
 
         CountDownLatch correctResponseExtensions = new CountDownLatch(1);
@@ -113,7 +113,7 @@ public class JettyWebSocketExtensionConfigTest
             }
         };
 
-        CompletableFuture<Session> connect = client.connect(socket, uri, request, listener);
+        CompletableFuture<Session> connect = client.connect(socket, request, listener);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.sendText("hello world", Callback.NOOP);

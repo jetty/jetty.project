@@ -224,12 +224,12 @@ public class ClientConnectTest
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/get-auth-header"));
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         // actual value for this test is irrelevant, its important that this
         // header actually be sent with a value (the value specified)
         String authHeaderValue = "Basic YWxhZGRpbjpvcGVuc2VzYW1l";
         request.setHeader("Authorization", authHeaderValue);
-        Future<Session> future = client.connect(cliSock, wsUri, request);
+        Future<Session> future = client.connect(cliSock, request);
 
         try (Session sess = future.get(5, TimeUnit.SECONDS))
         {

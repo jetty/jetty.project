@@ -88,7 +88,7 @@ public class UpgradeHeadersTest
         EventSocket clientEndpoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
 
-        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
         clientUpgradeRequest.getHeaders().put("sentHeader", List.of("value123"));
         if (clientUpgradeRequest.getHeaders().get("SenTHeaDer") == null)
             throw new IllegalStateException("No custom Header on ClientUpgradeRequest");
@@ -116,7 +116,7 @@ public class UpgradeHeadersTest
         };
 
         // If any of the above throw it would fail to upgrade to websocket.
-        assertNotNull(_client.connect(clientEndpoint, uri, clientUpgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
+        assertNotNull(_client.connect(clientEndpoint, clientUpgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));

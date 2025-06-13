@@ -131,9 +131,9 @@ public class WebSocketServletExamplesTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/advancedEcho");
         EventSocket socket = new EventSocket();
 
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.setSubProtocols("text");
-        CompletableFuture<Session> connect = client.connect(socket, uri, upgradeRequest);
+        CompletableFuture<Session> connect = client.connect(socket, upgradeRequest);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             String message = "hello world";

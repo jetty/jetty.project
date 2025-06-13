@@ -91,10 +91,10 @@ public class WebSocketProxy
             try
             {
                 this.session = session;
-                ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+                ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(serverUri);
                 upgradeRequest.setSubProtocols(session.getUpgradeRequest().getSubProtocols());
                 upgradeRequest.setExtensions(session.getUpgradeRequest().getExtensions());
-                client.connect(proxyToServer, serverUri, upgradeRequest)
+                client.connect(proxyToServer, upgradeRequest)
                     // Only demand for frames after the connect() is successful.
                     .thenAccept(ignored -> session.demand());
             }

@@ -75,11 +75,11 @@ public class LargeDeflateTest
     @Test
     public void testDeflate() throws Exception
     {
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"));
         upgradeRequest.addExtensions("permessage-deflate");
 
         EventSocket clientSocket = new EventSocket();
-        Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
+        Session session = _client.connect(clientSocket, upgradeRequest).get();
         ByteBuffer sentMessage = largePayloads();
         session.sendBinary(sentMessage, Callback.NOOP);
         session.close(StatusCode.NORMAL, "close from test", Callback.NOOP);

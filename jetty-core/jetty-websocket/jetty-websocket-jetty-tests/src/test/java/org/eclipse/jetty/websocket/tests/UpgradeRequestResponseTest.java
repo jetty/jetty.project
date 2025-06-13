@@ -64,10 +64,10 @@ public class UpgradeRequestResponseTest
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
         EventSocket socket = new EventSocket();
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(uri);
         request.addExtensions("permessage-deflate");
 
-        CompletableFuture<Session> connect = client.connect(socket, uri, request);
+        CompletableFuture<Session> connect = client.connect(socket, request);
         Session session = connect.get(5, TimeUnit.SECONDS);
         UpgradeRequest upgradeRequest = session.getUpgradeRequest();
         UpgradeResponse upgradeResponse = session.getUpgradeResponse();
@@ -94,10 +94,10 @@ public class UpgradeRequestResponseTest
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
         EventSocket socket = new EventSocket();
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        ClientUpgradeRequest request = new ClientUpgradeRequest(uri);
         request.addExtensions("permessage-deflate");
 
-        CompletableFuture<Session> connect = client.connect(socket, uri, request);
+        CompletableFuture<Session> connect = client.connect(socket, request);
         Session session = connect.get(5, TimeUnit.SECONDS);
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         UpgradeRequest upgradeRequest = serverSocket.session.getUpgradeRequest();

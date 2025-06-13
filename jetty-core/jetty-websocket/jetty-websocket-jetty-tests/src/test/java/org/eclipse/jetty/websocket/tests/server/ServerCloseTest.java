@@ -110,12 +110,11 @@ public class ServerCloseTest
     @Test
     public void fastClose() throws Exception
     {
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("fastclose");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+        Future<Session> futSession = client.connect(clientEndpoint, request);
 
         Session session = null;
         try
@@ -144,12 +143,11 @@ public class ServerCloseTest
     @Test
     public void fastFail() throws Exception
     {
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("fastfail");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+        Future<Session> futSession = client.connect(clientEndpoint, request);
 
         Session session = null;
         try (StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
@@ -183,12 +181,11 @@ public class ServerCloseTest
     @Test
     public void dropConnection() throws Exception
     {
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("container");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+        Future<Session> futSession = client.connect(clientEndpoint, request);
 
         Session session = null;
         try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
@@ -223,12 +220,11 @@ public class ServerCloseTest
         //fastClose();
         //dropConnection();
 
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("container");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+        Future<Session> futSession = client.connect(clientEndpoint, request);
 
         Session session = null;
         try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
@@ -260,12 +256,11 @@ public class ServerCloseTest
     public void testSecondCloseFromOnClosed() throws Exception
     {
         // Testing WebSocketSession.close() in onClosed() does not cause deadlock.
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("closeInOnClose");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        client.connect(clientEndpoint, wsUri, request).get(5, SECONDS);
+        client.connect(clientEndpoint, request).get(5, SECONDS);
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
@@ -285,12 +280,11 @@ public class ServerCloseTest
     public void testSecondCloseFromOnClosedInNewThread() throws Exception
     {
         // Testing WebSocketSession.close() in onClosed() does not cause deadlock.
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
         request.setSubProtocols("closeInOnCloseNewThread");
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        client.connect(clientEndpoint, wsUri, request).get(5, SECONDS);
+        client.connect(clientEndpoint, request).get(5, SECONDS);
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();

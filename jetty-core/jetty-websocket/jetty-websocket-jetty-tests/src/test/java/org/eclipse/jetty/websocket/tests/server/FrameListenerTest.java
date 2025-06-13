@@ -99,11 +99,10 @@ public class FrameListenerTest
     @Test
     public void testPartialText() throws Exception
     {
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
-
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+        ClientUpgradeRequest request = new ClientUpgradeRequest(wsUri);
+        CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
+        Future<Session> futSession = client.connect(clientEndpoint, request);
 
         Session session = null;
         try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))

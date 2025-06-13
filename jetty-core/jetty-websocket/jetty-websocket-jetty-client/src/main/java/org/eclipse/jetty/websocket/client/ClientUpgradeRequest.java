@@ -43,16 +43,16 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     private long timeout;
     private String httpVersion;
 
+    /**
+     * @deprecated use {@link #ClientUpgradeRequest(URI)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public ClientUpgradeRequest()
     {
         /* anonymous, no requestURI, upgrade request */
         this.requestURI = null;
     }
 
-    /**
-     * @deprecated use {@link #ClientUpgradeRequest()} instead.
-     */
-    @Deprecated
     public ClientUpgradeRequest(URI uri)
     {
         this.requestURI = uri;
@@ -84,22 +84,14 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     public int getHeaderInt(String name)
     {
         List<String> values = headers.get(name);
-        // no value list
         if (values == null)
-        {
             return -1;
-        }
+
         int size = values.size();
-        // empty value list
-        if (size <= 0)
-        {
+        if (size == 0)
             return -1;
-        }
-        // simple return
         if (size == 1)
-        {
             return Integer.parseInt(values.get(0));
-        }
         throw new NumberFormatException("Cannot convert multi-value header into int");
     }
 
