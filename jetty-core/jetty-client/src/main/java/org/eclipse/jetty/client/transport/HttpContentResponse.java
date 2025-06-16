@@ -131,4 +131,93 @@ public class HttpContentResponse implements ContentResponse
             getReason(),
             getContent().length);
     }
+
+    static class Wrapper implements ContentResponse
+    {
+        private final Request request;
+        private final ContentResponse response;
+
+        Wrapper(Request request, ContentResponse response)
+        {
+            this.request = request;
+            this.response = response;
+        }
+
+        @Override
+        public Request getRequest()
+        {
+            return request;
+        }
+
+        @Override
+        public HttpVersion getVersion()
+        {
+            return response.getVersion();
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return response.getStatus();
+        }
+
+        @Override
+        public String getReason()
+        {
+            return response.getReason();
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return response.getHeaders();
+        }
+
+        @Override
+        public HttpFields getTrailers()
+        {
+            return response.getTrailers();
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause)
+        {
+            return response.abort(cause);
+        }
+
+        @Override
+        public String getMediaType()
+        {
+            return response.getMediaType();
+        }
+
+        @Override
+        public String getEncoding()
+        {
+            return response.getEncoding();
+        }
+
+        @Override
+        public byte[] getContent()
+        {
+            return response.getContent();
+        }
+
+        @Override
+        public String getContentAsString()
+        {
+            return response.getContentAsString();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[%s %d %s - %d bytes]",
+                TypeUtil.toShortName(HttpContentResponse.Wrapper.class),
+                getVersion(),
+                getStatus(),
+                getReason(),
+                getContent().length);
+        }
+    }
 }
