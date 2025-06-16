@@ -15,11 +15,14 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.RandomConnectionPool;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -43,7 +46,9 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
@@ -1308,5 +1313,55 @@ public class GoAwayTest extends AbstractTest
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void reproduceStaleConnections() throws Exception
+    {
+        SecureRandom random = new SecureRandom();
+
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                if (random.nextInt(20) == 0)
+                {
+                    HTTP2Session session = (HTTP2Session)stream.getSession();
+                    int streamId = Integer.MAX_VALUE; // Integer.MAX_VALUE is not necessary, any stream ID reproduces the problem.
+//                    int streamId = stream.getId();
+                    session.goAway(new GoAwayFrame(streamId, ErrorCode.INTERNAL_ERROR.code, "problem_reproduced".getBytes(StandardCharsets.UTF_8)),
+                        Callback.from(() -> session.getEndPoint().close()));
+                }
+
+                stream.headers(new HeadersFrame(stream.getId(), new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, false))
+                    .whenComplete((strm, throwable) -> strm.data(new DataFrame(strm.getId(), ByteBuffer.allocate(128 * 1024), true), Callback.NOOP));
+                return null;
+            }
+        });
+        httpClient.stop();
+        httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
+        httpClient.start();
+
+        int requestCount = 10_000;
+        CountDownLatch latch = new CountDownLatch(requestCount);
+        for (int i = 0; i< requestCount; i++)
+        {
+            httpClient.newRequest("localhost", connector.getLocalPort())
+                .path("/")
+                .send(result -> latch.countDown());
+        }
+        boolean awaited = latch.await(4, TimeUnit.SECONDS);
+
+        httpClient.dumpStdErr();
+        ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
+        System.err.println("***** Repeating pool dump *****");
+        System.err.println(pool.dump());
+        System.gc();
+        System.err.println(pool.dump());
+        pool.reserve().remove(); // sweep
+        System.err.println(pool.dump());
+
+        assertTrue(awaited);
     }
 }
