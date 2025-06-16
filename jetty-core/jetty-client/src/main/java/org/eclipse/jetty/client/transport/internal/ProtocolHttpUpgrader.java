@@ -28,7 +28,6 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
-import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -76,7 +75,7 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
                 // Multiple threads may access the map, especially with DEBUG logging enabled.
                 Map<String, Object> context = new ConcurrentHashMap<>();
                 context.put(Destination.CONTEXT_KEY, newDestination);
-                context.put(HttpResponse.class.getName(), response);
+                context.put(Response.class.getName(), response);
                 context.put(Connection.PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
 
                 if (LOG.isDebugEnabled())

@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
-import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.client.transport.MutableResponse;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -237,7 +237,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
                 assertFalse(connection.getEndPoint().isOutputShutdown());
             })
-            .onResponseHeaders(r -> ((HttpResponse)r).headers(headers -> headers.remove(HttpHeader.CONNECTION)));
+            .onResponseHeaders(r -> ((MutableResponse)r).headers(headers -> headers.remove(HttpHeader.CONNECTION)));
         ContentResponse response = request.send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());

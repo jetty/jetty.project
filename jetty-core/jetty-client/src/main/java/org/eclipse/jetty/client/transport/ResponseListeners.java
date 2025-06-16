@@ -429,7 +429,7 @@ public class ResponseListeners
         if (contextResponse != null)
             return contextResponse;
 
-        contextResponse = ((AbstractResponse)response).withRequest(request);
+        contextResponse = new HttpResponse.Wrapper(request, (MutableResponse)response);
         request.attribute(RESPONSE_ATTRIBUTE, contextResponse);
         return contextResponse;
     }

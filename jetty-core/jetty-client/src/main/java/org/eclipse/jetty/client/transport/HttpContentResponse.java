@@ -23,8 +23,9 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.TypeUtil;
 
-public class HttpContentResponse extends AbstractResponse implements ContentResponse
+public class HttpContentResponse implements ContentResponse
 {
     private final Response response;
     private final byte[] content;
@@ -33,12 +34,6 @@ public class HttpContentResponse extends AbstractResponse implements ContentResp
 
     public HttpContentResponse(Response response, byte[] content, String mediaType, String encoding)
     {
-        this(response.getRequest(), response, content, mediaType, encoding);
-    }
-
-    public HttpContentResponse(Request request, Response response, byte[] content, String mediaType, String encoding)
-    {
-        super(request);
         this.response = response;
         this.content = content;
         this.mediaType = mediaType;
@@ -46,9 +41,9 @@ public class HttpContentResponse extends AbstractResponse implements ContentResp
     }
 
     @Override
-    public Response withRequest(Request request)
+    public Request getRequest()
     {
-        return new HttpContentResponse(request, this, getContent(), getMediaType(), getEncoding());
+        return response.getRequest();
     }
 
     @Override
@@ -130,7 +125,7 @@ public class HttpContentResponse extends AbstractResponse implements ContentResp
     public String toString()
     {
         return String.format("%s[%s %d %s - %d bytes]",
-            HttpContentResponse.class.getSimpleName(),
+            TypeUtil.toShortName(HttpContentResponse.class),
             getVersion(),
             getStatus(),
             getReason(),

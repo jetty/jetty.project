@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -132,5 +135,67 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(beginLatch.await(5, TimeUnit.SECONDS));
         assertFalse(headersLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testConversationResponse(Scenario scenario) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                switch (Request.getPathInContext(request))
+                {
+                    case "/old" -> org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "/new");
+                    case "/new" ->
+                    {
+                        response.getHeaders().put("Special", "Value");
+                        Content.Sink.write(response, true, "data", callback);
+                    }
+                    default -> throw new IllegalStateException();
+                }
+                return true;
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/old")
+            .onResponseBegin(r ->
+            {
+                if (r.getStatus() != HttpStatus.OK_200)
+                    r.abort(new IllegalArgumentException());
+            })
+            .onResponseHeaders(r ->
+            {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                if (!r.getHeaders().contains("Special", "Value"))
+                    r.abort(new IllegalArgumentException());
+            })
+            .onResponseContent((r, c) ->
+            {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertTrue(r.getHeaders().contains("Special", "Value"));
+                if (c == null || !c.hasRemaining())
+                    r.abort(new IllegalArgumentException());
+            })
+            .onResponseSuccess(r ->
+            {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertTrue(r.getHeaders().contains("Special", "Value"));
+            })
+            .onComplete(result ->
+            {
+                var r = result.getResponse();
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertTrue(r.getHeaders().contains("Special", "Value"));
+            })
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertTrue(response.getHeaders().contains("Special", "Value"));
+        assertEquals("data", response.getContentAsString());
     }
 }

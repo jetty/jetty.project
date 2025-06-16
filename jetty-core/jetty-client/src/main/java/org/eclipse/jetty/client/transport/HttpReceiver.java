@@ -534,10 +534,9 @@ public abstract class HttpReceiver implements Invocable
         });
     }
 
-    private void beforeDecoding(Response response, String contentEncoding)
+    private void beforeDecoding(MutableResponse response, String contentEncoding)
     {
-        HttpResponse httpResponse = (HttpResponse)response;
-        httpResponse.headers(headers ->
+        response.headers(headers ->
         {
             boolean seenContentEncoding = false;
             for (ListIterator<HttpField> iterator = headers.listIterator(headers.size()); iterator.hasPrevious();)
@@ -566,10 +565,9 @@ public abstract class HttpReceiver implements Invocable
         });
     }
 
-    private void afterDecoding(Response response, long decodedLength)
+    private void afterDecoding(MutableResponse response, long decodedLength)
     {
-        HttpResponse httpResponse = (HttpResponse)response;
-        httpResponse.headers(headers ->
+        response.headers(headers ->
         {
             headers.remove(HttpHeader.TRANSFER_ENCODING);
             headers.put(HttpHeader.CONTENT_LENGTH, decodedLength);
@@ -623,11 +621,11 @@ public abstract class HttpReceiver implements Invocable
         private static final Logger LOG = LoggerFactory.getLogger(DecodedContentSource.class);
 
         private final Content.Source source;
-        private final Response response;
+        private final MutableResponse response;
         private long decodedLength;
         private boolean last;
 
-        private DecodedContentSource(Content.Source source, Response response)
+        private DecodedContentSource(Content.Source source, MutableResponse response)
         {
             this.source = source;
             this.response = response;

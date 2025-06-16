@@ -183,13 +183,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange != null)
         {
             HttpFields trailers = frame.getMetaData().getHttpFields();
-            trailers.forEach(exchange.getResponse()::trailer);
+            exchange.getResponse().trailers(t -> t.add(trailers));
         }
         callback.succeeded();
         return null;
     }
 
-    private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
+    private void upgrade(HttpUpgrader upgrader, Response response, EndPoint endPoint)
     {
         try
         {

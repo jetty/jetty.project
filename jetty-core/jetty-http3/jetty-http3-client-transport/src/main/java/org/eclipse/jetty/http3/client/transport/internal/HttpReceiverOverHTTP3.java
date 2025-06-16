@@ -149,7 +149,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             return null;
 
         HttpFields trailers = frame.getMetaData().getHttpFields();
-        trailers.forEach(exchange.getResponse()::trailer);
+        exchange.getResponse().trailers(t -> t.add(trailers));
 
         Runnable task = () -> responseSuccess(null);
         return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);

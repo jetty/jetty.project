@@ -499,7 +499,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         if (LOG.isDebugEnabled())
             LOG.debug("Appending trailer '{}' to response in {}", trailer, this);
-        exchange.getResponse().trailer(trailer);
+        exchange.getResponse().addTrailer(trailer);
     }
 
     @Override

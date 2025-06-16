@@ -15,6 +15,7 @@ package org.eclipse.jetty.client.transport;
 
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -321,7 +322,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         {
             responseState = State.PENDING;
             responseFailure = null;
-            response.clearHeaders();
+            response.headers(HttpFields.Mutable::clear);
         }
     }
 

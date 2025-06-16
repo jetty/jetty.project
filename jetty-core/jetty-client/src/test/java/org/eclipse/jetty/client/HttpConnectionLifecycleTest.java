@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
-import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.client.transport.MutableResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -460,7 +460,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             .onResponseBegin(response1 ->
             {
                 // Simulate an HTTP 1.0 response has been received.
-                ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
+                ((MutableResponse)response1).version(HttpVersion.HTTP_1_0);
             })
             .send();
 

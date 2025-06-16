@@ -76,7 +76,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
+        responseListeners.notifyContentSource(new TestResponse(), contentSource);
 
         assertThat("Chunks: " + chunks, chunks.size(), is(6));
         assertThat(chunks.get(0).isLast(), is(false));
@@ -139,7 +139,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
+        responseListeners.notifyContentSource(new TestResponse(), contentSource);
 
         assertThat(chunks.size(), is(8));
         assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
@@ -211,7 +211,7 @@ public class ResponseListenersTest
         responseListeners.addContentSourceListener(contentSourceListener);
         responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(new TestResponse(request), contentSource);
+        responseListeners.notifyContentSource(new TestResponse(), contentSource);
 
         assertThat(chunks.size(), is(6));
         assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
@@ -314,17 +314,7 @@ public class ResponseListenersTest
     {
     }
 
-    private static class TestResponse extends AbstractResponse
+    private static class TestResponse implements Response
     {
-        private TestResponse(Request request)
-        {
-            super(request);
-        }
-
-        @Override
-        public Response withRequest(Request request)
-        {
-            return new TestResponse(request);
-        }
     }
 }

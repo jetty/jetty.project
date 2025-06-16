@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpURI;
@@ -154,7 +154,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
         // (with upgrade) for a resource, and the response is HTTP/2.
 
-        HttpResponse response = (HttpResponse)context.get(HttpResponse.class.getName());
+        Response response = (Response)context.get(Response.class.getName());
         HttpRequest request = (HttpRequest)response.getRequest();
 
         HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
