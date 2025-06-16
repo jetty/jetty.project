@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.internal.CachedQueryFields;
 import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
@@ -141,7 +142,7 @@ public interface Request extends Attributes, Content.Source
 {
     Logger LOG = LoggerFactory.getLogger(Request.class);
 
-    String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
+    String COOKIE_ATTRIBUTE = "__oejs.Request.Cookies";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
     /**
@@ -564,13 +565,18 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request, Charset charset)
     {
-        UriCompliance uriCompliance = null;
+        UriCompliance uriCompliance;
         try
         {
             String query = request.getHttpURI().getQuery();
             if (StringUtil.isBlank(query))
                 return Fields.EMPTY;
-            Fields fields = new Fields(true);
+
+            if (request.getAttribute(CachedQueryFields.class.getName()) instanceof CachedQueryFields cached &&
+                cached.getQuery().equals(query) && Objects.equals(cached.getCharset(), charset))
+                return cached;
+
+            CachedQueryFields fields = new CachedQueryFields(query, charset);
 
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
@@ -589,6 +595,7 @@ public interface Request extends Attributes, Content.Source
             {
                 UrlEncoded.decodeTo(query, fields::add, charset);
             }
+            request.setAttribute(CachedQueryFields.class.getName(), fields);
             return fields;
         }
         catch (Throwable t)
