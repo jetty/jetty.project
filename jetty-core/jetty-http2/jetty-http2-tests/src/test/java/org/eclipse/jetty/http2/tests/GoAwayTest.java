@@ -1325,7 +1325,7 @@ public class GoAwayTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                if (random.nextInt(20) == 0)
+//                if (random.nextInt(2) == 0)
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
                     int streamId = Integer.MAX_VALUE; // Integer.MAX_VALUE is not necessary, any stream ID reproduces the problem.
@@ -1343,7 +1343,7 @@ public class GoAwayTest extends AbstractTest
         httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
         httpClient.start();
 
-        int requestCount = 10_000;
+        int requestCount = 100;
         CountDownLatch latch = new CountDownLatch(requestCount);
         for (int i = 0; i< requestCount; i++)
         {
@@ -1353,14 +1353,10 @@ public class GoAwayTest extends AbstractTest
         }
         boolean awaited = latch.await(4, TimeUnit.SECONDS);
 
-        httpClient.dumpStdErr();
         ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
-        System.err.println("***** Repeating pool dump *****");
-        System.err.println(pool.dump());
-        System.gc();
-        System.err.println(pool.dump());
-        pool.reserve().remove(); // sweep
-        System.err.println(pool.dump());
+        String dump = pool.dump();
+        System.err.println(dump);
+        assertFalse(dump.contains("{acquired,ConcurrentEntry@"), dump);
 
         assertTrue(awaited);
     }
