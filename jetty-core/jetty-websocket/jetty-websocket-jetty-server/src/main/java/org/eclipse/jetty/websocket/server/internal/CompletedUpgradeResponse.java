@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 /**
  * Internal implementation of the {@link UpgradeResponse} interface.
+ * <p>
  * This takes a {@link ServerUpgradeResponse} instance and copies all required information after the WebSocket upgrade,
  * to store for the duration of the WebSocket connection, past the end of the HTTP request lifecycle.
  */

@@ -26,8 +26,10 @@ import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
- * Representing the Jetty {@link org.eclipse.jetty.client.Response}
- * in the {@link UpgradeResponse} interface.
+ * Representing the Jetty {@link org.eclipse.jetty.client.Response} in the {@link UpgradeResponse} interface.
+ * <p>
+ * An instance of this class is made available by the {@link org.eclipse.jetty.websocket.api.Session}
+ * after the websocket upgrade is complete.
  */
 public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {

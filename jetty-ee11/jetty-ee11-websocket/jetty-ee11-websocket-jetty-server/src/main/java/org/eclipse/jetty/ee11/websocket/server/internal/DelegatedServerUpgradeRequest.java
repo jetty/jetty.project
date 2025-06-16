@@ -41,6 +41,11 @@ import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
+/**
+ * Implements the {@link JettyServerUpgradeRequest} interface by delegating to the core {@link ServerUpgradeRequest}.
+ * <p>
+ * This class is to be used during the WebSocket negotiation phase on the server side.
+ */
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {
     private final HttpFields _httpFields;

@@ -34,8 +34,10 @@ import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Representing the Jetty {@link org.eclipse.jetty.client.Request}
- * in the {@link UpgradeRequest} interface.
+ * Representing the Jetty {@link org.eclipse.jetty.client.Request} in the {@link UpgradeRequest} interface.
+ * <p>
+ * An instance of this class is made available by the {@link org.eclipse.jetty.websocket.api.Session}
+ * after the websocket upgrade is complete.
  */
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {

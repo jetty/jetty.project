@@ -28,6 +28,11 @@ import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
+/**
+ * Implements the {@link JettyServerUpgradeResponse} interface by delegating to the core {@link ServerUpgradeResponse}.
+ * <p>
+ * This class is to be used during the WebSocket negotiation phase on the server side.
+ */
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
 {
     private final ServerUpgradeResponse _upgradeResponse;
