@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.core.app;
+package org.eclipse.jetty.staticapp;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -40,35 +40,35 @@ import org.eclipse.jetty.util.resource.Resources;
  *     This is basically just a {@link ResourceHandler} with a context-path.
  * </p>
  */
-public class StaticContextHandler extends ContextHandler
+public class StaticAppContext extends ContextHandler
 {
     private final ResourceHandler resourceHandler;
 
     /**
-     * Create a StaticContextHandler.
+     * Create a StaticAppContext.
      */
-    public StaticContextHandler()
+    public StaticAppContext()
     {
         this(null, null);
     }
 
     /**
-     * Create a StaticContextHandler on a specific contextPath.
+     * Create a StaticAppContext on a specific contextPath.
      *
      * @param contextPath the context path to serve static content from
      */
-    public StaticContextHandler(String contextPath)
+    public StaticAppContext(String contextPath)
     {
         this(contextPath, null);
     }
 
     /**
-     * Create a StaticContextHandler on a specific contextPath using a configured ResourceHandler.
+     * Create a StaticAppContext on a specific contextPath using a configured ResourceHandler.
      *
      * @param contextPath the context path
      * @param resourceHandler the resource handler
      */
-    public StaticContextHandler(String contextPath, ResourceHandler resourceHandler)
+    public StaticAppContext(String contextPath, ResourceHandler resourceHandler)
     {
         // don't set contextPath if not provided, leave it at "default" of "/" (to maintain default-context-path behaviors)
         if (contextPath != null)

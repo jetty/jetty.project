@@ -21,4 +21,4 @@ etc/jetty-coreapp-deploy.xml
 
 [ini-template]
 ## Default ContextHandler class for core environment deployments
-# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.core.app.CoreAppContext
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.coreapp.CoreAppContext

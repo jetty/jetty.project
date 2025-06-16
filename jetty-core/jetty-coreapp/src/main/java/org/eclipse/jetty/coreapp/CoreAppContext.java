@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.core.app;
+package org.eclipse.jetty.coreapp;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

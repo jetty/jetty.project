@@ -197,7 +197,7 @@ public class DeployerTest extends AbstractJettyHomeTest
             String testXmlStr = """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+                <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
                   <Set name="contextPath">/demo</Set>
                   <Set name="displayName">Demo of Core Deploy WebApp</Set>
                 </Configure>

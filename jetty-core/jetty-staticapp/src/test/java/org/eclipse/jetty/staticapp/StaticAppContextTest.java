@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.core.app;
+package org.eclipse.jetty.staticapp;
 
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 @ExtendWith(WorkDirExtension.class)
-public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
+public class StaticAppContextTest
 {
     public WorkDir workDir;
     private Server server;
@@ -64,13 +64,19 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     @BeforeEach
     public void ensureStaticEnvironment()
     {
-        Environment.ensure("static", StaticContextHandler.class);
+        Environment.ensure("static", StaticAppContext.class);
     }
 
     @AfterEach
     public void stopServer()
     {
         LifeCycle.stop(server);
+    }
+
+    @AfterEach
+    public void removeAllEnvironments()
+    {
+        Environment.removeAll();
     }
 
     private void startServer(Handler handler) throws Exception
@@ -96,7 +102,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         server.addBean(deployer);
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("static");
-        environmentConfig.setDefaultContextHandlerClass(StaticContextHandler.class);
+        environmentConfig.setDefaultContextHandlerClass(StaticAppContext.class);
         server.addBean(deploymentScanner);
 
         if (deploymentScannerConsumer != null)
@@ -259,7 +265,7 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
         Files.writeString(webapps.resolve("static.xml"), """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.StaticContextHandler">
+            <Configure class="org.eclipse.jetty.staticapp.StaticAppContext">
               <Set name="contextPath">/static</Set>
               <Set name="baseResourceAsString"><Property name="jetty.webapps"/>/static</Set>
               <Get name="resourceHandler">
@@ -424,10 +430,10 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
     @Test
     public void testEmbeddedDefaultNoBase() throws Exception
     {
-        StaticContextHandler staticContextHandler = new StaticContextHandler();
-        staticContextHandler.setContextPath("/static");
+        StaticAppContext staticContext = new StaticAppContext();
+        staticContext.setContextPath("/static");
 
-        startServer(staticContextHandler);
+        startServer(staticContext);
 
         String rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
@@ -446,11 +452,11 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
 
         Files.writeString(basedir.resolve("test.txt"), "TEST TEXT");
 
-        StaticContextHandler staticContextHandler = new StaticContextHandler();
-        staticContextHandler.setContextPath("/static");
-        staticContextHandler.setBaseResourceAsPath(basedir);
+        StaticAppContext staticContext = new StaticAppContext();
+        staticContext.setContextPath("/static");
+        staticContext.setBaseResourceAsPath(basedir);
 
-        startServer(staticContextHandler);
+        startServer(staticContext);
 
         String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
@@ -491,8 +497,8 @@ public class StaticContextHandlerTest extends AbstractCleanEnvironmentTest
             resourceHandler.setBaseResource(resource);
             resourceHandler.setDirAllowed(false);
 
-            StaticContextHandler staticContextHandler = new StaticContextHandler("/static", resourceHandler);
-            startServer(staticContextHandler);
+            StaticAppContext staticContext = new StaticAppContext("/static", resourceHandler);
+            startServer(staticContext);
 
             String rawResponse = localConnector.getResponse("""
                 GET /static/test.txt HTTP/1.1

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.core.app;
+package org.eclipse.jetty.coreapp;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class CoreAppContextTest extends AbstractCleanEnvironmentTest
+public class CoreAppContextTest
 {
     private static final String EXPECTED_MESSAGE_FROM_TEST_WEBAPP = "On the other side of the screen, it all looks so easy.";
     public WorkDir workDir;
@@ -80,6 +80,12 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
     public void ensureCoreEnvironment()
     {
         Environment.ensure("core", CoreAppContext.class);
+    }
+
+    @AfterEach
+    public void removeAllEnvironments()
+    {
+        Environment.removeAll();
     }
 
     private void startServer(Consumer<Server> serverConsumer) throws Exception
@@ -289,7 +295,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
             </Configure>
             """;
@@ -383,7 +389,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="displayName"><Property name="custom.displayPrefix" default=""/> Demo</Set>
               <Set name="contextPath">/demo</Set>
             </Configure>
@@ -452,7 +458,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
             </Configure>
             """;
@@ -513,7 +519,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
               <Set name="handler">
                 <New class="org.example.BogusHandler" /> <!-- THIS DOESN'T EXIST -->
@@ -569,7 +575,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
               <Set name="handler">
                 <New class="org.example.ExampleBadSetServerHandler" />
@@ -630,7 +636,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
               <Set name="handler">
                 <New class="org.example.ExampleBadStartHandler" />
@@ -724,7 +730,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/alt-demo</Set>
             </Configure>
             """;
@@ -798,7 +804,7 @@ public class CoreAppContextTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.core.app.CoreAppContext">
+            <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
               <Set name="contextPath">/demo</Set>
               <Call name="setExtraClassPath">
                 <Arg type="String"><Property name="jetty.base"/>/extra-lib/extra.jar</Arg>
