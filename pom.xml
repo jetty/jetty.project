@@ -2411,8 +2411,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-version-maven-plugin</artifactId>
+            <groupId>net.webtide.tools</groupId>
+            <artifactId>webtide-release-tools-plugin</artifactId>
             <executions>
               <execution>
                 <id>gen-versiontxt</id>
@@ -2422,24 +2422,25 @@
                 </goals>
                 <phase>generate-resources</phase>
                 <configuration>
-                  <refreshTags>true</refreshTags>
-                  <copyGenerated>true</copyGenerated>
-                  <attachArtifact>false</attachArtifact>
-                  <updateDate>true</updateDate>
-                  <filenameExcludes>
-                    <filenameExclude>jetty-documentation/.*</filenameExclude>
-                    <filenameExclude>examples/.*</filenameExclude>
-                    <filenameExclude>demos/.*</filenameExclude>
-                    <filenameExclude>aggregates/.*</filenameExclude>
-                    <filenameExclude>.*/test-.*</filenameExclude>
-                    <filenameExclude>.*/.*-test/.*</filenameExclude>
-                    <filenameExclude>.*/.*-tests/.*</filenameExclude>
-                    <filenameExclude>.*/src/test/.*</filenameExclude>
-                    <filenameExclude>\.git.*</filenameExclude>
-                    <filenameExclude>.*\.md$</filenameExclude>
-                    <filenameExclude>.*\.txt$</filenameExclude>
-                    <filenameExclude>Jenkinsfile</filenameExclude>
-                  </filenameExcludes>
+                  <configFile></configFile>
+                  <!--                  <refreshTags>true</refreshTags>-->
+                  <!--                  <copyGenerated>true</copyGenerated>-->
+                  <!--                  <attachArtifact>false</attachArtifact>-->
+                  <!--                  <updateDate>true</updateDate>-->
+                  <!--                  <filenameExcludes>-->
+                  <!--                    <filenameExclude>jetty-documentation/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>examples/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>demos/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>aggregates/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>.*/test-.*</filenameExclude>-->
+                  <!--                    <filenameExclude>.*/.*-test/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>.*/.*-tests/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>.*/src/test/.*</filenameExclude>-->
+                  <!--                    <filenameExclude>\.git.*</filenameExclude>-->
+                  <!--                    <filenameExclude>.*\.md$</filenameExclude>-->
+                  <!--                    <filenameExclude>.*\.txt$</filenameExclude>-->
+                  <!--                    <filenameExclude>Jenkinsfile</filenameExclude>-->
+                  <!--                  </filenameExcludes>-->
                 </configuration>
               </execution>
             </executions>
