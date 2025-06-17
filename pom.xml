@@ -1342,7 +1342,7 @@
           <artifactId>webtide-release-tools-plugin</artifactId>
           <version>1.0-SNAPSHOT</version>
           <configuration>
-            <configFile>${basedir}/config-12.0.x.json</configFile>
+            <configFile>${project.basedir}/build/config-12.0.x.json</configFile>
           </configuration>
         </plugin>
         <plugin>
