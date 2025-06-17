@@ -744,7 +744,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _strong == null ? "acquired" : "released", _weak.get());
+            ConcurrentEntry<P> weakEntry = _weak.get();
+            String state = weakEntry == null ? "leaked" : weakEntry.state.getLo() < 0 ? "reserved" : _strong == null ? "acquired" : "released";
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), state, weakEntry);
         }
     }
 }
