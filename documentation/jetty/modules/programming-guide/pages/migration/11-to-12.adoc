@@ -109,7 +109,7 @@
 | `cdi.mod` +
 `cdi-*.mod` | `{ee-all}-cdi.mod` +
 `{ee-all}-cdi-*.mod`
-| `deploy.mod` | `coreapp-deploy.mod` +
+| `deploy.mod` | `core-deploy.mod` +
 `{ee-all}-deploy.mod`
 | `fcgi.mod` | `{ee-all}-fcgi-proxy.mod`
 | `glassfish-jstl.mod` | `{ee-all}-glassfish-jstl.mod`

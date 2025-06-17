@@ -11,7 +11,7 @@ demo
 webapp
 
 [depends]
-coreapp-deploy
+core-deploy
 
 [files]
 webapps/root/

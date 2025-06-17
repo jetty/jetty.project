@@ -10,7 +10,7 @@ deployment
 ee8
 
 [before]
-coreapp-deploy
+core-deploy
 static-deploy
 
 [depend]

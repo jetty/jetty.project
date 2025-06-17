@@ -17,7 +17,7 @@ deployment-scanner
 lib/jetty-coreapp-${jetty.version}.jar
 
 [xml]
-etc/jetty-coreapp-deploy.xml
+etc/jetty-core-deploy.xml
 
 [ini-template]
 ## Default ContextHandler class for core environment deployments

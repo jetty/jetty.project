@@ -599,12 +599,12 @@ For more information about how to install WordPress and the necessary PHP module
 
 Then, the <<https,secure HTTP>> and/or the <<http2,secure HTTP/2>> Jetty modules should be enabled to allow browsers to connect to Jetty.
 
-Lastly, enable the `fcgi-proxy` module to provide FastCGI support (to convert HTTP requests from browsers to FastCGI for `php-fpm` and vice versa), and the `coreapp-deploy` module to deploy your WordPress web application as a xref:deploy/index.adoc#jetty[Jetty context XML file].
+Lastly, enable the `fcgi-proxy` module to provide FastCGI support (to convert HTTP requests from browsers to FastCGI for `php-fpm` and vice versa), and the `core-deploy` module to deploy your WordPress web application as a xref:deploy/index.adoc#jetty[Jetty context XML file].
 
 For example:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,https,fcgi-proxy,coreapp-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,https,fcgi-proxy,core-deploy
 ----
 
 TIP: The `https` Jetty module requires a KeyStore. If you do not already have one configured, you can add the `test-keystore` Jetty module to the command line above to create a KeyStore on-the-fly.
