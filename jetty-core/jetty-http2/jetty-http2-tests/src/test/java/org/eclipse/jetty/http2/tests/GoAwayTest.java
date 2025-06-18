@@ -1345,7 +1345,7 @@ public class GoAwayTest extends AbstractTest
 
         int requestCount = 100;
         CountDownLatch latch = new CountDownLatch(requestCount);
-        for (int i = 0; i< requestCount; i++)
+        for (int i = 0; i < requestCount; i++)
         {
             httpClient.newRequest("localhost", connector.getLocalPort())
                 .path("/")
