@@ -3,7 +3,7 @@
 <Configure>
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
-      <Arg>test </Arg>
+      <Arg>test</Arg>
       <Set name="defaultContextHandlerClassName">
         <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.deploy.test.TestContextHandler" />
       </Set>

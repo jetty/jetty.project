@@ -725,7 +725,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-core-webapp</artifactId>
+        <artifactId>jetty-coreapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
