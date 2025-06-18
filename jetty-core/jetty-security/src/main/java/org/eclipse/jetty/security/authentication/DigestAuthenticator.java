@@ -313,10 +313,10 @@ public class DigestAuthenticator extends LoginAuthenticator
             this(m, "MD5");
         }
         
-        Digest(String m, String a)
+        Digest(String method, String algorithm)
         {
-            method = m;
-            algorithm = a;
+            this.method = method;
+            this.algorithm = algorithm;
         }
         
         private String getAlgorithm()
@@ -380,8 +380,8 @@ public class DigestAuthenticator extends LoginAuthenticator
                 
                 // check digest
                 return stringEquals(TypeUtil.toString(md.digest(), 16).toLowerCase(), response == null ? null : response.toLowerCase());
-            } 
-            catch (Exception e) 
+            }
+            catch (Exception e)
             {
                 LOG.warn("Unable to process digest", e);
             }
