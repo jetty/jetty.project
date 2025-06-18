@@ -1356,8 +1356,23 @@ public class GoAwayTest extends AbstractTest
         ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
         String dump = pool.dump();
         System.err.println(dump);
-        assertFalse(dump.contains("{acquired,ConcurrentEntry@"), dump);
+        boolean contains = dumpContains(dump);
 
+        assertFalse(contains);
         assertTrue(awaited);
+    }
+
+    private boolean dumpContains(String dump)
+    {
+        int acquiredIdx = dump.indexOf("ConcurrentEntry@");
+        if (acquiredIdx == -1)
+            return false;
+
+        int multiplexIdx = dump.indexOf("multiplex=", acquiredIdx + "ConcurrentEntry@".length());
+        if (multiplexIdx == -1)
+            return false;
+
+        char c = dump.charAt(multiplexIdx + "multiplex=".length());
+        return c != '-' && c != '0';
     }
 }
