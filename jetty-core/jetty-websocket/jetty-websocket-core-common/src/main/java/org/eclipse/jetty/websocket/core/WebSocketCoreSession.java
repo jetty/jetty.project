@@ -795,14 +795,9 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         }
 
         @Override
-        protected void forwardFrame(Frame frame, Callback callback, boolean batch)
+        protected void forwardFrame(OutgoingEntry entry)
         {
-            OutgoingEntry currentEntry = new OutgoingEntry.Builder(getCurrentEntry())
-                .frame(frame)
-                .callback(callback)
-                .batch(batch)
-                .build();
-            negotiated.getExtensions().sendFrame(currentEntry);
+            negotiated.getExtensions().sendFrame(entry);
         }
     }
 }

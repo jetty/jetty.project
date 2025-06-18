@@ -14,13 +14,14 @@
 package org.eclipse.jetty.websocket.core.util;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.slf4j.Logger;
@@ -28,45 +29,34 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This is used to iteratively transform or process a frame into one or more other frames.
- * When a frame is ready to be processed {@link #onFrame(Frame, Callback, boolean)} is called.
- * Subsequent calls to {@link #transform(Callback)} are made on each callback success until one of these calls returns
- * true to indicate they are done processing the frame and are ready to receive a new one.
- * The {@link Callback} passed in to both these method must be succeeded in order to continue processing.
+ * When a frame is ready to be processed {@link #onFrame(OutgoingEntry, boolean)} is called.
+ * Subsequent calls to {@link #onFrame(OutgoingEntry, boolean)} are after each time the entry is succeeded
+ * until one of these calls returns true to indicate they are done processing the frame and are ready to receive a new one.
  */
 public abstract class TransformingFlusher implements OutgoingFrames
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
     private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final AutoLock lock = new AutoLock();
-    private final Queue<OutgoingEntry> entries = new ArrayDeque<>();
-    private final IteratingCallback flusher = new Flusher();
-    private boolean finished = true;
-    private Throwable failure;
-    private OutgoingEntry current;
-
-    public OutgoingEntry getCurrentEntry()
-    {
-        return current;
-    }
+    private final AutoLock _lock = new AutoLock();
+    private final Queue<OutgoingEntry> _entries = new ArrayDeque<>();
+    private final IteratingCallback _flusher = new Flusher();
+    private Throwable _failure;
 
     /**
      * Called when a frame is ready to be transformed.
-     * @param frame the frame to transform.
-     * @param callback used to signal to start processing again.
-     * @param batch whether this frame can be batched.
-     * @return true to indicate that you have finished transforming this frame.
+     * @param entry the entry containing the frame to be transformed.
+     * @param first true if this is the first time this entry is being processed.
+     * @return true to indicate that you have finished transforming this entry.
      */
-    protected abstract boolean onFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract boolean onFrame(OutgoingEntry entry, boolean first);
 
     /**
-     * Called to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
-     * This method is called on each callback success until it returns true.
-     * If the call to {@link #onFrame(Frame, Callback, boolean)} returns true then this method will not be called.
-     * @param callback used to signal to start processing again.
-     * @return true to indicate that you have finished transforming this frame.
+     * Called when the flusher has failed and {@link #onFrame(OutgoingEntry, boolean)} will never be called again.
      */
-    protected abstract boolean transform(Callback callback);
+    protected void onCompleteFailure(Throwable cause)
+    {
+    }
 
     @Override
     public final void sendFrame(OutgoingEntry entry)
@@ -74,17 +64,19 @@ public abstract class TransformingFlusher implements OutgoingFrames
         if (log.isDebugEnabled())
             log.debug("Queuing {}", entry);
 
-        boolean enqueued = false;
-        try (AutoLock l = lock.lock())
+        Throwable failure = null;
+        try (AutoLock l = _lock.lock())
         {
-            if (failure == null)
-                enqueued = entries.add(entry);
+            if (_failure == null)
+                _entries.add(entry);
+            else
+                failure = _failure;
         }
 
-        if (enqueued)
-            flusher.iterate();
+        if (failure == null)
+            _flusher.iterate();
         else
-            notifyCallbackFailure(entry.getCallback(), failure);
+            notifyCallbackFailure(entry, failure);
     }
 
     /**
@@ -102,122 +94,120 @@ public abstract class TransformingFlusher implements OutgoingFrames
     public void failFlusher(Throwable t)
     {
         boolean failed = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            if (failure == null)
+            if (_failure == null)
             {
-                failure = t;
+                _failure = t;
                 failed = true;
             }
             else
             {
-                failure.addSuppressed(t);
+                _failure.addSuppressed(t);
             }
         }
 
         if (failed)
-            flusher.abort(t);
-    }
-
-    private void onFailure(Throwable t)
-    {
-        try (AutoLock l = lock.lock())
-        {
-            if (failure == null)
-                failure = t;
-        }
-
-        for (OutgoingEntry entry : entries)
-            notifyCallbackFailure(entry.getCallback(), t);
-        entries.clear();
-    }
-
-    private OutgoingEntry pollEntry()
-    {
-        try (AutoLock l = lock.lock())
-        {
-            return entries.poll();
-        }
+            _flusher.abort(t);
     }
 
     private class Flusher extends IteratingCallback implements Callback
     {
+        private boolean _completed = false;
+        private OutgoingEntry _current;
+
         @Override
         protected Action process() throws Throwable
         {
-            try (AutoLock l = lock.lock())
+            boolean first = false;
+            try (AutoLock l = _lock.lock())
             {
-                if (failure != null)
-                    throw failure;
+                if (_failure != null)
+                    throw _failure;
+
+                if (_current == null)
+                {
+                    first = true;
+                    _current = _entries.poll();
+                }
             }
 
-            if (finished)
-            {
-                if (current != null)
-                    notifyCallbackSuccess(current.getCallback());
-
-                current = pollEntry();
-                if (current == null)
-                    return Action.IDLE;
-
-                if (log.isDebugEnabled())
-                    log.debug("onFrame {}", current);
-
-                finished = onFrame(current.getFrame(), this, current.isBatch());
-                return Action.SCHEDULED;
-            }
+            if (_current == null)
+                return Action.IDLE;
 
             if (log.isDebugEnabled())
-                log.debug("transform {}", current);
+                log.debug("onFrame {}", _current);
 
-            finished = transform(this);
+            _completed = onFrame(new OutgoingEntry.Builder(_current).callback(this).build(), first);
             return Action.SCHEDULED;
         }
 
         @Override
-        protected void onFailure(Throwable t)
+        protected void onSuccess()
+        {
+            if (_completed)
+            {
+                notifyCallbackSuccess(_current);
+                _current = null;
+            }
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable t)
         {
             if (log.isDebugEnabled())
                 log.debug("onCompleteFailure {}", t.toString());
 
-            if (current != null)
+            List<OutgoingEntry> entries;
+            try (AutoLock l = _lock.lock())
             {
-                notifyCallbackFailure(current.getCallback(), t);
-                current = null;
+                if (_failure == null)
+                    _failure = t;
+                entries = new ArrayList<>(_entries);
+                _entries.clear();
             }
-            TransformingFlusher.this.onFailure(t);
+
+            if (_current != null)
+            {
+                notifyCallbackFailure(_current, t);
+                _current = null;
+            }
+
+            for (OutgoingEntry entry : entries)
+                notifyCallbackFailure(entry, t);
+
+            // Allow any subclass to clean up internal state on failure.
+            TransformingFlusher.this.onCompleteFailure(t);
         }
     }
 
-    private void notifyCallbackSuccess(Callback callback)
+    private void notifyCallbackSuccess(OutgoingEntry entry)
     {
         if (log.isDebugEnabled())
-            log.debug("notifyCallbackSuccess {}", callback);
+            log.debug("notifyCallbackSuccess {}", entry);
 
         try
         {
-            if (callback != null)
-                callback.succeeded();
+            entry.getCallback().succeeded();
         }
         catch (Throwable x)
         {
-            log.warn("Exception while notifying success of callback {}", callback, x);
+            log.warn("Exception while notifying success of entry {}", entry, x);
         }
     }
 
-    private void notifyCallbackFailure(Callback callback, Throwable failure)
+    private void notifyCallbackFailure(OutgoingEntry entry, Throwable failure)
     {
         if (log.isDebugEnabled())
-            log.debug("notifyCallbackFailure {} {}", callback, failure.toString());
+            log.debug("notifyCallbackFailure {} {}", entry, failure.toString());
 
         try
         {
-            if (callback != null)
-                callback.failed(failure);
+            entry.getCallback().failed(failure);
         }
         catch (Throwable x)
         {
-            log.warn("Exception while notifying failure of callback {}", callback, x);
+            log.warn("Exception while notifying failure of entry {}", entry, x);
         }
     }
 }
