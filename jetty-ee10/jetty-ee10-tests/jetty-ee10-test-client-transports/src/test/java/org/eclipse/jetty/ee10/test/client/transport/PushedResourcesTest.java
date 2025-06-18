@@ -156,7 +156,7 @@ public class PushedResourcesTest extends AbstractTest
                 {
                     assertTrue(result.isSucceeded());
                     assertEquals(oldPath, pushedRequest.getPath());
-                    assertEquals(newPath, result.getRequest().getPath());
+                    assertEquals(oldPath, result.getRequest().getPath());
                     assertArrayEquals(pushBytes, getContent());
                     latch.countDown();
                 }
