@@ -134,7 +134,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     mvn clean install -pl build/build-resources/ -Peclipse-release -Dmaven.build.cache.enabled=false
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false
+        mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false -Dwebtide.release.tools.releaseVersion=$VER_RELEASE
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
