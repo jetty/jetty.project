@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * Control frames and dataFrames smaller than the maxFrameSize will be forwarded
  * directly to {@link #forwardFrame(OutgoingEntry)}.
  */
-public abstract class FragmentingFlusher extends TransformingFlusher
+public abstract class FragmentingFlusher extends WebSocketFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
     private final Configuration _configuration;

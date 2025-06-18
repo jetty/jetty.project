@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * Subsequent calls to {@link #onFrame(OutgoingEntry, boolean)} are after each time the entry is succeeded
  * until one of these calls returns true to indicate they are done processing the frame and are ready to receive a new one.
  */
-public abstract class TransformingFlusher implements OutgoingFrames
+public abstract class WebSocketFlusher implements OutgoingFrames
 {
     private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -177,7 +177,7 @@ public abstract class TransformingFlusher implements OutgoingFrames
                 notifyCallbackFailure(entry, t);
 
             // Allow any subclass to clean up internal state on failure.
-            TransformingFlusher.this.onCompleteFailure(t);
+            WebSocketFlusher.this.onCompleteFailure(t);
         }
     }
 

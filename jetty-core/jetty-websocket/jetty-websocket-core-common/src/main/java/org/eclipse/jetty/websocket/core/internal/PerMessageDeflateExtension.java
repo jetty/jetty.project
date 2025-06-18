@@ -37,8 +37,8 @@ import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.util.DemandChain;
-import org.eclipse.jetty.websocket.core.util.TransformingFlusher;
 import org.eclipse.jetty.websocket.core.util.WebSocketDemander;
+import org.eclipse.jetty.websocket.core.util.WebSocketFlusher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,7 +263,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         incomingFlusher.demand();
     }
 
-    private class OutgoingFlusher extends TransformingFlusher
+    private class OutgoingFlusher extends WebSocketFlusher
     {
         @Override
         protected boolean onFrame(OutgoingEntry entry, boolean first)
