@@ -222,7 +222,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         else
         {
             channel.destroy();
-            return false;
+            return true;
         }
     }
 
