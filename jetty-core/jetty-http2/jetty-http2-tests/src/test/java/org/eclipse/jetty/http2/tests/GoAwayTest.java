@@ -15,11 +15,15 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.RandomConnectionPool;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -43,13 +47,17 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1308,5 +1316,97 @@ public class GoAwayTest extends AbstractTest
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void reproduceStaleConnections() throws Exception
+    {
+        SecureRandom random = new SecureRandom();
+
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+//                if (random.nextInt(2) == 0)
+                {
+                    HTTP2Session session = (HTTP2Session)stream.getSession();
+                    int streamId = Integer.MAX_VALUE; // Integer.MAX_VALUE is not necessary, any stream ID reproduces the problem.
+//                    int streamId = stream.getId();
+                    session.goAway(new GoAwayFrame(streamId, ErrorCode.INTERNAL_ERROR.code, "problem_reproduced".getBytes(StandardCharsets.UTF_8)),
+                        Callback.from(() -> session.getEndPoint().close()));
+                }
+
+                stream.headers(new HeadersFrame(stream.getId(), new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, false))
+                    .whenComplete((strm, throwable) -> strm.data(new DataFrame(strm.getId(), ByteBuffer.allocate(128 * 1024), true), Callback.NOOP));
+                return null;
+            }
+        });
+        httpClient.stop();
+        httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
+        httpClient.start();
+
+        int requestCount = 1024 * 10;
+        CountDownLatch latch = new CountDownLatch(requestCount);
+        AtomicInteger requestBeginCount = new AtomicInteger();
+        AtomicInteger requestFailureCount = new AtomicInteger();
+        AtomicInteger requestSuccessCount = new AtomicInteger();
+        AtomicInteger responseBeginCount = new AtomicInteger();
+        AtomicInteger responseFailureCount = new AtomicInteger();
+        AtomicInteger responseSuccessCount = new AtomicInteger();
+        AtomicInteger loops = new AtomicInteger();
+        for (int i = 0; i < requestCount; i++)
+        {
+            loops.incrementAndGet();
+            httpClient.newRequest("localhost", connector.getLocalPort())
+                .path("/")
+                .onRequestBegin(r -> requestBeginCount.incrementAndGet())
+                .onRequestFailure((r, t) -> requestFailureCount.incrementAndGet())
+                .onRequestSuccess(r -> requestSuccessCount.incrementAndGet())
+                .onResponseBegin(r -> responseBeginCount.incrementAndGet())
+                .onResponseFailure((r, t) -> responseFailureCount.incrementAndGet())
+                .onResponseSuccess(response -> responseSuccessCount.incrementAndGet())
+                .send(result -> latch.countDown());
+        }
+        int spin = 20;
+        while (latch.getCount() > 0 && spin-- > 0)
+        {
+            System.err.println("Waiting for " + latch.getCount() + " requests");
+            Thread.sleep(100);
+        }
+        // boolean awaited = latch.await(10, TimeUnit.SECONDS);
+        System.err.println("requests=" + loops.get());
+        System.err.println("requestBeginCount=" + requestBeginCount.get());
+        System.err.println("requestFailureCount=" + requestFailureCount.get());
+        System.err.println("requestSuccessCount=" + requestSuccessCount.get());
+        System.err.println("requestCount=" + (requestSuccessCount.get() + requestFailureCount.get()));
+        System.err.println("missing requests=" + (requestCount - requestSuccessCount.get() - requestFailureCount.get()));
+        System.err.println("responseBeginCount=" + responseBeginCount.get());
+        System.err.println("responseFailureCount=" + responseFailureCount.get());
+        System.err.println("responseSuccessCount=" + responseSuccessCount.get());
+        System.err.println("responseCount=" + (responseSuccessCount.get() + responseFailureCount.get()));
+        System.err.println("missing responses=" + (requestCount - responseSuccessCount.get() - responseFailureCount.get()));
+
+        ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
+        String dump = pool.dump();
+        System.err.println(dump);
+        boolean contains = dumpContains(dump);
+
+        assertFalse(contains);
+        assertThat(latch.getCount(), Matchers.is(0L));
+    }
+
+    private boolean dumpContains(String dump)
+    {
+        int acquiredIdx = dump.indexOf("ConcurrentEntry@");
+        if (acquiredIdx == -1)
+            return false;
+
+        int multiplexIdx = dump.indexOf("multiplex=", acquiredIdx + "ConcurrentEntry@".length());
+        if (multiplexIdx == -1)
+            return false;
+
+        char c = dump.charAt(multiplexIdx + "multiplex=".length());
+        return c != '-' && c != '0';
     }
 }
