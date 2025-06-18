@@ -140,13 +140,30 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     @Override
     public void onFailure(Session session, Throwable failure, Callback callback)
     {
-        if (!failConnectionPromise(failure))
+        if (failConnectionPromise(failure))
+        {
+            callback.succeeded();
+        }
+        else
         {
             HttpConnectionOverHTTP2 connection = getConnection();
-            if (connection != null)
-                connection.close(failure);
+            if (connection == null)
+            {
+                callback.succeeded();
+            }
+            else
+            {
+                connection.offerTask(new org.eclipse.jetty.util.thread.Invocable.Task.Abstract(org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING)
+                {
+                    @Override
+                    public void run()
+                    {
+                        connection.close(failure);
+                        callback.succeeded();
+                    }
+                }, false);
+            }
         }
-        callback.succeeded();
     }
 
     private boolean failConnectionPromise(Throwable failure)
