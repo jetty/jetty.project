@@ -58,16 +58,16 @@ public class DigestAuthenticator extends LoginAuthenticator
     private final ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
     private long _maxNonceAgeMs = 60 * 1000;
     private int _maxNC = 1024;
-    private String algorithm = "MD5";
+    private String _algorithm = "MD5";
     
-    public void setAlgorithm(String a)
+    public void setAlgorithm(String algorithm)
     {
-        algorithm = a;
+        _algorithm = algorithm;
     }
 
     public String getAlgorithm()
     {
-        return algorithm;
+        return _algorithm;
     }
     
     @Override
@@ -119,7 +119,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Credentials: {}", credentials);
-            final Digest digest = new Digest(req.getMethod(), this.getAlgorithm());
+            final Digest digest = new Digest(req.getMethod(), getAlgorithm());
             String last = null;
             String name = null;
 
@@ -310,7 +310,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         Digest(String m)
         {
-            method = m;
+            this(m, "MD5");
         }
         
         Digest(String m, String a)
@@ -326,11 +326,10 @@ public class DigestAuthenticator extends LoginAuthenticator
         
         @Override
         public boolean check(Object credentials)
-        {            
+        {
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
             String password = (credentials instanceof String) ? (String)credentials : credentials.toString();
-            
             try
             {
                 // MD5 required by the specification
@@ -381,15 +380,13 @@ public class DigestAuthenticator extends LoginAuthenticator
                 
                 // check digest
                 return stringEquals(TypeUtil.toString(md.digest(), 16).toLowerCase(), response == null ? null : response.toLowerCase());
-                
             } 
             catch (Exception e) 
             {
                 LOG.warn("Unable to process digest", e);
             }
-                return false;
+            return false;
         }
-        
         @Override
         public String toString()
         {
