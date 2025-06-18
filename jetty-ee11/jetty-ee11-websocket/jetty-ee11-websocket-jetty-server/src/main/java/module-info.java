@@ -14,13 +14,12 @@
 module org.eclipse.jetty.ee11.websocket.jetty.server
 {
     requires jakarta.servlet;
+    requires org.eclipse.jetty.ee11.websocket.servlet;
+    requires org.eclipse.jetty.websocket.server;
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.common;
-    requires org.eclipse.jetty.ee11.websocket.servlet;
-    requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee11.webapp;
-    requires transitive org.eclipse.jetty.websocket.api;
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;

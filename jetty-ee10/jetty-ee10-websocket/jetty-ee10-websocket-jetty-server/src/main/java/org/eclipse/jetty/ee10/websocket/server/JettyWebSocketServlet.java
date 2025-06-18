@@ -23,13 +23,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee10.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee10.servlet.ServletCoreResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -190,11 +192,11 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        ServletContextRequest request = ServletContextRequest.getServletContextRequest(req);
-        ServletContextResponse response = request.getServletContextResponse();
+        Request coreRequest = ServletCoreRequest.wrap(req);
+        Response coreResponse = ServletCoreResponse.wrap(coreRequest, resp, false);
 
         // Do preliminary check before proceeding to attempt an upgrade.
-        if (mappings.getHandshaker().isWebSocketUpgradeRequest(request))
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(coreRequest))
         {
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             FutureCallback callback = new FutureCallback();
@@ -202,10 +204,10 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
-                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
+                coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
+                coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
 
-                if (mappings.upgrade(request, response, callback, null))
+                if (mappings.upgrade(coreRequest, coreResponse, callback, null))
                 {
                     callback.block();
                     return;
@@ -213,8 +215,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             }
             finally
             {
-                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+                coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 

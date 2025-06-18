@@ -22,6 +22,8 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.internal.CompletedUpgradeRequest;
+import org.eclipse.jetty.websocket.server.internal.CompletedUpgradeResponse;
 
 public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
@@ -40,8 +42,8 @@ public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFa
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         JettyWebSocketFrameHandler frameHandler = super.newJettyFrameHandler(websocketPojo);
-        frameHandler.setUpgradeRequest(new DelegatedServerUpgradeRequest(upgradeRequest));
-        frameHandler.setUpgradeResponse(new DelegatedServerUpgradeResponse(upgradeResponse));
+        frameHandler.setUpgradeRequest(new CompletedUpgradeRequest(upgradeRequest));
+        frameHandler.setUpgradeResponse(new CompletedUpgradeResponse(upgradeResponse));
         return frameHandler;
     }
 }

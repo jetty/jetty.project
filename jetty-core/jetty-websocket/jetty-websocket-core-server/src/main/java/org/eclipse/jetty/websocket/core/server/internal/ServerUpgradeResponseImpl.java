@@ -17,14 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 /**
- * Upgrade response used for websocket negotiation.
- * Allows setting of extensions and subprotocol without using headers directly.
+ * Internal implementation of the {@link ServerUpgradeResponse} interface used during the WebSocket negotiation on the server side.
+ * @see ServerUpgradeResponse
  */
 public class ServerUpgradeResponseImpl extends Response.Wrapper implements ServerUpgradeResponse
 {
@@ -56,8 +55,6 @@ public class ServerUpgradeResponseImpl extends Response.Wrapper implements Serve
     public void setAcceptedSubProtocol(String protocol)
     {
         negotiation.setSubprotocol(protocol);
-        // Use the nested headers (not the wrapped ones) to avoid infinite recursion.
-        response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     @Override

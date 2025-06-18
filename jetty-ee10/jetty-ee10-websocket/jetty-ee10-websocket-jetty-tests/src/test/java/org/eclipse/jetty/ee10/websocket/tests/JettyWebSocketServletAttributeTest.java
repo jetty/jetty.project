@@ -15,18 +15,21 @@ package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -78,24 +82,38 @@ public class JettyWebSocketServletAttributeTest
     @Test
     public void testAttributeSetInNegotiation() throws Exception
     {
-        start((context, container) -> container.addMapping("/", (req, resp) ->
+        String customHeaderName = "myWebSocketCustomAttribute";
+        String customHeaderValue = "foobar";
+        start((context, container) ->
         {
-            req.setServletAttribute("myWebSocketCustomAttribute", "true");
-            return serverEndpoint;
-        }));
+            // Add a custom filter that sets an attribute on the request.
+            context.addFilter("CustomFilter", (request, response, chain) ->
+            {
+                request.setAttribute(customHeaderName, customHeaderValue);
+                chain.doFilter(request, response);
+            }).addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), false, "/*");
+
+            // Add the WebSocketUpgradeFilter manually so it is after the custom filter.
+            context.addFilter(WebSocketUpgradeFilter.class.getName(), WebSocketUpgradeFilter.class)
+                .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+
+            container.addMapping("/", (req, resp) ->
+            {
+                // The UpgradeRequest should have the custom attribute set by the filter.
+                assertThat(req.getServletAttribute(customHeaderName), equalTo(customHeaderValue));
+                return serverEndpoint;
+            });
+        });
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket clientEndpoint = new EventSocket();
         client.connect(clientEndpoint, uri);
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
 
-        // We should have our custom attribute on the upgraded request, which was set in the negotiation.
-        JettyServerUpgradeRequest upgradeRequest = (JettyServerUpgradeRequest)serverEndpoint.session.getUpgradeRequest();
-        assertThat(upgradeRequest.getServletAttribute("myWebSocketCustomAttribute"), is("true"));
-
+        // Assert we have a normal close, meaning the servlet attribute was set correctly.
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
     }
 
     @Test

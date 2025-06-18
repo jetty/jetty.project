@@ -30,8 +30,8 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee11.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee11.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee11.servlet.ServletCoreResponse;
 import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee11.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -39,6 +39,8 @@ import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.AnnotatedServerE
 import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.JakartaWebSocketCreator;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -341,26 +343,26 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
+        Request coreRequest = ServletCoreRequest.wrap(request);
+        Response coreResponse = ServletCoreResponse.wrap(coreRequest, response, false);
 
         FutureCallback callback = new FutureCallback();
         try
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, defaultCustomizer))
+            if (handshaker.upgradeRequest(negotiator, coreRequest, coreResponse, callback, components, defaultCustomizer))
                 callback.block();
             else
                 throw new IllegalStateException("Invalid WebSocket Upgrade Request");
         }
         finally
         {
-            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 

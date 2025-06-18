@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
- * Client based UpgradeRequest API
+ * Client based UpgradeRequest API used to initiate the WebSocket handshake.
  */
 public final class ClientUpgradeRequest implements UpgradeRequest
 {

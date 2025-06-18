@@ -19,19 +19,24 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
-public class ServerUpgradeRequestDelegate extends Request.Wrapper implements ServerUpgradeRequest
+/**
+ * Internal implementation of the {@link org.eclipse.jetty.websocket.server.ServerUpgradeRequest} interface
+ * which delegates to the websocket-core {@link ServerUpgradeRequest}.
+ * @see org.eclipse.jetty.websocket.server.ServerUpgradeRequest
+ */
+public class DelegatedServerUpgradeRequest extends Request.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeRequest
 {
-    public ServerUpgradeRequestDelegate(org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest wrapped)
+    public DelegatedServerUpgradeRequest(ServerUpgradeRequest wrapped)
     {
         super(wrapped);
     }
 
     @Override
-    public org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest getWrapped()
+    public ServerUpgradeRequest getWrapped()
     {
-        return (org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest)super.getWrapped();
+        return (ServerUpgradeRequest)super.getWrapped();
     }
 
     @Override

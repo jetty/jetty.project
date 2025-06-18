@@ -294,7 +294,7 @@ public class ServletCoreRequest implements Request
     @Override
     public TunnelSupport getTunnelSupport()
     {
-        return null;
+        return _servletContextRequest.getTunnelSupport();
     }
 
     @Override

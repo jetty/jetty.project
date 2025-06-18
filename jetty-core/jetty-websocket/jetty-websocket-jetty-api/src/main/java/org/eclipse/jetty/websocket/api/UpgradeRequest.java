@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The HTTP Upgrade to WebSocket Request
+ * The HTTP Upgrade to WebSocket Request.
  */
 public interface UpgradeRequest
 {
