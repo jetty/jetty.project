@@ -387,6 +387,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             }
             return false;
         }
+
         @Override
         public String toString()
         {
