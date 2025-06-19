@@ -120,7 +120,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (LOG.isDebugEnabled())
             LOG.debug("released channel? {} {}", released, this);
         if (released)
-            getHttpDestination().release(getHttpConnection());
+        {
+            if (isFailed())
+                getHttpDestination().remove(getHttpConnection());
+            else
+                getHttpDestination().release(getHttpConnection());
+        }
     }
 
     @Override
