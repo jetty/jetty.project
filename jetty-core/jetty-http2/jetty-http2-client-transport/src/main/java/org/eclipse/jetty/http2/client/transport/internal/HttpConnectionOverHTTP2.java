@@ -15,9 +15,8 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -278,23 +277,19 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     private void abort(Throwable failure)
     {
-        List<CompletableFuture<?>> cfs = new ArrayList<>();
+        Set<HttpChannel> activeChannels = new HashSet<>(this.activeChannels);
+        CompletableFuture<?>[] cfs = new CompletableFuture<?>[activeChannels.size()];
+        int idx = 0;
         for (HttpChannel channel : activeChannels)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
-                cfs.add(exchange.getRequest().abort(failure));
+                cfs[idx++] = exchange.getRequest().abort(failure);
+            else
+                cfs[idx++] = CompletableFuture.completedFuture(false);
         }
-        try
-        {
-            CompletableFuture.allOf(cfs.toArray(new CompletableFuture[0])).get();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        CompletableFuture.allOf(cfs).whenComplete((b,x) -> this.activeChannels.clear());
 
-        activeChannels.clear();
         HttpChannel channel = idleChannels.poll();
         while (channel != null)
         {
