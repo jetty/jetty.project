@@ -498,8 +498,9 @@ public abstract class IteratingCallback implements Callback
      * @param failure the cause of the abort
      * @see #isAborted()
      */
-    public void abort(Throwable failure)
+    public boolean abort(Throwable failure)
     {
+        boolean rc;
         boolean abort = false;
         try (AutoLock ignored = _lock.lock())
         {
@@ -511,6 +512,7 @@ public abstract class IteratingCallback implements Callback
                 case ABORTED:
                 {
                     // Too late.
+                    rc = false;
                     break;
                 }
 
@@ -520,6 +522,7 @@ public abstract class IteratingCallback implements Callback
                     _failure = failure;
                     _state = State.ABORTED;
                     abort = true;
+                    rc = true;
                     break;
                 }
 
@@ -528,6 +531,7 @@ public abstract class IteratingCallback implements Callback
                 {
                     _failure = failure;
                     _state = State.ABORTED;
+                    rc = true;
                     break;
                 }
 
@@ -538,6 +542,7 @@ public abstract class IteratingCallback implements Callback
 
         if (abort)
             onCompleteFailure(failure);
+        return rc;
     }
 
     boolean isPending()

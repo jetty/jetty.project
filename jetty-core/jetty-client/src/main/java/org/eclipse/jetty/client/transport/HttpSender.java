@@ -376,7 +376,8 @@ public abstract class HttpSender
         if (abort)
         {
             contentSender.abort = promise;
-            contentSender.abort(this.failure.get());
+            if (!contentSender.abort(this.failure.get()))
+                promise.succeeded(false);
         }
         else
         {
