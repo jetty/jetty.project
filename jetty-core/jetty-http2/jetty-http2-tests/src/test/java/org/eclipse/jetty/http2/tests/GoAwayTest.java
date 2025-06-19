@@ -1323,11 +1323,15 @@ public class GoAwayTest extends AbstractTest
     {
         SecureRandom random = new SecureRandom();
 
+
+        AtomicInteger serverCount = new AtomicInteger();
+
         start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                serverCount.incrementAndGet();
 //                if (random.nextInt(2) == 0)
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
@@ -1342,11 +1346,14 @@ public class GoAwayTest extends AbstractTest
                 return null;
             }
         });
+
+        int requestCount = 1024 * 2;
+
         httpClient.stop();
         httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
+        httpClient.setMaxRequestsQueuedPerDestination(requestCount);
         httpClient.start();
 
-        int requestCount = 1024 * 10;
         CountDownLatch latch = new CountDownLatch(requestCount);
         AtomicInteger requestBeginCount = new AtomicInteger();
         AtomicInteger requestFailureCount = new AtomicInteger();
@@ -1368,24 +1375,19 @@ public class GoAwayTest extends AbstractTest
                 .onResponseSuccess(response -> responseSuccessCount.incrementAndGet())
                 .send(result -> latch.countDown());
         }
-        int spin = 20;
-        while (latch.getCount() > 0 && spin-- > 0)
-        {
-            System.err.println("Waiting for " + latch.getCount() + " requests");
-            Thread.sleep(100);
-        }
-        // boolean awaited = latch.await(10, TimeUnit.SECONDS);
-        System.err.println("requests=" + loops.get());
-        System.err.println("requestBeginCount=" + requestBeginCount.get());
-        System.err.println("requestFailureCount=" + requestFailureCount.get());
-        System.err.println("requestSuccessCount=" + requestSuccessCount.get());
-        System.err.println("requestCount=" + (requestSuccessCount.get() + requestFailureCount.get()));
-        System.err.println("missing requests=" + (requestCount - requestSuccessCount.get() - requestFailureCount.get()));
-        System.err.println("responseBeginCount=" + responseBeginCount.get());
-        System.err.println("responseFailureCount=" + responseFailureCount.get());
-        System.err.println("responseSuccessCount=" + responseSuccessCount.get());
-        System.err.println("responseCount=" + (responseSuccessCount.get() + responseFailureCount.get()));
-        System.err.println("missing responses=" + (requestCount - responseSuccessCount.get() - responseFailureCount.get()));
+        boolean awaited = latch.await(5, TimeUnit.SECONDS);
+        System.err.println("                loops=" + loops.get());
+        System.err.println("          serverCount=" + serverCount.get());
+        System.err.println("    requestBeginCount=" + requestBeginCount.get());
+        System.err.println("  requestFailureCount=" + requestFailureCount.get());
+        System.err.println("  requestSuccessCount=" + requestSuccessCount.get());
+        System.err.println("         requestCount=" + (requestSuccessCount.get() + requestFailureCount.get()));
+        System.err.println("     missing requests=" + (requestCount - requestSuccessCount.get() - requestFailureCount.get()));
+        System.err.println("   responseBeginCount=" + responseBeginCount.get());
+        System.err.println(" responseFailureCount=" + responseFailureCount.get());
+        System.err.println(" responseSuccessCount=" + responseSuccessCount.get());
+        System.err.println("        responseCount=" + (responseSuccessCount.get() + responseFailureCount.get()));
+        System.err.println("    missing responses=" + (loops.get() - responseSuccessCount.get() - responseFailureCount.get()));
 
         ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
         String dump = pool.dump();
@@ -1394,6 +1396,9 @@ public class GoAwayTest extends AbstractTest
 
         assertFalse(contains);
         assertThat(latch.getCount(), Matchers.is(0L));
+        assertTrue(awaited);
+
+
     }
 
     private boolean dumpContains(String dump)
