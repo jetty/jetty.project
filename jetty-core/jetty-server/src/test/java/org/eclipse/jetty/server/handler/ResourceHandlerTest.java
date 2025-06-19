@@ -3359,6 +3359,35 @@ public class ResourceHandlerTest
         assertThat(response.getContent(), containsString("Hello"));
     }
 
+    @Test
+    public void testConditionalWelcome() throws Exception
+    {
+        copySimpleTestResource(docRoot);
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/directory/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("Hello"));
+
+        String lastModified = response.get(LAST_MODIFIED);
+        assertThat(lastModified, is(not(nullValue())));
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/directory/ HTTP/1.1\r
+                Host: local\r
+                If-Modified-Since: %s\r
+                Connection: close\r
+                \r
+                """.formatted(lastModified)));
+
+        assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getContent(), not(containsString("Hello")));
+    }
+
     @ParameterizedTest
     @MethodSource("welcomeScenarios")
     public void testWelcome(ResourceHandlerTest.Scenario scenario) throws Exception
