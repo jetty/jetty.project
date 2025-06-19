@@ -49,6 +49,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -374,7 +375,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public String toConnectionString()
     {
         return String.format("%s@%x[l:%s<->r:%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress());

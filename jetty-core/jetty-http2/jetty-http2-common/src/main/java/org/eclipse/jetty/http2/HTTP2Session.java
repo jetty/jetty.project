@@ -2606,7 +2606,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (failure == null)
             {
                 if (created)
-                    HTTP2Session.this.onStreamCreated(streamId);
+                    HTTP2Session.this.onStreamCreated(reservedStreamId);
             }
             else
             {

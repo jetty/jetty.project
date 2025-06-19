@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -323,7 +324,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     public String toConnectionString()
     {
         return String.format("%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress(),

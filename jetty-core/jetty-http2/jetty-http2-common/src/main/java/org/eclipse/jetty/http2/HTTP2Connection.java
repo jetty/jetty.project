@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -232,6 +233,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
     }
 
+    private int getTaskCount()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return tasks.size();
+        }
+    }
+
     @Override
     public void onHeaders(HeadersFrame frame)
     {
@@ -298,6 +307,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     {
         producer.failed = true;
         session.onConnectionFailure(error, reason);
+    }
+
+    @Override
+    public String toConnectionString()
+    {
+        return "%s@%x[taskQueue=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getTaskCount());
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -116,7 +117,6 @@ public abstract class HttpConnection implements IConnection, Attachable
             {
                 // Association may fail, for example if the application
                 // aborted the request, so we must release the channel.
-                channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
 
@@ -314,7 +314,7 @@ public abstract class HttpConnection implements IConnection, Attachable
     @Override
     public String toString()
     {
-        return String.format("%s@%h", getClass().getSimpleName(), this);
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 
     /**

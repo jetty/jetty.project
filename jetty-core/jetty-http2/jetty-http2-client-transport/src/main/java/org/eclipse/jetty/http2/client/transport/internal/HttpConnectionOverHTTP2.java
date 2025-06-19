@@ -136,7 +136,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         HttpChannelOverHTTP2 channel = acquireHttpChannel();
         activeChannels.add(channel);
 
-        return send(channel, exchange);
+        SendFailure result = send(channel, exchange);
+        if (result != null)
+        {
+            activeChannels.remove(channel);
+            channel.destroy();
+        }
+        return result;
     }
 
     public void upgrade(Map<String, Object> context)
@@ -206,23 +212,23 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return new HttpChannelOverHTTP2(this, getSession());
     }
 
-    protected boolean release(HttpChannelOverHTTP2 channel)
+    protected void release(HttpChannelOverHTTP2 channel)
     {
+        boolean removed = activeChannels.remove(channel);
         if (LOG.isDebugEnabled())
-            LOG.debug("Released {}", channel);
-        if (activeChannels.remove(channel))
+            LOG.debug("released {} {}", removed, channel);
+        if (removed)
         {
+            getHttpDestination().release(this);
             // Recycle only non-failed channels.
             if (channel.isFailed())
                 channel.destroy();
             else if (isRecycleHttpChannels())
                 idleChannels.offer(channel);
-            return true;
         }
         else
         {
             channel.destroy();
-            return false;
         }
     }
 
@@ -307,9 +313,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     public String toString()
     {
-        return String.format("%s@%x(closed=%b)[%s]",
-            getClass().getSimpleName(),
-            hashCode(),
+        return String.format("%s(closed=%b)[%s]",
+            super.toString(),
             isClosed(),
             session);
     }

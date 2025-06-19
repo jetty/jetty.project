@@ -116,11 +116,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void release()
     {
         setStream(null);
-        boolean released = connection.release(this);
-        if (LOG.isDebugEnabled())
-            LOG.debug("released channel? {} {}", released, this);
-        if (released)
-            getHttpDestination().release(getHttpConnection());
+        connection.release(this);
     }
 
     @Override
