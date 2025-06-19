@@ -54,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1339,7 +1340,7 @@ public class GoAwayTest extends AbstractTest
         httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
         httpClient.start();
 
-        int requestCount = 100;
+        int requestCount = 10000;
         CountDownLatch latch = new CountDownLatch(requestCount);
         for (int i = 0; i < requestCount; i++)
         {
@@ -1347,19 +1348,19 @@ public class GoAwayTest extends AbstractTest
                 .path("/")
                 .send(result -> latch.countDown());
         }
-        boolean awaited = latch.await(4, TimeUnit.SECONDS);
+        boolean awaited = latch.await(5, TimeUnit.SECONDS);
 
         ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
-        String dump = pool.dump();
-        System.err.println(dump);
-        boolean contains = dumpContains(dump);
-
-        assertFalse(contains);
+        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertFalse(dumpContainsFailure(pool.dump()), pool.dump()));
+        System.err.println(pool.dump());
         assertTrue(awaited);
     }
 
-    private boolean dumpContains(String dump)
+    private boolean dumpContainsFailure(String dump)
     {
+        if (!dump.contains(",leaked=0,"))
+            return true;
+
         int acquiredIdx = dump.indexOf("ConcurrentEntry@");
         if (acquiredIdx == -1)
             return false;
