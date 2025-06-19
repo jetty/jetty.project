@@ -192,7 +192,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
 
     if proceedyn "Do you want to build aggregated Javadoc in target/reports/apidocs/? (Y/n)" y; then
-        mvn mvn clean install -Pjavadoc-aggregate javadoc:aggregate -DskipTests
+        mvn clean install -Pjavadoc-aggregate javadoc:aggregate -DskipTests
     fi
 
     # here we need to add something to publish to our staging repo
