@@ -1,3 +1,5 @@
+jetty-12.1.0-SNAPSHOT
+
 jetty-12.1.0.beta1 - 19 June 2025
  + 4493 Document ThreadPoolBudget behavior
  + 5442 Allow multiple authentication options for a web app
