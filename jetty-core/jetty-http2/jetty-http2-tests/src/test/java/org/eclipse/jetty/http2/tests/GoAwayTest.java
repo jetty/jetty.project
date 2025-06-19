@@ -20,6 +20,7 @@ import java.security.SecureRandom;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.RandomConnectionPool;
@@ -1320,6 +1321,8 @@ public class GoAwayTest extends AbstractTest
     {
         SecureRandom random = new SecureRandom();
 
+        AtomicInteger serverCount = new AtomicInteger();
+
         start(new ServerSessionListener()
         {
             @Override
@@ -1327,6 +1330,7 @@ public class GoAwayTest extends AbstractTest
             {
 //                if (random.nextInt(2) == 0)
                 {
+                    serverCount.incrementAndGet();
                     HTTP2Session session = (HTTP2Session)stream.getSession();
                     int streamId = Integer.MAX_VALUE; // Integer.MAX_VALUE is not necessary, any stream ID reproduces the problem.
 //                    int streamId = stream.getId();
@@ -1341,17 +1345,44 @@ public class GoAwayTest extends AbstractTest
         });
         httpClient.stop();
         httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, 4, 1));
+        httpClient.setMaxRequestsQueuedPerDestination(Integer.MAX_VALUE);
         httpClient.start();
 
-        int requestCount = 100;
+        int requestCount = 1000;
         CountDownLatch latch = new CountDownLatch(requestCount);
+        AtomicInteger requestBeginCount = new AtomicInteger();
+        AtomicInteger requestFailureCount = new AtomicInteger();
+        AtomicInteger requestSuccessCount = new AtomicInteger();
+        AtomicInteger responseBeginCount = new AtomicInteger();
+        AtomicInteger responseFailureCount = new AtomicInteger();
+        AtomicInteger responseSuccessCount = new AtomicInteger();
+        AtomicInteger loops = new AtomicInteger();
         for (int i = 0; i < requestCount; i++)
         {
+            loops.incrementAndGet();
             httpClient.newRequest("localhost", connector.getLocalPort())
                 .path("/")
+                .onRequestBegin(r -> requestBeginCount.incrementAndGet())
+                .onRequestFailure((r, t) -> requestFailureCount.incrementAndGet())
+                .onRequestSuccess(r -> requestSuccessCount.incrementAndGet())
+                .onResponseBegin(r -> responseBeginCount.incrementAndGet())
+                .onResponseFailure((r, t) -> responseFailureCount.incrementAndGet())
+                .onResponseSuccess(response -> responseSuccessCount.incrementAndGet())
                 .send(result -> latch.countDown());
         }
-        boolean awaited = latch.await(4, TimeUnit.SECONDS);
+        boolean awaited = latch.await(4, TimeUnit.SECONDS);        System.err.println("                loops=" + loops.get());
+        System.err.println("          serverCount=" + serverCount.get());
+        System.err.println("    requestBeginCount=" + requestBeginCount.get());
+        System.err.println("  requestFailureCount=" + requestFailureCount.get());
+        System.err.println("  requestSuccessCount=" + requestSuccessCount.get());
+        System.err.println("         requestCount=" + (requestSuccessCount.get() + requestFailureCount.get()));
+        System.err.println("     missing requests=" + (loops.get() - requestSuccessCount.get() - requestFailureCount.get()));
+        System.err.println("   responseBeginCount=" + responseBeginCount.get());
+        System.err.println(" responseFailureCount=" + responseFailureCount.get());
+        System.err.println(" responseSuccessCount=" + responseSuccessCount.get());
+        System.err.println("        responseCount=" + (responseSuccessCount.get() + responseFailureCount.get()));
+        System.err.println("    missing responses=" + (loops.get() - responseSuccessCount.get() - responseFailureCount.get()));
+
 
         ConcurrentPool<?> pool = (ConcurrentPool<?>)httpClient.getContainedBeans(Pool.class).stream().findFirst().orElseThrow();
         String dump = pool.dump();
