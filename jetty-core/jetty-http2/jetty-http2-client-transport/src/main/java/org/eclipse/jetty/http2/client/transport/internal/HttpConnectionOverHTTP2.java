@@ -278,17 +278,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private void abort(Throwable failure)
     {
         Set<HttpChannel> activeChannels = new HashSet<>(this.activeChannels);
-        CompletableFuture<?>[] cfs = new CompletableFuture<?>[activeChannels.size()];
-        int idx = 0;
         for (HttpChannel channel : activeChannels)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
-                cfs[idx++] = exchange.getRequest().abort(failure);
-            else
-                cfs[idx++] = CompletableFuture.completedFuture(false);
+                exchange.getRequest().abort(failure);
         }
-        CompletableFuture.allOf(cfs).whenComplete((b,x) -> this.activeChannels.clear());
 
         HttpChannel channel = idleChannels.poll();
         while (channel != null)
