@@ -498,9 +498,8 @@ public abstract class IteratingCallback implements Callback
      * @param failure the cause of the abort
      * @see #isAborted()
      */
-    public void abort(Throwable failure)
+    public boolean abort(Throwable failure)
     {
-        boolean abort = false;
         try (AutoLock ignored = _lock.lock())
         {
             switch (_state)
@@ -511,7 +510,7 @@ public abstract class IteratingCallback implements Callback
                 case ABORTED:
                 {
                     // Too late.
-                    break;
+                    return false;
                 }
 
                 case IDLE:
@@ -519,7 +518,6 @@ public abstract class IteratingCallback implements Callback
                 {
                     _failure = failure;
                     _state = State.ABORTED;
-                    abort = true;
                     break;
                 }
 
@@ -528,7 +526,9 @@ public abstract class IteratingCallback implements Callback
                 {
                     _failure = failure;
                     _state = State.ABORTED;
-                    break;
+                    // Will eventually be aborted
+                    // by the processing thread.
+                    return true;
                 }
 
                 default:
@@ -536,8 +536,8 @@ public abstract class IteratingCallback implements Callback
             }
         }
 
-        if (abort)
-            onCompleteFailure(failure);
+        onCompleteFailure(failure);
+        return true;
     }
 
     boolean isPending()
