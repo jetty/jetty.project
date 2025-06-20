@@ -148,7 +148,7 @@ The default request/response log line format is the https://en.wikipedia.org/wik
 
 [NOTE]
 ====
-Typically, the extended NCSA format is the is enough and it's the standard used and understood by most log parsing tools and monitoring tools.
+Typically, the extended NCSA format is enough and it's the standard used and understood by most log parsing tools and monitoring tools.
 
 To customize the request/response log line format see the link:{javadoc-url}/org/eclipse/jetty/server/CustomRequestLog.html[`CustomRequestLog` javadocs].
 ====
