@@ -121,13 +121,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private RetainableByteBuffer _decryptedInput;
     private RetainableByteBuffer _encryptedInput;
     private RetainableByteBuffer _encryptedOutput;
-    private boolean _renegotiationAllowed;
-    private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
-    private boolean _requireCloseMessage;
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private boolean _underflown;
+
+    // Those fields have getters/setters not protected by the lock.
+    private boolean _renegotiationAllowed;
+    private int _renegotiationLimit = -1;
+    private boolean _requireCloseMessage;
+
     private final Runnable _runFillable = new RunnableTask("runFillable")
     {
         @Override
@@ -327,12 +330,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     private void acquireEncryptedInput()
     {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException();
         if (_encryptedInput == null)
             _encryptedInput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
     }
 
     private void acquireEncryptedOutput()
     {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException();
         // TODO: before the output was done with the BBP only.
         if (_encryptedOutput == null)
             _encryptedOutput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
@@ -341,8 +348,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        acquireEncryptedInput();
-        BufferUtil.append(_encryptedInput.getByteBuffer(), buffer);
+        try (AutoLock l = _lock.lock())
+        {
+            acquireEncryptedInput();
+            BufferUtil.append(_encryptedInput.getByteBuffer(), buffer);
+        }
     }
 
     @Override
@@ -412,12 +422,31 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     @Override
     public String toConnectionString()
     {
-        ByteBuffer b = _encryptedInput == null ? null : _encryptedInput.getByteBuffer();
-        int ei = b == null ? -1 : b.remaining();
-        b = _encryptedOutput == null ? null : _encryptedOutput.getByteBuffer();
-        int eo = b == null ? -1 : b.remaining();
-        b = _decryptedInput == null ? null : _decryptedInput.getByteBuffer();
-        int di = b == null ? -1 : b.remaining();
+        int ei;
+        int eo;
+        int di;
+        FillState fillState;
+        FlushState flushState;
+        try (AutoLock l = _lock.tryLock())
+        {
+            if (_lock.isHeldByCurrentThread())
+            {
+                fillState = _fillState;
+                flushState = _flushState;
+                ByteBuffer b = _encryptedInput == null ? null : _encryptedInput.getByteBuffer();
+                ei = b == null ? -1 : b.remaining();
+                b = _encryptedOutput == null ? null : _encryptedOutput.getByteBuffer();
+                eo = b == null ? -1 : b.remaining();
+                b = _decryptedInput == null ? null : _decryptedInput.getByteBuffer();
+                di = b == null ? -1 : b.remaining();
+            }
+            else
+            {
+                fillState = null;
+                flushState = null;
+                ei = eo = di = -1;
+            }
+        }
 
         Connection connection = _sslEndPoint.getConnection();
         return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
@@ -425,7 +454,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             hashCode(),
             _sslEngine.getHandshakeStatus(),
             ei, eo, di,
-            _fillState, _flushState,
+            fillState, flushState,
             _sslEndPoint.toEndPointString(),
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
@@ -957,6 +986,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private void handshakeSucceeded() throws SSLException
         {
+            if (!_lock.isHeldByCurrentThread())
+                throw new IllegalStateException();
+
             if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.SUCCEEDED))
             {
                 if (LOG.isDebugEnabled())
@@ -1460,10 +1492,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public boolean isInputShutdown()
         {
-            return
-                (_encryptedInput == null || !_encryptedInput.hasRemaining()) &&
-                (_decryptedInput == null || !_decryptedInput.hasRemaining()) &&
-                (getEndPoint().isInputShutdown() || isInboundDone());
+            boolean inputsEmpty;
+            try (AutoLock l = _lock.lock())
+            {
+                inputsEmpty =
+                    (_encryptedInput == null || !_encryptedInput.hasRemaining()) &&
+                    (_decryptedInput == null || !_decryptedInput.hasRemaining());
+            }
+            return inputsEmpty && (getEndPoint().isInputShutdown() || isInboundDone());
         }
 
         private boolean isInboundDone()
