@@ -464,8 +464,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
     public void release(Connection connection)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Released {}", connection);
         HttpClient client = getHttpClient();
         if (client.isRunning())
         {
@@ -473,6 +471,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             {
                 // Trigger the next request after releasing the connection.
                 boolean released = releaseConnection(connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released: {} {}", released, connection);
                 send(!released);
             }
             else
@@ -484,7 +484,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} is stopped", client);
+                LOG.debug("Closing {}, {} is stopped", connection, client);
             connection.close();
         }
     }
@@ -500,7 +500,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     public boolean remove(Connection connection)
     {
         boolean removed = connectionPool.remove(connection);
-
         if (removed)
         {
             // Process queued requests that may be waiting.
