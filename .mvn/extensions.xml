@@ -3,7 +3,7 @@
     <!-- Workstation wide caching: just nuke your local repository and rebuild -->
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
-        <artifactId>extension</artifactId>
-        <version>0.7.8</version>
+        <artifactId>extension3</artifactId>
+        <version>0.8.0</version>
     </extension>
 </extensions>

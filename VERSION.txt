@@ -1,5 +1,3 @@
-jetty-12.0.24-SNAPSHOT
-
 jetty-12.0.23 - 02 July 2025
  + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke
    "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because
