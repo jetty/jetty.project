@@ -2421,27 +2421,6 @@
                   <goal>tag</goal>
                 </goals>
                 <phase>generate-resources</phase>
-                <configuration>
-                  <configFile></configFile>
-                  <!--                  <refreshTags>true</refreshTags>-->
-                  <!--                  <copyGenerated>true</copyGenerated>-->
-                  <!--                  <attachArtifact>false</attachArtifact>-->
-                  <!--                  <updateDate>true</updateDate>-->
-                  <!--                  <filenameExcludes>-->
-                  <!--                    <filenameExclude>jetty-documentation/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>examples/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>demos/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>aggregates/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>.*/test-.*</filenameExclude>-->
-                  <!--                    <filenameExclude>.*/.*-test/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>.*/.*-tests/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>.*/src/test/.*</filenameExclude>-->
-                  <!--                    <filenameExclude>\.git.*</filenameExclude>-->
-                  <!--                    <filenameExclude>.*\.md$</filenameExclude>-->
-                  <!--                    <filenameExclude>.*\.txt$</filenameExclude>-->
-                  <!--                    <filenameExclude>Jenkinsfile</filenameExclude>-->
-                  <!--                  </filenameExcludes>-->
-                </configuration>
               </execution>
             </executions>
           </plugin>
