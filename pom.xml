@@ -1340,9 +1340,9 @@
         <plugin>
           <groupId>net.webtide.tools</groupId>
           <artifactId>webtide-release-tools-plugin</artifactId>
-          <version>1.0-SNAPSHOT</version>
+          <version>1.0</version>
           <configuration>
-            <configFile>${project.basedir}/build/config-12.0.x.json</configFile>
+            <configFile>${project.basedir}/build/release-tools-config.json</configFile>
             <gitCacheDir>${project.build.directory}/.gitCacheDir</gitCacheDir>
           </configuration>
         </plugin>
