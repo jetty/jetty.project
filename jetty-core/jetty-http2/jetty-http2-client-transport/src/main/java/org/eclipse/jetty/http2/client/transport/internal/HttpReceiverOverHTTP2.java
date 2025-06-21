@@ -261,17 +261,23 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        return new ResponseFailureTask(failure, callback);
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            return new FailureTask(exchange, failure, callback);
+        callback.succeeded();
+        return null;
     }
 
-    private class ResponseFailureTask extends Invocable.Task.Abstract implements Promise<Boolean>
+    private static class FailureTask extends Invocable.Task.Abstract
     {
+        private final HttpExchange exchange;
         private final Throwable failure;
         private final Callback callback;
 
-        private ResponseFailureTask(Throwable failure, Callback callback)
+        private FailureTask(HttpExchange exchange, Throwable failure, Callback callback)
         {
             super(InvocationType.NON_BLOCKING);
+            this.exchange = exchange;
             this.failure = failure;
             this.callback = callback;
         }
@@ -279,19 +285,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         @Override
         public void run()
         {
-            responseFailure(failure, this);
-        }
-
-        @Override
-        public void succeeded(Boolean result)
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            callback.failed(x);
+            callback.completeWith(exchange.getRequest().abort(failure));
         }
     }
 }
