@@ -191,7 +191,7 @@ public class ResourceService
             }
 
             // Conditional response?
-            if (checkConditionalHeaders(request, response, content, callback))
+            if (handleConditionalHeaders(request, response, content, callback))
                 return;
 
             if (content.getPreCompressedContentFormats() == null || !content.getPreCompressedContentFormats().isEmpty())
@@ -308,18 +308,18 @@ public class ResourceService
 
     /**
      * @return true if the request was processed, false otherwise.
-     * @deprecated Use {@link #checkConditionalHeaders(Request, Response, HttpContent, Callback)}
+     * @deprecated Use {@link #handleConditionalHeaders(Request, Response, HttpContent, Callback)}
      */
     @Deprecated(forRemoval = true, since = "12.1.0")
     protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
-        return checkConditionalHeaders(request, response, content, callback);
+        return handleConditionalHeaders(request, response, content, callback);
     }
 
     /**
      * @return true if the request was processed, false otherwise.
      */
-    protected boolean checkConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+    protected boolean handleConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -487,7 +487,7 @@ public class ResourceService
         if (welcome(content, request, response, callback))
             return;
 
-        if (!checkConditionalHeaders(request, response, content, callback))
+        if (!handleConditionalHeaders(request, response, content, callback))
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
@@ -577,7 +577,7 @@ public class ResourceService
     protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
         HttpContent httpContent = _contentFactory.getContent(welcomeTarget);
-        if (checkConditionalHeaders(request, response, httpContent, callback))
+        if (handleConditionalHeaders(request, response, httpContent, callback))
             return;
         sendData(request, response, callback, httpContent, List.of());
     }
