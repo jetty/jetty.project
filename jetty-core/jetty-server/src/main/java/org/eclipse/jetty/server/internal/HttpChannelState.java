@@ -49,7 +49,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -810,7 +809,6 @@ public class HttpChannelState implements HttpChannel, Components
         private Request _loggedRequest;
         private HttpFields _trailers;
         private CachedQueryFields _cachedQueryFields;
-        private CookieCache _cookieCache;
 
         ChannelRequest(HttpChannelState httpChannelState, MetaData.Request metaData)
         {
@@ -819,6 +817,16 @@ public class HttpChannelState implements HttpChannel, Components
             _connectionMetaData = httpChannelState.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
             _lock = httpChannelState._lock;
+        }
+
+        CachedQueryFields getCachedQueryFields()
+        {
+            return _cachedQueryFields;
+        }
+
+        void setCachedQueryFields(CachedQueryFields cachedQueryFields)
+        {
+            _cachedQueryFields = cachedQueryFields;
         }
 
         public void setLoggedRequest(Request request)
@@ -927,40 +935,6 @@ public class HttpChannelState implements HttpChannel, Components
         public long getLength()
         {
             return _metaData.getContentLength();
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            // Short cut for known common implementation attributes to avoid the creation of a lazy attribute map.
-            // These attributes are hidden from name set
-            return switch (name)
-            {
-                case CachedQueryFields.KEY ->
-                {
-                    CachedQueryFields cqf = _cachedQueryFields;
-                    _cachedQueryFields = attribute instanceof CachedQueryFields fields ? fields : null;
-                    yield cqf;
-                }
-                case COOKIE_ATTRIBUTE ->
-                {
-                    CookieCache old = _cookieCache;
-                    _cookieCache = attribute instanceof CookieCache cookieCache ? cookieCache : null;
-                    yield old;
-                }
-                default -> super.setAttribute(name, attribute);
-            };
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return switch (name)
-            {
-                case CachedQueryFields.KEY -> _cachedQueryFields;
-                case COOKIE_ATTRIBUTE -> _cookieCache;
-                default -> super.getAttribute(name);
-            };
         }
 
         @Override

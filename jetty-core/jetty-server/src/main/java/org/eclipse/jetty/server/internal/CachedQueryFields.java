@@ -14,7 +14,9 @@
 package org.eclipse.jetty.server.internal;
 
 import java.nio.charset.Charset;
+import java.util.Objects;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
 
 public class CachedQueryFields extends Fields
@@ -22,6 +24,24 @@ public class CachedQueryFields extends Fields
     public static final String KEY = "_oejsi_CQF";
     private final String _query;
     private final Charset _charset;
+
+    public static CachedQueryFields getCached(Request request, String query, Charset charset)
+    {
+        // Cached fields can be stored directly in a ChannelRequest, else use an attribute
+        CachedQueryFields cached = request instanceof HttpChannelState.ChannelRequest channelRequest
+            ? channelRequest.getCachedQueryFields()
+            : request.getAttribute(CachedQueryFields.class.getName()) instanceof CachedQueryFields c ? c : null;
+
+        return cached != null && Objects.equals(query, cached._query) && Objects.equals(charset, cached._charset) ? cached : null;
+    }
+
+    public static void setCached(Request request, CachedQueryFields fields)
+    {
+        if (request instanceof HttpChannelState.ChannelRequest channelRequest)
+            channelRequest.setCachedQueryFields(fields);
+        else
+            request.setAttribute(CachedQueryFields.class.getName(), fields);
+    }
 
     public CachedQueryFields(String query, Charset charset)
     {

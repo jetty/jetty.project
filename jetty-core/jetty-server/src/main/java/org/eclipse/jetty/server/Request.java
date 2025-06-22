@@ -572,8 +572,8 @@ public interface Request extends Attributes, Content.Source
             if (StringUtil.isBlank(query))
                 return Fields.EMPTY;
 
-            if (request.getAttribute(CachedQueryFields.class.getName()) instanceof CachedQueryFields cached &&
-                cached.getQuery().equals(query) && Objects.equals(cached.getCharset(), charset))
+            CachedQueryFields cached = CachedQueryFields.getCached(request, query, charset);
+            if (cached != null)
                 return cached;
 
             CachedQueryFields fields = new CachedQueryFields(query, charset);
@@ -595,7 +595,8 @@ public interface Request extends Attributes, Content.Source
             {
                 UrlEncoded.decodeTo(query, fields::add, charset);
             }
-            request.setAttribute(CachedQueryFields.class.getName(), fields);
+
+            CachedQueryFields.setCached(request, fields);
             return fields;
         }
         catch (Throwable t)
