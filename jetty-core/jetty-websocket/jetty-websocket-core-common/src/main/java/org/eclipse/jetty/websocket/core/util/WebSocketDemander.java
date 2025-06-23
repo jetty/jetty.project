@@ -44,8 +44,8 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     private final AutoLock _lock = new AutoLock();
     private final IncomingFrames _emitFrame;
 
-    private boolean _upstreamDemand = false;
-    private boolean _downstreamDemand = false;
+    private boolean _inputDemand = false;
+    private boolean _outputDemand = false;
     private Throwable _failure = null;
     private DemandChain _nextDemand;
     private Frame _frame;
@@ -97,10 +97,10 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         Throwable failure = null;
         try (AutoLock l = _lock.lock())
         {
-            if (!_downstreamDemand)
+            if (!_outputDemand)
                 failure = new IllegalStateException("Demand already fulfilled");
             else
-                _downstreamDemand = false;
+                _outputDemand = false;
         }
 
         if (failure != null)
@@ -115,7 +115,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     }
 
     /**
-     * This is used by the downstream layer to demand a new frame to be processed in {@link #handle(Frame, Callback, boolean)}.
+     * This is demand is called by the application to demand a new frame to be processed in {@link #handle(Frame, Callback, boolean)}.
      */
     @Override
     public void demand()
@@ -124,10 +124,10 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         {
             if (_failure != null)
                 throw new IllegalStateException("Flusher is failed", _failure);
-            if (_downstreamDemand)
+            if (_outputDemand)
                 throw new ReadPendingException();
             else
-                _downstreamDemand = true;
+                _outputDemand = true;
         }
 
         iterate();
@@ -148,10 +148,10 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
             {
                 failure = _failure;
             }
-            else if (_upstreamDemand)
+            else if (_inputDemand)
             {
                 // Fulfill the incoming demand to receive a new frame.
-                _upstreamDemand = false;
+                _inputDemand = false;
                 _frame = frame;
                 _callback = new CountingCallback(callback, 1);
             }
@@ -211,13 +211,13 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
                 if (_failure != null)
                     throw _failure;
 
-                if (_upstreamDemand)
+                if (_inputDemand)
                     return Action.IDLE;
 
                 if (_needContent)
                 {
                     demand = true;
-                    _upstreamDemand = true;
+                    _inputDemand = true;
                 }
             }
 
