@@ -22,7 +22,7 @@ import java.util.Properties;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ShutdownMonitor;
+import org.eclipse.jetty.server.ShutdownService;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -41,7 +41,6 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
     protected boolean stopAtShutdown;
     protected List<File> jettyXmlFiles;
     protected Map<String, String> jettyProperties;
-    protected ShutdownMonitor shutdownMonitor;
     protected int stopPort;
     protected String stopKey;
     protected String contextXml;
@@ -143,16 +142,6 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         this.jettyProperties = jettyProperties;
     }
 
-    public ShutdownMonitor getShutdownMonitor()
-    {
-        return shutdownMonitor;
-    }
-
-    public void setShutdownMonitor(ShutdownMonitor shutdownMonitor)
-    {
-        this.shutdownMonitor = shutdownMonitor;
-    }
-
     public int getStopPort()
     {
         return stopPort;
@@ -202,7 +191,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         super.doStart();
 
         configure();
-        configureShutdownMonitor();
+        configureServerShutdown(server);
         server.start();
     }
     
@@ -271,14 +260,13 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         }
     }
 
-    private void configureShutdownMonitor()
+    private void configureServerShutdown(Server server)
     {
         if (stopPort > 0 && stopKey != null)
         {
-            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-            monitor.setPort(stopPort);
-            monitor.setKey(stopKey);
-            monitor.setExitVm(exitVm);
+            ShutdownService shutdownService = new ShutdownService("127.0.0.1", stopPort, stopKey, exitVm);
+            if (shutdownService.isConfigurationValid())
+                server.addBean(shutdownService);
         }
     }
 }

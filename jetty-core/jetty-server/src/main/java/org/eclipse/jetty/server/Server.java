@@ -539,12 +539,12 @@ public class Server extends Handler.Wrapper implements Attributes
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
-            //Register the Server with the handler thread for receiving
-            //remote stop commands
-            ShutdownMonitor.register(this);
-
-            //Start a thread waiting to receive "stop" commands.
-            ShutdownMonitor.getInstance().start(); // initialize
+            ShutdownService shutdown = getShutdown();
+            if (shutdown != null)
+            {
+                shutdown.addComponent(this);
+                shutdown.start();
+            }
 
             if (_errorHandler == null)
                 setErrorHandler(new DynamicErrorHandler());
@@ -635,6 +635,35 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
+    private ShutdownService getShutdown()
+    {
+        ShutdownService shutdown = getBean(ShutdownService.class);
+        if (shutdown != null)
+            return shutdown;
+
+        // Look for the old-school (now deprecated) ShutdownMonitor
+        // First we look to see if anyone has called ShutdownMonitor.getInstance() yet.
+        //noinspection removal
+        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
+        //noinspection removal
+        if (shutdownMonitor != null && shutdownMonitor.getPort() != (-1))
+        {
+            addBean(shutdownMonitor);
+            return shutdownMonitor;
+        }
+
+        // Lets create the default ShutdownService default implementation.
+        // Start System Property version
+        ShutdownService shutdownService = ShutdownService.createFromHistoricalSystemProperties();
+        if (shutdownService != null)
+        {
+            addBean(shutdownService);
+            return shutdownService;
+        }
+
+        return null;
+    }
+
     @Override
     protected void start(LifeCycle l) throws Exception
     {
@@ -700,9 +729,11 @@ public class Server extends Handler.Wrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        //Unregister the Server with the handler thread for receiving
-        //remote stop commands as we are stopped already
-        ShutdownMonitor.deregister(this);
+        ShutdownService shutdown = getBean(ShutdownService.class);
+        if (shutdown != null)
+        {
+            shutdown.removeComponent(this);
+        }
 
         ExceptionUtil.ifExceptionThrow(multiException);
     }
