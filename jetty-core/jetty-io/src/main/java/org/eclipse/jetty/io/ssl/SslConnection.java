@@ -126,10 +126,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private FillState _fillState = FillState.IDLE;
     private boolean _underflown;
 
-    // Those fields have getters/setters not protected by the lock.
-    private boolean _renegotiationAllowed;
-    private int _renegotiationLimit = -1;
-    private boolean _requireCloseMessage;
+    private volatile boolean _open; // Must be volatile to make the protection against modifications of the below fields effective.
+    // The following fields have getters/setters not protected by the lock
+    // so they cannot be set once the _open boolean above is set to true.
+    private boolean _renegotiationAllowed; // Effectively final, set by ClientConnectionFactory.customize() right after creation.
+    private int _renegotiationLimit = -1; // Set by ClientConnectionFactory.customize() right after creation, and updated by a single thread.
+    private boolean _requireCloseMessage; // Effectively final, set by ClientConnectionFactory.customize() right after creation.
 
     private final Runnable _runFillable = new RunnableTask("runFillable")
     {
@@ -247,6 +249,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     public void setRenegotiationAllowed(boolean renegotiationAllowed)
     {
+        if (_open)
+            throw new IllegalStateException("Cannot set renegotiation allowed on an open connection");
         _renegotiationAllowed = renegotiationAllowed;
     }
 
@@ -266,6 +270,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
      */
     public void setRenegotiationLimit(int renegotiationLimit)
     {
+        if (_open)
+            throw new IllegalStateException("Cannot set renegotiation limit on an open connection");
         _renegotiationLimit = renegotiationLimit;
     }
 
@@ -288,6 +294,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
      */
     public void setRequireCloseMessage(boolean requireCloseMessage)
     {
+        if (_open)
+            throw new IllegalStateException("Cannot set require close message on an open connection");
         _requireCloseMessage = requireCloseMessage;
     }
 
@@ -360,11 +368,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     {
         super.onOpen();
         getSslEndPoint().getConnection().onOpen();
+        _open = true;
     }
 
     @Override
     public void onClose(Throwable cause)
     {
+        _open = false;
         getSslEndPoint().getConnection().onClose(cause);
         super.onClose(cause);
     }
