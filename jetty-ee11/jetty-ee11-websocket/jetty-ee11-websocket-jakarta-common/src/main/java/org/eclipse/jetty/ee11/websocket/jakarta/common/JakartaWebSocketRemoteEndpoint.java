@@ -147,48 +147,57 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void sendObject(Object data, Callback callback) throws IOException, EncodeException
     {
         try
         {
             assertMessageNotNull(data);
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug("sendObject({}, {})", data, callback);
+            }
 
             Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
             if (encoder == null)
-                throw new IllegalArgumentException("No encoder for type: " + data.getClass());
-
-            if (encoder instanceof Encoder.Text textEncoder)
             {
-                String msg = textEncoder.encode(data);
+                throw new IllegalArgumentException("No encoder for type: " + data.getClass());
+            }
+
+            if (encoder instanceof Encoder.Text)
+            {
+                Encoder.Text text = (Encoder.Text)encoder;
+                String msg = text.encode(data);
                 sendFrame(new Frame(OpCode.TEXT).setPayload(msg), callback, batch);
                 return;
             }
 
-            if (encoder instanceof Encoder.TextStream textStreamEncoder)
+            if (encoder instanceof Encoder.TextStream)
             {
-                MessageWriter writer = newMessageWriter();
-                writer.setCallback(callback);
-                textStreamEncoder.encode(data, writer);
-                writer.close();
+                Encoder.TextStream etxt = (Encoder.TextStream)encoder;
+                try (MessageWriter writer = newMessageWriter())
+                {
+                    writer.setCallback(callback);
+                    etxt.encode(data, writer);
+                }
                 return;
             }
 
-            if (encoder instanceof Encoder.Binary binaryEncoder)
+            if (encoder instanceof Encoder.Binary)
             {
-                ByteBuffer buf = binaryEncoder.encode(data);
+                Encoder.Binary ebin = (Encoder.Binary)encoder;
+                ByteBuffer buf = ebin.encode(data);
                 sendFrame(new Frame(OpCode.BINARY).setPayload(buf), callback, batch);
                 return;
             }
 
-            if (encoder instanceof Encoder.BinaryStream binaryStreamEncoder)
+            if (encoder instanceof Encoder.BinaryStream)
             {
-                MessageOutputStream out = newMessageOutputStream();
-                out.setCallback(callback);
-                binaryStreamEncoder.encode(data, out);
-                out.close();
+                Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
+                try (MessageOutputStream out = newMessageOutputStream())
+                {
+                    out.setCallback(callback);
+                    ebin.encode(data, out);
+                }
                 return;
             }
 
@@ -212,9 +221,6 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         if (LOG.isDebugEnabled())
             LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
 
-        if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
-            throw new IllegalArgumentException("Pong payload is too large");
-
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
         b.block();
@@ -225,9 +231,6 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
-
-        if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
-            throw new IllegalArgumentException("Pong payload is too large");
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);

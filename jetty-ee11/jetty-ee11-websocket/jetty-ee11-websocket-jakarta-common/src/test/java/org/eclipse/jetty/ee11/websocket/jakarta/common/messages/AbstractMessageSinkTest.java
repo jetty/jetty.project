@@ -23,7 +23,6 @@ import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.AbstractSessionTest;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {
@@ -41,10 +40,10 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components, false));
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components));
     }
 
-    public <T> MethodHolder getAcceptHandle(Consumer<T> copy, Class<T> type)
+    public <T> MethodHandle getAcceptHandle(Consumer<T> copy, Class<T> type)
     {
         try
         {
@@ -52,7 +51,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
             String name = "accept";
             MethodType methodType = MethodType.methodType(void.class, type);
             MethodHandle handle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(refc, name, methodType);
-            return MethodHolder.from(handle.bindTo(copy));
+            return handle.bindTo(copy);
         }
         catch (NoSuchMethodException | IllegalAccessException e)
         {

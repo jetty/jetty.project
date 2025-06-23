@@ -22,7 +22,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,18 +52,11 @@ public class HttpsSocketImpl implements HttpSocket
     }
 
     @Override
-    public Socket apply(InetAddress host, Integer port)
+    public Socket connect(InetAddress host, int port) throws IOException
     {
-        try
-        {
-            SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
-            SocketAddress address = new InetSocketAddress(host, port);
-            sslsock.connect(address);
-            return sslsock;
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
+        SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
+        SocketAddress address = new InetSocketAddress(host, port);
+        sslsock.connect(address);
+        return sslsock;
     }
 }

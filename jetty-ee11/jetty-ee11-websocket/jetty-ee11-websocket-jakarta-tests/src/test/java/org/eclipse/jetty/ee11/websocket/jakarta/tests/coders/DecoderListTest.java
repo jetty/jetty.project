@@ -174,22 +174,25 @@ public class DecoderListTest
     }
 
     @Test
-    public void testStreamDecoders() throws Exception
+    public void testStreamDecoders()
     {
-        start(container ->
-        {
-            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
-                .decoders(List.of(TextStreamDecoder1.class, TextStreamDecoder2.class))
-                .build();
-            container.addEndpoint(endpointConfig);
-        });
+        // Stream decoders will not be able to form a decoder list as they don't implement willDecode().
+        Throwable error = assertThrows(Throwable.class, () ->
+            start(container ->
+            {
+                ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+                    .decoders(List.of(TextStreamDecoder1.class, TextStreamDecoder2.class))
+                    .build();
+                container.addEndpoint(endpointConfig);
+            })
+        );
 
-        // The TextStreamDecoder1 should be the one used as it was first in the list.
-        EventSocket clientEndpoint = new EventSocket();
-        Session session = client.connectToServer(clientEndpoint, serverUri);
-        session.getBasicRemote().sendText("message");
-        String response = clientEndpoint.textMessages.poll(3, TimeUnit.SECONDS);
-        assertThat(response, is("Decoder1: message"));
+        assertThat(error, instanceOf(RuntimeException.class));
+        Throwable cause = error.getCause();
+        assertThat(cause, instanceOf(DeploymentException.class));
+        Throwable invalidWebSocketException = cause.getCause();
+        assertThat(invalidWebSocketException, instanceOf(InvalidWebSocketException.class));
+        assertThat(invalidWebSocketException.getMessage(), containsString("Multiple decoders for objectTypeclass java.lang.String"));
     }
 
     public static class TextDecoderListEndpoint extends Endpoint

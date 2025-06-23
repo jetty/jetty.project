@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Extension;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -157,7 +156,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
         return sessionTracker.getSessions();
     }
 
-    public JakartaWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest) throws DeploymentException
+    public JakartaWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest)
     {
         return getFrameHandlerFactory().newJakartaWebSocketFrameHandler(websocketPojo, upgradeRequest);
     }

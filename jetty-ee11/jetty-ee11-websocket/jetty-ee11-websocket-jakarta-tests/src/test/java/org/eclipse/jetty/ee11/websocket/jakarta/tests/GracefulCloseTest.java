@@ -28,13 +28,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,11 +95,10 @@ public class GracefulCloseTest
         Graceful.shutdown(client).get(5, TimeUnit.SECONDS);
         client.stop();
 
-        // Check that the client endpoint was closed with the correct status code and error.
-        // The TCK tests that an onError is invoked when an abnormal close code is received.
+        // Check that the client endpoint was closed with the correct status code and no error.
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseReason.CloseCodes.GOING_AWAY));
-        assertThat(clientEndpoint.error, instanceOf(CloseException.class));
+        assertNull(clientEndpoint.error);
 
         // Check that the server endpoint was closed with the correct status code and no error.
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -123,10 +120,9 @@ public class GracefulCloseTest
         assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseReason.CloseCodes.GOING_AWAY));
         assertNull(clientEndpoint.error);
 
-        // Check that the server endpoint was closed with the correct status code and error.
-        // The TCK tests that an onError is invoked when an abnormal close code is received.
+        // Check that the server endpoint was closed with the correct status code and no error.
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.closeReason.getCloseCode(), is(CloseReason.CloseCodes.GOING_AWAY));
-        assertThat(serverEndpoint.error, instanceOf(CloseException.class));
+        assertNull(serverEndpoint.error);
     }
 }

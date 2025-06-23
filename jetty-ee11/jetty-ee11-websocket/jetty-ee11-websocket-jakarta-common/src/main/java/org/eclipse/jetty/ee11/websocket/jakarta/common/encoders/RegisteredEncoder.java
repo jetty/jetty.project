@@ -13,13 +13,9 @@
 
 package org.eclipse.jetty.ee11.websocket.jakarta.common.encoders;
 
-import java.lang.reflect.Type;
-
 import jakarta.websocket.Encoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.websocket.core.util.ReflectUtils.isAssignableFrom;
 
 public class RegisteredEncoder
 {
@@ -27,16 +23,16 @@ public class RegisteredEncoder
 
     public final Class<? extends Encoder> encoder;
     public final Class<? extends Encoder> interfaceType;
-    public final Type objectType;
+    public final Class<?> objectType;
     public final boolean primitive;
     public Encoder instance;
 
-    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Type objectType)
+    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
     {
         this(encoder, interfaceType, objectType, false);
     }
 
-    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Type objectType, boolean primitive)
+    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
     {
         this.encoder = encoder;
         this.interfaceType = interfaceType;
@@ -49,9 +45,9 @@ public class RegisteredEncoder
         return interfaceType.isAssignableFrom(type);
     }
 
-    public boolean isType(Type type)
+    public boolean isType(Class<?> type)
     {
-        return isAssignableFrom(objectType, type);
+        return objectType.isAssignableFrom(type);
     }
 
     public void destroyInstance()
@@ -78,7 +74,7 @@ public class RegisteredEncoder
         str.append(RegisteredEncoder.class.getSimpleName());
         str.append('[').append(encoder.getName());
         str.append(',').append(interfaceType.getName());
-        str.append(',').append(objectType.getTypeName());
+        str.append(',').append(objectType.getName());
         if (primitive)
         {
             str.append(",PRIMITIVE");

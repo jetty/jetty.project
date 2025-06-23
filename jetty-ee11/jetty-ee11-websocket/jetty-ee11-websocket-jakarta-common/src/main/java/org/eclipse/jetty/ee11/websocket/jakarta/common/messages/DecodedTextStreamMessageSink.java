@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
@@ -33,12 +32,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
 {
     public DecodedTextStreamMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders)
     {
-        this(session, methodHolder, decoders, null);
-    }
-
-    public DecodedTextStreamMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)
-    {
-        super(session, methodHolder, decoders, onError);
+        super(session, methodHolder, decoders);
     }
 
     @Override
@@ -52,7 +46,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
             return null;
         };
 
-        return new ReaderMessageSink(coreSession, methodHolder, true, _onError);
+        return new ReaderMessageSink(coreSession, methodHolder, true);
     }
 
     public void onStreamStart(Reader reader)

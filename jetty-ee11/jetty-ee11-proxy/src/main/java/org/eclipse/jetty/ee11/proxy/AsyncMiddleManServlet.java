@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -867,7 +868,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private static class GZIPDecoder extends GZIPContentDecoder
         {
-            private GZIPDecoder(ByteBufferPool bufferPool)
+            public GZIPDecoder(ByteBufferPool bufferPool)
             {
                 super(bufferPool, IO.DEFAULT_BUFFER_SIZE);
             }
@@ -904,7 +905,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public String toString()
         {
-            return "%s@%x[buffer=%s,callback=%s]".formatted(getClass().getSimpleName(), hashCode(), buffer, callback);
+            return "%s@%x[buffer=%s,callback=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), buffer, callback);
         }
     }
 }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common.encoders;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -150,7 +149,7 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 
     private void add(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceClass)
     {
-        Type objectType = ReflectUtils.findGenericTypeFor(encoder, interfaceClass);
+        Class<?> objectType = ReflectUtils.findGenericClassFor(encoder, interfaceClass);
         if (objectType == null)
         {
             StringBuilder err = new StringBuilder();
@@ -161,7 +160,33 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
             throw new InvalidWebSocketException(err.toString());
         }
 
-        registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
+        try
+        {
+            RegisteredEncoder conflicts = registeredEncoders.stream()
+                .filter(registered -> registered.isType(objectType))
+                .filter(registered -> !registered.primitive)
+                .findFirst()
+                .get();
+
+            if (conflicts.encoder.equals(encoder) && conflicts.implementsInterface(interfaceClass))
+            {
+                // Same encoder as what is there already, don't bother adding it again.
+                return;
+            }
+
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate Encoder Object type ");
+            err.append(objectType.getName());
+            err.append(" in ");
+            err.append(encoder.getName());
+            err.append(", previously declared in ");
+            err.append(conflicts.encoder.getName());
+            throw new InvalidWebSocketException(err.toString());
+        }
+        catch (NoSuchElementException e)
+        {
+            registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
+        }
     }
 
     public List<RegisteredEncoder> supporting(Class<? extends Encoder> interfaceType)

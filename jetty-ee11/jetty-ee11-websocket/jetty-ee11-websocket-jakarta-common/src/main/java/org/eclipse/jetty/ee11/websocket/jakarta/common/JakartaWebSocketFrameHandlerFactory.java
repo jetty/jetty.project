@@ -20,17 +20,14 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Decoder;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnClose;
@@ -75,11 +72,6 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         }
     }
 
-    static InvokerUtils.Arg[] getArgsFor(Type objectType)
-    {
-        return getArgsFor(ReflectUtils.getClassFromType(objectType));
-    }
-
     static InvokerUtils.Arg[] getArgsFor(Class<?> objectType)
     {
         return new InvokerUtils.Arg[]{new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(objectType).required()};
@@ -119,11 +111,11 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
-    public abstract JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig) throws DeploymentException;
+    public abstract JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
     public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass);
 
-    public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest) throws DeploymentException
+    public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
     {
         Object endpoint;
         EndpointConfig config;
@@ -196,15 +188,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         try
         {
             MethodHandles.Lookup lookup = getServerMethodHandleLookup();
-            if (AbstractDecodedMessageSink.Stream.class.isAssignableFrom(msgMetadata.getSinkClass()))
-            {
-                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, List.class, Consumer.class));
-                List<RegisteredDecoder> registeredDecoders = msgMetadata.getRegisteredDecoders();
-                Consumer<Throwable> onError = session.getFrameHandler()::handleError;
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHolder(), registeredDecoders, onError);
-            }
-            else if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
+            if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
                     MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, List.class));
@@ -283,93 +267,83 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         return metadata;
     }
 
-    protected JakartaWebSocketFrameHandlerMetadata discoverJakartaFrameHandlerMetadata(Class<?> endpointClass, JakartaWebSocketFrameHandlerMetadata metadata) throws DeploymentException
+    protected JakartaWebSocketFrameHandlerMetadata discoverJakartaFrameHandlerMetadata(Class<?> endpointClass, JakartaWebSocketFrameHandlerMetadata metadata)
     {
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
 
-        try
+        // OnOpen [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnOpen.class);
+        if (onmethod != null)
         {
-            // OnOpen [0..1]
-            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnOpen.class);
-            if (onmethod != null)
-            {
-                assertSignatureValid(endpointClass, onmethod, OnOpen.class);
-                final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-                final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
-                MethodHandle methodHandle = InvokerUtils
-                    .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
-                metadata.setOpenHandler(methodHandle, onmethod);
-            }
+            assertSignatureValid(endpointClass, onmethod, OnOpen.class);
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
+            final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
+            MethodHandle methodHandle = InvokerUtils
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
+            metadata.setOpenHandler(methodHandle, onmethod);
+        }
 
-            // OnClose [0..1]
-            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnClose.class);
-            if (onmethod != null)
-            {
-                assertSignatureValid(endpointClass, onmethod, OnClose.class);
-                final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-                final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
-                MethodHandle methodHandle = InvokerUtils
-                    .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
-                metadata.setCloseHandler(methodHandle, onmethod);
-            }
+        // OnClose [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnClose.class);
+        if (onmethod != null)
+        {
+            assertSignatureValid(endpointClass, onmethod, OnClose.class);
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
+            final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
+            MethodHandle methodHandle = InvokerUtils
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
+            metadata.setCloseHandler(methodHandle, onmethod);
+        }
 
-            // OnError [0..1]
-            onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnError.class);
-            if (onmethod != null)
-            {
-                assertSignatureValid(endpointClass, onmethod, OnError.class);
-                final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-                final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
-                MethodHandle methodHandle = InvokerUtils
-                    .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
-                metadata.setErrorHandler(methodHandle, onmethod);
-            }
+        // OnError [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnError.class);
+        if (onmethod != null)
+        {
+            assertSignatureValid(endpointClass, onmethod, OnError.class);
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
+            final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
+            MethodHandle methodHandle = InvokerUtils
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
+            metadata.setErrorHandler(methodHandle, onmethod);
+        }
 
-            // OnMessage [0..2]
-            Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
-            if (onMessages != null && onMessages.length > 0)
+        // OnMessage [0..2]
+        Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
+        if (onMessages != null && onMessages.length > 0)
+        {
+            for (Method onMsg : onMessages)
             {
-                for (Method onMsg : onMessages)
+                assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
+
+                long annotationMaxMessageSize = onMessageAnno.maxMessageSize();
+                if (annotationMaxMessageSize > Integer.MAX_VALUE)
                 {
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
-
-                    long annotationMaxMessageSize = onMessageAnno.maxMessageSize();
-                    if (annotationMaxMessageSize > Integer.MAX_VALUE)
-                    {
-                        throw new InvalidWebSocketException(String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
+                    throw new InvalidWebSocketException(String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
                             endpointClass.getName(), onMsg.getName(), annotationMaxMessageSize));
-                    }
-
-                    // Create MessageMetadata and set annotated maxMessageSize if it is not the default value.
-                    JakartaWebSocketMessageMetadata msgMetadata = new JakartaWebSocketMessageMetadata();
-                    if (annotationMaxMessageSize != -1)
-                        msgMetadata.setMaxMessageSize((int)annotationMaxMessageSize);
-
-                    // Function to search for matching MethodHandle for the endpointClass given a signature.
-                    Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
-                        InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
-
-                    // Try to match from available decoders (includes primitive types).
-                    if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))
-                        continue;
-
-                    // No decoders matched try partial signatures and pong signatures.
-                    if (matchOnMessage(onMsg, metadata, msgMetadata, getMethodHandle))
-                        continue;
-
-                    throw new InvalidSignatureException("Unable to match @OnMessage " + onMsg);
                 }
+
+                // Create MessageMetadata and set annotated maxMessageSize if it is not the default value.
+                JakartaWebSocketMessageMetadata msgMetadata = new JakartaWebSocketMessageMetadata();
+                if (annotationMaxMessageSize != -1)
+                    msgMetadata.setMaxMessageSize((int)annotationMaxMessageSize);
+
+                // Function to search for matching MethodHandle for the endpointClass given a signature.
+                Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
+
+                // Try to match from available decoders (includes primitive types).
+                if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))
+                    continue;
+
+                // No decoders matched try partial signatures and pong signatures.
+                if (matchOnMessage(onMsg, metadata, msgMetadata, getMethodHandle))
+                    continue;
+
+                // Not a valid @OnMessage declaration signature.
+                throw InvalidSignatureException.build(endpointClass, OnMessage.class, onMsg);
             }
-        }
-        catch (DeploymentException e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new DeploymentException("Failed to deploy endpoint", t);
         }
 
         return metadata;
@@ -434,18 +408,17 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         List<RegisteredDecoder> decoders = new ArrayList<>();
         Class<? extends Decoder> interfaceType = firstDecoder.interfaceType;
         metadata.getAvailableDecoders().stream().filter(decoder ->
-                decoder.interfaceType.equals(interfaceType) && (getMethodHandle.apply(getArgsFor(decoder.objectType)) != null))
+            decoder.interfaceType.equals(interfaceType) && (getMethodHandle.apply(getArgsFor(decoder.objectType)) != null))
             .forEach(decoders::add);
         msgMetadata.setRegisteredDecoders(decoders);
 
         // Get the general methodHandle which applies to all the decoders in the list.
-        Type objectType = firstDecoder.objectType;
+        Class<?> objectType = firstDecoder.objectType;
         for (RegisteredDecoder decoder : decoders)
         {
-            if (ReflectUtils.isAssignableFrom(objectType, decoder.objectType))
+            if (decoder.objectType.isAssignableFrom(objectType))
                 objectType = decoder.objectType;
         }
-
         MethodHandle methodHandle = getMethodHandle.apply(getArgsFor(objectType));
         msgMetadata.setMethodHolder(MethodHolder.from(methodHandle));
 
@@ -474,7 +447,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         return true;
     }
 
-    private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass) throws DeploymentException
+    private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
     {
         // Test modifiers
         int mods = method.getModifiers();
@@ -484,7 +457,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" method must be public: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new DeploymentException(err.toString());
+            throw new InvalidSignatureException(err.toString());
         }
 
         if (Modifier.isStatic(mods))
@@ -493,7 +466,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" method must not be static: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new DeploymentException(err.toString());
+            throw new InvalidSignatureException(err.toString());
         }
 
         // Test return type
@@ -510,7 +483,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" return must be void: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new DeploymentException(err.toString());
+            throw new InvalidSignatureException(err.toString());
         }
     }
 

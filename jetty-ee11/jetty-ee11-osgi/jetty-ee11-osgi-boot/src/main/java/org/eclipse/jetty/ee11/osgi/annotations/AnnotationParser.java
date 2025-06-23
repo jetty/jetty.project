@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Extension of AnnotationParser to parse classes inside bundles.
  */
 public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
 {

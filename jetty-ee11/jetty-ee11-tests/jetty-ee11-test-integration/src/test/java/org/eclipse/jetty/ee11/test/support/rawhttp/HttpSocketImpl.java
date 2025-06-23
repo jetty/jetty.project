@@ -17,23 +17,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import org.eclipse.jetty.io.RuntimeIOException;
-
 /**
  * Standard HTTP Socket Impl
  */
 public class HttpSocketImpl implements HttpSocket
 {
     @Override
-    public Socket apply(InetAddress host, Integer port)
+    public Socket connect(InetAddress host, int port) throws IOException
     {
-        try
-        {
-            return new Socket(host, port);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
+        return new Socket(host, port);
     }
 }

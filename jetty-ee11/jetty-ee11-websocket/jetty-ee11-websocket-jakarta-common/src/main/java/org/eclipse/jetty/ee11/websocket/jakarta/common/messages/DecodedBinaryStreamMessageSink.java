@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
@@ -33,12 +32,7 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
 {
     public DecodedBinaryStreamMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders)
     {
-        this(session, methodHolder, decoders, null);
-    }
-
-    public DecodedBinaryStreamMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)
-    {
-        super(session, methodHolder, decoders, onError);
+        super(session, methodHolder, decoders);
     }
 
     @Override
@@ -52,7 +46,7 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
             return null;
         };
 
-        return new InputStreamMessageSink(coreSession, methodHolder, true, _onError);
+        return new InputStreamMessageSink(coreSession, methodHolder, true);
     }
 
     public void onStreamStart(InputStream stream)

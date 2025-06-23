@@ -21,7 +21,6 @@ import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
@@ -84,7 +83,7 @@ public class DeploymentTest
 
         Throwable error = assertThrows(Throwable.class, () ->
             client.connectToServer(clientSocket, server.getWsUri().resolve(app1.getContextPath() + "/badonclose/a")));
-        assertThat(error, Matchers.instanceOf(DeploymentException.class));
+        assertThat(error, Matchers.instanceOf(IOException.class));
         assertThat(error.getMessage(), Matchers.containsString("503 Service Unavailable"));
     }
 

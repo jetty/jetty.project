@@ -595,12 +595,9 @@ public class WebAppContextTest
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
 
             response.setHeader("ERRORDUMPSERVLET", "ERRORDUMPSERVLET");
-
             PrintWriter writer = response.getWriter();
             writer.println("DISPATCH: " + request.getDispatcherType().name());
             writer.println("ERROR_PAGE: " + request.getPathInfo());
-            writer.println(request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
-            writer.println(request.getAttribute(Dispatcher.ERROR_MESSAGE));
             writer.println("ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
             writer.println("ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
             writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
@@ -648,6 +645,7 @@ public class WebAppContextTest
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
 
             response.setHeader("GLOBALERRORDUMPSERVLET", "GLOBALERRORDUMPSERVLET");
+
             PrintWriter writer = response.getWriter();
             writer.println("GLOBAL DISPATCH: " + request.getDispatcherType().name());
             writer.println("GLOBAL ERROR_PAGE: " + request.getPathInfo());
@@ -1123,6 +1121,9 @@ public class WebAppContextTest
         // Check context specific
         context.getHiddenClassMatcher().add("org.context.specific.");
 
+        // Check old API
+        context.getServerClassMatcher().add("org.deprecated.api.");
+
         server.setHandler(context);
         server.start();
 
@@ -1134,6 +1135,7 @@ public class WebAppContextTest
             assertThat("Should have default patterns", hiddenClasses, hasItem(defaultServerClass));
 
         assertThat("context API", hiddenClasses, hasItem("org.context.specific."));
+        assertThat("deprecated API", hiddenClasses, hasItem("org.deprecated.api."));
     }
 
     @Test
@@ -1156,6 +1158,9 @@ public class WebAppContextTest
         // Check context specific
         context.getProtectedClassMatcher().add("org.context.specific.");
 
+        // Check old API is a wrapper
+        context.getSystemClassMatcher().add("org.deprecated.api.");
+
         server.setHandler(context);
         server.start();
 
@@ -1168,6 +1173,7 @@ public class WebAppContextTest
             assertThat("Should have default patterns", protectedClasses, hasItem(defaultSystemClass));
 
         assertThat("context API", protectedClasses, hasItem("org.context.specific."));
+        assertThat("deprecated API", protectedClasses, hasItem("org.deprecated.api."));
     }
 
     public static class OkServlet extends HttpServlet

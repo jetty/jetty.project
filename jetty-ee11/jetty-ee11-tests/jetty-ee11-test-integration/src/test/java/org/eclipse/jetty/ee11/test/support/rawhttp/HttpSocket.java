@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.ee11.test.support.rawhttp;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.function.BiFunction;
 
 /**
  * A Raw HTTP Socket connection interface.
  */
-public interface HttpSocket extends BiFunction<InetAddress, Integer, Socket>
+public interface HttpSocket
 {
+    Socket connect(InetAddress host, int port) throws IOException;
 }

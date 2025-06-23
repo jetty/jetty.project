@@ -2687,7 +2687,7 @@ public class ServletContextHandlerTest
         assertThat(context.getServletContext().getResource("/subdir/data.txt"), notNullValue());
         assertThat(context.getServletContext().getResource("/subdir%5Cdata.txt"), nullValue()); //encoded slosh
         assertThat(context.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null
-        //NOTE that these tests return a value, whereas in versions prior to 12 they did not
+        //NOTE that these tests return a resource whereas major versions of jetty before 12 did not
         assertThat(context.getServletContext().getResource("//subdir/data.txt"), notNullValue());
         assertThat(context.getServletContext().getResource("/subdir//data.txt"), notNullValue());
         assertThat(context.getServletContext().getResource("/subdir%2Fdata.txt"), notNullValue()); //encoded slash

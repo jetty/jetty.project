@@ -9,6 +9,7 @@ ee11
 [depends]
 ee11-apache-jsp
 
+# needed for JPMS and auto naming as glassfish jar doesn't have the JPMS metadata
 [lib]
-lib/ee11-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
-lib/ee11-glassfish-jstl/@org.glassfish.wasp:wasp@
+lib/ee11-glassfish-jstl/jakarta.servlet.jsp.jstl.@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
+lib/ee11-glassfish-jstl/org.glassfish.web.@org.glassfish.web:jakarta.servlet.jsp.jstl@

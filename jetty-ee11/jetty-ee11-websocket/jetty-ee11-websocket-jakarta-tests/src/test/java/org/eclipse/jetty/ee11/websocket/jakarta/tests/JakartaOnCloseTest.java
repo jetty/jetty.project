@@ -39,7 +39,6 @@ import org.junit.jupiter.api.function.Executable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -214,17 +213,16 @@ public class JakartaOnCloseTest
         // Initiate close on client to cause the server to throw in onClose.
         clientEndpoint.session.close();
 
-        // The server ignores the error and closes normally once close callback is succeeded.
+        // Test the receives the normal close, and throws in onClose.
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.closeReason.getCloseCode(), is(CloseCodes.NORMAL_CLOSURE));
         assertTrue(serverEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.error, instanceOf(RuntimeException.class));
         assertThat(serverEndpoint.error.getMessage(), containsString("trigger onError from server onClose"));
 
-        // The client also ignores the close error and has normal close status.
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.NORMAL_CLOSURE));
-        assertThat(clientEndpoint.closeReason.getReasonPhrase(), emptyString());
+        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.UNEXPECTED_CONDITION));
+        assertThat(clientEndpoint.closeReason.getReasonPhrase(), containsString("trigger onError from server onClose"));
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error, instanceOf(RuntimeException.class));
         assertThat(clientEndpoint.error.getMessage(), containsString("trigger onError from client onClose"));

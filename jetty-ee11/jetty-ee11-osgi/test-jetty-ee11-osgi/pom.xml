@@ -12,7 +12,6 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <bundle.debug>false</bundle.debug>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
@@ -58,6 +57,10 @@
       <artifactId>jetty-keystore</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
     </dependency>
@@ -70,8 +73,8 @@
       <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.wasp</groupId>
-      <artifactId>wasp</artifactId>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
@@ -140,7 +143,6 @@
       <artifactId>jetty-ee11-annotations</artifactId>
       <scope>runtime</scope>
     </dependency>
-    <!-- Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-jndi</artifactId>
@@ -268,11 +270,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
       <scope>test</scope>
@@ -307,7 +304,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
+      <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee11</classifier>
       <scope>test</scope>
@@ -405,8 +402,8 @@
       <artifactId>pax-exam</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
+      <!-- Use the forked container so we can pass it system properties eg for alpn -->
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-container-forked</artifactId>
       <scope>test</scope>
@@ -544,10 +541,12 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
-              <bundle.debug></bundle.debug>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <!-- uncomment to be able to use jetty logging -->
+              <!-- pax.exam.system>default</pax.exam.system -->
             </systemPropertyVariables>
             <!-- TODO -->
             <excludes>

@@ -66,6 +66,7 @@ public class TestMailSessionReference
         {
             assertFalse(session.getDebug());
         }
+
         Context foo = icontext.createSubcontext("foo");
         NameParser parser = icontext.getNameParser("");
         Name objectNameInNamespace = parser.parse(icontext.getNameInNamespace());

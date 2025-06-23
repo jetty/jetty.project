@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee11.websocket.jakarta.common;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
+import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
 import jakarta.websocket.SendResult;
@@ -85,10 +87,6 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         {
             sendObject(data, future);
         }
-        catch (IllegalArgumentException e)
-        {
-            throw e;
-        }
         catch (Throwable t)
         {
             future.failed(t);
@@ -96,75 +94,81 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         return future;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings(
+        {"rawtypes", "unchecked"})
     @Override
     public void sendObject(Object data, SendHandler handler)
     {
         assertMessageNotNull(data);
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("sendObject({},{})", data, handler);
+        }
 
         Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
         if (encoder == null)
+        {
             throw new IllegalArgumentException("No encoder for type: " + data.getClass());
+        }
 
-        if (encoder instanceof Encoder.Text textEncoder)
+        if (encoder instanceof Encoder.Text)
         {
+            Encoder.Text etxt = (Encoder.Text)encoder;
             try
             {
-                String msg = textEncoder.encode(data);
+                String msg = etxt.encode(data);
                 sendText(msg, handler);
+                return;
             }
-            catch (Throwable t)
+            catch (EncodeException e)
             {
-                handler.onResult(new SendResult(t));
+                handler.onResult(new SendResult(e));
             }
-            return;
         }
-        else if (encoder instanceof Encoder.TextStream textStreamEncoder)
+        else if (encoder instanceof Encoder.TextStream)
         {
-            try
-            {
-                MessageWriter writer = newMessageWriter();
-                writer.setCallback(new SendHandlerCallback(handler));
-                textStreamEncoder.encode(data, writer);
-                writer.close();
-            }
-            catch (Throwable t)
-            {
-                handler.onResult(new SendResult(t));
-            }
-            return;
-        }
-        else if (encoder instanceof Encoder.Binary binaryEncoder)
-        {
-            try
-            {
-                ByteBuffer buf = binaryEncoder.encode(data);
-                sendBinary(buf, handler);
-            }
-            catch (Throwable t)
-            {
-                handler.onResult(new SendResult(t));
-            }
-            return;
-        }
-        else if (encoder instanceof Encoder.BinaryStream binaryStreamEncoder)
-        {
+            Encoder.TextStream etxt = (Encoder.TextStream)encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
+            try (MessageWriter writer = newMessageWriter())
+            {
+                writer.setCallback(callback);
+                etxt.encode(data, writer);
+                return;
+            }
+            catch (EncodeException | IOException e)
+            {
+                handler.onResult(new SendResult(e));
+            }
+        }
+        else if (encoder instanceof Encoder.Binary)
+        {
+            Encoder.Binary ebin = (Encoder.Binary)encoder;
             try
             {
-                MessageOutputStream out = newMessageOutputStream();
-                out.setCallback(callback);
-                binaryStreamEncoder.encode(data, out);
-                out.close();
+                ByteBuffer buf = ebin.encode(data);
+                sendBinary(buf, handler);
+                return;
             }
-            catch (Throwable t)
+            catch (EncodeException e)
             {
-                handler.onResult(new SendResult(t));
+                handler.onResult(new SendResult(e));
             }
-            return;
+        }
+        else if (encoder instanceof Encoder.BinaryStream)
+        {
+            Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
+            SendHandlerCallback callback = new SendHandlerCallback(handler);
+            try (MessageOutputStream out = newMessageOutputStream())
+            {
+                out.setCallback(callback);
+                ebin.encode(data, out);
+                return;
+            }
+            catch (EncodeException | IOException e)
+            {
+                handler.onResult(new SendResult(e));
+            }
         }
 
         throw new IllegalArgumentException("Unknown encoder type: " + encoder);

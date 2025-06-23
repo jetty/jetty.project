@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee11.websocket.jakarta.common.decoders;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
 
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
@@ -22,8 +21,6 @@ import org.eclipse.jetty.ee11.websocket.jakarta.common.InitException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.websocket.core.util.ReflectUtils.isAssignableFrom;
 
 public class RegisteredDecoder
 {
@@ -33,19 +30,19 @@ public class RegisteredDecoder
     public final Class<? extends Decoder> decoder;
     // The jakarta.websocket.Decoder.* type (eg: Decoder.Binary, Decoder.BinaryStream, Decoder.Text, Decoder.TextStream)
     public final Class<? extends Decoder> interfaceType;
-    public final Type objectType;
+    public final Class<?> objectType;
     public final boolean primitive;
     public final EndpointConfig config;
     private final WebSocketComponents components;
 
     private Decoder instance;
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Type objectType, EndpointConfig endpointConfig, WebSocketComponents components)
+    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components)
     {
         this(decoder, interfaceType, objectType, endpointConfig, components, false);
     }
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Type objectType, EndpointConfig endpointConfig, WebSocketComponents components, boolean primitive)
+    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components, boolean primitive)
     {
         this.decoder = decoder;
         this.interfaceType = interfaceType;
@@ -60,12 +57,11 @@ public class RegisteredDecoder
         return interfaceType.isAssignableFrom(type);
     }
 
-    public boolean isType(Type type)
+    public boolean isType(Class<?> type)
     {
-        return isAssignableFrom(objectType, type);
+        return objectType.isAssignableFrom(type);
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Decoder> T getInstance()
     {
         if (instance == null)
@@ -109,7 +105,7 @@ public class RegisteredDecoder
         str.append(RegisteredDecoder.class.getSimpleName());
         str.append('[').append(decoder.getName());
         str.append(',').append(interfaceType.getName());
-        str.append(',').append(objectType.getTypeName());
+        str.append(',').append(objectType.getName());
         if (primitive)
         {
             str.append(",PRIMITIVE");

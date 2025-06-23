@@ -2265,7 +2265,8 @@ public class DefaultServletTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=iso-8859-1")); // inferred charset
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
 
         String body = response.getContent();
         assertThat(body, not(containsString("Extra Info")));
@@ -3409,7 +3410,7 @@ public class DefaultServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path docroot = TestEEResources.getResourceAsPath("/docroot");
+        Path docroot = Objects.requireNonNull(TestEEResources.getResourceAsPath("/docroot"));
 
         ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
@@ -3417,7 +3418,7 @@ public class DefaultServletTest
         slashHolder.setInitParameter("baseResource", docroot.toUri().toString());
         context.addServlet(slashHolder, "/");
 
-        Path altroot = TestEEResources.getResourceAsPath("/altroot");
+        Path altroot = Objects.requireNonNull(TestEEResources.getResourceAsPath("/altroot"));
         ServletHolder rHolder = new ServletHolder("alt", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
@@ -3446,9 +3447,8 @@ public class DefaultServletTest
         server.stop();
 
         Path suffixroot = TestEEResources.getResourceAsPath("/suffixroot");
-        assertNotNull(suffixroot);
         ResourceFactory resourceFactory = ResourceFactory.of(context);
-        context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
+        context.setBaseResource(resourceFactory.newResource(suffixroot));
 
         ServletHolder holderAlt = new ServletHolder("static-js", DefaultServlet.class);
         context.addServlet(holderAlt, "*.js");

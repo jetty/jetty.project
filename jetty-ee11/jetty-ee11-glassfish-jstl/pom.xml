@@ -28,8 +28,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.glassfish.wasp</groupId>
-      <artifactId>wasp</artifactId>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
     </dependency>
 
     <dependency>

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee11.security.jaspi;
 
+import java.security.SecurityPermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
     {
+        checkPermission();
+
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
         DefaultRegistrationContext context = new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
@@ -72,6 +76,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
     {
+        checkPermission();
+
         String key = getKey(layer, appContext);
         DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
         DefaultRegistrationContext oldContext = _registrations.put(key, context);
@@ -83,6 +89,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public boolean removeRegistration(String registrationID)
     {
+        checkPermission();
+
         DefaultRegistrationContext registrationContext = _registrations.remove(registrationID);
         if (registrationContext == null)
             return false;
@@ -108,6 +116,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String[] detachListener(RegistrationListener listener, String layer, String appContext)
     {
+        checkPermission();
+
         List<String> registrationIds = new ArrayList<>();
         for (DefaultRegistrationContext registration : _registrations.values())
         {
@@ -143,7 +153,14 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public void refresh()
     {
+        checkPermission();
+
         // TODO: maybe we should re-construct providers created from classname.
+    }
+
+    private static void checkPermission()
+    {
+        SecurityUtils.checkPermission(new SecurityPermission(PROVIDER_REGISTRATION_PERMISSION_NAME));
     }
 
     private static String getKey(String layer, String appContext)

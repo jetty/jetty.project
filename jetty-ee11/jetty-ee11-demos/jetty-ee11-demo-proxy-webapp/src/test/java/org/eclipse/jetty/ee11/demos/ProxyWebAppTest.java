@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet6.embedded;
+package org.eclipse.jetty.ee11.demos;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -34,9 +34,7 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Starts a new Jetty Base in the target/embedded/ directory using entirely
- * embedded jetty techniques, in ways similar to the various Jetty XML files
- * from {@code jetty-home}
+ * Test the configuration found in WEB-INF/web.xml of ee11-demo-proxy.war
  */
 public class ProxyWebAppTest
 {

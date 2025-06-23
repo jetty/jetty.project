@@ -86,8 +86,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.util.ajax
-            --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.ee.test.resources
             --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>

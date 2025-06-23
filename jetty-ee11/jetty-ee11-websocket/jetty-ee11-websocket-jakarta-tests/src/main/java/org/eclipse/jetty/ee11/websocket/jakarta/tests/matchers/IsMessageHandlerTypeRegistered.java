@@ -63,7 +63,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JakartaWebSo
 
             if (expectedType == MessageType.PONG)
             {
-                if (registeredDecoder.isType(PongMessage.class))
+                if (PongMessage.class.isAssignableFrom(registeredDecoder.objectType))
                     return true;
                 continue;
             }

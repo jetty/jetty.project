@@ -140,7 +140,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
             {
                 if (error != null)
                 {
-                    futureSession.completeExceptionally(error);
+                    futureSession.completeExceptionally(convertCause(error));
                     return;
                 }
 
@@ -154,6 +154,18 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         }
 
         return futureSession;
+    }
+
+    public static Throwable convertCause(Throwable error)
+    {
+        if (error instanceof UpgradeException ||
+            error instanceof WebSocketTimeoutException)
+            return new IOException(error);
+
+        if (error instanceof InvalidWebSocketException)
+            return new DeploymentException(error.getMessage(), error);
+
+        return error;
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException, DeploymentException
@@ -176,7 +188,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
                 upgradeRequest.addExtensions(new JakartaWebSocketExtensionConfig(ext));
             }
 
-            if (!clientEndpointConfig.getPreferredSubprotocols().isEmpty())
+            if (clientEndpointConfig.getPreferredSubprotocols().size() > 0)
                 upgradeRequest.setSubProtocols(clientEndpointConfig.getPreferredSubprotocols());
         }
 
@@ -195,13 +207,6 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
                 throw (DeploymentException)cause;
             if (cause instanceof IOException)
                 throw (IOException)cause;
-            if (cause instanceof UpgradeException)
-                throw new DeploymentException(cause.getMessage(), cause);
-            if (cause instanceof WebSocketTimeoutException)
-                throw new IOException(cause);
-            if (cause instanceof InvalidWebSocketException)
-                throw new DeploymentException(e.getMessage(), e);
-
             throw new IOException(cause);
         }
         catch (TimeoutException e)
@@ -210,7 +215,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         }
         catch (Throwable e)
         {
-            throw new DeploymentException("Unable to connect to " + destURI, e);
+            throw new IOException("Unable to connect to " + destURI, e);
         }
     }
 

@@ -185,26 +185,21 @@ import org.slf4j.LoggerFactory;
  *     Use {@code true} to use direct byte buffers to serve static resources.
  *     Defaults to {@code true}.
  *   </dd>
- *   <dt>minMappedFileSize</dt>
+ *   <dt>useFileMappedBuffer</dt>
  *   <dd>
- *     The minimum size in bytes of a file that will used with file mapping; or {@code 0} for
- *     no file mapping; or {@code -1} (or net set) for a default size of 1MB.
- *   </dd>
- *   <dt>maxMappedFileSize</dt>
- *   <dd>
- *     The maximum size in bytes of a file that will used with file mapping;
- *     or {@code -1} (or not set) for a default size of {@link Integer#MAX_VALUE}.
+ *     Use {@code true} to use file mapping to serve static resources instead of
+ *     buffers configured with the above two settings.
+ *     Defaults to {@code false}.
  *   </dd>
  *   <dt>welcomeServlets</dt>
  *   <dd>
- *     Use {@code false} to only serve welcome resources when they exist on the file system.
- *     If they also map to a Servlet, then the servlet will be used to generate the response.
+ *     Use {@code false} to only serve welcome resources from the file system.
  *     Use {@code true} to dispatch welcome resources to a matching Servlet
- *     (for example mapped to {@code *.welcome}), even if the welcome resources
+ *     (for example mapped to {@code *.welcome}), when the welcome resources
  *     does not exist on file system.
- *     Use {@code exact} to dispatch welcome resource to a Servlet when the resource does not
- *     exist on the file system, but only if the its mapping is exactly the same as the welcome
- *     resource (for example {@code /index.welcome})
+ *     Use {@code exact} to dispatch welcome resource to a Servlet whose mapping
+ *     is exactly the same as the welcome resource (for example {@code /index.welcome}),
+ *     when the welcome resources does not exist on file system.
  *     Defaults to {@code false}.
  *   </dd>
  * </dl>
@@ -291,7 +286,7 @@ public class ResourceServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = contextHandler.getMimeTypes();
-            ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+            ByteBufferPool.Sized bufferPool = getByteBufferPool(contextHandler);
             contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, bufferPool);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
@@ -317,15 +312,8 @@ public class ResourceServlet extends HttpServlet
                 }
             }
 
-            int minMappedFileSize = getInitInt("minMappedFileSize", -1);
-            String useFileMappedBuffer = getInitParameter("useFileMappedBuffer");
-            if (useFileMappedBuffer != null)
-                LOG.warn("{} Deprecated useFileMappedBuffer used. Use minMappedFileSize instead", this);
-            
-            if (minMappedFileSize > 0)
-                contentFactory = new FileMappingHttpContentFactory(contentFactory, minMappedFileSize, getInitInt("maxMappedFileSize", Integer.MAX_VALUE));
-            else if (minMappedFileSize == -1 || getInitBoolean("useFileMappedBuffer", true))
-                contentFactory = new FileMappingHttpContentFactory(contentFactory, -1, -1);
+            if (getInitBoolean("useFileMappedBuffer", false))
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
             contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", bufferPool);
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
@@ -869,7 +857,7 @@ public class ResourceServlet extends HttpServlet
             if (servletCoreRequest != null)
                 return servletCoreRequest.getServletRequest();
 
-            ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
             if (servletContextRequest != null)
                 return servletContextRequest.getServletApiRequest();
 

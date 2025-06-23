@@ -190,14 +190,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             decodedPathInContext,
             matchedResource
         );
-
         ServletContextRequest originalServletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         if (originalServletContextRequest != null)
         {
             servletContextRequest.setRequestedSession(originalServletContextRequest.getRequestedSession());
             servletContextRequest.setManagedSession(originalServletContextRequest.getManagedSession());
         }
-
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }
@@ -290,7 +288,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public ServletContextHandler.ServletScopedContext getServletContext()
     {
-        return (ServletContextHandler.ServletScopedContext)super.getContext();
+        if (super.getContext() instanceof ServletContextHandler.ServletScopedContext servletScopedContext)
+            return servletScopedContext;
+        return null;
     }
 
     @Override
@@ -338,8 +338,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Object getAttribute(String name)
     {
-        if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
-            return _requestedSession;
+        if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+            return _requestedSession.getAttribute(name);
         return _attributes.getAttribute(name);
     }
 

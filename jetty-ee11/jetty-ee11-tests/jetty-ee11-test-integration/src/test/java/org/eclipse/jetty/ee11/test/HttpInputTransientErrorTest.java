@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -65,7 +66,7 @@ public class HttpInputTransientErrorTest
         try
         {
             if (bufferPool != null)
-                assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
         }
         finally
         {
@@ -102,7 +103,7 @@ public class HttpInputTransientErrorTest
             {
                 AsyncContext asyncContext = req.startAsync(req, resp);
                 asyncContext.setTimeout(0);
-                resp.setContentType("text/plain;charset=utf-8");
+                resp.setContentType("text/plain;charset=UTF-8");
 
                 // Since the client sends a request with a content-length header, but sends
                 // the content only after idle timeout expired, this ReadListener will have
@@ -133,7 +134,7 @@ public class HttpInputTransientErrorTest
                     {
                         events.add("onAllDataRead");
                         resp.setStatus(HttpStatus.OK_200);
-                        resp.setContentType("text/plain;charset=utf-8");
+                        resp.setContentType("text/plain;charset=UTF-8");
                         resp.getWriter().println("read=" + counter.get());
                         asyncContext.complete();
                     }
@@ -201,7 +202,7 @@ public class HttpInputTransientErrorTest
             {
                 AsyncContext asyncContext = req.startAsync(req, resp);
                 asyncContext.setTimeout(0);
-                resp.setContentType("text/plain;charset=utf-8");
+                resp.setContentType("text/plain;charset=UTF-8");
 
                 // Not calling setReadListener will make Jetty set the ServletChannelState
                 // in state WAITING upon doPost return, so idle timeouts are ignored.
@@ -363,7 +364,7 @@ public class HttpInputTransientErrorTest
 
                 String content = IO.toString(req.getInputStream());
                 resp.setStatus(HttpStatus.OK_200);
-                resp.setContentType("text/plain;charset=utf-8");
+                resp.setContentType("text/plain;charset=UTF-8");
                 resp.getWriter().println("read=" + content.length());
             }
         });

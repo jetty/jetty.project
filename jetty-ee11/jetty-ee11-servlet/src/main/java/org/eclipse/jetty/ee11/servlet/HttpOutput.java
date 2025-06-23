@@ -16,8 +16,13 @@ package org.eclipse.jetty.ee11.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
 
 import jakarta.servlet.RequestDispatcher;
@@ -40,6 +45,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ThreadIdPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +124,7 @@ public class HttpOutput extends ServletOutputStream
     }
     
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
+    private static final ThreadIdPool<CharsetEncoder> _encoder = new ThreadIdPool<>();
 
     private final ServletChannel _servletChannel;
     private final ServletChannelState _channelState;
@@ -375,19 +382,6 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             _softClose = true;
-        }
-    }
-
-    public ByteBuffer takeContentAndClose()
-    {
-        try (AutoLock l = _channelState.lock())
-        {
-            if (_state != State.OPEN)
-                throw new IllegalStateException(lockedStateString());
-            ByteBuffer content = _aggregate != null && _aggregate.hasRemaining() ? BufferUtil.copy(_aggregate.getByteBuffer()) : BufferUtil.EMPTY_BUFFER;
-            _state = State.CLOSED;
-            lockedReleaseBuffer();
-            return content;
         }
     }
 
@@ -1114,54 +1108,73 @@ public class HttpOutput extends ServletOutputStream
             throw new IOException("Closed");
 
         s = String.valueOf(s);
-        String charset = _servletChannel.getServletContextResponse().getCharacterEncoding(false);
-        // String.getBytes() is much faster than a CharsetEncoder.encode() loop that would also need to estimate
-        // the destination buffer size, so this compensates for the rare extra copy that needs to be done when
-        // the aggregation buffer is full.
-        byte[] bytes = s.getBytes(charset);
-        if (!eoln)
-        {
-            write(bytes);
-        }
-        else
-        {
-            int len = bytes.length + IO.CRLF_BYTES.length;
 
-            // If there is enough room left in the aggregation buffer, just fill it;
-            // otherwise either do 2 writes if blocking or copy into a bigger byte array if async.
-            boolean aggregated = false;
-            boolean blocking = false;
-            try (AutoLock ignored = _channelState.lock())
+        String charset = _servletChannel.getServletContextResponse().getCharacterEncoding(false);
+        CharsetEncoder encoder = _encoder.take();
+        if (encoder == null || !encoder.charset().name().equalsIgnoreCase(charset))
+        {
+            encoder = Charset.forName(charset).newEncoder();
+            encoder.onMalformedInput(CodingErrorAction.REPLACE);
+            encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
+        }
+        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+        RetainableByteBuffer out = pool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        try
+        {
+            CharBuffer in = CharBuffer.wrap(s);
+            CharBuffer crlf = eoln ? CharBuffer.wrap("\r\n") : null;
+            ByteBuffer byteBuffer = out.getByteBuffer();
+            BufferUtil.flipToFill(byteBuffer);
+
+            while (true)
             {
-                if (len <= _bufferSize)
+                CoderResult result;
+                if (in.hasRemaining())
                 {
-                    lockedAcquireBuffer();
-                    if (len <= maximizeAggregateSpace())
+                    result = encoder.encode(in, byteBuffer, crlf == null);
+                    if (result.isUnderflow())
+                        if (crlf == null)
+                            break;
+                        else
+                            continue;
+                }
+                else if (crlf != null && crlf.hasRemaining())
+                {
+                    result = encoder.encode(crlf, byteBuffer, true);
+                    if (result.isUnderflow())
                     {
-                        BufferUtil.fill(_aggregate.getByteBuffer(), bytes, 0, bytes.length);
-                        aggregated = true;
+                        if (!encoder.flush(byteBuffer).isUnderflow())
+                            result.throwException();
+                        break;
                     }
                 }
-                if (!aggregated && _apiState == ApiState.BLOCKING)
-                    blocking = true;
+                else
+                    break;
+
+                if (result.isOverflow())
+                {
+                    BufferUtil.flipToFlush(byteBuffer, 0);
+                    RetainableByteBuffer bigger = pool.acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    BufferUtil.flipToFill(bigger.getByteBuffer());
+                    bigger.getByteBuffer().put(byteBuffer);
+                    out.release();
+                    BufferUtil.flipToFill(bigger.getByteBuffer());
+                    out = bigger;
+                    byteBuffer = bigger.getByteBuffer();
+                    continue;
+                }
+
+                result.throwException();
             }
 
-            if (aggregated)
-            {
-                write(IO.CRLF_BYTES);
-            }
-            else if (blocking)
-            {
-                write(bytes);
-                write(IO.CRLF_BYTES);
-            }
-            else
-            {
-                byte[] bytesWithCrLf = new byte[len];
-                System.arraycopy(bytes, 0, bytesWithCrLf, 0, bytes.length);
-                System.arraycopy(IO.CRLF_BYTES, 0, bytesWithCrLf, bytes.length, IO.CRLF_BYTES.length);
-                write(bytesWithCrLf);
-            }
+            BufferUtil.flipToFlush(byteBuffer, 0);
+            write(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
+        }
+        finally
+        {
+            out.release();
+            encoder.reset();
+            _encoder.offer(encoder);
         }
     }
 

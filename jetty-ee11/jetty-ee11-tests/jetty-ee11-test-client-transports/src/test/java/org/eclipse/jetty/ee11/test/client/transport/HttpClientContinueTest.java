@@ -166,7 +166,6 @@ public class HttpClientContinueTest extends AbstractTest
                 .body(content)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-
         }
 
         assertNotNull(response);
@@ -236,14 +235,14 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond417ExpectationFailed(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, 417);
+        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.EXPECTATION_FAILED_417);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, 413);
+        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.PAYLOAD_TOO_LARGE_413);
     }
 
     private void testExpect100ContinueWithContentRespondError(TransportType transportType, int error) throws Exception
@@ -797,64 +796,6 @@ public class HttpClientContinueTest extends AbstractTest
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testExpect100ContinueWithTwoResponsesInOneRead() throws Exception
-    {
-        // There is a chance that the server replies with the 100 Continue response
-        // and immediately after with the "normal" response, say a 200 OK.
-        // These may be read by the client in a single read, and must be handled correctly.
-
-        startClient(TransportType.HTTP);
-
-        try (ServerSocket server = new ServerSocket())
-        {
-            server.bind(new InetSocketAddress("localhost", 0));
-
-            CountDownLatch latch = new CountDownLatch(1);
-            client.newRequest("localhost", server.getLocalPort())
-                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
-                .body(new BytesRequestContent(new byte[]{0}))
-                .send(result ->
-                {
-                    assertTrue(result.isSucceeded(), result.toString());
-                    assertEquals(200, result.getResponse().getStatus());
-                    latch.countDown();
-                });
-
-            try (Socket socket = server.accept())
-            {
-                // Read only the request headers.
-                readRequestHeaders(socket.getInputStream());
-
-                OutputStream output = socket.getOutputStream();
-                String responses = """
-                    HTTP/1.1 100 Continue\r
-                    \r
-                    HTTP/1.1 200 OK\r
-                    Transfer-Encoding: chunked\r
-                    \r
-                    10\r
-                    0123456789ABCDEF\r
-                    """;
-                output.write(responses.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                Thread.sleep(1000);
-
-                String content = """
-                    10\r
-                    0123456789ABCDEF\r
-                    0\r
-                    \r
-                    """;
-                output.write(content.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
-            }
-        }
-    }
-
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentLengthZeroExpectIsRemoved(TransportType transportType) throws Exception
@@ -910,6 +851,64 @@ public class HttpClientContinueTest extends AbstractTest
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
             assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testExpect100ContinueWithTwoResponsesInOneRead() throws Exception
+    {
+        // There is a chance that the server replies with the 100 Continue response
+        // and immediately after with the "normal" response, say a 200 OK.
+        // These may be read by the client in a single read, and must be handled correctly.
+
+        startClient(TransportType.HTTP);
+
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.bind(new InetSocketAddress("localhost", 0));
+
+            CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .body(new BytesRequestContent(new byte[]{0}))
+                .send(result ->
+                {
+                    assertTrue(result.isSucceeded(), result.toString());
+                    assertEquals(200, result.getResponse().getStatus());
+                    latch.countDown();
+                });
+
+            try (Socket socket = server.accept())
+            {
+                // Read only the request headers.
+                readRequestHeaders(socket.getInputStream());
+
+                OutputStream output = socket.getOutputStream();
+                String responses = """
+                    HTTP/1.1 100 Continue\r
+                    \r
+                    HTTP/1.1 200 OK\r
+                    Transfer-Encoding: chunked\r
+                    \r
+                    10\r
+                    0123456789ABCDEF\r
+                    """;
+                output.write(responses.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                Thread.sleep(1000);
+
+                String content = """
+                    10\r
+                    0123456789ABCDEF\r
+                    0\r
+                    \r
+                    """;
+                output.write(content.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
+            }
         }
     }
 

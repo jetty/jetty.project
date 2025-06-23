@@ -140,7 +140,6 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
     private final JakartaWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-    private boolean failed = false;
 
     /**
      * Main entry point for {@link JakartaWebSocketServletContainerInitializer}.
@@ -205,88 +204,64 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
-        try
+        if (endpointClass == null)
         {
-            if (failed)
-                throw new DeploymentException("Previous endpoint failed to deploy");
-
-            if (endpointClass == null)
-            {
-                throw new DeploymentException("Unable to deploy null endpoint class");
-            }
-
-            if (isStarted() || isStarting())
-            {
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                if (anno == null)
-                {
-                    throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
-                }
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("addEndpoint({})", endpointClass);
-                }
-
-                ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
-                validateEndpointConfig(config);
-                addEndpointMapping(config);
-            }
-            else
-            {
-                if (deferredEndpointClasses == null)
-                    deferredEndpointClasses = new ArrayList<>();
-                deferredEndpointClasses.add(endpointClass);
-            }
+            throw new DeploymentException("Unable to deploy null endpoint class");
         }
-        catch (DeploymentException e)
+
+        if (isStarted() || isStarting())
         {
-            webSocketMappings.clear();
-            failed = true;
-            throw e;
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            if (anno == null)
+            {
+                throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+            }
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({})", endpointClass);
+            }
+
+            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            validateEndpointConfig(config);
+            addEndpointMapping(config);
+        }
+        else
+        {
+            if (deferredEndpointClasses == null)
+                deferredEndpointClasses = new ArrayList<>();
+            deferredEndpointClasses.add(endpointClass);
         }
     }
 
     @Override
     public void addEndpoint(ServerEndpointConfig providedConfig) throws DeploymentException
     {
-        try
+        if (providedConfig == null)
+            throw new DeploymentException("ServerEndpointConfig is null");
+
+        if (isStarted() || isStarting())
         {
-            if (failed)
-                throw new DeploymentException("Previous endpoint failed to deploy");
+            // Decorate the provided Configurator.
+            components.getObjectFactory().decorate(providedConfig.getConfigurator());
 
-            if (providedConfig == null)
-                throw new DeploymentException("ServerEndpointConfig is null");
+            // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
+            Class<?> endpointClass = providedConfig.getEndpointClass();
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            ServerEndpointConfig config = (anno == null) ? providedConfig
+                : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
 
-            if (isStarted() || isStarting())
-            {
-                // Decorate the provided Configurator.
-                components.getObjectFactory().decorate(providedConfig.getConfigurator());
+            if (LOG.isDebugEnabled())
+                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
 
-                // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
-                Class<?> endpointClass = providedConfig.getEndpointClass();
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                ServerEndpointConfig config = (anno == null) ? providedConfig
-                    : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
-
-                validateEndpointConfig(config);
-                addEndpointMapping(config);
-            }
-            else
-            {
-                if (deferredEndpointConfigs == null)
-                    deferredEndpointConfigs = new ArrayList<>();
-                deferredEndpointConfigs.add(providedConfig);
-            }
+            validateEndpointConfig(config);
+            addEndpointMapping(config);
         }
-        catch (DeploymentException e)
+        else
         {
-            webSocketMappings.clear();
-            failed = true;
-            throw e;
+            if (deferredEndpointConfigs == null)
+                deferredEndpointConfigs = new ArrayList<>();
+            deferredEndpointConfigs.add(providedConfig);
         }
     }
 
@@ -297,17 +272,11 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
             JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
             PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
-            if (webSocketMappings.getWebSocketNegotiator(pathSpec) != null)
-                throw new DeploymentException("Duplicate WebSocket mapping for path: " + config.getPath());
             webSocketMappings.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
         }
         catch (InvalidSignatureException e)
         {
             throw new DeploymentException(e.getMessage(), e);
-        }
-        catch (DeploymentException e)
-        {
-            throw e;
         }
         catch (Throwable t)
         {

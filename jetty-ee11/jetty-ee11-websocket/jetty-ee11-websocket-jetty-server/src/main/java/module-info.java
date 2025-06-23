@@ -16,8 +16,8 @@ module org.eclipse.jetty.ee11.websocket.jetty.server
     requires jakarta.servlet;
     requires org.eclipse.jetty.ee11.websocket.servlet;
     requires org.eclipse.jetty.websocket.server;
-    requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.common;
+    requires org.eclipse.jetty.websocket.core.server;
 
     requires transitive org.eclipse.jetty.ee11.webapp;
 

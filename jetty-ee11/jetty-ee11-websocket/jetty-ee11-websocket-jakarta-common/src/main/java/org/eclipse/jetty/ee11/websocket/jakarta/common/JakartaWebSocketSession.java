@@ -37,10 +37,8 @@ import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoder
 import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,12 +189,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     {
         try
         {
-            int closeCode = closeReason.getCloseCode().getCode();
-            coreSession.close(closeCode, closeReason.getReasonPhrase(), Callback.from(() ->
-            {
-                if (!CloseStatus.isOrdinary(closeCode))
-                    frameHandler.handleError(new CloseException(closeCode, "Abnormal Close"));
-            }));
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), Callback.NOOP);
         }
         catch (Throwable t)
         {
@@ -548,7 +541,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     @Override
     public boolean isOpen()
     {
-        return coreSession.isOutputOpen() || coreSession.isInputOpen();
+        return coreSession.isOutputOpen();
     }
 
     /**

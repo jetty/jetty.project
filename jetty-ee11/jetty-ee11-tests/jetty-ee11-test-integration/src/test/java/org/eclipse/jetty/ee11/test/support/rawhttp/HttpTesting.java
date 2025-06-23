@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  * Testing utility for performing RAW HTTP request/response.
  */
-@Deprecated(forRemoval = true, since = "12.1.0")
 public class HttpTesting
 {
     private boolean debug = false;
@@ -186,7 +185,7 @@ public class HttpTesting
      */
     public Socket open() throws IOException
     {
-        Socket sock = httpSocket.apply(serverHost, serverPort);
+        Socket sock = httpSocket.connect(serverHost, serverPort);
         sock.setSoTimeout(timeoutMillis);
         return sock;
     }
