@@ -572,7 +572,7 @@ public interface Request extends Attributes, Content.Source
             if (StringUtil.isBlank(query))
                 return Fields.EMPTY;
 
-            CachedQueryFields cached = CachedQueryFields.getCached(request, query, charset);
+            CachedQueryFields cached = CachedQueryFields.getCached(request, charset);
             if (cached != null)
                 return cached;
 

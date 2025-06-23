@@ -808,7 +808,6 @@ public class HttpChannelState implements HttpChannel, Components
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
-        private CachedQueryFields _cachedQueryFields;
 
         ChannelRequest(HttpChannelState httpChannelState, MetaData.Request metaData)
         {
@@ -817,16 +816,6 @@ public class HttpChannelState implements HttpChannel, Components
             _connectionMetaData = httpChannelState.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
             _lock = httpChannelState._lock;
-        }
-
-        CachedQueryFields getCachedQueryFields()
-        {
-            return _cachedQueryFields;
-        }
-
-        void setCachedQueryFields(CachedQueryFields cachedQueryFields)
-        {
-            _cachedQueryFields = cachedQueryFields;
         }
 
         public void setLoggedRequest(Request request)
