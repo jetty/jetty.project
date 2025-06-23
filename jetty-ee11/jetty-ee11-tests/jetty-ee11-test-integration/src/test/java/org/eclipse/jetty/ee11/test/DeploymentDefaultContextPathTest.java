@@ -179,7 +179,7 @@ public class DeploymentDefaultContextPathTest
                     xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
                     metadata-complete="false"
                     version="5.0">
-                  <display-name>EE10 Test WebApp</display-name>
+                  <display-name>EE11 Test WebApp</display-name>
                   <default-context-path>%s</default-context-path>
                 </web-app>
                 """.formatted(defaultContextPath);
