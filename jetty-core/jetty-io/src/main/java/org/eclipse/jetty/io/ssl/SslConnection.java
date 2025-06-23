@@ -328,7 +328,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return Math.max(hsSize, size);
     }
 
-    private void acquireEncryptedInput()
+    private void lockedAcquireEncryptedInput()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -336,7 +336,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             _encryptedInput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
     }
 
-    private void acquireEncryptedOutput()
+    private void lockedAcquireEncryptedOutput()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -350,7 +350,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     {
         try (AutoLock l = _lock.lock())
         {
-            acquireEncryptedInput();
+            lockedAcquireEncryptedInput();
             BufferUtil.append(_encryptedInput.getByteBuffer(), buffer);
         }
     }
@@ -459,7 +459,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
 
-    private void releaseEmptyEncryptedInputBuffer()
+    private void lockedReleaseEmptyEncryptedInputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -470,7 +470,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     }
 
-    private void releaseEmptyDecryptedInputBuffer()
+    private void lockedReleaseEmptyDecryptedInputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -481,7 +481,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     }
 
-    private void discardInputBuffers()
+    private void lockedDiscardInputBuffers()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -489,25 +489,25 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             _encryptedInput.clear();
         if (_decryptedInput != null)
             _decryptedInput.clear();
-        releaseEmptyInputBuffers();
+        lockedReleaseEmptyInputBuffers();
     }
 
-    private void releaseEmptyInputBuffers()
+    private void lockedReleaseEmptyInputBuffers()
     {
-        releaseEmptyEncryptedInputBuffer();
-        releaseEmptyDecryptedInputBuffer();
+        lockedReleaseEmptyEncryptedInputBuffer();
+        lockedReleaseEmptyDecryptedInputBuffer();
     }
 
-    private void discardEncryptedOutputBuffer()
+    private void lockedDiscardEncryptedOutputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
         if (_encryptedOutput != null)
             _encryptedOutput.clear();
-        releaseEmptyEncryptedOutputBuffer();
+        lockedReleaseEmptyEncryptedOutputBuffer();
     }
 
-    private void releaseEmptyEncryptedOutputBuffer()
+    private void lockedReleaseEmptyEncryptedOutputBuffer()
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
@@ -720,7 +720,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
                             }
 
-                            acquireEncryptedInput();
+                            lockedAcquireEncryptedInput();
 
                             // can we use the passed buffer if it is big enough
                             ByteBuffer appIn;
@@ -838,14 +838,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     // See also system property "jsse.SSLEngine.acceptLargeFragments".
                                     if ((_decryptedInput == null || !_decryptedInput.hasRemaining()) && appBufferSize < getApplicationBufferSize())
                                     {
-                                        releaseEmptyDecryptedInputBuffer();
+                                        lockedReleaseEmptyDecryptedInputBuffer();
                                         continue;
                                     }
                                     throw new IllegalStateException("Unexpected unwrap result " + unwrap);
 
                                 case OK:
                                     if (unwrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
-                                        handshakeSucceeded();
+                                        lockedHandshakeSucceeded();
 
                                     if (isRenegotiating() && !allowRenegotiate())
                                         return filled = -1;
@@ -869,7 +869,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        discardInputBuffers();
+                        lockedDiscardInputBuffers();
                         Throwable f = handleException(x, "fill");
                         Throwable failure = handshakeFailed(f);
                         if (_flushState == FlushState.WAIT_FOR_FILL)
@@ -881,7 +881,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     finally
                     {
-                        releaseEmptyInputBuffers();
+                        lockedReleaseEmptyInputBuffers();
 
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
@@ -984,7 +984,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void handshakeSucceeded() throws SSLException
+        private void lockedHandshakeSucceeded() throws SSLException
         {
             if (!_lock.isHeldByCurrentThread())
                 throw new IllegalStateException();
@@ -1126,7 +1126,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
 
                             int packetBufferSize = getPacketBufferSize();
-                            acquireEncryptedOutput();
+                            lockedAcquireEncryptedOutput();
 
                             if (_handshake.compareAndSet(HandshakeState.INITIAL, HandshakeState.HANDSHAKE))
                             {
@@ -1199,14 +1199,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     // See also system property "jsse.SSLEngine.acceptLargeFragments".
                                     if (packetBufferSize < getPacketBufferSize())
                                     {
-                                        releaseEmptyEncryptedOutputBuffer();
+                                        lockedReleaseEmptyEncryptedOutputBuffer();
                                         continue;
                                     }
                                     throw new IllegalStateException("Unexpected wrap result " + wrap);
 
                                 case OK:
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
-                                        handshakeSucceeded();
+                                        lockedHandshakeSucceeded();
 
                                     if (isRenegotiating() && !allowRenegotiate())
                                     {
@@ -1237,13 +1237,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        discardEncryptedOutputBuffer();
+                        lockedDiscardEncryptedOutputBuffer();
                         Throwable failure = handleException(x, "flush");
                         throw handshakeFailed(failure);
                     }
                     finally
                     {
-                        releaseEmptyEncryptedOutputBuffer();
+                        lockedReleaseEmptyEncryptedOutputBuffer();
                         if (LOG.isDebugEnabled())
                             LOG.debug("<flush {} {}", result, SslConnection.this);
                     }
@@ -1403,7 +1403,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 try (AutoLock l = _lock.lock())
                                 {
                                     _flushState = FlushState.IDLE;
-                                    releaseEmptyEncryptedOutputBuffer();
+                                    lockedReleaseEmptyEncryptedOutputBuffer();
                                 }
                             }, t -> disconnect()), write);
                         }
@@ -1427,7 +1427,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try (AutoLock l = _lock.lock())
             {
-                discardEncryptedOutputBuffer();
+                lockedDiscardEncryptedOutputBuffer();
             }
             getEndPoint().close();
         }
@@ -1476,7 +1476,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try (AutoLock l = _lock.lock())
             {
-                discardInputBuffers();
+                lockedDiscardInputBuffers();
             }
             // First send the TLS Close Alert, then the FIN.
             doShutdownOutput(true);
@@ -1650,7 +1650,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB succeeded {}", SslConnection.this);
-                    releaseEmptyEncryptedOutputBuffer();
+                    lockedReleaseEmptyEncryptedOutputBuffer();
                     _flushState = FlushState.IDLE;
 
                     interested = _fillState == FillState.INTERESTED;
@@ -1676,7 +1676,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB failed {}", SslConnection.this, x);
 
-                    discardEncryptedOutputBuffer();
+                    lockedDiscardEncryptedOutputBuffer();
 
                     _flushState = FlushState.IDLE;
                     failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH ||
