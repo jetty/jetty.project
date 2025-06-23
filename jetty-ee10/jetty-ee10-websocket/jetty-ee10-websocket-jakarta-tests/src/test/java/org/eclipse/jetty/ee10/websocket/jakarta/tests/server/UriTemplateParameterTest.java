@@ -21,8 +21,8 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -81,7 +81,7 @@ public class UriTemplateParameterTest
         expect.add(new Frame(OpCode.TEXT).setPayload("9,999|1,234|5,678"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
+        try (WebSocketTester session = server.newWebSocketTester(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);

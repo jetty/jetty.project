@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * <p>
  * This is particularly useful when the WebSocket endpoints are discovered via the jakarta.websocket annotation scanning.
  */
-public class WSServer extends LocalServer implements LocalFuzzer.Provider
+public class WSServer extends LocalServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(WSServer.class);
     private final Path testDir;
