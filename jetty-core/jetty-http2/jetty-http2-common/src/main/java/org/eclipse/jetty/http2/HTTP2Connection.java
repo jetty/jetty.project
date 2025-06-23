@@ -312,7 +312,13 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public String toConnectionString()
     {
-        return "%s@%x[taskQueue=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getTaskCount());
+        String countState;
+        try (AutoLock l = lock.tryLock())
+        {
+            boolean held = l.isHeldByCurrentThread();
+            countState = held ? String.valueOf(tasks.size()) : "undefined";
+        }
+        return "%s@%x[taskQueue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), countState);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

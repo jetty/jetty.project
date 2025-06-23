@@ -148,6 +148,30 @@ public interface Promise<C>
     }
 
     /**
+     * Creates a promise that runs the given {@link Runnable} when it succeeds or fails.
+     *
+     * @param complete The completion task to run on success or failure
+     * @return a new promise
+     */
+    static <T> Promise<T> from(Runnable complete)
+    {
+        return new Promise<>()
+        {
+            @Override
+            public void succeeded(T result)
+            {
+                complete.run();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                complete.run();
+            }
+        };
+    }
+
+    /**
      * <p>A CompletableFuture that is also a Promise.</p>
      *
      * @param <S> the type of the result

@@ -571,4 +571,144 @@ public class IteratingCallbackTest
         assertEquals(1, count.get());
         assertTrue(icb.isAborted());
     }
+
+    @Test
+    public void testAbortFromProcess()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                abort(new Exception());
+
+                return Action.SCHEDULED;
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testAbortFromProcessThenThrow()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                abort(new Exception());
+
+                failed(new Throwable());
+                throw new RuntimeException();
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testIterateThenAbort()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback();
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(0, icb.onCompleteFailureCount.get());
+
+        assertTrue(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testAbortThenIterate()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback();
+
+        assertTrue(icb.abort(new Exception()));
+        assertEquals(0, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        icb.iterate();
+        assertEquals(0, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(0, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    private static class AccountingIteratingCallback extends IteratingCallback
+    {
+        final AtomicInteger processCount = new AtomicInteger();
+        final AtomicInteger onSuccessCount = new AtomicInteger();
+        final AtomicInteger onCompleteSuccessCount = new AtomicInteger();
+        final AtomicInteger onCompleteFailureCount = new AtomicInteger();
+
+        @Override
+        protected Action process()
+        {
+            processCount.incrementAndGet();
+            return Action.IDLE;
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            onSuccessCount.incrementAndGet();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            onCompleteSuccessCount.incrementAndGet();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            onCompleteFailureCount.incrementAndGet();
+        }
+    }
 }

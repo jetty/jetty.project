@@ -388,7 +388,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
         {
-            releaseConnection(connection);
+            releaseOrClose(connection);
             if (!client.isRunning())
             {
                 if (LOG.isDebugEnabled())
@@ -408,10 +408,12 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
-                exchange.abort(cause, Promise.noop());
-                // The exchange won't be associated to a connection,
-                // and this connection won't be used, release it back.
-                releaseConnection(connection);
+                exchange.abort(cause, Promise.from(() ->
+                {
+                    // The exchange won't be associated to a connection,
+                    // and this connection won't be used, release it back.
+                    releaseOrClose(connection);
+                }));
                 return getQueuedRequestCount() > 0;
             }
 
@@ -431,12 +433,12 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 // Resend this exchange, likely on another connection,
                 // and return false to avoid to re-enter this method.
                 send(exchange);
-                releaseConnection(connection);
+                releaseOrClose(connection);
                 return false;
             }
 
             request.abort(failure.failure);
-            releaseConnection(connection);
+            releaseOrClose(connection);
             return getQueuedRequestCount() > 0;
         }
     }
@@ -470,7 +472,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             if (connectionPool.isActive(connection))
             {
                 // Trigger the next request after releasing the connection.
-                boolean released = releaseConnection(connection);
+                boolean released = releaseOrClose(connection);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Released: {} {}", released, connection);
                 send(!released);
@@ -489,7 +491,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         }
     }
 
-    private boolean releaseConnection(Connection connection)
+    private boolean releaseOrClose(Connection connection)
     {
         boolean released = connectionPool.release(connection);
         if (!released)

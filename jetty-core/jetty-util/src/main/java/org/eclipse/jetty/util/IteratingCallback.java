@@ -497,6 +497,8 @@ public abstract class IteratingCallback implements Callback
      *
      * @param failure the cause of the abort
      * @see #isAborted()
+     * @return {@code true} if the abort was or will be performed,
+     * {@code false} if this instance is already succeeded, failed, closed or aborted
      */
     public boolean abort(Throwable failure)
     {

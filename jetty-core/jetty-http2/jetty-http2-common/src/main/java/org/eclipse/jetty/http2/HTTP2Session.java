@@ -675,6 +675,15 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         streamsState.onWriteFailure(failure);
     }
 
+    /**
+     * <p>Fails the streams that match the predicate, with error code
+     * {@link ErrorCode#CANCEL_STREAM_ERROR} and {@link IOException}.</p>
+     *
+     * @param matcher the predicate to match
+     * @param reason the failure reason
+     * @param reset whether the stream will be reset
+     * @param callback the callback that is completed when all the matching streams have been failed
+     */
     private void failStreams(Predicate<Stream> matcher, String reason, boolean reset, Callback callback)
     {
         int error = ErrorCode.CANCEL_STREAM_ERROR.code;
@@ -682,6 +691,16 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         failStreams(matcher, error, reason, failure, reset, callback);
     }
 
+    /**
+     * <p>Fails the streams that match the predicate, with the given error code, reason and failure.</p>
+     *
+     * @param matcher the predicate to match
+     * @param error the HTTP/2 error code
+     * @param reason the failure reason
+     * @param failure the failure
+     * @param reset whether the stream will be reset
+     * @param callback the callback that is completed when all the matching streams have been failed
+     */
     private void failStreams(Predicate<Stream> matcher, int error, String reason, Throwable failure, boolean reset, Callback callback)
     {
         Collection<Stream> streams = getStreams();

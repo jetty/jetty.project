@@ -235,7 +235,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected void release(HttpChannelOverHTTP2 channel)
     {
-            boolean removed;
+        boolean removed;
         boolean destroy;
         try (AutoLock ignored = lock.lock())
         {
@@ -315,9 +315,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     public String toString()
     {
-        return String.format("%s(closed=%b)[%s]",
+        String closeState;
+        try (AutoLock l = lock.tryLock())
+        {
+            boolean held = l.isHeldByCurrentThread();
+            closeState = held ? Boolean.toString(closed) : "undefined";
+        }
+        return String.format("%s(closed=%s)[%s]",
             super.toString(),
-            isClosed(),
+            closeState,
             session);
     }
 }
