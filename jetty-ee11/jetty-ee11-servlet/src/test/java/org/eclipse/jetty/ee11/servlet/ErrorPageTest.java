@@ -160,6 +160,7 @@ public class ErrorPageTest
         assertThat(body, containsString("ERROR_EXCEPTION: null"));
         assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
         assertThat(body, containsString("ERROR_SERVLET: " + errorContentServlet.getClass().getName()));
+        assertThat(body, containsString("ERROR_METHOD: GET"));
         assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
@@ -791,7 +792,9 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(responseBody, Matchers.containsString("ERROR_METHOD: POST"));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_QUERY_STRING: name=value"));
     }
 
     @Test
@@ -1498,7 +1501,7 @@ public class ErrorPageTest
             }
         };
 
-        contextHandler.addServlet(asyncServlet, "/async/*").setAsyncSupported(true);
+        contextHandler.addServlet(asyncServlet, "/async/*");
         contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
@@ -1916,9 +1919,8 @@ public class ErrorPageTest
         HttpServlet error598Servlet = new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
-                assertThat(req.getDispatcherType(), is(DispatcherType.ERROR));
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {
@@ -2083,7 +2085,9 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("ERROR_METHOD: " + request.getAttribute(Dispatcher.ERROR_METHOD));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+            writer.println("ERROR_QUERY_STRING: " + request.getAttribute(Dispatcher.ERROR_QUERY_STRING));
 
             writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
             writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));

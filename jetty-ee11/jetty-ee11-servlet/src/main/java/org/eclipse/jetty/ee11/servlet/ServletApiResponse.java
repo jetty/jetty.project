@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.WriteThroughWriter;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -175,6 +178,20 @@ public class ServletApiResponse implements HttpServletResponse
         sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
     }
 
+    @Override
+    public void sendRedirect(String location, int code, boolean clear) throws IOException
+    {
+        if (clear)
+        {
+            sendRedirect(code, location);
+        }
+        else
+        {
+            ByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose();
+            sendRedirect(code, location, buffer);
+        }
+    }
+
     /**
      * Sends a response with one of the 300 series redirection codes.
      *
@@ -185,9 +202,23 @@ public class ServletApiResponse implements HttpServletResponse
     public void sendRedirect(int code, String location) throws IOException
     {
         resetBuffer();
+        sendRedirect(code, location, null);
+    }
+
+    /**
+     * Sends a response with one of the 300 series redirection codes.
+     *
+     * @param code the redirect status code
+     * @param location the location to send in {@code Location} headers
+     * @param content the content of the response, or null for a generated HTML message if {@link HttpConfiguration#isGenerateRedirectBody()} is {@code true}.
+     * @throws IOException if unable to send the redirect
+     */
+    private void sendRedirect(int code, String location, ByteBuffer content) throws IOException
+    {
+        resetBuffer();
         try (Blocker.Callback callback = Blocker.callback())
         {
-            Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false);
+            Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false, content);
             callback.block();
 
             // Close the HttpOutput.
@@ -319,7 +350,6 @@ public class ServletApiResponse implements HttpServletResponse
         if (getServletResponseInfo().getOutputType() == ServletContextResponse.OutputType.NONE)
         {
             String encoding = getServletResponseInfo().getCharacterEncoding(true);
-
             Locale locale = getLocale();
             if (writer != null && writer.isFor(locale, encoding))
                 writer.reopen();
@@ -328,8 +358,8 @@ public class ServletApiResponse implements HttpServletResponse
                 // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
                 // in the writer implementation for flush and completion operations.
                 WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
-                getServletResponseInfo().setWriter(writer = new ResponseWriter(
-                    outputStreamWriter, locale, encoding));
+                writer = new ResponseWriter(outputStreamWriter, locale, encoding);
+                getServletResponseInfo().setWriter(writer);
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
@@ -342,6 +372,12 @@ public class ServletApiResponse implements HttpServletResponse
     public void setCharacterEncoding(String encoding)
     {
         getServletResponseInfo().setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
+    }
+
+    @Override
+    public void setCharacterEncoding(Charset encoding)
+    {
+        setCharacterEncoding(encoding == null ? null : encoding.name());
     }
 
     @Override
@@ -641,7 +677,7 @@ public class ServletApiResponse implements HttpServletResponse
     }
 
     /**
-     * Servlet API wrapper for cross context included responses.
+     * Servlet API wrapper used on the post-dispatch side of a cross-context include.
      * It prevents the headers or response code from being updated.
      * @see jakarta.servlet.RequestDispatcher#include(ServletRequest, ServletResponse)
      */
@@ -750,6 +786,24 @@ public class ServletApiResponse implements HttpServletResponse
 
         @Override
         public void sendRedirect(String location) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, boolean clearBuffer) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
         {
             // NOOP for include.
         }

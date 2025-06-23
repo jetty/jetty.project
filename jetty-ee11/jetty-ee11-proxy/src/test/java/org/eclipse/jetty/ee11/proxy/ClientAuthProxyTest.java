@@ -131,7 +131,7 @@ public class ClientAuthProxyTest
         server.setHandler(handler);
 
         server.start();
-        // System.err.println("SERVER = localhost:" + serverConnector.getLocalPort());
+        System.err.println("SERVER = localhost:" + serverConnector.getLocalPort());
     }
 
     private void startServer() throws Exception
@@ -187,7 +187,7 @@ public class ClientAuthProxyTest
         proxy.setHandler(context);
 
         proxy.start();
-        // System.err.println("PROXY = localhost:" + proxyConnector.getLocalPort());
+        System.err.println("PROXY = localhost:" + proxyConnector.getLocalPort());
     }
 
     private void startClient() throws Exception

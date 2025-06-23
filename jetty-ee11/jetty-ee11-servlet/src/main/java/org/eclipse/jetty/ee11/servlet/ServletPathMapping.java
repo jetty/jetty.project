@@ -112,10 +112,10 @@ public class ServletPathMapping implements HttpServletMapping
             case PREFIX_GLOB:
                 _mappingMatch = MappingMatch.PATH;
                 _servletPath = pathSpec.getPrefix();
-                _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
                 _pathInfo = matchedPath != null
                     ? matchedPath.getPathInfo()
                     : _servletPath.length() == pathInContext.length() ? null : pathInContext.substring(_servletPath.length());
+                _matchValue = _pathInfo == null ? "" : _pathInfo.startsWith("/") ? _pathInfo.substring(1) : _pathInfo;
                 break;
 
             case SUFFIX_GLOB:

@@ -1059,6 +1059,41 @@ public class HttpOutputTest
     }
 
     @Test
+    public void testPrintlnSmallBuffer() throws Exception
+    {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        PrintWriter exp = new PrintWriter(bout, true, StandardCharsets.UTF_8);
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setCharacterEncoding("UTF-8");
+                HttpOutput out = (HttpOutput)response.getOutputStream();
+
+                exp.println("a".repeat(8));
+                out.println("a".repeat(8));
+                exp.println("a".repeat(9));
+                out.println("a".repeat(9));
+                exp.println("a".repeat(10));
+                out.println("a".repeat(10));
+                exp.println("a".repeat(11));
+                out.println("a".repeat(11));
+            }
+        };
+        _servletContextHandler.addServlet(servlet, "/test");
+        ((HttpConnectionFactory)_connector.getDefaultConnectionFactory()).getHttpConfiguration().setOutputBufferSize(10);
+        ((HttpConnectionFactory)_connector.getDefaultConnectionFactory()).getHttpConfiguration().setOutputAggregationSize(10);
+        _server.start();
+        ByteBuffer responseBuf = _connector.getResponse(ByteBuffer.wrap("GET /test HTTP/1.0\nHost: localhost:80\n\n".getBytes(StandardCharsets.UTF_8)));
+        String response = BufferUtil.toString(responseBuf, StandardCharsets.UTF_8);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        String expected = bout.toString(StandardCharsets.UTF_8);
+        assertThat(expected, not(emptyString()));
+        assertThat(response.replace("\r\n", System.lineSeparator()), containsString(expected));
+    }
+
+    @Test
     public void testReset() throws Exception
     {
         ByteArrayOutputStream exp = new ByteArrayOutputStream();

@@ -8,9 +8,9 @@
   </parent>
   <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE11 :: Demo :: Jetty WebApp</name>
+  <name>EE10 :: Demo :: Jetty WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jetty.websocket.webapp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>

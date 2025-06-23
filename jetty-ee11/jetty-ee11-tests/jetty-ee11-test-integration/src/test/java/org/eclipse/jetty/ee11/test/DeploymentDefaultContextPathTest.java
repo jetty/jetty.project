@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
@@ -39,13 +38,11 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-@Isolated
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentDefaultContextPathTest
 {
@@ -62,7 +59,7 @@ public class DeploymentDefaultContextPathTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        Deployer deployer = new StandardDeployer(contexts);
+        StandardDeployer deployer = new StandardDeployer(contexts);
         server.addBean(deployer);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
@@ -182,7 +179,7 @@ public class DeploymentDefaultContextPathTest
                     xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
                     metadata-complete="false"
                     version="5.0">
-                  <display-name>EE11 Test WebApp</display-name>
+                  <display-name>EE10 Test WebApp</display-name>
                   <default-context-path>%s</default-context-path>
                 </web-app>
                 """.formatted(defaultContextPath);

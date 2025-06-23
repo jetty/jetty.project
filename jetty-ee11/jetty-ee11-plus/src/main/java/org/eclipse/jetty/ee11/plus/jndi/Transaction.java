@@ -23,7 +23,7 @@ import jakarta.transaction.UserTransaction;
 public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction
 {
     /**
-     * @param scope the scope, usually an environment like ee9, ee11
+     * @param scope the scope, usually an environment like ee9, ee10, ee11
      * @param userTransaction the UserTransaction
      * @throws NamingException if there was a problem registering the transaction
      */

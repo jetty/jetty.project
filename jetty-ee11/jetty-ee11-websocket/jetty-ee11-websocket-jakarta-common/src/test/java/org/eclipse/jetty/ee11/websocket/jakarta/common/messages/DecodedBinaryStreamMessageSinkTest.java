@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -48,9 +47,9 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
+        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
@@ -71,9 +70,9 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
+        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

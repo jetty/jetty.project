@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.lang.invoke.MethodHandle;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -49,9 +48,9 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Date> copyFuture = new CompletableFuture<>();
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
+        DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
@@ -67,9 +66,9 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Date> copyFuture = new CompletableFuture<>();
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
+        DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

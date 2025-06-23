@@ -791,7 +791,7 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 try
                 {
-                super.write(b);
+                    super.write(b);
                 }
                 catch (Throwable t)
                 {
@@ -974,6 +974,7 @@ public class ServletApiRequest implements HttpServletRequest
             LOG.warn("Unexpected connection type {}", connection);
             throw new IllegalStateException();
         }
+
         AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
         CompletableFuture.allOf(inputStreamComplete, outputStreamComplete).whenComplete((result, failure) ->
         {
@@ -1008,6 +1009,7 @@ public class ServletApiRequest implements HttpServletRequest
     }
 
     @Override
+    @Deprecated(since = "12.1.0")
     public PushBuilder newPushBuilder()
     {
         if (!getRequest().getConnectionMetaData().isPushSupported())
@@ -1047,7 +1049,8 @@ public class ServletApiRequest implements HttpServletRequest
                 if (httpCookie == null)
                     continue;
 
-                if (httpCookie.isExpired())
+                // this should be httpCookie.isExpired(), but because of an error in the servlet spec it is
+                if (httpCookie.isExpired() || (httpCookie.getMaxAge() < 0))
                 {
                     for (Iterator<Object> i = cookies.iterator(); i.hasNext();)
                     {
@@ -1059,7 +1062,10 @@ public class ServletApiRequest implements HttpServletRequest
                     }
                     continue;
                 }
-                cookies.add(httpCookie);
+                else
+                {
+                     cookies.add(httpCookie);
+                }
             }
         }
 
@@ -1128,19 +1134,22 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        Set<String> set = getRequest().getAttributeNameSet();
         if (_async != null)
         {
-            set = new HashSet<>(set);
-            set.add(AsyncContext.ASYNC_REQUEST_URI);
-            set.add(AsyncContext.ASYNC_CONTEXT_PATH);
-            set.add(AsyncContext.ASYNC_SERVLET_PATH);
-            set.add(AsyncContext.ASYNC_PATH_INFO);
-            set.add(AsyncContext.ASYNC_QUERY_STRING);
-            set.add(AsyncContext.ASYNC_MAPPING);
+            Set<String> names = new HashSet<>(Set.of(
+
+                AsyncContext.ASYNC_REQUEST_URI,
+                AsyncContext.ASYNC_CONTEXT_PATH,
+                AsyncContext.ASYNC_SERVLET_PATH,
+                AsyncContext.ASYNC_PATH_INFO,
+                AsyncContext.ASYNC_QUERY_STRING,
+                AsyncContext.ASYNC_MAPPING
+            ));
+            names.addAll(getRequest().getAttributeNameSet());
+            return Collections.enumeration(names);
         }
 
-        return Collections.enumeration(set);
+        return Collections.enumeration(getRequest().getAttributeNameSet());
     }
 
     @Override
@@ -1325,7 +1334,6 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-
                             if (cause instanceof IOException ioe)
                                 throw new UncheckedIOException(msg, ioe);
                             throw new RuntimeException(msg, e);

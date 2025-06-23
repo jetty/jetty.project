@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
@@ -63,11 +64,13 @@ public class ContextScopeListenerTest
 
         _client = new HttpClient();
         _client.start();
+        assertThat(ContextHandler.getCurrentContext(), nullValue());
     }
 
     @AfterEach
     public void after() throws Exception
     {
+        assertThat(ContextHandler.getCurrentContext(), nullValue());
         _client.stop();
         _server.stop();
     }

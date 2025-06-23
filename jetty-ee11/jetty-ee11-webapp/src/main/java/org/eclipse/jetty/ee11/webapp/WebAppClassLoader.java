@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee11.webapp;
 
-import java.security.PrivilegedExceptionAction;
-
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 
 /**
@@ -30,6 +28,7 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
  * <p>
  * Java compliant loading, where the parent loader always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)} method.
+ *
  * @deprecated use the core {@link org.eclipse.jetty.ee.webapp.WebAppClassLoader} directly instead.
  */
 @Deprecated(since = "12.0.0", forRemoval = true)
@@ -40,30 +39,13 @@ public class WebAppClassLoader extends org.eclipse.jetty.ee.webapp.WebAppClassLo
         registerAsParallelCapable();
     }
 
-    public WebAppClassLoader(org.eclipse.jetty.ee.webapp.WebAppClassLoader.Context context)
+    public WebAppClassLoader(Context context)
     {
         super(context);
     }
 
-    public WebAppClassLoader(ClassLoader parent, org.eclipse.jetty.ee.webapp.WebAppClassLoader.Context context)
+    public WebAppClassLoader(ClassLoader parent, Context context)
     {
         super(parent, context);
-    }
-
-    /**
-     * Run an action with access to ServerClasses
-     * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
-     * configured so as to allow server classes to be visible</p>
-     *
-     * @param action The action to run
-     * @param <T> the type of PrivilegedExceptionAction and the type returned by the action
-     * @return The return from the action
-     * @throws Exception if thrown by the action
-     * @deprecated use {@link org.eclipse.jetty.ee.webapp.WebAppClassLoader#runWithHiddenClassAccess(PrivilegedExceptionAction)} instead
-     */
-    @Deprecated(since = "12.1.0", forRemoval = true)
-    public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
-    {
-        return org.eclipse.jetty.ee.webapp.WebAppClassLoader.runWithHiddenClassAccess(action);
     }
 }

@@ -166,6 +166,7 @@ public class HttpClientContinueTest extends AbstractTest
                 .body(content)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
+
         }
 
         assertNotNull(response);
@@ -235,14 +236,14 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond417ExpectationFailed(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.EXPECTATION_FAILED_417);
+        testExpect100ContinueWithContentRespondError(transportType, 417);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.PAYLOAD_TOO_LARGE_413);
+        testExpect100ContinueWithContentRespondError(transportType, 413);
     }
 
     private void testExpect100ContinueWithContentRespondError(TransportType transportType, int error) throws Exception
@@ -796,64 +797,6 @@ public class HttpClientContinueTest extends AbstractTest
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentLengthZeroExpectIsRemoved(TransportType transportType) throws Exception
-    {
-        start(transportType, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
-            {
-                assertEquals(0, request.getContentLengthLong());
-                // The Expect header must have been removed by the client.
-                assertNull(request.getHeader(HttpHeader.EXPECT.asString()));
-            }
-        });
-
-        ContentResponse response = client.newRequest(newURI(transportType))
-            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
-            .body(new StringRequestContent(""))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-    }
-
-    @Test
-    public void testExpect100ContinueWithContentLengthZero() throws Exception
-    {
-        startServer(TransportType.HTTP, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                assertEquals(0, request.getContentLengthLong());
-                assertNotNull(request.getHeader(HttpHeader.EXPECT.asString()));
-
-                // Trigger the 100-Continue logic.
-                // The 100 continue will not be sent, since there is no request content.
-                ServletInputStream input = request.getInputStream();
-                assertEquals(-1, input.read());
-            }
-        });
-
-        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", ((NetworkConnector)connector).getLocalPort())))
-        {
-            String request = """
-                GET / HTTP/1.1
-                Host: localhost
-                Expect: 100-Continue
-                Content-Length: 0
-                
-                """;
-            client.write(StandardCharsets.UTF_8.encode(request));
-
-            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-    }
-
     @Test
     public void testExpect100ContinueWithTwoResponsesInOneRead() throws Exception
     {
@@ -909,6 +852,64 @@ public class HttpClientContinueTest extends AbstractTest
 
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testExpect100ContinueWithContentLengthZeroExpectIsRemoved(TransportType transportType) throws Exception
+    {
+        start(transportType, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(0, request.getContentLengthLong());
+                // The Expect header must have been removed by the client.
+                assertNull(request.getHeader(HttpHeader.EXPECT.asString()));
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI(transportType))
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            .body(new StringRequestContent(""))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testExpect100ContinueWithContentLengthZero() throws Exception
+    {
+        startServer(TransportType.HTTP, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                assertEquals(0, request.getContentLengthLong());
+                assertNotNull(request.getHeader(HttpHeader.EXPECT.asString()));
+
+                // Trigger the 100-Continue logic.
+                // The 100 continue will not be sent, since there is no request content.
+                ServletInputStream input = request.getInputStream();
+                assertEquals(-1, input.read());
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", ((NetworkConnector)connector).getLocalPort())))
+        {
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                Expect: 100-Continue
+                Content-Length: 0
+                
+                """;
+            client.write(StandardCharsets.UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 

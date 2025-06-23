@@ -40,7 +40,6 @@ import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletConta
 import org.eclipse.jetty.ee11.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -66,10 +65,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -153,19 +149,6 @@ public class WebSocketOverHTTP2Test
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn.apply(clientConnector)));
-        wsClient = new WebSocketClient(httpClient);
-        wsClient.start();
-    }
-
-    private void startClient(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn1,
-                             Function<ClientConnector, ClientConnectionFactory.Info> protocolFn2) throws Exception
-    {
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        clientConnector.setExecutor(clientThreads);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn1.apply(clientConnector), protocolFn2.apply(clientConnector)));
         wsClient = new WebSocketClient(httpClient);
         wsClient.start();
     }
@@ -408,66 +391,12 @@ public class WebSocketOverHTTP2Test
         assertNull(clientEndpoint.error);
     }
 
-    @Test
-    public void testUpgradeRequestSetHttpVersion() throws Exception
-    {
-        startServer();
-        startClient(clientConnector -> HttpClientConnectionFactory.HTTP11,
-            clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
-
-        CountDownLatch latch = new CountDownLatch(2);
-        onComplete = latch::countDown;
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/version");
-
-        // Connect with HTTP/1.1 and verify version in the Session's UpgradeRequest.
-        EventSocket wsEndPoint = new EventSocket();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
-        upgradeRequest.setHttpVersion(HttpVersion.HTTP_1_1.asString());
-        Session session = wsClient.connect(wsEndPoint, upgradeRequest).get(5, TimeUnit.SECONDS);
-        assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_1_1.asString()));
-        assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_1_1.asString()));
-
-        // Verify we can do a normal close of the websocket connection.
-        session.close(StatusCode.NORMAL, "normal close from test", Callback.NOOP);
-        assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(wsEndPoint.closeCode, equalTo(StatusCode.NORMAL));
-        assertThat(wsEndPoint.closeReason, equalTo("normal close from test"));
-
-        // Connect with HTTP/2 and verify version in the Session's UpgradeRequest.
-        wsEndPoint = new EventSocket();
-        upgradeRequest = new ClientUpgradeRequest(uri);
-        upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
-        session = wsClient.connect(wsEndPoint, upgradeRequest).get(5, TimeUnit.SECONDS);
-        assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
-        assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_2.asString()));
-
-        // Verify we can do a normal close of the websocket connection.
-        session.close(StatusCode.NORMAL, "normal close from test", Callback.NOOP);
-        assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(wsEndPoint.closeCode, equalTo(StatusCode.NORMAL));
-        assertThat(wsEndPoint.closeReason, equalTo("normal close from test"));
-
-        // Wait for the request to complete on server before stopping.
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @WebSocket
-    public static class VersionServerEndpoint
-    {
-        @OnWebSocketOpen
-        public void onOpen(Session session)
-        {
-            session.sendText("version: " + session.getUpgradeRequest().getHttpVersion(), Callback.NOOP);
-        }
-    }
-
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
     {
         @Override
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
-            factory.addMapping("/ws/version", (request, response) -> new VersionServerEndpoint());
             factory.addMapping("/ws/echo/query", (request, response) ->
             {
                 assertNotNull(request.getQueryString());

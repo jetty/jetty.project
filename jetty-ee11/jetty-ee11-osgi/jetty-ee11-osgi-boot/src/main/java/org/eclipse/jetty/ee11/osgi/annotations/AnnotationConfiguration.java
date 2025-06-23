@@ -43,6 +43,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
 
     public class BundleParserTask extends ParserTask
     {
+
         public BundleParserTask(AnnotationParser parser, Set<? extends Handler> handlers, Resource resource)
         {
             super(parser, handlers, resource);
@@ -224,7 +225,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
 
     protected void parseBundle(State state, AnnotationParser parser, Bundle webbundle, Bundle bundle)
     {
-
         Resource bundleRes = parser.getBundleIndex().getResource(bundle);
         Set<Handler> handlers = new HashSet<>(state._discoverableAnnotationHandlers);
         if (state._classInheritanceHandler != null)

@@ -68,8 +68,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -84,7 +82,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossContextDispatcherTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
     public static final String MULTIPART = "--AaB03x\r\n" +
         "content-disposition: form-data; name=\"field1\"\r\n" +
         "\r\n" +
@@ -102,10 +99,6 @@ public class CrossContextDispatcherTest
         "Connection: close\r\n";
 
     public static final String GET_INCLUDE = "GET /context/dispatch/?include=/reader HTTP/1.1\r\n";
-    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE +
-        MULTIPART_HEADERS +
-        "\r\n" +
-        MULTIPART;
 
     public static final String GET_FORWARD = "GET /context/dispatch/?forward=/reader HTTP/1.1\r\n";
 
@@ -142,19 +135,18 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_targetServletContextHandler);
 
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(TestEEResources.getResourceAsPathDir("/dispatchResourceTest")));
-        ContextHandler resourceContextHandler = new ContextHandler("/resource");
-        resourceContextHandler.setHandler(resourceHandler);
-        resourceContextHandler.setCrossContextDispatchSupported(true);
-        contextCollection.addHandler(resourceContextHandler);
-
         _rootContextHandler = new ServletContextHandler();
         _rootContextHandler.setContextPath("/");
         _rootContextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/docroot"));
         _rootContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_rootContextHandler);
 
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(TestEEResources.getResourceAsPathDir("/dispatchResourceTest")));
+        ContextHandler resourceContextHandler = new ContextHandler("/resource");
+        resourceContextHandler.setHandler(resourceHandler);
+        resourceContextHandler.setCrossContextDispatchSupported(true);
+        contextCollection.addHandler(resourceContextHandler);
         _server.setHandler(contextCollection);
         _server.addConnector(_connector);
 
@@ -219,7 +211,7 @@ public class CrossContextDispatcherTest
         _rootContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-         String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponse("""
             GET /context/dispatch/?include=/verify&ctx=/ HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -880,6 +872,7 @@ public class CrossContextDispatcherTest
             String ctx = request.getParameter("ctx");
             if (StringUtil.isBlank(ctx))
                 ctx = "/foreign";
+
             if (request.getParameter("forward") != null)
             {
                 ServletContext foreign = getServletContext().getContext(ctx);

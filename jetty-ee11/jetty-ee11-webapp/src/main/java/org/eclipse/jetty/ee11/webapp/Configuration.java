@@ -115,24 +115,6 @@ public interface Configuration
     }
 
     /**
-     * @deprecated use {@link #getProtectedClasses()} instead
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    default org.eclipse.jetty.ee11.webapp.ClassMatcher getSystemClasses()
-    {
-        return org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(getProtectedClasses());
-    }
-
-    /**
-     * @deprecated use {@link #getHiddenClasses()} instead
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    default org.eclipse.jetty.ee11.webapp.ClassMatcher getServerClasses()
-    {
-        return org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(getHiddenClasses());
-    }
-
-    /**
      * Set up for configuration.
      * <p>
      * Typically this step discovers configuration resources.

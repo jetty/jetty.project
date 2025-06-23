@@ -63,9 +63,9 @@ public class JakartaWebSocketMessageMetadata
         return methodHolder;
     }
 
-    public void setMethodHolder(MethodHolder methodHandle)
+    public void setMethodHolder(MethodHolder methodHolder)
     {
-        this.methodHolder = methodHandle;
+        this.methodHolder = methodHolder;
     }
 
     public Class<? extends MessageSink> getSinkClass()

@@ -45,7 +45,7 @@ public abstract class AbstractGzipTest
 {
     protected static final int DEFAULT_OUTPUT_BUFFER_SIZE = new HttpConfiguration().getOutputBufferSize();
 
-    protected WorkDir workDir;
+    public WorkDir workDir;
 
     protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream) throws IOException
     {

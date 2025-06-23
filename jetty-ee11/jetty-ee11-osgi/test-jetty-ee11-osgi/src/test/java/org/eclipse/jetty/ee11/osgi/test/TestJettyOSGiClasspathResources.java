@@ -14,8 +14,8 @@
 package org.eclipse.jetty.ee11.osgi.test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.jar.JarInputStream;
 import javax.inject.Inject;
@@ -51,6 +51,7 @@ public class TestJettyOSGiClasspathResources
         ArrayList<Option> options = new ArrayList<>();
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -68,7 +69,7 @@ public class TestJettyOSGiClasspathResources
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("test-jetty-ee11-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
    
     @Test
@@ -105,7 +106,7 @@ public class TestJettyOSGiClasspathResources
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
         File warFile = new File("target/test-jetty-ee11-osgi-webapp-resources.war");
         TinyBundle tiny = TinyBundles.bundle();
-        tiny.readIn(new JarInputStream(new FileInputStream(warFile)));
+        tiny.readIn(new JarInputStream(Files.newInputStream(warFile.toPath())));
         tiny.setHeader(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
         tiny.setHeader(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee11.osgi.webapp.resources.alt");
         InputStream is = tiny.build(TinyBundles.bndBuilder());

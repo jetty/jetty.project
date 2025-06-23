@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.servlet;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,6 +49,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_CONTEXT;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
@@ -478,7 +480,7 @@ public class ServletChannel
                             if (!_httpInput.consumeAvailable())
                                 ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
 
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
@@ -533,7 +535,7 @@ public class ServletChannel
                         finally
                         {
                             // clean up the context that was set in Response.sendError
-                            _servletContextRequest.removeAttribute(ErrorHandler.ERROR_CONTEXT);
+                            _servletContextRequest.removeAttribute(ERROR_CONTEXT);
                         }
                         break;
                     }

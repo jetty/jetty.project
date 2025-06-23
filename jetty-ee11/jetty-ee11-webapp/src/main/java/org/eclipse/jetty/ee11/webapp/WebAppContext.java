@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -84,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * API, which is used by any {@link WebAppClassLoader} to control visibility of classes to the context.</p>
  */
 @ManagedObject("Web Application ContextHandler")
-public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
+public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
@@ -102,20 +101,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
-    /**
-     * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
-     */
-    @Deprecated (forRemoval = true, since = "12.0.9")
-    public static final org.eclipse.jetty.ee11.webapp.ClassMatcher __dftSystemClasses =
-        org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
-
-    /**
-     * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
-     */
-    @Deprecated (forRemoval = true, since = "12.0.9")
-    public static final org.eclipse.jetty.ee11.webapp.ClassMatcher __dftServerClasses =
-        org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
-
     private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
     private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
 
@@ -130,7 +115,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _logUrlOnStart = false;
     private boolean _parentLoaderPriority = Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
-    private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
 
@@ -246,7 +230,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return;
         }
 
-        // Allow only files that are archives
         if (Resources.isReadableFile(baseResource))
         {
             URI uri = baseResource.getURI();
@@ -386,11 +369,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
-            }
-            catch (Throwable t)
-            {
-                if (mue == null)
-                    mue = new MalformedURLException(pathInContext);
             }
         }
 
@@ -675,7 +653,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a ClassMatcher for hidden (server) classes by combining with
      * any existing matcher.
      *
-     * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @param hiddenClasses The class matcher of patterns to add to the hidden (server) ClassMatcher
      * @see org.eclipse.jetty.util.ClassVisibilityChecker
      * @see #setHiddenClassMatcher(ClassMatcher)
      */
@@ -698,7 +676,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match System (protected) classes to implement the
+     * @return The ClassMatcher used to match protected (system) classes to implement the
      * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
      * @see #setProtectedClassMatcher(ClassMatcher)
      */
@@ -708,7 +686,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match Server (hidden) classes to implement the
+     * @return The ClassMatcher used to match hidden (server) classes to implement the
      * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
      * @see #setHiddenClassMatcher(ClassMatcher)
      */
@@ -727,96 +705,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public String[] getHiddenClasses()
     {
         return _hiddenClasses.getPatterns();
-    }
-
-    /**
-     * @deprecated use {@link #setHiddenClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void setServerClassMatcher(org.eclipse.jetty.ee11.webapp.ClassMatcher serverClasses)
-    {
-        setHiddenClassMatcher(serverClasses);
-    }
-
-    /**
-     * @deprecated use {@link #setProtectedClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void setSystemClassMatcher(org.eclipse.jetty.ee11.webapp.ClassMatcher systemClasses)
-    {
-        setProtectedClassMatcher(systemClasses);
-    }
-
-    /**
-     * @deprecated use {@link #addHiddenClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void addServerClassMatcher(org.eclipse.jetty.ee11.webapp.ClassMatcher serverClasses)
-    {
-        addHiddenClassMatcher(serverClasses);
-    }
-
-    /**
-     * @deprecated use {@link #addProtectedClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void addSystemClassMatcher(org.eclipse.jetty.ee11.webapp.ClassMatcher systemClasses)
-    {
-        addProtectedClassMatcher(systemClasses);
-    }
-
-    /**
-     * @deprecated use {@link #getProtectedClassMatcher()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public org.eclipse.jetty.ee11.webapp.ClassMatcher getSystemClassMatcher()
-    {
-        return org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(getProtectedClassMatcher());
-    }
-
-    /**
-     * @deprecated use {@link #getHiddenClassMatcher()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public org.eclipse.jetty.ee11.webapp.ClassMatcher getServerClassMatcher()
-    {
-        return org.eclipse.jetty.ee11.webapp.ClassMatcher.wrap(getHiddenClassMatcher());
-    }
-
-    /**
-     * @deprecated use {@link #getProtectedClasses()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public String[] getSystemClasses()
-    {
-        return getProtectedClasses();
-    }
-
-    /**
-     * @deprecated use {@link #getHiddenClasses()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public String[] getServerClasses()
-    {
-        return getHiddenClasses();
-    }
-
-    /**
-     * @deprecated use {@link #isHiddenClass(Class)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public boolean isServerClass(Class<?> clazz)
-    {
-        return isHiddenClass(clazz);
-    }
-
-    /**
-     * @deprecated use {@link #isProtectedClass(Class)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public boolean isSystemClass(Class<?> clazz)
-    {
-        return isProtectedClass(clazz);
     }
 
     @Override
@@ -948,18 +836,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<String> systemClasses = null;
+        List<String> protectedClasses = null;
         if (_protectedClasses != null)
         {
-            systemClasses = new ArrayList<>(_protectedClasses);
-            Collections.sort(systemClasses);
+            protectedClasses = new ArrayList<>(_protectedClasses);
+            Collections.sort(protectedClasses);
         }
 
-        List<String> serverClasses = null;
+        List<String> hiddenClasses = null;
         if (_hiddenClasses != null)
         {
-            serverClasses = new ArrayList<>(_hiddenClasses);
-            Collections.sort(serverClasses);
+            hiddenClasses = new ArrayList<>(_hiddenClasses);
+            Collections.sort(hiddenClasses);
         }
 
         String name = getDisplayName();
@@ -989,15 +877,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
-            Dumpable.named("environment", ServletContextHandler.ENVIRONMENT.getName()),
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("Systemclasses " + name, systemClasses),
-            new DumpableCollection("Serverclasses " + name, serverClasses),
+            new DumpableCollection("Protected classes " + name, protectedClasses),
+            new DumpableCollection("Hidden classes " + name, hiddenClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getContext().asAttributeMap().entrySet()),
-            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
-            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1548,32 +1433,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            try
-            {
-                if (path == null)
-                    return null;
+            if (path == null)
+                return null;
 
-                // Assumption is that the resource base has been properly setup.
-                // Spec requirement is that the WAR file is interrogated first.
-                // If a WAR file is mounted, or is extracted to a temp directory,
-                // then the first entry of the resource base must be the WAR file.
-                Resource resource = WebAppContext.this.getResource(path);
-                if (Resources.missing(resource))
-                    return null;
+            // Assumption is that the resource base has been properly setup.
+            // Spec requirement is that the WAR file is interrogated first.
+            // If a WAR file is mounted, or is extracted to a temp directory,
+            // then the first entry of the resource base must be the WAR file.
+            Resource resource = WebAppContext.this.getResource(path);
+            if (Resources.missing(resource))
+                return null;
 
-                for (Resource r : resource)
-                {
-                    // return first entry
-                    return r.getURI().toURL();
-                }
-            }
-            catch (MalformedURLException e)
+            for (Resource r: resource)
             {
-                throw e;
-            }
-            catch (Throwable e)
-            {
-                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+                // return first entry
+                return r.getURI().toURL();
             }
 
             // A Resource was returned, but did not exist

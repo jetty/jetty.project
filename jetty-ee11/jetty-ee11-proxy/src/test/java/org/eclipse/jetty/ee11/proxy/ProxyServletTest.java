@@ -91,6 +91,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -432,7 +433,7 @@ public class ProxyServletTest
     {
         // Create a 6 MiB file
         final int length = 6 * 1024;
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingPath();
+        Path targetTestsDir = MavenPaths.targetTests();
         Files.createDirectories(targetTestsDir);
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];

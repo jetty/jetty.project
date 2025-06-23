@@ -35,8 +35,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
 import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
@@ -1023,9 +1022,6 @@ public class ServletChannelState
 
         // No ISE, so good to modify request/state
         request.setAttribute(ERROR_EXCEPTION, th);
-        request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
-
-        // Set Jetty specific attributes.
         request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
@@ -1069,18 +1065,15 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            // Set Jetty Specific Attributes.
+            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
-            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
 
             _sendError = true;
             if (_event != null)
             {
-                Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-                if (cause == null)
-                    cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
+                Throwable cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
                 if (cause != null)
                     _event.addThrowable(cause);
             }

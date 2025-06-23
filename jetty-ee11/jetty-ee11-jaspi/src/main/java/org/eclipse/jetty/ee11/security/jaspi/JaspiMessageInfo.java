@@ -81,7 +81,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (_response == null)
             return null;
-        return Response.asInContext(_response, ServletContextResponse.class).getServletApiResponse();
+        return Response.as(_response, ServletContextResponse.class).getServletApiResponse();
     }
 
     @Override

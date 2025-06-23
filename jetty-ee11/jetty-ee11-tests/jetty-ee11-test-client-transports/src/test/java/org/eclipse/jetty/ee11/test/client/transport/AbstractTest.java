@@ -14,11 +14,9 @@
 package org.eclipse.jetty.ee11.test.client.transport;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -44,6 +42,7 @@ import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
@@ -59,6 +58,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -67,13 +67,18 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
     public WorkDir workDir;
 
+    @RegisterExtension
+    public final BeforeTestExecutionCallback printMethodName = context ->
+        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected Path pemDir;
     protected SslContextFactory.Server sslContextFactoryServer;
@@ -84,10 +89,7 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
-        if ("ci".equals(System.getProperty("env")))
-            transportTypes.remove(TransportType.H3_QUICHE);
-        return transportTypes;
+        return EnumSet.allOf(TransportType.class);
     }
 
     public static Collection<TransportType> transportsNoFCGI()
@@ -158,25 +160,14 @@ public class AbstractTest
         return new Server(serverThreads);
     }
 
-    protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
+    protected SslContextFactory.Server newSslContextFactoryServer()
     {
         SslContextFactory.Server ssl = new SslContextFactory.Server();
-        configureSslContextFactory(ssl);
+        ssl.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        ssl.setKeyStorePassword("storepwd");
+        ssl.setUseCipherSuitesOrder(true);
+        ssl.setCipherComparator(HTTP2Cipher.COMPARATOR);
         return ssl;
-    }
-
-    private void configureSslContextFactory(SslContextFactory sslContextFactory) throws Exception
-    {
-        KeyStore keystore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = Files.newInputStream(Path.of("src/test/resources/keystore.p12")))
-        {
-            keystore.load(is, "storepwd".toCharArray());
-        }
-        sslContextFactory.setTrustStore(keystore);
-        sslContextFactory.setKeyStore(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setUseCipherSuitesOrder(true);
-        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
     protected void startClient(TransportType transportType) throws Exception
@@ -200,14 +191,12 @@ public class AbstractTest
     {
         return switch (transportType)
         {
-            case HTTP, HTTPS, H2C, H2, FCGI ->
-                new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
-            case H3_QUICHE ->
-            {
+            case HTTP, HTTPS, H2C, H2, FCGI:
+                yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
+            case H3_QUICHE:
                 Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
-                QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(serverPemDirectory);
+                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(serverPemDirectory));
                 yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
-            }
         };
     }
 
@@ -249,45 +238,37 @@ public class AbstractTest
         return list.toArray(ConnectionFactory[]::new);
     }
 
-    protected SslContextFactory.Client newSslContextFactoryClient() throws Exception
+    protected SslContextFactory.Client newSslContextFactoryClient()
     {
-        SslContextFactory.Client ssl = new SslContextFactory.Client();
-        configureSslContextFactory(ssl);
-        ssl.setEndpointIdentificationAlgorithm(null);
-        return ssl;
+        return new SslContextFactory.Client(true);
     }
 
     protected HttpClientTransport newHttpClientTransport(TransportType transportType) throws Exception
     {
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(newSslContextFactoryClient());
         return switch (transportType)
         {
             case HTTP, HTTPS ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 yield new HttpClientTransportOverHTTP(clientConnector);
             }
             case H2C, H2 ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3_QUICHE ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
-                clientConnector.setSslContextFactory(sslContextFactory);
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
                 QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration(clientPemDirectory));
-                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
-            case FCGI -> new HttpClientTransportOverFCGI(1, "");
+            case FCGI ->
+            {
+                yield new HttpClientTransportOverFCGI(clientConnector, "");
+            }
         };
     }
 

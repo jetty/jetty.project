@@ -57,7 +57,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -214,7 +213,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 req.getParameterMap();
             }
@@ -481,15 +480,10 @@ public class MultiPartServletTest
             MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setMaxParts(1);
             formData.setMaxMemoryFileSize(-1);
+            MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
 
-            try (Blocker.Promise<MultiPartFormData.Parts> promise = Blocker.promise())
-            {
-                formData.parse(new InputStreamContentSource(inputStream), promise);
-                MultiPartFormData.Parts parts = promise.block();
-
-                assertThat(parts.size(), is(1));
-                assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
-            }
+            assertThat(parts.size(), is(1));
+            assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
         }
     }
 
@@ -536,7 +530,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 resp.setContentType("text/plain");
                 Map<String, String[]> parameterMap = req.getParameterMap();

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +40,8 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
@@ -58,8 +57,8 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

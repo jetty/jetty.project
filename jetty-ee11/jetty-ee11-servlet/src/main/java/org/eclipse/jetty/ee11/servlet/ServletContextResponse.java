@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A core response wrapper that carries the servlet related response state,
@@ -326,8 +327,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.
-        if (_characterEncoding != null)
-            return _characterEncoding;
+        if (StringUtil.isNotBlank(_characterEncoding) || _encodingFrom == EncodingFrom.ASSUMED)
+            return _characterEncoding.isEmpty() ? null : _characterEncoding;
 
         String encoding;
 
@@ -339,7 +340,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
         encoding = mimeTypes.getAssumedCharsetName(_contentType);
         if (encoding != null)
-            return encoding;
+            return encoding.isEmpty() ? null : encoding;
 
         // Try char set inferred from content type.
         encoding = mimeTypes.getInferredCharsetName(_contentType);
@@ -451,6 +452,11 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         DEFAULT,
 
         /**
+         * Character encoding was assumed from the Content-Type and will be added as a parameter to the Content-Type.
+         */
+        ASSUMED,
+
+        /**
          * Character encoding was inferred from the Content-Type and will be added as a parameter to the Content-Type.
          */
         INFERRED,
@@ -537,26 +543,79 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         {
             _contentType = field.getValue();
             _mimeType = MimeTypes.CACHE.get(_contentType);
+            String mimeType = _mimeType == null ? MimeTypes.getContentTypeWithoutCharset(_contentType) : _mimeType.asString();
+            MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
 
-            String charset = MimeTypes.getCharsetFromContentType(_contentType);
-            if (charset == null && _mimeType != null && _mimeType.isCharsetAssumed())
+            String charset;
+            EncodingFrom charsetFrom;
+            if (_mimeType == null)
+            {
+                if (mimeTypes.isCharsetAssumed(mimeType))
+                {
+                    String assumed = mimeTypes.getAssumedCharsetName(mimeType);
+                    if (assumed == null)
+                    {
+                        charset = null;
+                        charsetFrom = EncodingFrom.ASSUMED;
+                    }
+                    else
+                    {
+                        charset = assumed;
+                        charsetFrom = EncodingFrom.ASSUMED;
+                    }
+                }
+                else
+                {
+                    charset = MimeTypes.getCharsetFromContentType(_contentType);
+                    charsetFrom = EncodingFrom.SET_CONTENT_TYPE;
+                }
+            }
+            else if (_mimeType.isCharsetAssumed())
+            {
                 charset = _mimeType.getCharsetString();
+                charsetFrom = EncodingFrom.ASSUMED;
+            }
+            else
+            {
+                charset = _mimeType.getCharsetString();
+                charsetFrom = EncodingFrom.SET_CONTENT_TYPE;
+            }
 
             if (charset == null)
             {
                 switch (_encodingFrom)
                 {
                     case NOT_SET:
-                        break;
-                    case DEFAULT:
                     case INFERRED:
-                    case SET_CONTENT_TYPE:
+                    case ASSUMED:
+                    {
+                        // Look for an inferred encoding
+                        String inferred = mimeTypes.getInferredCharsetName(_mimeType == null ? mimeType : _mimeType.getBaseType().asString());
+                        if (inferred != null)
+                        {
+                            charset = inferred;
+                            charsetFrom = EncodingFrom.INFERRED;
+                            _contentType = _contentType + ";charset=" + charset;
+                            _mimeType = MimeTypes.CACHE.get(_contentType);
+                            field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                            break;
+                        }
+                        charsetFrom = EncodingFrom.NOT_SET;
+                        break;
+                    }
+                    case DEFAULT:
                     case SET_LOCALE:
                     case SET_CHARACTER_ENCODING:
+                    case SET_CONTENT_TYPE:
                     {
-                        _contentType = _contentType + ";charset=" + _characterEncoding;
-                        _mimeType = MimeTypes.CACHE.get(_contentType);
-                        field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                        if (charsetFrom != EncodingFrom.ASSUMED || _encodingFrom == EncodingFrom.SET_CHARACTER_ENCODING)
+                        {
+                            charset = _characterEncoding;
+                            charsetFrom = _encodingFrom;
+                            _contentType = _contentType + ";charset=" + charset;
+                            _mimeType = MimeTypes.CACHE.get(_contentType);
+                            field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                        }
                         break;
                     }
                     default:
@@ -567,16 +626,16 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             {
                 // too late to change the character encoding;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null && (_mimeType == null || !_mimeType.isCharsetAssumed()))
+                if (_characterEncoding != null && (mimeTypes.isCharsetAssumed(_contentType) || !_mimeType.isCharsetAssumed()))
                     _contentType = _contentType + ";charset=" + _characterEncoding;
                 _mimeType = MimeTypes.CACHE.get(_contentType);
                 field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                charset = _characterEncoding;
+                charsetFrom = _encodingFrom;
             }
-            else
-            {
-                _characterEncoding = charset;
-                _encodingFrom = ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE;
-            }
+
+            _characterEncoding = charset;
+            _encodingFrom = charsetFrom;
 
             if (HttpGenerator.__STRICT || _mimeType == null)
                 return field;

@@ -634,13 +634,13 @@ public class RequestTest
     @ParameterizedTest
     @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
         textBlock = """
-        # query         | expectedName | expectedValue
-        a=bad_%e0%b     | a            | bad_�
-        a=bad_%e0%b&b=2 | a            | bad_�
-        a=bad_%e0%ba    | a            | bad_�
-        b=short%a       | b            | short%a
-        c=%%TOK%%       | c            | %%TOK%%
-        """)
+            # query         | expectedName | expectedValue
+            a=bad_%e0%b     | a            | bad_�
+            a=bad_%e0%b&b=2 | a            | bad_�
+            a=bad_%e0%ba    | a            | bad_�
+            b=short%a       | b            | short%a
+            c=%%TOK%%       | c            | %%TOK%%
+            """)
     public void testBadUtf8Query(String query, String expectedName, String expectedValue) throws Exception
     {
         HttpServlet servlet = new HttpServlet()

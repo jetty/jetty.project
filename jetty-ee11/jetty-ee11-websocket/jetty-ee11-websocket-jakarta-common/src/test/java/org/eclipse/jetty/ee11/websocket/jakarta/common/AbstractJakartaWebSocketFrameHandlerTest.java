@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
@@ -66,7 +67,7 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
         }
     };
 
-    protected JakartaWebSocketFrameHandler newJakartaFrameHandler(Object websocket)
+    protected JakartaWebSocketFrameHandler newJakartaFrameHandler(Object websocket) throws DeploymentException
     {
         JakartaWebSocketFrameHandlerFactory factory = container.getFrameHandlerFactory();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, endpointConfig);

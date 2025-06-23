@@ -70,6 +70,11 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     }
 
     @Override
+    public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
+    {
+    }
+
+    @Override
     public void setDateHeader(String name, long date)
     {
     }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -46,8 +45,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     public void testInputStream1Message1Frame() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
-        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -64,8 +63,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     public void testInputStream2Messages2Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
-        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -95,8 +94,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     public void testInputStream1Message3Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
-        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -120,8 +119,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     public void testInputStream1Message4FramesEmptyFin() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
-        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
+        MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

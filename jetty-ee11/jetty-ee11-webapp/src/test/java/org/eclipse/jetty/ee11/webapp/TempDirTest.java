@@ -119,7 +119,7 @@ public class TempDirTest
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         webInfConfiguration.resolveTempDirectory(webAppContext);
         File tempDirectory = webAppContext.getTempDirectory();
-        assertThat(tempDirectory, anExistingDirectory());
+        assertThat(tempDirectory, is(anExistingDirectory()));
         assertThat(tempDirectory.getParentFile().toPath(), PathMatchers.isSame(tmpDir));
     }
 

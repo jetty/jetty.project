@@ -47,10 +47,11 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  */
 public class TestOSGiUtil
 {
-    public static final String BUNDLE_DEBUG = "bundle.debug";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
 
+    public static final String BUNDLE_DEBUG = "bundle.debug";
+    
     /**
      * Null FragmentActivator for the fake bundle
      * that exposes src/test/resources/jetty-logging.properties in
@@ -177,20 +178,20 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        //configure jetty slf4j logging, and provide a jetty-logging properties file
-        //note 1: you will need to change the surefire plugin config in pom.xml to set the system property "pax.exam.system=false"
-        //to make paxexam use this slf4j
-        //note 2: if you do set the above system property, more than likely the test will not finish, no idea why
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+
+        // BEGIN - slf4j 2.x
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
         loggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
         loggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
+        // END - slf4j 2.x
+        
         res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
+
         res.add(mavenBundle().groupId("jakarta.servlet").artifactId("jakarta.servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
@@ -272,11 +273,11 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("jetty-ee11-osgi-boot-jsp").versionAsInProject().noStart());
     }
-
+    
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
@@ -325,14 +326,14 @@ public class TestOSGiUtil
             }
         }
     }
-
+    
     protected static void dumpBundle(Bundle b)
     {
         System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
     }
 
     protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
-    {
+    {        
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -355,9 +356,7 @@ public class TestOSGiUtil
         System.err.println("RESOLVED: " + Bundle.RESOLVED);
         System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
-        {
             dumpBundle(b);
-        }
     }
 
     @SuppressWarnings("rawtypes")

@@ -57,9 +57,10 @@ public class PushedResourcesTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 Cookie cookie0 = new Cookie("C0", "v0");
-                cookie0.setMaxAge(0);
+                cookie0.setMaxAge(-1);
                 response.addCookie(cookie0);
                 Cookie cookie1 = new Cookie("C1", "v1");
+                cookie1.setMaxAge(1);
                 response.addCookie(cookie1);
 
                 String target = request.getRequestURI();

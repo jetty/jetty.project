@@ -110,7 +110,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
-import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,16 +193,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext servletScopedContext)
-            return servletScopedContext.getServletContext();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext servletScopedContext)
-            return servletScopedContext.getServletContextHandler();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContextHandler();
         return null;
     }
 
@@ -221,7 +220,6 @@ public class ServletContextHandler extends ContextHandler
     private Logger _logger;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
-    private boolean _usingSecurityManager = getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -323,21 +321,20 @@ public class ServletContextHandler extends ContextHandler
             new ClassLoaderDump(getClassLoader()),
             Dumpable.named("context " + this, getContext()),
             Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
-            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
-            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public boolean isUsingSecurityManager()
     {
-        return _usingSecurityManager;
+        return false;
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager && getSecurityManager() == null)
-            throw new IllegalStateException("No security manager");
-        _usingSecurityManager = usingSecurityManager;
+        if (usingSecurityManager)
+            throw new UnsupportedOperationException("SecurityManager not supported");
     }
 
     /**
@@ -571,7 +568,7 @@ public class ServletContextHandler extends ContextHandler
         // Handle more REALLY SILLY request events!
         if (!_servletRequestListeners.isEmpty())
         {
-            final ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
+            ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
             for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
                 i.previous().requestDestroyed(sre);
@@ -785,9 +782,8 @@ public class ServletContextHandler extends ContextHandler
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            LOG.trace("IGNORE", e);
         }
-
         return null;
     }
 
@@ -884,9 +880,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public ServletScopedContext getContext()
     {
-        if (super.getContext() instanceof ServletScopedContext servletScopedContext)
-            return servletScopedContext;
-        throw new IllegalStateException("Context is not ServletScopedContext");
+        return (ServletScopedContext)super.getContext();
     }
 
     /**
@@ -1221,7 +1215,6 @@ public class ServletContextHandler extends ContextHandler
             Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
             return true;
         }
-
         return false;
     }
 
@@ -1743,11 +1736,6 @@ public class ServletContextHandler extends ContextHandler
         getContext().destroy(listener);
     }
 
-    private static Object getSecurityManager()
-    {
-        return SecurityUtils.getSecurityManager();
-    }
-
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
         private final List<String> _urlPatterns = new ArrayList<>();
@@ -2074,59 +2062,12 @@ public class ServletContextHandler extends ContextHandler
         {
             _servletContext.setExtendedListenerTypes(b);
         }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return switch (name)
-            {
-                case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
-                case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
-                default -> super.getAttribute(name);
-            };
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            return switch (name)
-            {
-                case FormFields.MAX_FIELDS_ATTRIBUTE ->
-                {
-                    int oldValue = getMaxFormKeys();
-                    if (attribute == null)
-                        setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
-                    else
-                        setMaxFormKeys(Integer.parseInt(attribute.toString()));
-                    yield oldValue;
-                }
-                case FormFields.MAX_LENGTH_ATTRIBUTE ->
-                {
-                    int oldValue = getMaxFormContentSize();
-                    if (attribute == null)
-                        setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
-                    else
-                        setMaxFormContentSize(Integer.parseInt(attribute.toString()));
-                    yield oldValue;
-                }
-                default -> super.setAttribute(name, attribute);
-            };
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
-            names.add(FormFields.MAX_LENGTH_ATTRIBUTE);
-            return Collections.unmodifiableSet(names);
-        }
     }
 
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
         public static final int SERVLET_MAJOR_VERSION = 6;
-        public static final int SERVLET_MINOR_VERSION = 0;
+        public static final int SERVLET_MINOR_VERSION = 1;
 
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
         private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
@@ -2881,41 +2822,29 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            try
-            {
-                // This is an API call from the application which may pass non-normalized paths.
-                // Thus, we normalize here, to avoid the enforcement of normalized paths in
-                // ServletContextHandler.this.getResource(path).
-                path = URIUtil.normalizePath(path);
-                if (path == null)
-                    return null;
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
+            if (path == null)
+                return null;
 
-                // Assumption is that the resource base has been properly setup.
-                // Spec requirement is that the WAR file is interrogated first.
-                // If a WAR file is mounted, or is extracted to a temp directory,
-                // then the first entry of the resource base must be the WAR file.
-                Resource resource = ServletContextHandler.this.getResource(path);
-                if (!Resources.exists(resource))
-                    return null;
+            // Assumption is that the resource base has been properly setup.
+            // Spec requirement is that the WAR file is interrogated first.
+            // If a WAR file is mounted, or is extracted to a temp directory,
+            // then the first entry of the resource base must be the WAR file.
+            Resource resource = ServletContextHandler.this.getResource(path);
+            if (resource == null)
+                return null;
 
-                for (Resource r : resource)
-                {
-                    // return first
-                    if (Resources.exists(r))
-                        return r.getURI().toURL();
-                }
-            }
-            catch (MalformedURLException e)
+            for (Resource r: resource)
             {
-                throw e;
-            }
-            catch (Throwable e)
-            {
-                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+                // return first
+                if (Resources.exists(r))
+                    return r.getURI().toURL();
             }
 
-            // No hits
+            // A Resource was returned, but did not exist
             return null;
         }
 
@@ -2933,9 +2862,8 @@ public class ServletContextHandler extends ContextHandler
                     return null;
                 return IOResources.asInputStream(r);
             }
-            catch (Throwable e)
+            catch (Exception e)
             {
-                // catch RuntimeException and things like java.nio.fileInvalidPathException here.
                 LOG.trace("IGNORED", e);
                 return null;
             }
@@ -3071,25 +2999,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ClassLoader getClassLoader()
         {
-            // no security manager just return the classloader
-            ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-            if (isUsingSecurityManager())
-            {
-                // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it, as required by the javadoc specification.
-                ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                    .getCallerClass()
-                    .getClassLoader();
-                while (callerLoader != null)
-                {
-                    if (callerLoader == classLoader)
-                        return classLoader;
-                    else
-                        callerLoader = callerLoader.getParent();
-                }
-                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
-            }
-            return classLoader;
+            return ServletContextHandler.this.getClassLoader();
         }
 
         public void setEnabled(boolean enabled)
