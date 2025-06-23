@@ -26,6 +26,7 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -171,14 +172,7 @@ public class DeploymentDefaultContextPathTest
             FS.ensureDirExists(webinf);
 
             Path webXml = root.resolve("WEB-INF/web.xml");
-            String webXmlText = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <web-app
-                    xmlns="https://jakarta.ee/xml/ns/jakartaee"
-                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                    xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
-                    metadata-complete="false"
-                    version="5.0">
+            String webXmlText = WebXmlConfiguration.WEB_APP_ELEMENT + """
                   <display-name>EE11 Test WebApp</display-name>
                   <default-context-path>%s</default-context-path>
                 </web-app>
