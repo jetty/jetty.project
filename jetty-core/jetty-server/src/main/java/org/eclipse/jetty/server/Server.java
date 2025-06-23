@@ -539,12 +539,12 @@ public class Server extends Handler.Wrapper implements Attributes
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
-            //Register the Server with the handler thread for receiving
-            //remote stop commands
-            ShutdownMonitor.register(this);
-
-            //Start a thread waiting to receive "stop" commands.
-            ShutdownMonitor.getInstance().start(); // initialize
+            Shutdown shutdown = getShutdown();
+            if (shutdown != null)
+            {
+                shutdown.addComponent(this);
+                shutdown.start();
+            }
 
             if (_errorHandler == null)
                 setErrorHandler(new DynamicErrorHandler());
@@ -635,6 +635,35 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
+    private Server.Shutdown getShutdown()
+    {
+        Server.Shutdown shutdown = getBean(Shutdown.class);
+        if (shutdown != null)
+            return shutdown;
+
+        // Look for the old-school (now deprecated) ShutdownMonitor
+        // First we look to see if anyone has called ShutdownMonitor.getInstance() yet.
+        //noinspection removal
+        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
+        //noinspection removal
+        if (shutdownMonitor != null && shutdownMonitor.getPort() != (-1))
+        {
+            addBean(shutdownMonitor);
+            return shutdownMonitor;
+        }
+
+        // Lets create the default ServerShutdown implementation.
+        // Start System Property version
+        ServerShutdown serverShutdown = new ServerShutdown();
+        if (serverShutdown.isConfigurationValid())
+        {
+            addBean(serverShutdown);
+            return serverShutdown;
+        }
+
+        return null;
+    }
+
     @Override
     protected void start(LifeCycle l) throws Exception
     {
@@ -700,9 +729,12 @@ public class Server extends Handler.Wrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        //Unregister the Server with the handler thread for receiving
-        //remote stop commands as we are stopped already
-        ShutdownMonitor.deregister(this);
+        Shutdown shutdown = getBean(Shutdown.class);
+        if (shutdown != null)
+        {
+            shutdown.removeComponent(this);
+            shutdown.stop();
+        }
 
         ExceptionUtil.ifExceptionThrow(multiException);
     }
@@ -871,6 +903,55 @@ public class Server extends Handler.Wrapper implements Attributes
             _seconds = seconds;
             _dateField = dateField;
         }
+    }
+
+    /**
+     * Generic implementation of Shutdown control.
+     */
+    interface Shutdown
+    {
+        /**
+         * Add a specific Jetty {@link LifeCycle} component that will be
+         * stopped during shutdown.
+         *
+         * <p>
+         *     It is the responsibility of Shutdown implementations to
+         *     ensure that the LifeCycle being passed here is not being
+         *     stopped twice.
+         * </p>
+         *
+         * @param component the component to stop on shutdown.
+         */
+        void addComponent(LifeCycle component);
+
+        /**
+         * Removes a specific Jetty {@link LifeCycle} component from
+         * those that will be stopped during shutdown.
+         *
+         * @param component the component to remove from stop on shutdown.
+         * @return true if component was being tracked.
+         */
+        boolean removeComponent(LifeCycle component);
+
+        /**
+         * Start the Shutdown Control.
+         *
+         * <p>
+         *     This intentionally does not use Jetty LifeCycle, as the shutdown
+         *     control itself should not be a participant in the component lifecycle.
+         * </p>
+         */
+        void start() throws Exception;
+
+        /**
+         * Stop the Shutdown Control.
+         *
+         * <p>
+         *     This intentionally does not use Jetty LifeCycle, as the shutdown
+         *     control itself should not be a participant in the component lifecycle.
+         * </p>
+         */
+        void stop();
     }
 
     private static class DynamicErrorHandler extends ErrorHandler {}

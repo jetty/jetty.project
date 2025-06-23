@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.LineNumberReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,34 +23,35 @@ import java.util.List;
 import java.util.Optional;
 
 import org.awaitility.Awaitility;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.server.ServerShutdown;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestJettyStopMojo
 {
     /**
-     * ShutdownMonitorMain
-     * Kick off the ShutdownMonitor and wait for it to exit.
+     * ServerShutdownMain
+     * Kick off the ServerShutdown and wait for it to exit.
      */
-    public static final class ShutdownMonitorMain
+    public static final class ServerShutdownMain
     {
         public static void main(String[] args)
         {
             try
             {
-                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-                monitor.setPort(0);
-                monitor.start();
-                monitor.await();
+                ServerShutdown serverShutdown = new ServerShutdown("127.0.0.1", 0, null, true);
+                Awaitility.await().until(serverShutdown::isListening);
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -167,6 +166,8 @@ public class TestJettyStopMojo
         }
     }
 
+    public WorkDir workDir;
+
     @Test
     public void testStopNoWait() throws Exception
     {
@@ -258,20 +259,22 @@ public class TestJettyStopMojo
         cmd.add("-DDEBUG=true");
         cmd.add("-cp");
         cmd.add(System.getProperty("java.class.path"));
-        cmd.add(ShutdownMonitorMain.class.getName());
+        cmd.add(ServerShutdownMain.class.getName());
 
         ProcessBuilder command = new ProcessBuilder(cmd);
-        File file = MavenTestingUtils.getTargetFile("tester.out");
-        command.redirectOutput(file);
+
+        Path root = workDir.getEmptyPathDir();
+        Path file = root.resolve("tester.out");
+        command.redirectOutput(file.toFile());
         command.redirectErrorStream(true);
-        command.directory(MavenTestingUtils.getTargetDir());
+        command.directory(root.toFile());
         Process fork = command.start();
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(file::exists);
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> Files.exists(file));
         final String[] port = {null};
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            Optional<String> tmp = Files.readAllLines(file.toPath()).stream()
+            Optional<String> tmp = Files.readAllLines(file).stream()
                     .filter(s -> s.startsWith("STOP.PORT=")).findFirst();
             if (tmp.isPresent())
             {

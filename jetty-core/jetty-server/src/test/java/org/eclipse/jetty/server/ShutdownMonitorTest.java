@@ -15,31 +15,43 @@ package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("removal")
 public class ShutdownMonitorTest
 {
-    @AfterEach
-    public void dispose()
+    @BeforeEach
+    public void initStopProperties()
     {
+        System.setProperty("STOP.HOST", "");
+        System.setProperty("STOP.PORT", "");
+        System.setProperty("STOP.KEY", "");
+        System.setProperty("STOP.EXIT", "false");
         ShutdownMonitor.reset();
     }
-    
+
     @Test
     @Disabled // TODO
     public void testPid() throws Exception
@@ -75,9 +87,7 @@ public class ShutdownMonitorTest
     public void testStatus() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
         monitor.setPort(0);
-        monitor.setExitVm(false);
         monitor.start();
         String key = monitor.getKey();
         int port = monitor.getPort();
@@ -105,9 +115,7 @@ public class ShutdownMonitorTest
     public void testStartStopDifferentPortDifferentKey() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
         monitor.setPort(0);
-        monitor.setExitVm(false);
         monitor.start();
         String key = monitor.getKey();
         int port = monitor.getPort();
@@ -116,7 +124,7 @@ public class ShutdownMonitorTest
         monitor.start();
 
         stop("stop", port, key, true);
-        assertTrue(monitor.await(10, TimeUnit.SECONDS));
+        awaitMonitorStop(monitor);
         assertTrue(!monitor.isAlive());
 
         // Should be able to change port and key because it is stopped.
@@ -131,7 +139,7 @@ public class ShutdownMonitorTest
         assertTrue(monitor.isAlive());
 
         stop("stop", port, key, true);
-        assertTrue(monitor.await(5, TimeUnit.SECONDS));
+        awaitMonitorStop(monitor);
         assertTrue(!monitor.isAlive());
     }
 
@@ -148,7 +156,6 @@ public class ShutdownMonitorTest
     @Test
     public void testNoExitSystemProperty() throws Exception
     {
-        System.setProperty("STOP.EXIT", "false");
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
@@ -167,7 +174,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("stop", port, key, true);
-            assertTrue(monitor.await(5, TimeUnit.SECONDS));
+            awaitMonitorStop(monitor);
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -176,7 +183,7 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
-    
+
     @Disabled
     @Test
     public void testExitVmDefault() throws Exception
@@ -191,32 +198,37 @@ public class ShutdownMonitorTest
     @Test
     public void testExitVmTrue() throws Exception
     {
-        //Test setting exit true
+        // Test setting exit true
         System.setProperty("STOP.EXIT", "true");
+        ShutdownMonitor.reset();
+
+        // The testcase
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertTrue(monitor.isExitVm());
     }
-    
+
     @Disabled
     @Test
     public void testExitVmFalse() throws Exception
     {
-        //Test setting exit false
-        System.setProperty("STOP.EXIT", "false");
+        // Test setting exit true
+        System.setProperty("STOP.EXIT", "true");
+        ShutdownMonitor.reset();
+
+        // The testcase
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
     }
-    
+
     @Disabled
     @Test
     public void testForceStopCommand() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
         monitor.setPort(0);
-        monitor.setExitVm(false);
+        assertFalse(monitor.isExitVm());
         monitor.start();
 
         try (CloseableServer server = new CloseableServer())
@@ -231,7 +243,7 @@ public class ShutdownMonitorTest
             int port = monitor.getPort();
 
             stop("forcestop", port, key, true);
-            assertTrue(monitor.await(5, TimeUnit.SECONDS));
+            awaitMonitorStop(monitor);
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -241,28 +253,28 @@ public class ShutdownMonitorTest
         }
     }
 
-    @Test
-    public void testOldStopCommandWithStopOnShutdownTrue() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testOldStopCommand(boolean stopAtShutdown) throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
-        monitor.setExitVm(false);
+        assertFalse(monitor.isExitVm());
         monitor.start();
 
         try (CloseableServer server = new CloseableServer())
         {
-            server.setStopAtShutdown(true);
+            server.setStopAtShutdown(stopAtShutdown);
             server.start();
 
-            //should be registered for shutdown on exit
-            assertTrue(ShutdownThread.isRegistered(server));
+            assertThat(ShutdownThread.isRegistered(server), is(stopAtShutdown));
             assertTrue(ShutdownMonitor.isRegistered(server));
 
             String key = monitor.getKey();
             int port = monitor.getPort();
 
             stop("stop", port, key, true);
-            assertTrue(monitor.await(5, TimeUnit.SECONDS));
+            awaitMonitorStop(monitor);
 
             assertTrue(!monitor.isAlive());
             assertTrue(server.stopped);
@@ -272,42 +284,16 @@ public class ShutdownMonitorTest
         }
     }
 
-    @Test
-    public void testOldStopCommandWithStopOnShutdownFalse() throws Exception
+    private void awaitMonitorStop(ShutdownMonitor monitor)
     {
-        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
-        monitor.setPort(0);
-        monitor.setExitVm(false);
-        monitor.start();
-
-        try (CloseableServer server = new CloseableServer())
-        {
-            server.setStopAtShutdown(false);
-            server.start();
-
-            assertTrue(!ShutdownThread.isRegistered(server));
-            assertTrue(ShutdownMonitor.isRegistered(server));
-
-            String key = monitor.getKey();
-            int port = monitor.getPort();
-
-            stop("stop", port, key, true);
-            assertTrue(monitor.await(5, TimeUnit.SECONDS));
-
-            assertTrue(!monitor.isAlive());
-            assertTrue(!server.stopped);
-            assertTrue(!server.destroyed);
-            assertTrue(!ShutdownThread.isRegistered(server));
-            assertTrue(ShutdownMonitor.isRegistered(server));
-        }
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> !monitor.isListening());
     }
 
     public void stop(String command, int port, String key, boolean check) throws Exception
     {
         try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), port))
         {
-            // send stop command
+            // send sendCommand command
             try (OutputStream out = s.getOutputStream())
             {
                 out.write((key + "\r\n" + command + "\r\n").getBytes());
@@ -315,13 +301,15 @@ public class ShutdownMonitorTest
 
                 if (check)
                 {
-                    // check for stop confirmation
-                    LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
-                    String response;
-                    if ((response = lin.readLine()) != null)
+                    // check for sendCommand confirmation
+                    try (InputStream in = s.getInputStream();
+                         InputStreamReader inReader = new InputStreamReader(in, StandardCharsets.UTF_8);
+                         BufferedReader reader = new BufferedReader(inReader))
+                    {
+                        String response = reader.readLine();
+                        assertNotNull(response, "No stopped confirmation");
                         assertEquals("Stopped", response);
-                    else
-                        throw new IllegalStateException("No stop confirmation");
+                    }
                 }
             }
         }

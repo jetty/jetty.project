@@ -1,0 +1,518 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.server;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Default implementation of {@link Server.Shutdown}, which will listen
+ * to a configured Host / Port and handle commands to control the
+ * list of Jetty Component {@link LifeCycle} objects.
+ *
+ * <p>
+ *   The commands you can send to this Server are always in {@code US_ASCII}
+ *   with a CRLF ({@code \r\n}.
+ * </p>
+ *
+ * <p>
+ *   Supported commands:
+ * </p>
+ *
+ * <dl>
+ * <dt>{@code FORCESTOP}</dt>
+ * <dd>Will stop components by calling {@link LifeCycle#stop()}.<br>
+ *     Will receive {@code Stopped\r\n} after stop, and before exit.
+ * </dd>
+ *
+ * <dt>{@code STOPEXIT}</dt>
+ * <dd>Will stop components by calling {@link LifeCycle#stop()},<br>
+ *     (Each component that is a {@link Destroyable} will also be {@link Destroyable#destroy() destroyed})
+ *     followed by {@code System.exit(0);} at the end.<br>
+ *     Will receive {@code Stopped\r\n} after stop/destroy, and before exit.</dd>
+ *
+ * <dt>{@code EXIT}</dt>
+ * <dd>Will simply call {@code System.exit(0);} on JVM</dd>
+ *
+ * <dt>{@code STATUS}</dt>
+ * <dd>Will return {@code OK\r\n} to indicate ServerShutdown is alive and ready to take commands.</dd>
+ *
+ * <dt>{@code PID}</dt>
+ * <dd>Will return PID of the running JVM from {@link ProcessHandle#pid() ProcessHandle.current().pid()} on JVM</dd>
+ * </dl>
+ *
+ * @since 12.0.23
+ */
+public class ServerShutdown implements Server.Shutdown
+{
+    private static final Logger LOG = LoggerFactory.getLogger(ServerShutdown.class);
+    protected final AutoLock lock = new AutoLock();
+    // Host to listen on
+    private final String host;
+    // Port to listen on
+    private int port;
+    private final boolean exitVm;
+    protected final List<LifeCycle> components = new ArrayList<>();
+    private ServerSocket serverSocket;
+    private String key;
+
+    /**
+     * <p>
+     * Creates a ShutdownMonitor using configuration from the System properties.
+     * </p>
+     *
+     * <dl>
+     * <dt>{@code STOP.HOST}</dt>
+     * <dd>IP to listen on, defaults to {@code 127.0.0.1}</dd>
+     * <dt>{@code STOP.PORT}</dt>
+     * <dd>Port to listen on, defaults to {@code 0}.
+     * (0 will use a port number that is automatically allocated)</dd>
+     * <dt>{@code STOP.KEY}</dt>
+     * <dd>The Key that must be provided to initiate a Shutdown</dd>
+     * <dt>{@code STOP.EXIT}</dt>
+     * <dd>Boolean to indicate if a {@code System.exit(0)} should occur on successful shutdown,
+     * defaults to {@code true}</dd>
+     * </dl>
+     */
+    public ServerShutdown()
+    {
+        this(System.getProperty("STOP.HOST", "127.0.0.1"),
+            Integer.getInteger("STOP.PORT", -1),
+            System.getProperty("STOP.KEY", null),
+            Boolean.parseBoolean(System.getProperty("STOP.EXIT", "true")));
+    }
+
+    /**
+     * Create a new ShutdownMonitor.
+     *
+     * @param host the host
+     * @param port the port
+     * @param key the key that must be passed to allow a shutdown
+     * @param exitVm flag to exit vm on successful shutdown
+     */
+    public ServerShutdown(@Name("host") String host,
+                          @Name("port") int port,
+                          @Name("key") String key,
+                          @Name("exitVm") boolean exitVm)
+    {
+        this.host = host;
+        this.port = port;
+        this.key = key;
+        this.exitVm = exitVm;
+    }
+
+    @Override
+    public void addComponent(LifeCycle component)
+    {
+        try (AutoLock l = lock.lock())
+        {
+            // TODO: should we reject calls to this method after the ServerSocket is started?
+            this.components.add(component);
+        }
+    }
+
+    @Override
+    public boolean removeComponent(LifeCycle component)
+    {
+        // TODO: should we reject calls to this method after the ServerSocket is started?
+        boolean ret = false;
+        try (AutoLock l = lock.lock())
+        {
+            ret = this.components.remove(component);
+        }
+
+        return ret;
+    }
+
+    public boolean hasComponent(LifeCycle component)
+    {
+        boolean ret = false;
+        try (AutoLock l = lock.lock())
+        {
+            ret = this.components.contains(component);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public void start() throws Exception
+    {
+        try (AutoLock l = lock.lock())
+        {
+            if (serverSocket != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Already started: {}", this);
+                return; // cannot start it again
+            }
+
+            listen();
+            if (serverSocket != null)
+            {
+                Thread thread = new Thread(new ServerShutdown.ShutdownRunnable(serverSocket));
+                thread.setDaemon(true);
+                thread.setName(TypeUtil.toShortName(this.getClass()));
+                thread.start();
+            }
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        IO.close(serverSocket);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closed ServerSocket");
+        serverSocket = null;
+    }
+
+    public boolean isExitVm()
+    {
+        return exitVm;
+    }
+
+    public String getHost()
+    {
+        return host;
+    }
+
+    public String getKey()
+    {
+        return key;
+    }
+
+    public void setPort(int port)
+    {
+        if (port < 0 || port > 0xFFFF)
+        {
+            throw new IllegalArgumentException("Invalid Port: " + port);
+        }
+        this.port = port;
+    }
+
+    public int getPort()
+    {
+        return port;
+    }
+
+    public boolean isConfigurationValid()
+    {
+        return (port >= 0 && port <= 0xFFFF);
+    }
+
+    /**
+     * Get the {@link ServerSocket#getLocalPort()} that this is listening on.
+     * @return the port that the server socket is listening on.
+     */
+    public int getLocalPort()
+    {
+        if (serverSocket != null)
+        {
+            return serverSocket.getLocalPort();
+        }
+        return -1;
+    }
+
+    public void setKey(String key)
+    {
+        this.key = key;
+    }
+
+    public boolean isListening()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            if (serverSocket == null)
+                return false;
+
+            System.out.printf("%s [isBound=%b, isClosed=%b]%n",
+                this, serverSocket.isBound(), serverSocket.isClosed());
+            return serverSocket.isBound() && !serverSocket.isClosed();
+        }
+    }
+
+    /**
+     * Configure the ServerSocket before binding.
+     *
+     * @param serverSocket the server socket.
+     */
+    protected void configure(ServerSocket serverSocket) throws SocketException
+    {
+        serverSocket.setReuseAddress(true);
+    }
+
+    private void listen()
+    {
+        int port = getPort();
+        if (port < 0 || port > 0xFFFF)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not enabled (port invalid): {}", port);
+            return;
+        }
+
+        String key = getKey();
+        try
+        {
+            serverSocket = new ServerSocket();
+            try
+            {
+                configure(serverSocket);
+                serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
+            }
+            catch (Throwable e)
+            {
+                IO.close(serverSocket);
+                throw e;
+            }
+
+            // In the case where the port is automatically allocated,
+            // output the port number to STDOUT.
+            if (port == 0)
+            {
+                port = serverSocket.getLocalPort();
+                System.out.printf("STOP.PORT=%d%n", port);
+            }
+
+            // In the case where the key is automatically generated,
+            // output the key to STDOUT.
+            if (key == null)
+            {
+                key = Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()), 36);
+                System.out.printf("STOP.KEY=%s%n", key);
+                setKey(key);
+            }
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("Failed to start ServerSocket on {}:{}", host, port, x);
+            serverSocket = null;
+        }
+        finally
+        {
+            if (LOG.isDebugEnabled())
+            {
+                // establish the port and key that are in use
+                LOG.debug("STOP.PORT={}", port);
+                LOG.debug("STOP.KEY={}", key);
+                // also show if we're exiting the jvm or not
+                LOG.debug("STOP.EXIT={}", exitVm);
+            }
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%H{host=%s,port=%s,key=%s,exitVm=%b,serverSocket=%s}",
+            TypeUtil.toShortName(this.getClass()),
+            hashCode(),
+            host,
+            port,
+            key,
+            exitVm,
+            serverSocket
+        );
+    }
+
+    /**
+     * Thread handling incoming ServerSocket accept events.
+     */
+    private class ShutdownRunnable implements Runnable
+    {
+        private final ServerSocket serverSocket;
+
+        private ShutdownRunnable(ServerSocket serverSocket)
+        {
+            this.serverSocket = serverSocket;
+        }
+
+        @Override
+        public void run()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Started: {}", ShutdownRunnable.this);
+            try
+            {
+                boolean processCommands = true;
+                String key = getKey();
+                while (processCommands)
+                {
+                    try (Socket socket = serverSocket.accept())
+                    {
+                        LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
+                        String receivedKey = reader.readLine();
+                        if (!key.equals(receivedKey))
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Ignoring command with incorrect key: {}", receivedKey);
+                            continue;
+                        }
+
+                        String cmd = reader.readLine();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("command={}", cmd);
+                        OutputStream out = socket.getOutputStream();
+                        boolean exitVm = isExitVm();
+
+                        String cmdLower = cmd.toLowerCase(Locale.ENGLISH);
+
+                        switch (cmdLower)
+                        {
+                            case "stop" -> // historic, for backward compatibility
+                            {
+                                // Stop the lifecycles, only if they are registered with the ShutdownThread, only destroying if vm is exiting
+                                LOG.info("Performing 'stop' command");
+                                stopComponents(exitVm);
+
+                                // Reply to client
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Informing client that we are stopped");
+                                flush(out, "Stopped\r\n");
+
+                                processCommands = false;
+                                if (exitVm)
+                                {
+                                    // Kill JVM
+                                    LOG.info("Exiting JVM");
+                                    System.exit(0);
+                                }
+                            }
+                            case "forcestop" ->
+                            {
+                                LOG.info("Performing `forced stop` command");
+                                stopComponents(exitVm);
+
+                                // Reply to client
+                                LOG.debug("Informing client that we are stopped");
+                                flush(out, "Stopped\r\n");
+
+                                processCommands = false;
+                                if (exitVm)
+                                {
+                                    // Kill JVM
+                                    LOG.info("Exiting JVM");
+                                    System.exit(0);
+                                }
+                            }
+                            case "stopexit" ->
+                            {
+                                LOG.info("Performing `stop` and `exit` commands");
+                                stopComponents(true);
+
+                                // Reply to client
+                                LOG.debug("Informing client that we are stopped");
+                                flush(out, "Stopped\r\n");
+
+                                processCommands = false;
+
+                                LOG.info("Killing JVM");
+                                System.exit(0);
+                            }
+                            case "exit" ->
+                            {
+                                processCommands = false;
+
+                                LOG.info("Killing JVM");
+                                System.exit(0);
+                            }
+                            case "status" ->
+                            {
+                                // Reply to client
+                                flush(out, "OK\r\n");
+                            }
+                            case "pid" ->
+                            {
+                                flush(out, Long.toString(ProcessHandle.current().pid()));
+                            }
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Failed to handle incoming shutdown client", x);
+                    }
+                }
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failed ServerSocket", x);
+            }
+            finally
+            {
+                stop();
+            }
+        }
+
+        private void flush(OutputStream out, String message) throws IOException
+        {
+            out.write(message.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+        }
+
+        private void stopComponents(boolean destroy)
+        {
+            List<LifeCycle> components;
+            try (AutoLock l = lock.lock())
+            {
+                components = new ArrayList<>(ServerShutdown.this.components);
+            }
+
+            for (LifeCycle component : components)
+            {
+                try
+                {
+                    if (component.isStarted())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Calling stop() on {}", component);
+                        component.stop();
+                    }
+
+                    if ((component instanceof Destroyable) && destroy)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Calling destroy() on {}", component);
+                        ((Destroyable)component).destroy();
+                    }
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Unable to stop component: {}", component, x);
+                }
+            }
+        }
+    }
+}

@@ -45,7 +45,7 @@ import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.ShutdownMonitor;
+import org.eclipse.jetty.server.ServerShutdown;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -487,10 +487,9 @@ public class Runner
                 break;
 
             case 3:
-                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-                monitor.setPort(stopPort);
-                monitor.setKey(stopKey);
-                monitor.setExitVm(true);
+                ServerShutdown serverShutdown = new ServerShutdown("127.0.0.1", stopPort, stopKey, true);
+                if (serverShutdown.isConfigurationValid())
+                    _server.addBean(serverShutdown);
                 break;
 
             default:
