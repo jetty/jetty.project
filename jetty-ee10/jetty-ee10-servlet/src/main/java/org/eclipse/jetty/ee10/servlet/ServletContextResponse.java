@@ -596,6 +596,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                             case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
                             default -> null;
                         };
+                        //if we obtained the encoding from the content type, then reset it as we've just removed the content-type
+                        if (_encodingFrom == EncodingFrom.SET_CONTENT_TYPE)
+                            _encodingFrom = EncodingFrom.NOT_SET;
                     }
                 }
             }
