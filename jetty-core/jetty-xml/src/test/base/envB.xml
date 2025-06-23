@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<!-- Deliberately left on old DTD location and version for testing-->
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <Configure id="Base" class="org.eclipse.jetty.xml.XmlConfigurationTest$Base">
   <Get id="R" name="resource"/>

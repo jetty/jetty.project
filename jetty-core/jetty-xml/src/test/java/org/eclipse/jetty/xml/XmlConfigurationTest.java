@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -67,6 +69,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -341,6 +344,35 @@ public class XmlConfigurationTest
             writer.write(rawXml);
         }
         return new XmlConfiguration(ResourceFactory.root().newResource(testFile));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "https://jetty.org/configure_10_0.dtd",
+        "https://eclipse.org/jetty/configure_10_0.dtd",
+        "https://jetty.org/configure_9_3.dtd",
+        "https://eclipse.org/jetty/configure_9_3.dtd",
+        "https://jetty.org/configure_9_0.dtd",
+        "https://eclipse.org/jetty/configure_9_0.dtd",
+        "https://jetty.org/configure_8_0.dtd",
+        "https://eclipse.org/jetty/configure_8_0.dtd",
+        "https://jetty.org/configure_7_0.dtd",
+        "https://eclipse.org/jetty/configure_7_0.dtd",
+    })
+    public void testDtdVariants(String doctype) throws Exception
+    {
+        String rawXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://%s">
+            <Configure class="org.eclipse.jetty.xml.ExampleConfiguration">
+              <Set name="Test">Value</Set>
+            </Configure>
+            """.formatted(doctype);
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource(new URI("/test"), rawXml.getBytes(UTF_8)));
+        xmlConfiguration.getXmlParser().setValidating(true);
+        Object configured = xmlConfiguration.configure();
+        assertThat(configured, notNullValue());
+        assertThat(configured, instanceOf(ExampleConfiguration.class));
     }
 
     @Test
