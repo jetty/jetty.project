@@ -17,6 +17,8 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.maven.toolchain.Toolchain;
+import org.apache.maven.toolchain.java.DefaultJavaToolChain;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +61,15 @@ public abstract class AbstractForker extends AbstractLifeCycle
     protected File workDir;
     
     protected Map<String, String> systemProperties;
-    
-    protected abstract ProcessBuilder  createCommand();
+
+    protected String javaPath;
+
+    protected AbstractForker(String javaPath)
+    {
+        this.javaPath = javaPath;
+    }
+
+    protected abstract ProcessBuilder createCommand();
     
     protected abstract void redeployWebApp() throws Exception;
     
@@ -248,4 +257,65 @@ public abstract class AbstractForker extends AbstractLifeCycle
                 LOG.info("Couldn't verify success of child startup");
         }
     }
+
+    /**
+     * Get the location of the java binary.
+     * @return the location of the java binary
+     */
+    protected String getJavaBin()
+    {
+        if(javaPath == null)
+        {
+            return javaPath;
+        }
+        String[] javaexes = new String[]{"java", "java.exe"};
+
+        File javaHomeDir = new File(System.getProperty("java.home"));
+        for (String javaexe : javaexes)
+        {
+            File javabin = new File(javaHomeDir, fileSeparators("bin/" + javaexe));
+            if (javabin.exists() && javabin.isFile())
+            {
+                return javabin.getAbsolutePath();
+            }
+        }
+
+        return "java";
+    }
+
+
+    public static String fileSeparators(String path)
+    {
+        StringBuilder ret = new StringBuilder();
+        for (char c : path.toCharArray())
+        {
+            if ((c == '/') || (c == '\\'))
+            {
+                ret.append(File.separatorChar);
+            }
+            else
+            {
+                ret.append(c);
+            }
+        }
+        return ret.toString();
+    }
+
+    public static String pathSeparators(String path)
+    {
+        StringBuilder ret = new StringBuilder();
+        for (char c : path.toCharArray())
+        {
+            if ((c == ',') || (c == ':'))
+            {
+                ret.append(File.pathSeparatorChar);
+            }
+            else
+            {
+                ret.append(c);
+            }
+        }
+        return ret.toString();
+    }
+
 }
