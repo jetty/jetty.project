@@ -376,6 +376,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     {
         _open = false;
         getSslEndPoint().getConnection().onClose(cause);
+        try (AutoLock l = _lock.lock())
+        {
+            lockedDiscardInputBuffers();
+            lockedDiscardEncryptedOutputBuffer();
+        }
         super.onClose(cause);
     }
 
