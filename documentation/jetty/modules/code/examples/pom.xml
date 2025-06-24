@@ -150,6 +150,11 @@
       <artifactId>jetty-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
+      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-component-annotations</artifactId>
       <scope>compile</scope>
