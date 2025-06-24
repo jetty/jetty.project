@@ -514,17 +514,21 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * {@return the tool chain specified by the user in plugin parameters}.
      */
-    protected final Toolchain getToolchain() {
+    protected final Toolchain getToolchain()
+    {
         Toolchain tc = null;
 
-        if (jdkToolchain != null) {
+        if (jdkToolchain != null)
+        {
             List<Toolchain> tcs = toolchainManager.getToolchains(session, "jdk", jdkToolchain);
-            if (tcs != null && !tcs.isEmpty()) {
+            if (tcs != null && !tcs.isEmpty())
+            {
                 tc = tcs.get(0);
             }
         }
 
-        if (tc == null) {
+        if (tc == null)
+        {
             tc = toolchainManager.getToolchainFromBuildContext("jdk", session);
         }
 
@@ -952,3 +956,4 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
     }
 }
+
