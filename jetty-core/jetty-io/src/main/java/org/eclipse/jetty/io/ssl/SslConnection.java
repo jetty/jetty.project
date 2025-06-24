@@ -432,9 +432,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     @Override
     public String toConnectionString()
     {
-        int ei;
-        int eo;
-        int di;
+        int encryptedInputRemainingBytes;
+        int encryptedOutputRemainingBytes;
+        int decryptedInputRemainingBytes;
         FillState fillState;
         FlushState flushState;
         try (AutoLock l = _lock.tryLock())
@@ -444,17 +444,17 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 fillState = _fillState;
                 flushState = _flushState;
                 ByteBuffer b = _encryptedInput == null ? null : _encryptedInput.getByteBuffer();
-                ei = b == null ? -1 : b.remaining();
+                encryptedInputRemainingBytes = b == null ? -1 : b.remaining();
                 b = _encryptedOutput == null ? null : _encryptedOutput.getByteBuffer();
-                eo = b == null ? -1 : b.remaining();
+                encryptedOutputRemainingBytes = b == null ? -1 : b.remaining();
                 b = _decryptedInput == null ? null : _decryptedInput.getByteBuffer();
-                di = b == null ? -1 : b.remaining();
+                decryptedInputRemainingBytes = b == null ? -1 : b.remaining();
             }
             else
             {
                 fillState = null;
                 flushState = null;
-                ei = eo = di = -1;
+                encryptedInputRemainingBytes = encryptedOutputRemainingBytes = decryptedInputRemainingBytes = -1;
             }
         }
 
@@ -463,7 +463,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             getClass().getSimpleName(),
             hashCode(),
             _sslEngine.getHandshakeStatus(),
-            ei, eo, di,
+            encryptedInputRemainingBytes, encryptedOutputRemainingBytes, decryptedInputRemainingBytes,
             fillState, flushState,
             _sslEndPoint.toEndPointString(),
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
