@@ -312,14 +312,10 @@ public class ShutdownService
             serverSocket = new ServerSocket();
             configure(serverSocket);
             serverSocket.bind(new InetSocketAddress(InetAddress.getByName(getHost()), getPort()));
-            if (LOG.isDebugEnabled())
-            {
-                // establish the port and key that are in use
-                LOG.debug("STOP.PORT={}", getLocalPort());
-                LOG.debug("STOP.KEY={}", getKey());
-                // also show if we're exiting the jvm or not
-                LOG.debug("STOP.EXIT={}", isExitVm());
-            }
+            // Output to STDOUT the stop details (used by scripting to know the port and key)
+            System.out.printf("STOP.PORT=%d%n", getLocalPort());
+            System.out.printf("STOP.KEY=%s%n", getKey());
+            System.out.printf("STOP.EXIT=%s%n", isExitVm());
         }
         catch (Throwable x)
         {
