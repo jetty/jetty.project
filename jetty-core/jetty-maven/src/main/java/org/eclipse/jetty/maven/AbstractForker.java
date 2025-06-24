@@ -262,7 +262,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
      */
     protected String getJavaBin()
     {
-        if (javaPath == null)
+        if (javaPath != null)
         {
             return javaPath;
         }
