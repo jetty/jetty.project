@@ -137,12 +137,12 @@ public class HttpResponse implements MutableResponse
         return String.format("%s[%s %d %s]@%x", TypeUtil.toShortName(HttpResponse.class), getVersion(), getStatus(), getReason(), hashCode());
     }
 
-    static class Wrapper implements MutableResponse
+    static class WrapperWithRequest implements MutableResponse
     {
         private final Request request;
         private final MutableResponse response;
 
-        Wrapper(Request request, MutableResponse response)
+        WrapperWithRequest(Request request, MutableResponse response)
         {
             this.request = request;
             this.response = response;

@@ -23,42 +23,22 @@ import org.eclipse.jetty.http.HttpVersion;
 /**
  * <p>A mutable {@link Response}, used by implementations
  * to set the various components of an HTTP response,
- * such as status code, headers, and trailers.</p>
+ * such as status code, headers, and trailers, as they
+ * get parsed, typically from the network bytes.</p>
  */
 public interface MutableResponse extends Response
 {
-    default MutableResponse version(HttpVersion version)
-    {
-        return this;
-    }
+    MutableResponse version(HttpVersion version);
 
-    default MutableResponse status(int status)
-    {
-        return this;
-    }
+    MutableResponse status(int status);
 
-    default MutableResponse reason(String reason)
-    {
-        return this;
-    }
+    MutableResponse reason(String reason);
 
-    default MutableResponse addHeader(HttpField header)
-    {
-        return this;
-    }
+    MutableResponse addHeader(HttpField header);
 
-    default MutableResponse headers(Consumer<HttpFields.Mutable> consumer)
-    {
-        return this;
-    }
+    MutableResponse headers(Consumer<HttpFields.Mutable> consumer);
 
-    default MutableResponse addTrailer(HttpField trailer)
-    {
-        return this;
-    }
+    MutableResponse addTrailer(HttpField trailer);
 
-    default MutableResponse trailers(Consumer<HttpFields.Mutable> consumer)
-    {
-        return this;
-    }
+    MutableResponse trailers(Consumer<HttpFields.Mutable> consumer);
 }

@@ -55,8 +55,8 @@ public class HttpConversation extends Attributes.Lazy
     }
 
     /**
-     * <p>Updates the response listeners, eventually using the given override response listener,
-     * that must be notified instead of the response listeners of the first exchange.</p>
+     * <p>Updates the response listeners to notify, eventually using the given {@code overrideListener}
+     * parameter, that must be notified instead of the response listeners of the first exchange.</p>
      * <p>The response listeners change as the conversation proceeds, as follows:</p>
      * <ol>
      * <li>
@@ -102,7 +102,7 @@ public class HttpConversation extends Attributes.Lazy
      * </ul>
      * </li>
      * </ol>
-     * <p>Basically the override conversation listener replaces the first exchange response listener,
+     * <p>In practice the {@code overrideListener} parameter replaces the first exchange response listener,
      * and we also notify the last exchange response listeners (if it's not also the first).</p>
      * <p>This scheme allows for protocol handlers to not worry about other protocol handlers, or to worry
      * too much about notifying the first exchange response listeners, but still allowing a protocol

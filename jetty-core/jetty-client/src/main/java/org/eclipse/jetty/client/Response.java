@@ -36,36 +36,29 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface Response
 {
     /**
+     * <p>Returns the {@link Request} associated with this {@code Response}.</p>
+     * <p>In case of HTTP conversations, generated for example by redirects
+     * or authentication, the {@link Request} returned by this method is
+     * the first request that started the HTTP conversation.</p>
+     *
      * @return the request associated with this response
      */
-    default Request getRequest()
-    {
-        return null;
-    }
+    Request getRequest();
 
     /**
      * @return the HTTP version of this response, such as "HTTP/1.1"
      */
-    default HttpVersion getVersion()
-    {
-        return null;
-    }
+    HttpVersion getVersion();
 
     /**
      * @return the HTTP status code of this response, such as 200 or 404
      */
-    default int getStatus()
-    {
-        return 0;
-    }
+    int getStatus();
 
     /**
      * @return the HTTP reason associated to the {@link #getStatus}
      */
-    default String getReason()
-    {
-        return null;
-    }
+    String getReason();
 
     /**
      * <p>Returns the headers of this response.</p>
@@ -82,18 +75,12 @@ public interface Response
      *
      * @return the headers of this response
      */
-    default HttpFields getHeaders()
-    {
-        return null;
-    }
+    HttpFields getHeaders();
 
     /**
      * @return the trailers of this response
      */
-    default HttpFields getTrailers()
-    {
-        return null;
-    }
+    HttpFields getTrailers();
 
     /**
      * Attempts to abort the receive of this response.
@@ -101,10 +88,7 @@ public interface Response
      * @param cause the abort cause, must not be null
      * @return a {@link CompletableFuture} that eventually reports whether the abort succeeded
      */
-    default CompletableFuture<Boolean> abort(Throwable cause)
-    {
-        return CompletableFuture.completedFuture(false);
-    }
+    CompletableFuture<Boolean> abort(Throwable cause);
 
     /**
      * Common, empty, super-interface for response listeners
@@ -317,38 +301,38 @@ public interface Response
     interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {
         @Override
-        public default void onBegin(Response response)
+        default void onBegin(Response response)
         {
         }
 
         @Override
-        public default boolean onHeader(Response response, HttpField field)
+        default boolean onHeader(Response response, HttpField field)
         {
             return true;
         }
 
         @Override
-        public default void onHeaders(Response response)
+        default void onHeaders(Response response)
         {
         }
 
         @Override
-        public default void onContent(Response response, ByteBuffer content)
+        default void onContent(Response response, ByteBuffer content)
         {
         }
 
         @Override
-        public default void onSuccess(Response response)
+        default void onSuccess(Response response)
         {
         }
 
         @Override
-        public default void onFailure(Response response, Throwable failure)
+        default void onFailure(Response response, Throwable failure)
         {
         }
 
         @Override
-        public default void onComplete(Result result)
+        default void onComplete(Result result)
         {
         }
     }

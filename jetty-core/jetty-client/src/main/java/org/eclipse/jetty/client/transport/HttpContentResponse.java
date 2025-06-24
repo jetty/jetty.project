@@ -132,12 +132,12 @@ public class HttpContentResponse implements ContentResponse
             getContent().length);
     }
 
-    static class Wrapper implements ContentResponse
+    static class WrapperWithRequest implements ContentResponse
     {
         private final Request request;
         private final ContentResponse response;
 
-        Wrapper(Request request, ContentResponse response)
+        WrapperWithRequest(Request request, ContentResponse response)
         {
             this.request = request;
             this.response = response;
@@ -213,7 +213,7 @@ public class HttpContentResponse implements ContentResponse
         public String toString()
         {
             return String.format("%s[%s %d %s - %d bytes]",
-                TypeUtil.toShortName(HttpContentResponse.Wrapper.class),
+                TypeUtil.toShortName(WrapperWithRequest.class),
                 getVersion(),
                 getStatus(),
                 getReason(),

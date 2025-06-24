@@ -14,21 +14,25 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientResponseListenersTest extends AbstractHttpClientServerTest
@@ -39,14 +43,14 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
     {
         start(scenario, new EmptyServerHandler());
 
-        AtomicInteger counter = new AtomicInteger();
+        List<String> events = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(2);
         Response.Listener listener = new Response.Listener()
         {
             @Override
             public void onBegin(Response response)
             {
-                counter.incrementAndGet();
+                events.add("begin");
             }
 
             @Override
@@ -59,41 +63,41 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
             @Override
             public void onHeaders(Response response)
             {
-                counter.incrementAndGet();
+                events.add("headers");
             }
 
             @Override
             public void onContent(Response response, ByteBuffer content)
             {
-                // Should not be invoked
-                counter.incrementAndGet();
+                // Should not be invoked.
+                events.add("content");
             }
 
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                // Should not be invoked
-                counter.incrementAndGet();
+                // Should not be invoked.
+                events.add("content");
             }
 
             @Override
             public void onSuccess(Response response)
             {
-                counter.incrementAndGet();
+                events.add("success");
             }
 
             @Override
             public void onFailure(Response response, Throwable failure)
             {
-                // Should not be invoked
-                counter.incrementAndGet();
+                // Should not be invoked.
+                events.add("failure");
             }
 
             @Override
             public void onComplete(Result result)
             {
                 assertEquals(200, result.getResponse().getStatus());
-                counter.incrementAndGet();
+                events.add("complete");
                 latch.countDown();
             }
         };
@@ -110,10 +114,11 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
             .send(listener);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-        int expectedEventsTriggeredByResponseListeners = 4;
-        int expectedEventsTriggeredBySendListener = 4;
-        int expected = expectedEventsTriggeredByResponseListeners + expectedEventsTriggeredBySendListener;
-        assertEquals(expected, counter.get());
+
+        // The events are duplicated, because the same listener
+        // instance is used explicitly in the onResponseXYZ()
+        // events, and as a listener passed to send(listener).
+        assertThat(events, contains("begin", "begin", "headers", "headers", "success", "success", "complete", "complete"));
     }
 
     @ParameterizedTest
@@ -124,17 +129,33 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
 
         CountDownLatch beginLatch = new CountDownLatch(1);
         CountDownLatch headersLatch = new CountDownLatch(1);
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
+        var request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
+        List<Request> requests = new ArrayList<>();
+        ContentResponse response = request
             // Listeners for future events will be notified.
-            .onResponseBegin(r1 -> r1.getRequest().onResponseHeaders(r2 -> beginLatch.countDown()))
+            .onResponseBegin(rs1 ->
+            {
+                var rq1 = rs1.getRequest();
+                requests.add(rq1);
+                rq1.onResponseHeaders(rs2 ->
+                {
+                    requests.add(rs2.getRequest());
+                    beginLatch.countDown();
+                });
+            })
             // Listeners for current or past events won't be notified.
-            .onResponseHeaders(r1 -> r1.getRequest().onResponseHeaders(r2 -> headersLatch.countDown()))
+            .onResponseHeaders(rs1 ->
+            {
+                requests.add(rs1.getRequest());
+                rs1.getRequest().onResponseHeaders(rs2 -> headersLatch.countDown());
+            })
             .send();
+        requests.add(response.getRequest());
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(beginLatch.await(5, TimeUnit.SECONDS));
         assertFalse(headersLatch.await(1, TimeUnit.SECONDS));
+        requests.forEach(r -> assertSame(request, r));
     }
 
     @ParameterizedTest
@@ -144,9 +165,9 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                switch (Request.getPathInContext(request))
+                switch (org.eclipse.jetty.server.Request.getPathInContext(request))
                 {
                     case "/old" -> org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "/new");
                     case "/new" ->
@@ -160,37 +181,71 @@ public class HttpClientResponseListenersTest extends AbstractHttpClientServerTes
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        var request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .path("/old")
-            .onResponseBegin(r ->
+            .path("/old");
+        ContentResponse response = request
+            .onResponseBegin(rs ->
             {
-                if (r.getStatus() != HttpStatus.OK_200)
-                    r.abort(new IllegalArgumentException());
+                try
+                {
+                    assertSame(request, rs.getRequest());
+                    assertEquals(HttpStatus.OK_200, rs.getStatus());
+                }
+                catch (Throwable x)
+                {
+                    rs.abort(x);
+                }
             })
-            .onResponseHeaders(r ->
+            .onResponseHeaders(rs ->
             {
-                assertEquals(HttpStatus.OK_200, r.getStatus());
-                if (!r.getHeaders().contains("Special", "Value"))
-                    r.abort(new IllegalArgumentException());
+                try
+                {
+                    assertSame(request, rs.getRequest());
+                    assertEquals(HttpStatus.OK_200, rs.getStatus());
+                    assertTrue(rs.getHeaders().contains("Special", "Value"));
+                }
+                catch (Throwable x)
+                {
+                    rs.abort(x);
+                }
             })
-            .onResponseContent((r, c) ->
+            .onResponseContent((rs, c) ->
             {
-                assertEquals(HttpStatus.OK_200, r.getStatus());
-                assertTrue(r.getHeaders().contains("Special", "Value"));
-                if (c == null || !c.hasRemaining())
-                    r.abort(new IllegalArgumentException());
+                try
+                {
+                    assertSame(request, rs.getRequest());
+                    assertEquals(HttpStatus.OK_200, rs.getStatus());
+                    assertTrue(rs.getHeaders().contains("Special", "Value"));
+                    assertNotNull(c);
+                    assertTrue(c.hasRemaining());
+                }
+                catch (Throwable x)
+                {
+                    rs.abort(x);
+                }
             })
-            .onResponseSuccess(r ->
+            .onResponseSuccess(rs ->
             {
-                assertEquals(HttpStatus.OK_200, r.getStatus());
-                assertTrue(r.getHeaders().contains("Special", "Value"));
+                try
+                {
+                    assertSame(request, rs.getRequest());
+                    assertEquals(HttpStatus.OK_200, rs.getStatus());
+                    assertTrue(rs.getHeaders().contains("Special", "Value"));
+                }
+                catch (Throwable x)
+                {
+                    rs.abort(x);
+                }
             })
             .onComplete(result ->
             {
-                var r = result.getResponse();
-                assertEquals(HttpStatus.OK_200, r.getStatus());
-                assertTrue(r.getHeaders().contains("Special", "Value"));
+                var rq = result.getRequest();
+                var rs = result.getResponse();
+                assertSame(request, rq);
+                assertSame(request, rs.getRequest());
+                assertEquals(HttpStatus.OK_200, rs.getStatus());
+                assertTrue(rs.getHeaders().contains("Special", "Value"));
             })
             .send();
 

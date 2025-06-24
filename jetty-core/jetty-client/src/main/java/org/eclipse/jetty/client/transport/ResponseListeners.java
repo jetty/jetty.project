@@ -364,6 +364,13 @@ public class ResponseListeners
                addCompleteListener(listener, false);
     }
 
+    /**
+     * <p>Adds the listeners of the given {@code ResponseListeners} to this {@code ResponseListeners},
+     * contextualizing the {@link Request} reachable from the {@link Response} or {@link Result}
+     * passed to the listeners being added to the {@link Request} of this {@code ResponseListeners}.</p>
+     *
+     * @param that the other {@code ResponseListeners} instance
+     */
     public void combine(ResponseListeners that)
     {
         addBeginListener(that.beginListener == null ? null : r -> that.beginListener.onBegin(that.contextResponse(r)));
@@ -430,9 +437,9 @@ public class ResponseListeners
             return contextResponse;
 
         if (response instanceof ContentResponse contentResponse)
-            contextResponse = new HttpContentResponse.Wrapper(request, contentResponse);
+            contextResponse = new HttpContentResponse.WrapperWithRequest(request, contentResponse);
         else
-            contextResponse = new HttpResponse.Wrapper(request, (MutableResponse)response);
+            contextResponse = new HttpResponse.WrapperWithRequest(request, (MutableResponse)response);
         request.attribute(RESPONSE_ATTRIBUTE, contextResponse);
         return contextResponse;
     }

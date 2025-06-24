@@ -14,20 +14,37 @@
 package org.eclipse.jetty.client.transport;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -312,9 +329,445 @@ public class ResponseListenersTest
 
     private static class TestRequest implements Request
     {
+        @Override
+        public Connection getConnection()
+        {
+            return null;
+        }
+
+        @Override
+        public String getScheme()
+        {
+            return "";
+        }
+
+        @Override
+        public Request scheme(String scheme)
+        {
+            return null;
+        }
+
+        @Override
+        public String getHost()
+        {
+            return "";
+        }
+
+        @Override
+        public Request host(String host)
+        {
+            return null;
+        }
+
+        @Override
+        public int getPort()
+        {
+            return 0;
+        }
+
+        @Override
+        public Request port(int port)
+        {
+            return null;
+        }
+
+        @Override
+        public Transport getTransport()
+        {
+            return null;
+        }
+
+        @Override
+        public Request transport(Transport transport)
+        {
+            return null;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return "";
+        }
+
+        @Override
+        public Request method(HttpMethod method)
+        {
+            return null;
+        }
+
+        @Override
+        public Request method(String method)
+        {
+            return null;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return "";
+        }
+
+        @Override
+        public Request path(String path)
+        {
+            return null;
+        }
+
+        @Override
+        public String getQuery()
+        {
+            return "";
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpVersion getVersion()
+        {
+            return null;
+        }
+
+        @Override
+        public Request version(HttpVersion version)
+        {
+            return null;
+        }
+
+        @Override
+        public Fields getParams()
+        {
+            return null;
+        }
+
+        @Override
+        public Request param(String name, String value)
+        {
+            return null;
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return null;
+        }
+
+        @Override
+        public Request headers(Consumer<HttpFields.Mutable> consumer)
+        {
+            return null;
+        }
+
+        @Override
+        public Supplier<HttpFields> getTrailersSupplier()
+        {
+            return null;
+        }
+
+        @Override
+        public Request trailersSupplier(Supplier<HttpFields> trailers)
+        {
+            return null;
+        }
+
+        @Override
+        public List<HttpCookie> getCookies()
+        {
+            return List.of();
+        }
+
+        @Override
+        public Request cookie(HttpCookie cookie)
+        {
+            return null;
+        }
+
+        @Override
+        public Object getTag()
+        {
+            return null;
+        }
+
+        @Override
+        public Request tag(Object tag)
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getAttributes()
+        {
+            return Map.of();
+        }
+
+        @Override
+        public Request attribute(String name, Object value)
+        {
+            return null;
+        }
+
+        @Override
+        public Content getBody()
+        {
+            return null;
+        }
+
+        @Override
+        public Request body(Content content)
+        {
+            return null;
+        }
+
+        @Override
+        public Request file(Path file) throws IOException
+        {
+            return null;
+        }
+
+        @Override
+        public Request file(Path file, String contentType) throws IOException
+        {
+            return null;
+        }
+
+        @Override
+        public String getAgent()
+        {
+            return "";
+        }
+
+        @Override
+        public Request agent(String agent)
+        {
+            return null;
+        }
+
+        @Override
+        public Request accept(String... accepts)
+        {
+            return null;
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return 0;
+        }
+
+        @Override
+        public Request idleTimeout(long timeout, TimeUnit unit)
+        {
+            return null;
+        }
+
+        @Override
+        public long getTimeout()
+        {
+            return 0;
+        }
+
+        @Override
+        public Request timeout(long timeout, TimeUnit unit)
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isFollowRedirects()
+        {
+            return false;
+        }
+
+        @Override
+        public Request followRedirects(boolean follow)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestListener(Listener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestQueued(QueuedListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestBegin(BeginListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestHeaders(HeadersListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestCommit(CommitListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestContent(ContentListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestSuccess(SuccessListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onRequestFailure(FailureListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseListener(Response.Listener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseBegin(Response.BeginListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseHeader(Response.HeaderListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseHeaders(Response.HeadersListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseContent(Response.ContentListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseContentAsync(Response.AsyncContentListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseContentSource(Response.ContentSourceListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseSuccess(Response.SuccessListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onResponseFailure(Response.FailureListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onPush(BiFunction<Request, Request, Response.CompleteListener> pushHandler)
+        {
+            return null;
+        }
+
+        @Override
+        public Request onComplete(Response.CompleteListener listener)
+        {
+            return null;
+        }
+
+        @Override
+        public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
+        {
+            return null;
+        }
+
+        @Override
+        public void send(Response.CompleteListener listener)
+        {
+
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause)
+        {
+            return null;
+        }
+
+        @Override
+        public Throwable getAbortCause()
+        {
+            return null;
+        }
     }
 
     private static class TestResponse implements Response
     {
+        @Override
+        public Request getRequest()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpVersion getVersion()
+        {
+            return null;
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return 0;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return "";
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpFields getTrailers()
+        {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause)
+        {
+            return null;
+        }
     }
 }
