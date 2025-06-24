@@ -1338,6 +1338,11 @@
           <version>${njord.version}</version>
         </plugin>
         <plugin>
+          <groupId>io.github.olamy.maven.plugins</groupId>
+          <artifactId>jacoco-aggregator-maven-plugin</artifactId>
+          <version>1.0.2</version>
+        </plugin>
+        <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
@@ -1580,6 +1585,7 @@
               <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
               <pax.exam.debug.remote>${pax.exam.debug.remote}</pax.exam.debug.remote>
+              <distributionTest.args>${distributionTest.args}</distributionTest.args>
             </systemPropertyVariables>
             <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
             <environmentVariables>
@@ -1792,6 +1798,35 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>io.github.olamy.maven.plugins</groupId>
+        <artifactId>jacoco-aggregator-maven-plugin</artifactId>
+        <version>1.0.2</version>
+        <configuration>
+          <excludes>
+            <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/com/oracle/**</exclude>
+            <exclude>**/javax/**</exclude>
+            <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
+            <!-- example code / documentation -->
+            <exclude>**/org/eclipse/jetty/embedded/**</exclude>
+            <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
+            <exclude>**/org/eclipse/jetty/demo/**</exclude>
+            <exclude>**/org/eclipse/jdt/**</exclude>
+            <exclude>**/jmh**/**</exclude>
+            <exclude>**/org/eclipse/jetty/docs/programming/**</exclude>
+            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+            <!-- test classes -->
+            <exclude>**/org/eclipse/jetty/tests/**</exclude>
+            <exclude>**/org/eclipse/jetty/test/**</exclude>
+            <exclude>**/jakarta/xml/**</exclude>
+            <exclude>**/org/apache/**</exclude>
+            <exclude>**/org/slf4j/**</exclude>
+            <exclude>**/org/objectweb/**</exclude>
+            <exclude>**/**Benchmark**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <executions>
@@ -1989,22 +2024,26 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <configuration>
           <excludes>
-            <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/com/oracle/**</exclude>
+            <exclude>**/javax/**</exclude>
             <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
             <exclude>**/org/eclipse/jetty/demo/**</exclude>
-            <!-- special environments / late integrations -->
-            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
-            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
+            <exclude>**/org/eclipse/jdt/**</exclude>
+            <exclude>**/jmh**/**</exclude>
+            <exclude>**/org/eclipse/jetty/docs/programming/**</exclude>
             <exclude>**/org/eclipse/jetty/osgi/**</exclude>
-            <exclude>**/org/eclipse/jetty/spring/**</exclude>
-            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
             <!-- test classes -->
             <exclude>**/org/eclipse/jetty/tests/**</exclude>
             <exclude>**/org/eclipse/jetty/test/**</exclude>
+            <exclude>**/jakarta/xml/**</exclude>
+            <exclude>**/org/apache/**</exclude>
+            <exclude>**/org/slf4j/**</exclude>
+            <exclude>**/org/objectweb/**</exclude>
+            <exclude>**/**Benchmark**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -2014,6 +2053,17 @@
               <goal>prepare-agent</goal>
             </goals>
             <phase>initialize</phase>
+          </execution>
+          <execution>
+            <id>jacoco-setup-distribution-tests</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of distribution tests -->
+              <propertyName>distributionTest.args</propertyName>
+            </configuration>
           </execution>
           <execution>
             <id>jacoco-setup-m-invoker-p</id>

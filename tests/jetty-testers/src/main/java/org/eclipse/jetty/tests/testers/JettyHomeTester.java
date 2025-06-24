@@ -145,6 +145,13 @@ public class JettyHomeTester
         int debugPort = Integer.getInteger("distribution.debug.port", 0);
         if (debugPort > 0)
             commands.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort);
+
+        String disTestArgs = System.getProperty("distributionTest.args");
+        if (StringUtils.isNotBlank(disTestArgs))
+        {
+            commands.add(disTestArgs);
+        }
+
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
 

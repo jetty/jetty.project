@@ -62,14 +62,14 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk17", "clean install io.github.olamy.maven.plugins:jacoco-aggregator-maven-plugin:report-aggregate-all", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
-                             tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
-                             sourceCodeRetention: 'MODIFIED',
-                             sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
+                             tools: [[parser: 'JACOCO',pattern: 'target/site/jacoco-aggregate/jacoco.xml'],
+                                     [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
+                            sourceCodeRetention: 'NEVER' //MODIFIED
             }
           }
         }
