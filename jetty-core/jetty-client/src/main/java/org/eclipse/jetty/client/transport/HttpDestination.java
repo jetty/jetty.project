@@ -384,8 +384,10 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     {
         HttpClient client = getHttpClient();
         HttpExchange exchange = getHttpExchanges().poll();
+
         if (LOG.isDebugEnabled())
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
+
         if (exchange == null)
         {
             releaseOrClose(connection);
@@ -397,50 +399,48 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             }
             return false;
         }
-        else
+
+        Request request = exchange.getRequest();
+        Throwable cause = request.getAbortCause();
+        if (cause != null)
         {
-            Request request = exchange.getRequest();
-            Throwable cause = request.getAbortCause();
-            if (cause != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Aborted before processing {}", exchange, cause);
-                // It may happen that the request is aborted before the exchange
-                // is created. Aborting the exchange a second time will result in
-                // a no-operation, so we just abort here to cover that edge case.
-                exchange.abort(cause, Promise.from(() ->
-                {
-                    // The exchange won't be associated to a connection,
-                    // and this connection won't be used, release it back.
-                    releaseOrClose(connection);
-                }));
-                return getQueuedRequestCount() > 0;
-            }
-
-            SendFailure failure = send((IConnection)connection, exchange);
-            if (failure == null)
-            {
-                // Aggressively send other queued requests
-                // in case connections are multiplexed.
-                return getQueuedRequestCount() > 0;
-            }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("Send failed {} for {}", failure, exchange);
-
-            if (failure.retry)
+                LOG.debug("Aborted before processing {}", exchange, cause);
+            // It may happen that the request is aborted before the exchange
+            // is created. Aborting the exchange a second time will result in
+            // a no-operation, so we just abort here to cover that edge case.
+            exchange.abort(cause, Promise.from(() ->
             {
-                // Resend this exchange, likely on another connection,
-                // and return false to avoid to re-enter this method.
-                send(exchange);
+                // The exchange won't be associated to a connection,
+                // and this connection won't be used, release it back.
                 releaseOrClose(connection);
-                return false;
-            }
-
-            request.abort(failure.failure);
-            releaseOrClose(connection);
+            }));
             return getQueuedRequestCount() > 0;
         }
+
+        SendFailure failure = send((IConnection)connection, exchange);
+        if (failure == null)
+        {
+            // Aggressively send other queued requests
+            // in case connections are multiplexed.
+            return getQueuedRequestCount() > 0;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Send failed {} for {}", failure, exchange);
+
+        if (failure.retry)
+        {
+            // Resend this exchange, likely on another connection,
+            // and return false to avoid to re-enter this method.
+            send(exchange);
+            releaseOrClose(connection);
+            return false;
+        }
+
+        request.abort(failure.failure);
+        releaseOrClose(connection);
+        return getQueuedRequestCount() > 0;
     }
 
     protected SendFailure send(IConnection connection, HttpExchange exchange)
