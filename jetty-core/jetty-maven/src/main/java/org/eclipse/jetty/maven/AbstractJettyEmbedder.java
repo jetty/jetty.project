@@ -265,8 +265,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         if (stopPort > 0 && stopKey != null)
         {
             ShutdownService shutdownService = new ShutdownService("127.0.0.1", stopPort, stopKey, exitVm);
-            if (shutdownService.isConfigurationValid())
-                server.addBean(shutdownService);
+            server.addBean(shutdownService);
         }
     }
 }
