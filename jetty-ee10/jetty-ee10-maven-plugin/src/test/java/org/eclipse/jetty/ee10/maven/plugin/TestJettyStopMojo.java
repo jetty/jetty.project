@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class TestJettyStopMojo
 {
     /**
-     * ServerShutdownMain
+     * ShutdownServiceMain
      * Kick off the ShutdownService and wait for it to exit.
      */
-    public static final class ServerShutdownMain
+    public static final class ShutdownServiceMain
     {
         public static void main(String[] args)
         {
@@ -259,7 +259,7 @@ public class TestJettyStopMojo
         cmd.add("-DDEBUG=true");
         cmd.add("-cp");
         cmd.add(System.getProperty("java.class.path"));
-        cmd.add(ServerShutdownMain.class.getName());
+        cmd.add(ShutdownServiceMain.class.getName());
 
         ProcessBuilder command = new ProcessBuilder(cmd);
 
