@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.TypeUtil;
@@ -82,7 +82,7 @@ public interface Environment extends Attributes
 
     class Named extends Attributes.Mapped implements Environment, Dumpable
     {
-        private static final Map<String, Environment> __environments = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        private static final Map<String, Environment> __environments = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
         private final String _name;
         private final ClassLoader _classLoader;
 
