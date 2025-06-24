@@ -117,8 +117,6 @@ public abstract class AbstractServerForker extends AbstractForker
         this.server = server;
     }
 
-
-
     @Override
     public void doStart()
         throws Exception

@@ -551,7 +551,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected JettyForker newJettyForker()
         throws Exception
     {
-        JettyForker jetty = new JettyForker();
+        Toolchain toolchain = getToolchain();
+        String javaPath = null;
+        if (toolchain instanceof JavaToolchainImpl javaToolChain)
+        {
+            javaPath = javaToolChain.getJavaHome();
+        }
+        JettyForker jetty = new JettyForker(javaPath);
         jetty.setServer(server);
         jetty.setWorkDir(project.getBasedir());
         jetty.setStopKey(stopKey);

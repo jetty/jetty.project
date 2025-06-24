@@ -17,8 +17,6 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.maven.toolchain.Toolchain;
-import org.apache.maven.toolchain.java.DefaultJavaToolChain;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -264,7 +262,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
      */
     protected String getJavaBin()
     {
-        if(javaPath == null)
+        if (javaPath == null)
         {
             return javaPath;
         }
@@ -282,8 +280,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
 
         return "java";
     }
-
-
+    
     public static String fileSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();

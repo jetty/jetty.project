@@ -87,7 +87,8 @@ public abstract class AbstractHomeForker extends AbstractForker
     protected String version;
     protected String environment;
 
-    protected AbstractHomeForker(String javaPath) {
+    protected AbstractHomeForker(String javaPath)
+    {
         super(javaPath);
     }
 
