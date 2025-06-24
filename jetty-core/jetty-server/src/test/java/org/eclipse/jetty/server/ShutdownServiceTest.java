@@ -75,7 +75,7 @@ public class ShutdownServiceTest
         shutdown.start();
         assertTrue(shutdown.isListening());
 
-        sendCommand(shutdown , "stop");
+        sendCommand(shutdown, "stop");
         awaitShutdownListening(shutdown);
         assertFalse(shutdown.isListening());
     }
@@ -106,7 +106,7 @@ public class ShutdownServiceTest
             assertFalse(shutdown.hasComponent(server));
         }
     }
-    
+
     @Test
     public void testForceStopCommand() throws Exception
     {
@@ -171,9 +171,9 @@ public class ShutdownServiceTest
              InputStreamReader inReader = new InputStreamReader(in, StandardCharsets.US_ASCII);
              BufferedReader reader = new BufferedReader(inReader))
         {
-                out.write((shutdownService.getKey() + "\r\n" + command + "\r\n").getBytes(StandardCharsets.US_ASCII));
-                out.flush();
-                return reader.readLine();
+            out.write((shutdownService.getKey() + "\r\n" + command + "\r\n").getBytes(StandardCharsets.US_ASCII));
+            out.flush();
+            return reader.readLine();
         }
     }
 

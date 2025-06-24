@@ -132,7 +132,7 @@ public class ShutdownMonitor extends ShutdownService
 
     private ShutdownMonitor(String host, int port, String key, boolean exitVm)
     {
-        super(host, port == -1 ? 0: port, key, exitVm);
+        super(host, port == -1 ? 0 : port, key, exitVm);
         this.mutablePort = port;
         this.mutableKey = super.getKey();
         this.mutableExitVm = exitVm;
