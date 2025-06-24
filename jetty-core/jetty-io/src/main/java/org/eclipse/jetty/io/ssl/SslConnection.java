@@ -356,6 +356,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     public void onClose(Throwable cause)
     {
         getSslEndPoint().getConnection().onClose(cause);
+        try (AutoLock l = _lock.lock())
+        {
+            discardInputBuffers();
+            discardEncryptedOutputBuffer();
+        }
         super.onClose(cause);
     }
 
