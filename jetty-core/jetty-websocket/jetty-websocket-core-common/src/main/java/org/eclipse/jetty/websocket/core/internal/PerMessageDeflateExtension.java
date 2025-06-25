@@ -55,7 +55,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     private static final int DEFAULT_BUF_SIZE = 8 * 1024;
 
     private final OutgoingFlusher outgoingFlusher;
-    private final IncomingFlusher incomingFlusher;
+    private final IncomingDemander incomingFlusher;
     private DeflaterPool.Entry deflaterHolder;
     private InflaterPool.Entry inflaterHolder;
 
@@ -69,7 +69,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     public PerMessageDeflateExtension()
     {
         outgoingFlusher = new OutgoingFlusher();
-        incomingFlusher = new IncomingFlusher();
+        incomingFlusher = new IncomingDemander();
     }
 
     @Override
@@ -356,13 +356,13 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         }
     }
 
-    private class IncomingFlusher extends WebSocketDemander
+    private class IncomingDemander extends WebSocketDemander
     {
         private boolean _tailBytes;
         private boolean _incomingCompressed;
         private AtomicReference<RetainableByteBuffer> _payloadRef;
 
-        public IncomingFlusher()
+        public IncomingDemander()
         {
             super(PerMessageDeflateExtension.this::nextIncomingFrame);
         }

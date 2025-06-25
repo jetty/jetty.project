@@ -51,7 +51,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
             }
         };
 
-        incomingFlusher = new FragmentingDemandingFlusher();
+        incomingFlusher = new FragmentingDemander();
     }
 
     @Override
@@ -92,11 +92,11 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         configuration.setMaxFrameSize(maxLength);
     }
 
-    public class FragmentingDemandingFlusher extends WebSocketDemander
+    public class FragmentingDemander extends WebSocketDemander
     {
         private ByteBuffer _payload;
 
-        public FragmentingDemandingFlusher()
+        public FragmentingDemander()
         {
             super(FragmentExtension.this::nextIncomingFrame);
         }
@@ -113,8 +113,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
                     return true;
                 }
 
-                // Slice the payload so we don't modify the original.
-                _payload = frame.getPayload().slice();
+                _payload = frame.getPayload();
             }
 
             int remaining = _payload.remaining();

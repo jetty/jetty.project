@@ -65,7 +65,7 @@ public abstract class WebSocketFlusher implements OutgoingFrames
             log.debug("Queuing {}", entry);
 
         Throwable failure = null;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure == null)
                 _entries.add(entry);
@@ -94,7 +94,7 @@ public abstract class WebSocketFlusher implements OutgoingFrames
     public void failFlusher(Throwable t)
     {
         boolean failed = false;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure == null)
             {
@@ -120,7 +120,7 @@ public abstract class WebSocketFlusher implements OutgoingFrames
         protected Action process() throws Throwable
         {
             boolean first = false;
-            try (AutoLock l = _lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 if (_failure != null)
                     throw _failure;
@@ -159,7 +159,7 @@ public abstract class WebSocketFlusher implements OutgoingFrames
                 log.debug("onCompleteFailure {}", t.toString());
 
             List<OutgoingEntry> entries;
-            try (AutoLock l = _lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 if (_failure == null)
                     _failure = t;

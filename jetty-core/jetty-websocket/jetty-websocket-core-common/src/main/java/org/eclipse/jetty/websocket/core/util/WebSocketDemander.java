@@ -95,7 +95,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     public void emitFrame(Frame frame, Callback callback)
     {
         Throwable failure = null;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (!_outputDemand)
                 failure = new IllegalStateException("Demand already fulfilled");
@@ -120,7 +120,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     @Override
     public void demand()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure != null)
                 throw new IllegalStateException("Flusher is failed", _failure);
@@ -142,7 +142,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     public void onFrame(Frame frame, Callback callback)
     {
         Throwable failure = null;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure != null)
             {
@@ -153,6 +153,8 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
                 // Fulfill the incoming demand to receive a new frame.
                 _inputDemand = false;
                 _frame = frame;
+                // Wrap the callback with CountingCallback to protect against the case where the demander is failed
+                // as the application is completing the callback.
                 _callback = new CountingCallback(callback, 1);
             }
             else
@@ -169,6 +171,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         {
             callback.failed(failure);
             failFlusher(failure);
+            failed(failure);
         }
     }
 
@@ -187,7 +190,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     public void failFlusher(Throwable t)
     {
         boolean abort = false;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure == null)
             {
@@ -206,7 +209,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         boolean demand = false;
         while (true)
         {
-            try (AutoLock l = _lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 if (_failure != null)
                     throw _failure;
@@ -233,7 +236,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
             boolean needContent = handle(_frame, _callback, first);
             if (needContent)
             {
-                try (AutoLock l = _lock.lock())
+                try (AutoLock ignored = _lock.lock())
                 {
                     _needContent = true;
                     _first = true;
@@ -248,7 +251,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     protected void onCompleteFailure(Throwable cause)
     {
         Callback callback;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_failure != null)
                 ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
