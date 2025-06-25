@@ -539,11 +539,30 @@ public class Server extends Handler.Wrapper implements Attributes
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
-            ShutdownService shutdown = getShutdown();
-            if (shutdown != null)
+            // Look for the old-school (now deprecated) ShutdownMonitor
+            // First we look to see if anyone has called ShutdownMonitor.getInstance() yet.
+            //noinspection removal
+            ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
+            //noinspection removal
+            if (shutdownMonitor != null && shutdownMonitor.getPort() != (-1))
             {
-                shutdown.addComponent(this);
-                shutdown.start();
+                addBean(shutdownMonitor);
+            }
+
+            if (getBean(ShutdownService.class) == null)
+            {
+                // Attempt to create the default ShutdownService based on historical System Properties.
+                ShutdownService shutdownService = ShutdownService.createFromHistoricalSystemProperties();
+                if (shutdownService != null)
+                {
+                    addBean(shutdownService);
+                }
+            }
+
+            for (ShutdownService service: getBeans(ShutdownService.class))
+            {
+                service.addComponent(this);
+                service.start();
             }
 
             if (_errorHandler == null)
@@ -635,35 +654,6 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private ShutdownService getShutdown()
-    {
-        ShutdownService shutdown = getBean(ShutdownService.class);
-        if (shutdown != null)
-            return shutdown;
-
-        // Look for the old-school (now deprecated) ShutdownMonitor
-        // First we look to see if anyone has called ShutdownMonitor.getInstance() yet.
-        //noinspection removal
-        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
-        //noinspection removal
-        if (shutdownMonitor != null && shutdownMonitor.getPort() != (-1))
-        {
-            addBean(shutdownMonitor);
-            return shutdownMonitor;
-        }
-
-        // Lets create the default ShutdownService default implementation.
-        // Start System Property version
-        ShutdownService shutdownService = ShutdownService.createFromHistoricalSystemProperties();
-        if (shutdownService != null)
-        {
-            addBean(shutdownService);
-            return shutdownService;
-        }
-
-        return null;
-    }
-
     @Override
     protected void start(LifeCycle l) throws Exception
     {
@@ -729,10 +719,9 @@ public class Server extends Handler.Wrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        ShutdownService shutdown = getBean(ShutdownService.class);
-        if (shutdown != null)
+        for (ShutdownService service: getBeans(ShutdownService.class))
         {
-            shutdown.removeComponent(this);
+            service.removeComponent(this);
         }
 
         ExceptionUtil.ifExceptionThrow(multiException);
