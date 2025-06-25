@@ -33,6 +33,7 @@ import org.eclipse.jetty.ee11.webapp.JndiConfiguration;
 import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -193,7 +194,7 @@ public class WebAppTester extends ContainerLifeCycle
 
         public void createWebInf() throws IOException
         {
-            String emptyWebXml = WebXmlConfiguration.WEB_APP_ELEMENT + "</web-app>";
+            String emptyWebXml = WebDescriptor.WEB_APP_ELEMENT + "</web-app>";
             File webXml = _webInf.resolve("web.xml").toFile();
             try (FileWriter out = new FileWriter(webXml))
             {

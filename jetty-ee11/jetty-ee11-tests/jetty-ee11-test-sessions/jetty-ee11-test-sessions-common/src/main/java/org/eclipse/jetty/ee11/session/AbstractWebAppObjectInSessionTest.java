@@ -21,7 +21,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
@@ -59,7 +59,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         webInfDir.mkdir();
         // Write web.xml
         File webXml = new File(webInfDir, "web.xml");
-        String xml = WebXmlConfiguration.WEB_APP_ELEMENT +
+        String xml = WebDescriptor.WEB_APP_ELEMENT +
                 "\n" +
                 "</web-app>";
         FileWriter w = new FileWriter(webXml);
