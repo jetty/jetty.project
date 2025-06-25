@@ -33,7 +33,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -213,6 +213,7 @@ public class ResourceFactoryTest
     }
 
     @Test
+    @Tag("external")
     public void testRegisterHttpsUrlFactory() throws MalformedURLException
     {
         URI uri = URI.create("https://webtide.com/");

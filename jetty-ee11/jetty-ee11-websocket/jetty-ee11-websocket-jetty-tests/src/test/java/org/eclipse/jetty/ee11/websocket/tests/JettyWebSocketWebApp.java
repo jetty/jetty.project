@@ -20,7 +20,7 @@ import java.net.URL;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -66,7 +66,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void createWebXml() throws IOException
     {
-        String emptyWebXml = WebXmlConfiguration.WEB_APP_ELEMENT + "</web-app>";
+        String emptyWebXml = WebDescriptor.WEB_APP_ELEMENT + "</web-app>";
 
         Path webXml = webInf.resolve("web.xml");
         try (FileWriter writer = new FileWriter(webXml.toFile()))

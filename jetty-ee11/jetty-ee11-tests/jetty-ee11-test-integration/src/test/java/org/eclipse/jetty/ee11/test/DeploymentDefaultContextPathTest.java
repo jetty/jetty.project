@@ -26,7 +26,7 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -172,7 +172,7 @@ public class DeploymentDefaultContextPathTest
             FS.ensureDirExists(webinf);
 
             Path webXml = root.resolve("WEB-INF/web.xml");
-            String webXmlText = WebXmlConfiguration.WEB_APP_ELEMENT + """
+            String webXmlText = WebDescriptor.WEB_APP_ELEMENT + """
                   <display-name>EE11 Test WebApp</display-name>
                   <default-context-path>%s</default-context-path>
                 </web-app>
