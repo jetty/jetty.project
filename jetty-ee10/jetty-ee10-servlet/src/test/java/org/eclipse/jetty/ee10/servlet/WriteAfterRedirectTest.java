@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.ValidatingConnectionPool;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -103,6 +104,13 @@ public class WriteAfterRedirectTest
                 }
             }
         });
+
+        // The server will close the connection without any indication to the client,
+        // so when the client follows the redirect it may send it on a closed connection,
+        // which will fail the test. ValidatingConnectionPool is designed for these cases.
+        _client.getTransport().setConnectionPoolFactory(destination ->
+            new ValidatingConnectionPool(destination, _client.getMaxConnectionsPerDestination(), _client.getScheduler(), 1000)
+        );
 
         // We get the correct redirect.
         _client.setFollowRedirects(false);
