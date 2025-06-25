@@ -79,7 +79,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Isolated
+@Isolated("Consuming huge resource")
 public class HugeResourceTest
 {
     private static final long KB = 1024;

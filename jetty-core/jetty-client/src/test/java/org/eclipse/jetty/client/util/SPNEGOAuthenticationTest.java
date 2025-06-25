@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Isolated("SimpleKdcServer running on a specific port")
 public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticationTest.class);

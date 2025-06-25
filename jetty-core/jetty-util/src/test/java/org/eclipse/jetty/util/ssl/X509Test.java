@@ -29,7 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-@Isolated
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class X509Test
 {
     @BeforeEach

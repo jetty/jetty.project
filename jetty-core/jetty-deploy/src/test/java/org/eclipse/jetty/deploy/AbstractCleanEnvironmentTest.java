@@ -21,7 +21,7 @@ import org.junit.jupiter.api.parallel.Isolated;
  * Ensure that each test is using a clean (empty) Environment,
  * by running isolated.
  */
-@Isolated
+@Isolated("Ensure that each test is using a clean (empty) Environment")
 public abstract class AbstractCleanEnvironmentTest
 {
     @AfterEach

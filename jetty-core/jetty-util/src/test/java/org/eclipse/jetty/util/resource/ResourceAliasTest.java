@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-@Isolated
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class ResourceAliasTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceAliasTest.class);

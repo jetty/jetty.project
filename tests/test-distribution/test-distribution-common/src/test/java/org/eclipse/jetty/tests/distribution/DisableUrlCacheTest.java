@@ -40,7 +40,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Isolated
 public class DisableUrlCacheTest extends AbstractJettyHomeTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(DisableUrlCacheTest.class);

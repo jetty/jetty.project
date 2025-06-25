@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
-@Isolated
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class ResourceTest
 {
     private static final boolean DIR = true;

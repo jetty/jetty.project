@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Isolated
+@Isolated("Access static method of FileSystemPool")
 public class BufferUtilTest
 {
     @BeforeEach

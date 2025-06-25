@@ -67,7 +67,7 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
-@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
+@Isolated("Access static method of FileSystemPool")
 public class FileSystemResourceTest
 {
 

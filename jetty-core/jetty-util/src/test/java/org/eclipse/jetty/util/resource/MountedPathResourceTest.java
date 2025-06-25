@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-@Isolated
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class MountedPathResourceTest
 {
 
