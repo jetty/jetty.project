@@ -165,7 +165,6 @@
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-modules java.security.jgss
-            --add-modules org.eclipse.jetty.jmx
             --add-reads org.eclipse.jetty.client=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>

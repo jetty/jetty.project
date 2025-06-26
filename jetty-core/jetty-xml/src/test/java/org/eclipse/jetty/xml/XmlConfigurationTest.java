@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -324,7 +326,7 @@ public class XmlConfigurationTest
     {
         if (!rawXml.contains("!DOCTYPE"))
             rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">\n" +
                 rawXml;
         return asXmlConfiguration("raw.xml", rawXml);
     }
@@ -333,7 +335,7 @@ public class XmlConfigurationTest
     {
         if (!rawXml.contains("!DOCTYPE"))
             rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">\n" +
                 rawXml;
         Path testFile = workDir.getEmptyPathDir().resolve(filename);
         try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
@@ -2074,6 +2076,24 @@ public class XmlConfigurationTest
         XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
         InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
         assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
+    }
+
+    @ParameterizedTest
+    @MethodSource("xmlSystemIdSource")
+    public void testDtdVariants(String doctype) throws Exception
+    {
+        String rawXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://%s">
+            <Configure class="org.eclipse.jetty.xml.ExampleConfiguration">
+              <Set name="Test">Value</Set>
+            </Configure>
+            """.formatted(doctype);
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource(new URI("/test"), rawXml.getBytes(UTF_8)));
+        xmlConfiguration.getXmlParser().setValidating(true);
+        Object configured = xmlConfiguration.configure();
+        assertThat(configured, notNullValue());
+        assertThat(configured, instanceOf(ExampleConfiguration.class));
     }
 
     public static Stream<Arguments> xmlPublicIdSource()

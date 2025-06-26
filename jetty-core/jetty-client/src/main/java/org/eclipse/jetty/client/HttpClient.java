@@ -576,7 +576,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (transport.requiresDomainNameResolution())
         {
             Origin.Address address = origin.getAddress();
-            getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
+            getSocketAddressResolver().resolve(address.getHost(), address.getPort(), context, new Promise<>()
             {
                 @Override
                 public void succeeded(List<InetSocketAddress> socketAddresses)

@@ -254,6 +254,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
     }
 
+    private int getTaskCount()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return tasks.size();
+        }
+    }
+
     @Override
     public void onHeaders(HeadersFrame frame)
     {
@@ -319,6 +327,18 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     {
         producer.failed = true;
         session.onConnectionFailure(error, reason);
+    }
+
+    @Override
+    public String toConnectionString()
+    {
+        String countState;
+        try (AutoLock l = lock.tryLock())
+        {
+            boolean held = l.isHeldByCurrentThread();
+            countState = held ? String.valueOf(tasks.size()) : "undefined";
+        }
+        return "%s@%x[taskQueue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), countState);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

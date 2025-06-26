@@ -502,6 +502,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         {
             if (isCommitted())
                 return false;
+
             if (field.getHeader() == HttpHeader.CONTENT_TYPE)
             {
                 _contentType = null;
@@ -511,7 +512,11 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                     _characterEncoding = switch (_encodingFrom)
                     {
                         case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                        default -> null;
+                        default ->
+                        {
+                            _encodingFrom = EncodingFrom.NOT_SET;
+                            yield null;
+                        }
                     };
                 }
             }

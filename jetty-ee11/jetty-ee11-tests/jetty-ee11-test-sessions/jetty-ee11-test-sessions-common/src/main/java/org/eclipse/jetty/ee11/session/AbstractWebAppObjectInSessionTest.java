@@ -21,6 +21,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
@@ -58,12 +59,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         webInfDir.mkdir();
         // Write web.xml
         File webXml = new File(webInfDir, "web.xml");
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
-                "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
-                "         version=\"2.4\">\n" +
+        String xml = WebDescriptor.WEB_APP_ELEMENT +
                 "\n" +
                 "</web-app>";
         FileWriter w = new FileWriter(webXml);
