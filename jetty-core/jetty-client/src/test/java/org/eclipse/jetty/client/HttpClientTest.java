@@ -834,9 +834,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), 5000)
             {
                 @Override
-                public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+                public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
                 {
-                    super.resolve(host, port, new Promise<>()
+                    super.resolve(host, port, context, new Promise<>()
                     {
                         @Override
                         public void succeeded(List<InetSocketAddress> result)

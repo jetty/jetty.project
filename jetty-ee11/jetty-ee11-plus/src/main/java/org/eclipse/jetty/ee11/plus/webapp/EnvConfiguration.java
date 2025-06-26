@@ -72,7 +72,7 @@ public class EnvConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp {}", context.getContextPath());
 
-        //check to see if an explicit file has been set,
+        //check to see if an explicit file has been set
         Resource jettyEnvXmlResource = (Resource)context.getAttribute(JETTY_ENV_XML);
         if (jettyEnvXmlResource == null)
         {
@@ -258,7 +258,7 @@ public class EnvConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-ee10-env.xml
+            //try to find jetty-eeXX-env.xml
             Resource xmlResource = webInf.resolve(JETTY_EE11_ENV_XML_FILENAME);
             if (!Resources.missing(xmlResource))
                 return xmlResource;

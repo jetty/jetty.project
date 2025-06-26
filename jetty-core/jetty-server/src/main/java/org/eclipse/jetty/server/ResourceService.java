@@ -191,7 +191,7 @@ public class ResourceService
             }
 
             // Conditional response?
-            if (passConditionalHeaders(request, response, content, callback))
+            if (handleConditionalHeaders(request, response, content, callback))
                 return;
 
             if (content.getPreCompressedContentFormats() == null || !content.getPreCompressedContentFormats().isEmpty())
@@ -308,8 +308,18 @@ public class ResourceService
 
     /**
      * @return true if the request was processed, false otherwise.
+     * @deprecated Use {@link #handleConditionalHeaders(Request, Response, HttpContent, Callback)}
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+    {
+        return handleConditionalHeaders(request, response, content, callback);
+    }
+
+    /**
+     * @return true if the request was processed, false otherwise.
+     */
+    protected boolean handleConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -477,7 +487,7 @@ public class ResourceService
         if (welcome(content, request, response, callback))
             return;
 
-        if (!passConditionalHeaders(request, response, content, callback))
+        if (!handleConditionalHeaders(request, response, content, callback))
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
@@ -531,9 +541,7 @@ public class ResourceService
         switch (welcomeAction.mode)
         {
             case REDIRECT -> redirectWelcome(request, response, callback, welcomeAction.target);
-            case SERVE ->
-                // TODO : check conditional headers.
-                serveWelcome(request, response, callback, welcomeAction.target);
+            case SERVE -> serveWelcome(request, response, callback, welcomeAction.target);
             case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
         }
     }
@@ -568,8 +576,10 @@ public class ResourceService
      */
     protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        HttpContent c = _contentFactory.getContent(welcomeTarget);
-        sendData(request, response, callback, c, List.of());
+        HttpContent httpContent = _contentFactory.getContent(welcomeTarget);
+        if (handleConditionalHeaders(request, response, httpContent, callback))
+            return;
+        sendData(request, response, callback, httpContent, List.of());
     }
 
     /**
