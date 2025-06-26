@@ -40,8 +40,8 @@ public class WebDescriptorTest
             <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                      metadata-complete="false"
-                     xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-                     version="6.0">
+                     xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+                     version="6.1">
               <display-name>Empty WebApp Descriptor</display-name>
             </web-app>
             """, StandardCharsets.UTF_8);

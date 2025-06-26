@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,9 +42,10 @@ public interface SocketAddressResolver
      *
      * @param host the host to resolve
      * @param port the port of the resulting socket address
+     * @param context the context information
      * @param promise the callback invoked when the resolution succeeds or fails
      */
-    public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
+    public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise);
 
     /**
      * <p>Creates {@link InetSocketAddress} instances synchronously in the caller thread.</p>
@@ -52,7 +54,7 @@ public interface SocketAddressResolver
     public static class Sync implements SocketAddressResolver
     {
         @Override
-        public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+        public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
         {
             try
             {
@@ -140,7 +142,7 @@ public interface SocketAddressResolver
         }
 
         @Override
-        public void resolve(final String host, final int port, final Promise<List<InetSocketAddress>> promise)
+        public void resolve(final String host, final int port, Map<String, Object> context, final Promise<List<InetSocketAddress>> promise)
         {
             executor.execute(() ->
             {
