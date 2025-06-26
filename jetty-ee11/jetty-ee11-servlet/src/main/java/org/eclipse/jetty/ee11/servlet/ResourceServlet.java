@@ -843,12 +843,12 @@ public class ResourceServlet extends HttpServlet
         }
 
         @Override
-        protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+        protected boolean handleConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
             boolean included = isIncluded(getServletRequest(request));
             if (included)
                 return false;
-            return super.passConditionalHeaders(request, response, content, callback);
+            return super.handleConditionalHeaders(request, response, content, callback);
         }
 
         private HttpServletRequest getServletRequest(Request request)

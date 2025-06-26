@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -294,14 +295,14 @@ public class ConnectionPoolTest
         client.setSocketAddressResolver(new SocketAddressResolver.Sync()
         {
             @Override
-            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
             {
                 client.getExecutor().execute(() ->
                 {
                     try
                     {
                         Thread.sleep(delay);
-                        super.resolve(host, port, promise);
+                        super.resolve(host, port, context, promise);
                     }
                     catch (InterruptedException x)
                     {
@@ -362,14 +363,14 @@ public class ConnectionPoolTest
         client.setSocketAddressResolver(new SocketAddressResolver.Sync()
         {
             @Override
-            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
             {
                 client.getExecutor().execute(() ->
                 {
                     try
                     {
                         Thread.sleep(100);
-                        super.resolve(host, port, promise);
+                        super.resolve(host, port, context, promise);
                     }
                     catch (InterruptedException x)
                     {
