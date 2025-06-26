@@ -424,6 +424,8 @@ public abstract class HttpReceiver implements Invocable
         {
             // The response was already completed (either successfully
             // or with a failure) by a previous event, bail out.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Already failed on {}", this);
             promise.succeeded(false);
         }
     }

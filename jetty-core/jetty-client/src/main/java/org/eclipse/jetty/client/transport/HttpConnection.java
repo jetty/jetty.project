@@ -117,7 +117,6 @@ public abstract class HttpConnection implements IConnection, Attachable
             {
                 // Association may fail, for example if the application
                 // aborted the request, so we must release the channel.
-                channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
 
@@ -315,7 +314,7 @@ public abstract class HttpConnection implements IConnection, Attachable
     @Override
     public String toString()
     {
-        return String.format("%s@%h", TypeUtil.toShortName(getClass()), this);
+        return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
     }
 
     /**

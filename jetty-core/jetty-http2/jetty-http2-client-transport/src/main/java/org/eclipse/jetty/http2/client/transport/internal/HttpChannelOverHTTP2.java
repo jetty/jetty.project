@@ -114,15 +114,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         sender.send(exchange);
     }
 
+    void acquire()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("channel acquired {} {}", this, stream);
+    }
+
     @Override
     public void release()
     {
         setStream(null);
-        boolean released = connection.release(this);
+        connection.release(this);
         if (LOG.isDebugEnabled())
-            LOG.debug("released channel? {} {}", released, this);
-        if (released)
-            getHttpDestination().release(getHttpConnection());
+            LOG.debug("channel released {} {}", this, stream);
     }
 
     @Override
@@ -237,6 +241,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             if (failure instanceof RetryableStreamException)
                 failure = new RetryableRequestException(failure);
             Runnable task = channel.onFailure(failure, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("executing failure task {} {}", stream, task);
             ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
         }
     }
