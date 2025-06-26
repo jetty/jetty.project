@@ -7,7 +7,7 @@ a running Jetty Server.
 [tags]
 shutdown
 
-[depend]
+[before]
 server
 
 [xml]
