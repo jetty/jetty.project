@@ -567,7 +567,7 @@
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <pax.exam.debug.port>${pax.exam.debug.port}</pax.exam.debug.port>
               <pax.exam.LEVEL>${pax.exam.LEVEL}</pax.exam.LEVEL>
-              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <settingsFilePath>${settings.path}</settingsFilePath>
               <servlet.artifactId>${servlet.artifactId}</servlet.artifactId>
               <inject.groupId>${inject.groupId}</inject.groupId>
               <inject.artifactId>${inject.artifactId}</inject.artifactId>
