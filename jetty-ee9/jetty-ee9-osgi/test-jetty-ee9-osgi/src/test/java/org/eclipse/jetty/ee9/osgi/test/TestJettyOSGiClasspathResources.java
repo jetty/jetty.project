@@ -115,8 +115,6 @@ public class TestJettyOSGiClasspathResources
         Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
         bundle.start();
 
-
-
         try (HttpClient client = new HttpClient())
         {
             client.start();
