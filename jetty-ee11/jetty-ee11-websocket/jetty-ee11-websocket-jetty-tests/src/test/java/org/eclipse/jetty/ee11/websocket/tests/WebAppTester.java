@@ -33,7 +33,6 @@ import org.eclipse.jetty.ee11.webapp.JndiConfiguration;
 import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
 import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -194,7 +193,15 @@ public class WebAppTester extends ContainerLifeCycle
 
         public void createWebInf() throws IOException
         {
-            String emptyWebXml = WebDescriptor.WEB_APP_ELEMENT + "</web-app>";
+            String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<web-app\n" +
+                "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "  xmlns=\"http://java.sun.com/xml/ns/javaee\"\n" +
+                "  xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\"\n" +
+                "  metadata-complete=\"false\"\n" +
+                "  version=\"3.0\">\n" +
+                "</web-app>";
+
             File webXml = _webInf.resolve("web.xml").toFile();
             try (FileWriter out = new FileWriter(webXml))
             {

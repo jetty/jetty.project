@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,7 @@ public class CharacterEncodingTest
         context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/character-encoding/not-exists/*");
         context.addServlet(CharsetContentTypeSetTwiceServlet.class, "/character-encoding/set-twice/*");
         context.addServlet(InferredContentTypeServlet.class, "/bad/*");
+
         server.start();
     }
 
@@ -150,7 +152,6 @@ public class CharacterEncodingTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-
     }
 
     @Test
