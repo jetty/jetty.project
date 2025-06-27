@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1085,6 +1086,7 @@ public class IteratingCallbackTest
         assertTrue(icb.isAborted());
     }
 
+    @Disabled("See https://github.com/jetty/jetty.project/issues/13298")
     @Test
     public void testAbortFromProcess()
     {
@@ -1114,6 +1116,7 @@ public class IteratingCallbackTest
         assertEquals(1, icb.onCompleteFailureCount.get());
     }
 
+    @Disabled("See https://github.com/jetty/jetty.project/issues/13298")
     @Test
     public void testAbortFromProcessThenThrow()
     {
