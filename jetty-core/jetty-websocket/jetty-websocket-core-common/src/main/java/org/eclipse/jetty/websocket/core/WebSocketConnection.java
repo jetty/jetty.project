@@ -331,26 +331,20 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void acquireNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                networkBuffer = newNetworkBuffer(getInputBufferSize());
-        }
+        if (networkBuffer == null)
+            networkBuffer = newNetworkBuffer(getInputBufferSize());
     }
 
     private void reacquireNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                throw new IllegalStateException();
+        if (networkBuffer == null)
+            throw new IllegalStateException();
 
-            if (networkBuffer.getByteBuffer().hasRemaining())
-                throw new IllegalStateException();
+        if (networkBuffer.getByteBuffer().hasRemaining())
+            throw new IllegalStateException();
 
-            networkBuffer.release();
-            networkBuffer = newNetworkBuffer(getInputBufferSize());
-        }
+        networkBuffer.release();
+        networkBuffer = newNetworkBuffer(getInputBufferSize());
     }
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
@@ -360,17 +354,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void releaseNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                throw new IllegalStateException();
+        if (networkBuffer == null)
+            throw new IllegalStateException();
 
-            if (networkBuffer.hasRemaining())
-                throw new IllegalStateException();
+        if (networkBuffer.hasRemaining())
+            throw new IllegalStateException();
 
-            networkBuffer.release();
-            networkBuffer = null;
-        }
+        networkBuffer.release();
+        networkBuffer = null;
     }
 
     @Override
@@ -392,10 +383,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public void demand()
     {
         boolean fillAndParse = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
+                LOG.debug("demand {} fp={} {}", demand, fillingAndParsing, this);
 
             if (demand != DemandState.CANCELLED)
             {
@@ -417,7 +408,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean moreDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("moreDemand? d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -446,7 +437,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean meetDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -464,7 +455,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public void cancelDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -598,10 +589,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
-        try (AutoLock l = lock.lock())
-        {
-            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
-        }
+        networkBuffer = newNetworkBuffer(initialBuffer.remaining());
         ByteBuffer buffer = networkBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
         BufferUtil.put(initialBuffer, buffer);
