@@ -14,8 +14,13 @@
 package org.eclipse.jetty.tests.testers;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Queue;
@@ -154,6 +159,21 @@ public class ProcessWrapper implements AutoCloseable
     public Supplier<String> logs()
     {
         return () -> String.join("\n", this.getLogs());
+    }
+
+    public void saveLogs(Path filename) throws IOException
+    {
+        if (!Files.isDirectory(filename.getParent()))
+            Files.createDirectories(filename.getParent());
+        try (OutputStream out = Files.newOutputStream(filename))
+        {
+            byte[] ln = new byte[]{0x0A};
+            for (String line : getLogs())
+            {
+                out.write(line.getBytes(StandardCharsets.UTF_8));
+                out.write(ln);
+            }
+        }
     }
 
     public boolean awaitForJettyStart(boolean ignoreWarn)

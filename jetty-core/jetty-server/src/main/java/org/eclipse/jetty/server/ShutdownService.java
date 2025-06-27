@@ -89,7 +89,7 @@ public class ShutdownService
     private ServerSocket serverSocket;
 
     /**
-     * Create the default ShutdownService, using historical system properties.
+     * Create the default ShutdownService, using deprecated historical system properties.
      *
      * <dl>
      * <dt>{@code STOP.HOST}</dt>
@@ -110,6 +110,8 @@ public class ShutdownService
      */
     public static ShutdownService createFromHistoricalSystemProperties()
     {
+        LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {} constructor.",
+            ShutdownService.class.getName());
         int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
         if (port < 0 || port > 0xFFFF)
         {

@@ -63,12 +63,21 @@ public class ShutdownMonitor extends ShutdownService
     protected static AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
 
     /**
-     * @deprecated No direct replacement, see {@link ShutdownService}, which isn't a singleton.
+     * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static ShutdownMonitor getInstance()
     {
-        return INSTANCE.updateAndGet((h) -> h != null ? h : createFromSystemProperties());
+        return INSTANCE.updateAndGet((h) ->
+        {
+            if (h != null)
+                return h;
+            else
+            {
+                LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
+                return createFromSystemProperties();
+            }
+        });
     }
 
     /**
@@ -82,7 +91,7 @@ public class ShutdownMonitor extends ShutdownService
     }
 
     /**
-     * @deprecated See {@link ShutdownService#addComponent(LifeCycle)}.
+     * @deprecated See {@link org.eclipse.jetty.server.ShutdownService#addComponent(LifeCycle)}.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static void register(LifeCycle... lifeCycles)
@@ -116,6 +125,9 @@ public class ShutdownMonitor extends ShutdownService
      */
     private static ShutdownMonitor createFromSystemProperties()
     {
+        LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {}",
+            ShutdownService.class.getName());
+
         int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
         String host = getSysProp("STOP.HOST", "127.0.0.1");
         String key = getSysProp("STOP.KEY", null);

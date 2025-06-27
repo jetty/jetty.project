@@ -21,10 +21,18 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.awaitility.Awaitility;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShutdownServiceTest
@@ -155,6 +164,32 @@ public class ShutdownServiceTest
             assertFalse(server.destroyed);
             assertFalse(ShutdownThread.isRegistered(server));
             assertFalse(shutdown.hasComponent(server));
+        }
+    }
+
+    @Test
+    public void testShutdownXml() throws Exception
+    {
+        Path xml = MavenPaths.projectBase().resolve("src/main/config/etc/jetty-shutdown-service.xml");
+        assertTrue(Files.isRegularFile(xml));
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceXml = resourceFactory.newResource(xml);
+            Map<String, Object> idMap = new HashMap<>();
+            Map<String, String> properties = new HashMap<>();
+            properties.put("jetty.shutdown.host", "localhost");
+            properties.put("jetty.shutdown.port", "9595");
+            properties.put("jetty.shutdown.key", "SEAWALL");
+            properties.put("jetty.shutdown.exit", "false");
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(resourceXml, idMap, properties);
+            xmlConfiguration.configure();
+            ShutdownService service = (ShutdownService)xmlConfiguration.getIdMap().get("ShutdownService");
+            assertNotNull(service);
+            assertEquals("localhost", service.getHost());
+            assertEquals(9595, service.getPort());
+            assertEquals("SEAWALL", service.getKey());
+            assertFalse(service.isExitVm());
         }
     }
 
