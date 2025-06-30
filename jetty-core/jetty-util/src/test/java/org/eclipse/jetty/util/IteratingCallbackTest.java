@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -904,82 +903,6 @@ public class IteratingCallbackTest
         assertThat(badCalls.get(), is(0));
     }
 
-    private static class TestIteratingCB extends IteratingCallback
-    {
-        final AtomicInteger _count;
-        final AtomicInteger _badCalls = new AtomicInteger(0);
-        final AtomicBoolean _onSuccess = new AtomicBoolean();
-        final AtomicReference<Throwable> _onFailure = new AtomicReference<>();
-        final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
-        final CountDownLatch _completed = new CountDownLatch(1);
-
-        private TestIteratingCB()
-        {
-            this(1);
-        }
-
-        private TestIteratingCB(int count)
-        {
-            _count = new AtomicInteger(count);
-        }
-
-        @Override
-        protected Action process()
-        {
-            return _count.getAndDecrement() == 0 ? Action.SUCCEEDED : Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onAborted(Throwable cause)
-        {
-            _completion.compareAndSet(null, cause, false, false);
-        }
-
-        @Override
-        protected void onSuccess()
-        {
-            if (!_onSuccess.compareAndSet(false, true))
-                _badCalls.incrementAndGet();
-        }
-
-        @Override
-        protected void onFailure(Throwable cause)
-        {
-            if (!_onFailure.compareAndSet(null, cause))
-                _badCalls.incrementAndGet();
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            if (_completion.isMarked())
-                _badCalls.incrementAndGet();
-
-            if (_completion.compareAndSet(null, null, false, true))
-                _completed.countDown();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            if (_completion.isMarked())
-                _badCalls.incrementAndGet();
-
-            if (_completion.compareAndSet(null, cause, false, true))
-                _completed.countDown();
-
-            // Try again the CAS if there was a call to onAborted().
-            Throwable failure = _completion.getReference();
-            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
-                _completed.countDown();
-        }
-
-        public void checkNoBadCalls()
-        {
-            assertThat(_badCalls.get(), is(0));
-        }
-    }
-
     @Test
     public void testOnSuccessCalledDespiteISE() throws Exception
     {
@@ -1086,9 +1009,8 @@ public class IteratingCallbackTest
         assertTrue(icb.isAborted());
     }
 
-    @Disabled("See https://github.com/jetty/jetty.project/issues/13298")
     @Test
-    public void testAbortFromProcess()
+    public void testAbortFromProcessThenSucceed()
     {
         AccountingIteratingCallback icb = new AccountingIteratingCallback()
         {
@@ -1106,19 +1028,26 @@ public class IteratingCallbackTest
         icb.iterate();
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
-        assertEquals(1, icb.onCompleteFailureCount.get());
+        assertEquals(0, icb.onCompleteFailureCount.get());
 
+        // Now complete the scheduled operation.
+        icb.succeeded();
+
+        // Already aborted so abort() returns false.
         assertFalse(icb.abort(new Exception()));
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
     }
 
-    @Disabled("See https://github.com/jetty/jetty.project/issues/13298")
     @Test
-    public void testAbortFromProcessThenThrow()
+    public void testAbortThenSucceedFromProcess()
     {
         AccountingIteratingCallback icb = new AccountingIteratingCallback()
         {
@@ -1129,7 +1058,41 @@ public class IteratingCallbackTest
 
                 abort(new Exception());
 
-                failed(new Throwable());
+                succeeded();
+                return Action.SCHEDULED;
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        // Already aborted so abort() returns false.
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testAbortThenThrowFromProcess()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                abort(new Exception());
+
                 throw new RuntimeException();
             }
         };
@@ -1137,12 +1100,115 @@ public class IteratingCallbackTest
         icb.iterate();
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
 
         assertFalse(icb.abort(new Exception()));
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testAbortThenFailFromProcess(boolean succeed)
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                abort(new Exception());
+
+                if (succeed)
+                    succeeded();
+                else
+                    failed(new Throwable());
+                throw new RuntimeException();
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testSucceedThenThrowFromProcess()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                succeeded();
+
+                throw new RuntimeException();
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(0, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    @Test
+    public void testAbortFromProcessThenFail()
+    {
+        AccountingIteratingCallback icb = new AccountingIteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                super.process();
+
+                abort(new Exception());
+
+                return Action.SCHEDULED;
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
+        assertEquals(0, icb.onCompleteSuccessCount.get());
+        assertEquals(0, icb.onCompleteFailureCount.get());
+
+        // Now complete the scheduled operation.
+        icb.failed(new Throwable());
+
+        assertFalse(icb.abort(new Exception()));
+        assertEquals(1, icb.processCount.get());
+        assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
     }
@@ -1155,18 +1221,24 @@ public class IteratingCallbackTest
         icb.iterate();
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(0, icb.onFailureCount.get());
+        assertEquals(0, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(0, icb.onCompleteFailureCount.get());
 
         assertTrue(icb.abort(new Exception()));
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
 
         assertFalse(icb.abort(new Exception()));
         assertEquals(1, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
     }
@@ -1179,26 +1251,110 @@ public class IteratingCallbackTest
         assertTrue(icb.abort(new Exception()));
         assertEquals(0, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
 
         icb.iterate();
         assertEquals(0, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
 
         assertFalse(icb.abort(new Exception()));
         assertEquals(0, icb.processCount.get());
         assertEquals(0, icb.onSuccessCount.get());
+        assertEquals(1, icb.onFailureCount.get());
+        assertEquals(1, icb.onAbortCount.get());
         assertEquals(0, icb.onCompleteSuccessCount.get());
         assertEquals(1, icb.onCompleteFailureCount.get());
+    }
+
+    private static class TestIteratingCB extends IteratingCallback
+    {
+        final AtomicInteger _count;
+        final AtomicInteger _badCalls = new AtomicInteger(0);
+        final AtomicBoolean _onSuccess = new AtomicBoolean();
+        final AtomicReference<Throwable> _onFailure = new AtomicReference<>();
+        final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
+        final CountDownLatch _completed = new CountDownLatch(1);
+
+        private TestIteratingCB()
+        {
+            this(1);
+        }
+
+        private TestIteratingCB(int count)
+        {
+            _count = new AtomicInteger(count);
+        }
+
+        @Override
+        protected Action process()
+        {
+            return _count.getAndDecrement() == 0 ? Action.SUCCEEDED : Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onAborted(Throwable cause)
+        {
+            _completion.compareAndSet(null, cause, false, false);
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            if (!_onSuccess.compareAndSet(false, true))
+                _badCalls.incrementAndGet();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            if (!_onFailure.compareAndSet(null, cause))
+                _badCalls.incrementAndGet();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            if (_completion.isMarked())
+                _badCalls.incrementAndGet();
+
+            if (_completion.compareAndSet(null, null, false, true))
+                _completed.countDown();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            if (_completion.isMarked())
+                _badCalls.incrementAndGet();
+
+            if (_completion.compareAndSet(null, cause, false, true))
+                _completed.countDown();
+
+            // Try again the CAS if there was a call to onAborted().
+            Throwable failure = _completion.getReference();
+            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
+                _completed.countDown();
+        }
+
+        public void checkNoBadCalls()
+        {
+            assertThat(_badCalls.get(), is(0));
+        }
     }
 
     private static class AccountingIteratingCallback extends IteratingCallback
     {
         final AtomicInteger processCount = new AtomicInteger();
         final AtomicInteger onSuccessCount = new AtomicInteger();
+        final AtomicInteger onFailureCount = new AtomicInteger();
+        final AtomicInteger onAbortCount = new AtomicInteger();
         final AtomicInteger onCompleteSuccessCount = new AtomicInteger();
         final AtomicInteger onCompleteFailureCount = new AtomicInteger();
 
@@ -1213,6 +1369,18 @@ public class IteratingCallbackTest
         protected void onSuccess()
         {
             onSuccessCount.incrementAndGet();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            onFailureCount.incrementAndGet();
+        }
+
+        @Override
+        protected void onAborted(Throwable cause)
+        {
+            onAbortCount.incrementAndGet();
         }
 
         @Override
