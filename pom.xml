@@ -209,7 +209,7 @@
     <jboss.logging.processor.version>2.2.2.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.1.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.24.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.24.4</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -1770,18 +1770,6 @@
                 <include>**/*.adoc</include>
               </includes>
               <excludes>
-                <!-- Sabre Holdings -->
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebAppContext.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/Connectors.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/ContextHandlers.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/FileMatchingConfiguration.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/LoginServices.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/SystemProperties.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/ServerProxy.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/TaskLog.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebXmlConfiguration.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/JettyRunTask.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/ServerProxyImpl.java</exclude>
                 <!-- Aki Yoshida -->
                 <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
                 <!-- Distribution Text (no header, too noisy) -->
@@ -1990,7 +1978,6 @@
         <configuration>
           <excludes>
             <!-- build tools -->
-            <exclude>**/org/eclipse/jetty/ant/**</exclude>
             <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>

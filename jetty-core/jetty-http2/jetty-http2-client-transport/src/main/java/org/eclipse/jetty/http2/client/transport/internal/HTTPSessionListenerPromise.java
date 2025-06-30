@@ -140,13 +140,20 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     @Override
     public void onFailure(Session session, Throwable failure, Callback callback)
     {
-        if (!failConnectionPromise(failure))
+        if (failConnectionPromise(failure))
         {
-            HttpConnectionOverHTTP2 connection = getConnection();
-            if (connection != null)
-                connection.close(failure);
+            callback.succeeded();
+            return;
         }
-        callback.succeeded();
+
+        HttpConnectionOverHTTP2 connection = getConnection();
+        if (connection == null)
+        {
+            callback.succeeded();
+            return;
+        }
+
+        connection.onFailure(failure, callback);
     }
 
     private boolean failConnectionPromise(Throwable failure)

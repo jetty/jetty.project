@@ -27,12 +27,15 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 public class CharacterEncodingTest
 {
@@ -53,6 +56,20 @@ public class CharacterEncodingTest
             {
                 // nothing we only test we throw this exception
             }
+        }
+    }
+
+    public static class InferredContentTypeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // set something with an inferred encoding
+            response.setContentType("application/json");
+            //remove the content-type header, which should remove the inferred encoding
+            response.setContentType(null);
+            //now set a content-type that does not have an encoding
+            response.setContentType("application/problem+json");
         }
     }
 
@@ -86,6 +103,7 @@ public class CharacterEncodingTest
 
         context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/character-encoding/not-exists/*");
         context.addServlet(CharsetContentTypeSetTwiceServlet.class, "/character-encoding/set-twice/*");
+        context.addServlet(InferredContentTypeServlet.class, "/bad/*");
 
         server.start();
     }
@@ -104,6 +122,22 @@ public class CharacterEncodingTest
     }
 
     @Test
+    public void testInferredContentType() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/bad/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        String contentType = response.get("Content-Type");
+        assertThat(contentType, not(containsString("null")));
+        assertThat("Response Code", response.getStatus(), is(200));
+    }
+
+    @Test
     public void testUnknownCharacterEncoding() throws Exception
     {
         HttpTester.Request request = new HttpTester.Request();
@@ -117,7 +151,6 @@ public class CharacterEncodingTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-
     }
 
     @Test

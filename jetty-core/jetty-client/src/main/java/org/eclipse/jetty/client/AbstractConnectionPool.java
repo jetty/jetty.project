@@ -324,6 +324,16 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             {
                 Connection connection = entry.getPooled();
 
+                if (connection.isClosed())
+                {
+                    // No point checking the return value,
+                    // the connection is already closed.
+                    remove(connection);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Connection removed: closed {} {}", entry, pool);
+                    continue;
+                }
+
                 long maxDurationNanos = this.maxDurationNanos;
                 if (maxDurationNanos > 0L)
                 {

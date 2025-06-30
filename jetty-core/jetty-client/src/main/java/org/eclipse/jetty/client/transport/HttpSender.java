@@ -376,7 +376,12 @@ public abstract class HttpSender
         if (abort)
         {
             contentSender.abort = promise;
-            contentSender.abort(this.failure.get());
+            if (!contentSender.abort(this.failure.get()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not abort {}", this);
+                promise.succeeded(false);
+            }
         }
         else
         {

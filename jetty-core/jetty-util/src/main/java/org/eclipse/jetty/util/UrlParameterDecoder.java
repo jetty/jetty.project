@@ -182,20 +182,22 @@ class UrlParameterDecoder
             case '&' ->
             {
                 String str = takeBuiltString();
-                if (name == null)
-                {
-                    onNewField(str, "");
-                }
-                else
+                if (name != null)
                 {
                     onNewField(name, str);
                     name = null;
+                }
+                else if (!StringUtil.isEmpty(str))
+                {
+                    onNewField(str, "");
                 }
             }
             case '=' ->
             {
                 if (name == null)
+                {
                     name = takeBuiltString();
+                }
                 else
                     builder.append(c);
             }
@@ -303,7 +305,8 @@ class UrlParameterDecoder
         else if (builder.length() > 0)
         {
             name = takeBuiltString();
-            onNewField(name, "");
+            if (!StringUtil.isEmpty(name))
+                onNewField(name, "");
         }
     }
 
@@ -339,10 +342,10 @@ class UrlParameterDecoder
 
     private void onNewField(String name, String value)
     {
-        if (name == null || name.isEmpty())
+        if (name == null && value == null)
             return;
         keyCount++;
-        newFieldAdder.accept(name, value);
+        newFieldAdder.accept(name == null ? "" : name, value == null ? "" : value);
         if (maxKeys >= 0 && keyCount > maxKeys)
             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", keyCount, maxKeys));
     }

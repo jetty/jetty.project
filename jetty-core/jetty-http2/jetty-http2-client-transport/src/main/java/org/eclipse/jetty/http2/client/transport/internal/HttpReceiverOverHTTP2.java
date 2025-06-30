@@ -202,7 +202,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             Response.CompleteListener listener = pushHandler.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().newHttpChannel();
                 pushRequest.getResponseListeners().addCompleteListener(listener, true);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest);
                 pushChannel.associate(pushExchange);
@@ -261,7 +261,31 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        Promise<Boolean> promise = Promise.from(failed -> callback.succeeded(), callback::failed);
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseFailure(failure, promise));
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            return new FailureTask(exchange, failure, callback);
+        callback.succeeded();
+        return null;
+    }
+
+    private static class FailureTask extends Invocable.Task.Abstract
+    {
+        private final HttpExchange exchange;
+        private final Throwable failure;
+        private final Callback callback;
+
+        private FailureTask(HttpExchange exchange, Throwable failure, Callback callback)
+        {
+            super(InvocationType.NON_BLOCKING);
+            this.exchange = exchange;
+            this.failure = failure;
+            this.callback = callback;
+        }
+
+        @Override
+        public void run()
+        {
+            callback.completeWith(exchange.getRequest().abort(failure));
+        }
     }
 }

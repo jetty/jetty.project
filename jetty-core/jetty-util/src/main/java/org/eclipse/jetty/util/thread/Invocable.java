@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -139,7 +141,7 @@ public interface Invocable
             @Override
             public String toString()
             {
-                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getInvocationType());
+                return String.format("%s@%x[%s]", TypeUtil.toShortName(getClass()), hashCode(), getInvocationType());
             }
         }
     }
