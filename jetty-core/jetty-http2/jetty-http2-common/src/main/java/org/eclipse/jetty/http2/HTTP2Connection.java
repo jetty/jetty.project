@@ -254,14 +254,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
     }
 
-    private int getTaskCount()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            return tasks.size();
-        }
-    }
-
     @Override
     public void onHeaders(HeadersFrame frame)
     {
@@ -332,13 +324,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public String toConnectionString()
     {
-        String countState;
-        try (AutoLock l = lock.tryLock())
-        {
-            boolean held = l.isHeldByCurrentThread();
-            countState = held ? String.valueOf(tasks.size()) : "undefined";
-        }
-        return "%s@%x[taskQueue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), countState);
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), strategy);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
@@ -447,10 +433,17 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                     {
                         shutdown = true;
                         session.onShutdown();
-                        // The onShutDown() call above may have produced a task.
+                        // The onShutdown() call above may have produced a task.
                         return pollTask();
                     }
                 }
+            }
+            catch (Throwable x)
+            {
+                // This should not happen.
+                LOG.warn("Unexpected exception while producing {}", this, x);
+                session.onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, x.toString());
+                return null;
             }
             finally
             {
@@ -575,7 +568,13 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         @Override
         public String toString()
         {
-            return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
+            String countState;
+            try (AutoLock l = lock.tryLock())
+            {
+                boolean held = l.isHeldByCurrentThread();
+                countState = held ? String.valueOf(tasks.size()) : "undefined";
+            }
+            return "%s@%x[taskQueue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), countState);
         }
     }
 
