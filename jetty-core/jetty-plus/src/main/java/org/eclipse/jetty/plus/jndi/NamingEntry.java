@@ -187,12 +187,16 @@ public abstract class NamingEntry
         namingEntryName.addAll(0, prefix);
         _namingEntryNameString = namingEntryName.toString();
         NamingUtil.bind(ic, _namingEntryNameString, this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("SAVED {} in {}", this, _namingEntryNameString);
 
         //bind the object as well
         Name objectName = parser.parse(getJndiName());
         objectName.addAll(0, prefix);
         _objectNameString = objectName.toString();
         NamingUtil.bind(ic, _objectNameString, object);
+        if (LOG.isDebugEnabled())
+            LOG.debug("SAVED {} in {}", object, _objectNameString);
     }
 
     protected String toStringMetaData()
