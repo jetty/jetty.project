@@ -52,6 +52,7 @@ public class TestJettyOSGiAnnotationParser
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
         options.add(CoreOptions.junitBundles());
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
