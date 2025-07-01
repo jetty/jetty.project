@@ -544,7 +544,7 @@
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
-              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <settingsFilePath>${settings.path}</settingsFilePath>
               <!-- uncomment to be able to use jetty logging -->
               <!-- pax.exam.system>default</pax.exam.system -->
             </systemPropertyVariables>

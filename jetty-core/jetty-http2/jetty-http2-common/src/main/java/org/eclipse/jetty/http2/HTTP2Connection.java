@@ -321,6 +321,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         session.onConnectionFailure(error, reason);
     }
 
+    @Override
+    public String toConnectionString()
+    {
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), strategy);
+    }
+
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private static final RetainableByteBuffer.Mutable STOPPED = new RetainableByteBuffer.NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
@@ -427,10 +433,17 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                     {
                         shutdown = true;
                         session.onShutdown();
-                        // The onShutDown() call above may have produced a task.
+                        // The onShutdown() call above may have produced a task.
                         return pollTask();
                     }
                 }
+            }
+            catch (Throwable x)
+            {
+                // This should not happen.
+                LOG.warn("Unexpected exception while producing {}", this, x);
+                session.onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, x.toString());
+                return null;
             }
             finally
             {
@@ -555,7 +568,13 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         @Override
         public String toString()
         {
-            return String.format("%s@%x", TypeUtil.toShortName(getClass()), hashCode());
+            String countState;
+            try (AutoLock l = lock.tryLock())
+            {
+                boolean held = l.isHeldByCurrentThread();
+                countState = held ? String.valueOf(tasks.size()) : "undefined";
+            }
+            return "%s@%x[taskQueue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), countState);
         }
     }
 

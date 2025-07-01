@@ -19,6 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.Descriptor;
 import org.eclipse.jetty.ee11.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee11.webapp.IterativeDescriptorProcessor;
@@ -111,7 +112,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no descriptor has configured an env-entry of this name previously
                 context.getMetaData().setOrigin("env-entry." + name, descriptor);
-                makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);        
+                makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);
                 break;
             }
             case WebXml:
@@ -689,7 +690,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     {
         Objects.requireNonNull(context);
         Objects.requireNonNull(node);
-        
+
         Iterator<XmlParser.Node> itor = node.iterator("injection-target");
 
         while (itor.hasNext())
@@ -745,13 +746,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         Context envCtx = (Context)ic.lookup("java:comp/env");
         NamingUtil.bind(envCtx, name, value);
     }
-    
+
     /**
      * Make injections and any java:comp/env bindings necessary given an env-entry declaration.
      * The handling of env-entries is different to other resource declarations like resource-ref, resource-env-ref etc
      * because we allow the EnvEntry (@see org.eclipse.jetty.plus.jndi.EnvEntry) class that is configured externally to the webapp 
      * to specify a value that can override a value present in a web.xml descriptor.
-     * 
+     *
      * @param context the WebAppContext of the env-entry
      * @param descriptor the web.xml, web-default.xml, web-override.xml or web-fragment.xml
      * @param node the parsed xml representation of the env-entry declaration
@@ -868,6 +869,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
         //try the server's environment
         scope = context.getServer();
+        bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
+        if (bound)
+            return;
+
+        //try the ee environment next
+        scope = ServletContextHandler.ENVIRONMENT.getName();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;

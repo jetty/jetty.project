@@ -460,16 +460,7 @@ public abstract class IteratingCallback implements Callback
                         if (action != Action.SCHEDULED && action != null)
                         {
                             _state = State.CLOSED;
-                            onAbortedOnFailureOnCompleted = new IllegalStateException("Action not scheduled");
-                            if (_failure == null)
-                            {
-                                _failure = onAbortedOnFailureOnCompleted;
-                            }
-                            else
-                            {
-                                ExceptionUtil.addSuppressedIfNotAssociated(_failure, onAbortedOnFailureIfNotPendingDoCompleted);
-                                onAbortedOnFailureOnCompleted = _failure;
-                            }
+                            _failure = onAbortedOnFailureOnCompleted = ExceptionUtil.combine(_failure, new IllegalStateException("Action not scheduled"));
                             break processing;
                         }
                         if (_failure != null)
@@ -620,13 +611,11 @@ public abstract class IteratingCallback implements Callback
             switch (_state)
             {
                 case PROCESSING:
+                case PROCESSING_CALLED:
                 {
                     // Another thread is processing, so we just tell it the state
                     _state = State.PROCESSING_CALLED;
-                    if (_failure == null)
-                        _failure = cause;
-                    else
-                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                    _failure = ExceptionUtil.combine(_failure, cause);
                     break;
                 }
                 case PENDING:
@@ -793,10 +782,7 @@ public abstract class IteratingCallback implements Callback
                 case PROCESSING_CALLED:
                 {
                     // Another thread is processing, but we have already succeeded or failed.
-                    if (_failure == null)
-                        _failure = cause;
-                    else
-                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                    _failure = ExceptionUtil.combine(_failure, cause);
                     _aborted = true;
                     break;
                 }
@@ -948,12 +934,6 @@ public abstract class IteratingCallback implements Callback
         ClosedException()
         {
             super("Closed");
-        }
-
-        ClosedException(Throwable suppressed)
-        {
-            this();
-            ExceptionUtil.addSuppressedIfNotAssociated(this, suppressed);
         }
     }
 
