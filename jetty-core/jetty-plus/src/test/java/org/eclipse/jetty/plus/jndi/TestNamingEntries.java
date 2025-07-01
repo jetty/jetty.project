@@ -259,6 +259,13 @@ public class TestNamingEntries
         Object theResult = ic.lookup(NamingEntryUtil.getNameForScope("testScope") + "/stringResourceA/b/c");
         assertNotNull(theResult);
         assertEquals(testObject, theResult);
+
+        stringResource = new Resource("test Scope", "some/depth", testObject);
+        ne = NamingEntryUtil.lookupNamingEntry("test Scope", "some/depth");
+        assertNotNull(ne);
+        theResult = ic.lookup(NamingEntryUtil.getNameForScope("test Scope") + "/some/depth");
+        assertEquals(testObject, theResult);
+
     }
 
     @Test

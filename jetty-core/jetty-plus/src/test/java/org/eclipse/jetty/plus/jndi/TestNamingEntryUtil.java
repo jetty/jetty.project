@@ -70,6 +70,17 @@ public class TestNamingEntryUtil
         Name name = NamingEntryUtil.getNameForScope(myScope);
         assertNotNull(name);
         assertEquals(myScope, name.toString());
+
+        //test canonicalization
+        String dodgyScope = "has/slash";
+        name = NamingEntryUtil.getNameForScope(dodgyScope);
+        assertNotNull(name);
+        assertEquals("has_slash", name.toString());
+
+        dodgyScope = "has space";
+        name = NamingEntryUtil.getNameForScope(dodgyScope);
+        assertNotNull(name);
+        assertEquals("has_space", name.toString());
     }
 
     @Test
