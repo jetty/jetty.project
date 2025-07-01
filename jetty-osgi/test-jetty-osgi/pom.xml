@@ -18,7 +18,7 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <osgi.bundle.debug>false</osgi.bundle.debug>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>2.6.16</pax.url.version>
+    <pax.url.version>2.6.17</pax.url.version>
     <swissbox.version>1.9.0</swissbox.version>
     <tinybundles.version>4.0.1</tinybundles.version>
   </properties>
