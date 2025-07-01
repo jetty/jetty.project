@@ -135,7 +135,7 @@ public final class StatusCode
     /**
      * 1014 indicates that a gateway or proxy received and invalid upstream response.
      * <p>
-     * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg10748.html">[hybi] WebSocket Subprotocol Close Code: Bad Gateway</a>
+     * See <a href="https://mailarchive.ietf.org/arch/msg/hybi/l1lK4ZImO70jmcYorRa1lsLdvzY/">[hybi] WebSocket Subprotocol Close Code: Bad Gateway</a>
      */
     public static final int INVALID_UPSTREAM_RESPONSE = 1014;
 
