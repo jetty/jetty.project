@@ -465,8 +465,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void fillAndParse()
     {
-        boolean close = false;
-        Throwable closeCause = null;
         try (AutoLock ignored = lock.lock())
         {
             switch (state)
@@ -474,17 +472,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 case IDLE -> state = State.FILLING_AND_PARSING;
                 case CLOSED ->
                 {
-                    close = true;
-                    closeCause = this.closeCause;
+                    return;
                 }
                 default -> throw new IllegalStateException(state.name());
             }
-        }
-
-        if (close)
-        {
-            doOnClose(closeCause);
-            return;
         }
 
         acquireNetworkBuffer();
@@ -561,6 +552,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
         finally
         {
+            boolean close = false;
+            Throwable closeCause = null;
             try (AutoLock ignored = lock.lock())
             {
                 switch (state)
@@ -568,6 +561,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     case FILLING_AND_PARSING -> state = State.IDLE;
                     case CLOSING ->
                     {
+                        state = State.CLOSED;
                         close = true;
                         closeCause = this.closeCause;
                     }
