@@ -101,11 +101,11 @@ public class NamingEntryUtil
 
     /**
      * Get all NameEntries of a certain type in the given naming
-     * environment scope (server-wide names or context-specific names)
+     * scope.
      *
      * @param scope the object scope
      * @param clazz the type of the entry
-     * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
+     * @return all NameEntries of a certain type in the given naming scope
      * @throws NamingException if unable to lookup the naming entries
      */
     public static <T> List<? extends T> lookupNamingEntries(Object scope, Class<T> clazz)
@@ -224,6 +224,9 @@ public class NamingEntryUtil
     {
         if (scope == null)
             return "";
+
+        if (scope instanceof String strScope)
+            return strScope;
 
         String str = scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
         str = StringUtil.replace(str, '/', '_');
