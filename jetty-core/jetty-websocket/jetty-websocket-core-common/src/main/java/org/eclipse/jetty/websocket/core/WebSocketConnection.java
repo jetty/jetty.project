@@ -489,6 +489,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         acquireNetworkBuffer();
 
+        boolean registerFillInterested = false;
         try
         {
             while (true)
@@ -539,7 +540,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled == 0)
                 {
                     releaseNetworkBuffer();
-                    fillInterested();
+                    registerFillInterested = true;
                     return;
                 }
 
@@ -575,6 +576,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             }
             if (close)
                 doOnClose(closeCause);
+            else if (registerFillInterested)
+                fillInterested();
         }
     }
 
