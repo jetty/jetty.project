@@ -193,16 +193,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContext();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContextHandler();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContextHandler();
         return null;
     }
 

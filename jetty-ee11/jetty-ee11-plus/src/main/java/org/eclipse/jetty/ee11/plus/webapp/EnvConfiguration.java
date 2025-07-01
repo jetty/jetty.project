@@ -20,12 +20,12 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.jndi.ContextFactory;
