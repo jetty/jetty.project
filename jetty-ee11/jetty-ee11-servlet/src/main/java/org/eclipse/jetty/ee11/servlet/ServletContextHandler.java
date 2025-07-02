@@ -880,11 +880,13 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public ServletScopedContext getContext()
     {
-        return (ServletScopedContext)super.getContext();
+        if (super.getContext() instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext;
+        throw new IllegalStateException("Context is not ServletScopedContext");
     }
 
     /**
-     * Add a context event listeners.
+     * Add a context event listener.
      *
      * @param listener the event listener to add
      * @return true if the listener was added
