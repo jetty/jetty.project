@@ -571,8 +571,16 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     {
                         case MORE_FILLING_AND_PARSING ->
                         {
-                            fillingAndParsing = true;
-                            state = State.FILLING_AND_PARSING;
+                            if (registerFillInterested)
+                            {
+                                // We had no content to read, so no point looping around again.
+                                state = State.IDLE;
+                            }
+                            else
+                            {
+                                fillingAndParsing = true;
+                                state = State.FILLING_AND_PARSING;
+                            }
                         }
                         case FILLING_AND_PARSING -> state = State.IDLE;
                         case CLOSING ->
