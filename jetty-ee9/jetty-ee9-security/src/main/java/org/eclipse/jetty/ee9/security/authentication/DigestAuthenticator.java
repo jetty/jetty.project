@@ -61,7 +61,18 @@ public class DigestAuthenticator extends LoginAuthenticator
     private final Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
     private long _maxNonceAgeMs = 60 * 1000;
     private int _maxNC = 1024;
+    private String _algorithm = "MD5";
+    
+    public void setAlgorithm(String algorithm)
+    {
+        _algorithm = algorithm;
+    }
 
+    public String getAlgorithm()
+    {
+        return _algorithm;
+    }
+    
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
@@ -128,7 +139,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Credentials: {}", credentials);
-                final Digest digest = new Digest(request.getMethod());
+                final Digest digest = new Digest(request.getMethod(), getAlgorithm());
                 String last = null;
                 String name = null;
 
@@ -197,7 +208,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
                     "\", nonce=\"" + newNonce(baseRequest) +
-                    "\", algorithm=MD5" +
+                    "\", algorithm=" + getAlgorithm() +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
@@ -310,6 +321,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         @Serial
         private static final long serialVersionUID = -2484639019549527724L;
+        private String algorithm;
         final String method;
         String username = "";
         String realm = "";
@@ -322,7 +334,18 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         Digest(String m)
         {
-            method = m;
+            this(m, "MD5");
+        }
+        
+        Digest(String method, String algorithm)
+        {
+            this.method = method;
+            this.algorithm = algorithm;
+        }
+        
+        private String getAlgorithm()
+        {
+            return algorithm;
         }
 
         @Override
@@ -335,7 +358,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             try
             {
                 // MD5 required by the specification
-                MessageDigest md = MessageDigest.getInstance("MD5");
+                MessageDigest md = MessageDigest.getInstance(getAlgorithm());
                 byte[] ha1;
                 if (credentials instanceof Credential.MD5)
                 {
@@ -379,10 +402,9 @@ public class DigestAuthenticator extends LoginAuthenticator
                 md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte)':');
                 md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
-                byte[] digest = md.digest();
-
+                
                 // check digest
-                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
+                return stringEquals(TypeUtil.toString(md.digest(), 16).toLowerCase(), response == null ? null : response.toLowerCase());
             }
             catch (Exception e)
             {
