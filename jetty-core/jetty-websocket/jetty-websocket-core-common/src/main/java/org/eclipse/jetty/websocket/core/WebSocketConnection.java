@@ -472,8 +472,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             switch (state)
             {
                 case IDLE -> state = State.FILLING_AND_PARSING;
-                case FILLING_AND_PARSING -> state = State.MORE_FILLING_AND_PARSING;
-                case CLOSED ->
+                case FILLING_AND_PARSING ->
+                {
+                    state = State.MORE_FILLING_AND_PARSING;
+                    return;
+                }
+                case CLOSED, CLOSING ->
                 {
                     return;
                 }
