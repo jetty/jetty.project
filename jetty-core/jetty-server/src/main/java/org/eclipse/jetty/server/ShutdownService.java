@@ -73,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * <dd>Will return PID of the running JVM from {@link ProcessHandle#pid() ProcessHandle.current().pid()} on JVM</dd>
  * </dl>
  *
- * @since 12.0.23
+ * @since 12.1.0
  */
 public class ShutdownService
 {
