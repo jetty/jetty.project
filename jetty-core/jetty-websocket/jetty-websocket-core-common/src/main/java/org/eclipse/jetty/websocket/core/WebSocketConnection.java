@@ -65,17 +65,18 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     /*
      * The state of the WebSocketConnection, used to serialize fillingAndParsing with connection close events.
      * <pre>
-     *   IDLE   <------> FILLING_AND_PARSING
-     *     |                 |
-     *     |                 |
-     *     v                 v
-     *   CLOSED <-------- CLOSING
+     *   IDLE   <------> FILLING_AND_PARSING  <------> MORE_FILLING_AND_PARSING
+     *     |                 |                           |
+     *     |                 |                           |
+     *     v                 v                           |
+     *   CLOSED <-------- CLOSING <----------------------+
      * </pre>
      */
     private enum State
     {
         IDLE,
         FILLING_AND_PARSING,
+        MORE_FILLING_AND_PARSING,
         CLOSING,
         CLOSED
     }
@@ -235,6 +236,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     break;
                 }
                 case FILLING_AND_PARSING:
+                case MORE_FILLING_AND_PARSING:
                 {
                     state = State.CLOSING;
                     break;
@@ -316,26 +318,20 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void acquireNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                networkBuffer = newNetworkBuffer(getInputBufferSize());
-        }
+        if (networkBuffer == null)
+            networkBuffer = newNetworkBuffer(getInputBufferSize());
     }
 
     private void reacquireNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                throw new IllegalStateException();
+        if (networkBuffer == null)
+            throw new IllegalStateException();
 
-            if (networkBuffer.getByteBuffer().hasRemaining())
-                throw new IllegalStateException();
+        if (networkBuffer.getByteBuffer().hasRemaining())
+            throw new IllegalStateException();
 
-            networkBuffer.release();
-            networkBuffer = newNetworkBuffer(getInputBufferSize());
-        }
+        networkBuffer.release();
+        networkBuffer = newNetworkBuffer(getInputBufferSize());
     }
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
@@ -345,17 +341,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void releaseNetworkBuffer()
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (networkBuffer == null)
-                throw new IllegalStateException();
+        if (networkBuffer == null)
+            throw new IllegalStateException();
 
-            if (networkBuffer.hasRemaining())
-                throw new IllegalStateException();
+        if (networkBuffer.hasRemaining())
+            throw new IllegalStateException();
 
-            networkBuffer.release();
-            networkBuffer = null;
-        }
+        networkBuffer.release();
+        networkBuffer = null;
     }
 
     @Override
@@ -377,10 +370,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public void demand()
     {
         boolean fillAndParse = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
+                LOG.debug("demand {} fp={} {}", demand, fillingAndParsing, this);
 
             if (demand != DemandState.CANCELLED)
             {
@@ -402,7 +395,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean moreDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("moreDemand? d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -431,7 +424,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean meetDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -449,7 +442,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public void cancelDemand()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -459,116 +452,136 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void fillAndParse()
     {
-        boolean close = false;
-        Throwable closeCause = null;
         try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
                 case IDLE -> state = State.FILLING_AND_PARSING;
-                case CLOSED ->
+                case FILLING_AND_PARSING ->
                 {
-                    close = true;
-                    closeCause = this.closeCause;
+                    state = State.MORE_FILLING_AND_PARSING;
+                    return;
+                }
+                case CLOSED, CLOSING ->
+                {
+                    return;
                 }
                 default -> throw new IllegalStateException(state.name());
             }
         }
 
-        if (close)
+        boolean fillingAndParsing = true;
+        while (fillingAndParsing)
         {
-            doOnClose(closeCause);
-            return;
-        }
+            acquireNetworkBuffer();
 
-        acquireNetworkBuffer();
-
-        try
-        {
-            while (true)
+            boolean registerFillInterested = false;
+            try
             {
-                // Parse and handle frames
-                while (networkBuffer.hasRemaining())
+                while (true)
                 {
-                    Frame.Parsed frame = parser.parse(networkBuffer.getByteBuffer());
-                    if (frame == null)
-                        break;
-
-                    messagesIn.increment();
-
-                    if (meetDemand())
-                        onFrame(frame);
-
-                    if (!moreDemand())
-                        return;
-                }
-
-                // buffer must be empty here because parser is fully consuming
-                assert (!networkBuffer.hasRemaining());
-
-                if (!getEndPoint().isOpen())
-                {
-                    releaseNetworkBuffer();
-                    return;
-                }
-
-                // If more references that 1(us), don't refill into buffer and risk compaction.
-                if (networkBuffer.isRetained())
-                    reacquireNetworkBuffer();
-
-                // The parser is fully consuming so we can clear the network buffer before filling.
-                networkBuffer.clear();
-                int filled = getEndPoint().fill(networkBuffer.getByteBuffer());
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, networkBuffer);
-
-                if (filled < 0)
-                {
-                    releaseNetworkBuffer();
-                    coreSession.onEof();
-                    return;
-                }
-
-                if (filled == 0)
-                {
-                    releaseNetworkBuffer();
-                    fillInterested();
-                    return;
-                }
-
-                bytesIn.add(filled);
-            }
-        }
-        catch (Throwable t)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Error during fillAndParse() {}", t.toString());
-
-            if (networkBuffer != null)
-            {
-                BufferUtil.clear(networkBuffer.getByteBuffer());
-                releaseNetworkBuffer();
-            }
-            coreSession.processConnectionError(t, Callback.NOOP);
-        }
-        finally
-        {
-            try (AutoLock ignored = lock.lock())
-            {
-                switch (state)
-                {
-                    case FILLING_AND_PARSING -> state = State.IDLE;
-                    case CLOSING ->
+                    // Parse and handle frames
+                    while (networkBuffer.hasRemaining())
                     {
-                        close = true;
-                        closeCause = this.closeCause;
+                        Frame.Parsed frame = parser.parse(networkBuffer.getByteBuffer());
+                        if (frame == null)
+                            break;
+
+                        messagesIn.increment();
+
+                        if (meetDemand())
+                            onFrame(frame);
+
+                        if (!moreDemand())
+                            return;
                     }
-                    default -> throw new IllegalStateException(state.name());
+
+                    // buffer must be empty here because parser is fully consuming
+                    assert (!networkBuffer.hasRemaining());
+
+                    if (!getEndPoint().isOpen())
+                    {
+                        releaseNetworkBuffer();
+                        return;
+                    }
+
+                    // If more references that 1(us), don't refill into buffer and risk compaction.
+                    if (networkBuffer.isRetained())
+                        reacquireNetworkBuffer();
+
+                    // The parser is fully consuming so we can clear the network buffer before filling.
+                    networkBuffer.clear();
+                    int filled = getEndPoint().fill(networkBuffer.getByteBuffer());
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("endpointFill() filled={}: {}", filled, networkBuffer);
+
+                    if (filled < 0)
+                    {
+                        releaseNetworkBuffer();
+                        coreSession.onEof();
+                        return;
+                    }
+
+                    if (filled == 0)
+                    {
+                        releaseNetworkBuffer();
+                        registerFillInterested = true;
+                        return;
+                    }
+
+                    bytesIn.add(filled);
                 }
             }
-            if (close)
-                doOnClose(closeCause);
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error during fillAndParse() {}", t.toString());
+
+                if (networkBuffer != null)
+                {
+                    BufferUtil.clear(networkBuffer.getByteBuffer());
+                    releaseNetworkBuffer();
+                }
+                coreSession.processConnectionError(t, Callback.NOOP);
+            }
+            finally
+            {
+                fillingAndParsing = false;
+                boolean close = false;
+                Throwable closeCause = null;
+                try (AutoLock ignored = lock.lock())
+                {
+                    switch (state)
+                    {
+                        case MORE_FILLING_AND_PARSING ->
+                        {
+                            if (registerFillInterested)
+                            {
+                                // We had no content to read, so no point looping around again.
+                                state = State.IDLE;
+                            }
+                            else
+                            {
+                                fillingAndParsing = true;
+                                state = State.FILLING_AND_PARSING;
+                            }
+                        }
+                        case FILLING_AND_PARSING -> state = State.IDLE;
+                        case CLOSING ->
+                        {
+                            state = State.CLOSED;
+                            close = true;
+                            closeCause = this.closeCause;
+                        }
+                        default -> throw new IllegalStateException(state.name());
+                    }
+                }
+                if (close)
+                    doOnClose(closeCause);
+                else if (registerFillInterested)
+                    fillInterested();
+            }
         }
     }
 
@@ -583,10 +596,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
-        try (AutoLock l = lock.lock())
-        {
-            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
-        }
+        networkBuffer = newNetworkBuffer(initialBuffer.remaining());
         ByteBuffer buffer = networkBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
         BufferUtil.put(initialBuffer, buffer);
