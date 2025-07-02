@@ -89,62 +89,6 @@ public class ShutdownService
     private ServerSocket serverSocket;
 
     /**
-     * Create the default ShutdownService, using deprecated historical system properties.
-     *
-     * <dl>
-     * <dt>{@code STOP.HOST}</dt>
-     * <dd>IP to listen on, defaults to {@code 127.0.0.1}</dd>
-     * <dt>{@code STOP.PORT}</dt>
-     * <dd>Port to listen on, defaults to {@code 0}.
-     * (0 will use a port number that is automatically allocated)</dd>
-     * <dt>{@code STOP.KEY}</dt>
-     * <dd>The Key that must be provided to initiate a Shutdown.<br>
-     * Limited to {@link java.nio.charset.StandardCharsets#US_ASCII US_ASCII} charset.<br>
-     * If one is not provided, a generated Key will be created.</dd>
-     * <dt>{@code STOP.EXIT}</dt>
-     * <dd>Boolean to indicate if a {@code System.exit(0)} should occur on successful shutdown,
-     * defaults to {@code true}</dd>
-     * </dl>
-     *
-     * @return the ShutdownService if system properties exist and have valid values, null otherwise.
-     */
-    public static ShutdownService createFromHistoricalSystemProperties()
-    {
-        LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {} constructor.",
-            ShutdownService.class.getName());
-        int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
-        if (port < 0 || port > 0xFFFF)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Not enabling default ShutdownService, missing required System properties.");
-            return null;
-        }
-        String host = getSysProp("STOP.HOST", "127.0.0.1");
-        String key = getSysProp("STOP.KEY", null);
-        boolean exitVm = Boolean.parseBoolean(getSysProp("STOP.EXIT", "true"));
-        return new ShutdownService(host, port, key, exitVm);
-    }
-
-    /**
-     * Get a System Property with fallback to default value, if the property
-     * doesn't exist, or has a blank value. (an empty string is a valid value,
-     * which the {@link System#getProperty(String, String)} does not fall back
-     * to default when encountering.)
-     *
-     * @param keyName key name
-     * @param defaultValue the value to fall back on if unset or blank.
-     * @return the value
-     */
-    protected static String getSysProp(String keyName, String defaultValue)
-    {
-        String value = System.getProperty(keyName, defaultValue);
-        if (StringUtil.isBlank(value))
-            return defaultValue;
-        else
-            return value;
-    }
-
-    /**
      * Create a new ShutdownService.
      *
      * @param host the host

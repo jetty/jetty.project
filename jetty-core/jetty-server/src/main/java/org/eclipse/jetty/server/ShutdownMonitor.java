@@ -17,6 +17,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -125,14 +126,39 @@ public class ShutdownMonitor extends ShutdownService
      */
     private static ShutdownMonitor createFromSystemProperties()
     {
+        int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
+        if (port < 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("STOP.PORT System Property is not defined, not instantiating ShutdownMonitor.");
+            return null;
+        }
+
         LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {}",
             ShutdownService.class.getName());
-
-        int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
         String host = getSysProp("STOP.HOST", "127.0.0.1");
         String key = getSysProp("STOP.KEY", null);
         boolean exitVm = Boolean.parseBoolean(getSysProp("STOP.EXIT", "true"));
         return new ShutdownMonitor(host, port, key, exitVm);
+    }
+
+    /**
+     * Get a System Property with fallback to default value, if the property
+     * doesn't exist, or has a blank value. (an empty string is a valid value,
+     * which the {@link System#getProperty(String, String)} does not fall back
+     * to default when encountering.)
+     *
+     * @param keyName key name
+     * @param defaultValue the value to fall back on if unset or blank.
+     * @return the value
+     */
+    private static String getSysProp(String keyName, String defaultValue)
+    {
+        String value = System.getProperty(keyName, defaultValue);
+        if (StringUtil.isBlank(value))
+            return defaultValue;
+        else
+            return value;
     }
 
     // A mutable port number, to maintain backward compat with existing ShutdownMonitor API.

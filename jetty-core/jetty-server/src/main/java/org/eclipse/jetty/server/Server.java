@@ -540,25 +540,15 @@ public class Server extends Handler.Wrapper implements Attributes
                 ShutdownThread.register(this);
 
             // Look for the old-school (now deprecated) ShutdownMonitor
-            // First we look to see if anyone has called ShutdownMonitor.getInstance() yet.
             //noinspection removal
-            ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
-            //noinspection removal
-            if (shutdownMonitor != null && shutdownMonitor.getPort() != (-1))
+            ShutdownMonitor shutdownMonitor = getDeprecatedShutdownMonitor();
+            if (shutdownMonitor != null)
             {
+                // Add it as a bean to this server (for below)
                 addBean(shutdownMonitor);
             }
 
-            if (getBean(ShutdownService.class) == null)
-            {
-                // Attempt to create the default ShutdownService based on historical System Properties.
-                ShutdownService shutdownService = ShutdownService.createFromHistoricalSystemProperties();
-                if (shutdownService != null)
-                {
-                    addBean(shutdownService);
-                }
-            }
-
+            // Next use the actual ShutdownService implementations
             for (ShutdownService service: getBeans(ShutdownService.class))
             {
                 service.addComponent(this);
@@ -652,6 +642,25 @@ public class Server extends Handler.Wrapper implements Attributes
             if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
+    }
+
+    @SuppressWarnings("removal")
+    private ShutdownMonitor getDeprecatedShutdownMonitor()
+    {
+        // See if embedded usage of Deprecated ShutdownMonitor exists
+        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
+        if (shutdownMonitor != null && shutdownMonitor.getPort() >= 0)
+        {
+            return shutdownMonitor;
+        }
+
+        // If historical system property exists, attempt to initialize ShutdownMonitor
+        if (System.getProperty("STOP.PORT") != null)
+        {
+            return ShutdownMonitor.getInstance();
+        }
+
+        return null;
     }
 
     @Override
