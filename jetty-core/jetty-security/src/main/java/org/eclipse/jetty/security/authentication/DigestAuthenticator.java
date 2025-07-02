@@ -59,7 +59,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     private long _maxNonceAgeMs = 60 * 1000;
     private int _maxNC = 1024;
     private String _algorithm = "MD5";
-    
+
     public void setAlgorithm(String algorithm)
     {
         _algorithm = algorithm;
@@ -323,13 +323,14 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             return algorithm;
         }
-        
+
         @Override
         public boolean check(Object credentials)
         {
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
             String password = (credentials instanceof String) ? (String)credentials : credentials.toString();
+
             try
             {
                 // MD5 required by the specification
@@ -385,6 +386,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             {
                 LOG.warn("Unable to process digest", e);
             }
+
             return false;
         }
 
