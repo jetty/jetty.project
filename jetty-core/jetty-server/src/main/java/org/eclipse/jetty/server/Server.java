@@ -541,7 +541,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             // Look for the old-school (now deprecated) ShutdownMonitor
             //noinspection removal
-            ShutdownMonitor shutdownMonitor = ShutdownMonitor.getDeprecatedConfiguredInstance();
+            ShutdownMonitor shutdownMonitor = ShutdownMonitor.getConfiguredInstance();
             if (shutdownMonitor != null)
             {
                 // Add it as a bean to this server (for below)

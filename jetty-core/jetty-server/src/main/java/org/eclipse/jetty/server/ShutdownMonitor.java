@@ -136,21 +136,24 @@ public class ShutdownMonitor extends ShutdownService
     }
 
     /**
-     * Attempt to get a {@code ShutdownMonitor} using deprecated techniques.
+     * Get configured {@code ShutdownMonitor} instance.
      *
      * <ol>
      *   <li>If {@code ShutdownMonitor.getInstance()} has been called,
-     *         and it has a valid configuration, return that instance.</li>
+     *       and it has a valid configuration, return that instance.</li>
      *   <li>If the System Properties exist, and contain a valid
      *       configuration, return a {@code ShutdownMonitor} based on
      *       that configuration. (same instance will be returned by
      *       subsequent calls to {@link #getInstance()}</li>
      * </ol>
+     *
+     * @return the configured ShutdownMonitor instance, or null if
+     *         not configured.
      */
-    protected static ShutdownMonitor getDeprecatedConfiguredInstance()
+    protected static ShutdownMonitor getConfiguredInstance()
     {
         ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
-        if (shutdownMonitor != null && shutdownMonitor.getPort() >= 0)
+        if (shutdownMonitor != null && shutdownMonitor.isConfigured())
         {
             return shutdownMonitor;
         }
@@ -241,6 +244,11 @@ public class ShutdownMonitor extends ShutdownService
     private boolean containsLifeCycle(LifeCycle lifeCycle)
     {
         return hasComponent(lifeCycle);
+    }
+
+    public boolean isConfigured()
+    {
+        return mutablePort >= 0 && mutablePort <= 0xFFFF;
     }
 
     /**
