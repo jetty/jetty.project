@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * <dt>{@code STOP.HOST}</dt>
  * <dd>IP to listen on, defaults to {@code 127.0.0.1}</dd>
  * <dt>{@code STOP.PORT}</dt>
- * <dd>Port to listen on, defaults to {@code 0}.<br>
+ * <dd>Port to listen on, defaults to {@code -1} (or disabled).<br>
  * (0 will use a port number that is automatically allocated)</dd>
  * <dt>{@code STOP.KEY}</dt>
  * <dd>The Key that must be provided to initiate a Shutdown.<br>
@@ -64,10 +64,64 @@ public class ShutdownMonitor extends ShutdownService
     protected static AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
 
     /**
+     * Historical Configuration from System Properties.
+     */
+    public static class HistoricalConfig
+    {
+        private final String host;
+        private final int port;
+        private final String key;
+        private final boolean exitVm;
+
+        public HistoricalConfig()
+        {
+            LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {}",
+                ShutdownService.class.getName());
+            port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
+            host = getSysProp("STOP.HOST", "127.0.0.1");
+            key = getSysProp("STOP.KEY", null);
+            exitVm = Boolean.parseBoolean(getSysProp("STOP.EXIT", "true"));
+        }
+
+        public boolean isValid()
+        {
+            return port >= 0 && port <= 0xFFFF;
+        }
+
+        /**
+         * Get a System Property with fallback to default value, if the property
+         * doesn't exist, or has a blank value. (an empty string is a valid value,
+         * which the {@link System#getProperty(String, String)} does not fall back
+         * to default when encountering.)
+         *
+         * @param keyName key name
+         * @param defaultValue the value to fall back on if unset or blank.
+         * @return the value
+         */
+        private String getSysProp(String keyName, String defaultValue)
+        {
+            String value = System.getProperty(keyName, defaultValue);
+            if (StringUtil.isBlank(value))
+                return defaultValue;
+            else
+                return value;
+        }
+    }
+
+    /**
      * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static ShutdownMonitor getInstance()
+    {
+        return getInstanceFrom(new HistoricalConfig());
+    }
+
+    /**
+     * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    protected static ShutdownMonitor getInstanceFrom(HistoricalConfig config)
     {
         return INSTANCE.updateAndGet((h) ->
         {
@@ -76,7 +130,7 @@ public class ShutdownMonitor extends ShutdownService
             else
             {
                 LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
-                return createFromSystemProperties();
+                return new ShutdownMonitor(config);
             }
         });
     }
@@ -119,48 +173,6 @@ public class ShutdownMonitor extends ShutdownService
         return getInstance().containsLifeCycle(lifeCycle);
     }
 
-    /**
-     * Create the default ShutdownService, using historical system properties.
-     *
-     * @return the ShutdownService if system properties exist and have valid values, null otherwise.
-     */
-    private static ShutdownMonitor createFromSystemProperties()
-    {
-        int port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
-        if (port < 0)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("STOP.PORT System Property is not defined, not instantiating ShutdownMonitor.");
-            return null;
-        }
-
-        LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {}",
-            ShutdownService.class.getName());
-        String host = getSysProp("STOP.HOST", "127.0.0.1");
-        String key = getSysProp("STOP.KEY", null);
-        boolean exitVm = Boolean.parseBoolean(getSysProp("STOP.EXIT", "true"));
-        return new ShutdownMonitor(host, port, key, exitVm);
-    }
-
-    /**
-     * Get a System Property with fallback to default value, if the property
-     * doesn't exist, or has a blank value. (an empty string is a valid value,
-     * which the {@link System#getProperty(String, String)} does not fall back
-     * to default when encountering.)
-     *
-     * @param keyName key name
-     * @param defaultValue the value to fall back on if unset or blank.
-     * @return the value
-     */
-    private static String getSysProp(String keyName, String defaultValue)
-    {
-        String value = System.getProperty(keyName, defaultValue);
-        if (StringUtil.isBlank(value))
-            return defaultValue;
-        else
-            return value;
-    }
-
     // A mutable port number, to maintain backward compat with existing ShutdownMonitor API.
     private int mutablePort;
     // A mutable key, to maintain backward compat with existing ShutdownMonitor API.
@@ -168,12 +180,16 @@ public class ShutdownMonitor extends ShutdownService
     // A mutable exitVm, to maintain backward compat with existing ShutdownMonitor API.
     private boolean mutableExitVm;
 
-    private ShutdownMonitor(String host, int port, String key, boolean exitVm)
+    private ShutdownMonitor(HistoricalConfig historicalConfig)
     {
-        super(host, port == -1 ? 0 : port, key, exitVm);
-        this.mutablePort = port;
+        super(historicalConfig.host,
+            historicalConfig.port == -1 ? 0 : historicalConfig.port,
+            historicalConfig.key,
+            historicalConfig.exitVm);
+
+        this.mutablePort = super.getPort();
         this.mutableKey = super.getKey();
-        this.mutableExitVm = exitVm;
+        this.mutableExitVm = super.isExitVm();
     }
 
     private void addLifeCycles(LifeCycle... lifeCycles)

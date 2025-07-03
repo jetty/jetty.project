@@ -645,6 +645,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @SuppressWarnings("removal")
+    @Deprecated(since = "12.1.0", forRemoval = true)
     private ShutdownMonitor getDeprecatedShutdownMonitor()
     {
         // See if embedded usage of Deprecated ShutdownMonitor exists
@@ -654,10 +655,12 @@ public class Server extends Handler.Wrapper implements Attributes
             return shutdownMonitor;
         }
 
-        // If historical system property exists, attempt to initialize ShutdownMonitor
-        if (System.getProperty("STOP.PORT") != null)
+        // If historical system properties exists, and are valid,
+        // initialize ShutdownMonitor otherwise it returns null.
+        ShutdownMonitor.HistoricalConfig historicalConfig = new ShutdownMonitor.HistoricalConfig();
+        if (historicalConfig.isValid())
         {
-            return ShutdownMonitor.getInstance();
+            return ShutdownMonitor.getInstanceFrom(historicalConfig);
         }
 
         return null;
