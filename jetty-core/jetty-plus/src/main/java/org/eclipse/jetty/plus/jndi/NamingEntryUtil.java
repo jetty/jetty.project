@@ -225,7 +225,7 @@ public class NamingEntryUtil
         if (scope == null)
             return "";
 
-        String str = (scope instanceof String) ? (String)scope : scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
+        String str = (scope instanceof String s) ? s : scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
 
         str = StringUtil.replace(str, '/', '_');
         str = StringUtil.replace(str, ' ', '_');
