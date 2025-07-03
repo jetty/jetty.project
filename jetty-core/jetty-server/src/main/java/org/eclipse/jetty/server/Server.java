@@ -541,7 +541,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             // Look for the old-school (now deprecated) ShutdownMonitor
             //noinspection removal
-            ShutdownMonitor shutdownMonitor = getDeprecatedShutdownMonitor();
+            ShutdownMonitor shutdownMonitor = ShutdownMonitor.getDeprecatedConfiguredInstance();
             if (shutdownMonitor != null)
             {
                 // Add it as a bean to this server (for below)
@@ -642,28 +642,6 @@ public class Server extends Handler.Wrapper implements Attributes
             if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
-    }
-
-    @SuppressWarnings("removal")
-    @Deprecated(since = "12.1.0", forRemoval = true)
-    private ShutdownMonitor getDeprecatedShutdownMonitor()
-    {
-        // See if embedded usage of Deprecated ShutdownMonitor exists
-        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
-        if (shutdownMonitor != null && shutdownMonitor.getPort() >= 0)
-        {
-            return shutdownMonitor;
-        }
-
-        // If historical system properties exists, and are valid,
-        // initialize ShutdownMonitor otherwise it returns null.
-        ShutdownMonitor.HistoricalConfig historicalConfig = new ShutdownMonitor.HistoricalConfig();
-        if (historicalConfig.isValid())
-        {
-            return ShutdownMonitor.getInstanceFrom(historicalConfig);
-        }
-
-        return null;
     }
 
     @Override

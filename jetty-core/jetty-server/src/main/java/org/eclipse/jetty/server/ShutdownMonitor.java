@@ -61,12 +61,12 @@ import org.slf4j.LoggerFactory;
 public class ShutdownMonitor extends ShutdownService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownMonitor.class);
-    protected static AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
+    private static final AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
 
     /**
      * Historical Configuration from System Properties.
      */
-    public static class HistoricalConfig
+    private static class HistoricalConfig
     {
         private final String host;
         private final int port;
@@ -121,7 +121,7 @@ public class ShutdownMonitor extends ShutdownService
      * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
-    protected static ShutdownMonitor getInstanceFrom(HistoricalConfig config)
+    private static ShutdownMonitor getInstanceFrom(HistoricalConfig config)
     {
         return INSTANCE.updateAndGet((h) ->
         {
@@ -133,6 +133,33 @@ public class ShutdownMonitor extends ShutdownService
                 return new ShutdownMonitor(config);
             }
         });
+    }
+
+    /**
+     * Attempt to get a {@code ShutdownMonitor} using deprecated techniques.
+     *
+     * <ol>
+     *   <li>If {@code ShutdownMonitor.getInstance()} has been called,
+     *         and it has a valid configuration, return that instance.</li>
+     *   <li>If the System Properties exist, and contain a valid
+     *       configuration, return a {@code ShutdownMonitor} based on
+     *       that configuration. (same instance will be returned by
+     *       subsequent calls to {@link #getInstance()}</li>
+     * </ol>
+     */
+    protected static ShutdownMonitor getDeprecatedConfiguredInstance()
+    {
+        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
+        if (shutdownMonitor != null && shutdownMonitor.getPort() >= 0)
+        {
+            return shutdownMonitor;
+        }
+
+        ShutdownMonitor.HistoricalConfig historicalConfig = new ShutdownMonitor.HistoricalConfig();
+        if (historicalConfig.isValid())
+            return ShutdownMonitor.getInstanceFrom(historicalConfig);
+
+        return null;
     }
 
     /**
