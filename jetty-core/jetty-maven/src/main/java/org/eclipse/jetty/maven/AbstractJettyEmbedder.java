@@ -191,7 +191,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         super.doStart();
 
         configure();
-        configureServerShutdown(server);
+        configureShutdownService(server);
         server.start();
     }
     
@@ -260,7 +260,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         }
     }
 
-    private void configureServerShutdown(Server server)
+    private void configureShutdownService(Server server)
     {
         if (stopPort > 0 && stopKey != null)
         {
