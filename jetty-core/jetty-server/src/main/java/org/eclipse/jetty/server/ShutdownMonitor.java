@@ -64,64 +64,10 @@ public class ShutdownMonitor extends ShutdownService
     private static final AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
 
     /**
-     * Historical Configuration from System Properties.
-     */
-    private static class HistoricalConfig
-    {
-        private final String host;
-        private final int port;
-        private final String key;
-        private final boolean exitVm;
-
-        public HistoricalConfig()
-        {
-            LOG.warn("Configuring Shutdown from System Properties is deprecated, and has been replaced with `shutdown` module and {}",
-                ShutdownService.class.getName());
-            port = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
-            host = getSysProp("STOP.HOST", "127.0.0.1");
-            key = getSysProp("STOP.KEY", null);
-            exitVm = Boolean.parseBoolean(getSysProp("STOP.EXIT", "true"));
-        }
-
-        public boolean isValid()
-        {
-            return port >= 0 && port <= 0xFFFF;
-        }
-
-        /**
-         * Get a System Property with fallback to default value, if the property
-         * doesn't exist, or has a blank value. (an empty string is a valid value,
-         * which the {@link System#getProperty(String, String)} does not fall back
-         * to default when encountering.)
-         *
-         * @param keyName key name
-         * @param defaultValue the value to fall back on if unset or blank.
-         * @return the value
-         */
-        private String getSysProp(String keyName, String defaultValue)
-        {
-            String value = System.getProperty(keyName, defaultValue);
-            if (StringUtil.isBlank(value))
-                return defaultValue;
-            else
-                return value;
-        }
-    }
-
-    /**
      * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static ShutdownMonitor getInstance()
-    {
-        return getInstanceFrom(new HistoricalConfig());
-    }
-
-    /**
-     * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
-     */
-    @Deprecated(since = "12.1.0", forRemoval = true)
-    private static ShutdownMonitor getInstanceFrom(HistoricalConfig config)
     {
         return INSTANCE.updateAndGet((h) ->
         {
@@ -130,7 +76,7 @@ public class ShutdownMonitor extends ShutdownService
             else
             {
                 LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
-                return new ShutdownMonitor(config);
+                return new ShutdownMonitor();
             }
         });
     }
@@ -152,17 +98,19 @@ public class ShutdownMonitor extends ShutdownService
      */
     protected static ShutdownMonitor getConfiguredInstance()
     {
-        ShutdownMonitor shutdownMonitor = ShutdownMonitor.INSTANCE.get();
-        if (shutdownMonitor != null && shutdownMonitor.isConfigured())
+        return INSTANCE.updateAndGet((h) ->
         {
-            return shutdownMonitor;
-        }
-
-        ShutdownMonitor.HistoricalConfig historicalConfig = new ShutdownMonitor.HistoricalConfig();
-        if (historicalConfig.isValid())
-            return ShutdownMonitor.getInstanceFrom(historicalConfig);
-
-        return null;
+            if (h != null)
+                return h;
+            if (System.getProperty("STOP.PORT") != null ||
+                System.getProperty("STOP.HOST") != null ||
+                System.getProperty("STOP.KEY") != null)
+            {
+                LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
+                return new ShutdownMonitor();
+            }
+            return null;
+        });
     }
 
     /**
@@ -210,16 +158,35 @@ public class ShutdownMonitor extends ShutdownService
     // A mutable exitVm, to maintain backward compat with existing ShutdownMonitor API.
     private boolean mutableExitVm;
 
-    private ShutdownMonitor(HistoricalConfig historicalConfig)
+    private ShutdownMonitor()
     {
-        super(historicalConfig.host,
-            historicalConfig.port == -1 ? 0 : historicalConfig.port,
-            historicalConfig.key,
-            historicalConfig.exitVm);
+        super(getSysProp("STOP.HOST", "127.0.0.1"),
+            Integer.parseInt(getSysProp("STOP.PORT", "0")),
+            getSysProp("STOP.KEY", null),
+            Boolean.parseBoolean(getSysProp("STOP.EXIT", "true")));
 
         this.mutablePort = super.getPort();
         this.mutableKey = super.getKey();
         this.mutableExitVm = super.isExitVm();
+    }
+
+    /**
+     * Get a System Property with fallback to default value, if the property
+     * doesn't exist, or has a blank value. (an empty string is a valid value,
+     * which the {@link System#getProperty(String, String)} does not fall back
+     * to default when encountering.)
+     *
+     * @param keyName key name
+     * @param defaultValue the value to fall back on if unset or blank.
+     * @return the value
+     */
+    private static String getSysProp(String keyName, String defaultValue)
+    {
+        String value = System.getProperty(keyName, defaultValue);
+        if (StringUtil.isBlank(value))
+            return defaultValue;
+        else
+            return value;
     }
 
     private void addLifeCycles(LifeCycle... lifeCycles)
