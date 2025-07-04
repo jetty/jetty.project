@@ -1508,6 +1508,93 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"ee9", "ee10"})
+    public void testEEProxyModule(String env) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        List<String> modules = List.of("http", toEnvironment("proxy", env), toEnvironment("deploy", env));
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Create a custom module for the ServerConnector that represents the backend server.
+            Path jettyBaseModules = distribution.getJettyBase().resolve("modules");
+            Files.createDirectories(jettyBaseModules);
+            Path httpBackendModule = jettyBaseModules.resolve("http-backend.mod");
+            Files.writeString(httpBackendModule, """
+                [depend]
+                server
+                [xml]
+                etc/jetty-http-backend.xml
+                [ini-template]
+                # jetty.http.backend.port=9090
+                """, StandardOpenOption.CREATE);
+            Path jettyBaseEtc = distribution.getJettyBase().resolve("etc");
+            Files.createDirectories(jettyBaseEtc);
+            Path httpBackendXML = jettyBaseEtc.resolve("jetty-http-backend.xml");
+            Files.writeString(httpBackendXML, """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+                <Configure id="Server" class="org.eclipse.jetty.server.Server">
+                  <Call name="addConnector">
+                    <Arg>
+                      <New class="org.eclipse.jetty.server.ServerConnector">
+                        <Arg name="server"><Ref refid="Server" /></Arg>
+                        <Arg name="acceptors" type="int">1</Arg>
+                        <Arg name="selectors" type="int">1</Arg>
+                        <Arg name="factories">
+                          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                            <Item>
+                              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                              </New>
+                            </Item>
+                          </Array>
+                        </Arg>
+                        <Set name="port"><Property name="jetty.http.backend.port" default="9090" /></Set>
+                        <Set name="name">backendConnector</Set>
+                      </New>
+                    </Arg>
+                  </Call>
+                </Configure>
+                """, StandardOpenOption.CREATE);
+
+            // Set up the backend application.
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "backend");
+            Path jettyBaseWebapps = distribution.getJettyBase().resolve("webapps");
+            Files.writeString(jettyBaseWebapps.resolve("backend.properties"), "environment=" + env, StandardOpenOption.CREATE);
+
+            int proxyPort = Tester.freePort();
+            int backendPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(
+                "jetty.http.port=" + proxyPort,
+                "jetty.http.selectors=1",
+                "jetty.http.backend.port=" + backendPort,
+                "--module=http-backend",
+                "jetty.proxy.contextPath=/proxy",
+                "jetty.proxy.proxyTo=http://localhost:%d/backend".formatted(backendPort)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 5, TimeUnit.SECONDS), String.join(System.lineSeparator(), run2.getLogs()));
+
+                startHttpClient();
+                ContentResponse response = client.newRequest("localhost", proxyPort)
+                    .path("/proxy")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), String.join(System.lineSeparator(), run2.getLogs()));
+                assertThat(response.getContentAsString(), containsString("Hello World"));
+            }
+        }
+    }
+
     @Test
     @EnabledForJreRange(min = JRE.JAVA_19, max = JRE.JAVA_20)
     public void testVirtualThreadPoolPreview() throws Exception

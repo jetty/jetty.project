@@ -112,8 +112,6 @@ include::{jetty-home}/modules/console-capture.mod[tags=documentation]
 [[core-deploy]]
 == Module `core-deploy`
 
-include::{jetty-home}/modules/ee10-deploy.mod[tags=description]
-
 Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
 See xref:deploy/index.adoc[how to deploy web applications] for more information.
 
@@ -157,7 +155,7 @@ include::{jetty-home}/modules/debuglog.mod[tags=documentation]
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`
 
-include::{jetty-home}/modules/ee10-deploy.mod[tags=description]
+include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=description]
 
 Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
 See xref:deploy/index.adoc[how to deploy web applications] for more information.
@@ -169,7 +167,7 @@ Multiple versions of this module exist (`{ee-all}-deploy`) to support each Jakar
 Jetty's configuration properties are nearly identical across these versions; the configuration properties for the `{ee-current}-deploy` Jetty module are:
 
 ----
-include::{jetty-home}/modules/ee10-deploy.mod[tags=ini-template]
+include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=ini-template]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -180,16 +178,36 @@ The name of the monitored directory.
 The scan period in seconds, that is how frequently the `DeploymentManager` wakes up to scan the monitored directory for changes.
 Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:deploy/index.adoc#hot-static[here] for more information).
 
+[[eeN-proxy]]
+== Module `{ee-all}-proxy`
+
+The `{ee-all}-proxy` module adds a simple reverse proxy service that proxies incoming requests to a backend server.
+Each module targets the corresponding Jakarta EE platform version.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/{ee-current}-proxy.mod[tags=documentation]
+----
+
+Among the configurable properties, the only mandatory one is:
+
+`jetty.proxy.proxyTo`::
+The URI of the backend server, in absolute form, for example `+http://backend:9090/path+`.
++
+The path in context of the incoming request is appended to the `jetty.proxy.proxyTo` property to obtain the URI to proxy to.
+For example, for the incoming URI `+http://proxy:8080/ctx/foo/bar+`, the path in context (assuming the context path is `/ctx`) is `/foo/bar`, therefore the request is proxied to `+http://backend:9090/path/foo/bar+`.
+
 [[eeN-webapp]]
 == Module `{ee-all}-webapp`
 
-include::{jetty-home}/modules/ee10-webapp.mod[tags=description]
+include::{jetty-home}/modules/{ee-current}-webapp.mod[tags=description]
 
 Multiple versions of this module exist (`{ee-all}-webapp`) to support each Jakarta EE platform's version of the Java Servlet specification.
 Jetty's configuration properties are identical across all versions of this module, and are as follows:
 
 ----
-include::{jetty-home}/modules/ee10-webapp.mod[tags=ini-template]
+include::{jetty-home}/modules/{ee-current}-webapp.mod[tags=ini-template]
 ----
 
 [[graceful]]
@@ -333,7 +351,7 @@ include::{jetty-home}/modules/https.mod[]
 [[jmx]]
 == Module `jmx`
 
-include::{jetty-home}/modules/ee10-webapp.mod[tags=description]
+include::{jetty-home}/modules/jmx.mod[tags=description]
 
 This configuration is useful for xref:jmx/index.adoc#local[local development and testing].
 If you need to xref:jmx/index.adoc#remote[enable remote access], use the xref:jmx/index.adoc#remote[`jmx-remote` module].
