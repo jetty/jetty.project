@@ -290,9 +290,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public ServletContextHandler.ServletScopedContext getServletContext()
     {
-        if (super.getContext() instanceof ServletContextHandler.ServletScopedContext servletScopedContext)
-            return servletScopedContext;
-        return null;
+        return super.getContext() instanceof ServletContextHandler.ServletScopedContext servletScopedContext
+            ? servletScopedContext : null;
     }
 
     @Override
