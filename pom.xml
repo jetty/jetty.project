@@ -164,7 +164,7 @@
     <asm.version>9.8</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
-    <bouncycastle.version>1.80</bouncycastle.version>
+    <bouncycastle.version>1.81</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
@@ -187,16 +187,16 @@
     <flatten.maven.plugin.version>1.7.0</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
     <grpc.version>1.72.0</grpc.version>
-    <gson.version>2.13.0</gson.version>
+    <gson.version>2.13.1</gson.version>
     <guava.version>33.4.8-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.5.0</hazelcast.version>
-    <hibernate.search.version>7.2.3.Final</hibernate.search.version>
+    <hibernate.search.version>7.2.4.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
-    <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
-    <infinispan.version>15.2.1.Final</infinispan.version>
+    <infinispan.protostream.version>5.0.14.Final</infinispan.protostream.version>
+    <infinispan.version>15.2.4.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -234,16 +234,16 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.platform.version>1.12.2</junit.platform.version>
-    <junit.version>5.12.2</junit.version>
+    <junit.platform.version>1.13.2</junit.platform.version>
+    <junit.version>5.13.2</junit.version>
     <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.24.3</log4j2.version>
+    <log4j2.version>2.25.0</log4j2.version>
     <logback.version>1.5.18</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.3</mariadb.version>
+    <mariadb.version>3.5.4</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.13.1</maven-plugin.plugin.version>
@@ -295,11 +295,11 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.300</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.23.0</osgi-version>
+    <osgi-version>3.23.100</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.debug.remote>false</pax.exam.debug.remote>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>3.0.0</pax.url.version>
+    <pax.url.version>3.0.1</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
@@ -314,12 +314,12 @@
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.9.0</swissbox.version>
-    <testcontainers.version>1.20.6</testcontainers.version>
+    <testcontainers.version>1.21.3</testcontainers.version>
     <testng.version>7.11.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.18.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.6.3.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.6.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
