@@ -13,26 +13,35 @@
 
 = Web Application Deployment
 
+The Jetty server supports the deployment of these types of web applications:
+
+* <<web-application-format-static,Jetty Static web applications>> -- web applications made of static files only.
+* <<web-application-format-core,Jetty Core web applications>> -- web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
+* <<web-application-format-jakarta,Java EE 8 web applications>> -- web applications written using the Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
+* <<web-application-format-jakarta,Jakarta EE 9 to Jakarta {ee-current-caps} web applications>> -- web applications written using the corresponding Servlet (and associated specifications) in the `+jakarta.*+` packages.
+
+In the following, the term "web application" is used to refer to either a Jetty Static web application, or Jetty Core web application, or Java EE 8 web application or Jakarta EE 9 to Jakarta {ee-current-caps} web application, unless specified otherwise.
+
+Also, in the following, references to "Jakarta EE" refer to both Java EE and Jakarta EE, unless specified otherwise.
+
 The Jetty server deploys each web application to a specific _environment_.
 
 The available environments are:
 
-* The Jetty Static Environment -- Supports web applications made of static files only.
-* The Jetty Core Environment -- Supports web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
-* The Java EE 8 Environment -- Supports Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
-* Any version from the Jakarta EE 9 Environment up to the Jakarta {ee-current-caps} Environment -- Supports corresponding Servlet (and associated specifications) in the `+jakarta.*+` packages.
+* The `static` environment, for Jetty Static web applications.
+* The `core` environment, for Jetty Core web applications.
+* The `{ee-all}` environments, for Jakarta EE web applications.
 
-You can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the core Jetty `Handler` APIs, all in the same Jetty server.
+You can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the Jetty Core `Handler` APIs, say `backoffice-core.xml`, all in the same Jetty server.
 
 For each specific environment there is a specific deploy module that must be enabled:
 
-* For Jetty Static, the xref:modules/standard.adoc#static-deploy[`static-deploy`] module
-* For Jetty Core, the xref:modules/standard.adoc#core-deploy[`core-deploy`] module
-* For Java EE 8, the xref:modules/standard.adoc#eeN-deploy[`ee8-deploy`] module
-* For Jakarta EE 9 up to Jakarta {ee-current-caps}, the corresponding xref:modules/standard.adoc#eeN-deploy[`ee<N>-deploy`] module
+* For the `static` environment, the xref:modules/standard.adoc#static-deploy[`static-deploy`] module.
+* For the `core` environment, the xref:modules/standard.adoc#core-deploy[`core-deploy`] module.
+* For the `{ee-all}` environments, the corresponding xref:modules/standard.adoc#eeN-deploy[`{ee-all}-deploy`] module.
 
 Each of these modules provides environment specific features, such as library dependencies and default configuration.
-The Jakarta EE deploy modules provide the corresponding Jakarta EE APIs and the Jetty implementation of the Jakarta EE APIs.
+The Jakarta EE deploy modules provide the corresponding Jakarta EE APIs and the Jetty implementation of those APIs.
 
 For example, you can enable the `{ee-current}-deploy` module in the following way:
 
@@ -41,7 +50,7 @@ For example, you can enable the `{ee-current}-deploy` module in the following wa
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----
 
-All the deploy modules depend on the xref:modules/standard.adoc#deployment-scanner[`deployment-scanner`] module, that scans <<monitored-directories,monitored directories>> for <<web-application-files,web applications>> to deploy, and for <<environment-configuration,environment configuration>> files to process.
+All deploy modules depend on the xref:modules/standard.adoc#deployment-scanner[`deployment-scanner`] module, that scans <<monitored-directories,monitored directories>> for <<web-application-files,web applications>> to deploy, and for <<environment-configuration,environment configuration>> files to process.
 
 NOTE: While you can have many deploy modules enabled, one for each environment, there is only one `deployment-scanner` module that scans the monitored directories.
 
@@ -87,7 +96,7 @@ The web application base resource directory can be outside of `$JETTY_BASE/webap
 == Web Application Format
 
 [[web-application-format-static]]
-=== Jetty Static Format
+=== Jetty Static Web Application Format
 
 For Jetty Static web applications, the web application format is just a directory, and any file in that directory and any subdirectory is served when requested with the proper request URI -- no files are hidden.
 
@@ -118,7 +127,7 @@ jetty.deploy.baseResource.dirAllowed=false
 ----
 
 [[web-application-format-core]]
-=== Jetty Core Format
+=== Jetty Core Web Application Format
 
 For Jetty Core web applications, the web application format is a directory with the following structure:
 
@@ -144,19 +153,19 @@ A notable difference with `+*.war+` files is that static files are only served f
 This means that files in the directory root, or under any other directory that is not `static/`, are hidden and if requested they will result in a `404 Not Found` response.
 If the `static/` directory is missing, then no static files can be served, and therefore all requests are processed dynamically by the ``Handler``s configured in the web application.
 
-Since static files can only be served from the `static/` directory, the `classes/` and `lib/` directories are implicitly hidden, as well as any other directory such as `includes/` or `fragments/`.
+Since static files can only be served from the `static/` directory, the `classes/` and `lib/` directories are implicitly hidden, as well as any other directory such as `includes/` or `fragments/`, and any file in the directory root.
 
 The `classes/` directory stores the web application's `+*.class+` files, while the `lib/` directory stores the web application's libraries, typically `+*.jar+` files.
 Both these directories are optional.
 
-The `jetty-web.xml` file is an optional in-application <<jetty-web-xml,Jetty Context XML file,>> that allows you to configure the web application deployment.
+The <<jetty-web-xml,`jetty-web.xml`>> file is an optional in-application Jetty Context XML file, that allows you to configure the web application deployment.
 
 [[web-application-format-jakarta]]
-=== Jakarta EE Format
+=== Jakarta EE Web Application Format
 
 For Jakarta EE web applications, the deployment unit is the usual `+*.war+` file or a directory with a `+*.war+` structure.
 
-Like for the <<web-application-format-core,Jetty Core Format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty Context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
+Like for the <<web-application-format-core,Jetty Core web application Format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty Context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
 
 [[hot-cold]]
 == Hot vs Cold Deployment
@@ -379,7 +388,8 @@ $ java -jar $JETTY_HOME/start.jar -Dwebapps.dir=/opt/myapps
 
 Properties specified in environment properties file (described in <<environment-configuration,this section>>) and in the web application properties file (described in <<web-application-files,this section>>) are available when processing the Jetty context XML file.
 
-Remember that Jetty Context XML files in the `$JETTY_BASE/webapps` directory can only refer to classes present in the environment class-path or module-path, and in the server class-path or module-path.
+Remember that Jetty Context XML files in the `$JETTY_BASE/webapps` directory can only refer to classes present in the environment class-path/module-path, and in the server class-path/module-path.
+For more information about the Jetty class loader hierarchy, see xref:start/index.adoc#start-class-path[this section].
 
 If you need to configure the deployment of your web application referring to web application specific classes, use the in-application Jetty Context XML file, as described in <<jetty-web-xml,this section>>.
 
@@ -432,6 +442,7 @@ The `$JETTY_HOME/environments/{ee-current}-extra.xml` file may contain:
 
 Custom classes like `com.acme.MyListenerFeature` must be present in the environment class loader, so that the XML file can reference them.
 You can extend the environment class loader by enabling the xref:modules/standard.adoc#eeN-ext[`{ee-current}-ext.mod`].
+Refer to xref:start/index.adoc#start-class-path[this section] for more information about the Jetty class loader hierarchy.
 
 The directory structure would look like this:
 
@@ -443,7 +454,7 @@ $JETTY_BASE
 │   └── {ee-current}-extra.xml
 ├── start.d
 │   ├── ...
-│   └── {ee-current}-ext.xml
+│   └── {ee-current}-ext.ini
 └── webapps
     ├── wiki.properties
     └── wiki.xml
@@ -454,7 +465,7 @@ $JETTY_BASE
 
 As discussed in <<context-xml,this section>>, the deployment of a web application can be specified with a Jetty Context XML file placed in the `$JETTY_HOME/webapps` directory.
 
-However, the deployment of a web application can also be configured using a Jetty Context XML file placed _inside_ the web application, both for <<web-application-format-core,core deployments>> and <<web-application-format-jakarta,Jakarta deployments>>.
+However, the deployment of a web application can also be configured using a Jetty Context XML file placed _inside_ the web application, both for <<web-application-format-core,Core web application deployments>> and <<web-application-format-jakarta,Jakarta web application deployments>>.
 
 This file can be useful:
 
@@ -462,12 +473,12 @@ This file can be useful:
 * To perform configuration of the web application that can only occur _after_ the web application's class-path has been created, for example because it references classes present in web application itself.
 
 [[jetty-web-xml-core]]
-=== In-Application Jetty Context XML File for Core Deployments
+=== In-Application Jetty Context XML File for Core Web Application Deployments
 
 The file must be in the root of the web application and named `jetty-web.xml`, see <<web-application-format-core,this section>> for an example.
 
 [[jetty-web-xml-jakarta]]
-=== In-Application Jetty Context XML Files for Jakarta Deployments
+=== In-Application Jetty Context XML Files for Jakarta Web Application Deployments
 
 For Jakarta deployments, there may be multiple in-application Jetty Context XML files, typically one for each `{ee-all}` environment.
 
@@ -501,7 +512,7 @@ By using virtual hosts, you will be able to have the first web application avail
 
 Another typical case is when you want to use different subdomains for different web application, for example a project website is at `+http://project.org/+` and the project documentation is at `+http://docs.project.org+`.
 
-Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler], and therefore for <<web-application-format-static, Static web applications>>, <<web-application-format-core,Core web applications>> and <<web-application-format-jakarta,Jakarta web applications>>.
+Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler], and therefore for <<web-application-format-static,Jetty Static web applications>>, <<web-application-format-core,Jetty Core web applications>> and <<web-application-format-jakarta,Jakarta web applications>>.
 
 [[virtual-hosts-names]]
 === Virtual Host Names
@@ -666,11 +677,11 @@ See xref:protocols/index.adoc[this section] for further information about how to
 [[extract-war]]
 == Configuring `+*.war+` File Extraction
 
-By default, `+*.war+` files are uncompressed and its content extracted in a temporary directory.
+By default, when a Jakarta EE web application in `+*.war+` file format is deployed, the `+*.war+` file is uncompressed and its content extracted in a temporary directory.
 // TODO: reference the `work` module and how it works, perhaps in a section about the `deploy` module?
 The web application resources are served by Jetty from the files extracted in the temporary directory, not from the files within the `+*.war+` file, for performance reasons.
 
-If you do not want Jetty to extract the `+*.war+` files, you can disable this feature, for example:
+If you do not want Jetty to extract the `+*.war+` files, you can disable this feature in this way:
 
 .mywebapp.xml
 [,xml,subs="attributes+,+quotes"]
@@ -688,7 +699,7 @@ If you do not want Jetty to extract the `+*.war+` files, you can disable this fe
 [[jetty-override-web-xml]]
 == Overriding `web.xml`
 
-You can configure an additional `web.xml` that complements the `web.xml` file that is present in the web application `+*.war+` file.
+When deploying Jakarta EE web applications, you can configure an additional `web.xml` that complements the `web.xml` file that is present in the web application `+*.war+` file.
 This additional `web.xml` is processed _after_ the `+*.war+` file `web.xml`.
 This allows you to add host specific configuration or server specific configuration without having to extract the web application `web.xml`, modify it, and repackage it in the `+*.war+` file.
 
@@ -713,8 +724,8 @@ The format of the additional `web.xml` is exactly the same as a standard `web.xm
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-         version="6.0">
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+         version="6.1">
   <servlet>
     <servlet-name>my-servlet</servlet-name>
     <init-param>
