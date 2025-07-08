@@ -244,36 +244,78 @@ public class HttpTokens
      * @param c the character to test.
      * @return the original character or the replacement character ' ' or '?',
      * the return value is guaranteed to be a valid ISO-8859-1 character.
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values">RFC9110 - 5.5. Field Values</a>
      */
     public static char sanitizeFieldVchar(char c)
     {
-        switch (c)
+        if (isVchar(c))
+            return c;
+
+        return switch (c)
         {
+            // HTAB is an allowed character
+            case '\t' -> c;
+
             // A recipient of CR, LF, or NUL within a field value MUST either reject the message
             // or replace each of those characters with SP before further processing
-            case '\r':
-            case '\n':
-            case 0x00:
-                return ' ';
+            case '\r', '\n', 0x00 -> ' ';
 
-            default:
-                if (isIllegalFieldVchar(c))
-                    return '?';
-        }
-        return c;
+            // All others are sanitized with `?`
+            default -> '?';
+        };
+    }
+
+    /**
+     * Check if char is a {@code VCHAR} per RFC9110.
+     *
+     * <p>
+     * RFC9110 defines {@code VCHAR} as "any visible US-ASCII character"
+     * </p>
+     *
+     * <p>
+     * The <a href="https://www.iana.org/assignments/character-sets/character-sets.xhtml">IANA Registry of character sets</a>
+     * declares {@code US-ASCII} as dictated by <a href="https://www.rfc-editor.org/rfc/rfc2046.html">RFC 2046</a>.
+     * </p>
+     *
+     * <p>
+     * <a href="https://www.rfc-editor.org/rfc/rfc2046.html">RFC 2046</a> declares that US-ASCII is
+     * defined by {@code US ASCII, ANSI X3.4-1986 (ISO 646 International Reference Version)}, which states.
+     * </p>
+     *
+     * <ul>
+     *     <li>Codes 0 through 31 and 127 (decimal) are unprintable control characters.</li>
+     *     <li>Code 32 (decimal) is a nonprinting spacing character.</li>
+     *     <li>Codes 33 through 126 (decimal) are printable graphic characters.</li>
+     * </ul>
+     *
+     * <p>
+     * A {@code VCHAR} is by definition limited to 7-bit, as values above 127 are undefined.
+     * </p>
+     *
+     * @param c the char to test
+     * @return true if char is a VCHAR
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc9110.html#notation">RFC 9110 - 2.1. Syntax Notation</a>
+     */
+    public static boolean isVchar(char c)
+    {
+        return (c >= 0x20 /* space */ && c <= 0x7E /* tilde */);
     }
 
     /**
      * Checks whether this is an invalid VCHAR based on RFC9110.
-     * If this not a valid ISO-8859-1 character or a control character
-     * we say that it is illegal.
+     * If this not a "visible US-ASCII character" or HTAB we say that it is illegal.
+     *
+     * <p>
+     *     This means control characters (except HTAB) are illegal.
+     *     Along with all characters above 0x7F (as they are undefined
+     *     by the US-ASCII spec)
+     * </p>
      *
      * @param c the character to test.
-     * @return true if this is invalid VCHAR.
+     * @return true if this is invalid VCHAR for field use.
      */
     public static boolean isIllegalFieldVchar(char c)
     {
-        return (c >= 256 || c < ' ');
+        return (c != 0x09 /* HTAB */) && (c >= 0x7E /* tilde */ || c < 0x20 /* space */);
     }
 }
-
