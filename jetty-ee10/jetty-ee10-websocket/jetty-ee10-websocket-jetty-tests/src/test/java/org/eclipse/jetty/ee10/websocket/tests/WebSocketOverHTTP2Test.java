@@ -19,6 +19,8 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +42,7 @@ import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletConta
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -50,6 +53,7 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.ConnectionLimit;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -67,6 +71,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -74,6 +79,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,12 +91,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketOverHTTP2Test
 {
+    private static final int CONNECTION_LIMIT = 5;
+
     private Server server;
     private ServerConnector connector;
     private ServerConnector tlsConnector;
     private WebSocketClient wsClient;
     private ServletContextHandler context;
     private Runnable onComplete;
+    private ConnectionLimit _connectionLimit;
 
     private void startServer() throws Exception
     {
@@ -137,6 +146,10 @@ public class WebSocketOverHTTP2Test
                     onComplete.run();
             }
         });
+
+        _connectionLimit = new ConnectionLimit(CONNECTION_LIMIT, connector, tlsConnector);
+        connector.addBean(_connectionLimit);
+        tlsConnector.addBean(_connectionLimit);
 
         server.start();
     }
@@ -389,6 +402,60 @@ public class WebSocketOverHTTP2Test
         assertThat(clientEndpoint.closeCode, equalTo(StatusCode.SHUTDOWN));
         assertThat(clientEndpoint.closeReason, containsStringIgnoringCase("timeout"));
         assertNull(clientEndpoint.error);
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        startServer();
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        EchoSocket serverEndpoint = new EchoSocket();
+        container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
+
+        // The HTTP/2 connection remains open so we must account for this.
+        List<EventSocket> clientHandlers = new ArrayList<>();
+        for (int i = 0; i < CONNECTION_LIMIT - 1; i++)
+        {
+            EventSocket clientEndpoint = new EventSocket();
+            clientHandlers.add(clientEndpoint);
+            wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+            assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+            assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
+            awaitConnections(i + 2);
+        }
+
+        // Trying to open an additional connection results in the connection being immediately closed.
+        EventSocket clientHandler = new EventSocket();
+        wsClient.connect(clientHandler, uri).get(5, TimeUnit.SECONDS);
+        assertTrue(clientHandler.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientHandler.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientHandler.closeCode, equalTo(StatusCode.NO_CLOSE));
+        awaitConnections(CONNECTION_LIMIT);
+
+        // Close all the sessions.
+        for (EventSocket handler : clientHandlers)
+        {
+            handler.session.close();
+            assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
+        }
+
+        // The only connection remaining is the HTTP/2 connection.
+        awaitConnections(1);
+    }
+
+    public void awaitConnections(int connections)
+    {
+        await()
+            .atMost(1, TimeUnit.SECONDS)
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(() ->
+            {
+                assertThat(_connectionLimit.getConnections(), equalTo(connections));
+                assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
+            });
     }
 
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
