@@ -240,7 +240,15 @@ public class RewriteLanguageRule extends Rule
                 @Override
                 public HttpField onReplaceField(HttpField oldField, HttpField newField)
                 {
+                    if (oldField.getHeader() == HttpHeader.VARY && !newField.getValue().contains(HttpHeader.ACCEPT_LANGUAGE.asString()))
+                        return new HttpField(HttpHeader.VARY, newField.getValue() + ", " + HttpHeader.ACCEPT_LANGUAGE.asString());
                     return onAddField(newField);
+                }
+
+                @Override
+                public boolean onRemoveField(HttpField field)
+                {
+                    return !(field.getHeader() == HttpHeader.VARY && field.getValue().contains(HttpHeader.ACCEPT_LANGUAGE.asString()));
                 }
             };
 
