@@ -525,11 +525,15 @@ public class HttpParserTest
         {
             cases.add(Arguments.of(httpCompliance, "Value", "Value"));
             cases.add(Arguments.of(httpCompliance, " Value", "Value"));
-            // HTAB is OWS (and ignored for the value)
+            // HTAB is valid OWS when at the start or end of a value.
+            // But is preserved as field-content within a value
             cases.add(Arguments.of(httpCompliance, "\tValue", "Value"));
             cases.add(Arguments.of(httpCompliance, "\t \tValue", "Value"));
             cases.add(Arguments.of(httpCompliance, "\t\t\tValue", "Value"));
-            // Extra spaces
+            cases.add(Arguments.of(httpCompliance, "Value\t", "Value"));
+            cases.add(Arguments.of(httpCompliance, "Va\tlue", "Va\tlue"));
+            // SPACE is valid OWS when at the start or end of value.
+            // But is preserved as field-content within a value
             cases.add(Arguments.of(httpCompliance, "   Value", "Value"));
             cases.add(Arguments.of(httpCompliance, "   Value   ", "Value"));
             cases.add(Arguments.of(httpCompliance, "V a l u e", "V a l u e"));
