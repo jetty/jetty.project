@@ -13,7 +13,7 @@
 
 = JavaServer Faces TagLibs
 
-If you want to use JSF with your webapp, you should copy the relevant jars from your implementation of choice into your `$JETTY_BASE` directory, ideally into `$JETTY_BASE/lib/ext`.
+If you want to use JSF with your web application, you should copy the relevant jars from your implementation of choice into your `$JETTY_BASE` directory, ideally into `$JETTY_BASE/lib/ext`.
 If that directory does not exist, enable the `ext` module, which will create the directory and ensure all jars within it are put onto the container classpath.
 
 

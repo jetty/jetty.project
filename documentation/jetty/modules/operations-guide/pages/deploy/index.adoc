@@ -584,7 +584,7 @@ If you want to deploy different web applications to the same context path, typic
 
 You have `domain.war` that you want to deploy at `+http://domain.biz/+` and `hobby.war` that you want to deploy at `+http://hobby.net+`.
 
-To achieve this, you simply use the same context path of `/` for each of your webapps, while specifying different virtual hosts for each of your webapps:
+To achieve this, you simply use the same context path of `/` for each of your web applications, while specifying different virtual hosts for each of your web applications:
 
 .domain.xml
 [,xml,subs=attributes+]

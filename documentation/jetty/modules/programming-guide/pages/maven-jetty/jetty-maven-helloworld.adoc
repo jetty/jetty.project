@@ -149,11 +149,11 @@ You can now compile and execute the HelloWorld class by using these commands:
 Point your browser to `+http://localhost:8080+` to see the _Hello World_ page.
 
 [[developing-standard-webapp-with-jetty-and-maven]]
-== Developing a Standard WebApp with Jetty and Maven
+== Developing a Jakarta EE Web Application with Jetty and Maven
 
 The previous section demonstrated how to use Maven with an application that embeds Jetty.
-We can instead develop a standard webapp using Maven and Jetty.
-First create the Maven structure (you can use the maven webapp archetype instead if you prefer):
+We can instead develop a Jakarta EE web application using Maven and Jetty.
+First create the Maven structure (you can use the Maven Webapp Archetype instead if you prefer):
 
 ----
 > mkdir JettyMavenHelloWarApp
