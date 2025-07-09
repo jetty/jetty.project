@@ -8,6 +8,7 @@ ee9
 
 [depend]
 server
+ee9-annotations
 ee9-deploy
 
 [lib]

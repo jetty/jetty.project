@@ -8,6 +8,7 @@ ee10
 
 [depend]
 server
+ee10-annotations
 ee10-deploy
 
 [lib]

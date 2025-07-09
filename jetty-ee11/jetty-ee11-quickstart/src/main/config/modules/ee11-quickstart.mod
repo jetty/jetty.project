@@ -8,6 +8,7 @@ ee11
 
 [depend]
 server
+ee11-annotations
 ee11-deploy
 
 [lib]

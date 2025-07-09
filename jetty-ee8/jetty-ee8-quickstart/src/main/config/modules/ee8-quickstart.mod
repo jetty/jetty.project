@@ -8,6 +8,7 @@ ee8
 
 [depend]
 server
+ee8-annotations
 ee8-deploy
 
 [lib]
