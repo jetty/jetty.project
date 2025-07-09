@@ -105,7 +105,14 @@ public class ShutdownMonitor extends ShutdownService
             if (System.getProperty("STOP.PORT") != null)
             {
                 LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
-                return new ShutdownMonitor();
+                try
+                {
+                    return new ShutdownMonitor();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Unable to create ShutdownMonitor", x);
+                }
             }
             return null;
         });
