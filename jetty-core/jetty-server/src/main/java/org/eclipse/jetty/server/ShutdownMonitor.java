@@ -102,9 +102,7 @@ public class ShutdownMonitor extends ShutdownService
         {
             if (h != null)
                 return h;
-            if (System.getProperty("STOP.PORT") != null ||
-                System.getProperty("STOP.HOST") != null ||
-                System.getProperty("STOP.KEY") != null)
+            if (System.getProperty("STOP.PORT") != null)
             {
                 LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
                 return new ShutdownMonitor();
@@ -165,7 +163,8 @@ public class ShutdownMonitor extends ShutdownService
             getSysProp("STOP.KEY", null),
             Boolean.parseBoolean(getSysProp("STOP.EXIT", "true")));
 
-        this.mutablePort = super.getPort();
+        // Different default port for mutable port
+        this.mutablePort = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
         this.mutableKey = super.getKey();
         this.mutableExitVm = super.isExitVm();
     }
