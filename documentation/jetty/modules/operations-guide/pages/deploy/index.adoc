@@ -158,14 +158,14 @@ Since static files can only be served from the `static/` directory, the `classes
 The `classes/` directory stores the web application's `+*.class+` files, while the `lib/` directory stores the web application's libraries, typically `+*.jar+` files.
 Both these directories are optional.
 
-The <<jetty-web-xml,`jetty-web.xml`>> file is an optional in-application Jetty Context XML file, that allows you to configure the web application deployment.
+The <<jetty-web-xml,`jetty-web.xml`>> file is an optional in-application Jetty context XML file, that allows you to configure the web application deployment.
 
 [[web-application-format-jakarta]]
 === Jakarta EE Web Application Format
 
 For Jakarta EE web applications, the deployment unit is the usual `+*.war+` file or a directory with a `+*.war+` structure.
 
-Like for the <<web-application-format-core,Jetty Core web application Format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty Context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
+Like for the <<web-application-format-core,Jetty Core web application format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
 
 [[hot-cold]]
 == Hot vs Cold Deployment
@@ -238,7 +238,7 @@ This allows the directory with the same _basename_ to be the `+*.war+` file unpa
 [[rules-context-path]]
 === Context Path Resolution
 
-When a web application is deployed (or redeployed), the web application `contextPath` is derived from the web application <<web-application-files,_basename_>>, with the following rules:
+When a web application is deployed (or redeployed), the web application `contextPath` is derived from the <<web-application-files,web application files>>, with the following rules:
 
 * If `<basename>.xml` exists, it is processed and the directives contained in the XML file can set the `contextPath` to any value (including one that is different from the _basename_).
 * If `<basename>.properties` exists, then the `contextPath` is set to the value of the `jetty.deploy.contextPath` property, if it is present in `<basename>.properties`.
@@ -295,9 +295,9 @@ TIP: In case of multiple deploy environments, it is good practice to always spec
 ====
 If you do *not* specify the `environment` property in the web application <<web-application-files,properties file>> for your web applications, then the deployer for the default environment will be used.
 
-For example, if the `{ee-current}-deploy` and the `ee9-deploy` module are enabled, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed to the (default) `{ee-current}` environment, with unspecified results.
+For example, if the `{ee-current}-deploy` and the `ee9-deploy` module are enabled, and you deploy a Jakarta EE 9 web application _without_ the `+*.properties+` file, then it will be deployed to the (default) `{ee-current}` environment, with unspecified results.
 
-This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
+This unspecified deployment may not work as the Jakarta EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
 ====
 
 Also in case of multiple deployers, if a web application <<web-application-files,properties file>> specifies an `environment` property, and the corresponding deploy module is not enabled, the deployment will fail.
@@ -388,10 +388,10 @@ $ java -jar $JETTY_HOME/start.jar -Dwebapps.dir=/opt/myapps
 
 Properties specified in environment properties file (described in <<environment-configuration,this section>>) and in the web application properties file (described in <<web-application-files,this section>>) are available when processing the Jetty context XML file.
 
-Remember that Jetty Context XML files in the `$JETTY_BASE/webapps` directory can only refer to classes present in the environment class-path/module-path, and in the server class-path/module-path.
+Remember that Jetty context XML files in the `$JETTY_BASE/webapps` directory can only refer to classes present in the environment class-path/module-path, in the server class-path/module-path, and in the JVM class-path/module-path.
 For more information about the Jetty class loader hierarchy, see xref:start/index.adoc#start-class-path[this section].
 
-If you need to configure the deployment of your web application referring to web application specific classes, use the in-application Jetty Context XML file, as described in <<jetty-web-xml,this section>>.
+If you need to configure the deployment of your web application referring to web application specific classes, use the in-application Jetty context XML file, as described in <<jetty-web-xml,this section>>.
 
 [[environment-configuration]]
 == Environment Configuration
@@ -463,9 +463,9 @@ $JETTY_BASE
 [[jetty-web-xml]]
 == In-Application Jetty Context XML File
 
-As discussed in <<context-xml,this section>>, the deployment of a web application can be specified with a Jetty Context XML file placed in the `$JETTY_HOME/webapps` directory.
+As discussed in <<context-xml,this section>>, the deployment of a web application can be specified with a Jetty context XML file placed in the `$JETTY_HOME/webapps` directory.
 
-However, the deployment of a web application can also be configured using a Jetty Context XML file placed _inside_ the web application, both for <<web-application-format-core,Core web application deployments>> and <<web-application-format-jakarta,Jakarta web application deployments>>.
+However, the deployment of a web application can also be configured using a Jetty context XML file placed _inside_ the web application, both for <<web-application-format-core,Core web application deployments>> and <<web-application-format-jakarta,Jakarta EE web application deployments>>.
 
 This file can be useful:
 
@@ -478,9 +478,9 @@ This file can be useful:
 The file must be in the root of the web application and named `jetty-web.xml`, see <<web-application-format-core,this section>> for an example.
 
 [[jetty-web-xml-jakarta]]
-=== In-Application Jetty Context XML Files for Jakarta Web Application Deployments
+=== In-Application Jetty Context XML Files for Jakarta EE Web Application Deployments
 
-For Jakarta deployments, there may be multiple in-application Jetty Context XML files, typically one for each `{ee-all}` environment.
+For Jakarta EE deployments, there may be multiple in-application Jetty context XML files, typically one for each `{ee-all}` environment.
 
 The files must be named either `WEB-INF/jetty-{ee-all}-web.xml` or `WEB-INF/jetty-web.xml`; the latter is only processed if the former(s) are missing.
 
@@ -498,7 +498,7 @@ If you only deploy to a single environment, then you can omit it from the filena
 
 Web applications may _reference_ JNDI entries, such as a JDBC `DataSource` or a Jakarta Mail `Session`.
 
-The JNDI entries must be _defined_ in a Jetty Context XML file, as detailed in xref:jndi/index.adoc[this section].
+The JNDI entries must be _defined_ in a Jetty context XML file, as detailed in xref:jndi/index.adoc[this section].
 
 [[virtual-hosts]]
 == Configuring Virtual Hosts
@@ -512,7 +512,7 @@ By using virtual hosts, you will be able to have the first web application avail
 
 Another typical case is when you want to use different subdomains for different web application, for example a project website is at `+http://project.org/+` and the project documentation is at `+http://docs.project.org+`.
 
-Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler], and therefore for <<web-application-format-static,Jetty Static web applications>>, <<web-application-format-core,Jetty Core web applications>> and <<web-application-format-jakarta,Jakarta web applications>>.
+Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler], and therefore for <<web-application-format-static,Jetty Static web applications>>, <<web-application-format-core,Jetty Core web applications>> and <<web-application-format-jakarta,Jakarta EE web applications>>.
 
 [[virtual-hosts-names]]
 === Virtual Host Names

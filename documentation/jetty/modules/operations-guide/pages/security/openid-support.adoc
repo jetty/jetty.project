@@ -44,13 +44,13 @@ jetty.openid.clientId=test1234
 jetty.openid.clientSecret=XT_Mafv_aUCGheuCaKY8P
 ----
 
-== Web Application Specific Configuration in `web.xml`
+== Jakarta EE Web Application Specific Configuration in `web.xml`
 
-The web application's `web.xml` file needs some specific configuration to use OpenID.
+The Jakarta EE web application's `web.xml` file needs some specific configuration to use OpenID.
 
 There must be a `<login-config>` element with an `<auth-method>` value of `OPENID`, and a `<realm-name>` value of the exact URL string used to set the OpenID Provider.
 
-To set the error page, you must set an `context-param` named `org.eclipse.jetty.security.openid.error_page` whose value should be a path relative to the web application where authentication errors should be redirected.
+To set the error page, you must set a `<context-param>` named `org.eclipse.jetty.security.openid.error_page` whose value should be a path relative to the web application where authentication errors should be redirected.
 
 For example:
 

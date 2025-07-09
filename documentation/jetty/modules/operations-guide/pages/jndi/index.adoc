@@ -15,21 +15,24 @@
 
 For each specific xref:deploy/index.adoc[_environment_] there is a specific Jetty module that you must enable in order to use JNDI resources in your web application:
 
-* For Static and Core web applications, the `plus` module.
-* For Jakarta {ee-all-caps} the correspondent `{ee-all}-plus` module.
+* For Jetty Static and Core web applications, the `plus` module.
+* For Jakarta {ee-all-caps} web applications, the correspondent `{ee-all}-plus` module.
 
 If you have already enabled an xref:annotations/index.adoc[`annotations`] module suitable for your environment, an appropriate `plus` module will already have been enabled, and you do not need to explicitly enable a `plus` module.
 
-If your JNDI resources need extra libraries, for example database driver libraries, that are not located inside your web application, then you must ensure they are on environment class-path.
+If your JNDI resources need extra libraries, for example database driver libraries, that are not located inside your web application, then you must ensure they are on the environment class-path/module-path.
 
-You can enable the xref:modules/standard.adoc#ext[`ext`] module for Core web applications, or the specific xref:modules/standard.adoc#eeN-ext[`{ee-all}-ext`] module for Jakarta web applications, and place your extra libraries respectively in `$JETTY_BASE/lib/ext` or `$JETTY_BASE/lib/{ee-all}/ext` to make them available in the environment class-path.
+You can enable the xref:modules/standard.adoc#ext[`ext`] module for Jetty Core web applications, or the specific xref:modules/standard.adoc#eeN-ext[`{ee-all}-ext`] module for Jakarta EE web applications, and place your extra libraries respectively in `$JETTY_BASE/lib/ext` or `$JETTY_BASE/lib/{ee-all}/ext` to make them available in the environment class-path/module-path.
 
 You can now define JNDI resources and reference them within your web applications.
 
 == Defining resources
 
 JNDI resources are referenced by web application via JNDI names.
-For Jakarta web applications, the JNDI names must be declared via `env-entry`, `resource-ref` and `resource-env-refs` in `web.xml`, `web-fragment.xml` or Jetty's `override-web.xml`.
+
+// TODO: document how it is for Jetty web applications.
+
+For Jakarta EE web applications, the JNDI names must be declared via `env-entry`, `resource-ref` and `resource-env-refs` in `web.xml`, `web-fragment.xml` or Jetty's `override-web.xml`.
 
 The resources are bound to their JNDI names in Jetty XML files that are either _external_  or _internal_ to your web application.
 
@@ -37,7 +40,7 @@ External Jetty XML files are those used to deploy the web application, as define
 
 Internal Jetty XML files are those present inside the web application directory or packaged file, as defined in xref:deploy/index.adoc#jetty-web-xml[this section].
 
-For Jakarta web applications, the file `WEB-INF/jetty-{ee-all}-env.xml` is processed _before_ other internal Jetty XML files such as `WEB-INF/jetty-{ee-all}-web.xml`, so that JNDI resources can be bound and later possibly processed by `WEB-INF/jetty-{ee-all}-web.xml`.
+For Jakarta EE web applications, the file `WEB-INF/jetty-{ee-all}-env.xml` is processed _before_ other internal Jetty XML files such as `WEB-INF/jetty-{ee-all}-web.xml`, so that JNDI resources can be bound and later possibly processed by `WEB-INF/jetty-{ee-all}-web.xml`.
 
 See the section on <<xml,Jetty XML files>> for more information on how to choose in which XML file to place the definitions of your JNDI resources.
 
@@ -49,7 +52,7 @@ Used for `env-entry` resources in `web.xml`.
 Used for other type of resources.
 <<tx,`org.eclipse.jetty.plus.jndi.Transaction`>>::
 <<tx,`org.eclipse.jetty.{ee-all}.plus.jndi.Transaction`>>::
-Used for a transaction resource.
+Used for a JTA transaction manager.
 <<link,`org.eclipse.jetty.plus.jndi.Link`>>::
 Used for linking between a `web.xml` resource name and a naming entry.
 
@@ -140,7 +143,7 @@ This example configures a http://db.apache.org/derby[Derby] DataSource named `jd
 </Configure>
 ----
 
-This would be linked into the web application JNDI namespace via an entry in a `web.xml` like so:
+This would be linked into the web application's JNDI namespace via an entry in a `web.xml` like so:
 
 [,xml]
 ----
@@ -184,7 +187,7 @@ Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM con
 </Configure>
 ----
 
-The corresponding entry in `web.xml` to bind the ConnectionFactory into the web application JNDI namespace would be:
+The corresponding entry in `web.xml` to bind the ConnectionFactory into the web application's JNDI namespace would be:
 
 [,xml,subs=attributes+]
 ----
@@ -280,7 +283,7 @@ If your JTA implementation of `UserTransaction` does _not_ implement `javax.nami
 <1> The <<scope,scope>> of the resource.
 <2> The transaction manager instance implementing `jakarta.transaction.UserTransaction`.
 
-Jetty will automatically bind this transaction manager to the web application JNDI namespace at `java:comp/UserTransaction`.
+Jetty will automatically bind this transaction manager to the web application's JNDI namespace at `java:comp/UserTransaction`.
 
 [[link]]
 === org.eclipse.jetty.plus.jndi.Link

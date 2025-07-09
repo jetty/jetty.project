@@ -13,11 +13,11 @@
 
 = HTTP Server Libraries
 
-Web application development typically involves writing your web applications, packaging them into a web application archive, the `+*.war+` file, and then deploy the `+*.war+` file into a standalone Servlet Container that you have previously installed.
+Web application development typically involves writing your web applications, optionally packaging them into a web application archive, for example the Jakarta EE `+*.war+` file, and then deploy the web application into a standalone Servlet Container that you have previously installed.
 
-The Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing <<handler,Jetty ``Handler``s>>) or using the standard <<handler-use-servlet,Servlet APIs>> (by writing ``Servlet``s and Servlet ``Filter``s).
-These components can then be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
-This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
+The Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing <<handler,Jetty ``Handler``s>>) or using the Jakarta EE <<handler-use-servlet,Servlet APIs>> (by writing ``Servlet``s and Servlet ``Filter``s).
+These components can then be programmatically assembled together, without the need of creating a web application archive, added to a Jetty ``Server`` instance that is then started.
+This result in your web applications to be available to HTTP clients as if you deployed your web applications in a standalone Jetty server.
 
 Jetty `Handler` APIs pros:
 
@@ -26,7 +26,7 @@ Jetty `Handler` APIs pros:
 * Faster turnaround to implement new APIs or new standards.
 * Normal classloading behavior (web application classloading isolation also available).
 
-Servlet APIs pros:
+Jakarta EE APIs pros:
 
 * Standard, well known, APIs.
 
@@ -80,7 +80,7 @@ The advantage is that you do not pay the cost for features that you do not use, 
 The built-in ``Handler``s provided by the Jetty server libraries allow you to write web applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
 Read <<handler,this section>> for further details about ``Handler``s.
 
-If you are interested in writing your web application based on the Servlet APIs, jump to <<handler-use-servlet,this section>>.
+If you are interested in writing your web application based on the Jakarta EE APIs, jump to <<handler-use-servlet,this section>>.
 
 [[request-processing]]
 == Request Processing
@@ -734,7 +734,7 @@ If the code takes a long time to execute, requests from other connections may be
 [[handler-use]]
 === Jetty Handlers
 
-Web applications are the unit of deployment in an HTTP server or Servlet container such as Jetty.
+Web applications are the unit of deployment in an HTTP server or Servlet Container such as Jetty.
 
 Two different web applications are typically deployed on different __context path__s, where a _context path_ is the initial segment of the URI path.
 For example, web application `webappA` that implements a web user interface for an e-commerce site may be deployed to context path `/shop`, while web application `webappB` that implements a REST API for the e-commerce business may be deployed to `/api`.
@@ -755,7 +755,7 @@ In the first case the contexts were `(domain.com, /shop)` and `(domain.com, /api
 Server applications using the Jetty Server Libraries create and configure a _context_ for each web application.
 Many __context__s can be deployed together to enrich the web application offering -- for example a catalog context, a shop context, an API context, an administration context, etc.
 
-Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations, as described in <<handler-use-servlet,this section>>.
+Web applications can be written using exclusively the Jakarta EE APIs, since developers know them well, and because they guarantee better portability across Servlet Container implementations, as described in <<handler-use-servlet,this section>>.
 
 On the other hand, web applications can be written using the Jetty APIs, for better performance, or to be able to  access to Jetty specific APIs, or to use features such as redirection from HTTP to HTTPS, support for `gzip` content compression, URI rewriting, etc.
 The Jetty Server Libraries provides a number of out-of-the-box ``Handler``s that implement the most common functionalities and are described in the next sections.
@@ -1504,9 +1504,9 @@ Server
 [[handler-use-servlet-context]]
 ==== ServletContextHandler
 
-``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
+``Handler``s are easy to write, but often web applications have already been written using the Jakarta EE APIs, using ``Servlet``s and ``Filter``s.
 
-`ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
+`ServletContextHandler` is a `ContextHandler` that provides support for the Jakarta EE Servlet APIs and implements the behaviors required by the Servlet specification.
 
 However, differently from <<handler-use-webapp-context,`WebAppContext`>>, it does not require web application to be packaged as a `+*.war+`, nor it requires a `web.xml` for configuration.
 
@@ -1574,9 +1574,9 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 </dependency>
 ----
 
-Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
+Jakarta EE web applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Jakarta EE web application packaged as defined by the Servlet specification.
 
-Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s as described in <<handler-use-servlet-context,this section>>, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s, and also enforces a number of restrictions defined by the Servlet specification, in particular related to class loading.
+Where web applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s as described in <<handler-use-servlet-context,this section>>, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s, and also enforces a number of restrictions defined by the Servlet specification, in particular related to class loading.
 
 [,java,indent=0]
 ----
@@ -1586,14 +1586,15 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 [[handler-use-webapp-context-class-loading]]
 ==== WebAppContext Class Loading
 
-The Servlet specification requires that a web application class loader must load classes found in the web application `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
-This is significantly different to typical java class loaders where loaders first delegate to their parent class loader.
+The Jakarta EE Servlet specification requires that a Jakarta EE web application class loader must load classes found in `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
+This is significantly different to typical Java class loaders where loaders first delegate to their parent class loader.
 For Servlet specification compliant web applications, the typical parent-first class loading model is _inverted_.
 
-Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _hidden classes_ (previously called _server classes_).
-Web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
+Furthermore, the Servlet specification requires that Jakarta EE web applications cannot load or otherwise access the Servlet Container implementation classes, also called _hidden classes_ (previously called _server classes_).
+Jakarta EE web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet Container implementations.
 
-Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.  These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
+Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.
+These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
 
 `WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_ by delegating to the `ClassVisibilityChecker` of the context.
 
@@ -1617,8 +1618,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 [[handler-use-default-servlet]]
 ==== DefaultServlet -- Static Content for Servlets
 
-If you have a <<handler-use-servlet-context,Servlet web application>>, you may want to use a `DefaultServlet` instead of `ResourceHandler`.
-The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
+If you have a <<handler-use-servlet-context,Jakarta EE web application>>, you may want to use a `DefaultServlet` instead of `ResourceHandler`.
+The features are similar, but `DefaultServlet` is more commonly used to serve static files for Jakarta EE web applications.
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 

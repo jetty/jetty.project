@@ -18,21 +18,48 @@ Forms can be a vector for denial-of-service attacks, like explained in xref:prog
 
 == Configuring Form Limits for a Web Application
 
-To configure the form limits for a single web application, the `WebAppContext` instance can be configured from a context XML file or `WEB-INF/jetty-web.xml` file:
+To configure the form limits for a Jakarta EE web application, the `WebAppContext` instance can be configured from a Jetty context XML file or from a `WEB-INF/jetty-{ee-all}-web.xml` file:
 
 [,xml,subs=attributes+]
 ----
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
-
   ...
-
   <Set name="maxFormContentSize">200000</Set>
   <Set name="maxFormKeys">200</Set>
 </Configure>
-
 ----
 
-These settings can also be set via the following `ServletContext` attributes.
+Setting the form limits can also be done, for both Jakarta EE web applications and Jetty Core web applications, by setting the following `Context` attributes.
 
-- `org.eclipse.jetty.server.Request.maxFormKeys`
-- `org.eclipse.jetty.server.Request.maxFormContentSize`
+* `org.eclipse.jetty.server.Request.maxFormKeys`
+* `org.eclipse.jetty.server.Request.maxFormContentSize`
+
+For Jakarta EE web applications, these attributes can be set in `web.xml` via the `<context-param>` element.
+
+For Jakarta EE and Jetty web applications, these attributes can be set in the Jetty context XML file.
+
+For Jakarta EE web applications:
+
+[,xml,subs=attributes+]
+----
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+  ...
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.server.Request.maxFormKeys</Arg>
+    <Arg>128</Arg>
+  </Call>
+</Configure>
+----
+
+For Jetty Core web applications:
+
+[,xml]
+----
+<Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
+  ...
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.server.Request.maxFormKeys</Arg>
+    <Arg>128</Arg>
+  </Call>
+</Configure>
+----
