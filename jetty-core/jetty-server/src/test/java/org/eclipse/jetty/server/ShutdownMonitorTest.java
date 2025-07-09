@@ -53,12 +53,15 @@ public class ShutdownMonitorTest
     }
 
     @Test
-    public void testEmbeddedUnconfigured()
+    public void testEmbeddedUnconfigured() throws Exception
     {
         // By default, when a ShutdownMonitor.getInstance() is created, the port is -1
         // This means it is unconfigured, and will not start a ShutdownMonitor ServerSocket.
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         assertEquals(-1, monitor.getPort());
+
+        monitor.start();
+        assertFalse(monitor.isAlive());
     }
 
     @Test
