@@ -629,7 +629,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             break;
                         }
 
-                        // Set a close callback on the HttpOutput to make it an async callback
+                        // Set a close callback on the HttpOutput to make it an async callback;
+                        // the response may already have been completed when the callback runs if completeOutput() decides to abort.
                         _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
