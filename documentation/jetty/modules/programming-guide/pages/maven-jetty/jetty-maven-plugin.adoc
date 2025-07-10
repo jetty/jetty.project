@@ -332,42 +332,42 @@ This is an instance of link:{javadoc-url}/org/eclipse/jetty/{ee-current}}/maven/
 You can use any of the setter methods on this object to configure your web application.
 Here are a few of the most useful ones:
 +
-contextPath;;
+contextPath::
 The context path for your web application.
 By default, this is set to `/`.
 If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
-descriptor;;
+descriptor::
 The path to the `web.xml` file for your web application.
 By default, the plugin will look in `src/main/webapp/WEB-INF/web.xml`.
-defaultsDescriptor;;
+defaultsDescriptor::
 The path to a `webdefault.xml` file that will be applied to your web application before the `web.xml`.
 If you don't supply one, Jetty uses a default file baked into the `jetty-{ee-current}-webapp-{jetty-version}.jar`.
-overrideDescriptor;;
+overrideDescriptor::
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
-jettyEnvXml;;
+jettyEnvXml::
 Optional.
 Location of a `jetty-{ee-current}-env.xml` file, which allows you to make JNDI bindings that satisfy `env-entry`, `resource-env-ref`, and `resource-ref` linkages in the `web.xml` that are scoped  only to the web application and not shared with other web applications that you might be deploying at the same time (for example, by using a `jettyXml` file).
-tempDirectory;;
+tempDirectory::
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your web application is running.
 The default is `${project.build.outputDirectory}/tmp`.
-baseResource;;
+baseResource::
 The path from which Jetty serves static resources.
 Defaults to `src/main/webapp`.
 If this location does not exist (because, for example, your project does not use static content), then the plugin will synthesize a virtual static resource location of `target/webapp-synth`.
-resourceBases;;
+resourceBases::
 Use instead of `baseResource` if you have multiple directories from which you want to serve static content.
 This is an array of directory locations, either as urls or file paths.
-baseAppFirst;;
+baseAppFirst::
 Defaults to "true".
 Controls whether any overlaid wars are added before or after the original base resource(s) of the web application.
 See the section on <<using-overlaid-wars,overlaid wars>> for more information.
-containerIncludeJarPattern;;
+containerIncludeJarPattern::
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the web application) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute xref:operations-guide:annotations/index.adoc#og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:operations-guide:annotations/index.adoc#og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
-webInfIncludeJarPattern;;
+webInfIncludeJarPattern::
 Defaults to matching _all_ the dependency jars for the web application (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
 This is analogous to the context attribute xref:operations-guide:annotations/index.adoc#og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:operations-guide:annotations/index.adoc#og-web-inf-include-jar-pattern[here].
@@ -560,41 +560,41 @@ This is an instance of link:{javadoc-url}/org/eclipse/jetty/{ee-current}/maven/p
 You can use any of the setter methods on this object to configure your web application.
 Here are a few of the most useful ones:
 +
-contextPath;;
+contextPath::
 The context path for your web application.
 By default, this is set to `/`.
 If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
-descriptor;;
+descriptor::
 The path to the `web.xml` file for your web application.
 The default is `src/main/webapp/WEB-INF/web.xml`.
-defaultsDescriptor;;
+defaultsDescriptor::
 The path to a `webdefault.xml` file that will be applied to your web application before the `web.xml`.
 If you don't supply one, Jetty uses a default file baked into the `jetty-{ee-current}-webapp-{jetty-version}.jar`.
-overrideDescriptor;;
+overrideDescriptor::
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
-jettyEnvXml;;
+jettyEnvXml::
 Optional.
 Location of a `jetty-env.xml` file, which allows you to make JNDI bindings that satisfy `env-entry`, `resource-env-ref`, and `resource-ref` linkages in the `web.xml` that are scoped  only to the web application and not shared with other web applications that you might be deploying at the same time (for example, by using a `jettyXml` file).
-tempDirectory;;
+tempDirectory::
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your web application is running.
 The default is `${project.build.outputDirectory}/tmp`.
-baseResource;;
+baseResource::
 The path from which Jetty serves static resources.
 Defaults to `src/main/webapp`.
-resourceBases;;
+resourceBases::
 Use instead of `baseResource` if you have multiple directories from which you want to serve static content.
 This is an array of directory names.
-baseAppFirst;;
+baseAppFirst::
 Defaults to "true".
 Controls whether any overlaid wars are added before or after the original base resource(s) of the web application.
 See the section on <<using-overlaid-wars,overlaid wars>> for more information.
-containerIncludeJarPattern;;
+containerIncludeJarPattern::
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the web application) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute xref:operations-guide:annotations/index.adoc#og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:operations-guide:annotations/index.adoc#og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
-webInfIncludeJarPattern;;
+webInfIncludeJarPattern::
 Defaults to matching _all_ of the dependency jars for the web application (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
 This is analogous to the context attribute xref:operations-guide:annotations/index.adoc#og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:operations-guide:annotations/index.adoc#og-web-inf-include-jar-pattern[here].

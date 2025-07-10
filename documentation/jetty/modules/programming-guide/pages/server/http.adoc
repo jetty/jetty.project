@@ -1498,6 +1498,18 @@ Server
           └── MyWebApp
 ----
 
+[[handler-use-moved]]
+==== MovedContextHandler
+
+`MovedContextHandler` allows you to redirect an old URI to a new one, specifying the HTTP redirect code.
+
+Use of this class is less flexible than using the <<handler-use-rewrite,`RewriteHandler`>> with a redirect rule, because it unconditionally redirects old URIs to the new URIs, while a `RewriteHandler` redirect rule performs the redirection only if the rule matches.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=movedContextHandler]
+----
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 

@@ -15,12 +15,13 @@
 
 The Jetty server supports the deployment of these types of web applications:
 
-* <<web-application-format-static,Jetty Static web applications>> -- web applications made of static files only.
-* <<web-application-format-core,Jetty Core web applications>> -- web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
-* <<web-application-format-jakarta,Java EE 8 web applications>> -- web applications written using the Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
 * <<web-application-format-jakarta,Jakarta EE 9 to Jakarta {ee-current-caps} web applications>> -- web applications written using the corresponding Servlet (and associated specifications) in the `+jakarta.*+` packages.
+* <<web-application-format-jakarta,Java EE 8 web applications>> -- web applications written using the Servlet 4.0 (and associated specifications) in the `+javax.*+` packages.
+* <<web-application-format-core,Jetty Core web applications>> -- web applications written against the Jetty `Handler` APIs, without any Servlet dependencies.
+* <<web-application-format-context,Jetty `ContextHandler` web applications>> -- web applications made of Jetty ``Handler``s shipped with the Jetty libraries.
+* <<web-application-format-static,Jetty Static web applications>> -- web applications made of static files only.
 
-In the following, the term "web application" is used to refer to either a Jetty Static web application, or Jetty Core web application, or Java EE 8 web application or Jakarta EE 9 to Jakarta {ee-current-caps} web application, unless specified otherwise.
+In the following, the term "web application" is used to refer to either a Jetty Static web application, or Jetty Core web application, or Jetty `ContextHandler` web application, or Java EE 8 web application or Jakarta EE 9 to Jakarta {ee-current-caps} web application, unless specified otherwise.
 
 Also, in the following, references to "Jakarta EE" refer to both Java EE and Jakarta EE, unless specified otherwise.
 
@@ -29,7 +30,7 @@ The Jetty server deploys each web application to a specific _environment_.
 The available environments are:
 
 * The `static` environment, for Jetty Static web applications.
-* The `core` environment, for Jetty Core web applications.
+* The `core` environment, for Jetty Core web applications, and Jetty `ContextHandler` web applications.
 * The `{ee-all}` environments, for Jakarta EE web applications.
 
 You can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the Jetty Core `Handler` APIs, say `backoffice-core.xml`, all in the same Jetty server.
@@ -95,36 +96,12 @@ The web application base resource directory can be outside of `$JETTY_BASE/webap
 [[web-application-format]]
 == Web Application Format
 
-[[web-application-format-static]]
-=== Jetty Static Web Application Format
+[[web-application-format-jakarta]]
+=== Jakarta EE Web Application Format
 
-For Jetty Static web applications, the web application format is just a directory, and any file in that directory and any subdirectory is served when requested with the proper request URI -- no files are hidden.
+For Jakarta EE web applications, the deployment unit is the usual `+*.war+` file or a directory with a `+*.war+` structure.
 
-For example, with the following directory structure:
-
-----
-$JETTY_BASE/webapps
-└── static-app
-    ├── css/
-    │   └── styles.css
-    └── index.html
-----
-
-Requests to `+http://localhost:8080/static-app/index.html+` and `+http://localhost:8080/static-app/css/style.css+` will serve the correspondent files.
-
-A request to `+http://localhost:8080/static-app/css/+` will list the content of the directory.
-
-To disable directory listing, create a web application <<web-application-files,properties file>> with the following content:
-
-.static-app.properties
-[,properties]
-----
-# Specifies the environment.
-environment=static
-
-# Disables directory listing.
-jetty.deploy.baseResource.dirAllowed=false
-----
+Like for the <<web-application-format-core,Jetty Core web application format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
 
 [[web-application-format-core]]
 === Jetty Core Web Application Format
@@ -160,12 +137,110 @@ Both these directories are optional.
 
 The <<jetty-web-xml,`jetty-web.xml`>> file is an optional in-application Jetty context XML file, that allows you to configure the web application deployment.
 
-[[web-application-format-jakarta]]
-=== Jakarta EE Web Application Format
+[[web-application-format-context]]
+=== Jetty `ContextHandler` Web Application Format
 
-For Jakarta EE web applications, the deployment unit is the usual `+*.war+` file or a directory with a `+*.war+` structure.
+For Jetty `ContextHandler` web applications, the web application format is just a Jetty XML file, that contains references to Jetty ``Handler``s shipped with the Jetty libraries.
+Refer to xref:programming-guide:server/http.adoc#handler-use[this section] for the available Jetty ``Handler``s.
 
-Like for the <<web-application-format-core,Jetty Core web application format>>, the `+*.war+` file or a directory can contain an optional in-application <<jetty-web-xml,Jetty context XML file>> under the `WEB-INF` directory, that allows you to configure the web application deployment.
+For example, you can use xref:programming-guide:server/http.adoc#handler-use-moved[`MovedContextHandler`] to redirect an old issue-tracking website at `bugs.acme.org` to the new issue-tracking website at `github.com`:
+
+----
+$JETTY_BASE/webapps
+└── bugs.acme.org.xml
+----
+
+.bugs.acme.org.xml
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
+  <Set name="virtualHosts">
+    <Array type="string"><Item>bugs.acme.org</Item></Array>
+  </Set>
+  <Set name="contextPath">/</Set>
+  <Set name="redirectURI">https://github.com/acme/acme/issues</Set>
+  <Set name="statusCode">301</Set>
+  <Set name="discardPathInContext">true</Set>
+  <Set name="discardQuery">true</Set>
+</Configure>
+----
+
+In the example above, file `$JETTY_BASE/webapps/bugs.acme.org.xml` specifies a web application deployed under virtual host `bugs.acme.org` at context path `/`.
+
+The web application is a `MovedContextHandler` that redirects with HTTP status code `301` (a permanent redirect).
+
+Every request to `+http://bugs.acme.org/<any-path-or-query>+` will be redirected to `+https://github.com/acme/acme/issues+`.
+
+Another example is the use of xref:programming-guide:server/http.adoc#handler-use-context[`ContextHandler`] in conjunction with xref:programming-guide:server/http.adoc#handler-use-rewrite[`RewriteHandler`] to rewrite old documentation URIs to new documentation URIs:
+
+----
+$JETTY_BASE/webapps
+└── docs.project.org.xml
+----
+
+.docs.project.org.xml
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Set name="virtualHosts">
+    <Array type="string"><Item>docs.project.org</Item></Array>
+  </Set>
+  <Set name="contextPath">/</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+            <Set name="pattern">/docs/#_(.*)</Set>
+            <Set name="">/$1</Set>
+          </New>
+        </Arg>
+      </Call>
+    </New>
+  </Set>
+</Configure>
+----
+
+In the example above, file `$JETTY_BASE/webapps/docs.project.org.xml` specifies a web application deployed under virtual host `docs.project.org` at context path `/`.
+
+The web application is a `ContextHandler` with a child `RewriteHandler` that rewrites old documentation URIs such as `/docs/#_proj-intro` to `/proj-intro` using a regular expression rewrite rule.
+
+[[web-application-format-static]]
+=== Jetty Static Web Application Format
+
+For Jetty Static web applications, the web application format is just a directory, and any file in that directory and any subdirectory is served when requested with the proper request URI -- no files are hidden.
+
+For example, with the following directory structure:
+
+----
+$JETTY_BASE/webapps
+└── static-app
+    ├── css/
+    │   └── styles.css
+    └── index.html
+----
+
+Requests to `+http://localhost:8080/static-app/index.html+` and `+http://localhost:8080/static-app/css/style.css+` will serve the correspondent files.
+
+A request to `+http://localhost:8080/static-app/css/+` will list the content of the directory.
+
+To disable directory listing, create a web application <<web-application-files,properties file>> with the following content:
+
+.static-app.properties
+[,properties]
+----
+# Specifies the environment.
+environment=static
+
+# Disables directory listing.
+jetty.deploy.baseResource.dirAllowed=false
+----
 
 [[hot-cold]]
 == Hot vs Cold Deployment
