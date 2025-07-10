@@ -199,8 +199,8 @@ public class RewriteEncodingRule extends Rule
         @Override
         protected boolean handle(Response response, Callback callback) throws Exception
         {
-            // Add the language field if not already set
-            response.getHeaders().computeField(HttpHeader.CONTENT_LANGUAGE, (h, l) ->
+            // Add the encoding field if not already set
+            response.getHeaders().computeField(HttpHeader.CONTENT_ENCODING, (h, l) ->
             {
                 if (l == null || l.isEmpty())
                     return _encoding.contentEncodingField();

@@ -119,7 +119,7 @@ public class RewriteEncodingRuleTest extends AbstractRuleTest
     }
 
     @Test
-    public void testOneLanguage() throws Exception
+    public void testOneEncoding() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx/unknown.html HTTP/1.0\r
@@ -166,7 +166,7 @@ public class RewriteEncodingRuleTest extends AbstractRuleTest
     }
 
     @Test
-    public void testQualityLanguage() throws Exception
+    public void testQualityEncoding() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx/unknown.html HTTP/1.0\r
@@ -213,7 +213,7 @@ public class RewriteEncodingRuleTest extends AbstractRuleTest
     }
 
     @Test
-    public void testUnknownQualityLanguage() throws Exception
+    public void testUnknownQualityEncoding() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx/unknown.html HTTP/1.0\r
@@ -260,7 +260,7 @@ public class RewriteEncodingRuleTest extends AbstractRuleTest
     }
 
     @Test
-    public void testWildLanguage() throws Exception
+    public void testWildEncoding() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx/unknown.html HTTP/1.0\r
