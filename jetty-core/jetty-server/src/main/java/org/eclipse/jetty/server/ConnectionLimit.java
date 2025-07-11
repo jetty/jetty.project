@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Connection.Listener;
@@ -34,7 +31,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** todo check documentation
  * <p>A Listener that limits the number of Connections.</p>
  * <p>This listener applies a limit to the number of connections, which when
  * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)}
@@ -68,7 +65,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     private final AutoLock _lock = new AutoLock();
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
-    private final Set<SelectableChannel> _acceptedChannels = new HashSet<>();
     private int _accepting;
     private int _connections;
     private int _maxConnections;
@@ -189,7 +185,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         }
     }
 
-    private boolean check()
+    private boolean lockedCheck()
     {
         assert _lock.isHeldByCurrentThread();
         int total = _accepting + _connections;
@@ -252,10 +248,11 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
+            System.err.println("onAccepting: " + channel.hashCode());
             _accepting++;
             if (LOG.isDebugEnabled())
                 LOG.debug("Accepting ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
-            if (check())
+            if (lockedCheck())
                 IO.close(channel);
         }
     }
@@ -265,10 +262,11 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
+            System.err.println("onAcceptFailed: " + channel.hashCode());
             _accepting--;
             if (LOG.isDebugEnabled())
                 LOG.debug("Accept failed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel, cause);
-            check();
+            lockedCheck();
         }
     }
 
@@ -277,39 +275,24 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _acceptedChannels.add(channel);
-        }
-    }
-
-    @Override
-    public void onOpened(Connection connection)
-    {
-        try (AutoLock ignored = _lock.lock())
-        {
-            // We should only decrement _accepting once per SelectableChannel.
-            Object transport = connection.getEndPoint().getTransport();
-            if (transport instanceof SelectableChannel selectableChannel && _acceptedChannels.remove(selectableChannel))
-                _accepting--;
+            System.err.println("onAccepted: " + channel.hashCode());
+            _accepting--;
             _connections++;
             if (LOG.isDebugEnabled())
-                LOG.debug("Opened ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, connection);
-
-            // HTTP/2 will need to rely on this close to prevent streams on an existing HTTP2Connection from exceeding
-            // the limit by upgrading streams to WebSocket, as the call to connector.setAccepting(false) will not prevent this.
-            if (check())
-                connection.getEndPoint().close(new IOException("Exceeded Connection Limit"));
+                LOG.debug("Accepted ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
         }
     }
 
     @Override
-    public void onClosed(Connection connection)
+    public void onClosed(SelectableChannel channel)
     {
         try (AutoLock ignored = _lock.lock())
         {
+            System.err.println("onClosed: " + channel.hashCode());
             _connections--;
             if (LOG.isDebugEnabled())
-                LOG.debug("Closed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, connection);
-            check();
+                LOG.debug("Closed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
+            lockedCheck();
         }
     }
 }

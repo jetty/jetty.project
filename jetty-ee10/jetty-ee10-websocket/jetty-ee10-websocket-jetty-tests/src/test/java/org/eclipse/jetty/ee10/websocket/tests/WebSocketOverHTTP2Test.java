@@ -405,7 +405,7 @@ public class WebSocketOverHTTP2Test
     }
 
     @Test
-    public void test() throws Exception
+    public void testConnectionLimit() throws Exception
     {
         startServer();
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
@@ -414,25 +414,20 @@ public class WebSocketOverHTTP2Test
         container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
 
-        // The HTTP/2 connection remains open so we must account for this.
         List<EventSocket> clientHandlers = new ArrayList<>();
-        for (int i = 0; i < CONNECTION_LIMIT - 1; i++)
+        for (int i = 0; i < CONNECTION_LIMIT; i++)
         {
             EventSocket clientEndpoint = new EventSocket();
             clientHandlers.add(clientEndpoint);
             wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
             assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
             assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
-            awaitConnections(i + 2);
+            awaitConnections(1);
         }
 
-        // Trying to open an additional connection results in the connection being immediately closed.
-        EventSocket clientHandler = new EventSocket();
-        wsClient.connect(clientHandler, uri).get(5, TimeUnit.SECONDS);
-        assertTrue(clientHandler.openLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientHandler.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientHandler.closeCode, equalTo(StatusCode.NO_CLOSE));
-        awaitConnections(CONNECTION_LIMIT);
+        // We only have 1 HTTP2Connection, and the WebSocket connections are over HTTP/2 streams so do not count toward the limit.
+        assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
+        assertThat(_connectionLimit.getConnections(), equalTo(1));
 
         // Close all the sessions.
         for (EventSocket handler : clientHandlers)
@@ -442,8 +437,8 @@ public class WebSocketOverHTTP2Test
             assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
         }
 
-        // The only connection remaining is the HTTP/2 connection.
-        awaitConnections(1);
+        assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
+        assertThat(_connectionLimit.getConnections(), equalTo(1));
     }
 
     public void awaitConnections(int connections)

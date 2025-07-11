@@ -17,7 +17,9 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.server.ConnectionLimit;
 import org.eclipse.jetty.server.Server;
@@ -33,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class WebSocketConnectionLimitTest
@@ -88,7 +91,10 @@ public class WebSocketConnectionLimitTest
 
         // Trying to open an additional connection results in a failure.
         TestMessageHandler clientHandler = new TestMessageHandler();
-        assertThrows(Throwable.class, () -> _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS));
+        _client.getHttpClient().setConnectTimeout(1000);
+        _client.getHttpClient().setIdleTimeout(1000);
+        ExecutionException error = assertThrows(ExecutionException.class, () -> _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS));
+        assertCausedByTimeout(error);
         assertThat(_connectionLimit.getConnections(), equalTo(CONNECTION_LIMIT));
 
         // Close all the sessions.
@@ -101,6 +107,29 @@ public class WebSocketConnectionLimitTest
 
         // All connections should be closed.
         awaitConnections(0);
+
+        // Now additional connections can be opened without error.
+        TestMessageHandler clientHandler2 = new TestMessageHandler();
+        _client.connect(clientHandler2, uri).get(5, TimeUnit.SECONDS);
+        assertTrue(clientHandler2.openLatch.await(5, TimeUnit.SECONDS));
+        awaitConnections(1);
+        clientHandler2.getCoreSession().close(Callback.NOOP);
+        assertTrue(clientHandler2.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientHandler2.closeStatus.getCode(), equalTo(CloseStatus.NO_CODE));
+        awaitConnections(0);
+    }
+
+    public void assertCausedByTimeout(Throwable error)
+    {
+        Throwable cause = error.getCause();
+        while (cause != null)
+        {
+            if (cause instanceof TimeoutException)
+                return;
+            cause = cause.getCause();
+        }
+
+        fail("No timeout exception cause", error);
     }
 
     public void awaitConnections(int connections)
