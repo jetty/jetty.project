@@ -9,7 +9,8 @@ ee8
 [depend]
 server
 ee8-annotations
-ee8-deploy
+ee8-webapp
+ee8-plus
 
 [lib]
 lib/jetty-ee8-quickstart-${jetty.version}.jar

@@ -9,7 +9,8 @@ ee10
 [depend]
 server
 ee10-annotations
-ee10-deploy
+ee10-webapp
+ee10-plus
 
 [lib]
 lib/jetty-ee10-quickstart-${jetty.version}.jar
