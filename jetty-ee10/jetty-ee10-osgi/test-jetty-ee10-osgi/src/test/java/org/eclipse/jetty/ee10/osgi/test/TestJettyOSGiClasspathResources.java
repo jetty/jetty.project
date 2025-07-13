@@ -53,7 +53,7 @@ public class TestJettyOSGiClasspathResources
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>(TestOSGiUtil.configurePaxExamLogging());
-
+        
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
