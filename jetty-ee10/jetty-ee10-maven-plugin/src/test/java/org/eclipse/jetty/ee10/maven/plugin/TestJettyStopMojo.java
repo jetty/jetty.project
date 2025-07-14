@@ -21,36 +21,39 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.awaitility.Awaitility;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.server.ShutdownService;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.Matchers.greaterThan;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestJettyStopMojo
 {
     /**
-     * ShutdownMonitorMain
-     * Kick off the ShutdownMonitor and wait for it to exit.
+     * ShutdownServiceMain
+     * Kick off the ShutdownService and wait for it to exit.
      */
-    public static final class ShutdownMonitorMain
+    public static final class ShutdownServiceMain
     {
         public static void main(String[] args)
         {
             try
             {
-                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-                monitor.setPort(0);
-                monitor.start();
-                monitor.await();
+                ShutdownService shutdownService = new ShutdownService("127.0.0.1", 0, args[0], true);
+                shutdownService.start();
+                Awaitility.await().until(shutdownService::isListening);
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -165,6 +168,8 @@ public class TestJettyStopMojo
         }
     }
 
+    public WorkDir workDir;
+
     @Test
     public void testStopNoWait() throws Exception
     {
@@ -237,7 +242,7 @@ public class TestJettyStopMojo
     @Test
     public void testStopWait() throws Exception
     {
-        //test that we will communicate with a remote process and wait for it to exit
+        // test that we will communicate with a remote process and wait for it to exit
         String stopKey = "foo";
         List<String> cmd = new ArrayList<>();
         String java = "java";
@@ -252,42 +257,44 @@ public class TestJettyStopMojo
         }
 
         cmd.add(java);
-        cmd.add("-DSTOP.KEY=" + stopKey);
-        cmd.add("-DDEBUG=true");
         cmd.add("-cp");
         cmd.add(System.getProperty("java.class.path"));
-        cmd.add(ShutdownMonitorMain.class.getName());
+        cmd.add("-Dorg.eclipse.jetty.server.ShutdownService.LEVEL=DEBUG");
+        cmd.add(ShutdownServiceMain.class.getName());
+        cmd.add(stopKey);
 
         ProcessBuilder command = new ProcessBuilder(cmd);
-        File file = MavenTestingUtils.getTargetFile("tester.out");
-        command.redirectOutput(file);
+
+        Path root = workDir.getEmptyPathDir();
+        Path file = root.resolve("tester.out");
+        command.redirectOutput(file.toFile());
         command.redirectErrorStream(true);
-        command.directory(MavenTestingUtils.getTargetDir());
+        command.directory(root.toFile());
         Process fork = command.start();
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(file::exists);
-        final String[] port = {null};
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> Files.exists(file));
+        AtomicInteger port = new AtomicInteger(-1);
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            Optional<String> tmp = Files.readAllLines(file.toPath()).stream()
+            Optional<String> tmp = Files.readAllLines(file).stream()
                     .filter(s -> s.startsWith("STOP.PORT=")).findFirst();
             if (tmp.isPresent())
             {
-                // TODO validate it's an integer
-                port[0] = tmp.get().substring(10);
+                String line = tmp.get();
+                String portStr = line.substring(10);
+                port.set(Integer.parseInt(portStr));
                 return true;
             }
             return false;
-
         });
 
-        assertNotNull(port[0]);
+        assertThat(port.get(), greaterThan(0));
 
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
         mojo.stopKey = stopKey;
-        mojo.stopPort = Integer.parseInt(port[0]);
+        mojo.stopPort = port.get();
         mojo.setLog(log);
 
         mojo.execute();

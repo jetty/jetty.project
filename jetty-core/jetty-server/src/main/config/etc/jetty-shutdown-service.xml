@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Jetty ShutdownService                                           -->
+<!-- =============================================================== -->
+<Configure id="ShutdownService" class="org.eclipse.jetty.server.ShutdownService">
+  <Arg name="host" type="String"><Property name="jetty.shutdown.host" default="127.0.0.1"/></Arg>
+  <Arg name="port" type="int"><Property name="jetty.shutdown.port" default="-1"/></Arg>
+  <Arg name="key" type="String"><Property name="jetty.shutdown.key"/></Arg>
+  <Arg name="exitVm" type="boolean"><Property name="jetty.shutdown.exit" default="true"/></Arg>
+</Configure>
