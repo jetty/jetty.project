@@ -663,10 +663,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 default -> throw new IllegalStateException(state.name());
             }
         }
+
         if (close)
             doOnClose(closeCause);
-
-        if (moreDemand())
+        else if (moreDemand())
             fillAndParse();
     }
 
