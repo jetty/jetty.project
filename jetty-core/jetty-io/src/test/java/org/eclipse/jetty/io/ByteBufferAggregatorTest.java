@@ -23,7 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Deprecated
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class ByteBufferAggregatorTest
 {
     private ArrayByteBufferPool.Tracking bufferPool;

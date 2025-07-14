@@ -15,8 +15,6 @@ package org.eclipse.jetty.websocket.core.messages;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -31,7 +29,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private ByteBufferCallbackAccumulator accumulator;
+    private RetainableByteBuffer.DynamicCapacity accumulator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -50,7 +48,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
+            long size = (accumulator == null ? 0 : accumulator.size()) + frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
@@ -60,7 +58,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             // If the frame is fin and no accumulator has been
             // created or used, then we don't need to aggregate.
-            if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
+            if (frame.isFin() && (accumulator == null || accumulator.isEmpty()))
             {
                 invoke(getMethodHolder(), frame.getPayload(), callback);
                 autoDemand();
@@ -75,17 +73,16 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new ByteBufferCallbackAccumulator();
-            accumulator.addEntry(frame.getPayload(), callback);
+                accumulator = new RetainableByteBuffer.DynamicCapacity(getCoreSession().getByteBufferPool(), frame.getPayload().isDirect(), -1L);
+            RetainableByteBuffer.Mutable rbb = RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded);
+            if (accumulator.append(rbb))
+                rbb.release();
 
             if (frame.isFin())
             {
-                ByteBufferPool bufferPool = getCoreSession().getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(accumulator.getLength(), false);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                accumulator.writeTo(byteBuffer);
+                RetainableByteBuffer buffer = accumulator.take();
                 callback = Callback.from(buffer::release);
-                invoke(getMethodHolder(), byteBuffer, callback);
+                invoke(getMethodHolder(), buffer.getByteBuffer(), callback);
                 autoDemand();
             }
             else
@@ -105,7 +102,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     public void fail(Throwable failure)
     {
         if (accumulator != null)
-            accumulator.fail(failure);
+        {
+            accumulator.release();
+            accumulator = null;
+        }
     }
 
     protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, Callback callback) throws Throwable

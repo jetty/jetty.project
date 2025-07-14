@@ -23,7 +23,6 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -581,7 +580,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
      * A handler that will echo the request body to the response body, but only
      * once the entire body content has been received.
      */
-    public static class EchoWholeHandler extends Handler.Abstract
+    public class EchoWholeHandler extends Handler.Abstract
     {
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -601,19 +600,19 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
          * Accumulate the Request body until it's entirely received,
          * then write the body back to the response body.
          */
-        private static class WholeProcess implements Runnable
+        private class WholeProcess implements Runnable
         {
             Request request;
             Response response;
             Callback callback;
-            ByteBufferAccumulator bufferAccumulator;
+            RetainableByteBuffer.DynamicCapacity bufferAccumulator;
 
             public WholeProcess(Request request, Response response, Callback callback)
             {
                 this.request = request;
                 this.response = response;
                 this.callback = callback;
-                this.bufferAccumulator = new ByteBufferAccumulator();
+                this.bufferAccumulator = new RetainableByteBuffer.DynamicCapacity(_bufferPool);
             }
 
             @Override
@@ -629,17 +628,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     }
                     if (Content.Chunk.isFailure(chunk))
                     {
+                        bufferAccumulator.release();
                         callback.failed(chunk.getFailure());
                         return;
                     }
                     // copy buffer
-                    bufferAccumulator.copyBuffer(chunk.getByteBuffer().slice());
+                    bufferAccumulator.append(chunk);
                     chunk.release();
                     if (chunk.isLast())
                     {
                         // write accumulated buffers
-                        RetainableByteBuffer buffer = bufferAccumulator.toRetainableByteBuffer();
-                        response.write(true, buffer.getByteBuffer(), Callback.from(buffer::release, callback));
+                        response.write(true, bufferAccumulator.getByteBuffer(), Callback.from(bufferAccumulator::release, callback));
                         return;
                     }
                 }

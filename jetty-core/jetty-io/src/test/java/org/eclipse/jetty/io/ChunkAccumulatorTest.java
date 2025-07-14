@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class ChunkAccumulatorTest
 {
     @Test

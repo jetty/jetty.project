@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * <p>The buffers are taken from the supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.</p>
  * @deprecated Use {@link RetainableByteBuffer.DynamicCapacity}
  */
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class ByteBufferAggregator
 {
     private static final Logger LOG = LoggerFactory.getLogger(ByteBufferAggregator.class);

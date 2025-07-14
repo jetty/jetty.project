@@ -20,7 +20,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -118,14 +118,14 @@ public class PermessageDeflateDemandTest
         return BufferUtil.toBuffer(bytes);
     }
 
-    public static class ServerHandler implements FrameHandler
+    public class ServerHandler implements FrameHandler
     {
         private CoreSession _coreSession;
         private byte _messageType;
         public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
         private StringBuilder _stringBuilder = new StringBuilder();
-        private ByteBufferCallbackAccumulator _byteBuilder = new ByteBufferCallbackAccumulator();
+        private RetainableByteBuffer.DynamicCapacity _byteBuilder = new RetainableByteBuffer.DynamicCapacity();
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
@@ -166,11 +166,13 @@ public class PermessageDeflateDemandTest
                         }
                         break;
                     case OpCode.BINARY:
-                        _byteBuilder.addEntry(frame.getPayload(), callback);
+                        RetainableByteBuffer.Mutable rbb = RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded);
+                        if (_byteBuilder.append(rbb))
+                            rbb.release();
                         if (frame.isFin())
                         {
                             binaryMessages.add(BufferUtil.toBuffer(_byteBuilder.takeByteArray()));
-                            _byteBuilder = new ByteBufferCallbackAccumulator();
+                            _byteBuilder = new RetainableByteBuffer.DynamicCapacity(_bufferPool);
                         }
                         break;
                     default:

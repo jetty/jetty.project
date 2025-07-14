@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class ByteBufferAccumulatorTest
 {
     private CountingBufferPool bufferPool;

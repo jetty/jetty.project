@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * @see #ensureBuffer(int, int)
  * @deprecated Use {@link RetainableByteBuffer.DynamicCapacity}
  */
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class ByteBufferAccumulator implements AutoCloseable
 {
     private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
