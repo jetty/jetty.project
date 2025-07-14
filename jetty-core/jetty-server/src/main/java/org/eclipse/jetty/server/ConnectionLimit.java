@@ -248,7 +248,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
-            System.err.println("onAccepting: " + channel.hashCode());
             _accepting++;
             if (LOG.isDebugEnabled())
                 LOG.debug("Accepting ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
@@ -262,7 +261,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
-            System.err.println("onAcceptFailed: " + channel.hashCode());
             _accepting--;
             if (LOG.isDebugEnabled())
                 LOG.debug("Accept failed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel, cause);
@@ -275,7 +273,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
-            System.err.println("onAccepted: " + channel.hashCode());
             _accepting--;
             _connections++;
             if (LOG.isDebugEnabled())
@@ -288,7 +285,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {
         try (AutoLock ignored = _lock.lock())
         {
-            System.err.println("onClosed: " + channel.hashCode());
             _connections--;
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
