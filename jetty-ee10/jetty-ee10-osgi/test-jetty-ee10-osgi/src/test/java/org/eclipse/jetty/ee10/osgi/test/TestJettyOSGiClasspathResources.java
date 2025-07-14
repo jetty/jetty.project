@@ -53,7 +53,7 @@ public class TestJettyOSGiClasspathResources
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>(TestOSGiUtil.configurePaxExamLogging());
-        
+
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -65,7 +65,6 @@ public class TestJettyOSGiClasspathResources
         TestOSGiUtil.coreJspDependencies(options);
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").versionAsInProject().start());
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bnd.util").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
