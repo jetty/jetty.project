@@ -181,7 +181,7 @@
     <checkstyle.version>10.23.0</checkstyle.version>
     <commons-codec.version>1.18.0</commons-codec.version>
     <commons-io.version>2.19.0</commons-io.version>
-    <commons-lang3.version>3.17.0</commons-lang3.version>
+    <commons-lang3.version>3.18.0</commons-lang3.version>
     <commons.compress.version>1.27.1</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>17</compiler.release>
