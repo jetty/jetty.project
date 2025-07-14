@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** todo check documentation
+/**
  * <p>A Listener that limits the number of Connections.</p>
  * <p>This listener applies a limit to the number of connections, which when
  * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)}
