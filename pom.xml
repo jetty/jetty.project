@@ -298,7 +298,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.1.4</mongodb.version>
     <netty.version>4.2.0.Final</netty.version>
-    <njord.version>0.7.1</njord.version>
+    <njord.version>0.8.2</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -1491,6 +1491,15 @@
           <version>${njord.version}</version>
         </plugin>
         <plugin>
+          <groupId>net.webtide.tools</groupId>
+          <artifactId>webtide-release-tools-plugin</artifactId>
+          <version>1.0</version>
+          <configuration>
+            <configFile>${project.basedir}/build/release-tools-config.json</configFile>
+            <gitCacheDir>${project.build.directory}/.gitCacheDir</gitCacheDir>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
@@ -2039,6 +2048,7 @@
                   <version>[17,)</version>
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
+                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"></versionOsgiRule>
                 <!-- do not support alphax as a version number -->
                 <!--
                   <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
@@ -2191,7 +2201,7 @@
     <extensions>
       <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
-        <artifactId>extension</artifactId>
+        <artifactId>extension3</artifactId>
         <version>${njord.version}</version>
       </extension>
       <extension>
@@ -2573,8 +2583,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-version-maven-plugin</artifactId>
+            <groupId>net.webtide.tools</groupId>
+            <artifactId>webtide-release-tools-plugin</artifactId>
             <executions>
               <execution>
                 <id>gen-versiontxt</id>
@@ -2583,26 +2593,6 @@
                   <goal>tag</goal>
                 </goals>
                 <phase>generate-resources</phase>
-                <configuration>
-                  <refreshTags>true</refreshTags>
-                  <copyGenerated>true</copyGenerated>
-                  <attachArtifact>false</attachArtifact>
-                  <updateDate>true</updateDate>
-                  <filenameExcludes>
-                    <filenameExclude>jetty-documentation/.*</filenameExclude>
-                    <filenameExclude>examples/.*</filenameExclude>
-                    <filenameExclude>demos/.*</filenameExclude>
-                    <filenameExclude>aggregates/.*</filenameExclude>
-                    <filenameExclude>.*/test-.*</filenameExclude>
-                    <filenameExclude>.*/.*-test/.*</filenameExclude>
-                    <filenameExclude>.*/.*-tests/.*</filenameExclude>
-                    <filenameExclude>.*/src/test/.*</filenameExclude>
-                    <filenameExclude>\.git.*</filenameExclude>
-                    <filenameExclude>.*\.md$</filenameExclude>
-                    <filenameExclude>.*\.txt$</filenameExclude>
-                    <filenameExclude>Jenkinsfile</filenameExclude>
-                  </filenameExcludes>
-                </configuration>
               </execution>
             </executions>
           </plugin>
