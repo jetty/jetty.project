@@ -52,7 +52,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
-                callback.failed(new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize)));
+                MessageTooLargeException failure = new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize));
+                fail(failure);
+                callback.failed(failure);
                 return;
             }
 
@@ -75,8 +77,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (accumulator == null)
                 accumulator = new RetainableByteBuffer.DynamicCapacity(getCoreSession().getByteBufferPool(), frame.getPayload().isDirect(), -1L);
             RetainableByteBuffer.Mutable rbb = RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded);
-            if (accumulator.append(rbb))
-                rbb.release();
+            // Since the accumulator has an unlimited max size, append() will never return false
+            // so there is no need to check its return value.
+            accumulator.append(rbb);
+            rbb.release();
 
             if (frame.isFin())
             {
