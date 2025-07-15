@@ -266,7 +266,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * </tr>
      * <tr>
      * <td>selectors</td>
-     * <td>cores / 2</td>
+     * <td>1</td>
      * <td>The number of NIO selectors used by {@link HttpClient}</td>
      * </tr>
      * </tbody>
