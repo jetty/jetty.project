@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -1659,6 +1660,175 @@ public class JSON
             {
                 throw new RuntimeException(e);
             }
+        }
+    }
+    
+    public String toJSON(final Object o, String ident)
+    {
+        return toString(o, ident, 0);
+    }
+
+    private String toString(final Object o, String ident, int nest)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.ensureCapacity(9);
+        HashMap<String, ?> hm;
+
+        try
+        {
+            hm = (HashMap<String, ?>)o;
+        }
+        catch (ClassCastException e)
+        {
+            throw new ClassCastException("The given object is instance of " + o.getClass().toString());
+        }
+        sb.append('{');
+        boolean isCommaNeede = false;
+        for (Entry<String, ?> entry : hm.entrySet())
+        {
+            if (isCommaNeede)
+            {
+                sb.append(", ");
+            }
+
+            sb.append('\n');
+            putIndent(sb, ident, nest + 1);
+            sb.append(putQuote(entry.getKey()));
+            sb.append(": ");
+            putIndent(sb, ident, 0);
+
+            Object value = entry.getValue();
+            if (value instanceof Boolean)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof Double)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof Long)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof String)
+            {
+                sb.append(putQuote(value));
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof HashMap<?, ?>)
+            {
+                HashMap<?, ?> valueMap = (HashMap<?, ?>)value;
+                if (valueMap.size() == 0)
+                {
+                    sb.append("{}");
+                    isCommaNeede = true;
+                    continue;
+                }
+                else
+                {
+                    String v = toString(value, ident, nest + 2);
+                    sb.append(v);
+                    putIndent(sb, ident, nest + 1);
+                }
+                sb.append('}');
+                isCommaNeede = true;
+                continue;
+            }
+
+            if (value instanceof Object[])
+            {
+                sb.append(parseArray((Object[])value));
+                isCommaNeede = true;
+                continue;
+            }
+
+            if (value instanceof Object)
+            {
+                sb.append(parseArray((Object[])value));
+                isCommaNeede = true;
+                continue;
+            }
+
+            sb.append(putQuote(value));
+            isCommaNeede = true;
+        }
+        
+        sb.append('\n');
+        // Zero value means it is the most outermost nest
+        if (nest == 0)
+        {
+            sb.append('}');
+        }
+        return sb.toString();
+    }
+    
+    private String parseArray(Object[] o)
+    {
+        ArrayList<Object> array = new ArrayList<>();
+        for (Object val : o)
+        {
+            if (val instanceof Long)
+            {
+                array.add((Long)val);
+            }
+            else if (val instanceof String)
+            {
+                array.add("\"" + (String)val + "\"");
+            }
+            else if (val instanceof Boolean)
+            {
+                array.add((Boolean)val);
+            }
+        }
+        return array.toString();
+    }
+    
+    private String putQuote(Object o)
+    {
+        String s = (String)o;
+        StringBuilder newString = new StringBuilder();
+        for (Character v : s.toCharArray())
+        {
+            switch (v)
+            {
+                case '\\':
+                case '"':
+                    newString.append("\"");
+                    break;
+                case '\n':
+                    newString.append("\\n");
+                    break;
+                case '\t':
+                    newString.append("\\t");
+                    break;
+                case '\b':
+                    newString.append("\\b");
+                    break;
+                case '\f':
+                    newString.append("\\f");
+                    break;
+                case '\r':
+                    newString.append("\\r");
+                    break;
+                default:
+                    newString.append(v);
+            }
+        }
+        return String.format("\"%s\"", newString.toString());
+    }
+    
+    private void putIndent(StringBuilder sb, String ident, int indentFactor)
+    {
+        for (; indentFactor > 0; indentFactor--)
+        {
+            sb.append(ident);
         }
     }
 }
