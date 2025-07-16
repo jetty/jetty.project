@@ -541,7 +541,7 @@ public class HttpParserTest
             // Mix of WS
             cases.add(Arguments.of(httpCompliance, " \t V a l u e \t ", "V a l u e"));
             // Characters above US-ASCII (should be replaced)
-            // TODO: why is this unprintable character preserved?
+            // OBS: This character 0x8B falls into the `obs-text` portion of ABNF, even though it's not visible, and is a control character.
             cases.add(Arguments.of(httpCompliance, ((char)0x8B) + "Value", ((char)0x8B) + "Value"));
             // ... like Unicode (should be sanitized replaced)
             cases.add(Arguments.of(httpCompliance, "(€)Euro", "(?)Euro"));
