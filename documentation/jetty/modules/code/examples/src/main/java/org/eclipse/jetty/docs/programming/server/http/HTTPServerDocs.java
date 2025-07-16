@@ -90,6 +90,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -1846,6 +1847,28 @@ public class HTTPServerDocs
 
         server.start();
         // end::gracefulHandler[]
+    }
+
+    public void movedContextHandler() throws Exception
+    {
+        // tag::movedContextHandler[]
+        Server server = new Server();
+
+        // Install the MovedContextHandler to redirect from
+        // http://olddomain.com/path to http://newdomain.com/ctx/path.
+        MovedContextHandler movedContextHandler = new MovedContextHandler();
+        movedContextHandler.setVirtualHosts(List.of("olddomain.com"));
+        movedContextHandler.setContextPath("/");
+        // Redirect permanently.
+        movedContextHandler.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+        // Redirect to the new domain.
+        movedContextHandler.setRedirectURI("https://newdomain.com/ctx");
+        // Keep the URI path, but discard the query.
+        movedContextHandler.setDiscardQuery(true);
+
+        server.setHandler(movedContextHandler);
+        server.start();
+        // end::movedContextHandler[]
     }
 
     public void continue100()

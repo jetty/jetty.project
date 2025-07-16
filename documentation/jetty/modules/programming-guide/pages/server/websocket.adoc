@@ -18,6 +18,7 @@ Jetty provides different implementations of the WebSocket protocol:
 * A Jakarta EE 8 (`javax.websocket`) implementation, based on the https://jakarta.ee/specifications/websocket/1.1/[Jakarta WebSocket 1.1 Specification].
 * A Jakarta EE 9 (`jakarta.websocket`) implementation, based on the https://jakarta.ee/specifications/websocket/2.0/[Jakarta WebSocket 2.0 Specification].
 * A Jakarta EE 10 (`jakarta.websocket`) implementation, based on the https://jakarta.ee/specifications/websocket/2.1/[Jakarta WebSocket 2.1 Specification].
+* A Jakarta EE 11 (`jakarta.websocket`) implementation, based on the https://jakarta.ee/specifications/websocket/2.2/[Jakarta WebSocket 2.2 Specification].
 * A Jetty specific implementation, based on the Jetty WebSocket APIs, that does not depend on any Jakarta EE APIs.
 
 The Jakarta EE implementations and APIs are described in <<standard,this section>>.
@@ -44,8 +45,8 @@ TIP: If the feature you are looking for is not present, you may ask for these fe
 [[standard]]
 == Standard APIs Implementation
 
-When you write a WebSocket application using the standard `jakarta.websocket` APIs, your code typically need to depend on just the APIs to compile your application.
-However, at runtime you need to have an implementation of the standard APIs in your class-path (or module-path).
+When you write a WebSocket application using the Jakarta EE `jakarta.websocket` APIs, your code typically need to depend on just the Jakarta EE WebSocket APIs to compile your application.
+However, at runtime you need to have an implementation of the Jakarta EE WebSocket APIs in your class-path/module-path.
 
 The standard `jakarta.websocket` APIs, for example for Jakarta {ee-current-caps}, are provided by the following Maven artifact:
 
@@ -54,7 +55,7 @@ The standard `jakarta.websocket` APIs, for example for Jakarta {ee-current-caps}
 <dependency>
   <groupId>jakarta.websocket</groupId>
   <artifactId>jakarta.websocket-api</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0</version>
 </dependency>
 ----
 
@@ -71,7 +72,7 @@ At runtime, you also need an implementation of the standard Jakarta {ee-current-
 
 [NOTE]
 ====
-The `jakarta.websocket-api` artifact and the `jetty-{ee-current}-websocket-jakarta-server` artifact (and their transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
+The `jakarta.websocket-api` artifact and the `jetty-{ee-current}-websocket-jakarta-server` artifact (and their transitive dependencies) should be present in the server class-path/module-path, and never in the web application's `/WEB-INF/lib` directory.
 ====
 
 To configure correctly your WebSocket application based on the standard Jakarta {ee-current-caps} WebSocket APIs, you need two steps:
@@ -82,9 +83,9 @@ To configure correctly your WebSocket application based on the standard Jakarta 
 [[standard-container]]
 === Setting Up `ServerContainer`
 
-Jetty sets up a `ServerContainer` instance using `JakartaWebSocketServletContainerInitializer`.
+Jetty sets up a `jakarta.websocket.server.ServerContainer` instance using `JakartaWebSocketServletContainerInitializer`.
 
-When you deploy web applications using xref:server/http.adoc#handler-use-webapp-context[`WebAppContext`], then  `JakartaWebSocketServletContainerInitializer` is automatically discovered and initialized by Jetty when the web application starts, so that it sets up the `ServerContainer`.
+When you deploy web applications using xref:server/http.adoc#handler-use-webapp-context[`WebAppContext`], then  `JakartaWebSocketServletContainerInitializer` is automatically discovered (because it is present in the server class-path/module-path) and initialized by Jetty when the web application starts, so that it sets up the `ServerContainer`.
 In this way, you do not need to write any additional code:
 
 [,java,indent=0]
@@ -223,7 +224,7 @@ Note that using a more specific path mapping for WebSocket requests is also bene
 == Jetty APIs Implementation
 
 When you write a WebSocket application using the Jetty WebSocket APIs, your code typically needs to depend on just the Jetty WebSocket APIs to compile your application.
-However, at runtime you need to have the _implementation_ of the Jetty WebSocket APIs in your class-path (or module-path).
+However, at runtime you need to have the _implementation_ of the Jetty WebSocket APIs in your class-path/module-path.
 
 Jetty's WebSocket APIs are provided by the following Maven artifact:
 
@@ -249,7 +250,7 @@ Jetty's implementation of the Jetty WebSocket APIs is provided by the following 
 
 [NOTE]
 ====
-The `jetty-websocket-jetty-api` artifact and the `jetty-websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in a web application's `/WEB-INF/lib` directory.
+The `jetty-websocket-jetty-api` artifact and the `jetty-websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path/module-path, and never in the web application's class-path.
 ====
 
 To configure correctly your WebSocket application based on the Jetty WebSocket APIs, you need two steps:

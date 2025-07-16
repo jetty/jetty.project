@@ -542,7 +542,7 @@ rectangle "Jetty Start JVM" {
 }
 ----
 
-When different versions of the Jakarta EE Jetty deploy or webapp modules are enabled, the server ClassLoader hierarchy is the following:
+When different versions of the Jakarta EE `ee<N>-deploy` or `ee<N>-webapp` modules are enabled, the server ClassLoader hierarchy is the following:
 
 [plantuml,subs=+attributes]
 ----
