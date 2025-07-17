@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -180,20 +179,20 @@ public class MimeTypesTest
         assertThat(wrapper.getCharsetInferredFromContentType("text/plain"), equalToIgnoringCase("us-ascii"));
         assertThat(wrapper.getCharsetAssumedFromContentType("json"), equalToIgnoringCase("utf-8"));
 
-        wrapped.addMimeMapping("txt", StandardCharsets.UTF_16.name());
-        wrapped.addInferred("text/plain", StandardCharsets.UTF_16.name());
-        wrapped.addAssumed("json", StandardCharsets.UTF_16.name());
+        wrapped.addMimeMapping("txt", "text/alt");
+        wrapped.addInferred("text/plain", "UTF-8");
+        wrapped.addAssumed("json", "UTF-16");
 
         assertThat(wrapper.getMimeMap().size(), is(1));
         assertThat(wrapper.getInferredMap().size(), is(1));
         assertThat(wrapper.getAssumedMap().size(), is(1));
-        assertThat(wrapper.getMimeByExtension("fee.txt"), is("text/plain"));
-        assertThat(wrapper.getCharsetInferredFromContentType("text/plain"), equalToIgnoringCase("us-ascii"));
-        assertThat(wrapper.getCharsetAssumedFromContentType("json"), equalToIgnoringCase("utf-8"));
+        assertThat(wrapper.getMimeByExtension("fee.txt"), is("text/alt"));
+        assertThat(wrapper.getCharsetInferredFromContentType("text/plain"), equalToIgnoringCase("utf-8"));
+        assertThat(wrapper.getCharsetAssumedFromContentType("json"), equalToIgnoringCase("utf-16"));
 
         wrapped.addMimeMapping("xml", "text/xml");
         wrapped.addInferred("text/xml", "iso-8859-1");
-        wrapped.addAssumed("text/xxx", StandardCharsets.UTF_16.name());
+        wrapped.addAssumed("text/xxx", "UTF-16");
         assertThat(wrapped.getMimeMap().size(), is(2));
         assertThat(wrapped.getInferredMap().size(), is(2));
         assertThat(wrapped.getAssumedMap().size(), is(2));
@@ -201,9 +200,9 @@ public class MimeTypesTest
         assertThat(wrapper.getMimeMap().size(), is(2));
         assertThat(wrapper.getInferredMap().size(), is(2));
         assertThat(wrapper.getAssumedMap().size(), is(2));
-        assertThat(wrapper.getMimeByExtension("fee.txt"), is("text/plain"));
-        assertThat(wrapper.getCharsetInferredFromContentType("text/plain"), equalToIgnoringCase("us-ascii"));
-        assertThat(wrapper.getCharsetAssumedFromContentType("json"), equalToIgnoringCase("utf-8"));
+        assertThat(wrapper.getMimeByExtension("fee.txt"), is("text/alt"));
+        assertThat(wrapper.getCharsetInferredFromContentType("text/plain"), equalToIgnoringCase("utf-8"));
+        assertThat(wrapper.getCharsetAssumedFromContentType("json"), equalToIgnoringCase("utf-16"));
         assertThat(wrapper.getMimeByExtension("fee.xml"), is("text/xml"));
         assertThat(wrapper.getCharsetInferredFromContentType("text/xml"), equalToIgnoringCase("iso-8859-1"));
         assertThat(wrapper.getCharsetAssumedFromContentType("text/xxx"), equalToIgnoringCase("utf-16"));

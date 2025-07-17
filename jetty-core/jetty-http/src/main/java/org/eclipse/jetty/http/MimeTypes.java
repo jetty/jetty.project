@@ -847,7 +847,7 @@ public class MimeTypes
     }
 
     /**
-     * @deprecated Create a new {@link MimeTypes} with your settings, and call {@link #setFrom(MimeTypes)} instead.
+     * @deprecated Create a new {@link MimeTypes} with your settings, and call {@link #setFrom(MimeTypes)} against original MimeTypes instead.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
     public static class Wrapper extends Mutable
@@ -872,22 +872,37 @@ public class MimeTypes
         @Override
         public String getMimeForExtension(String extension)
         {
-            String mime = super.getMimeForExtension(extension);
-            return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
+            if (_wrapped != null)
+            {
+                String mime = _wrapped.getMimeForExtension(extension);
+                if (mime != null)
+                    return mime;
+            }
+            return super.getMimeForExtension(extension);
         }
 
         @Override
         public String getCharsetInferredFromContentType(String contentType)
         {
-            String charset = super.getCharsetInferredFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
+            if (_wrapped != null)
+            {
+                String charset = _wrapped.getCharsetInferredFromContentType(contentType);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getCharsetInferredFromContentType(contentType);
         }
 
         @Override
         public String getCharsetAssumedFromContentType(String contentType)
         {
-            String charset = super.getCharsetAssumedFromContentType(contentType);
-            return charset == null && _wrapped != null ? _wrapped.getCharsetAssumedFromContentType(contentType) : charset;
+            if (_wrapped != null)
+            {
+                String charset = _wrapped.getCharsetAssumedFromContentType(contentType);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getCharsetAssumedFromContentType(contentType);
         }
 
         @Override
@@ -921,6 +936,207 @@ public class MimeTypes
             map = new HashMap<>(map);
             map.putAll(_wrapped.getAssumedMap());
             return Collections.unmodifiableMap(map);
+        }
+
+        @Override
+        public Charset getAssumedCharset(String contentType)
+        {
+            if (_wrapped != null)
+            {
+                Charset charset = _wrapped.getAssumedCharset(contentType);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getAssumedCharset(contentType);
+        }
+
+        @Override
+        public String getAssumedCharsetName(String contentType)
+        {
+            if (_wrapped != null)
+            {
+                String charsetName = _wrapped.getAssumedCharsetName(contentType);
+                if (charsetName != null)
+                    return charsetName;
+            }
+            return super.getAssumedCharsetName(contentType);
+        }
+
+        @Override
+        public Charset getCharset(HttpField field) throws IllegalCharsetNameException, UnsupportedCharsetException
+        {
+            if (_wrapped != null)
+            {
+                Charset charset = _wrapped.getCharset(field);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getCharset(field);
+        }
+
+        @Override
+        public Charset getCharset(String mimeType) throws IllegalCharsetNameException, UnsupportedCharsetException
+        {
+            if (_wrapped != null)
+            {
+                Charset charset = _wrapped.getCharset(mimeType);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getCharset(mimeType);
+        }
+
+        @Override
+        public Charset getInferredCharset(String contentType)
+        {
+            if (_wrapped != null)
+            {
+                Charset charset = _wrapped.getInferredCharset(contentType);
+                if (charset != null)
+                    return charset;
+            }
+            return super.getInferredCharset(contentType);
+        }
+
+        @Override
+        public String getInferredCharsetName(String contentType)
+        {
+            if (_wrapped != null)
+            {
+                String charsetName = _wrapped.getInferredCharsetName(contentType);
+                if (charsetName != null)
+                    return charsetName;
+            }
+            return super.getInferredCharsetName(contentType);
+        }
+
+        @Override
+        public String getMimeByExtension(String filename)
+        {
+            if (_wrapped != null)
+            {
+                String mime = _wrapped.getMimeByExtension(filename);
+                if (mime != null)
+                    return mime;
+            }
+            return super.getMimeByExtension(filename);
+        }
+
+        @Override
+        public boolean isCharsetAssumed(String contentType)
+        {
+            if (_wrapped != null)
+                return _wrapped.isCharsetAssumed(contentType);
+            else
+                return super.isCharsetAssumed(contentType);
+        }
+
+        @Override
+        protected void loadEncodings(InputStream stream, String resourceName) throws IOException
+        {
+            if (_wrapped != null)
+                _wrapped.loadEncodings(stream, resourceName);
+            else
+                super.loadEncodings(stream, resourceName);
+        }
+
+        @Override
+        protected void loadMimeProperties(InputStream stream, String resourceName) throws IOException
+        {
+            if (_wrapped != null)
+                _wrapped.loadMimeProperties(stream, resourceName);
+            else
+                super.loadMimeProperties(stream, resourceName);
+        }
+
+        @Override
+        public String addAssumed(String mimeType, String encoding)
+        {
+            if (_wrapped instanceof Mutable mutable)
+                return mutable.addAssumed(mimeType, encoding);
+            else
+                return super.addAssumed(mimeType, encoding);
+        }
+
+        @Override
+        public void addEncodings(Resource encodingProperties) throws UncheckedIOException
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.addEncodings(encodingProperties);
+            else
+                super.addEncodings(encodingProperties);
+        }
+
+        @Override
+        public String addInferred(String mimeType, String encoding)
+        {
+            if (_wrapped instanceof Mutable mutable)
+                return mutable.addInferred(mimeType, encoding);
+            else
+                return super.addInferred(mimeType, encoding);
+        }
+
+        @Override
+        public String addMimeMapping(String extension, String type)
+        {
+            if (_wrapped instanceof Mutable mutable)
+                return mutable.addMimeMapping(extension, type);
+            else
+                return super.addMimeMapping(extension, type);
+        }
+
+        @Override
+        public void addMimeTypes(Resource mimeProperties) throws UncheckedIOException
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.addMimeTypes(mimeProperties);
+            else
+                super.addMimeTypes(mimeProperties);
+        }
+
+        @Override
+        public boolean isDefault()
+        {
+            if (_wrapped instanceof Mutable mutable)
+                return mutable.isDefault();
+            else
+                return super.isDefault();
+        }
+
+        @Override
+        public void mergeFrom(MimeTypes other)
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.mergeFrom(other);
+            else
+                super.mergeFrom(other);
+        }
+
+        @Override
+        public void setEncodings(Resource encodingProperties) throws UncheckedIOException
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.setEncodings(encodingProperties);
+            else
+                super.setEncodings(encodingProperties);
+        }
+
+        @Override
+        public void setFrom(MimeTypes other)
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.setFrom(other);
+            else
+                super.setFrom(other);
+        }
+
+        @Override
+        public void setMimeTypes(Resource mimeProperties) throws UncheckedIOException
+        {
+            if (_wrapped instanceof Mutable mutable)
+                mutable.setMimeTypes(mimeProperties);
+            else
+                super.setMimeTypes(mimeProperties);
         }
     }
 
