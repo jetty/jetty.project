@@ -5,12 +5,12 @@
     <Arg>
       <New class="org.eclipse.jetty.server.EndPointLimit">
         <Arg name= "maxEndPointCount" type="int">
-          <Property name="jetty.endpointlimiter.maxEndPointCount" default="1000" />
+          <Property name="jetty.endpointlimit.maxEndPointCount" default="1000" />
         </Arg>
         <Arg name="server">
           <Ref refid="Server" />
         </Arg>
-        <Set name="idleTimeout"><Property name="jetty.endpointlimiter.idleTimeout" default="1000" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.endpointlimit.idleTimeout" default="1000" /></Set>
       </New>
     </Arg>
   </Call>
