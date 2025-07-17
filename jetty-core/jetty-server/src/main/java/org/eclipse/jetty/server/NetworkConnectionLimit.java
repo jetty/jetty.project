@@ -29,22 +29,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A listener that limits the number of {@link EndPoint}s (TCP connections).</p>
- * <p>This listener applies a limit to the number of TCP connections, which when
+ * <p>A listener that limits the number of network connections.</p>
+ * <p>This listener applies a limit to the number of network connections, which when
  * exceeded results in a call to {@link AbstractConnector#setAccepting(boolean)}
- * to prevent further TCP connections to be accepted.</p>
+ * to prevent further network connections to be accepted.</p>
  * <p>This listener can be applied to an entire {@link Server} or to a specific
  * {@link Connector} by adding it via {@link Container#addBean(Object)}.</p>
- * <p>When the number of {@code EndPoint}s is exceeded, the idle timeout of existing
+ * <p>When the number of network connections is exceeded, the idle timeout of existing
  * {@code EndPoint}s is changed to the value configured in this listener (typically
  * a shorter value).
- * When the number of {@code EndPoint}s returns below the limit, as {@code EndPoint}s
- * are closed, the idle timeout of existing {@code EndPoint}s is restored to that
- * of the connector.</p>
+ * When the number of network connections returns below the limit, as they
+ * are closed, the idle timeout of existing {@code EndPoint}s is restored
+ * to that of the connector.</p>
  * <p>Typical usage:</p>
  * <pre>{@code
  * Server server = new Server();
- * server.addBean(new EndPointLimit(5000, server));
+ * server.addBean(new NetworkConnectionLimit(5000, server));
  * ...
  * server.start();
  * }</pre>
@@ -52,28 +52,28 @@ import org.slf4j.LoggerFactory;
  * @see LowResourceMonitor
  * @see SelectorManager.AcceptListener
  */
-public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.AcceptListener
+public class NetworkConnectionLimit extends AbstractLifeCycle implements SelectorManager.AcceptListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(EndPointLimit.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkConnectionLimit.class);
 
     private final AutoLock _lock = new AutoLock();
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
-    private int _pendingEndPoints;
-    private int _endPoints;
-    private int _maxEndPoints;
-    private long _idleTimeout;
+    private int _pendingConnections;
+    private int _connections;
+    private int _maxNetworkConnections;
+    private long _endPointIdleTimeout;
     private boolean _limiting;
 
-    public EndPointLimit(@Name("maxEndPointCount") int maxEndPoints, @Name("server") Server server)
+    public NetworkConnectionLimit(@Name("maxNetworkConnectionCount") int maxNetworkConnections, @Name("server") Server server)
     {
-        _maxEndPoints = maxEndPoints;
+        _maxNetworkConnections = maxNetworkConnections;
         _server = server;
     }
 
-    public EndPointLimit(@Name("maxEndPointCount") int maxEndPoints, @Name("connectors") Connector... connectors)
+    public NetworkConnectionLimit(@Name("maxNetworkConnectionCount") int maxNetworkConnections, @Name("connectors") Connector... connectors)
     {
-        this(maxEndPoints, (Server)null);
+        this(maxNetworkConnections, (Server)null);
         registerConnectors(connectors);
     }
 
@@ -84,62 +84,62 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
             if (c instanceof AbstractConnector)
                 _connectors.add((AbstractConnector)c);
             else
-                LOG.warn("Connector {} is not an instance of {}: endPoints will not be limited", c, AbstractConnector.class.getSimpleName());
+                LOG.warn("Connector {} is not an instance of {}: network connections will not be limited", c, AbstractConnector.class.getSimpleName());
         }
     }
 
     /**
-     * @return the idle timeout in ms to apply to all EndPoints when maxEndPoints is reached
+     * @return the idle timeout in ms to apply to all EndPoints when the network connection limit is reached
      */
-    @ManagedAttribute("The EndPoint idle timeout in ms to apply when maxEndPoints is reached")
-    public long getIdleTimeout()
+    @ManagedAttribute("The EndPoint idle timeout in ms to apply when the network connection limit is reached")
+    public long getEndPointIdleTimeout()
     {
-        return _idleTimeout;
+        return _endPointIdleTimeout;
     }
 
     /**
-     * <p>Sets the idle timeout in ms to apply to all EndPoints when maxEndPoints is reached.</p>
+     * <p>Sets the idle timeout in ms to apply to all EndPoints when the network connection limit is reached.</p>
      * <p>A value less than or equal to zero will not change the existing EndPoint idle timeout.</p>
      *
-     * @param idleTimeout the idle timeout in ms to apply to all EndPoints when maxEndPoints is reached
+     * @param idleTimeout the idle timeout in ms to apply to all EndPoints when the network connection limit is reached
      */
-    public void setIdleTimeout(long idleTimeout)
+    public void setEndPointIdleTimeout(long idleTimeout)
     {
-        _idleTimeout = idleTimeout;
+        _endPointIdleTimeout = idleTimeout;
     }
 
-    @ManagedAttribute("The maximum number of EndPoints")
-    public int getMaxEndPointCount()
+    @ManagedAttribute("The maximum number of network connections")
+    public int getMaxNetworkConnectionCount()
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _maxEndPoints;
+            return _maxNetworkConnections;
         }
     }
 
-    public void setMaxEndPointCount(int max)
+    public void setMaxNetworkConnectionCount(int max)
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _maxEndPoints = max;
+            _maxNetworkConnections = max;
         }
     }
 
-    @ManagedAttribute(value = "The number of connected EndPoints")
-    public int getEndPointCount()
+    @ManagedAttribute(value = "The number of connected network connections")
+    public int getNetworkConnectionCount()
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _endPoints;
+            return _connections;
         }
     }
 
-    @ManagedAttribute(value = "The number of pending EndPoints")
-    public int getPendingEndPointCount()
+    @ManagedAttribute(value = "The number of pending network connections")
+    public int getPendingNetworkConnectionCount()
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _pendingEndPoints;
+            return _pendingConnections;
         }
     }
 
@@ -152,9 +152,9 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
                 registerConnectors(_server.getConnectors());
 
             if (LOG.isDebugEnabled())
-                LOG.debug("EndPoints limit {} for {}", _maxEndPoints, _connectors);
+                LOG.debug("Network connection limit {} for {}", _maxNetworkConnections, _connectors);
 
-            _endPoints = 0;
+            _connections = 0;
             _limiting = false;
             for (AbstractConnector c : _connectors)
             {
@@ -172,7 +172,7 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
             {
                 c.removeBean(this);
             }
-            _endPoints = 0;
+            _connections = 0;
             if (_server != null)
                 _connectors.clear();
         }
@@ -181,23 +181,23 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
     private boolean lockedCheck()
     {
         assert _lock.isHeldByCurrentThread();
-        int total = _pendingEndPoints + _endPoints;
-        if (total >= _maxEndPoints)
+        int total = _pendingConnections + _connections;
+        if (total >= _maxNetworkConnections)
         {
             if (!_limiting)
             {
                 _limiting = true;
-                LOG.info("EndPoint limit {} reached for {}", _maxEndPoints, _connectors);
+                LOG.info("Network connection limit {} reached for {}", _maxNetworkConnections, _connectors);
                 limit();
             }
-            return total > _maxEndPoints;
+            return total > _maxNetworkConnections;
         }
         else
         {
             if (_limiting)
             {
                 _limiting = false;
-                LOG.info("EndPoint limit {} cleared for {}", _maxEndPoints, _connectors);
+                LOG.info("Network connection limit {} cleared for {}", _maxNetworkConnections, _connectors);
                 unlimit();
             }
             return false;
@@ -211,11 +211,11 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
         {
             c.setAccepting(false);
 
-            if (_idleTimeout > 0)
+            if (_endPointIdleTimeout > 0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
                 {
-                    endPoint.setIdleTimeout(_idleTimeout);
+                    endPoint.setIdleTimeout(_endPointIdleTimeout);
                 }
             }
         }
@@ -227,7 +227,7 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
         {
             c.setAccepting(true);
 
-            if (_idleTimeout > 0)
+            if (_endPointIdleTimeout > 0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
                 {
@@ -242,9 +242,9 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _pendingEndPoints++;
+            _pendingConnections++;
             if (LOG.isDebugEnabled())
-                LOG.debug("Accepting ({}+{}) <= {} {}", _pendingEndPoints, _endPoints, _maxEndPoints, channel);
+                LOG.debug("Accepting ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel);
             if (lockedCheck())
             {
                 if (LOG.isDebugEnabled())
@@ -259,9 +259,9 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _pendingEndPoints--;
+            _pendingConnections--;
             if (LOG.isDebugEnabled())
-                LOG.debug("Accept failed ({}+{}) <= {} {}", _pendingEndPoints, _endPoints, _maxEndPoints, channel, cause);
+                LOG.debug("Accept failed ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel, cause);
             lockedCheck();
         }
     }
@@ -271,10 +271,10 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _pendingEndPoints--;
-            _endPoints++;
+            _pendingConnections--;
+            _connections++;
             if (LOG.isDebugEnabled())
-                LOG.debug("Accepted ({}+{}) <= {} {}", _pendingEndPoints, _endPoints, _maxEndPoints, channel);
+                LOG.debug("Accepted ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel);
         }
     }
 
@@ -283,9 +283,9 @@ public class EndPointLimit extends AbstractLifeCycle implements SelectorManager.
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _endPoints--;
+            _connections--;
             if (LOG.isDebugEnabled())
-                LOG.debug("Closed ({}+{}) <= {} {}", _pendingEndPoints, _endPoints, _maxEndPoints, channel);
+                LOG.debug("Closed ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel);
             lockedCheck();
         }
     }

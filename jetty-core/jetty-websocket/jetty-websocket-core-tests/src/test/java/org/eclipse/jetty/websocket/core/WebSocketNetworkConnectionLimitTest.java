@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.server.EndPointLimit;
+import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
-public class WebSocketEndPointLimitTest
+public class WebSocketNetworkConnectionLimitTest
 {
     private static final int CONNECTION_LIMIT = 5;
 
@@ -46,7 +46,7 @@ public class WebSocketEndPointLimitTest
     private WebSocketUpgradeHandler _upgradeHandler;
     private WebSocketCoreClient _client;
     private ServerConnector _serverConnector;
-    private EndPointLimit _endPointLimit;
+    private NetworkConnectionLimit _networkConnectionLimit;
 
     @BeforeEach
     public void before() throws Exception
@@ -57,8 +57,8 @@ public class WebSocketEndPointLimitTest
         _upgradeHandler = new WebSocketUpgradeHandler();
         _server.setHandler(_upgradeHandler);
 
-        _endPointLimit = new EndPointLimit(CONNECTION_LIMIT, _serverConnector);
-        _serverConnector.addBean(_endPointLimit);
+        _networkConnectionLimit = new NetworkConnectionLimit(CONNECTION_LIMIT, _serverConnector);
+        _serverConnector.addBean(_networkConnectionLimit);
 
         _server.start();
 
@@ -95,7 +95,7 @@ public class WebSocketEndPointLimitTest
         _client.getHttpClient().setIdleTimeout(1000);
         ExecutionException error = assertThrows(ExecutionException.class, () -> _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS));
         assertCausedByTimeout(error);
-        assertThat(_endPointLimit.getEndPointCount(), equalTo(CONNECTION_LIMIT));
+        assertThat(_networkConnectionLimit.getNetworkConnectionCount(), equalTo(CONNECTION_LIMIT));
 
         // Close all the sessions.
         for (TestMessageHandler handler : clientHandlers)
@@ -139,8 +139,8 @@ public class WebSocketEndPointLimitTest
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(_endPointLimit.getEndPointCount(), equalTo(connections));
-                assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
+                assertThat(_networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
+                assertThat(_networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
             });
     }
 }

@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * @see LowResourceMonitor
  * @see Connection.Listener
  * @see SelectorManager.AcceptListener
- * @deprecated use {@link EndPointLimit} instead
+ * @deprecated use {@link NetworkConnectionLimit} instead
  */
 @Deprecated(forRemoval = true, since = "12.1.0")
 @ManagedObject

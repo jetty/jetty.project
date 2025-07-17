@@ -36,7 +36,7 @@ Existing, established connections will work normally.
 
 Once accepting new connections has been suspended, Jetty will periodically check whether the rate has returned withing the limits, and if so, accepting new connections will be resumed.
 
-This module is often used in conjunction with the xref:endpoint-limit[`endpoint-limit`] module.
+This module is often used in conjunction with the xref:network-connection-limit[`network-connection-limit`] module.
 
 NOTE: The number of connections seen at the JVM level may be different from the number of connections seen at the OS level.
 For more information, refer to xref:programming-guide:server/http.adoc#connector-limiting[this section].
@@ -75,24 +75,24 @@ This property allows you to cap the max heap memory retained by the pool.
 `jetty.byteBufferPool.maxDirectMemory`::
 This property allows you to cap the max direct memory retained by the pool.
 
-[[endpoint-limit]]
-== Module `endpoint-limit`
+[[network-connection-limit]]
+== Module `network-connection-limit`
 
-The `endpoint-limit` module limits the number of ``EndPoint``s (TCP connections) accepted by the server, across all connectors.
+The `network-connection-limit` module limits the number of network connections accepted by the server, across all connectors.
 
-Once the configured maximum number of ``EndPoint``s is reached, Jetty will not accept more TCP connections.
-Existing, established ``EndPoint``s will work normally.
-When existing ``EndPoint``s are closed, accepting new TCP connections will be resumed.
+Once the configured maximum number of network connections is reached, Jetty will not accept more network connections.
+Existing, established network connections will work normally.
+When existing network connections are closed, accepting new network connections will be resumed.
 
 This module is often used in conjunction with the xref:accept-rate-limit[`accept-rate-limit`] module.
 
-NOTE: The number of TCP connections seen at the JVM level may be different from the number of TCP connections seen at the OS level.
+NOTE: The number of network connections seen at the JVM level may be different from the number of network connections seen at the OS level.
 For more information, refer to xref:programming-guide:server/http.adoc#connector-limiting[this section].
 
-The module file is `$JETTY_HOME/modules/endpoint-limit.mod`:
+The module file is `$JETTY_HOME/modules/network-connection-limit.mod`:
 
 ----
-include::{jetty-home}/modules/endpoint-limit.mod[tags=documentation]
+include::{jetty-home}/modules/network-connection-limit-limit.mod[tags=documentation]
 ----
 
 [[console-capture]]

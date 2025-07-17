@@ -8,13 +8,13 @@ connector
 server
 
 [xml]
-etc/jetty-endpoint-limit.xml
+etc/jetty-network-connection-limit.xml
 
 [ini-template]
 #tag::documentation[]
-## The maximum number of EndPoints allowed across all Connectors.
-#jetty.endpointlimit.maxEndPointCount=1000
+## The maximum number of network connections allowed across all connectors.
+#jetty.networkConnectionLimit.maxNetworkConnectionCount=1000
 
 ## The idle timeout to apply (in milliseconds) to existing EndPoints when the limit is reached.
-#jetty.endpointlimit.idleTimeout=1000
+#jetty.networkConnectionLimit.endPointIdleTimeout=1000
 #end::documentation[]

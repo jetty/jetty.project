@@ -64,13 +64,13 @@ import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
-import org.eclipse.jetty.server.EndPointLimit;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
+import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -357,14 +357,14 @@ public class HTTPServerDocs
         // end::sameRandomPort[]
     }
 
-    public void endPointLimit()
+    public void networkConnectionLimit()
     {
-        // tag::endPointLimit[]
+        // tag::networkConnectionLimit[]
         Server server = new Server();
 
         // Limit TCP connections to the server, across all connectors.
-        EndPointLimit serverEndPointLimit = new EndPointLimit(1024, server);
-        server.addBean(serverEndPointLimit);
+        NetworkConnectionLimit serverNetworkConnectionLimit = new NetworkConnectionLimit(1024, server);
+        server.addBean(serverNetworkConnectionLimit);
 
         ServerConnector connector1 = new ServerConnector(server);
         connector1.setPort(8080);
@@ -374,9 +374,9 @@ public class HTTPServerDocs
         connector2.setPort(9090);
         server.addConnector(connector2);
         // Limit connections for this connector only.
-        EndPointLimit connectorEndPointLimit = new EndPointLimit(64, connector2);
-        connector2.addBean(connectorEndPointLimit);
-        // end::endPointLimit[]
+        NetworkConnectionLimit connectorNetworkConnectionLimit = new NetworkConnectionLimit(64, connector2);
+        connector2.addBean(connectorNetworkConnectionLimit);
+        // end::networkConnectionLimit[]
     }
 
     public void sslHandshakeListener() throws Exception

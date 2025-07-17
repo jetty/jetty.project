@@ -53,9 +53,9 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.EndPointLimit;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
@@ -400,14 +400,14 @@ public class WebSocketOverHTTP2Test
 
     @Test
     @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
-    public void testEndPointLimit() throws Exception
+    public void testNetworkConnectionLimit() throws Exception
     {
         startServer();
 
-        int maxEndPointCount = 5;
-        EndPointLimit endPointLimit = new EndPointLimit(maxEndPointCount, connector, tlsConnector);
-        connector.addBean(endPointLimit);
-        tlsConnector.addBean(endPointLimit);
+        int maxNetworkConnectionCount = 5;
+        NetworkConnectionLimit networkConnectionLimit = new NetworkConnectionLimit(maxNetworkConnectionCount, connector, tlsConnector);
+        connector.addBean(networkConnectionLimit);
+        tlsConnector.addBean(networkConnectionLimit);
 
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
@@ -416,19 +416,19 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
 
         List<EventSocket> clientHandlers = new ArrayList<>();
-        for (int i = 0; i < maxEndPointCount; i++)
+        for (int i = 0; i < maxNetworkConnectionCount; i++)
         {
             EventSocket clientEndpoint = new EventSocket();
             clientHandlers.add(clientEndpoint);
             wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
             assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
             assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
-            awaitConnections(1, endPointLimit);
+            awaitConnections(1, networkConnectionLimit);
         }
 
         // We only have 1 HTTP2Connection, and the WebSocket connections are over HTTP/2 streams so do not count toward the limit.
-        assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
-        assertThat(endPointLimit.getEndPointCount(), equalTo(1));
+        assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+        assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
 
         // Close all the sessions.
         for (EventSocket handler : clientHandlers)
@@ -438,18 +438,18 @@ public class WebSocketOverHTTP2Test
             assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
         }
 
-        assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
-        assertThat(endPointLimit.getEndPointCount(), equalTo(1));
+        assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+        assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
     }
 
-    private static void awaitConnections(int connections, EndPointLimit endPointLimit)
+    private static void awaitConnections(int connections, NetworkConnectionLimit networkConnectionLimit)
     {
         await().atMost(1, TimeUnit.SECONDS)
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(endPointLimit.getEndPointCount(), equalTo(connections));
-                assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
+                assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
+                assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
             });
     }
 
