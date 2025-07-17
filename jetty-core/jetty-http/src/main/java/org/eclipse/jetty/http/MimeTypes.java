@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -536,6 +537,15 @@ public class MimeTypes
     }
 
     /**
+     * @deprecated use {@link #getInferredCharsetName(String)} instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public String getCharsetInferredFromContentType(String contentType)
+    {
+        return getInferredCharsetName(contentType);
+    }
+
+    /**
      * @param contentType The content type to obtain a charset for.
      * @return The string value of {@link #getInferredCharset(String)}
      * @see #getInferredCharset(String)
@@ -543,6 +553,15 @@ public class MimeTypes
     public String getInferredCharsetName(String contentType)
     {
         return nameOf(getInferredCharset(contentType));
+    }
+
+    /**
+     * @deprecated use {@link #getAssumedCharsetName(String)} instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public String getCharsetAssumedFromContentType(String contentType)
+    {
+        return getAssumedCharsetName(contentType);
     }
 
     /**
@@ -565,6 +584,36 @@ public class MimeTypes
     public Map<String, String> getMimeMap()
     {
         return Collections.unmodifiableMap(_mimeMap);
+    }
+
+    /**
+     * @see #getInferredCharset(String)
+     * @see #getInferredCharsetName(String)
+     * @deprecated No replacement provided.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public Map<String, String> getInferredMap()
+    {
+        return _inferredEncodings.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                (e) -> nameOf(e.getValue())
+            ));
+    }
+
+    /**
+     * @see #getAssumedCharset(String)
+     * @see #getAssumedCharsetName(String)
+     * @deprecated No replacement provided.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public Map<String, String> getAssumedMap()
+    {
+        return _assumedEncodings.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                (e) -> nameOf(e.getValue())
+            ));
     }
 
     public static class Mutable extends MimeTypes
@@ -794,6 +843,88 @@ public class MimeTypes
                 if (!reference.containsKey(entry.getKey()))
                     target.put(entry.getKey(), entry.getValue());
             }
+        }
+    }
+
+    /**
+     * @deprecated Create a new {@link MimeTypes} with your settings, and call {@link #setFrom(MimeTypes)} instead.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public static class Wrapper extends Mutable
+    {
+        private MimeTypes _wrapped;
+
+        public Wrapper()
+        {
+            super(null);
+        }
+
+        public MimeTypes getWrapped()
+        {
+            return _wrapped;
+        }
+
+        public void setWrapped(MimeTypes wrapped)
+        {
+            _wrapped = wrapped;
+        }
+
+        @Override
+        public String getMimeForExtension(String extension)
+        {
+            String mime = super.getMimeForExtension(extension);
+            return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
+        }
+
+        @SuppressWarnings("removal")
+        @Override
+        public String getCharsetInferredFromContentType(String contentType)
+        {
+            String charset = super.getCharsetInferredFromContentType(contentType);
+            return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
+        }
+
+        @SuppressWarnings("removal")
+        @Override
+        public String getCharsetAssumedFromContentType(String contentType)
+        {
+            String charset = super.getCharsetAssumedFromContentType(contentType);
+            return charset == null && _wrapped != null ? _wrapped.getCharsetAssumedFromContentType(contentType) : charset;
+        }
+
+        @Override
+        public Map<String, String> getMimeMap()
+        {
+            Map<String, String> map = super.getMimeMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getMimeMap());
+            return Collections.unmodifiableMap(map);
+        }
+
+        @SuppressWarnings("removal")
+        @Override
+        public Map<String, String> getInferredMap()
+        {
+            Map<String, String> map = super.getInferredMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getInferredMap());
+            return Collections.unmodifiableMap(map);
+        }
+
+        @SuppressWarnings("removal")
+        @Override
+        public Map<String, String> getAssumedMap()
+        {
+            Map<String, String> map = super.getAssumedMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getAssumedMap());
+            return Collections.unmodifiableMap(map);
         }
     }
 
