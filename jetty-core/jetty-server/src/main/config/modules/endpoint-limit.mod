@@ -8,7 +8,7 @@ connector
 server
 
 [xml]
-etc/jetty-endpoint-limiter.xml
+etc/jetty-endpoint-limit.xml
 
 [ini-template]
 #tag::documentation[]

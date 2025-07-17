@@ -8,7 +8,7 @@ connector
 deprecated
 
 [deprecated]
-Use module endpoint-limiter instead.
+Use module endpoint-limit instead.
 
 [depend]
 server
