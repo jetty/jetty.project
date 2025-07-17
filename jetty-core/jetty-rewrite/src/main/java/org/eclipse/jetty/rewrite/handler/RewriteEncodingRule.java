@@ -14,10 +14,13 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -179,21 +182,50 @@ public class RewriteEncodingRule extends Rule
 
     protected class EncodingHandler extends Handler
     {
+        private static final EnumSet<HttpHeader> IF_MATCHES = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
         private static final HttpField VARY_ACCEPT_LANGUAGE = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_LANGUAGE.asString());
         private final Encoding _encoding;
+        private final String _dashEncoding;
         private final HttpURI _encodingURI;
+        private final HttpFields _httpFields;
 
         public EncodingHandler(Rule.Handler input, String encodingPathInContext, Encoding encoding)
         {
             super(input);
             _encoding = encoding;
+            _dashEncoding = "-" + encoding.encoding();
             _encodingURI = HttpURI.build(input.getHttpURI()).path(URIUtil.addPaths(input.getContext().getContextPath(), encodingPathInContext)).asImmutable();
+
+            HttpFields httpFields = input.getHeaders();
+            if (httpFields.contains(IF_MATCHES))
+            {
+                httpFields = HttpFields.build(httpFields)
+                    .computeField(HttpHeader.IF_MATCH, this::computeNoEncodingEtag)
+                    .computeField(HttpHeader.IF_NONE_MATCH, this::computeNoEncodingEtag).asImmutable();
+            }
+            _httpFields = httpFields;
+        }
+
+        private HttpField computeNoEncodingEtag(HttpHeader header, List<HttpField> fields)
+        {
+            if (fields == null || fields.isEmpty())
+                return null;
+            return new HttpField(header, fields.stream()
+                .flatMap(field -> Stream.of(field.getValues()))
+                .map(value -> value.replace(_dashEncoding, ""))
+                .collect(Collectors.joining(", ")));
         }
 
         @Override
         public HttpURI getHttpURI()
         {
             return _encodingURI;
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _httpFields;
         }
 
         @Override
@@ -220,7 +252,7 @@ public class RewriteEncodingRule extends Rule
                     {
                         String etag = field.getValue();
                         if (etag.endsWith("\""))
-                            return new HttpField(HttpHeader.ETAG, etag.substring(0, etag.length() - 1) + '-' + _encoding.encoding() + "\"");
+                            return new HttpField(HttpHeader.ETAG, etag.substring(0, etag.length() - 1) + _dashEncoding + "\"");
                     }
 
                     return field;

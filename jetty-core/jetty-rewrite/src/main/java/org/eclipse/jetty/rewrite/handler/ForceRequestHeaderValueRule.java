@@ -15,12 +15,15 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.util.StringUtil;
 
 public class ForceRequestHeaderValueRule extends Rule
 {
     private String headerName;
     private String headerValue;
+    private HttpField field;
 
     public String getHeaderName()
     {
@@ -30,6 +33,7 @@ public class ForceRequestHeaderValueRule extends Rule
     public void setHeaderName(String headerName)
     {
         this.headerName = headerName;
+        this.field = new HttpField(headerName, headerValue);
     }
 
     public String getHeaderValue()
@@ -40,13 +44,17 @@ public class ForceRequestHeaderValueRule extends Rule
     public void setHeaderValue(String headerValue)
     {
         this.headerValue = headerValue;
+        if (!StringUtil.isBlank(headerName))
+            this.field = new HttpField(headerName, headerValue);
+        else
+            this.field = null;
     }
 
     @Override
     public Handler matchAndApply(Handler input) throws IOException
     {
         HttpFields headers = input.getHeaders();
-        String existingValue = headers.get(headerName);
+        String existingValue = (field == null || field.getHeader() == null) ? headers.get(headerName) : headers.get(field.getHeader());
 
         // No hit, skip this rule.
         if (existingValue == null)
@@ -57,8 +65,10 @@ public class ForceRequestHeaderValueRule extends Rule
             return null;
 
         HttpFields.Mutable newHeaders = HttpFields.build(headers);
-        newHeaders.remove(headerName);
-        newHeaders.add(headerName, headerValue);
+        if (field != null)
+            newHeaders.put(field);
+        else
+            newHeaders.put(headerName, headerValue);
         return new Handler(input)
         {
             @Override

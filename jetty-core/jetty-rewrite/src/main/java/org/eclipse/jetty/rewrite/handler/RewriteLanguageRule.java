@@ -15,8 +15,11 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -188,23 +191,49 @@ public class RewriteLanguageRule extends Rule
 
     protected class LanguageHandler extends Handler
     {
+        private static final EnumSet<HttpHeader> IF_MATCHES = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
         private static final HttpField VARY_ACCEPT_LANGUAGE = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_LANGUAGE.asString());
-        private final String _language;
+        private final String _dashLanguage;
         private final HttpURI _languageURI;
         private final HttpField _languageField;
+        private final HttpFields _httpFields;
 
         public LanguageHandler(Rule.Handler input, String languagePathInContext, String language)
         {
             super(input);
-            _language = language;
+            _dashLanguage = '-' + language;
             _languageURI = HttpURI.build(input.getHttpURI()).path(URIUtil.addPaths(input.getContext().getContextPath(), languagePathInContext)).asImmutable();
             _languageField = new HttpField(HttpHeader.CONTENT_LANGUAGE, language);
+            HttpFields httpFields = input.getHeaders();
+            if (httpFields.contains(IF_MATCHES))
+            {
+                httpFields = HttpFields.build(httpFields)
+                    .computeField(HttpHeader.IF_MATCH, this::computeNoLangEtag)
+                    .computeField(HttpHeader.IF_NONE_MATCH, this::computeNoLangEtag).asImmutable();
+            }
+            _httpFields = httpFields;
+        }
+
+        private HttpField computeNoLangEtag(HttpHeader header, List<HttpField> fields)
+        {
+            if (fields == null || fields.isEmpty())
+                return null;
+            return new HttpField(header, fields.stream()
+                .flatMap(field -> Stream.of(field.getValues()))
+                .map(value -> value.replace(_dashLanguage, ""))
+                .collect(Collectors.joining(", ")));
         }
 
         @Override
         public HttpURI getHttpURI()
         {
             return _languageURI;
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _httpFields;
         }
 
         @Override
@@ -231,7 +260,7 @@ public class RewriteLanguageRule extends Rule
                     {
                         String etag = field.getValue();
                         if (etag.endsWith("\""))
-                            return new HttpField(HttpHeader.ETAG, etag.substring(0, etag.length() - 1) + '-' + _language + "\"");
+                            return new HttpField(HttpHeader.ETAG, etag.substring(0, etag.length() - 1) + _dashLanguage + "\"");
                     }
 
                     return field;

@@ -13,14 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.encoders;
 
-import jakarta.websocket.EncodeException;
-import jakarta.websocket.Encoder;
-
 /**
- * Default encoder for {@link Long} to {@link jakarta.websocket.Encoder.Text} Message encoder
- */
-public class LongEncoder extends AbstractEncoder implements Encoder.Text<Long>
-{
+ * Default encoder for {@link Long} to {@link jakarta.websocket.Encoder.Text} Message enc{
     @Override
     public String encode(Long object) throws EncodeException
     {
