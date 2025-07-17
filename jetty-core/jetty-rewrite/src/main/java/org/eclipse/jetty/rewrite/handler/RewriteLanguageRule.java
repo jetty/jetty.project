@@ -217,7 +217,7 @@ public class RewriteLanguageRule extends Rule
             if (fields == null || fields.isEmpty())
                 return null;
             return new HttpField(header, fields.stream()
-                .flatMap(field -> field.getValueList().stream())
+                .flatMap(field -> field.getValueList(true).stream())
                 .map(value -> value.replace(_dashLanguage, ""))
                 .collect(Collectors.joining(", ")));
         }
