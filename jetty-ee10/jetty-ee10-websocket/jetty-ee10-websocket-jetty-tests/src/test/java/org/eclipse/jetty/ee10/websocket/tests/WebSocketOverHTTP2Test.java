@@ -92,15 +92,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketOverHTTP2Test
 {
-    private static final int CONNECTION_LIMIT = 5;
-
     private Server server;
     private ServerConnector connector;
     private ServerConnector tlsConnector;
     private WebSocketClient wsClient;
     private ServletContextHandler context;
     private Runnable onComplete;
-    private EndPointLimit _endPointLimit;
 
     private void startServer() throws Exception
     {
@@ -147,10 +144,6 @@ public class WebSocketOverHTTP2Test
                     onComplete.run();
             }
         });
-
-        _endPointLimit = new EndPointLimit(CONNECTION_LIMIT, connector, tlsConnector);
-        connector.addBean(_endPointLimit);
-        tlsConnector.addBean(_endPointLimit);
 
         server.start();
     }
@@ -405,11 +398,17 @@ public class WebSocketOverHTTP2Test
         assertNull(clientEndpoint.error);
     }
 
-    @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
     @Test
+    @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
     public void testEndPointLimit() throws Exception
     {
         startServer();
+
+        int maxEndPointCount = 5;
+        EndPointLimit endPointLimit = new EndPointLimit(maxEndPointCount, connector, tlsConnector);
+        connector.addBean(endPointLimit);
+        tlsConnector.addBean(endPointLimit);
+
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
         EchoSocket serverEndpoint = new EchoSocket();
@@ -417,19 +416,19 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
 
         List<EventSocket> clientHandlers = new ArrayList<>();
-        for (int i = 0; i < CONNECTION_LIMIT; i++)
+        for (int i = 0; i < maxEndPointCount; i++)
         {
             EventSocket clientEndpoint = new EventSocket();
             clientHandlers.add(clientEndpoint);
             wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
             assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
             assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
-            awaitConnections(1);
+            awaitConnections(1, endPointLimit);
         }
 
         // We only have 1 HTTP2Connection, and the WebSocket connections are over HTTP/2 streams so do not count toward the limit.
-        assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
-        assertThat(_endPointLimit.getEndPointCount(), equalTo(1));
+        assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
+        assertThat(endPointLimit.getEndPointCount(), equalTo(1));
 
         // Close all the sessions.
         for (EventSocket handler : clientHandlers)
@@ -439,19 +438,18 @@ public class WebSocketOverHTTP2Test
             assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
         }
 
-        assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
-        assertThat(_endPointLimit.getEndPointCount(), equalTo(1));
+        assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
+        assertThat(endPointLimit.getEndPointCount(), equalTo(1));
     }
 
-    public void awaitConnections(int connections)
+    private static void awaitConnections(int connections, EndPointLimit endPointLimit)
     {
-        await()
-            .atMost(1, TimeUnit.SECONDS)
+        await().atMost(1, TimeUnit.SECONDS)
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(_endPointLimit.getEndPointCount(), equalTo(connections));
-                assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
+                assertThat(endPointLimit.getEndPointCount(), equalTo(connections));
+                assertThat(endPointLimit.getPendingEndPointCount(), equalTo(0));
             });
     }
 
