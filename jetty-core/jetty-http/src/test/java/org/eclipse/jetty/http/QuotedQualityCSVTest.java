@@ -121,9 +121,9 @@ public class QuotedQualityCSVTest
     public void testQuoted()
     {
         QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
-        values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
+        values.addValue("  \"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
         assertThat(values, Matchers.contains(
-            "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
+            "\"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
     }
 
     @Test

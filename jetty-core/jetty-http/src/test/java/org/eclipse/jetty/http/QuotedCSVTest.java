@@ -97,6 +97,16 @@ public class QuotedCSVTest
     }
 
     @Test
+    public void testETag()
+    {
+        QuotedCSV values = new QuotedCSV(false, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
+        assertThat(values, Matchers.contains(
+            "W/\"000000000\"",
+            "W/\"123456789\"",
+            "W/\"999999999\""));
+    }
+
+    @Test
     public void testOpenQuote()
     {
         QuotedCSV values = new QuotedCSV();
@@ -111,7 +121,7 @@ public class QuotedCSVTest
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("A;p=\"v\",B,\"C, D\"");
         assertThat(values, Matchers.contains(
-            "A;p=v",
+            "A;p=\"v\"",
             "B",
             "C, D"));
     }
@@ -122,7 +132,7 @@ public class QuotedCSVTest
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("value;p=\"v");
         assertThat(values, Matchers.contains(
-            "value;p=v"));
+            "value;p=\"v"));
     }
 
     @Test
@@ -132,7 +142,7 @@ public class QuotedCSVTest
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
         assertThat(values, Matchers.contains(
             "for=192.0.2.43",
-            "for=[2001:db8:cafe::17]",
+            "for=\"[2001:db8:cafe::17]\"",
             "for=unknown"));
     }
 

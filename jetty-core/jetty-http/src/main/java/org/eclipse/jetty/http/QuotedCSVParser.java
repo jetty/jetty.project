@@ -127,19 +127,6 @@ public abstract class QuotedCSVParser
                         onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                     continue;
 
-                case '"':
-                    quoted = true;
-                    if (_keepQuotes)
-                    {
-                        if (state == State.PARAM_VALUE && paramValue < 0)
-                            paramValue = nwsLength;
-                        buffer.append(c);
-                    }
-                    else if (state == State.PARAM_VALUE && paramValue < 0)
-                        paramValue = nwsLength;
-                    nwsLength = buffer.length();
-                    continue;
-
                 case ';':
                     buffer.setLength(nwsLength); // trim following OWS
                     if (state == State.VALUE)
@@ -222,6 +209,23 @@ public abstract class QuotedCSVParser
                         default:
                             throw new IllegalStateException(state.toString());
                     }
+
+                case '"':
+                    if (buffer.isEmpty())
+                    {
+                        quoted = true;
+                        if (_keepQuotes)
+                        {
+                            if (state == State.PARAM_VALUE && paramValue < 0)
+                                paramValue = nwsLength;
+                            buffer.append(c);
+                        }
+                        else if (state == State.PARAM_VALUE && paramValue < 0)
+                            paramValue = nwsLength;
+                        nwsLength = buffer.length();
+                        continue;
+                    }
+                    // fall through to handle embedded quote as a normal character
 
                 default:
                 {
