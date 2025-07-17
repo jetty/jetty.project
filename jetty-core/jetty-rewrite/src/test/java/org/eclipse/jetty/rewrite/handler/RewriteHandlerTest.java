@@ -123,21 +123,4 @@ public class RewriteHandlerTest extends AbstractRuleTest
         assertEquals("/x%20y/zzz", response.get("X-Path"));
         assertEquals("/xxx/x%20y", response.get("X-Original-Path"));
     }
-
-    @Test
-    public void testThrowsIfNoChildHandlerSet() {
-        RewriteHandler rewriteHandler = new RewriteHandler();
-        rewriteHandler.setRules(List.of(
-                new RewritePatternRule("/bug/*", "/fix")
-        ));
-
-        IllegalStateException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                IllegalStateException.class,
-                rewriteHandler::start,
-                "Expected start() to throw if no child handler is set"
-        );
-
-        assertEquals("RewriteHandler requires a child Handler before starting.",
-                exception.getMessage());
-    }
 }

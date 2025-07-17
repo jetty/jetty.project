@@ -143,15 +143,6 @@ public class RewriteHandler extends Handler.Wrapper
         return input.handle(response, callback);
     }
 
-    @Override
-    protected void doStart() throws Exception {
-        if (getHandler() == null) {
-            throw new IllegalStateException("RewriteHandler requires a child Handler " +
-                    "before starting.");
-        }
-        super.doStart();
-    }
-
     private static class LastRuleHandler extends Rule.Handler
     {
         private final Handler _handler;
@@ -165,6 +156,9 @@ public class RewriteHandler extends Handler.Wrapper
         @Override
         protected boolean handle(Response response, Callback callback) throws Exception
         {
+            if (_handler == null)
+                throw new IllegalStateException("RewriteHandler: Child handler is not set.");
+
             return _handler.handle(getWrapped(), response, callback);
         }
     }
