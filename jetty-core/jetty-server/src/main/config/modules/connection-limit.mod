@@ -5,6 +5,10 @@ Enables a server-wide limit on TCP connections.
 
 [tags]
 connector
+deprecated
+
+[deprecated]
+Use module endpoint-limiter instead.
 
 [depend]
 server

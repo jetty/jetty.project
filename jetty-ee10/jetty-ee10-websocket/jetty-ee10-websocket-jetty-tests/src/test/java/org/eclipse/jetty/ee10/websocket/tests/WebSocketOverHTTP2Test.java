@@ -53,7 +53,7 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.ConnectionLimit;
+import org.eclipse.jetty.server.EndPointLimit;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -100,7 +100,7 @@ public class WebSocketOverHTTP2Test
     private WebSocketClient wsClient;
     private ServletContextHandler context;
     private Runnable onComplete;
-    private ConnectionLimit _connectionLimit;
+    private EndPointLimit _endPointLimit;
 
     private void startServer() throws Exception
     {
@@ -148,9 +148,9 @@ public class WebSocketOverHTTP2Test
             }
         });
 
-        _connectionLimit = new ConnectionLimit(CONNECTION_LIMIT, connector, tlsConnector);
-        connector.addBean(_connectionLimit);
-        tlsConnector.addBean(_connectionLimit);
+        _endPointLimit = new EndPointLimit(CONNECTION_LIMIT, connector, tlsConnector);
+        connector.addBean(_endPointLimit);
+        tlsConnector.addBean(_endPointLimit);
 
         server.start();
     }
@@ -407,7 +407,7 @@ public class WebSocketOverHTTP2Test
 
     @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
     @Test
-    public void testConnectionLimit() throws Exception
+    public void testEndPointLimit() throws Exception
     {
         startServer();
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
@@ -428,8 +428,8 @@ public class WebSocketOverHTTP2Test
         }
 
         // We only have 1 HTTP2Connection, and the WebSocket connections are over HTTP/2 streams so do not count toward the limit.
-        assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
-        assertThat(_connectionLimit.getConnections(), equalTo(1));
+        assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
+        assertThat(_endPointLimit.getEndPointCount(), equalTo(1));
 
         // Close all the sessions.
         for (EventSocket handler : clientHandlers)
@@ -439,8 +439,8 @@ public class WebSocketOverHTTP2Test
             assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
         }
 
-        assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
-        assertThat(_connectionLimit.getConnections(), equalTo(1));
+        assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
+        assertThat(_endPointLimit.getEndPointCount(), equalTo(1));
     }
 
     public void awaitConnections(int connections)
@@ -450,8 +450,8 @@ public class WebSocketOverHTTP2Test
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(_connectionLimit.getConnections(), equalTo(connections));
-                assertThat(_connectionLimit.getPendingConnections(), equalTo(0));
+                assertThat(_endPointLimit.getEndPointCount(), equalTo(connections));
+                assertThat(_endPointLimit.getPendingEndPointCount(), equalTo(0));
             });
     }
 

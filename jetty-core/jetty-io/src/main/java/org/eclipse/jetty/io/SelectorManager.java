@@ -320,7 +320,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Failed to notify onAccepted on listener {}", l, x);
+                    LOG.warn("Failed to notify onClosed() on listener {}", l, x);
                 }
             }
         }
@@ -471,7 +471,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn("Failed to notify onAccepting on listener {}", l, x);
+                LOG.warn("Failed to notify onAccepting() on listener {}", l, x);
             }
         }
     }
@@ -486,7 +486,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn("Failed to notify onAcceptFailed on listener {}", l, x);
+                LOG.warn("Failed to notify onAcceptFailed() on listener {}", l, x);
             }
         }
     }
@@ -501,7 +501,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn("Failed to notify onAccepted on listener {}", l, x);
+                LOG.warn("Failed to notify onAccepted() on listener {}", l, x);
             }
         }
     }

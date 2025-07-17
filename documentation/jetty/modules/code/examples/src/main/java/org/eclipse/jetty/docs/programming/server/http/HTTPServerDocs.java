@@ -62,9 +62,9 @@ import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.ConnectionLimit;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.EndPointLimit;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -357,14 +357,14 @@ public class HTTPServerDocs
         // end::sameRandomPort[]
     }
 
-    public void connectionLimit()
+    public void endPointLimit()
     {
-        // tag::connectionLimit[]
+        // tag::endPointLimit[]
         Server server = new Server();
 
-        // Limit connections to the server, across all connectors.
-        ConnectionLimit serverConnectionLimit = new ConnectionLimit(1024, server);
-        server.addBean(serverConnectionLimit);
+        // Limit TCP connections to the server, across all connectors.
+        EndPointLimit serverEndPointLimit = new EndPointLimit(1024, server);
+        server.addBean(serverEndPointLimit);
 
         ServerConnector connector1 = new ServerConnector(server);
         connector1.setPort(8080);
@@ -374,9 +374,9 @@ public class HTTPServerDocs
         connector2.setPort(9090);
         server.addConnector(connector2);
         // Limit connections for this connector only.
-        ConnectionLimit connectorConnectionLimit = new ConnectionLimit(64, connector2);
-        connector2.addBean(connectorConnectionLimit);
-        // end::connectionLimit[]
+        EndPointLimit connectorEndPointLimit = new EndPointLimit(64, connector2);
+        connector2.addBean(connectorEndPointLimit);
+        // end::endPointLimit[]
     }
 
     public void sslHandshakeListener() throws Exception
