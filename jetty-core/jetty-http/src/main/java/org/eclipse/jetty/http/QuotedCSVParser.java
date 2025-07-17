@@ -16,9 +16,13 @@ package org.eclipse.jetty.http;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 
 /**
- * Implements a quoted comma separated list parser
- * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
+ * Implements a quoted comma-separated list parser
+ * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.5">RFC9110 section 5.5</a>
+ * and <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
  * OWS is removed and quoted characters ignored for parsing.
+ *
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.5"
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.6"
  */
 public abstract class QuotedCSVParser
 {
@@ -211,17 +215,13 @@ public abstract class QuotedCSVParser
                     }
 
                 case '"':
-                    if (buffer.isEmpty())
+                    if (state == State.VALUE && buffer.isEmpty() || state == State.PARAM_VALUE && paramValue < 0)
                     {
                         quoted = true;
-                        if (_keepQuotes)
-                        {
-                            if (state == State.PARAM_VALUE && paramValue < 0)
-                                paramValue = nwsLength;
-                            buffer.append(c);
-                        }
-                        else if (state == State.PARAM_VALUE && paramValue < 0)
+                        if (state == State.PARAM_VALUE)
                             paramValue = nwsLength;
+                        if (_keepQuotes)
+                            buffer.append(c);
                         nwsLength = buffer.length();
                         continue;
                     }
