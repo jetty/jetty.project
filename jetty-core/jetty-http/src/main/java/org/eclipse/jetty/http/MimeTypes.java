@@ -876,7 +876,6 @@ public class MimeTypes
             return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
         }
 
-        @SuppressWarnings("removal")
         @Override
         public String getCharsetInferredFromContentType(String contentType)
         {
@@ -884,7 +883,6 @@ public class MimeTypes
             return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
         }
 
-        @SuppressWarnings("removal")
         @Override
         public String getCharsetAssumedFromContentType(String contentType)
         {
@@ -903,7 +901,6 @@ public class MimeTypes
             return Collections.unmodifiableMap(map);
         }
 
-        @SuppressWarnings("removal")
         @Override
         public Map<String, String> getInferredMap()
         {
@@ -915,7 +912,6 @@ public class MimeTypes
             return Collections.unmodifiableMap(map);
         }
 
-        @SuppressWarnings("removal")
         @Override
         public Map<String, String> getAssumedMap()
         {
