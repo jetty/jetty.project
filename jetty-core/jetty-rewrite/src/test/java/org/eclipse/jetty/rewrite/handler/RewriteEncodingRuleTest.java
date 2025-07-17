@@ -305,4 +305,33 @@ public class RewriteEncodingRuleTest extends AbstractRuleTest
         assertThat(response.get(HttpHeader.CONTENT_ENCODING), is("br"));
         assertThat(response.get(HttpHeader.ETAG), containsString("-br\""));
     }
+
+    @Test
+    public void testEtags() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx/all.html HTTP/1.0\r
+            Accept-Encoding: br\r
+            \r
+            """));
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertEquals("br", response.getContent());
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), is("br"));
+
+        String etag = response.get(HttpHeader.ETAG);
+        assertThat(etag, containsString("-br\""));
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx/all.html HTTP/1.0\r
+            Accept-Encoding: br\r
+            If-None-Match: w/"abc"\r
+            If-None-Match: w/"xyz", %s, w/"pqy"\r
+            If-None-Match: w/"123"\r
+            \r
+            """.formatted(etag)));
+
+        assertEquals(304, response.getStatus());
+    }
 }

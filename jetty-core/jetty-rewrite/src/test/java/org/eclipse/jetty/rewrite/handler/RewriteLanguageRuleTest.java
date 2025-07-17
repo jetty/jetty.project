@@ -308,4 +308,33 @@ public class RewriteLanguageRuleTest extends AbstractRuleTest
         assertThat(response.get(HttpHeader.CONTENT_LANGUAGE), is("en-AU"));
         assertThat(response.get(HttpHeader.ETAG), containsString("-en-AU\""));
     }
+
+    @Test
+    public void testEtags() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx/all.html HTTP/1.0\r
+            Accept-Language: en\r
+            \r
+            """));
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Language"));
+        assertEquals("en", response.getContent());
+        assertThat(response.get(HttpHeader.CONTENT_LANGUAGE), is("en"));
+
+        String etag = response.get(HttpHeader.ETAG);
+        assertThat(etag, containsString("-en\""));
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /ctx/all.html HTTP/1.0\r
+            Accept-Language: en\r
+            If-None-Match: w/"abc"\r
+            If-None-Match: w/"xyz", %s, w/"pqy"\r
+            If-None-Match: w/"123"\r
+            \r
+            """.formatted(etag)));
+
+        assertEquals(304, response.getStatus());
+    }
 }

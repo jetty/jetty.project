@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -183,7 +182,6 @@ public class RewriteEncodingRule extends Rule
     protected class EncodingHandler extends Handler
     {
         private static final EnumSet<HttpHeader> IF_MATCHES = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
-        private static final HttpField VARY_ACCEPT_LANGUAGE = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_LANGUAGE.asString());
         private final Encoding _encoding;
         private final String _dashEncoding;
         private final HttpURI _encodingURI;
@@ -211,7 +209,7 @@ public class RewriteEncodingRule extends Rule
             if (fields == null || fields.isEmpty())
                 return null;
             return new HttpField(header, fields.stream()
-                .flatMap(field -> Stream.of(field.getValues()))
+                .flatMap(field -> field.getValueList().stream())
                 .map(value -> value.replace(_dashEncoding, ""))
                 .collect(Collectors.joining(", ")));
         }
