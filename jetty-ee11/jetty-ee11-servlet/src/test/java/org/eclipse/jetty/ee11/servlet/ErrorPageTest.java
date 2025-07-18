@@ -1501,7 +1501,7 @@ public class ErrorPageTest
             }
         };
 
-        contextHandler.addServlet(asyncServlet, "/async/*").setAsyncSupported(true);
+        contextHandler.addServlet(asyncServlet, "/async/*");
         contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
