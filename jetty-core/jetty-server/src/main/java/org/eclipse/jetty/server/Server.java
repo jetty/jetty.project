@@ -539,12 +539,21 @@ public class Server extends Handler.Wrapper implements Attributes
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
-            //Register the Server with the handler thread for receiving
-            //remote stop commands
-            ShutdownMonitor.register(this);
+            // Look for the old-school (now deprecated) ShutdownMonitor
+            //noinspection removal
+            ShutdownMonitor shutdownMonitor = ShutdownMonitor.getConfiguredInstance();
+            if (shutdownMonitor != null)
+            {
+                // Add it as a bean to this server (for below)
+                addBean(shutdownMonitor);
+            }
 
-            //Start a thread waiting to receive "stop" commands.
-            ShutdownMonitor.getInstance().start(); // initialize
+            // Next use the actual ShutdownService implementations
+            for (ShutdownService service: getBeans(ShutdownService.class))
+            {
+                service.addComponent(this);
+                service.start();
+            }
 
             if (_errorHandler == null)
                 setErrorHandler(new DynamicErrorHandler());
@@ -700,9 +709,10 @@ public class Server extends Handler.Wrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        //Unregister the Server with the handler thread for receiving
-        //remote stop commands as we are stopped already
-        ShutdownMonitor.deregister(this);
+        for (ShutdownService service: getBeans(ShutdownService.class))
+        {
+            service.removeComponent(this);
+        }
 
         ExceptionUtil.ifExceptionThrow(multiException);
     }

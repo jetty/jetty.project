@@ -219,7 +219,7 @@ include::{jetty-home}/modules/deployment-scanner.mod[tags=documentation]
 
 Among the configurable properties, the most relevant are:
 
-`jetty.deploy.monitoredDir`::
+`jetty.deploy.webappsDir`::
 The name of the directory to deploy web applications.
 `jetty.deploy.scanInterval`::
 The scan period in seconds, that is how frequently the `DeploymentScanner` wakes up to scan the monitored directories for changes.
@@ -273,6 +273,15 @@ include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=ini-template]
 
 See also the <<static-deploy,`static-deploy`>> module and the <<core-deploy,`core-deploy`>> module for Jetty specific deployment environments.
 
+[[eeN-ext]]
+== Module `{ee-all}-ext`
+
+The `{ee-all}-ext` modules allow to add libraries to the environment class-path or module-path, for example to provide implementations of Jakarta APIs such as a Jakarta Mail implementation or Jakarta Transaction implementation.
+
+The libraries must be in `+*.jar+` format, and must be placed in `$JETTY_BASE/lib/{ee-all}/ext`.
+
+Refer also to the server specific <<ext,`ext`>> module.
+
 [[eeN-proxy]]
 == Module `{ee-all}-proxy`
 
@@ -304,6 +313,15 @@ Jetty's configuration properties are identical across all versions of this modul
 ----
 include::{jetty-home}/modules/{ee-current}-webapp.mod[tags=ini-template]
 ----
+
+[[ext]]
+== Module `ext`
+
+The `ext` module allows to add libraries to the server class-path or module-path, for example for custom classes that extend Jetty classes, for server-wide logging libraries, for JDBC drivers, etc.
+
+The libraries must be in `+*.jar+` format, and must be placed in `$JETTY_BASE/lib/ext`.
+
+Refer also to the environment specific <<eeN-ext,`{ee-all}-ext`>> modules.
 
 [[graceful]]
 == Module `graceful`

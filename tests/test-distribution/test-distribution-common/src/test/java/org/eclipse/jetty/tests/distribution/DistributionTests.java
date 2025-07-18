@@ -202,10 +202,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         String mods = String.join(",",
             "resources", "server", "http",
-            toEnvironment("webapp", env),
             toEnvironment("deploy", env),
             toEnvironment("apache-jsp", env),
-            toEnvironment("servlet", env),
             toEnvironment("quickstart", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))

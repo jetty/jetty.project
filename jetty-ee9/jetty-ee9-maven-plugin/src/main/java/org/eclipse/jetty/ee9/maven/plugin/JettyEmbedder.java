@@ -13,27 +13,15 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.maven.AbstractJettyEmbedder;
-import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.maven.ServerSupport;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * JettyEmbedder

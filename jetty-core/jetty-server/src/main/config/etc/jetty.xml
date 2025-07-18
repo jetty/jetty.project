@@ -24,6 +24,11 @@
       <Set name="dynamic" property="jetty.server.contexts.dynamic"/>
     </New>
   </Set>
+  <Call name="addBean">
+    <Arg>
+      <Ref refid="ShutdownService" />
+    </Arg>
+  </Call>
 
   <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
   <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>

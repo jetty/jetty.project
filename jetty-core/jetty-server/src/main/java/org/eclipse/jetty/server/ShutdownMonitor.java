@@ -13,470 +13,325 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Shutdown/Stop Monitor thread.
+ * Shutdown Monitor.
+ *
  * <p>
- * This thread listens on the host/port specified by the STOP.HOST/STOP.PORT
- * system parameter (defaults to 127.0.0.1/-1 for not listening) for request
- * authenticated with the key given by the STOP.KEY system parameter
- * for admin requests.
+ *     This is a singleton that is only valid when the following System Properties are defined.
+ * </p>
+ *
+ * <dl>
+ * <dt>{@code STOP.HOST}</dt>
+ * <dd>IP to listen on, defaults to {@code 127.0.0.1}</dd>
+ * <dt>{@code STOP.PORT}</dt>
+ * <dd>Port to listen on, defaults to {@code -1} (or disabled).<br>
+ * (0 will use a port number that is automatically allocated)</dd>
+ * <dt>{@code STOP.KEY}</dt>
+ * <dd>The Key that must be provided to initiate a Shutdown.<br>
+ * Limited to {@link java.nio.charset.StandardCharsets#US_ASCII US_ASCII} charset.<br>
+ * If one is not provided, a generated Key will be created.</dd>
+ * <dt>{@code STOP.EXIT}</dt>
+ * <dd>Boolean to indicate if a {@code System.exit(0)} should occur on successful shutdown,
+ * defaults to {@code true}</dd>
+ * </dl>
+ *
  * <p>
- * If the stop port is set to zero, then a random port is assigned and the
- * port number is printed to stdout.
+ * This starts a {@link java.net.ServerSocket} that listens on the host/port specified by
+ * the configuration, and starts a thread to accept incoming requests.
+ * </p>
+ *
  * <p>
- * Commands "stop" and "status" are currently supported.
+ *     See {@link ShutdownService} for details about commands that can be sent to
+ *     this server.
+ * </p>
+ *
+ * @deprecated Replaced with {@link ShutdownService} component, which is not a singleton.
  */
-public class ShutdownMonitor
+@Deprecated(since = "12.1.0", forRemoval = true)
+public class ShutdownMonitor extends ShutdownService
 {
-    // Implementation of safe lazy init, using Initialization on Demand Holder technique.
-    private static class Holder
-    {
-        static ShutdownMonitor instance = new ShutdownMonitor();
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(ShutdownMonitor.class);
+    private static final AtomicReference<ShutdownMonitor> INSTANCE = new AtomicReference<>();
 
+    /**
+     * @deprecated No direct replacement, see {@link ShutdownService}, which is not a singleton.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public static ShutdownMonitor getInstance()
     {
-        return Holder.instance;
+        return INSTANCE.updateAndGet((h) ->
+        {
+            if (h != null)
+                return h;
+            else
+            {
+                LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
+                return new ShutdownMonitor();
+            }
+        });
     }
 
+    /**
+     * Get configured {@code ShutdownMonitor} instance.
+     *
+     * <ol>
+     *   <li>If {@code ShutdownMonitor.getInstance()} has been called,
+     *       and it has a valid configuration, return that instance.</li>
+     *   <li>If the System Properties exist, and contain a valid
+     *       configuration, return a {@code ShutdownMonitor} based on
+     *       that configuration. (same instance will be returned by
+     *       subsequent calls to {@link #getInstance()}</li>
+     * </ol>
+     *
+     * @return the configured ShutdownMonitor instance, or null if
+     *         not configured.
+     */
+    protected static ShutdownMonitor getConfiguredInstance()
+    {
+        return INSTANCE.updateAndGet((h) ->
+        {
+            if (h != null)
+                return h;
+            if (System.getProperty("STOP.PORT") != null)
+            {
+                LOG.warn("{} is deprecated, and has been replaced with {}", ShutdownMonitor.class.getName(), ShutdownService.class.getName());
+                try
+                {
+                    return new ShutdownMonitor();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Unable to create ShutdownMonitor", x);
+                }
+            }
+            return null;
+        });
+    }
+
+    /**
+     * This existed for test case reasons, it was never a public runtime method.
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     protected static void reset()
     {
-        Holder.instance = new ShutdownMonitor();
+        INSTANCE.set(null);
     }
 
+    /**
+     * @deprecated See {@link org.eclipse.jetty.server.ShutdownService#addComponent(LifeCycle)}.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public static void register(LifeCycle... lifeCycles)
     {
         getInstance().addLifeCycles(lifeCycles);
     }
 
+    /**
+     * @deprecated See {@link ShutdownService#removeComponent(LifeCycle)}
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public static void deregister(LifeCycle lifeCycle)
     {
         getInstance().removeLifeCycle(lifeCycle);
     }
 
+    /**
+     * This existed for test case reasons, it was never a public runtime method.
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public static boolean isRegistered(LifeCycle lifeCycle)
     {
         return getInstance().containsLifeCycle(lifeCycle);
     }
 
-    private final AutoLock.WithCondition _lock = new AutoLock.WithCondition();
-    private final Set<LifeCycle> _lifeCycles = new LinkedHashSet<>();
-    private boolean debug;
-    private final String host;
-    private int port;
-    private String key;
-    private boolean exitVm = true;
-    private boolean alive;
+    // A mutable port number, to maintain backward compat with existing ShutdownMonitor API.
+    private int mutablePort;
+    // A mutable key, to maintain backward compat with existing ShutdownMonitor API.
+    private String mutableKey;
+    // A mutable exitVm, to maintain backward compat with existing ShutdownMonitor API.
+    private boolean mutableExitVm;
 
-    /**
-     * Creates a ShutdownMonitor using configuration from the System properties.
-     * <p>
-     * <code>STOP.PORT</code> = the port to listen on (empty, null, or values less than 0 disable the stop ability)<br>
-     * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop<br>
-     * <p>
-     * Note: server socket will only listen on localhost, and a successful stop will issue a System.exit() call.
-     */
     private ShutdownMonitor()
     {
-        this.debug = System.getProperty("DEBUG") != null;
-        this.host = System.getProperty("STOP.HOST", "127.0.0.1");
-        this.port = Integer.getInteger("STOP.PORT", -1);
-        this.key = System.getProperty("STOP.KEY", null);
-        //only change the default exitVm setting if STOP.EXIT is explicitly set
-        this.exitVm = Boolean.valueOf(System.getProperty("STOP.EXIT", "true"));
+        super(getSysProp("STOP.HOST", "127.0.0.1"),
+            Integer.parseInt(getSysProp("STOP.PORT", "0")),
+            getSysProp("STOP.KEY", null),
+            Boolean.parseBoolean(getSysProp("STOP.EXIT", "true")));
+
+        // Different default port for mutable port
+        this.mutablePort = Integer.parseInt(getSysProp("STOP.PORT", "-1"));
+        this.mutableKey = super.getKey();
+        this.mutableExitVm = super.isExitVm();
+    }
+
+    /**
+     * Get a System Property with fallback to default value, if the property
+     * doesn't exist, or has a blank value. (an empty string is a valid value,
+     * which the {@link System#getProperty(String, String)} does not fall back
+     * to default when encountering.)
+     *
+     * @param keyName key name
+     * @param defaultValue the value to fall back on if unset or blank.
+     * @return the value
+     */
+    private static String getSysProp(String keyName, String defaultValue)
+    {
+        String value = System.getProperty(keyName, defaultValue);
+        if (StringUtil.isBlank(value))
+            return defaultValue;
+        else
+            return value;
     }
 
     private void addLifeCycles(LifeCycle... lifeCycles)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock l = lock.lock())
         {
-            _lifeCycles.addAll(Arrays.asList(lifeCycles));
+            for (LifeCycle lifeCycle : lifeCycles)
+            {
+                addComponent(lifeCycle);
+            }
         }
     }
 
+    /**
+     * Does nothing.
+     */
     private void removeLifeCycle(LifeCycle lifeCycle)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            _lifeCycles.remove(lifeCycle);
-        }
+        removeComponent(lifeCycle);
     }
 
     private boolean containsLifeCycle(LifeCycle lifeCycle)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _lifeCycles.contains(lifeCycle);
-        }
+        return hasComponent(lifeCycle);
     }
 
-    private void debug(String format, Object... args)
+    public boolean isConfigured()
     {
-        if (debug)
-            System.err.printf("[ShutdownMonitor] " + format + "%n", args);
+        return mutablePort >= 0 && mutablePort <= 0xFFFF;
     }
 
-    private void debug(Throwable t)
+    /**
+     * Does nothing.
+     *
+     * @deprecated No replacement, use SLF4J Logger at name {@link ShutdownService}
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void setDebug(boolean flag)
     {
-        if (debug)
-            t.printStackTrace(System.err);
+        // does nothing
+    }
+
+    /**
+     * Does nothing.
+     *
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void setExitVm(boolean exitVm)
+    {
+        mutableExitVm = exitVm;
+    }
+
+    @Override
+    public boolean isExitVm()
+    {
+        return mutableExitVm;
+    }
+
+    @Override
+    public int getPort()
+    {
+        return mutablePort;
+    }
+
+    /**
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void setPort(int port)
+    {
+        if (port < 0 || port > 0xFFFF)
+            throw new IllegalArgumentException("Invalid port: " + port);
+        mutablePort = port;
+    }
+
+    /**
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void setKey(String key)
+    {
+        mutableKey = key;
     }
 
     public String getKey()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return key;
-        }
+        return mutableKey;
     }
 
-    public int getPort()
+    @Override
+    public void start() throws Exception
     {
-        try (AutoLock l = _lock.lock())
+        int port = getPort();
+        if (port < 0 || port > 0xFFFF)
         {
-            return port;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not enabling ShutdownMonitor, port not configured");
+            return;
         }
+        super.start();
     }
 
-    public boolean isExitVm()
+    @Override
+    protected void bound(ServerSocket serverSocket)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return exitVm;
-        }
-    }
-
-    public void setDebug(boolean flag)
-    {
-        this.debug = flag;
+        if (serverSocket == null)
+            return;
+        if (!serverSocket.isBound())
+            return;
+        mutablePort = serverSocket.getLocalPort();
     }
 
     /**
-     * Set true to exit the VM on shutdown.
-     * @param exitVm true to exit the VM on shutdown
+     * Does nothing.
+     * This existed for test case reasons, it was never a public runtime method.
+     *
+     * @deprecated No replacement.
      */
-    public void setExitVm(boolean exitVm)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            if (alive)
-                throw new IllegalStateException("ShutdownMonitor already started");
-            this.exitVm = exitVm;
-        }
-    }
-
-    public void setKey(String key)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            if (alive)
-                throw new IllegalStateException("ShutdownMonitor already started");
-            this.key = key;
-        }
-    }
-
-    public void setPort(int port)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            if (alive)
-                throw new IllegalStateException("ShutdownMonitor already started");
-            this.port = port;
-        }
-    }
-
-    public void start() throws Exception
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            if (alive)
-            {
-                debug("Already started");
-                return; // cannot start it again
-            }
-            ServerSocket serverSocket = listen();
-            if (serverSocket != null)
-            {
-                alive = true;
-                Thread thread = new Thread(new ShutdownMonitorRunnable(serverSocket));
-                thread.setDaemon(true);
-                thread.setName("ShutdownMonitor");
-                thread.start();
-            }
-        }
-    }
-
-    private void stop()
-    {
-        try (AutoLock.WithCondition l = _lock.lock())
-        {
-            alive = false;
-            l.signalAll();
-        }
-    }
-
-    // For test purposes only.
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public void await() throws InterruptedException
     {
-        try (AutoLock.WithCondition l = _lock.lock())
-        {
-            while (alive)
-            {
-                l.await();
-            }
-        }
+        throw new UnsupportedOperationException("await() no longer supported");
     }
 
-    // For test purposes only.
+    /**
+     * Does nothing.
+     * This existed for test case reasons, it was never a public runtime method.
+     *
+     * @deprecated No replacement.
+     */
+    @Deprecated(since = "12.1.0", forRemoval = true)
     protected boolean await(long time, TimeUnit unit) throws InterruptedException
     {
-        try (AutoLock.WithCondition l = _lock.lock())
-        {
-            if (alive)
-                return l.await(time, unit);
-            else
-                return true;
-        }
+        throw new UnsupportedOperationException("await(long, TimeUnit) no longer supported");
     }
 
     protected boolean isAlive()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return alive;
-        }
-    }
-
-    private ServerSocket listen()
-    {
-        int port = getPort();
-        if (port < 0)
-        {
-            debug("Not enabled (port < 0): %d", port);
-            return null;
-        }
-
-        String key = getKey();
-        try
-        {
-            ServerSocket serverSocket = new ServerSocket();
-            try
-            {
-                serverSocket.setReuseAddress(true);
-                serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
-            }
-            catch (Throwable e)
-            {
-                IO.close(serverSocket);
-                throw e;
-            }
-            if (port == 0)
-            {
-                port = serverSocket.getLocalPort();
-                System.out.printf("STOP.PORT=%d%n", port);
-                setPort(port);
-            }
-
-            if (key == null)
-            {
-                key = Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()), 36);
-                System.out.printf("STOP.KEY=%s%n", key);
-                setKey(key);
-            }
-
-            return serverSocket;
-        }
-        catch (Throwable x)
-        {
-            debug(x);
-            System.err.println("Error binding ShutdownMonitor to port " + port + ": " + x.toString());
-            return null;
-        }
-        finally
-        {
-            // establish the port and key that are in use
-            debug("STOP.PORT=%d", port);
-            debug("STOP.KEY=%s", key);
-            //also show if we're exiting the jvm or not
-            debug("STOP.EXIT=%b", exitVm);
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s[port=%d,alive=%b]", TypeUtil.toShortName(this.getClass()), getPort(), isAlive());
-    }
-
-    /**
-     * Thread for listening to STOP.PORT for command to stop Jetty.
-     * If ShutdownMonitor.exitVm is true, then System.exit will also be
-     * called after the stop.
-     */
-    private class ShutdownMonitorRunnable implements Runnable
-    {
-        private final ServerSocket serverSocket;
-
-        private ShutdownMonitorRunnable(ServerSocket serverSocket)
-        {
-            this.serverSocket = serverSocket;
-        }
-
-        @Override
-        public void run()
-        {
-            debug("Started");
-            try
-            {
-                String key = getKey();
-                while (true)
-                {
-                    try (Socket socket = serverSocket.accept())
-                    {
-                        LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
-                        String receivedKey = reader.readLine();
-                        if (!key.equals(receivedKey))
-                        {
-                            debug("Ignoring command with incorrect key: %s", receivedKey);
-                            continue;
-                        }
-
-                        String cmd = reader.readLine();
-                        debug("command=%s", cmd);
-                        OutputStream out = socket.getOutputStream();
-                        boolean exitVm = isExitVm();
-
-                        if ("stop".equalsIgnoreCase(cmd)) //historic, for backward compatibility
-                        {
-                            //Stop the lifecycles, only if they are registered with the ShutdownThread, only destroying if vm is exiting
-                            debug("Performing stop command");
-                            stopLifeCycles(ShutdownThread::isRegistered, exitVm);
-
-                            // Reply to client
-                            debug("Informing client that we are stopped");
-                            informClient(out, "Stopped\r\n");
-
-                            if (!exitVm)
-                                break;
-
-                            // Kill JVM
-                            debug("Killing JVM");
-                            System.exit(0);
-                        }
-                        else if ("forcestop".equalsIgnoreCase(cmd))
-                        {
-                            debug("Performing forced stop command");
-                            stopLifeCycles(l -> true, exitVm);
-
-                            // Reply to client
-                            debug("Informing client that we are stopped");
-                            informClient(out, "Stopped\r\n");
-
-                            if (!exitVm)
-                                break;
-
-                            // Kill JVM
-                            debug("Killing JVM");
-                            System.exit(0);
-                        }
-                        else if ("stopexit".equalsIgnoreCase(cmd))
-                        {
-                            debug("Performing stop and exit commands");
-                            stopLifeCycles(ShutdownThread::isRegistered, true);
-
-                            // Reply to client
-                            debug("Informing client that we are stopped");
-                            informClient(out, "Stopped\r\n");
-
-                            debug("Killing JVM");
-                            System.exit(0);
-                        }
-                        else if ("exit".equalsIgnoreCase(cmd))
-                        {
-                            debug("Killing JVM");
-                            System.exit(0);
-                        }
-                        else if ("status".equalsIgnoreCase(cmd))
-                        {
-                            // Reply to client
-                            informClient(out, "OK\r\n");
-                        }
-                        else if ("pid".equalsIgnoreCase(cmd))
-                        {
-                            informClient(out, Long.toString(ProcessHandle.current().pid()));
-                        }
-                    }
-                    catch (Throwable x)
-                    {
-                        debug(x);
-                    }
-                }
-            }
-            catch (Throwable x)
-            {
-                debug(x);
-            }
-            finally
-            {
-                IO.close(serverSocket);
-                stop();
-                debug("Stopped");
-            }
-        }
-
-        private void informClient(OutputStream out, String message) throws IOException
-        {
-            out.write(message.getBytes(StandardCharsets.UTF_8));
-            out.flush();
-        }
-
-        private void stopLifeCycles(Predicate<LifeCycle> predicate, boolean destroy)
-        {
-            List<LifeCycle> lifeCycles;
-            try (AutoLock l = _lock.lock())
-            {
-                lifeCycles = new ArrayList<>(_lifeCycles);
-            }
-
-            for (LifeCycle l : lifeCycles)
-            {
-                try
-                {
-                    if (l.isStarted() && predicate.test(l))
-                        l.stop();
-
-                    if ((l instanceof Destroyable) && destroy)
-                        ((Destroyable)l).destroy();
-                }
-                catch (Throwable x)
-                {
-                    debug(x);
-                }
-            }
-        }
+        return isListening();
     }
 }
