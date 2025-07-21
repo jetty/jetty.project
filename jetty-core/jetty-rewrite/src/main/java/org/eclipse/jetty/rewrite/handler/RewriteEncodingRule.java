@@ -57,17 +57,17 @@ public class RewriteEncodingRule extends Rule
     private final BiFunction<Context, String, Resource> _getResource;
     private final Map<String, Encoding> _encodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    protected RewriteEncodingRule()
+    public RewriteEncodingRule()
     {
-        this(RewriteEncodingRule::getResource, "br", ".br", "gzip", ".gz");
+        this(RewriteEncodingRule::getResource, "br", ".br", "gzip", ".gz", "zstd", ".zst");
     }
 
-    protected RewriteEncodingRule(BiFunction<Context, String, Resource> getResource)
+    public RewriteEncodingRule(BiFunction<Context, String, Resource> getResource)
     {
-        this(getResource, "br", ".br", "gzip", ".gz");
+        this(getResource, "br", ".br", "gzip", ".gz", "zstd", ".zst");
     }
 
-    protected RewriteEncodingRule(BiFunction<Context, String, Resource> getResource, String... encodingsAndExtensions)
+    public RewriteEncodingRule(BiFunction<Context, String, Resource> getResource, String... encodingsAndExtensions)
     {
         _getResource = getResource;
         if (encodingsAndExtensions.length % 2 != 0)

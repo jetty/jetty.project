@@ -127,6 +127,15 @@ public class QuotedQualityCSVTest
     }
 
     @Test
+    public void testParamValueQuoted()
+    {
+        QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
+        values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
+        assertThat(values, Matchers.contains(
+            "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
+    }
+
+    @Test
     public void testOpenQuote()
     {
         QuotedQualityCSV values = new QuotedQualityCSV();

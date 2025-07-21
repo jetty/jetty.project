@@ -14,6 +14,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -32,7 +33,7 @@ public class ForceRequestHeaderValueRule extends Rule
 
     public void setHeaderName(String headerName)
     {
-        this.headerName = headerName;
+        this.headerName = Objects.requireNonNull(headerName);
         this.field = new HttpField(headerName, headerValue);
     }
 

@@ -62,27 +62,27 @@ public class RewriteLanguageRule extends Rule
     private final BiFunction<Context, String, Resource> _getResource;
     private final List<String> _wildCardLanguages;
 
-    protected RewriteLanguageRule()
+    public RewriteLanguageRule()
     {
         this(true);
     }
 
-    protected RewriteLanguageRule(List<String> wildCardLanguages)
+    public RewriteLanguageRule(List<String> wildCardLanguages)
     {
         this(RewriteLanguageRule::localizeWithPrefix, RewriteLanguageRule::getResource, wildCardLanguages);
     }
 
-    protected RewriteLanguageRule(boolean prefix)
+    public RewriteLanguageRule(boolean prefix)
     {
         this(prefix ? RewriteLanguageRule::localizeWithPrefix : RewriteLanguageRule::localizeWithSuffix, RewriteLanguageRule::getResource, null);
     }
 
-    protected RewriteLanguageRule(BiFunction<String, String, String> localizePath, BiFunction<Context, String, Resource> getResource)
+    public RewriteLanguageRule(BiFunction<String, String, String> localizePath, BiFunction<Context, String, Resource> getResource)
     {
         this(localizePath, getResource, null);
     }
 
-    protected RewriteLanguageRule(BiFunction<String, String, String> localizePath, BiFunction<Context, String, Resource> getResource, List<String> wildCardLanguages)
+    public RewriteLanguageRule(BiFunction<String, String, String> localizePath, BiFunction<Context, String, Resource> getResource, List<String> wildCardLanguages)
     {
         _localizePath = localizePath;
         _getResource = getResource;
