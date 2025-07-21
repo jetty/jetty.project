@@ -40,8 +40,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class UrlParameterDecoderTest
@@ -99,7 +101,7 @@ public class UrlParameterDecoderTest
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String input = "a=b&c=d";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         assertEquals("b", fields.getValue("a"));
         assertEquals("d", fields.getValue("c"));
@@ -148,7 +150,7 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(expectedParams.size()));
 
@@ -171,7 +173,7 @@ public class UrlParameterDecoderTest
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String input = "text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         String hex = "E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
         String expected = new String(StringUtil.fromHexString(hex), UTF_8);
@@ -186,7 +188,7 @@ public class UrlParameterDecoderTest
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
         String input = "text=test%C3%A4";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         // http://www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=00e4&mode=hex
         // Should be "testä"
@@ -234,14 +236,10 @@ public class UrlParameterDecoderTest
     @MethodSource("invalidTestData")
     public <X extends Throwable> void testInvalidDecode(Charset charset, String input, Class<X> expectedThrowableType)
     {
-        assertThrows(expectedThrowableType, () ->
-        {
-            Fields fields = new Fields();
-            CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
-            UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-            decoder.parse(input);
-            System.out.println("fields=" + fields);
-        });
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(charset);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+        assertThrows(expectedThrowableType, () -> decoder.parse(input));
     }
 
     /**
@@ -254,7 +252,7 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder();
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
         String input = "Name=Euro-€-Symbol";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
         assertThat("Field count", fields.getSize(), is(1));
         Fields.Field field = fields.get("Name");
         assertNotNull(field, "Fields[Name]");
@@ -268,7 +266,7 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
         String input = "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(4));
         Fields.Field field = fields.get("name\n");
@@ -288,7 +286,7 @@ public class UrlParameterDecoderTest
         assertEquals("value 3", field.getValue(), "Fields[nãme3]");
     }
 
-    public static Stream<Arguments> queryBehaviorsBadUtf8Allowed()
+    public static Stream<Arguments> queryBehaviorsBadUtf8AllowedGood()
     {
         List<Arguments> cases = new ArrayList<>();
 
@@ -299,6 +297,28 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=&other=foo", Map.of("param", "", "other", "foo")));
         cases.add(Arguments.of("param=%E2%9C%94", Map.of("param", "✔")));
         cases.add(Arguments.of("param=%E2%9C%94&other=foo", Map.of("param", "✔", "other", "foo")));
+
+        // Extra ampersands
+        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
+
+        // Encoded ampersands
+        cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
+        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param", "aaa", "&other", "foo")));
+
+        // pct-encoded parameter names ("帽子" means "hat" in japanese)
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", Map.of("帽子", "Beret", "other", "foo")));
+        cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret", "other", "foo")));
+
+        return cases.stream();
+    }
+
+    public static Stream<Arguments> queryBehaviorsBadUtf8AllowedBad()
+    {
+        List<Arguments> cases = new ArrayList<>();
 
         // Truncated / Insufficient Hex cases
         cases.add(Arguments.of("param=%E2%9C%9", Map.of("param", "�")));
@@ -358,6 +378,74 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=%x&other=foo", Map.of("param", "%x", "other", "foo")));
         cases.add(Arguments.of("param=%£&other=foo", Map.of("param", "%£", "other", "foo")));
 
+        // bad pct-encoded parameter names
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", Map.of("帽�", "Beret")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+
+        return cases.stream();
+    }
+
+    /**
+     * Test of BAD UTF8 ALLOWED, with good input data.
+     */
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsBadUtf8AllowedGood")
+    public void testQueryBehaviorsBadUtf8AllowedGood(String input, Map<String, String> expectedParams) throws IOException
+    {
+        testQueryBehaviorsBadUtf8Allowed(input, expectedParams, false);
+    }
+
+    /**
+     * Test of BAD UTF8 ALLOWED, with bad input data.
+     */
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsBadUtf8AllowedBad")
+    public void testQueryBehaviorsBadUtf8AllowedBad(String input, Map<String, String> expectedParams) throws IOException
+    {
+        testQueryBehaviorsBadUtf8Allowed(input, expectedParams, true);
+    }
+
+    private void testQueryBehaviorsBadUtf8Allowed(String input, Map<String, String> expectedParams, boolean badInput) throws IOException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
+        boolean allowBadEncoding = true;
+        boolean allowBadPercent = true;
+        boolean allowTruncatedEncoding = true;
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+
+        assertEquals(badInput, decoder.parse(input), badInput ? "Has coding errors" : "No coding errors");
+
+        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
+
+        for (String key : expectedParams.keySet())
+        {
+            Fields.Field field = fields.get(key);
+            String message = "Fields[%s]".formatted(key);
+            assertNotNull(field, message);
+            assertEquals(expectedParams.get(key), field.getValue(), message);
+        }
+    }
+
+    /**
+     * The set of allowed query string behaviors collected from Jetty 11. (Good inputs)
+     */
+    public static Stream<Arguments> queryBehaviorsLegacyAllowedGood()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // Normal cases
+        cases.add(Arguments.of("param=aaa", Map.of("param", "aaa")));
+        cases.add(Arguments.of("param=aaa&other=foo", Map.of("param", "aaa", "other", "foo")));
+        cases.add(Arguments.of("param=", Map.of("param", "")));
+        cases.add(Arguments.of("param=&other=foo", Map.of("param", "", "other", "foo")));
+        cases.add(Arguments.of("param=%E2%9C%94", Map.of("param", "✔")));
+        cases.add(Arguments.of("param=%E2%9C%94&other=foo", Map.of("param", "✔", "other", "foo")));
+
         // Extra ampersands
         cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
         cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
@@ -373,55 +461,19 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", Map.of("帽子", "Beret", "other", "foo")));
         cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret", "other", "foo")));
 
-        // bad pct-encoded parameter names
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", Map.of("帽�", "Beret")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", Map.of("帽�", "Beret")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", Map.of("帽�", "Beret")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
+        // raw unicode parameter names
+        cases.add(Arguments.of("€=currency", Map.of("€", "currency")));
+        cases.add(Arguments.of("帽子=Beret", Map.of("帽子", "Beret")));
 
         return cases.stream();
     }
 
-    @ParameterizedTest
-    @MethodSource("queryBehaviorsBadUtf8Allowed")
-    public void testQueryBehaviorsBadUtf8Allowed(String input, Map<String, String> expectedParams) throws IOException
-    {
-        Fields fields = new Fields();
-        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        boolean allowBadEncoding = true;
-        boolean allowBadPercent = true;
-        boolean allowTruncatedEncoding = true;
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
-
-        decoder.parse(input);
-
-        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
-
-        for (String key : expectedParams.keySet())
-        {
-            Fields.Field field = fields.get(key);
-            String message = "Fields[%s]".formatted(key);
-            assertNotNull(field, message);
-            assertEquals(expectedParams.get(key), field.getValue(), message);
-        }
-    }
-
     /**
-     * The set of allowed query string behaviors collected from Jetty 11.
+     * The set of allowed query string behaviors collected from Jetty 11. (Bad inputs)
      */
-    public static Stream<Arguments> queryBehaviorsLegacyAllowed()
+    public static Stream<Arguments> queryBehaviorsLegacyAllowedBad()
     {
         List<Arguments> cases = new ArrayList<>();
-
-        // Normal cases
-        cases.add(Arguments.of("param=aaa", Map.of("param", "aaa")));
-        cases.add(Arguments.of("param=aaa&other=foo", Map.of("param", "aaa", "other", "foo")));
-        cases.add(Arguments.of("param=", Map.of("param", "")));
-        cases.add(Arguments.of("param=&other=foo", Map.of("param", "", "other", "foo")));
-        cases.add(Arguments.of("param=%E2%9C%94", Map.of("param", "✔")));
-        cases.add(Arguments.of("param=%E2%9C%94&other=foo", Map.of("param", "✔", "other", "foo")));
 
         // Truncated / Insufficient Hex cases
         cases.add(Arguments.of("param=%E2%9C", Map.of("param", "�")));
@@ -437,35 +489,28 @@ public class UrlParameterDecoderTest
         cases.add(Arguments.of("param=f_%e0%b8", Map.of("param", "f_�")));
         cases.add(Arguments.of("param=f_%e0%b8&other=foo", Map.of("param", "f_�", "other", "foo")));
 
-        // Extra ampersands
-        cases.add(Arguments.of("param=aaa&&&", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&&param=aaa", Map.of("param", "aaa")));
-        cases.add(Arguments.of("&&param=aaa&&other=foo", Map.of("param", "aaa", "other", "foo")));
-        cases.add(Arguments.of("param=aaa&&other=foo&&", Map.of("param", "aaa", "other", "foo")));
-
-        // Encoded ampersands
-        cases.add(Arguments.of("param=aaa%26&other=foo", Map.of("param", "aaa&", "other", "foo")));
-        cases.add(Arguments.of("param=aaa&%26other=foo", Map.of("param", "aaa", "&other", "foo")));
-
-        // pct-encoded parameter names ("帽子" means "hat" in japanese)
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret")));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", Map.of("帽子", "Beret", "other", "foo")));
-        cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", Map.of("帽子", "Beret", "other", "foo")));
-
         // truncated pct-encoded parameter names
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", Map.of("帽�", "Beret")));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", Map.of("帽�", "Beret", "other", "foo")));
-
-        // raw unicode parameter names (strange replacement logic here)
-        cases.add(Arguments.of("€=currency", Map.of("€", "currency")));
-        cases.add(Arguments.of("帽子=Beret", Map.of("帽子", "Beret")));
 
         return cases.stream();
     }
 
     @ParameterizedTest
-    @MethodSource("queryBehaviorsLegacyAllowed")
-    public void testQueryBehaviorsLegacyAllowed(String input, Map<String, String> expectedParams) throws IOException
+    @MethodSource("queryBehaviorsLegacyAllowedGood")
+    public void testQueryBehaviorsLegacyAllowedGood(String input, Map<String, String> expectedParams) throws IOException
+    {
+        testQueryBehaviorsLegacyAllowed(input, expectedParams, false);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryBehaviorsLegacyAllowedBad")
+    public void testQueryBehaviorsLegacyAllowedBad(String input, Map<String, String> expectedParams) throws IOException
+    {
+        testQueryBehaviorsLegacyAllowed(input, expectedParams, true);
+    }
+
+    public void testQueryBehaviorsLegacyAllowed(String input, Map<String, String> expectedParams, boolean badInput) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPORT);
@@ -474,7 +519,7 @@ public class UrlParameterDecoderTest
         boolean allowTruncatedEncoding = true;
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
 
-        decoder.parse(input);
+        assertEquals(badInput, decoder.parse(input), badInput ? "Has coding errors" : "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(expectedParams.size()));
 
@@ -584,7 +629,7 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(japaneseCharset);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
         String input = "name=%82%B1%82%F1%82%C9%82%BF%82%CD";
-        decoder.parse(input);
+        assertFalse(decoder.parse(input), "No coding errors");
 
         String helloInJapanese = "こんにちは";
 
@@ -614,12 +659,16 @@ public class UrlParameterDecoderTest
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
-        decoder.parse(query);
+        assertTrue(decoder.parse(query), "Has coding errors");
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
         assertThat("Value", field.getValue(), is(expectedValue));
     }
 
+    /**
+     * Tests of raw UTF-8 bytes (not pct-encoded) that arrive.
+     * These invalid bytes are automatically converted to replacement characters.
+     */
     public static Stream<Arguments> incompleteSequenceCases()
     {
         List<Arguments> cases = new ArrayList<>();
@@ -654,7 +703,7 @@ public class UrlParameterDecoderTest
     }
 
     /**
-     * Default UrlDecoder behavior with incomplete sequences.
+     * Default UrlParameterDecoder behavior with incomplete sequences, using String input.
      */
     @ParameterizedTest
     @MethodSource("incompleteSequenceCases")
@@ -664,8 +713,9 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
 
+        // When using new String(byte[], Charset) with invalid bytes, the UTF-8 replacement character is automatically applied.
         String s = new String(input, UTF_8);
-        decoder.parse(s);
+        assertFalse(decoder.parse(s), "No coding errors");
         assertThat("Field count", fields.getSize(), is(expected.size()));
         for (String expectedKey : expected.keySet())
         {
@@ -676,6 +726,9 @@ public class UrlParameterDecoderTest
         }
     }
 
+    /**
+     * Configured UrlParameterDecoder behavior (allowing all) with incomplete sequences, using String input.
+     */
     @ParameterizedTest
     @MethodSource("incompleteSequenceCases")
     public void testUtf8IncompleteSequenceAllowedAsString(byte[] input, Map<String, String> expected) throws Exception
@@ -684,8 +737,9 @@ public class UrlParameterDecoderTest
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
 
+        // When using new String(byte[], Charset) with invalid bytes, the UTF-8 replacement character is automatically applied.
         String s = new String(input, UTF_8);
-        decoder.parse(s);
+        assertFalse(decoder.parse(s), "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(expected.size()));
         for (String expectedKey : expected.keySet())
@@ -697,6 +751,9 @@ public class UrlParameterDecoderTest
         }
     }
 
+    /**
+     * Configured UrlParameterDecoder behavior (allowing all) with incomplete sequences, using InputStream input.
+     */
     @ParameterizedTest
     @MethodSource("incompleteSequenceCases")
     public void testUtf8IncompleteSequenceAllowedAsInputStream(byte[] input, Map<String, String> expected) throws Exception
@@ -707,7 +764,8 @@ public class UrlParameterDecoderTest
 
         try (InputStream is = new ByteArrayInputStream(input))
         {
-            decoder.parse(is, UTF_8);
+            // Internal conversion of raw bytes to char (for parsing) results in automatic UTF-8 replacement character use.
+            assertFalse(decoder.parse(is, UTF_8), "No coding errors");
 
             assertThat("Field count", fields.getSize(), is(expected.size()));
             for (String expectedKey : expected.keySet())

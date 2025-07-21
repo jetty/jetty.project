@@ -368,7 +368,7 @@ public class UrlEncoded
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8);
         try
         {
-            return decoder.parse(query, offset, length);
+            return !decoder.parse(query, offset, length);
         }
         catch (IOException e)
         {
