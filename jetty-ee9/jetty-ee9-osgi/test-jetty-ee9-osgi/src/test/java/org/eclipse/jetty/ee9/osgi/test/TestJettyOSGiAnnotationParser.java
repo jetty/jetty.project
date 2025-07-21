@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
-import org.eclipse.jetty.ee9.annotations.ClassInheritanceHandler;
+import org.eclipse.jetty.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -52,6 +52,7 @@ public class TestJettyOSGiAnnotationParser
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
         options.add(CoreOptions.junitBundles());
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);

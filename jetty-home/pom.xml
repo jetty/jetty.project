@@ -45,6 +45,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-coreapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
     </dependency>
     <dependency>
@@ -116,6 +120,11 @@
       <artifactId>jetty-start</artifactId>
       <version>${project.version}</version>
       <classifier>shaded</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-staticapp</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

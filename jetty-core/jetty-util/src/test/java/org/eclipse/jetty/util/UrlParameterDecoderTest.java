@@ -105,6 +105,62 @@ public class UrlParameterDecoderTest
         assertEquals("d", fields.getValue("c"));
     }
 
+    /**
+     * List of parsing behaviors from Browser {@code URLSearchParams} implementations.
+     * @see <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams">URLSearchParams</a>
+     */
+    public static Stream<Arguments> browserParsingCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        cases.add(Arguments.of("a=b&c=d", Map.of("a", List.of("b"), "c", List.of("d"))));
+        cases.add(Arguments.of("a=b?c=d", Map.of("a", List.of("b?c=d"))));
+        cases.add(Arguments.of("=", Map.of("", List.of(""))));
+        cases.add(Arguments.of("a=b&a=c&a=d", Map.of("a", List.of("b", "c", "d"))));
+        cases.add(Arguments.of("&", Map.of()));
+        cases.add(Arguments.of("&&&", Map.of()));
+        cases.add(Arguments.of("a=b&&&", Map.of("a", List.of("b"))));
+        cases.add(Arguments.of("&&&a=b", Map.of("a", List.of("b"))));
+        cases.add(Arguments.of("=&=", Map.of("", List.of("", ""))));
+        cases.add(Arguments.of("&=&", Map.of("", List.of(""))));
+        cases.add(Arguments.of("foo", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("foo&bar", Map.of("foo", List.of(""), "bar", List.of(""))));
+        cases.add(Arguments.of("foo=", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("foo=&", Map.of("foo", List.of(""))));
+        cases.add(Arguments.of("=foo", Map.of("", List.of("foo"))));
+        cases.add(Arguments.of("=foo&=bar", Map.of("", List.of("foo", "bar"))));
+        cases.add(Arguments.of("foo==", Map.of("foo", List.of("="))));
+        cases.add(Arguments.of("foo===", Map.of("foo", List.of("=="))));
+        cases.add(Arguments.of("a===b", Map.of("a", List.of("==b"))));
+        cases.add(Arguments.of("a=\"b\"", Map.of("a", List.of("\"b\""))));
+        cases.add(Arguments.of("\"a=b\"", Map.of("\"a", List.of("b\""))));
+        cases.add(Arguments.of("a=b& =foo", Map.of("a", List.of("b"), " ", List.of("foo"))));
+        cases.add(Arguments.of("===foo", Map.of("", List.of("==foo"))));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserParsingCases")
+    public void testBrowserParsingBehavior(String input, Map<String, List<String>> expectedParams) throws IOException
+    {
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        decoder.parse(input);
+
+        assertThat("Field count", fields.getSize(), is(expectedParams.size()));
+
+        for (String key : expectedParams.keySet())
+        {
+            Fields.Field field = fields.get(key);
+            String message = "Fields[%s]".formatted(key);
+            assertNotNull(field, message);
+            assertEquals(expectedParams.get(key), field.getValues(), message);
+        }
+    }
+
     @Test
     public void testManyPctEncoding()
         throws Exception

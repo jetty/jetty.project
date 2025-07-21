@@ -421,9 +421,9 @@ public class WebSocketOverHTTP2Test
 
         // Connect with HTTP/1.1 and verify version in the Session's UpgradeRequest.
         EventSocket wsEndPoint = new EventSocket();
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_1_1.asString());
-        Session session = wsClient.connect(wsEndPoint, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
+        Session session = wsClient.connect(wsEndPoint, upgradeRequest).get(5, TimeUnit.SECONDS);
         assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_1_1.asString()));
         assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_1_1.asString()));
 
@@ -435,9 +435,9 @@ public class WebSocketOverHTTP2Test
 
         // Connect with HTTP/2 and verify version in the Session's UpgradeRequest.
         wsEndPoint = new EventSocket();
-        upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest = new ClientUpgradeRequest(uri);
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
-        session = wsClient.connect(wsEndPoint, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
+        session = wsClient.connect(wsEndPoint, upgradeRequest).get(5, TimeUnit.SECONDS);
         assertThat(session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
         assertThat(wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("version: " + HttpVersion.HTTP_2.asString()));
 

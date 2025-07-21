@@ -25,6 +25,10 @@ public interface DemandChain
 {
     void demand();
 
+    /**
+     * Set the next {@link DemandChain} instance towards the transport side of the {@link DemandChain} pipeline.
+     * @param nextDemand the next link in the demand chain.
+     */
     default void setNextDemand(DemandChain nextDemand)
     {
     }

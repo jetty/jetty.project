@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The HTTP Upgrade to WebSocket Response
+ * The HTTP Upgrade to WebSocket Response.
  */
 public interface UpgradeResponse
 {

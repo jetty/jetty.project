@@ -100,13 +100,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-test-core-example-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>core-webapp</classifier>
-      <type>zip</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
@@ -273,6 +266,24 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- Using as ZIP to avoid having classes and dependencies live in test classloader -->
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-core-demo-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>core-webapp</classifier>
+      <type>zip</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- Using as ZIP to avoid having classes and dependencies live in test classloader -->
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-core-http2-client-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>core-webapp</classifier>
+      <type>zip</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <scope>test</scope>
@@ -409,25 +420,6 @@
               <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack</id>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <phase>process-test-resources</phase>
-            <configuration>
-              <ignorePermissions>true</ignorePermissions>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-home</artifactId>
-                  <type>zip</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${jetty.home}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
             </configuration>
           </execution>
           <execution>

@@ -39,8 +39,8 @@ public class SimpleEchoClient
             client.start();
 
             URI echoUri = new URI(destUri);
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
-            client.connect(socket, echoUri, request);
+            ClientUpgradeRequest request = new ClientUpgradeRequest(echoUri);
+            client.connect(socket, request);
             System.out.printf("Connecting to : %s%n", echoUri);
 
             // wait for closed socket connection.

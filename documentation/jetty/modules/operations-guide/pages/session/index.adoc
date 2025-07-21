@@ -702,7 +702,7 @@ You should be careful in the use of this property in clustered environments: if 
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
 ====
 
-IMPORTANT: Be aware that if your session attributes contain classes from inside your webapp (or Jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances.
+IMPORTANT: Be aware that if your session attributes contain classes from inside your web application (or Jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances.
 
 [[hazelcast-embedded]]
 === Embedded Hazelcast Clustering
@@ -754,7 +754,7 @@ You should be careful in the use of this property in clustered environments: if 
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
 ====
 
-IMPORTANT: If your session attributes contain classes from inside your webapp (or jetty classes) then you will need to put these classes onto the classpath of all of your hazelcast instances. In the case of embedded hazelcast, as it is started before your webapp, it will NOT have access to your webapp's classes - you will need to extract these classes and put them onto the jetty server's classpath.
+IMPORTANT: If your session attributes contain classes from inside your web application (or jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances. In the case of embedded Hazelcast, as it is started before your web application, it will NOT have access to your web application's classes - you will need to extract these classes and put them onto the jetty server's classpath.
 
 [[gcloud]]
 == Modules for Persistent HTTP Sessions: Google Cloud DataStore
@@ -848,7 +848,7 @@ Thorough consideration of the `maxIdleTime` of the session when setting the `sav
 jetty.session.gcloud.namespace::
 Optional.
 Sets the namespace for GCloud Datastore to use.
-If set, partitions the visibility of session data between webapps, which is helpful for multi-tenant deployments.
+If set, partitions the visibility of session data between web applications, which is helpful for multi-tenant deployments.
 More information can be found https://cloud.google.com/datastore/docs/concepts/multitenancy[here.]
 
 Configuration of the stored session object and its fields names-::
@@ -928,7 +928,7 @@ Whether the memcached system should generate heartbeats.
 
 === Minimizing Support for Sessions
 
-The standard support for webapps in Jetty will use sessions cached in memory, but not persisted/clustered, with a scavenge for expired sessions that occurs every 10 minutes.
+The standard support for web applications in Jetty will use sessions cached in memory, but not persisted/clustered, with a scavenge for expired sessions that occurs every 10 minutes.
 If you wish to pare back support for sessions because you know your app doesn't use them (or use JSPs that use them), then you can do the following:
 
 * enable the <<base,base sessions module>> and <<base,configure the scavenge interval>> to 0 to prevent scavenging

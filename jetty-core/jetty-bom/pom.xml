@@ -52,6 +52,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-coreapp</artifactId>
+        <version>12.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-deploy</artifactId>
         <version>12.1.0-SNAPSHOT</version>
       </dependency>
@@ -143,6 +148,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-start</artifactId>
+        <version>12.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-staticapp</artifactId>
         <version>12.1.0-SNAPSHOT</version>
       </dependency>
       <dependency>

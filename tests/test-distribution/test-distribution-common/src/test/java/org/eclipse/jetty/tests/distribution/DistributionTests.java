@@ -202,10 +202,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         String mods = String.join(",",
             "resources", "server", "http",
-            toEnvironment("webapp", env),
             toEnvironment("deploy", env),
             toEnvironment("apache-jsp", env),
-            toEnvironment("servlet", env),
             toEnvironment("quickstart", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
@@ -935,7 +933,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+                <Configure class="org.eclipse.jetty.coreapp.CoreAppContext">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
@@ -995,6 +993,95 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/test.txt");
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
+    public void testEEProxyModule(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        List<String> modules = List.of("http", toEnvironment("proxy", env), toEnvironment("deploy", env));
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Create a custom module for the ServerConnector that represents the backend server.
+            Path jettyBaseModules = jettyBase.resolve("modules");
+            Files.createDirectories(jettyBaseModules);
+            Path httpBackendModule = jettyBaseModules.resolve("http-backend.mod");
+            Files.writeString(httpBackendModule, """
+                [depend]
+                server
+                [xml]
+                etc/jetty-http-backend.xml
+                [ini-template]
+                # jetty.http.backend.port=9090
+                """, StandardOpenOption.CREATE);
+            Path jettyBaseEtc = jettyBase.resolve("etc");
+            Files.createDirectories(jettyBaseEtc);
+            Path httpBackendXML = jettyBaseEtc.resolve("jetty-http-backend.xml");
+            Files.writeString(httpBackendXML, """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+                <Configure id="Server" class="org.eclipse.jetty.server.Server">
+                  <Call name="addConnector">
+                    <Arg>
+                      <New class="org.eclipse.jetty.server.ServerConnector">
+                        <Arg name="server"><Ref refid="Server" /></Arg>
+                        <Arg name="acceptors" type="int">1</Arg>
+                        <Arg name="selectors" type="int">1</Arg>
+                        <Arg name="factories">
+                          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                            <Item>
+                              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                              </New>
+                            </Item>
+                          </Array>
+                        </Arg>
+                        <Set name="port"><Property name="jetty.http.backend.port" default="9090" /></Set>
+                        <Set name="name">backendConnector</Set>
+                      </New>
+                    </Arg>
+                  </Call>
+                </Configure>
+                """, StandardOpenOption.CREATE);
+
+            // Set up the backend application.
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "backend");
+            Path jettyBaseWebapps = jettyBase.resolve("webapps");
+            Files.writeString(jettyBaseWebapps.resolve("backend.properties"), "environment=" + env, StandardOpenOption.CREATE);
+
+            int proxyPort = Tester.freePort();
+            int backendPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(
+                "jetty.http.port=" + proxyPort,
+                "jetty.http.selectors=1",
+                "jetty.http.backend.port=" + backendPort,
+                "--module=http-backend",
+                "jetty.proxy.contextPath=/proxy",
+                "jetty.proxy.proxyTo=http://localhost:%d/backend".formatted(backendPort)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 5, TimeUnit.SECONDS), String.join(System.lineSeparator(), run2.getLogs()));
+
+                startHttpClient();
+                ContentResponse response = client.newRequest("localhost", proxyPort)
+                    .path("/proxy")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus(), String.join(System.lineSeparator(), run2.getLogs()));
+                assertThat(response.getContentAsString(), containsString("Hello World"));
             }
         }
     }
@@ -1344,9 +1431,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @Test
     public void testHTTP2ClientInCoreWebAppProvidedByServer() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,core-deploy"))
@@ -1356,18 +1445,11 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             String name = "test-webapp";
             Path webapps = distribution.getJettyBase().resolve("webapps");
-            Path webAppDirLib = webapps.resolve(name + ".d").resolve("lib");
-            Path webAppJar = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-http2-client-transport-provided-webapp:jar:" + jettyVersion);
-            Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
-            Files.writeString(webapps.resolve(name + ".xml"), """
-                <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
-                  <Set name="contextPath">/test</Set>
-                  <Set name="handler">
-                    <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />
-                  </Set>
-                </Configure>
+            Path webAppZip = distribution.resolveArtifact("org.eclipse.jetty.tests:jetty-core-http2-client-webapp:zip:core-webapp:" + jettyVersion);
+            Files.copy(webAppZip, webapps.resolve(name + ".jar"));
+
+            Files.writeString(webapps.resolve(name + ".properties"), """
+                jetty.deploy.contextPath=/test
                 """);
 
             int port = Tester.freePort();

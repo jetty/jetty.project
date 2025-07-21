@@ -15,99 +15,82 @@ package org.eclipse.jetty.websocket.core.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.FrameEntry;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Used to split large data frames into multiple frames below the maxFrameSize.
  * Control frames and dataFrames smaller than the maxFrameSize will be forwarded
- * directly to {@link #forwardFrame(Frame, Callback, boolean)}.
+ * directly to {@link #forwardFrame(OutgoingEntry)}.
  */
-public abstract class FragmentingFlusher extends TransformingFlusher
+public abstract class FragmentingFlusher extends WebSocketFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
-    private final Configuration configuration;
-    private FrameEntry current;
-    private ByteBuffer payload;
+    private final Configuration _configuration;
+    private ByteBuffer _payload;
 
     public FragmentingFlusher(Configuration configuration)
     {
-        this.configuration = configuration;
+        this._configuration = configuration;
     }
 
-    protected abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract void forwardFrame(OutgoingEntry entry);
 
     @Override
-    protected boolean onFrame(Frame frame, Callback callback, boolean batch)
+    protected boolean onFrame(OutgoingEntry entry, boolean first)
     {
-        long maxFrameSize = configuration.getMaxFrameSize();
-        if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
+        Frame frame = entry.getFrame();
+        long maxFrameSize = _configuration.getMaxFrameSize();
+        if (first)
         {
-            forwardFrame(frame, callback, batch);
-            return true;
+            if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
+            {
+                forwardFrame(entry);
+                return true;
+            }
+
+            _payload = frame.getPayload().slice();
         }
 
-        current = new FrameEntry(frame, callback, batch);
-        payload = frame.getPayload().slice();
-
-        boolean finished = fragment(callback, true);
-        if (finished)
-        {
-            current = null;
-            payload = null;
-        }
-        return finished;
-    }
-
-    @Override
-    protected boolean transform(Callback callback)
-    {
-        boolean finished = fragment(callback, false);
-        if (finished)
-        {
-            current = null;
-            payload = null;
-        }
-        return finished;
-    }
-
-    private boolean fragment(Callback callback, boolean first)
-    {
-        Frame frame = current.frame;
-        int remaining = payload.remaining();
-        long maxFrameSize = configuration.getMaxFrameSize();
+        int remaining = _payload.remaining();
         int fragmentSize = (int)Math.min(remaining, maxFrameSize);
-
-        boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-        Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
+        byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
+        Frame fragment = new Frame(opCode);
         boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
         fragment.setFin(frame.isFin() && finished);
 
         // If we don't need to fragment just forward with original payload.
         if (finished)
         {
-            fragment.setPayload(payload);
-            forwardFrame(fragment, callback, current.batch);
-            return true;
+            fragment.setPayload(_payload);
+            _payload = null;
+        }
+        else
+        {
+            // Slice the fragmented payload from the buffer.
+            int limit = _payload.limit();
+            int newLimit = _payload.position() + fragmentSize;
+            _payload.limit(newLimit);
+            ByteBuffer payloadFragment = _payload.slice();
+            _payload.limit(limit);
+            fragment.setPayload(payloadFragment);
+            _payload.position(newLimit);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Fragmented {}->{}", frame, fragment);
         }
 
-        // Slice the fragmented payload from the buffer.
-        int limit = payload.limit();
-        int newLimit = payload.position() + fragmentSize;
-        payload.limit(newLimit);
-        ByteBuffer payloadFragment = payload.slice();
-        payload.limit(limit);
-        fragment.setPayload(payloadFragment);
-        payload.position(newLimit);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Fragmented {}->{}", frame, fragment);
+        forwardFrame(new OutgoingEntry.Builder(entry).frame(fragment).build());
+        return finished;
+    }
 
-        forwardFrame(fragment, callback, current.batch);
-        return false;
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        super.onCompleteFailure(cause);
+        _payload = null;
     }
 }

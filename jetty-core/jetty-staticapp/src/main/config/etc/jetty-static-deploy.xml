@@ -1,0 +1,15 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the "static" environment deployment defaults          -->
+<!-- =============================================================== -->
+<Configure>
+  <Ref refid="deploymentScanner">
+    <Call name="configureEnvironment">
+      <Arg>static</Arg>
+      <Set name="defaultContextHandlerClassName">
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.staticapp.StaticAppContext" />
+      </Set>
+    </Call>
+  </Ref>
+</Configure>

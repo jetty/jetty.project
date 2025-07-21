@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * is available</li>
  * <li>{@link #responseHeader(HttpExchange, HttpField)}, when an HTTP field is available</li>
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
- * <li>{@link #responseSuccess(HttpExchange, Runnable)}, when the response is successful</li>
+ * <li>{@link #responseSuccess(Runnable)}, when the response is successful</li>
  * </ol>
  * At any time, subclasses may invoke {@link #responseFailure(Throwable, Promise)} to indicate that the response has failed
  * (for example, because of I/O exceptions).
@@ -302,7 +302,7 @@ public abstract class HttpReceiver implements Invocable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Interim response status {}, succeeding", response.getStatus());
                 // The response success event will be serialized and run after this event completes.
-                responseSuccess(exchange, this::onInterim);
+                responseSuccess(this::onInterim);
                 return;
             }
 
@@ -357,17 +357,18 @@ public abstract class HttpReceiver implements Invocable
      * This method takes care of notifying {@link Response.SuccessListener}s and possibly
      * {@link Response.CompleteListener}s (if the exchange is completed).
      *
-     * @param exchange the HTTP exchange
      * @param afterSuccessTask an optional task to invoke afterwards
      */
-    protected void responseSuccess(HttpExchange exchange, Runnable afterSuccessTask)
+    protected void responseSuccess(Runnable afterSuccessTask)
     {
+        HttpExchange exchange = getHttpExchange();
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking responseSuccess for {} on {}", exchange, this);
 
         // Mark atomically the response as completed, with respect
-        // to concurrency between response success and response failure.
-        if (!exchange.responseComplete(null))
+        // to concurrency between response success and response failure;
+        // exchange can be null if responseSuccess() has already been called.
+        if (exchange == null || !exchange.responseComplete(null))
             return;
 
         Runnable successTask = () ->
@@ -423,6 +424,8 @@ public abstract class HttpReceiver implements Invocable
         {
             // The response was already completed (either successfully
             // or with a failure) by a previous event, bail out.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Already failed on {}", this);
             promise.succeeded(false);
         }
     }

@@ -45,7 +45,6 @@ import org.apache.maven.project.MavenProject;
 import org.apache.tomcat.JarScanner;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -371,7 +370,7 @@ public class JspcMojo extends AbstractMojo
         throws Exception
     {
         List<String> fileNames = FileUtils.getFileNames(new File(webAppSourceDirectory), includes, excludes, false);
-        return StringUtils.join(fileNames.toArray(new String[0]), ",");
+        return String.join(",", fileNames);
     }
 
     /**

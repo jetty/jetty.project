@@ -18,6 +18,11 @@ import java.util.List;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
+/**
+ * Upgrade response used for websocket negotiation.
+ * <p>
+ * Allows setting of extensions and subprotocol without using headers directly.
+ */
 public interface ServerUpgradeResponse extends Response
 {
     String getAcceptedSubProtocol();

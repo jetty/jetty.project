@@ -20,12 +20,12 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.jndi.ContextFactory;
@@ -72,7 +72,7 @@ public class EnvConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp {}", context.getContextPath());
 
-        //check to see if an explicit file has been set,
+        //check to see if an explicit file has been set
         Resource jettyEnvXmlResource = (Resource)context.getAttribute(JETTY_ENV_XML);
         if (jettyEnvXmlResource == null)
         {
@@ -258,7 +258,7 @@ public class EnvConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-ee10-env.xml
+            //try to find jetty-eeXX-env.xml
             Resource xmlResource = webInf.resolve(JETTY_EE11_ENV_XML_FILENAME);
             if (!Resources.missing(xmlResource))
                 return xmlResource;

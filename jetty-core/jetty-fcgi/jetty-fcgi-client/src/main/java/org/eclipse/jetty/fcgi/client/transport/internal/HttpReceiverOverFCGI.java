@@ -85,6 +85,8 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         HttpConnectionOverFCGI httpConnection = getHttpConnection();
         boolean needFillInterest = httpConnection.parseAndFill(false);
         chunk = consumeChunk();
+        if (httpConnection.isComplete())
+            httpConnection.complete();
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
@@ -131,9 +133,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         chunk = Content.Chunk.EOF;
     }
 
-    void responseSuccess(HttpExchange exchange)
+    void responseSuccess()
     {
-        super.responseSuccess(exchange, this::receiveNext);
+        responseSuccess(this::receiveNext);
     }
 
     private void receiveNext()

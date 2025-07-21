@@ -24,7 +24,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.7</version>
+        <version>@commons.io.version@</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -96,6 +96,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>@maven.compiler.plugin.version@</version>
           <configuration>
+            <target>17</target>
+            <source>17</source>
             <release>17</release>
           </configuration>
         </plugin>

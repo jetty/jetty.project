@@ -162,30 +162,7 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); //.versionAsInProject().noStart());
-
-        /*
-         * Jetty 12 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
-         * To do that, we need to use slf4j-simple as the logging implementation. We make a simplelogger.properties
-         * file available so that jetty logging can be configured
-         */
-        // BEGIN - slf4j 1.7.x
-        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways) */
-
-        //TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
-        //simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
-        //simpleLoggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
-        //simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
-        //simpleLoggingPropertiesBundle.add(FragmentActivator.class);
-        //res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
-        //res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); // .versionAsInProject()
-
-        // END - slf4j 1.7.x
-
-        /*
-         * When running with slf4j >= 2.0.0, remove the slf4j simple logger above and uncomment the following lines
-         */
-        // BEGIN - slf4j 2.x
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
         loggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
@@ -193,7 +170,6 @@ public class TestOSGiUtil
         loggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
-        // END - slf4j 2.x
 
         String servletGroupId = System.getProperty("servlet.groupId", "org.eclipse.jetty.toolchain");
         String servletArtifactId = System.getProperty("servlet.artifactId", "jetty-jakarta-servlet-api");
@@ -216,8 +192,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.position").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.tracker").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.xml").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.repository").versionAsInProject());
+        //Do not remove the following line! Even though it is not needed for ee9, it is needed in ee8
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.equinox.http.service.api").versionAsInProject());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());

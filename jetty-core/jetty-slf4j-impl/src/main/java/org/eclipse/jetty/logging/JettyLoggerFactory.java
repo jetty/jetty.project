@@ -68,9 +68,23 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
      */
     public JettyLogger getJettyLogger(String name)
     {
+        return getJettyLogger(name, true);
+    }
+
+    /**
+     * Get a {@link JettyLogger} instance, creating if not yet existing.
+     *
+     * @param name the name of the logger
+     * @param create {@code true} if absent loggers should be created
+     * @return the JettyLogger instance
+     */
+    public JettyLogger getJettyLogger(String name, boolean create)
+    {
         if (name.equals(Logger.ROOT_LOGGER_NAME))
             return getRootLogger();
-        return loggerMap.computeIfAbsent(name, this::createLogger);
+        if (create)
+            return loggerMap.computeIfAbsent(name, this::createLogger);
+        return loggerMap.get(name);
     }
 
     /**

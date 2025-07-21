@@ -17,7 +17,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Serial;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -426,9 +425,6 @@ public class AsyncServletIOTest
 
     private static class AsyncIOServlet extends HttpServlet
     {
-        @Serial
-        private static final long serialVersionUID = -8161977157098646562L;
-
         public AsyncIOServlet()
         {
         }

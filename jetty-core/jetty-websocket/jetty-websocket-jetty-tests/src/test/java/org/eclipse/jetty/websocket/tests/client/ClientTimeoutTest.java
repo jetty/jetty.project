@@ -108,9 +108,9 @@ public class ClientTimeoutTest
     {
         EventSocket clientSocket = new EventSocket();
         long timeout = 1000;
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(WSURI.toWebsocket(server.getURI()));
         upgradeRequest.setTimeout(timeout, TimeUnit.MILLISECONDS);
-        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest);
+        Future<Session> connect = client.connect(clientSocket, upgradeRequest);
 
         ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
         assertThat(executionException.getCause(), instanceOf(UpgradeException.class));

@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageOutputStream;
@@ -40,6 +41,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     private final CoreSession coreSession;
     protected boolean batch = false;
     protected byte messageType = -1;
+    protected long messageWriteTimeout = -1;
 
     protected JakartaWebSocketRemoteEndpoint(JakartaWebSocketSession session, CoreSession coreSession)
     {
@@ -89,19 +91,16 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         coreSession.setIdleTimeout(Duration.ofMillis(ms));
     }
 
-    public long getWriteTimeout()
-    {
-        return coreSession.getWriteTimeout().toMillis();
-    }
-
-    public void setWriteTimeout(long ms)
-    {
-        coreSession.setWriteTimeout(Duration.ofMillis(ms));
-    }
-
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
+        sendFrame(new OutgoingEntry.Builder(frame, callback).batch(batch).messageTimeout(messageWriteTimeout).build());
+    }
+
+    @Override
+    public void sendFrame(OutgoingEntry entry)
+    {
+        Frame frame = entry.getFrame();
         if (frame.isDataFrame())
         {
             try
@@ -130,14 +129,14 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
             }
             catch (Throwable t)
             {
-                callback.failed(t);
+                entry.getCallback().failed(t);
                 return;
             }
         }
 
         try
         {
-            coreSession.sendFrame(frame, callback, batch);
+            coreSession.sendFrame(entry);
         }
         finally
         {

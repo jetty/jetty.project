@@ -424,7 +424,7 @@ public class DispatcherTest
             assertThat(response, containsString("forward"));
 
             response = _connector.getResponse("GET /context/forward/badparams?echo=badparams HTTP/1.0\n\n");
-            assertThat(response, containsString(" 500 "));
+            assertThat(response, containsString(" 400 "));
 
             response = _connector.getResponse("GET /context/forward/?echo=badclient&bad=%88%A4 HTTP/1.0\n\n");
             assertThat(response, containsString(" 400 "));
@@ -433,7 +433,7 @@ public class DispatcherTest
             assertThat(response, containsString(" 400 "));
 
             response = _connector.getResponse("GET /context/forward/badparams?echo=badclientandparam&bad=%88%A4 HTTP/1.0\n\n");
-            assertThat(response, containsString(" 500 "));
+            assertThat(response, containsString(" 400 "));
         }
     }
 

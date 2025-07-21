@@ -734,9 +734,13 @@ public class IO
     }
 
     /**
-     * <p>Convert an object to a {@link File} if possible.</p>
-     * @param fileObject A File, String, Path or null to be converted into a File
-     * @return A File representation of the passed argument or null.
+     * <p>
+     *     Convert an object to a {@link File} if possible.
+     * </p>
+     *
+     * @param fileObject A {@link File}, {@link Path}, {@link String} (supporting absolute, relative, partial, and other URI syntaxes), to be converted into a {@link File}.
+     *  {@code null} will result in a {@code null} return.
+     * @return A {@link File} representation of the passed argument or {@code null}.
      */
     public static File asFile(Object fileObject)
     {

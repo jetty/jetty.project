@@ -19,8 +19,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;

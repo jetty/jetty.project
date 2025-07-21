@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -48,6 +50,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -535,7 +538,7 @@ public class RequestTest
                 HEAD / HTTP/1.1
                 Host: tester
                 Connection: close
-                            
+                
                 """;
 
         HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponse(rawRequest));
@@ -708,6 +711,50 @@ public class RequestTest
     {
         UriCompliance uriCompliance = UriCompliance.LEGACY;
         testQueryExtractionBehavior(uriCompliance, inputQuery, expectedStatus, expectedKey, expectedValue);
+    }
+
+    @Test
+    public void testQueryCache() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Fields queries = Request.extractQueryParameters(request);
+                assertThat(Request.extractQueryParameters(request), sameInstance(queries));
+                assertThat(queries.getValue("a"), is("1"));
+
+                Request wrapperNoQuery = new Request.Wrapper(request);
+                assertThat(Request.extractQueryParameters(wrapperNoQuery), sameInstance(queries));
+
+                HttpURI uri = HttpURI.build(request.getHttpURI()).query("a=2");
+                Request wrapperQuery = new Request.Wrapper(request)
+                {
+                    @Override
+                    public HttpURI getHttpURI()
+                    {
+                        return uri;
+                    }
+                };
+
+                Fields queriesWrapped = Request.extractQueryParameters(wrapperQuery);
+
+                assertThat(queriesWrapped, not(sameInstance(queries)));
+                assertThat(queriesWrapped.getValue("a"), is("2"));
+
+                Fields queriesIso8859 = Request.extractQueryParameters(request, StandardCharsets.ISO_8859_1);
+                assertThat(queriesIso8859, not(sameInstance(queries)));
+                assertThat(queriesIso8859.getValue("a"), is("1"));
+
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("GET /foo?a=1 HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(200));
     }
 
     /**

@@ -31,13 +31,14 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.util.DemandChain;
-import org.eclipse.jetty.websocket.core.util.DemandingFlusher;
-import org.eclipse.jetty.websocket.core.util.TransformingFlusher;
+import org.eclipse.jetty.websocket.core.util.WebSocketDemander;
+import org.eclipse.jetty.websocket.core.util.WebSocketFlusher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +55,9 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     private static final int DEFAULT_BUF_SIZE = 8 * 1024;
 
     private final OutgoingFlusher outgoingFlusher;
-    private final IncomingFlusher incomingFlusher;
+    private final IncomingDemander incomingFlusher;
     private DeflaterPool.Entry deflaterHolder;
     private InflaterPool.Entry inflaterHolder;
-    private boolean incomingCompressed;
 
     private ExtensionConfig configRequested;
     private ExtensionConfig configNegotiated;
@@ -69,7 +69,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     public PerMessageDeflateExtension()
     {
         outgoingFlusher = new OutgoingFlusher();
-        incomingFlusher = new IncomingFlusher();
+        incomingFlusher = new IncomingDemander();
     }
 
     @Override
@@ -85,10 +85,10 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
         // Compressed frames may increase in size so we need the flusher to fragment them.
-        outgoingFlusher.sendFrame(frame, callback, batch);
+        outgoingFlusher.sendFrame(entry);
     }
 
     @Override
@@ -241,14 +241,14 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
+    protected void nextOutgoingFrame(OutgoingEntry entry)
     {
-        if (frame.isFin() && !outgoingContextTakeover)
+        if (entry.getFrame().isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
             releaseDeflater();
         }
-        super.nextOutgoingFrame(frame, callback, batch);
+        super.nextOutgoingFrame(entry);
     }
 
     @Override
@@ -263,54 +263,37 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         incomingFlusher.demand();
     }
 
-    private class OutgoingFlusher extends TransformingFlusher
+    private class OutgoingFlusher extends WebSocketFlusher
     {
-        private boolean _first;
-        private Frame _frame;
-        private boolean _batch;
-
         @Override
-        protected boolean onFrame(Frame frame, Callback callback, boolean batch)
+        protected boolean onFrame(OutgoingEntry entry, boolean first)
         {
-            if (frame.isControlFrame())
+            if (first)
             {
-                nextOutgoingFrame(frame, callback, batch);
-                return true;
+                if (entry.getFrame().isControlFrame())
+                {
+                    nextOutgoingFrame(entry);
+                    return true;
+                }
+
+                // Provide the frames payload as input to the Deflater.
+                getDeflater().setInput(entry.getFrame().getPayload().slice());
             }
 
-            _first = true;
-            _frame = frame;
-            _batch = batch;
-
-            // Provide the frames payload as input to the Deflater.
-            getDeflater().setInput(frame.getPayload().slice());
-            callback.succeeded();
-            return false;
-        }
-
-        @Override
-        protected boolean transform(Callback callback)
-        {
-            boolean finished = deflate(callback);
-            _first = false;
-
+            boolean finished = deflate(entry, first);
             if (finished)
-            {
-                _frame = null;
                 getDeflater().setInput(BufferUtil.EMPTY_BUFFER);
-            }
-
             return finished;
         }
 
-        private boolean deflate(Callback callback)
+        private boolean deflate(OutgoingEntry entry, boolean first)
         {
             // Get a buffer for the deflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? deflateBufferSize : (int)Math.min(maxFrameSize, deflateBufferSize);
             RetainableByteBuffer buffer = getByteBufferPool().acquire(bufferSize, false);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
-            callback = Callback.from(callback, buffer::release);
+            Callback callback = Callback.from(entry.getCallback(), buffer::release);
 
             // Fill up the buffer with a max length of bufferSize;
             boolean finished = false;
@@ -338,18 +321,19 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 }
             }
 
+            Frame frame = entry.getFrame();
             ByteBuffer payload = byteBuffer;
             if (payload.hasRemaining())
             {
                 // Handle tail bytes generated by SYNC_FLUSH.
-                if (finished && _frame.isFin() && endsWithTail(payload))
+                if (finished && frame.isFin() && endsWithTail(payload))
                 {
                     payload.limit(payload.limit() - TAIL_BYTES.length);
                     if (LOG.isDebugEnabled())
                         LOG.debug("payload (TAIL_DROP_FIN_ONLY) = {}", BufferUtil.toDetailString(payload));
                 }
             }
-            else if (_frame.isFin())
+            else if (frame.isFin())
             {
                 // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
                 // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
@@ -357,24 +341,28 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Compressed {}: payload:{}", _frame, payload.remaining());
+                LOG.debug("Compressed {}: payload:{}", frame, payload.remaining());
 
-            Frame chunk = new Frame(_first ? _frame.getOpCode() : OpCode.CONTINUATION);
-            chunk.setRsv1(_first && _frame.getOpCode() != OpCode.CONTINUATION);
+            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
+            chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
             chunk.setPayload(payload);
-            chunk.setFin(_frame.isFin() && finished);
+            chunk.setFin(frame.isFin() && finished);
 
-            nextOutgoingFrame(chunk, callback, _batch);
+            nextOutgoingFrame(new OutgoingEntry.Builder(entry)
+                .frame(chunk)
+                .callback(callback)
+                .build());
             return finished;
         }
     }
 
-    private class IncomingFlusher extends DemandingFlusher
+    private class IncomingDemander extends WebSocketDemander
     {
         private boolean _tailBytes;
+        private boolean _incomingCompressed;
         private AtomicReference<RetainableByteBuffer> _payloadRef;
 
-        public IncomingFlusher()
+        public IncomingDemander()
         {
             super(PerMessageDeflateExtension.this::nextIncomingFrame);
         }
@@ -396,7 +384,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 {
                     case OpCode.TEXT:
                     case OpCode.BINARY:
-                        incomingCompressed = frame.isRsv1();
+                        _incomingCompressed = frame.isRsv1();
                         break;
 
                     case OpCode.CONTINUATION:
@@ -408,7 +396,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                         break;
                 }
 
-                if (!incomingCompressed)
+                if (!_incomingCompressed)
                 {
                     emitFrame(frame, callback);
                     return true;
@@ -505,6 +493,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            super.onCompleteFailure(cause);
             releasePayload(_payloadRef);
         }
 

@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.logging;
 
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.slf4j.ILoggerFactory;
@@ -38,7 +39,6 @@ import org.slf4j.LoggerFactory;
  */
 public class StacklessLogging implements AutoCloseable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(StacklessLogging.class);
     private static final JettyLoggerFactory loggerFactory;
 
     static
@@ -59,7 +59,7 @@ public class StacklessLogging implements AutoCloseable
         loggerFactory = jettyLoggerFactory;
     }
 
-    private final Set<JettyLogger> squelched = new CopyOnWriteArraySet<>();
+    private final List<JettyLogger> squelched;
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {
@@ -86,27 +86,30 @@ public class StacklessLogging implements AutoCloseable
     public StacklessLogging(Logger... logs)
     {
         if (loggerFactory == null)
+        {
+            squelched = Collections.emptyList();
             return;
+        }
 
+        List<JettyLogger> stackless = new ArrayList<>();
         for (Logger log : logs)
         {
             if (log instanceof JettyLogger jettyLogger && !jettyLogger.isDebugEnabled())
-            {
-                if (!jettyLogger.isHideStacks())
-                {
-                    jettyLogger.setHideStacks(true);
-                    squelched.add(jettyLogger);
-                }
-            }
+                stackless.add(jettyLogger);
         }
+        squelched = List.copyOf(stackless);
+
+        JettyLogger.add(this);
     }
 
     @Override
     public void close()
     {
-        for (JettyLogger log : squelched)
-        {
-            log.setHideStacks(false);
-        }
+        JettyLogger.remove(this);
+    }
+
+    boolean isHiding(JettyLogger logger)
+    {
+        return squelched.contains(logger);
     }
 }

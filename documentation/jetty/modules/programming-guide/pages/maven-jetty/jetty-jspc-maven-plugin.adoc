@@ -165,14 +165,14 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
 </profiles>
 ----
 
-The following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the `web.xml` and your webapp assembled into a war:
+The following invocation would cause your code to be compiled, the JSPs to be compiled, the `<servlet>` and ``<servlet-mapping>``s inserted in the `web.xml` and your web application assembled into a `+*.war+` file:
 
 ----
 $ mvn -Dprod package
 ----
 
 [[jspc-overlay-precompile]]
-== Precompiling Jsps with Overlaid Wars
+== Precompiling JSPs with Overlaid Wars
 
 Precompiling jsps with an overlaid war requires a bit more configuration.
 This is because you need to separate the steps of unpacking the overlaid war and then repacking the final target war so the `jetty-{ee-current}-jspc-maven-plugin` has the opportunity to access the overlaid resources.

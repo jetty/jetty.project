@@ -21,10 +21,11 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.util.DemandChain;
-import org.eclipse.jetty.websocket.core.util.DemandingFlusher;
 import org.eclipse.jetty.websocket.core.util.FragmentingFlusher;
+import org.eclipse.jetty.websocket.core.util.WebSocketDemander;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
     private static final Logger LOG = LoggerFactory.getLogger(FragmentExtension.class);
 
     private final FragmentingFlusher outgoingFlusher;
-    private final DemandingFlusher incomingFlusher;
+    private final WebSocketDemander incomingFlusher;
     private final Configuration configuration = new Configuration.ConfigurationCustomizer();
 
     public FragmentExtension()
@@ -44,13 +45,13 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         outgoingFlusher = new FragmentingFlusher(configuration)
         {
             @Override
-            protected void forwardFrame(Frame frame, Callback callback, boolean batch)
+            protected void forwardFrame(OutgoingEntry entry)
             {
-                nextOutgoingFrame(frame, callback, batch);
+                nextOutgoingFrame(entry);
             }
         };
 
-        incomingFlusher = new FragmentingDemandingFlusher();
+        incomingFlusher = new FragmentingDemander();
     }
 
     @Override
@@ -78,9 +79,9 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
-        outgoingFlusher.sendFrame(frame, callback, batch);
+        outgoingFlusher.sendFrame(entry);
     }
 
     @Override
@@ -91,9 +92,11 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         configuration.setMaxFrameSize(maxLength);
     }
 
-    public class FragmentingDemandingFlusher extends DemandingFlusher
+    public class FragmentingDemander extends WebSocketDemander
     {
-        public FragmentingDemandingFlusher()
+        private ByteBuffer _payload;
+
+        public FragmentingDemander()
         {
             super(FragmentExtension.this::nextIncomingFrame);
         }
@@ -101,40 +104,41 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         @Override
         protected boolean handle(Frame frame, Callback callback, boolean first)
         {
+            long maxFrameSize = configuration.getMaxFrameSize();
             if (first)
             {
-                if (frame.isControlFrame())
+                if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
                 {
                     emitFrame(frame, callback);
                     return true;
                 }
+
+                _payload = frame.getPayload();
             }
 
-            ByteBuffer payload = frame.getPayload();
-            int remaining = payload.remaining();
-            long maxFrameSize = configuration.getMaxFrameSize();
+            int remaining = _payload.remaining();
             int fragmentSize = (int)Math.min(remaining, maxFrameSize);
-
-            boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
+            byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
+            Frame fragment = new Frame(opCode);
             boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
             fragment.setFin(frame.isFin() && finished);
 
             if (finished)
             {
                 // If finished we don't need to fragment, forward original payload.
-                fragment.setPayload(payload);
+                fragment.setPayload(_payload);
+                _payload = null;
             }
             else
             {
                 // Slice the fragmented payload from the buffer.
-                int limit = payload.limit();
-                int newLimit = payload.position() + fragmentSize;
-                payload.limit(newLimit);
-                ByteBuffer payloadFragment = payload.slice();
-                payload.limit(limit);
+                int limit = _payload.limit();
+                int newLimit = _payload.position() + fragmentSize;
+                _payload.limit(newLimit);
+                ByteBuffer payloadFragment = _payload.slice();
+                _payload.limit(limit);
                 fragment.setPayload(payloadFragment);
-                payload.position(newLimit);
+                _payload.position(newLimit);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fragmented {}->{}", frame, fragment);
             }
@@ -152,6 +156,13 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
 
             emitFrame(fragment, payloadCallback);
             return finished;
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            super.onCompleteFailure(cause);
+            _payload = null;
         }
     }
 }

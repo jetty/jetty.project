@@ -16,21 +16,41 @@ package org.eclipse.jetty.websocket.core.server;
 import java.util.List;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
+/**
+ * Upgrade request used for websocket negotiation.
+ * <p>
+ * Provides getters for things like the requested extensions and subprotocols so that the headers don't have to be parsed manually.
+ * <p>
+ * This should only be used during the websocket negotiation.
+ */
 public interface ServerUpgradeRequest extends Request
 {
+    /**
+     * @return The WebSocket components used for this upgrade request
+     */
     WebSocketComponents getWebSocketComponents();
 
-    void upgrade(Attributes attributes);
-
+    /**
+     * @return The extensions offered
+     */
     List<ExtensionConfig> getExtensions();
 
+    /**
+     * @return WebSocket protocol version from "Sec-WebSocket-Version" header
+     */
     String getProtocolVersion();
 
+    /**
+     * @return Get WebSocket negotiation offered sub protocols
+     */
     List<String> getSubProtocols();
 
+    /**
+     * @param subprotocol A sub protocol name
+     * @return True if the sub protocol was offered
+     */
     boolean hasSubProtocol(String subprotocol);
 }

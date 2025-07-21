@@ -34,5 +34,5 @@ lib/jetty-ee8-webapp-${jetty.version}.jar
 #jetty.webapp.addProtectedClasses+=,org.example.
 #jetty.webapp.addHiddenClasses+=,org.example.
 
-[ini]
-contextHandlerClass=org.eclipse.jetty.ee8.webapp.WebAppContext
+## Default ContextHandler class for ee8 environment deployments
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee8.webapp.WebAppContext

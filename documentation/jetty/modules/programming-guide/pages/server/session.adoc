@@ -395,10 +395,10 @@ As previously mentioned, it is strongly recommended that you extend the link:{ja
 
 Using one of the ``SessionCacheFactory``s will ensure that every time a `SessionManager` starts it will create a new instance of the corresponding type of `SessionCache`.
 
-But, what if you deploy multiple webapps, and for one of them, you don't want to use sessions?
-Or alternatively, you don't want to use sessions, but you have one webapp that now needs them?
+But, what if you deploy multiple web applications, and for one of them, you don't want to use sessions?
+Or alternatively, you don't want to use sessions, but you have one web application that now needs them?
 In that case, you can configure the `SessionCacheFactory` appropriate to the majority, and then specifically create the right type of `SessionCache` for the others.
-Here's an example where we configure the `DefaultSessionCacheFactory` to handle most webapps, but then specifically use a `NullSessionCache` for another:
+Here's an example where we configure the `DefaultSessionCacheFactory` to handle most web applications, but then specifically use a `NullSessionCache` for another:
 
 [,java,indent=0]
 ----

@@ -20,7 +20,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
  * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
  * payload. (eg: not UTF-8 in a text frame, or a unexpected data seen by an extension)
  *
- * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
+ * @see <a href="https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 public class BadPayloadException extends CloseException
 {

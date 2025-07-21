@@ -25,14 +25,16 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee10.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee10.servlet.ServletCoreResponse;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -218,27 +220,27 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
         };
 
-        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
+        Request coreRequest = ServletCoreRequest.wrap(request);
+        Response coreResponse = ServletCoreResponse.wrap(coreRequest, response, false);
 
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
 
         // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
         // are accessible when websocket-core calls back the Jetty WebSocket creator.
-        servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-        servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+        coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+        coreRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            boolean upgraded = webSocketMappings.upgrade(negotiator, servletContextRequest, servletContextResponse, callback, customizer);
+            boolean upgraded = webSocketMappings.upgrade(negotiator, coreRequest, coreResponse, callback, customizer);
             if (upgraded)
                 callback.block();
             return upgraded;
         }
         finally
         {
-            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            coreRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 

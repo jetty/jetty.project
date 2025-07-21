@@ -887,7 +887,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            List<String> names = new ArrayList<>(List.of(ERROR_METHOD, ERROR_REQUEST_URI, ERROR_QUERY_STRING, ERROR_STATUS_CODE, ERROR_MESSAGE));
+            List<String> names = new ArrayList<>(List.of(ERROR_METHOD, ERROR_REQUEST_URI, ERROR_QUERY_STRING, ERROR_STATUS_CODE, ERROR_MESSAGE, ERROR_SERVLET_NAME, ERROR_EXCEPTION, ERROR_EXCEPTION_TYPE));
             names.addAll(Collections.list(super.getAttributeNames()));
             return Collections.enumeration(names);
         }

@@ -33,4 +33,4 @@ Clustering::
 
 Performance::
 * xref:server/index.adoc#threadpool-virtual[Virtual Threads]
-* xref:quickstart/index.adoc[Faster Web Application Deployment]
+* xref:quickstart/index.adoc[Faster Jakarta EE Web Application Deployment]

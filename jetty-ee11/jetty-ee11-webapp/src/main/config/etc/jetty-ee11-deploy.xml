@@ -1,4 +1,4 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the "ee11" environment deployment defaults            -->
@@ -7,8 +7,8 @@
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>ee11</Arg>
-      <Set name="defaultContextHandlerClass">
-        <Property name="contextHandlerClass" default="org.eclipse.jetty.ee11.webapp.WebAppContext" />
+      <Set name="defaultContextHandlerClassName">
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.ee11.webapp.WebAppContext" />
       </Set>
       <Set name="defaultsDescriptor">
         <Property>

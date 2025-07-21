@@ -61,10 +61,10 @@ public class MessageHandlerTest
             private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
             @Override
-            public void sendFrame(Frame frame, Callback callback, boolean batch)
+            public void sendFrame(OutgoingEntry entry)
             {
-                frames.add(frame);
-                callback.succeeded();
+                frames.add(entry.getFrame());
+                entry.getCallback().succeeded();
             }
 
             @Override

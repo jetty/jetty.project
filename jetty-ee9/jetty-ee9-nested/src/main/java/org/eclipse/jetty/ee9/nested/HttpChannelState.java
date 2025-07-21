@@ -1019,6 +1019,10 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
 
+            // If abort() was already called, this is a no-op.
+            if (_requestState == RequestState.COMPLETED)
+                return;
+
             if (_requestState != RequestState.COMPLETING)
                 throw new IllegalStateException(this.getStatusStringLocked(), failure);
 

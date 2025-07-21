@@ -193,16 +193,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContext();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContextHandler();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContextHandler();
         return null;
     }
 
@@ -880,11 +880,13 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public ServletScopedContext getContext()
     {
-        return (ServletScopedContext)super.getContext();
+        if (super.getContext() instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext;
+        throw new IllegalStateException("Context is not ServletScopedContext");
     }
 
     /**
-     * Add a context event listeners.
+     * Add a context event listener.
      *
      * @param listener the event listener to add
      * @return true if the listener was added

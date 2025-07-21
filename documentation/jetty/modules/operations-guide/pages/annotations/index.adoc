@@ -13,23 +13,23 @@
 
 = Annotations
 
-Enable the `{ee-all}-annotations` module if your webapp - or any of its third party libraries - uses any of the following:
+Enable the `{ee-all}-annotations` module if your Jakarta EE web application -- or any of its third party libraries -- uses any of the following:
 
 * Annotations:
-** @Resource
-** @Resources
-** @PostConstruct
-** @PreDestroy
-** @DeclaredRoles
-** @RunAs
-** @MultipartConfig
-** @WebServlet
-** @WebFilter
-** @WebListener
-** @WebInitParam
-** @ServletSecurity, @HttpConstraint, @HttpMethodConstraint
-** @HandlesTypes
-* javax.servlet.ServletContainerInitializers or jakarta.servlet.ServletContainerInitializers
+** `@Resource`
+** `@Resources`
+** `@PostConstruct`
+** `@PreDestroy`
+** `@DeclaredRoles`
+** `@RunAs`
+** `@MultipartConfig`
+** `@WebServlet`
+** `@WebFilter`
+** `@WebListener`
+** `@WebInitParam`
+** `@ServletSecurity`, `@HttpConstraint`, `@HttpMethodConstraint`
+** `@HandlesTypes`
+* `javax.servlet.ServletContainerInitializer` or `jakarta.servlet.ServletContainerInitializer`
 * JSP
 
 
@@ -93,16 +93,16 @@ Here's an example from a context XML file that includes any jar whose name start
 Note that the order of the patterns defines the ordering of the scanning of the jars or class directories.
 
 [[og-web-inf-include-jar-pattern]]
-=== The webapp classpath
+=== The Jakarta EE Web Application Class-Path
 
 By default, Jetty will scan __all__ classes from `WEB-INF/classes` and _all_ jars from `WEB-INF/lib` according to the order, if any, established by absolute or relative ordering clauses in `web.xml`.
 
-If your webapp contains many jar files that you know do not contain any annotations, you can significantly speed up deployment by omitting them from scanning.
-However, be careful if your webapp uses a `ServletContainerInitializer` with a `@HandlesTypes` annotation that you don't exclude jars that contain classes matching the annotation.
+If your web application contains many jar files that you know do not contain any annotations, you can significantly speed up deployment by omitting them from scanning.
+However, be careful if your web application uses a `ServletContainerInitializer` with a `@HandlesTypes` annotation that you don't exclude jars that contain classes matching the annotation.
 
 Use the `org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern` context attribute to define a regular expression for jars and class directories to select for scanning.
 
-Here's an example of a context XML file that sets a pattern that matches any jar on the webapp's classpath that starts with `"spring-"`:
+Here's an example of a Jetty context XML file that sets a pattern that matches any jar on the web application's class-path that starts with `"spring-"`:
 
 [,xml,subs=attributes+]
 ----
@@ -133,10 +133,10 @@ There are several options to configure this:
 3.  Set the `System` property `org.eclipse.jetty.annotations.multiThreaded` to `false`
 
 Method 1 will only affect the current webapp.
-Method 2 will affect all webapps deployed to the same Server instance.
-Method 3 will affect all webapps deployed in the same JVM.
+Method 2 will affect all web applications deployed to the same `Server` instance.
+Method 3 will affect all web applications deployed in the same JVM.
 
-By default, Jetty will wait a maximum of 60 seconds for all of the scanning threads to complete.
+By default, Jetty will wait a maximum of 60 seconds for all the scanning threads to complete.
 You can set this to a higher or lower number of seconds by doing one of the following:
 
 1.  Set the context attribute `org.eclipse.jetty.annotations.maxWait`
@@ -144,15 +144,15 @@ You can set this to a higher or lower number of seconds by doing one of the foll
 3.  Set the `System` property `org.eclipse.jetty.annotations.maxWait`
 
 Method 1 will only affect the current webapp.
-Method 2 will affect all webapps deployed to the same Server instance.
-Method 3 will affect all webapps deployed in the same JVM.
+Method 2 will affect all web applications deployed to the same `Server` instance.
+Method 3 will affect all web applications deployed in the same JVM.
 
 [[scis]]
 == ServletContainerInitializers
 
-The `ServletContainerInitializer` class can exist in: the container's classpath, the webapp's `WEB-INF/classes` directory, the webapp's `WEB-INF/lib` jars, or any external extraClasspath that you have configured on the webapp.
+The `ServletContainerInitializer` class can exist in: the container's classpath, the web application's `WEB-INF/classes` directory, the webapp's `WEB-INF/lib` jars, or any external extraClasspath that you have configured on the webapp.
 
-The Jakarta Servlet Specification does not define any order in which a `ServletContainerInitializer` must be called when the webapp starts.
+The Jakarta Servlet Specification does not define any order in which a `ServletContainerInitializer` must be called when the web application starts.
 By default, Jetty will call them in the following order:
 
 1.  ServletContainerInitializers from the container's classpath

@@ -779,6 +779,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         try
         {
+            if (!Files.exists(dirA) || !Files.exists(dirB))
+                return false;
+
             return Files.isSameFile(dirA, dirB);
         }
         catch (IOException e)
@@ -1185,36 +1188,37 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
 
         /**
-         * The name of the class that this environment uses to create {@link ContextHandler}
-         * instances (supports a class that implements {@code java.util.function.Supplier<Handler>} as well).
+         * The default class that this environment uses to create {@link ContextHandler}
+         * instances (supports a class that implements {@code java.util.function.Supplier<ContextHandler>} as well).
          *
          * <p>
-         * This is the class used to create a ContextHandler for the environment before
-         * any XML files are loaded to configure the context.
+         * This is the fallback class used, if the context class itself isn't defined by
+         * the web application being deployed (such as from a Jetty XML).
          * </p>
          *
-         * @param classname the classname for this environment's context deployable.
-         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_ATTRIBUTE
+         * @param contextHandlerClass the default class for this environment's ContextHandler.
+         * @see StandardContextHandlerFactory#DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
-        public void setContextHandlerClass(String classname)
+        public void setDefaultContextHandlerClass(Class<? extends ContextHandler> contextHandlerClass)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_ATTRIBUTE, classname);
+            setDefaultContextHandlerClassName(contextHandlerClass.getName());
         }
 
         /**
          * The name of the default class that this environment uses to create {@link ContextHandler}
-         * instances (supports a class that implements {@code java.util.function.Supplier<Handler>} as well).
+         * instances (supports a class that implements {@code java.util.function.Supplier<ContextHandler>} as well).
          *
          * <p>
          * This is the fallback class used, if the context class itself isn't defined by
          * the web application being deployed. (such as from an XML definition)
          * </p>
-         * @param classname the default classname for this environment's context deployable.
-         * @see StandardContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE
+         *
+         * @param className the default class name for this environment's context deployable.
+         * @see StandardContextHandlerFactory#DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE
          */
-        public void setDefaultContextHandlerClass(String classname)
+        public void setDefaultContextHandlerClassName(String className)
         {
-            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT_ATTRIBUTE, classname);
+            _environment.setAttribute(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE, className);
         }
 
         /**

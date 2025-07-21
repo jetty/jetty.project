@@ -25,10 +25,9 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.DeploymentScanner.PathsApp;
+import org.eclipse.jetty.deploy.test.TestContextHandler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.StaticContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -374,15 +373,15 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
     {
         return Stream.of(
             // One environment only.
-            Arguments.of(List.of("core"), List.of(), "core"),
-            Arguments.of(List.of("core"), List.of("core"), "core"),
-            Arguments.of(List.of("core"), List.of("abc", "core"), "core"),
-            Arguments.of(List.of("core"), List.of("core", "abc"), "core"),
+            Arguments.of(List.of("test"), List.of(), "test"),
+            Arguments.of(List.of("test"), List.of("test"), "test"),
+            Arguments.of(List.of("test"), List.of("abc", "test"), "test"),
+            Arguments.of(List.of("test"), List.of("test", "abc"), "test"),
             // Many environments.
-            Arguments.of(List.of("abc", "core"), List.of(), "abc"),
-            Arguments.of(List.of("abc", "core"), List.of("abc"), "abc"),
-            Arguments.of(List.of("abc", "core"), List.of("core"), "core"),
-            Arguments.of(List.of("abc", "core"), List.of("core", "abc"), "core")
+            Arguments.of(List.of("abc", "test"), List.of(), "abc"),
+            Arguments.of(List.of("abc", "test"), List.of("abc"), "abc"),
+            Arguments.of(List.of("abc", "test"), List.of("test"), "test"),
+            Arguments.of(List.of("abc", "test"), List.of("test", "abc"), "test")
         );
     }
 
@@ -390,7 +389,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
     @MethodSource("environmentsOrder")
     public void testEnvironmentsOrder(List<String> environments, List<String> order, String expected)
     {
-        Environment.ensure("core", Environment.class);
+        Environment.ensure("test", Environment.class);
         Environment.ensure("abc", Environment.class);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(new Server());
@@ -434,9 +433,9 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             deploymentScanner.addWebappsDirectory(webapps);
             deploymentScanner.setEnvironmentsDirectory(environments);
 
-            Environment.ensure("static", ContextHandler.class);
-            DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("static");
-            coreConfig.setContextHandlerClass(StaticContextHandler.class.getName());
+            Environment.ensure("test", TestContextHandler.class);
+            DeploymentScanner.EnvironmentConfig testConfig = deploymentScanner.configureEnvironment("test");
+            testConfig.setDefaultContextHandlerClass(TestContextHandler.class);
 
             server.addBean(deploymentScanner);
             server.start();
@@ -447,9 +446,9 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             assertThat(dump, containsString("environmentsDir: " + environments));
             assertThat(dump, containsString("scanInterval: 0"));
             assertThat(dump, containsString("enabledEnvironments size=1"));
-            assertThat(dump, containsString(" +> static"));
+            assertThat(dump, containsString(" +> test"));
             assertThat(dump, containsString("environmentAttributes size=1"));
-            assertThat(dump, containsString("jetty.deploy.contextHandlerClass=org.eclipse.jetty.server.handler.StaticContextHandler"));
+            assertThat(dump, containsString(ContextHandlerFactory.DEFAULT_CONTEXT_HANDLER_CLASS_ATTRIBUTE + "=" + TestContextHandler.class.getName()));
         }
         finally
         {

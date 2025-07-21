@@ -83,9 +83,6 @@ public class DeploymentErrorTest
         // Empty contexts collections
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-        //Environment
-        ServletContextHandler.ENVIRONMENT.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee11.webapp.WebAppContext");
-
         // Deployment Manager
         deployer = new StandardDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
@@ -101,8 +98,9 @@ public class DeploymentErrorTest
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
+        assertNotNull(ServletContextHandler.ENVIRONMENT, "Expected environment does not exist");
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
-        envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
+        envConfig.setDefaultContextHandlerClass(WebAppContext.class);
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addWebappsDirectory(docroots);
         server.addBean(deploymentScanner);

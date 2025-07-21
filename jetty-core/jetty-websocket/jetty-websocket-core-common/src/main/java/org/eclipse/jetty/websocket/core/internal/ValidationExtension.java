@@ -20,6 +20,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -74,10 +75,11 @@ public class ValidationExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    public void sendFrame(OutgoingEntry entry)
     {
         try
         {
+            Frame frame = entry.getFrame();
             if (outgoingSequence != null)
                 outgoingSequence.check(frame.getOpCode(), frame.isFin());
 
@@ -88,11 +90,11 @@ public class ValidationExtension extends AbstractExtension
                 validateUTF8(frame, outgoingUtf8Validation, continuedOutOpCode);
 
             continuedOutOpCode = recordLastOpCode(frame, continuedOutOpCode);
-            nextOutgoingFrame(frame, callback, batch);
+            nextOutgoingFrame(entry);
         }
         catch (Throwable t)
         {
-            callback.failed(t);
+            entry.getCallback().failed(t);
         }
     }
 

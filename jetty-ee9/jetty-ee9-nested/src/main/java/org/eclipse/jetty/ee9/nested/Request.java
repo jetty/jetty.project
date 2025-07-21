@@ -2201,7 +2201,18 @@ public class Request implements HttpServletRequest
         if (newQuery != null)
         {
             newQueryParams = new Fields(true);
-            UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
+            try
+            {
+                UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
+            }
+            catch (BadMessageException e)
+            {
+                throw e;
+            }
+            catch (Throwable th)
+            {
+                throw new BadMessageException("Bad query encoding", th);
+            }
         }
 
         Fields oldQueryParams = _queryParameters;
@@ -2211,6 +2222,10 @@ public class Request implements HttpServletRequest
             try
             {
                 UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
+            }
+            catch (BadMessageException e)
+            {
+                throw e;
             }
             catch (Throwable th)
             {
