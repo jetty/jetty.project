@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -121,6 +122,7 @@ public class SessionContainer extends AbstractLifeCycle implements Connection.Li
         return Collections.unmodifiableSet(sessions);
     }
 
+    @ManagedAttribute("The number of HTTP/2 sessions in this container")
     public int getSize()
     {
         return sessions.size();
