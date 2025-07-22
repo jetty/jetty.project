@@ -153,6 +153,7 @@ class UrlParameterDecoder
 
     private boolean parseCompletely(CharIterator iter) throws IOException
     {
+        codingError = false;
         int i;
         while ((i = iter.next()) >= 0)
         {
