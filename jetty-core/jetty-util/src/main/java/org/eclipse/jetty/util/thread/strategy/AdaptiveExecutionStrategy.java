@@ -332,24 +332,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_CONSUME;
 
-                long biState = _state.get();
-                int state = AtomicBiInteger.getLo(biState);
-                int pending = AtomicBiInteger.getHi(biState);
-
-                // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-                if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, ++pending, IDLE))
-                {
-                    // If we can execute another producer, then we are EPC
-                    if (_tryExecutor.tryExecute(this))
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    // No reserved thread available, so lets try resuming production
-                    if (!_state.compareAndSet(pending, --pending, IDLE, PRODUCING))
-                    {
-                        // Somebody else is producing, so just reduce the pending count and continue with EPC
-                        _state.add(-1, 0);
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    }
-                }
+                if (tryExecuteProduceConsume())
+                    return SubStrategy.EXECUTE_PRODUCE_CONSUME;
 
                 // Otherwise use PIC: this producer thread consumes the task
                 // in non-blocking mode and then resumes production.
@@ -366,25 +350,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_EXECUTE_CONSUME;
 
-                // check if a pending producer is available.
-                long biState = _state.get();
-                int state = AtomicBiInteger.getLo(biState);
-                int pending = AtomicBiInteger.getHi(biState);
-
-                // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-                if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, ++pending, IDLE))
-                {
-                    // If we can execute another producer, then we are EPC
-                    if (_tryExecutor.tryExecute(this))
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    // No reserved thread available, so lets try resuming production
-                    if (!_state.compareAndSet(pending, --pending, IDLE, PRODUCING))
-                    {
-                        // Somebody else is producing, so just reduce the pending count and continue with EPC
-                        _state.add(-1, 0);
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    }
-                }
+                if (tryExecuteProduceConsume())
+                    return SubStrategy.EXECUTE_PRODUCE_CONSUME;
 
                 // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
                 return SubStrategy.PRODUCE_EXECUTE_CONSUME;
@@ -393,6 +360,48 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             default:
                 throw new IllegalStateException(String.format("taskType=%s %s", taskType, this));
         }
+    }
+
+    private boolean tryExecuteProduceConsume()
+    {
+        long biState = _state.get();
+        int state = AtomicBiInteger.getLo(biState);
+        int pending = AtomicBiInteger.getHi(biState);
+
+        // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
+        if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, pending + 1, IDLE))
+        {
+            // If we can execute another producer, then we are EPC
+            if (_tryExecutor.tryExecute(this))
+                return true;
+
+            // No reserved thread available, so we need to try to return to production
+            if (!_state.compareAndSet(pending + 1, pending, IDLE, PRODUCING))
+            {
+                // Simple state reversion didn't work, so do it properly
+                while (true)
+                {
+                    biState = _state.get();
+                    state = AtomicBiInteger.getLo(biState);
+                    pending = AtomicBiInteger.getHi(biState);
+                    switch (state)
+                    {
+                        case IDLE:
+                            if (!_state.compareAndSet(biState, pending - 1, PRODUCING))
+                                continue;
+                            // We are the producer again, so we are not EPC
+                            return false;
+                        case PRODUCING:
+                        case REPRODUCING:
+                            if (!_state.compareAndSet(biState, pending - 1, REPRODUCING))
+                                continue;
+                            // Somebody else is producing so we can be EPC after reducing pending count
+                            return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
