@@ -18,9 +18,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
@@ -134,7 +134,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final AtomicBiInteger _state = new AtomicBiInteger();
+    private final AtomicInteger _state = new AtomicInteger();
     private final ThreadLocal<Boolean> _inEPC = new ThreadLocal<>();
 
     /**
@@ -160,23 +160,15 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         boolean execute = false;
         loop: while (true)
         {
-            long biState = _state.get();
-            int state = AtomicBiInteger.getLo(biState);
-            int pending = AtomicBiInteger.getHi(biState);
-
+            int state = _state.get();
             switch (state)
             {
                 case IDLE:
-                    if (pending <= 0)
-                    {
-                        if (!_state.compareAndSet(biState, pending + 1, state))
-                            continue;
-                        execute = true;
-                    }
+                    execute = true;
                     break loop;
 
                 case PRODUCING:
-                    if (!_state.compareAndSet(biState, pending, REPRODUCING))
+                    if (!_state.compareAndSet(PRODUCING, REPRODUCING))
                         continue;
                     break loop;
 
@@ -216,19 +208,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         // check if the thread can produce.
         loop: while (true)
         {
-            long biState = _state.get();
-            int state = AtomicBiInteger.getLo(biState);
-            int pending = AtomicBiInteger.getHi(biState);
-
-            // If the calling thread was the pending producer, there is no longer one pending.
-            if (wasPending)
-                pending--;
+            int state = _state.get();
 
             switch (state)
             {
                 case IDLE:
                     // The strategy was IDLE, so this thread can become the producer.
-                    if (!_state.compareAndSet(biState, pending, PRODUCING))
+                    if (!_state.compareAndSet(state, PRODUCING))
                         continue;
                     break loop;
 
@@ -236,18 +222,18 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     // The strategy is already producing, so another thread must be the producer.
                     // However, it may be just about to stop being the producer so we set the
                     // REPRODUCING state to force it to produce at least once more.
-                    if (!_state.compareAndSet(biState, pending, REPRODUCING))
+                    if (!_state.compareAndSet(state, REPRODUCING))
                         continue;
                     return;
 
                 case REPRODUCING:
                     // Another thread is already producing and will already try again to produce.
-                    if (!_state.compareAndSet(biState, pending, state))
+                    if (!_state.compareAndSet(state, state))
                         continue;
                     return;
 
                 default:
-                    throw new IllegalStateException(toString(biState));
+                    throw new IllegalStateException(toString(state));
             }
         }
 
@@ -268,27 +254,25 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     // determine if we should keep producing.
                     while (true)
                     {
-                        long biState = _state.get();
-                        int state = AtomicBiInteger.getLo(biState);
-                        int pending = AtomicBiInteger.getHi(biState);
+                        int state = _state.get();
 
                         switch (state)
                         {
                             case PRODUCING:
                                 // The calling thread was the only producer, so it is now IDLE and we stop producing.
-                                if (!_state.compareAndSet(biState, pending, IDLE))
+                                if (!_state.compareAndSet(state, IDLE))
                                     continue;
                                 return;
 
                             case REPRODUCING:
                                 // Another thread may have queued a task and tried to produce
                                 // so the calling thread should continue to produce.
-                                if (!_state.compareAndSet(biState, pending, PRODUCING))
+                                if (!_state.compareAndSet(state, PRODUCING))
                                     continue;
                                 continue running;
 
                             default:
-                                throw new IllegalStateException(toString(biState));
+                                throw new IllegalStateException(toString(state));
                         }
                     }
                 }
@@ -364,36 +348,32 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private boolean tryExecuteProduceConsume()
     {
-        long biState = _state.get();
-        int state = AtomicBiInteger.getLo(biState);
-        int pending = AtomicBiInteger.getHi(biState);
+        int state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, pending + 1, IDLE))
+        if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(state, IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
                 return true;
 
             // No reserved thread available, so we need to try to return to production
-            if (!_state.compareAndSet(pending + 1, pending, IDLE, PRODUCING))
+            if (!_state.compareAndSet(IDLE, PRODUCING))
             {
                 // Simple state reversion didn't work, so do it properly
                 while (true)
                 {
-                    biState = _state.get();
-                    state = AtomicBiInteger.getLo(biState);
-                    pending = AtomicBiInteger.getHi(biState);
+                    state = _state.get();
                     switch (state)
                     {
                         case IDLE:
-                            if (!_state.compareAndSet(biState, pending - 1, PRODUCING))
+                            if (!_state.compareAndSet(state, PRODUCING))
                                 continue;
                             // We are the producer again, so we are not EPC
                             return false;
                         case PRODUCING:
                         case REPRODUCING:
-                            if (!_state.compareAndSet(biState, pending - 1, REPRODUCING))
+                            if (!_state.compareAndSet(state, REPRODUCING))
                                 continue;
                             // Somebody else is producing so we can be EPC after reducing pending count
                             return true;
@@ -442,16 +422,14 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 // Race the pending producer to produce again.
                 while (true)
                 {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
+                    int state = _state.get();
 
                     if (state == IDLE)
                     {
                         // We beat the pending producer, so we will become the producer instead.
                         // The pending produce will become a noop if it arrives whilst we are producing,
                         // or it may take over if we subsequently do another EPC consumption.
-                        if (!_state.compareAndSet(biState, pending, PRODUCING))
+                        if (!_state.compareAndSet(state, PRODUCING))
                             continue;
                         return true;
                     }
@@ -577,7 +555,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        return _state.getLo() == IDLE;
+        return _state.get() == IDLE;
     }
 
     @ManagedOperation(value = "resets the task counts", impact = "ACTION")
@@ -595,11 +573,11 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return toString(_state.get());
     }
 
-    public String toString(long biState)
+    public String toString(int state)
     {
         StringBuilder builder = new StringBuilder();
         getString(builder);
-        getState(builder, biState);
+        getState(builder, state);
         return builder.toString();
     }
 
@@ -613,10 +591,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         builder.append('/');
     }
 
-    private void getState(StringBuilder builder, long biState)
+    private void getState(StringBuilder builder, int state)
     {
-        int state = AtomicBiInteger.getLo(biState);
-        int pending = AtomicBiInteger.getHi(biState);
         builder.append(
             switch (state)
             {
@@ -625,8 +601,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 case REPRODUCING -> "REPRODUCING";
                 default -> "UNKNOWN(%d)".formatted(state);
             });
-        builder.append("/p=");
-        builder.append(pending);
         builder.append('/');
         builder.append(_tryExecutor);
         builder.append("[pc=");
