@@ -39,6 +39,7 @@ class UrlParameterDecoder
     private String name;
     private int keyCount;
     private int charCount;
+    private boolean codingError = false;
 
     public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder)
     {
@@ -152,6 +153,7 @@ class UrlParameterDecoder
 
     private boolean parseCompletely(CharIterator iter) throws IOException
     {
+        codingError = false;
         int i;
         while ((i = iter.next()) >= 0)
         {
@@ -164,7 +166,7 @@ class UrlParameterDecoder
         }
 
         complete();
-        return builder.hasCodingErrors();
+        return codingError;
     }
 
     /**
@@ -223,6 +225,7 @@ class UrlParameterDecoder
                 }
                 catch (NumberFormatException e)
                 {
+                    codingError = true;
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
                         throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)lo));
@@ -273,12 +276,14 @@ class UrlParameterDecoder
     {
         if (builder.replaceIncomplete())
         {
+            codingError = true;
             if (!allowBadEncoding || !allowBadPercent)
                 throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)0));
             return false;
         }
         else if (allowBadPercent)
         {
+            codingError = true;
             builder.append('%');
             if (hi != -1)
                 builder.append((char)hi);
@@ -286,6 +291,7 @@ class UrlParameterDecoder
         }
         else
         {
+            codingError = true;
             throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)0));
         }
     }
@@ -295,6 +301,9 @@ class UrlParameterDecoder
         buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
+    /**
+     * Finish up any remaining character sequences.
+     */
     private void complete() throws CharacterCodingException
     {
         if (name != null)
@@ -320,22 +329,26 @@ class UrlParameterDecoder
         if (!allowBadEncoding && !allowBadPercent && !allowTruncatedEncoding)
         {
             String result = builder.build(false);
+            codingError |= builder.hasCodingErrors();
             builder.reset();
             return result;
         }
 
-        boolean codingError = builder.hasCodingErrors();
+        codingError |= builder.hasCodingErrors();
         if (codingError && !allowBadEncoding)
         {
             return builder.build(false);
         }
 
-        if (builder.replaceIncomplete() && !allowTruncatedEncoding)
+        boolean replaced = builder.replaceIncomplete();
+        codingError |= replaced;
+        if (replaced && !allowTruncatedEncoding)
         {
             return builder.build(false);
         }
 
         String result = builder.build(true);
+        codingError |= builder.hasCodingErrors();
         builder.reset();
         return result;
     }

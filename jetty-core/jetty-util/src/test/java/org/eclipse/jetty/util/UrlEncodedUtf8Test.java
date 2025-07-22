@@ -24,6 +24,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlEncodedUtf8Test
 {
@@ -45,7 +47,28 @@ public class UrlEncodedUtf8Test
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
         Fields fields = new Fields();
-        UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true, true, true);
+        boolean ret = UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true, true, true);
+        assertFalse(ret, "decodeUtf8To should have returned false to indicate a bad utf-8 encoded value");
+        Fields.Field field = fields.get(expectedName);
+        assertThat("Name exists", field, notNullValue());
+        assertThat("Value", field.getValue(), is(expectedValue));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
+        textBlock = """
+            # query         | expectedName | expectedValue
+            a=good          | a            | good
+            b=go%2fod       | b            | go/od
+            c=quot%22       | c            | quot"
+            d=fo o          | d            | fo o
+            e=%25TOK%25     | e            | %TOK%
+            """)
+    public void testDecodeValid(String query, String expectedName, String expectedValue)
+    {
+        Fields fields = new Fields();
+        boolean ret = UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, false, false, false);
+        assertTrue(ret, "decodeUtf8To should have returned true to indicate a good utf-8 encoded value");
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
         assertThat("Value", field.getValue(), is(expectedValue));
