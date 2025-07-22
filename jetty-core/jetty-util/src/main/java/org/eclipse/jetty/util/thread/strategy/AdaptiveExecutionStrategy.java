@@ -135,6 +135,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
     private final AtomicBiInteger _state = new AtomicBiInteger();
+    private final ThreadLocal<Boolean> _inEPC = new ThreadLocal<>();
 
     /**
      * @param producer The producer of tasks to be consumed.
@@ -331,33 +332,23 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_CONSUME;
 
-                // check if a pending producer is available.
-                boolean tryExecuted = false;
-                while (true)
+                long biState = _state.get();
+                int state = AtomicBiInteger.getLo(biState);
+                int pending = AtomicBiInteger.getHi(biState);
+
+                // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
+                if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, ++pending, IDLE))
                 {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
-
-                    // If a pending producer is available or one can be started
-                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
+                    // If we can execute another producer, then we are EPC
+                    if (_tryExecutor.tryExecute(this))
+                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
+                    // No reserved thread available, so lets try resuming production
+                    if (!_state.compareAndSet(pending, --pending, IDLE, PRODUCING))
                     {
-                        tryExecuted = true;
-                        pending++;
-                    }
-
-                    if (pending > 0)
-                    {
-                        // Use EPC: this producer thread directly consumes the task, which may block
-                        // and then races with the pending producer to resume production.
-                        if (!_state.compareAndSet(biState, pending, IDLE))
-                            continue;
+                        // Somebody else is producing, so just reduce the pending count and continue with EPC
+                        _state.add(-1, 0);
                         return SubStrategy.EXECUTE_PRODUCE_CONSUME;
                     }
-
-                    if (!_state.compareAndSet(biState, pending, state))
-                        continue;
-                    break;
                 }
 
                 // Otherwise use PIC: this producer thread consumes the task
@@ -376,36 +367,27 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     return SubStrategy.PRODUCE_EXECUTE_CONSUME;
 
                 // check if a pending producer is available.
-                boolean tryExecuted = false;
-                while (true)
+                long biState = _state.get();
+                int state = AtomicBiInteger.getLo(biState);
+                int pending = AtomicBiInteger.getHi(biState);
+
+                // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
+                if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(biState, ++pending, IDLE))
                 {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
-
-                    // If a pending producer is available or one can be started
-                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
+                    // If we can execute another producer, then we are EPC
+                    if (_tryExecutor.tryExecute(this))
+                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
+                    // No reserved thread available, so lets try resuming production
+                    if (!_state.compareAndSet(pending, --pending, IDLE, PRODUCING))
                     {
-                        tryExecuted = true;
-                        pending++;
-                    }
-
-                    // If a pending producer is available or one can be started
-                    if (pending > 0)
-                    {
-                        // use EPC: This producer thread directly consumes the task, which may block
-                        // and then races with the pending producer to resume production.
-                        if (!_state.compareAndSet(biState, pending, IDLE))
-                            continue;
+                        // Somebody else is producing, so just reduce the pending count and continue with EPC
+                        _state.add(-1, 0);
                         return SubStrategy.EXECUTE_PRODUCE_CONSUME;
                     }
-
-                    if (!_state.compareAndSet(biState, pending, state))
-                        continue;
-
-                    // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
-                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
                 }
+
+                // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
+                return SubStrategy.PRODUCE_EXECUTE_CONSUME;
             }
 
             default:
@@ -444,7 +426,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
             case EXECUTE_PRODUCE_CONSUME:
                 _epcMode.increment();
+                _inEPC.set(true);
                 runTask(task);
+                _inEPC.set(false);
 
                 // Race the pending producer to produce again.
                 while (true)
