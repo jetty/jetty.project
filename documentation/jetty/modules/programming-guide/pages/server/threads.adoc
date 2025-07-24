@@ -1,0 +1,119 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Server Threading Architecture
+
+As explained in the general xref:arch/threads.adoc[Jetty threading architecture], web applications can specify the `InvocationType` of the Jetty implementation tasks that invoke web application code.
+
+There are two main Jetty implementation tasks that invoke web application code:
+
+* The task that invokes the `Handler` tree, detailed <<invocation-type-handler,here>>.
+* The task that invokes the `Request` demand callback, detailed <<invocation-type-demand,here>>.
+
+[[invocation-type-handler]]
+== `Handler` Tree `InvocationType`
+
+The `InvocationType` of the task that invokes the `Handler` tree is determined by the _structure_ of the `Handler` tree, and defines the `InvocationType` with which HTTP request are processed.
+
+As explained in xref:server/http.adoc#request-processing[this section], the `Handler` tree starts at the `Server` instance.
+
+In a simple `Handler` tree, the `Server` wraps a `ContextHandler` instance, that wraps an application code `Handler`, for example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=simpleHandlerTreeInvocationType]
+----
+<1> Specifies that the `ShopHandler.handle(\...)` implementation is `NON_BLOCKING`.
+
+The correspondent structure is the following:
+
+[,screen]
+----
+Server
+└── ContextHandler /shop
+    └── ShopHandler
+----
+
+Both `Server` and `ContextHandler` extend from `Handler.Wrapper`, which reports the same `InvocationType` as its child `Handler`.
+`ShopHandler` specifies its own `InvocationType` to be `NON_BLOCKING`, so the whole `Handler` tree is `NON_BLOCKING`.
+
+A more complex `Handler` tree is one that uses xref:server/http.adoc#handler-use-context-collection[`ContextHandlerCollection`], for example:
+
+[,screen]
+----
+Server
+└── ContextHandlerCollection
+    ├── ContextHandler /shop
+    │   └── ShopHandler
+    └── ContextHandler /api
+        └── RESTHandler
+----
+
+Another more complex `Handler` tree is one that uses xref:server/http.adoc#handler-use-path-mappings[`PathMappingsHandler`], for example:
+
+[,screen]
+----
+Server
+└── ContextHandler /shop
+    └── PathMappingsHandler
+        ├── CatalogHandler  /catalog/*
+        └── CheckoutHandler /checkout/*
+----
+
+Both `ContextHandlerCollection` and `PathMappingsHandler` extend from `Handler.Container` that calculates the `InvocationType` combining the ``InvocationType``s of all the children ``Handler``s (see link:{javadoc-url}/org/eclipse/jetty/util/thread/Invocable.html#combine(org.eclipse.jetty.util.thread.Invocable.InvocationType,org.eclipse.jetty.util.thread.Invocable.InvocationType)[Invocable.combine(InvocationType, InvocationType)]).
+
+When all the children ``Handler``s are `NON_BLOCKING`, then the `Handler.Container` is also `NON_BLOCKING`.
+Otherwise, if one of the children is `BLOCKING`, then the `Handler.Container` is also `BLOCKING`.
+
+=== `WebSocketUpgradeHandler` `InvocationType`
+xref:server/websocket.adoc#jetty[`WebSocketUpgradeHandler`] is a special case of `Handler.Wrapper` because it combines the `InvocationType` of the child `Handler` (that processes HTTP requests) with the `InvocationType` of the `ServerWebSocketContainer` (that processes WebSocket messages).
+
+WebSocket applications should set the `InvocationType` of the `ServerWebSocketContainer` to match whether xref:server/websocket.adoc#jetty-endpoints[WebSocket EndPoints] have been implemented in a blocking or non-blocking way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=webSocketInvocationType]
+----
+<1> Setting the `InvocationType` for the `ServerWebSocketContainer`.
+<2> Setting the `InvocationType` for the leaf HTTP `Handler`.
+
+In the example above, the `Handler` tree is the following:
+
+[,screen]
+----
+Server
+└── ContextHandler /ws
+    └── WebSocketUpgradeHandler
+        └── Handler.Abstract
+----
+
+[NOTE]
+====
+HTTP requests that flow through the `WebSocketUpgradeHandler` are influenced by the `InvocationType` of the `WebSocketUpgradeHandler`, even if `WebSocketUpgradeHandler` just forwards them to its child `Handler`.
+====
+
+[[invocation-type-demand]]
+== `Request` Demand `InvocationType`
+
+The `InvocationType` of the task that invokes the xref:arch/io.adoc#content-source[`Request`] demand callback is determined from the demand callback object passed to link:{javadoc-url}/org/eclipse/jetty/server/Request.html#demand(java.lang.Runnable)[`Request.demand(Runnable)`], and defines the `InvocationType` with which the demand callback is invoked.
+
+Rather than passing a simple `Runnable` or a lambda expression (for which the `InvocationType` is assumed to be `BLOCKING`), you can pass an `Invocable.Task`, that implements both `Invocable` (to specify the `InvocationType`) and `Runnable` (to specify the demand callback).
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=demandInvocationType]
+----
+<1> Specifies the ``Handler``'s `InvocationType` for HTTP request processing.
+<2> Specifies the demand callback to be an `Invocable.Task` with `InvocationType` `NON_BLOCKING`.

@@ -17,8 +17,10 @@ Writing a performant client or server is difficult, because it should:
 
 * Scale well with the number of processors.
 * Be efficient at using processor caches to avoid https://en.wikipedia.org/wiki/Parallel_slowdown[parallel slowdown].
-* Support multiple network protocols that may have very different requirements; for example, multiplexed protocols such as HTTP/2 introduce new challenges that are not present in non-multiplexed protocols such as HTTP/1.1.
-* Support different application threading models; for example, if a Jetty server invokes server-side application code that is allowed to call blocking APIs, then the Jetty server should not be affected by how long the blocking API call takes, and should be able to process other connections or other requests in a timely fashion.
+* Support multiple network protocols that may have very different requirements. +
+For example, multiplexed protocols such as HTTP/2 introduce new challenges that are not present in non-multiplexed protocols such as HTTP/1.1.
+* Support different application threading models. +
+For example, when a Jetty server invokes application code that calls blocking APIs, the Jetty server should not be affected by how long the blocking API calls take, and must process other connections or other requests in a timely fashion.
 
 [[execution-strategy]]
 == Execution Strategies
@@ -30,7 +32,10 @@ For example, Jetty produces (among others) these tasks:
 * A task that wraps a NIO selection event, see the xref:arch/io.adoc[Jetty I/O architecture].
 * A task that wraps the invocation of application code that may block (for example, the invocation of a Servlet to handle an HTTP request).
 
-A task is typically a `Runnable` object that may implement `org.eclipse.jetty.util.thread.Invocable` to indicate the behavior of the task (in particular, whether the task may block or not).
+A task is typically a `Runnable` object that may implement `org.eclipse.jetty.util.thread.Invocable`.
+The `Invocable` interface contains a single method that returns the `Invocable.InvocationType` of the task, that indicates the behavior of the task (in particular, whether the task may block or not).
+
+Applications can influence the behavior of the tasks by properly configuring Jetty components, as explained in xref:server/threads.adoc[this section] for the server-side and in xref:client/threads.adoc[this section] for the client-side.
 
 Once a task has been produced, it may be consumed using these modes:
 
@@ -40,7 +45,7 @@ Once a task has been produced, it may be consumed using these modes:
 
 [[execution-strategy-pc]]
 === Produce-Consume
-In the `Produce-Consume` mode, the producer thread loops to produce a task that is run directly by the `Producer Thread`.
+In the `Produce-Consume` mode, the `Producer Thread` loops to produce a task that is run directly by the `Producer Thread`.
 
 [plantuml]
 ----
@@ -63,9 +68,11 @@ If the task is a NIO selection event, then this mode is the thread-per-selector 
 
 This mode should only be used if the produced task is known to never block, or if the system tolerates well (or does not care about) head-of-line blocking.
 
+This mode is equivalent to the "selector loop" or "event loop" models typical of non-blocking I/O frameworks such as link:https://nodejs.org/[NodeJS], link:https://netty.io/[Netty] and others.
+
 [[execution-strategy-pec]]
 === Produce-Execute-Consume
-In the `Produce-Execute-Consume` mode, the `Producer Thread` loops to produce tasks that are submitted to a `java.util.concurrent.Executor` to be run by ``Worker Thread``s different from the `Producer Thread`.
+In the `Produce-Execute-Consume` mode, the `Producer Thread` loops to produce tasks that are submitted to a `java.util.concurrent.Executor` to be run by a `Worker Thread` different from the `Producer Thread`.
 
 [plantuml]
 ----
@@ -103,12 +110,12 @@ The `Executor` implementation typically adds the task to a queue, and dequeues t
 This mode solves the head-of-line blocking discussed in the <<execution-strategy-pc,`Produce-Consume` section>>, but suffers from other issues:
 
 * It is not CPU core cache efficient, as the data available to the producer thread will need to be accessed by another thread that likely is going to run on a CPU core that will not have that data in its caches.
-* If the tasks take time to be run, the `Executor` queue may grow indefinitely.
-* A small latency is added to every task: the time it waits in the `Executor` queue.
+* The `Executor` queue may grow indefinitely, if there are fewer threads than tasks, and the tasks take time to run.
+* A small latency is added to the processing of every task: the time it waits in the `Executor` queue.
 
 [[execution-strategy-epc]]
 === Execute-Produce-Consume
-In the `Execute-Produce-Consume` mode, the producer thread `Thread 1` loops to produce a task, then submits one internal task to an `Executor` to take over production on thread `Thread 2`, and then runs the task in `Thread 1`, and so on.
+In the `Execute-Produce-Consume` mode, the producer thread `Thread 1` loops to produce a task, then submits one internal task to an `Executor` to take over production on the new producer thread `Thread 2`, and then runs the task in `Thread 1` (which therefore becomes a worker thread).
 
 [plantuml]
 ----
@@ -144,25 +151,39 @@ hide time-axis
 
 ----
 
-This mode may operate like <<execution-strategy-pc,`Produce-Consume`>> when the take over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` behaves exactly like the `Produce-Consume` mode.
+This mode may operate like <<execution-strategy-pc,`Produce-Consume`>> when the take-over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` behaves exactly like the `Produce-Consume` mode.
 By the time thread `Thread 3` takes over task production from `Thread 2`, all the work might already be done.
 
-This mode may also operate similarly to <<execution-strategy-pec,`Produce-Execute-Consume`>> when the take over production task always finds a free CPU core immediately (for example, in a mostly idle server): thread `Thread 1` will produce a task, yield production to `Thread 2` while `Thread 1` is running the task; `Thread 2` will produce a task, yield production to `Thread 3` while `Thread 2` is running the task, etc.
+This mode may also operate similarly to <<execution-strategy-pec,`Produce-Execute-Consume`>> when the take-over production task always finds a free CPU core immediately (for example, in a mostly idle server): thread `Thread 1` will produce a task, yield production to `Thread 2` while `Thread 1` is running the task; `Thread 2` will produce a task, yield production to `Thread 3` while `Thread 2` is running the task, etc.
 
 Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient).
 
 [[execution-strategy-adaptive]]
 === Adaptive Execution Strategy
-The modes of task consumption discussed above are captured by the `org.eclipse.jetty.util.thread.ExecutionStrategy` interface, with an additional implementation that also takes into account the behavior of the task when the task implements `Invocable`.
+The modes of task consumption discussed above are captured by the `org.eclipse.jetty.util.thread.ExecutionStrategy` interface and its implementations:
 
-For example, a task that declares itself as non-blocking can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block.
+* `org.eclipse.jetty.util.thread.strategy.ProduceConsume` for the `Produce-Consume` mode.
+* `org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume` for the `Produce-Execute-Consume` mode.
+* `org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume` for the `Execute-Produce-Consume` mode.
 
-Conversely, a task that declares itself as blocking will stop production, and therefore must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
+There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that takes into account the `InvocationType` of the task when the task implements `Invocable` (otherwise it assumes `BLOCKING`).
+
+For example, a task that declares itself with `InvocationType` `NON_BLOCKING` can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block (although there is the risk of <<execution-strategy-pc,head-of-line blocking>>).
+
+Conversely, a task that declares itself with `InvocationType` `BLOCKING` may block and therefore stop production, and must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
 Deciding between these two modes depends on whether there is a free thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
 
 An implementation of `TryExecutor` can be asked whether a thread can be immediately and exclusively allocated to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
 
-The concept of task consumption modes, coupled with `Invocable` tasks that expose their own behavior, coupled with a `TryExecutor` that guarantees whether production can be immediately taken over are captured by the default Jetty execution strategy, named `org.eclipse.jetty.util.thread.AdaptiveExecutionStrategy`.
+The concept of task consumption modes, coupled with `Invocable` tasks that expose their own `InvocationType`, coupled with a `TryExecutor` that guarantees whether production can be immediately taken over, are all captured by `AdaptiveExecutionStrategy`, which is the default Jetty execution strategy.
+
+`AdaptiveExecutionStrategy` can seamlessly switch among consumption modes on a per-task basis.
+
+When all tasks are `NON_BLOCKING`, `AdaptiveExecutionStrategy` functions in `Produce-Consume` mode, resembling "selector loop" or "event loop" frameworks.
+
+When tasks are `BLOCKING` and no reserved threads are available, `AdaptiveExecutionStrategy` functions in `Produce-Execute-Consume` mode, resembling the classic model of a dedicated "selector thread" that always queues tasks to an `Executor`, to be executed by worker threads.
+
+When tasks are `BLOCKING` and reserved threads are available, it functions in `Execute-Produce-Consume` mode, so that tasks are processed more efficiently.
 
 [NOTE]
 ====

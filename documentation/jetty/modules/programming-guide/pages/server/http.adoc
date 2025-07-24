@@ -128,7 +128,7 @@ When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.
 
 `HttpChannel.onRequest()` calls the <<request-customizers,request customizers>>, that allow to customize the request and/or the response headers on a per-``Connector`` basis.
 
-After request customization, if any, the `Handler` chain is invoked, starting from the `Server` instance, and eventually your web application code is invoked.
+After request customization, if any, the `Handler` tree is invoked, starting from the `Server` instance, and eventually your web application code is invoked.
 
 [[request-processing-events]]
 === Request Processing Events
@@ -177,7 +177,7 @@ You can implement your own `RequestLog` if you want to have functionalities that
 [[request-customizers]]
 == Request Customizers
 
-A request customizer is an instance of `HttpConfiguration.Customizer`, that can customize the HTTP request and/or the HTTP response headers _before_ the `Handler` chain is invoked.
+A request customizer is an instance of `HttpConfiguration.Customizer`, that can customize the HTTP request and/or the HTTP response headers _before_ the `Handler` tree is invoked.
 
 Request customizers are added to a particular `HttpConfiguration` instance, and therefore are specific to a `Connector` instance: you can have two different ``Connector``s configured with different request customizers.
 
@@ -266,7 +266,7 @@ For more information about how to configure `ProxyCustomizer`, see also link:{ja
 
 `RewriteCustomizer` is similar to `RewriteHandler` (see <<handler-use-rewrite,this section>>), but a `RewriteCustomizer` cannot send a response or otherwise complete the request/response processing.
 
-A `RewriteCustomizer` is mostly useful if you want to rewrite the request URI _before_ the `Handler` chain is invoked.
+A `RewriteCustomizer` is mostly useful if you want to rewrite the request URI _before_ the `Handler` tree is invoked.
 However, a very similar effect can be achieved by having the `RewriteHandler` as the first `Handler` (the child `Handler` of the `Server` instance).
 
 Since `RewriteCustomizer` cannot send a response or complete the request/response processing, ``Rule``s that do so such as redirect rules have no effect and are ignored; only ``Rule``s that modify or wrap the `Request` will have effect and be applied.
@@ -1509,6 +1509,43 @@ Use of this class is less flexible than using the <<handler-use-rewrite,`Rewrite
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=movedContextHandler]
 ----
+
+[[handler-use-path-mappings]]
+==== PathMappingsHandler
+
+A web application may want to split the handling of HTTP requests so that they are handled by different ``Handler``s, to separate different web application concerns.
+
+For example, a shop web application with a context path of `/shop` may want to handle requests to browse the shop catalog separately from requests that manage the shopping cart, separately from requests that perform the checkout.
+
+A typical way to separate these concerns is to design the request URIs so that each feature is identified by a different link:{javadoc-url}/org/eclipse/jetty/server/Request.html#getPathInContext(org.eclipse.jetty.server.Request)[path in context], that is the request URI relative to the context path.
+
+In this case, requests to browse the shop catalog can have a URI path of `+/shop/catalog/*+`, while requests that manage the shopping cart can have a URI path of `+/shop/cart/*+`, and requests that perform the checkout can have a URI path of `+/shop/checkout/*+`.
+
+`PathMappingsHandler` supports exactly this use case:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=pathMappingsHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+  └── ContextHandler /shop
+      └── PathMappingsHandler
+          ├── CatalogHandler  /catalog/*
+          ├── CartHandler     /cart/*
+          └── CheckoutHandler /checkout/*
+----
+
+[NOTE]
+====
+The paths configured in `PathMappingsHandler` are the paths _after_ the <<handler-use,context path>>.
+
+Class link:{javadoc-url}/org/eclipse/jetty/http/pathmap/PathSpec.html[`PathSpec`] is used to specify the paths, and supports both Servlet path mappings and regular expression path mappings.
+====
 
 [[handler-use-servlet]]
 === Servlet API Handlers
