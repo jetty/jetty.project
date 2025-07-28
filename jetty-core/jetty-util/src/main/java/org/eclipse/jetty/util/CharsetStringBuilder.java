@@ -22,6 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
@@ -93,7 +96,48 @@ public interface CharsetStringBuilder
      * @return The decoded built string which must be complete in regard to any multibyte sequences.
      * @throws CharacterCodingException If the bytes cannot be correctly decoded or a multibyte sequence is incomplete.
      */
-    String build() throws CharacterCodingException;
+    default String build() throws CharacterCodingException
+    {
+        return build(false);
+    }
+
+    /**
+     * <p>Attempt to build the completed string and reset the buffer,
+     * returning a partial string if there are encoding errors</p>
+     *
+     * <p>Note, only some implementations support the {@code allowPartialString}
+     * parameter</p>
+     *
+     * @param allowPartialString true if a partial string is allowed to be returned,
+     * false means if complete string cannot be returned, an exception is thrown.
+     * @return The available string (complete or partial)
+     * @throws CharacterCodingException (only if {@code allowPartialString} is false) thrown if the bytes cannot be correctly decoded or a multibyte sequence is incomplete.
+     */
+    String build(boolean allowPartialString) throws CharacterCodingException;
+
+    /**
+     * <p>Test for if there are and detected encoding errors</p>
+     *
+     * @return {@code True} if the characters in the builder contain encoding errors.
+     *   Such as bad sequences, incomplete sequences, replacement characters, etc.
+     */
+    default boolean hasCodingErrors()
+    {
+        return false;
+    }
+
+    /**
+     * <p>If there is an incomplete sequence, replace it with the encoding
+     * specific replacement character.</p>
+     *
+     * <p>Will set the encoding errors to true for {@link #hasCodingErrors()}</p>
+     *
+     * @return true if replacement occurred, false if there was no issue.
+     */
+    default boolean replaceIncomplete()
+    {
+        return false;
+    }
 
     /**
      * @return the length in characters
@@ -111,39 +155,21 @@ public interface CharsetStringBuilder
      */
     static CharsetStringBuilder forCharset(Charset charset)
     {
+        return forCharset(charset, CodingErrorAction.REPORT, CodingErrorAction.REPORT);
+    }
+
+    static CharsetStringBuilder forCharset(Charset charset, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
+    {
         Objects.requireNonNull(charset);
         if (charset == StandardCharsets.UTF_8)
-            return new Utf8StringBuilder();
+            return new Utf8StringBuilder(onMalformedInput, onUnmappableCharacter);
         if (charset == StandardCharsets.ISO_8859_1)
             return new Iso88591StringBuilder();
         if (charset == StandardCharsets.US_ASCII)
             return new UsAsciiStringBuilder();
 
         // Use a CharsetDecoder that defaults to CodingErrorAction#REPORT
-        return new DecoderStringBuilder(charset.newDecoder());
-    }
-
-    /**
-     * Extended Utf8StringBuilder that mimics {@link CodingErrorAction#REPORT} behaviour
-     * for {@link CharsetStringBuilder} methods.
-     */
-    class ReportingUtf8StringBuilder extends Utf8StringBuilder
-    {
-        @Override
-        public String toCompleteString()
-        {
-            if (hasCodingErrors())
-                throw new RuntimeException(new CharacterCodingException());
-            return super.toCompleteString();
-        }
-
-        @Override
-        public String build() throws CharacterCodingException
-        {
-            if (hasCodingErrors())
-                throw new CharacterCodingException();
-            return super.build();
-        }
+        return new DecoderStringBuilder(charset.newDecoder(), onMalformedInput, onUnmappableCharacter);
     }
 
     class Iso88591StringBuilder implements CharsetStringBuilder
@@ -174,6 +200,12 @@ public interface CharsetStringBuilder
             String s = _builder.toString();
             _builder.setLength(0);
             return s;
+        }
+
+        @Override
+        public String build(boolean ignored)
+        {
+            return build();
         }
 
         @Override
@@ -222,6 +254,12 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public String build(boolean ignored)
+        {
+            return build();
+        }
+
+        @Override
         public int length()
         {
             return _builder.length();
@@ -236,13 +274,16 @@ public interface CharsetStringBuilder
 
     class DecoderStringBuilder implements CharsetStringBuilder
     {
+        private static final Logger LOG = LoggerFactory.getLogger(DecoderStringBuilder.class);
         private final CharsetDecoder _decoder;
         private final StringBuilder _stringBuilder = new StringBuilder(32);
         private ByteBuffer _buffer = ByteBuffer.allocate(32);
         
-        public DecoderStringBuilder(CharsetDecoder charsetDecoder)
+        public DecoderStringBuilder(CharsetDecoder charsetDecoder, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
         {
             _decoder = charsetDecoder;
+            _decoder.onMalformedInput(onMalformedInput);
+            _decoder.onUnmappableCharacter(onUnmappableCharacter);
         }
 
         private void ensureSpace(int needed)
@@ -319,8 +360,12 @@ public interface CharsetStringBuilder
         }
 
         @Override
-        public String build() throws CharacterCodingException
+        public String build(boolean ignore) throws CharacterCodingException
         {
+            // the parameter is ignored, as the CharsetDecoder configuration
+            // determines the behavior.
+            // See onMalformedInput(CodingErrorAction)
+            // and onUnmappableCharacter(CodingErrorAction)
             try
             {
                 if (_buffer.position() > 0)

@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 public class BufferUtilTest
 {
     @BeforeEach
@@ -55,6 +58,24 @@ public class BufferUtilTest
     public void afterEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
+    public void testSlice()
+    {
+        ByteBuffer byteBuffer = ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8));
+        assertEquals("0123456789", BufferUtil.toString(BufferUtil.slice(byteBuffer, 0, -1)));
+        assertEquals("3456789", BufferUtil.toString(BufferUtil.slice(byteBuffer, 3, -1)));
+        assertEquals("01234567", BufferUtil.toString(BufferUtil.slice(byteBuffer, 0, 8)));
+        assertEquals("5678", BufferUtil.toString(BufferUtil.slice(byteBuffer, 5, 4)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 1, 0)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 10, -1)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 1000, 0)));
+
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 0, 11));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 11, -1));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 1, 10));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, -1, 1));
     }
 
     @Test

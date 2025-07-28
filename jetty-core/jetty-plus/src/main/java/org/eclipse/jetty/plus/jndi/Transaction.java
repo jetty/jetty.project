@@ -19,6 +19,7 @@ import javax.naming.LinkRef;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.naming.Reference;
+import javax.naming.Referenceable;
 
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
@@ -69,6 +70,17 @@ public class Transaction extends NamingEntry
         throws NamingException
     {
         this(scope, (Object)userTransactionRef);
+    }
+
+    /**
+     * @param scope the environment in which to bind the UserTransaction
+     * @param userTransactionReferenceable a {@link Referenceable} to a UserTransaction
+     * @throws NamingException if there was a problem re
+     */
+    public Transaction(String scope, Referenceable userTransactionReferenceable)
+        throws NamingException
+    {
+        this(scope, (Object)userTransactionReferenceable.getReference());
     }
 
     /**

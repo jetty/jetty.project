@@ -278,7 +278,7 @@ public class ServletMultiPartFormData
         @Override
         public InputStream getInputStream() throws IOException
         {
-            return Content.Source.asInputStream(_part.newContentSource());
+            return Content.Source.asInputStream(_part.newContentSource(null, 0L, -1L)); // TODO use a pool
         }
 
         @Override

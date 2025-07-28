@@ -174,7 +174,7 @@ public class FrameFlusherTest
             }
         };
 
-        frameFlusher.setIdleTimeout(100);
+        frameFlusher.setFrameWriteTimeout(100);
         endPoint.setBlockTime(200);
 
         Frame frame = new Frame(OpCode.TEXT).setPayload("message").setFin(true);

@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
@@ -1570,7 +1571,36 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         @Override
         public void dispatch() throws IOException, ServletException
         {
-            _contextHandler.handleAsync(HttpChannel.this);
+            AsyncContextEvent event = HttpChannel.this.getState().getAsyncContextEvent();
+
+            //the user has dispatched to the same current context
+            if (event == null || event.getDispatchContext() == null || event.getDispatchContext() == _contextHandler.getServletContext())
+                _contextHandler.handleAsync(HttpChannel.this);
+            else
+            {
+                //the user has dispatched to a different context
+                if (event.getDispatchContext() instanceof CrossContextServletContext crossContextServletContext)
+                {
+                   dispatchCrossContext(crossContextServletContext);
+                }
+                else
+                {
+                    //the container has dispatched us to a different context
+                    ServletContext targetContext = _contextHandler.getServletContext().getContext(event.getDispatchContext().getContextPath());
+                    if (targetContext instanceof CrossContextServletContext crossContextServletContext)
+                        dispatchCrossContext(crossContextServletContext);
+                    else
+                        throw new IllegalStateException("Dispatch " + _contextHandler.getContextPath() + " -> non CrossContextServletContext" + event.getDispatchContext().getContextPath() + event.getDispatchContext());
+                }
+            }
+        }
+
+        private void dispatchCrossContext(CrossContextServletContext crossContextServletContext) throws ServletException, IOException
+        {
+            if (crossContextServletContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
+            {
+                coreContextHandler.getContextHandler().handleCrossContextAsync(HttpChannel.this);
+            }
         }
     }
 

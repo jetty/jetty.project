@@ -21,16 +21,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
- * ServerConnectorListener
- *
- * This is for test support, where we need jetty to run on a random port, and we need
- * a client to be able to find out which port was picked.
+ * This class is for test support, where we need Jetty to run on a random port,
+ * and we need a client to be able to find out which port was picked.
  */
-public class ServerConnectorListener extends AbstractLifeCycleListener
+public class ServerConnectorListener implements LifeCycle.Listener
 {
     private String _fileName;
     private String _sysPropertyName;
@@ -69,7 +66,6 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
         {
             System.setProperty(_sysPropertyName, String.valueOf(((ServerConnector)event).getLocalPort()));
         }
-        super.lifeCycleStarted(event);
     }
 
     /**

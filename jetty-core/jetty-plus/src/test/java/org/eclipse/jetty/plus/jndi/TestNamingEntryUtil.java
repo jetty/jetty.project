@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import java.util.List;
 import javax.naming.Context;
@@ -20,9 +20,7 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -66,6 +64,26 @@ public class TestNamingEntryUtil
     }
 
     @Test
+    public void testGetNameForStringScope() throws Exception
+    {
+        String myScope = "myScope";
+        Name name = NamingEntryUtil.getNameForScope(myScope);
+        assertNotNull(name);
+        assertEquals(myScope, name.toString());
+
+        //test canonicalization
+        String dodgyScope = "has/slash";
+        name = NamingEntryUtil.getNameForScope(dodgyScope);
+        assertNotNull(name);
+        assertEquals("has_slash", name.toString());
+
+        dodgyScope = "has space";
+        name = NamingEntryUtil.getNameForScope(dodgyScope);
+        assertNotNull(name);
+        assertEquals("has_space", name.toString());
+    }
+
+    @Test
     public void testGetContextForScope() throws Exception
     {
         ScopeA scope = new ScopeA();
@@ -97,17 +115,17 @@ public class TestNamingEntryUtil
     @Test
     public void testDestroySubcontext() throws Exception
     {
-        //create some NamingEntry in scope of a webapp
-        WebAppContext wac = new WebAppContext();
-        MyNamingEntry namingEntry1 = new MyNamingEntry(wac, "xxx", "111");
-        MyNamingEntry namingEntry2 = new MyNamingEntry(wac, "yyy", "222");
+        //create some NamingEntry in scope of a context
+        ContextHandler contextHandler = new ContextHandler();
+        MyNamingEntry namingEntry1 = new MyNamingEntry(contextHandler, "xxx", "111");
+        MyNamingEntry namingEntry2 = new MyNamingEntry(contextHandler, "yyy", "222");
 
-        assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "xxx"));
-        assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy"));
+        assertNotNull(NamingEntryUtil.lookupNamingEntry(contextHandler, "xxx"));
+        assertNotNull(NamingEntryUtil.lookupNamingEntry(contextHandler, "yyy"));
 
-        NamingEntryUtil.destroyContextForScope(wac);
-        assertNull(NamingEntryUtil.lookupNamingEntry(wac, "xxx"));
-        assertNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy"));
+        NamingEntryUtil.destroyContextForScope(contextHandler);
+        assertNull(NamingEntryUtil.lookupNamingEntry(contextHandler, "xxx"));
+        assertNull(NamingEntryUtil.lookupNamingEntry(contextHandler, "yyy"));
     }
 
     @Test
@@ -130,6 +148,16 @@ public class TestNamingEntryUtil
         ne = NamingEntryUtil.lookupNamingEntry(scope, "foo");
         assertNotNull(ne);
         assertEquals(ne, mne);
+    }
+
+    @Test
+    public void testLookupNamingEntryWithStringScope() throws Exception
+    {
+        String theScope = "theScope";
+        Object theObject = new Object();
+        Resource resource = new Resource(theScope, "theName", theObject);
+        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(theScope, "theName");
+        assertNotNull(ne);
     }
 
     @Test

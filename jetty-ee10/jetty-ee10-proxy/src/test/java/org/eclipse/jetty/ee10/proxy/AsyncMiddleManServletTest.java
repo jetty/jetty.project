@@ -589,7 +589,7 @@ public class AsyncMiddleManServletTest
                 .body(content)
                 .send(result ->
                 {
-                    if (result.isSucceeded() && result.getResponse().getStatus() == 502)
+                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                         latch.countDown();
                 });
 
@@ -669,7 +669,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-            assertEquals(502, response.getStatus());
+            assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
         }
     }
 
@@ -870,7 +870,7 @@ public class AsyncMiddleManServletTest
             .body(content)
             .send(result ->
             {
-                if (result.getResponse().getStatus() == 502)
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });
         content.write(ByteBuffer.allocate(512), Callback.NOOP);
@@ -925,7 +925,7 @@ public class AsyncMiddleManServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(502, response.getStatus());
+        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 
     @Test

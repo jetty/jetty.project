@@ -226,7 +226,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (name == null || value == null)
+        if (name == null)
             return; // Spec is to do nothing
 
         getResponse().getHeaders().add(name, value);

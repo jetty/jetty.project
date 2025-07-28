@@ -594,7 +594,11 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                         _characterEncoding = switch (_encodingFrom)
                         {
                             case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                            default -> null;
+                            default ->
+                            {
+                                _encodingFrom = EncodingFrom.NOT_SET;
+                                yield null;
+                            }
                         };
                     }
                 }
@@ -609,7 +613,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             assert oldField != null && newField != null;
 
             if (isCommitted())
-                return null;
+                return oldField;
 
             if (newField.getHeader() == null)
                 return newField;

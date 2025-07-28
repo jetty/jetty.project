@@ -15,11 +15,17 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.RandomConnectionPool;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -46,10 +52,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1308,5 +1317,52 @@ public class GoAwayTest extends AbstractTest
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4})
+    public void testImmediateGoAwayAndDisconnectDoesNotLeakClientConnections(int maxConnections) throws Exception
+    {
+        int maxConcurrent = 16;
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                return Map.of(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrent);
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                HTTP2Session session = (HTTP2Session)stream.getSession();
+                session.goAway(new GoAwayFrame(Integer.MAX_VALUE, ErrorCode.INTERNAL_ERROR.code, "problem_reproduced".getBytes(StandardCharsets.UTF_8)),
+                    Callback.from(session::disconnect));
+                return null;
+            }
+        });
+        httpClient.getTransport().setConnectionPoolFactory(destination -> new RandomConnectionPool(destination, maxConnections, 1));
+
+        // Use enough requests to trigger the maximum use
+        // of the pool, plus some that will remain queued.
+        int requestCount = maxConcurrent * maxConnections + 10;
+        CountDownLatch latch = new CountDownLatch(requestCount);
+        for (int i = 0; i < requestCount; i++)
+        {
+            httpClient.newRequest("localhost", connector.getLocalPort())
+                .path("/" + i)
+                .send(result -> latch.countDown());
+        }
+
+        // All the requests should fail, since the server is always closing the connection.
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        List<Destination> destinations = httpClient.getDestinations();
+        assertThat(destinations.size(), equalTo(1));
+
+        AbstractConnectionPool pool = (AbstractConnectionPool)destinations.get(0).getConnectionPool();
+        String dump = pool.dump();
+        assertFalse(dump.lines().anyMatch(l -> l.matches(".*multiplex=[1-9]([0-9]+)?.*")), dump);
+        assertThat(dump, Matchers.containsString(",leaked=0,"));
     }
 }

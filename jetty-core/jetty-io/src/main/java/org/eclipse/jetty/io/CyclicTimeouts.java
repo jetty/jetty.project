@@ -75,7 +75,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
      */
     protected abstract boolean onExpired(T expirable);
 
-    private void onTimeoutExpired()
+    protected void iterate()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Timeouts check for {}", this);
@@ -203,7 +203,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         @Override
         public void onTimeoutExpired()
         {
-            CyclicTimeouts.this.onTimeoutExpired();
+            CyclicTimeouts.this.iterate();
         }
     }
 }

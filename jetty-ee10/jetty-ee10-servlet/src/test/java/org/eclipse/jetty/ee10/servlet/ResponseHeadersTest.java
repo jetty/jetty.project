@@ -36,9 +36,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -62,6 +64,63 @@ public class ResponseHeadersTest
     public void stopServer()
     {
         LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testHeaders() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet testServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader("DeletedWithSetNullValue", "not-null");
+                response.setHeader("DeletedWithSetNullValue", null);
+                response.addHeader("IgnoredWithAddNullValue", null);
+
+                response.setHeader("SetHeaderOnce", "Once");
+                response.setHeader("SetHeaderTwice", "Once");
+                response.setHeader("SetHeaderTwice", "Twice");
+
+                response.addHeader("AddHeaderOnce", "Once");
+                response.addHeader("AddHeaderTwice", "Once");
+                response.addHeader("AddHeaderTwice", "Twice");
+
+                response.flushBuffer();
+
+                response.setHeader("SetAfterCommit", "ignored");
+                response.addHeader("AddAfterCommit", "ignored");
+                response.setHeader("AddHeaderTwice", "ignored");
+
+                response.getOutputStream().print("OK");
+            }
+        };
+        contextHandler.addServlet(testServlet, "/headers/*");
+
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/headers/test");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), is("OK"));
+
+        assertThat(response.getFieldNamesCollection(), not(hasItem("DeletedWithSetNullValue")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("SetAfterCommit")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("AddAfterCommit")));
+
+        assertThat(response.get("SetHeaderOnce"), is("Once"));
+        assertThat(response.get("SetHeaderTwice"), is("Twice"));
+        assertThat(response.get("AddHeaderOnce"), is("Once"));
+        assertThat(response.get("AddHeaderTwice"), is("Once"));
+        assertThat(response.getValuesList("AddHeaderTwice"), contains("Once", "Twice"));
     }
 
     @Test

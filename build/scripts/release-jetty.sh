@@ -70,7 +70,9 @@ VER_CURRENT=`sed -e "s/xmlns/ignore/" pom.xml | xmllint --xpath "/project/versio
 echo "Current pom.xml Version: ${VER_CURRENT}"
 read -e -p "Release Version  ? " VER_RELEASE
 read -e -p "Next Dev Version ? " VER_NEXT
+read -e -p "Previous Version ? " PREV_VER
 TAG_NAME="jetty-$VER_RELEASE"
+PREV_TAG="jetty-$PREV_VER"
 
 # Ensure tag doesn't exist (yet)
 git rev-parse --quiet --verify "$TAG_NAME" 2>&1 > /dev/null
@@ -105,6 +107,7 @@ echo "Current Version  : $VER_CURRENT"
 echo "Release Version  : $VER_RELEASE"
 echo "Next Dev Version : $VER_NEXT"
 echo "Tag name         : $TAG_NAME"
+echo "Previous Tag name: $PREV_TAG"
 echo "MAVEN_OPTS       : $MAVEN_OPTS"
 echo "Maven Deploy Opts: $DEPLOY_OPTS"
 
@@ -134,7 +137,8 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     mvn clean install -pl build/build-resources/ -Peclipse-release -Dmaven.build.cache.enabled=false
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false
+        mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false -Dwebtide.release.tools.releaseVersion=$VER_RELEASE \
+            -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
@@ -164,6 +168,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         mvn clean deploy -Peclipse-release $DEPLOY_OPTS
+        mvn njord:publish -Ddrop=false $DEPLOY_OPTS
     fi
     if proceedyn "Update working directory for $VER_NEXT? (Y/n)" y; then
         echo "Update VERSION.txt for $VER_NEXT"
@@ -189,8 +194,19 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
 
     if proceedyn "Do you want to build aggregated Javadoc in target/reports/apidocs/? (Y/n)" y; then
-        mvn mvn clean install -Pjavadoc-aggregate javadoc:aggregate -DskipTests
+        mvn clean install -Pjavadoc-aggregate javadoc:aggregate -DskipTests
     fi
+
+    if proceedyn "Do you want to build changelog.md in target/changelog.md? (Y/n)" y; then
+        mvn -N net.webtide.tools:webtide-release-tools-plugin:gh-release \
+            -Dwebtide.release.tools.refVersionCurrent=$TAG_NAME \
+            -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG -e
+    fi
+
+    # here we need to add something to publish to our staging repo
+    # mvn njord:publish -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging
+    # need an entry in settings.xml for id jetty-staging
+        
 else
     echo "Not performing release"
 fi

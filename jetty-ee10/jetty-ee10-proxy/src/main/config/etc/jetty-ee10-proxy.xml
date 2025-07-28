@@ -2,14 +2,27 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-  <Set name="handler">
-    <New class="org.eclipse.jetty.server.handler.ConnectHandler">
-      <Set name="handler">
-        <New class="org.eclipse.jetty.ee10.servlet.ServletHandler">
-          <Call id="proxyHolder" name="addServletWithMapping">
-            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee10.proxy.ProxyServlet"/></Arg>
+  <Ref refid="Contexts">
+    <Call name="addHandler">
+      <Arg>
+        <New class="org.eclipse.jetty.ee10.servlet.ServletContextHandler">
+          <Set name="contextPath"><Property name="jetty.proxy.contextPath" default="/"/></Set>
+          <Call name="insertHandler">
+            <Arg>
+              <New class="org.eclipse.jetty.server.handler.ConnectHandler"/>
+            </Arg>
+          </Call>
+          <Call id="proxyHolder" name="addServlet">
+            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee10.proxy.ProxyServlet$Transparent"/></Arg>
             <Arg><Property name="jetty.proxy.servletMapping" default="/*"/></Arg>
+            <Call name="setInitParameter">
+              <Arg>proxyTo</Arg>
+              <Arg><Property name="jetty.proxy.proxyTo"/></Arg>
+            </Call>
+            <Call name="setInitParameter">
+              <Arg>prefix</Arg>
+              <Arg><Property name="jetty.proxy.prefix"/></Arg>
+            </Call>
             <Call name="setInitParameter">
               <Arg>maxThreads</Arg>
               <Arg><Property name="jetty.proxy.maxThreads" default="128" /></Arg>
@@ -26,10 +39,30 @@
               <Arg>timeout</Arg>
               <Arg><Property name="jetty.proxy.timeout" default="60000" /></Arg>
             </Call>
+            <Call name="setInitParameter">
+              <Arg>requestBufferSize</Arg>
+              <Arg><Property name="jetty.proxy.requestBufferSize" default="4096" /></Arg>
+            </Call>
+            <Call name="setInitParameter">
+              <Arg>responseBufferSize</Arg>
+              <Arg><Property name="jetty.proxy.responseBufferSize" default="16384" /></Arg>
+            </Call>
+            <Call name="setInitParameter">
+              <Arg>maxRequestHeadersSize</Arg>
+              <Arg><Property name="jetty.proxy.maxRequestHeadersSize" default="8192" /></Arg>
+            </Call>
+            <Call name="setInitParameter">
+              <Arg>maxResponseHeadersSize</Arg>
+              <Arg><Property name="jetty.proxy.maxResponseHeadersSize" default="8192" /></Arg>
+            </Call>
+            <Call name="setInitParameter">
+              <Arg>selectors</Arg>
+              <Arg><Property name="jetty.proxy.selectors" default="1" /></Arg>
+            </Call>
           </Call>
         </New>
-      </Set>
-    </New>
-  </Set>
+      </Arg>
+    </Call>
+  </Ref>
 
 </Configure>

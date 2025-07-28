@@ -18,6 +18,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
@@ -85,6 +86,11 @@ public abstract class AbstractHomeForker extends AbstractForker
     protected Path mavenLibPath;
     protected String version;
     protected String environment;
+
+    protected AbstractHomeForker(String javaPath)
+    {
+        super(javaPath);
+    }
 
     public void setVersion(String version)
     {
@@ -175,12 +181,12 @@ public abstract class AbstractHomeForker extends AbstractForker
     protected ProcessBuilder createCommand()
     {
         List<String> cmd = new ArrayList<>();
-        cmd.add("java");
+        cmd.add(getJavaBin());
 
         //add any args to the jvm
         if (StringUtil.isNotBlank(jvmArgs))
         {
-            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jvmArgs.split(" ")).filter(StringUtil::isNotBlank).forEach((a) -> cmd.add(a.trim()));
         }
 
         cmd.add("-jar");
@@ -398,7 +404,7 @@ public abstract class AbstractHomeForker extends AbstractForker
             for (File f : libExtJarFiles)
             {
                 try (InputStream jarStream = new FileInputStream(f);
-                     FileOutputStream fileStream = new FileOutputStream(libExtPath.resolve(f.getName()).toFile()))
+                     OutputStream fileStream = Files.newOutputStream(libExtPath.resolve(f.getName())))
                 {
                     IO.copy(jarStream, fileStream);
                 }

@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -157,7 +158,8 @@ public class MultiPartByteRanges
             int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
             int len = Math.min(toReadInt, buffer.length);
             int read = inputStream.read(buffer, 0, len);
-            toRead -= read;
+            if (read > 0)
+                toRead -= read;
             return read;
         }
     }
@@ -221,8 +223,6 @@ public class MultiPartByteRanges
     public static class Part extends MultiPart.Part
     {
         private final Resource resource;
-        private final ByteRange byteRange;
-        private final ByteBufferPool bufferPool;
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
@@ -230,7 +230,17 @@ public class MultiPartByteRanges
                 .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, null);
         }
 
+        /**
+         * @deprecated use {@link #Part(String, Resource, ByteRange, long, ByteBufferPool.Sized)} instead.
+         */
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
+        {
+            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, new ByteBufferPool.Sized(bufferPool));
+        }
+
+        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool.Sized bufferPool)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
                 .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, bufferPool);
@@ -241,18 +251,25 @@ public class MultiPartByteRanges
             this(headers, resource, byteRange, null);
         }
 
+        /**
+         * @deprecated use {@link #Part(HttpFields, Resource, ByteRange, ByteBufferPool.Sized)} instead.
+         */
+        @Deprecated(since = "12.0.20", forRemoval = true)
         public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool bufferPool)
         {
-            super(null, null, headers);
+            this(headers, resource, byteRange, new ByteBufferPool.Sized(bufferPool));
+        }
+
+        public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool.Sized bufferPool)
+        {
+            super(Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING), byteRange.first(), byteRange.getLength(), null, null, headers);
             this.resource = resource;
-            this.byteRange = byteRange;
-            this.bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
         }
 
         @Override
-        public Content.Source newContentSource()
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length)
         {
-            return IOResources.asContentSource(resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
+            return IOResources.asContentSource(resource, bufferPool.getWrapped(), bufferPool.getSize(), bufferPool.isDirect(), first, length);
         }
     }
 

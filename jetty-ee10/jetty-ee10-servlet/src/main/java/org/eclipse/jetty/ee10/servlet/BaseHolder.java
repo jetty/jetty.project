@@ -166,7 +166,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.ScopedContext) && ((ContextHandler.ScopedContext)context).getContextHandler().isStarted())
+            if (context instanceof ContextHandler.ScopedContext scopedContext && scopedContext.getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }

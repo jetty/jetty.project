@@ -152,7 +152,7 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onError(Throwable t)
         {
-            onClientRequestFailure(request, proxyRequest, response, t);
+            content.fail(t);
         }
 
         @Override

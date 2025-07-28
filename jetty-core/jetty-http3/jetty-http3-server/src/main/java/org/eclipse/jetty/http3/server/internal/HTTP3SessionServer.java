@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
+import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -61,14 +66,27 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     @Override
     public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
-        if (frame.getMetaData().isRequest())
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
         {
             QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
             HTTP3StreamServer stream = (HTTP3StreamServer)getOrCreateStream(endPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("received request {} on {}", frame, stream);
             if (stream != null)
-                stream.onRequest(frame);
+            {
+                Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                if (metaDataFailure != null)
+                {
+                    // It's a bad request, request content will be dropped.
+                    stream.updateClose(true, false);
+                    notifyStreamFailure(stream, new BadMessageException(metaDataFailure.getMessage(), metaDataFailure));
+                }
+                else
+                {
+                    stream.onRequest(frame);
+                }
+            }
         }
         else
         {
@@ -116,5 +134,30 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         {
             LOG.info("failure notifying listener {}", listener, x);
         }
+    }
+
+    private void notifyStreamFailure(Stream stream, Throwable failure)
+    {
+        Server.Listener listener = getListener();
+        if (listener instanceof Listener l)
+        {
+            try
+            {
+                l.onStreamFailure(stream, failure);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("failure notifying listener {}", listener, x);
+            }
+        }
+        else
+        {
+            ((HTTP3Stream)stream).notifyFailure(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+        }
+    }
+
+    public interface Listener extends Session.Server.Listener
+    {
+        void onStreamFailure(Stream stream, Throwable failure);
     }
 }

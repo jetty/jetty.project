@@ -17,6 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -674,17 +676,28 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         }
 
         /* ensure scratch dir */
-        File scratch;
+        Path scratchDir;
         if (getInitParameter("scratchdir") == null)
         {
             File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
-            scratch = new File(tmp, "jsp");
-            setInitParameter("scratchdir", scratch.getAbsolutePath());
+            scratchDir = tmp.toPath().resolve("jsp");
+            setInitParameter("scratchdir", scratchDir.toAbsolutePath().toString());
         }
 
-        scratch = new File(getInitParameter("scratchdir"));
-        if (!scratch.exists() && !scratch.mkdir())
-            throw new IllegalStateException("Could not create JSP scratch directory");
+        scratchDir = Path.of(getInitParameter("scratchdir"));
+        if (!Files.isDirectory(scratchDir))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Creating JSP scratch directory: {}", scratchDir);
+            try
+            {
+                Files.createDirectories(scratchDir);
+            }
+            catch (Throwable e)
+            {
+                throw new IllegalStateException("Could not create JSP scratch directory", e);
+            }
+        }
     }
 
     @Override

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.EndpointConfig;
@@ -29,11 +31,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteTimeoutTest
 {
-    @ServerEndpoint("/logSocket")
+    private static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(1);
+
+    @ServerEndpoint("/")
     public static class ServerSocket extends EventSocket
     {
         @Override
@@ -42,6 +47,19 @@ public class WriteTimeoutTest
             session.setMaxIdleTimeout(-1);
             session.setMaxTextMessageBufferSize(-1);
             super.onOpen(session, endpointConfig);
+        }
+
+        @Override
+        public void onMessage(String message) throws IOException
+        {
+            try
+            {
+                assertTrue(MESSAGE_LATCH.await(10, TimeUnit.SECONDS));
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -67,26 +85,24 @@ public class WriteTimeoutTest
     }
 
     @Test
-    public void testTimeoutOnLargeMessage() throws Exception
+    public void testTimeoutFromSlowReads() throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
-        Session session = client.connectToServer(clientEndpoint, server.getWsUri().resolve("/logSocket"));
+        Session session = client.connectToServer(clientEndpoint, server.getWsUri());
+        session.getAsyncRemote().setSendTimeout(1000);
 
-        session.getAsyncRemote().setSendTimeout(5);
-        session.setMaxTextMessageBufferSize(1024 * 1024 * 6);
-
-        String string = "xxxxxxx";
-        StringBuilder sb = new StringBuilder();
-        while (sb.length() < session.getMaxTextMessageBufferSize() - string.length())
+        // Keep sending messages until one times out.
+        Exception exception = assertThrows(Exception.class, () ->
         {
-            sb.append(string);
-        }
-        string = sb.toString();
+            while (session.isOpen())
+            {
+                session.getBasicRemote().sendText("x".repeat(1024));
+            }
+        });
+        assertThat(exception.getCause(), instanceOf(WebSocketWriteTimeoutException.class));
 
-        while (session.isOpen())
-        {
-            session.getAsyncRemote().sendText(string);
-        }
+        // Unblock the thread in onMessage() on the server endpoint.
+        MESSAGE_LATCH.countDown();
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));

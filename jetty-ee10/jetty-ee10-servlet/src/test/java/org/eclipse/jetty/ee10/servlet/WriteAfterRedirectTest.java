@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.http.HttpServlet;
@@ -24,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.ValidatingConnectionPool;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -36,6 +39,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteAfterRedirectTest
 {
@@ -71,6 +75,7 @@ public class WriteAfterRedirectTest
     public void testWriteAfterRedirect() throws Exception
     {
         AtomicReference<Throwable> errorReference = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         startServer(new HttpServlet()
         {
             @Override
@@ -88,6 +93,7 @@ public class WriteAfterRedirectTest
                     catch (Throwable t)
                     {
                         errorReference.set(t);
+                        latch.countDown();
                         throw t;
                     }
                 }
@@ -98,6 +104,13 @@ public class WriteAfterRedirectTest
                 }
             }
         });
+
+        // The server will close the connection without any indication to the client,
+        // so when the client follows the redirect it may send it on a closed connection,
+        // which will fail the test. ValidatingConnectionPool is designed for these cases.
+        _client.getTransport().setConnectionPoolFactory(destination ->
+            new ValidatingConnectionPool(destination, _client.getMaxConnectionsPerDestination(), _client.getScheduler(), 1000)
+        );
 
         // We get the correct redirect.
         _client.setFollowRedirects(false);
@@ -114,6 +127,7 @@ public class WriteAfterRedirectTest
         assertThat(response.getContentAsString(), equalTo("hello world"));
 
         // The write() in the servlet actually threw because the HttpOutput was closed.
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(errorReference.get(), instanceOf(IOException.class));
         assertThat(errorReference.get().getMessage(), containsString("Closed"));
     }

@@ -748,6 +748,8 @@ public class HttpChannelState
                     break;
 
                 case COMPLETE:
+                case COMPLETING:
+                case COMPLETED:
                     return;
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
@@ -817,7 +819,7 @@ public class HttpChannelState
             if (_sendError)
             {
                 LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
-                return true;
+                return false;
             }
 
             // Check async state to determine type of handling
@@ -836,12 +838,7 @@ public class HttpChannelState
                 case ASYNC:
                 {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
-                    {
-                        if (committed)
-                            return true;
-                        sendError(th);
                         return false;
-                    }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;
@@ -1022,7 +1019,7 @@ public class HttpChannelState
                 LOG.debug("completed {}", toStringLocked());
 
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked());
+                throw new IllegalStateException(this.getStatusStringLocked(), failure);
 
             if (_event == null)
             {
@@ -1235,9 +1232,14 @@ public class HttpChannelState
     {
         if (event != null)
         {
-            ContextHandler.APIContext context = ((ContextHandler.APIContext)event.getServletContext());
-            if (context != null)
-                return context.getContextHandler();
+            ServletContext servletContext = event.getServletContext();
+            if (servletContext instanceof CrossContextServletContext crossContextServletContext)
+            {
+                if (crossContextServletContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
+                    return  coreContextHandler.getContextHandler();
+            }
+            if (servletContext instanceof ContextHandler.APIContext apiContext)
+                return apiContext.getContextHandler();
         }
         return null;
     }

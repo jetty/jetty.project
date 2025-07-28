@@ -210,6 +210,14 @@ public class CookieCutter implements CookieParser
                                         // This is a new cookie, so add the completed last cookie if we have one
                                         if (cookieName != null)
                                         {
+                                            if (!isLegacyCookieName(cookieName))
+                                            {
+                                                if (!_complianceMode.allows(INVALID_COOKIES))
+                                                    throw new InvalidCookieException("Bad Cookie Name");
+                                                reportComplianceViolation(INVALID_COOKIES, hdr);
+                                                reject = true;
+                                            }
+
                                             if (reject)
                                             {
                                                 if (_complianceMode.allows(INVALID_COOKIES))
@@ -384,5 +392,26 @@ public class CookieCutter implements CookieParser
             c == ',' || // comma
             c == ';' || // semicolon
             c == '\\';  // backslash
+    }
+
+    private boolean isLegacyCookieNameToken(char c)
+    {
+        return c >= 0x20 && c < 0x7f && "/()<>@,;:\\\"[]?={} \t".indexOf(c) == -1;
+    }
+
+    private boolean isLegacyCookieName(String name)
+    {
+        for (int i = 0; i < name.length(); i++)
+            if (!isLegacyCookieNameToken(name.charAt(i)))
+                return false;
+        return !name.equalsIgnoreCase("Comment") && // rfc2019
+            !name.equalsIgnoreCase("Discard") && // 2019++
+            !name.equalsIgnoreCase("Domain") &&
+            !name.equalsIgnoreCase("Expires") && // (old cookies)
+            !name.equalsIgnoreCase("Max-Age") && // rfc2019
+            !name.equalsIgnoreCase("Path") &&
+            !name.equalsIgnoreCase("Secure") &&
+            !name.equalsIgnoreCase("Version") &&
+            !name.startsWith("$");
     }
 }

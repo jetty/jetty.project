@@ -205,14 +205,12 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against an code to determine if it falls into the
-         * <code>Informational</code> message category as defined in the <a
-         * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
-         * HTTP/1.1</a>.
+         * Tests whether the status code is of the
+         * {@code Informational} message category as defined in
+         * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
          * @return true if within range of codes that belongs to
-         * <code>Informational</code> messages.
+         * {@code Informational} codes.
          */
         public boolean isInformational()
         {
@@ -220,14 +218,12 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against an code to determine if it falls into the
-         * <code>Success</code> message category as defined in the <a
-         * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
-         * HTTP/1.1</a>.
+         * Tests whether the status code is of the
+         * {@code Successful} message category as defined in
+         * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
          * @return true if within range of codes that belongs to
-         * <code>Success</code> messages.
+         * {@code Successful} codes.
          */
         public boolean isSuccess()
         {
@@ -235,14 +231,12 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against an code to determine if it falls into the
-         * <code>Redirection</code> message category as defined in the <a
-         * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
-         * HTTP/1.1</a>.
+         * Tests whether the status code is of the
+         * {@code Redirection} message category as defined in
+         * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
          * @return true if within range of codes that belongs to
-         * <code>Redirection</code> messages.
+         * {@code Redirection} codes.
          */
         public boolean isRedirection()
         {
@@ -250,14 +244,12 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against an code to determine if it falls into the
-         * <code>Client Error</code> message category as defined in the <a
-         * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
-         * HTTP/1.1</a>.
+         * Tests whether the status code is of the
+         * {@code Client Error} message category as defined in
+         * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
          * @return true if within range of codes that belongs to
-         * <code>Client Error</code> messages.
+         * {@code Client Error} codes.
          */
         public boolean isClientError()
         {
@@ -265,14 +257,12 @@ public class HttpStatus
         }
 
         /**
-         * Simple test against an code to determine if it falls into the
-         * <code>Server Error</code> message category as defined in the <a
-         * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
-         * HTTP/1.1</a>.
+         * Tests whether the status code is of the
+         * {@code Server Error} message category as defined in
+         * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
          *
          * @return true if within range of codes that belongs to
-         * <code>Server Error</code> messages.
+         * {@code Server Error} codes.
          */
         public boolean isServerError()
         {
@@ -281,10 +271,10 @@ public class HttpStatus
     }
 
     /**
-     * Get the HttpStatusCode for a specific code
+     * Get the HttpStatus.Code for a specific code.
      *
      * @param code the code to lookup.
-     * @return the {@link HttpStatus} if found, or null if not found.
+     * @return the {@link HttpStatus.Code} if found, or null if not found.
      */
     public static Code getCode(int code)
     {
@@ -317,28 +307,21 @@ public class HttpStatus
 
     public static boolean hasNoBody(int status)
     {
-        switch (status)
+        return switch (status)
         {
-            case NO_CONTENT_204:
-            case RESET_CONTENT_205:
-            case PARTIAL_CONTENT_206:
-            case NOT_MODIFIED_304:
-                return true;
-
-            default:
-                return status < OK_200;
-        }
+            case NO_CONTENT_204, RESET_CONTENT_205, PARTIAL_CONTENT_206, NOT_MODIFIED_304 -> true;
+            default -> status < OK_200;
+        };
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
-     * <code>Informational</code> message category as defined in the <a
-     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
+     * Tests whether the status code is of the
+     * {@code Informational} message category as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
      * @param code the code to test.
      * @return true if within range of codes that belongs to
-     * <code>Informational</code> messages.
+     * {@code Informational} codes.
      */
     public static boolean isInformational(int code)
     {
@@ -357,14 +340,13 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
-     * <code>Success</code> message category as defined in the <a
-     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
+     * Tests whether the status code is of the
+     * {@code Successful} message category as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
      * @param code the code to test.
      * @return true if within range of codes that belongs to
-     * <code>Success</code> messages.
+     * {@code Successful} codes.
      */
     public static boolean isSuccess(int code)
     {
@@ -372,14 +354,13 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
-     * <code>Redirection</code> message category as defined in the <a
-     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
+     * Tests whether the status code is of the
+     * {@code Redirection} message category as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
      * @param code the code to test.
      * @return true if within range of codes that belongs to
-     * <code>Redirection</code> messages.
+     * {@code Redirection} codes.
      */
     public static boolean isRedirection(int code)
     {
@@ -387,14 +368,26 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
-     * <code>Client Error</code> message category as defined in the <a
-     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
+     * Tests whether the status code is either a
+     * {@link #isClientError(int) client error} or a
+     * {@link #isServerError(int) server error}.
+     *
+     * @param code the code to test
+     * @return whether the status code is either a client error or a server error
+     */
+    public static boolean isError(int code)
+    {
+        return isClientError(code) || isServerError(code);
+    }
+
+    /**
+     * Tests whether the status code is of the
+     * {@code Client Error} message category as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
      * @param code the code to test.
      * @return true if within range of codes that belongs to
-     * <code>Client Error</code> messages.
+     * {@code Client Error} codes.
      */
     public static boolean isClientError(int code)
     {
@@ -402,14 +395,13 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
-     * <code>Server Error</code> message category as defined in the <a
-     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
+     * Tests whether the status code is of the
+     * {@code Server Error} message category as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
      *
      * @param code the code to test.
      * @return true if within range of codes that belongs to
-     * <code>Server Error</code> messages.
+     * {@code Server Error} codes.
      */
     public static boolean isServerError(int code)
     {

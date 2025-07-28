@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
@@ -66,7 +67,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
     }
 
-    private static class HTTP3SessionListener implements Session.Server.Listener
+    private static class HTTP3SessionListener implements HTTP3SessionServer.Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionListener.class);
 
@@ -99,6 +100,16 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             session.getStreams().stream()
                 .map(stream -> (HTTP3Stream)stream)
                 .forEach(stream -> stream.onFailure(error, failure));
+        }
+
+        @Override
+        public void onStreamFailure(Stream stream, Throwable failure)
+        {
+            HTTP3Stream http3Stream = (HTTP3Stream)stream;
+            ServerHTTP3StreamConnection connection = (ServerHTTP3StreamConnection)http3Stream.getEndPoint().getConnection();
+            Runnable task = connection.onFailure(http3Stream, failure);
+            Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
+            ThreadPool.executeImmediately(executor, task);
         }
     }
 

@@ -215,11 +215,6 @@ public abstract class IteratingCallback implements Callback
         {
             switch (_state)
             {
-                case PENDING:
-                case CALLED:
-                    // process will be called when callback is handled
-                    break;
-
                 case IDLE:
                     _state = State.PROCESSING;
                     process = true;
@@ -229,21 +224,15 @@ public abstract class IteratingCallback implements Callback
                     _iterate = true;
                     break;
 
-                case FAILED:
-                case SUCCEEDED:
-                    break;
-
-                case CLOSED:
-                case ABORTED:
                 default:
-                    throw new IllegalStateException(toString());
+                    break;
             }
         }
         if (process)
-            processing();
+            processing(true);
     }
 
-    private void processing()
+    private void processing(boolean processFirst)
     {
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
@@ -257,14 +246,17 @@ public abstract class IteratingCallback implements Callback
         {
             // Call process to get the action that we have to take.
             Action action = null;
-            try
+            if (processFirst)
             {
-                action = process();
-            }
-            catch (Throwable x)
-            {
-                failed(x);
-                // Fall through to possibly invoke onCompleteFailure().
+                try
+                {
+                    action = process();
+                }
+                catch (Throwable x)
+                {
+                    failed(x);
+                    // Fall through to possibly invoke onCompleteFailure().
+                }
             }
 
             boolean callOnSuccess = false;
@@ -346,7 +338,10 @@ public abstract class IteratingCallback implements Callback
             finally
             {
                 if (callOnSuccess)
+                {
                     onSuccess();
+                    processFirst = isProcessing();
+                }
             }
         }
 
@@ -400,7 +395,7 @@ public abstract class IteratingCallback implements Callback
         if (process)
         {
             onSuccess();
-            processing();
+            processing(isProcessing());
         }
     }
 
@@ -502,10 +497,11 @@ public abstract class IteratingCallback implements Callback
      *
      * @param failure the cause of the abort
      * @see #isAborted()
+     * @return {@code true} if the abort was or will be performed,
+     * {@code false} if this instance is already succeeded, failed, closed or aborted
      */
-    public void abort(Throwable failure)
+    public boolean abort(Throwable failure)
     {
-        boolean abort = false;
         try (AutoLock ignored = _lock.lock())
         {
             switch (_state)
@@ -516,7 +512,7 @@ public abstract class IteratingCallback implements Callback
                 case ABORTED:
                 {
                     // Too late.
-                    break;
+                    return false;
                 }
 
                 case IDLE:
@@ -524,7 +520,6 @@ public abstract class IteratingCallback implements Callback
                 {
                     _failure = failure;
                     _state = State.ABORTED;
-                    abort = true;
                     break;
                 }
 
@@ -533,7 +528,9 @@ public abstract class IteratingCallback implements Callback
                 {
                     _failure = failure;
                     _state = State.ABORTED;
-                    break;
+                    // Will eventually be aborted
+                    // by the processing thread.
+                    return true;
                 }
 
                 default:
@@ -541,8 +538,8 @@ public abstract class IteratingCallback implements Callback
             }
         }
 
-        if (abort)
-            onCompleteFailure(failure);
+        onCompleteFailure(failure);
+        return true;
     }
 
     boolean isPending()
@@ -596,6 +593,17 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             return _state == State.SUCCEEDED;
+        }
+    }
+
+    /**
+     * @return {@code true} if the iterating callback is processing
+     */
+    private boolean isProcessing()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PROCESSING;
         }
     }
 

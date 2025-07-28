@@ -44,7 +44,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseHeadersTest
@@ -150,6 +154,47 @@ public class ResponseHeadersTest
         }
     }
 
+    public static class NullResponseHeaderValueServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // We set an initial desired behavior.
+            response.addHeader("customHeader", null);
+            response.addHeader("customHeader", "foobar");
+            response.setHeader("customHeader", null);
+            PrintWriter writer = response.getWriter();
+            writer.println("content");
+        }
+    }
+
+    public static class HeadersServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setHeader("DeletedWithSetNullValue", "not-null");
+            response.setHeader("DeletedWithSetNullValue", null);
+            response.addHeader("IgnoredWithAddNullValue", null);
+
+            response.setHeader("SetHeaderOnce", "Once");
+            response.setHeader("SetHeaderTwice", "Once");
+            response.setHeader("SetHeaderTwice", "Twice");
+
+            response.addHeader("AddHeaderOnce", "Once");
+            response.addHeader("AddHeaderTwice", "Once");
+            response.addHeader("AddHeaderTwice", "Twice");
+
+            response.flushBuffer();
+
+            response.setHeader("SetAfterCommit", "ignored");
+            response.addHeader("AddAfterCommit", "ignored");
+            response.setHeader("AddHeaderTwice", "ignored");
+
+            response.getOutputStream().print("OK");
+        }
+    }
+
     private static Server server;
     private static LocalConnector connector;
 
@@ -171,9 +216,11 @@ public class ResponseHeadersTest
         context.addFilter(new FilterHolder(new WrappingFilter()), "/default/*", EnumSet.allOf(DispatcherType.class));
         context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
         context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
+        context.addServlet(new ServletHolder(new HeadersServlet()), "/headers/*");
         context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
         context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
         context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
+        context.addServlet(new ServletHolder(new NullResponseHeaderValueServlet()), "/nullHeaderValue");
 
         server.start();
     }
@@ -189,6 +236,30 @@ public class ResponseHeadersTest
         {
             e.printStackTrace(System.err);
         }
+    }
+
+    @Test
+    public void testHeaders() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/headers/test");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        assertTrue(response.getContent().startsWith("OK"));
+
+        assertThat(response.getFieldNamesCollection(), not(hasItem("DeletedWithSetNullValue")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("SetAfterCommit")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("AddAfterCommit")));
+
+        assertThat(response.get("SetHeaderOnce"), is("Once"));
+        assertThat(response.get("SetHeaderTwice"), is("Twice"));
+        assertThat(response.get("AddHeaderOnce"), is("Once"));
+        assertThat(response.get("AddHeaderTwice"), is("Once"));
+        assertThat(response.getValuesList("AddHeaderTwice"), contains("Once", "Twice"));
     }
 
     @Test
@@ -309,5 +380,22 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         // The Content-Type should not have a charset= portion
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
+    }
+
+    @Test
+    public void testNullHeaderValue() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/nullHeaderValue");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat(response.get("customHeader"), nullValue());
     }
 }

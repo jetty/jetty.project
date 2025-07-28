@@ -35,6 +35,11 @@ public abstract class AbstractServerForker extends AbstractForker
     protected int scanInterval;
     protected String executionClassName;
 
+    protected AbstractServerForker(String javaPath)
+    {
+        super(javaPath);
+    }
+
     /**
      * @return the scan
      */
@@ -217,60 +222,5 @@ public abstract class AbstractServerForker extends AbstractForker
             command.redirectErrorStream(true);
         }
         return command;
-    }
-
-    /**
-     * Get the location of the java binary.
-     * @return the location of the java binary
-     */
-    private String getJavaBin()
-    {
-        String[] javaexes = new String[]{"java", "java.exe"};
-
-        File javaHomeDir = new File(System.getProperty("java.home"));
-        for (String javaexe : javaexes)
-        {
-            File javabin = new File(javaHomeDir, fileSeparators("bin/" + javaexe));
-            if (javabin.exists() && javabin.isFile())
-            {
-                return javabin.getAbsolutePath();
-            }
-        }
-
-        return "java";
-    }
-
-    public static String fileSeparators(String path)
-    {
-        StringBuilder ret = new StringBuilder();
-        for (char c : path.toCharArray())
-        {
-            if ((c == '/') || (c == '\\'))
-            {
-                ret.append(File.separatorChar);
-            }
-            else
-            {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
-    }
-
-    public static String pathSeparators(String path)
-    {
-        StringBuilder ret = new StringBuilder();
-        for (char c : path.toCharArray())
-        {
-            if ((c == ',') || (c == ':'))
-            {
-                ret.append(File.pathSeparatorChar);
-            }
-            else
-            {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
     }
 }

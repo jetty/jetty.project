@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.RetryableStreamException;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
@@ -267,5 +268,50 @@ public class HTTP3ClientDocs
         // Reset this stream (for example, the user closed the application).
         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException());
         // end::reset[]
+    }
+
+    public void close() throws Exception
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        http3Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        Session.Client session = sessionCF.get();
+
+        // tag::close[]
+        session.goAway(false);
+        // end::close[]
+    }
+
+    public void retryStream() throws Exception
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        http3Client.start();
+        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        Session.Client session = sessionCF.get();
+
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+        HeadersFrame headersFrame = new HeadersFrame(request, true);
+
+        // tag::retryStream[]
+        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                if (failure instanceof RetryableStreamException)
+                {
+                    // The request may be retried.
+                }
+                else
+                {
+                    // The request failed.
+                }
+            }
+        });
+        // end::retryStream[]
     }
 }

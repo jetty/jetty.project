@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -62,7 +64,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
-        assertEquals(0, connectionPool.getActiveConnections().size());
+        await().atMost(5, TimeUnit.SECONDS).until(connectionPool.getActiveConnections()::size, equalTo(0));
         assertEquals(1, connectionPool.getIdleConnections().size());
     }
 
@@ -80,7 +82,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onQueued(Request request)
@@ -126,7 +128,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onBegin(Request request)
@@ -171,7 +173,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            request.listener(new Request.Listener()
+            request.onRequestListener(new Request.Listener()
             {
                 @Override
                 public void onHeaders(Request request)

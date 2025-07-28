@@ -16,6 +16,10 @@ package org.eclipse.jetty.http2.generator;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.io.ByteBufferPool;
 
+/**
+ * @deprecated No replacement, never used.
+ */
+@Deprecated(since = "12.0.20", forRemoval = true)
 public class NoOpGenerator extends FrameGenerator
 {
     public NoOpGenerator()

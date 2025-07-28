@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -249,7 +249,23 @@ public class TestNamingEntries
 
         ne = NamingEntryUtil.lookupNamingEntry(new ScopeB(), "resourceB");
         assertNull(ne);
-        testLink();
+
+        Object testObject = new Object();
+        Resource stringResource = new Resource("testScope", "stringResourceA/b/c", testObject);
+        ne = NamingEntryUtil.lookupNamingEntry("testScope", "stringResourceA/b/c");
+        assertNotNull(ne);
+
+        InitialContext ic = new InitialContext();
+        Object theResult = ic.lookup(NamingEntryUtil.getNameForScope("testScope") + "/stringResourceA/b/c");
+        assertNotNull(theResult);
+        assertEquals(testObject, theResult);
+
+        stringResource = new Resource("test Scope", "some/depth", testObject);
+        ne = NamingEntryUtil.lookupNamingEntry("test Scope", "some/depth");
+        assertNotNull(ne);
+        theResult = ic.lookup(NamingEntryUtil.getNameForScope("test Scope") + "/some/depth");
+        assertEquals(testObject, theResult);
+
     }
 
     @Test

@@ -193,16 +193,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContext();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContextHandler();
+        if (context instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext.getServletContextHandler();
         return null;
     }
 
@@ -869,7 +869,9 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public ServletScopedContext getContext()
     {
-        return (ServletScopedContext)super.getContext();
+        if (super.getContext() instanceof ServletScopedContext servletScopedContext)
+            return servletScopedContext;
+        throw new IllegalStateException("Context is not ServletScopedContext");
     }
 
     /**
@@ -2854,29 +2856,41 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-normalized paths.
-            // Thus, we normalize here, to avoid the enforcement of normalized paths in
-            // ServletContextHandler.this.getResource(path).
-            path = URIUtil.normalizePath(path);
-            if (path == null)
-                return null;
-
-            // Assumption is that the resource base has been properly setup.
-            // Spec requirement is that the WAR file is interrogated first.
-            // If a WAR file is mounted, or is extracted to a temp directory,
-            // then the first entry of the resource base must be the WAR file.
-            Resource resource = ServletContextHandler.this.getResource(path);
-            if (resource == null)
-                return null;
-
-            for (Resource r: resource)
+            try
             {
-                // return first
-                if (Resources.exists(r))
-                    return r.getURI().toURL();
+                // This is an API call from the application which may pass non-normalized paths.
+                // Thus, we normalize here, to avoid the enforcement of normalized paths in
+                // ServletContextHandler.this.getResource(path).
+                path = URIUtil.normalizePath(path);
+                if (path == null)
+                    return null;
+
+                // Assumption is that the resource base has been properly setup.
+                // Spec requirement is that the WAR file is interrogated first.
+                // If a WAR file is mounted, or is extracted to a temp directory,
+                // then the first entry of the resource base must be the WAR file.
+                Resource resource = ServletContextHandler.this.getResource(path);
+                if (resource == null)
+                    return null;
+
+                for (Resource r : resource)
+                {
+                    // return first
+                    if (Resources.exists(r))
+                        return r.getURI().toURL();
+                }
+            }
+            catch (MalformedURLException e)
+            {
+                throw e;
+            }
+            catch (Throwable e)
+            {
+                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
             }
 
-            // A Resource was returned, but did not exist
+            // No hits
             return null;
         }
 
@@ -2894,8 +2908,9 @@ public class ServletContextHandler extends ContextHandler
                     return null;
                 return IOResources.asInputStream(r);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
+                // catch RuntimeException and things like java.nio.fileInvalidPathException here.
                 LOG.trace("IGNORED", e);
                 return null;
             }

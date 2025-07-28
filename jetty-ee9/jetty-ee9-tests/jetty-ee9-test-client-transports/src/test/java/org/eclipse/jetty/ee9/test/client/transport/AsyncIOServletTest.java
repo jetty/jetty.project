@@ -305,7 +305,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testOnErrorThrows(Transport transport) throws Exception
+    public void testOnDataAvailableThrows(Transport transport) throws Exception
     {
         AtomicInteger errors = new AtomicInteger();
         start(transport, new HttpServlet()
@@ -320,7 +320,7 @@ public class AsyncIOServletTest extends AbstractTest
                     return;
                 }
 
-                request.startAsync(request, response);
+                AsyncContext asyncContext = request.startAsync(request, response);
                 request.getInputStream().setReadListener(new ReadListener()
                 {
                     @Override
@@ -340,13 +340,11 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onError(Throwable t)
                     {
                         assertScope();
+                        assertThat(t, instanceOf(NullPointerException.class));
+                        assertThat(t.getMessage(), is("explicitly_thrown_by_test_1"));
                         errors.incrementAndGet();
-                        throw new NullPointerException("explicitly_thrown_by_test_2")
-                        {
-                            {
-                                this.initCause(t);
-                            }
-                        };
+                        response.setStatus(HttpStatus.IM_A_TEAPOT_418);
+                        asyncContext.complete();
                     }
                 });
             }
@@ -359,7 +357,7 @@ public class AsyncIOServletTest extends AbstractTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+            assertEquals(HttpStatus.IM_A_TEAPOT_418, response.getStatus());
             assertEquals(1, errors.get());
         }
     }

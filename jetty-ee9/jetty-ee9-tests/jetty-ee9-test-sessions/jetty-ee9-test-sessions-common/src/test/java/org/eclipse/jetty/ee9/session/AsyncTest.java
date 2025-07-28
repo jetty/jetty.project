@@ -15,11 +15,18 @@ package org.eclipse.jetty.ee9.session;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +37,12 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
@@ -38,9 +50,12 @@ import org.eclipse.jetty.session.test.Foo;
 import org.eclipse.jetty.session.test.FooInvocationHandler;
 import org.eclipse.jetty.session.test.TestFoo;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
-import org.junit.jupiter.api.Disabled;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -145,7 +160,131 @@ public class AsyncTest
         }
     }
 
-    @Disabled //TODO cross context not supported
+    @Test
+    public void testSimpleCrossContextAsync() throws Exception
+    {
+        //Test async cross context dispatch from context A to context B
+        Server server = new Server();
+        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+
+        final List<String> events = new ArrayList<>();
+
+        ServletContextHandler contextA = new ServletContextHandler();
+        contextA.addEventListener(new ServletRequestListener()
+        {
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                events.add("Request Destroyed: " + sre.getServletRequest().getServletContext().getContextPath());
+                ServletRequestListener.super.requestDestroyed(sre);
+            }
+
+            @Override
+            public void requestInitialized(ServletRequestEvent sre)
+            {
+                events.add("Request Initialized: " + sre.getServletRequest().getServletContext().getContextPath());
+                ServletRequestListener.super.requestInitialized(sre);
+            }
+        });
+        contextA.setContextPath("/ctxA");
+        contextA.setCrossContextDispatchSupported(true);
+        final String ASYNC_FLAG_NAME = "async.flag";
+
+        ServletHolder serviceHolder = new ServletHolder("service-servlet", new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                if (req.getAttribute(ASYNC_FLAG_NAME) == null)
+                {
+                    AsyncContext asyncContext = req.startAsync(req, resp);
+                    req.setAttribute(ASYNC_FLAG_NAME, new Object());
+                    asyncContext.setTimeout(100);
+                    asyncContext.addListener(new AsyncListener()
+                    {
+                        @Override
+                        public void onComplete(AsyncEvent event)
+                        {
+                            events.add("ON complete");
+                        }
+
+                        @Override
+                        public void onTimeout(AsyncEvent event)
+                        {
+                            events.add("ON timeout");
+                        }
+
+                        @Override
+                        public void onError(AsyncEvent event)
+                        {
+                            events.add("ON error");
+                        }
+
+                        @Override
+                        public void onStartAsync(AsyncEvent event)
+                        {
+                            events.add("ON startasync");
+                        }
+                    });
+                    //perform cross context dispatch
+                    ServletContext destination = req.getServletContext().getContext("/ctxB");
+                    asyncContext.dispatch(destination, "/dispatched/z");
+                }
+            }
+        });
+
+        serviceHolder.setAsyncSupported(true);
+        contextA.addServlet(serviceHolder, "/dispatcher/*");
+        contextHandlerCollection.addHandler(contextA);
+
+        ServletContextHandler contextB = new ServletContextHandler();
+        contextB.setContextPath("/ctxB");
+        contextB.setCrossContextDispatchSupported(true);
+
+        ServletHolder testHolder = new ServletHolder("test-servlet", new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setCharacterEncoding("utf-8");
+                resp.setContentType("text/plain");
+                resp.getWriter().println("Dispatched to ctxB in test-servlet");
+                resp.getWriter().println(req.getQueryString());
+            }
+        });
+
+        contextB.addServlet(testHolder, "/dispatched/*");
+        contextHandlerCollection.addHandler(contextB);
+        server.setHandler(contextHandlerCollection);
+        LocalConnector connector = new LocalConnector(server);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        server.addConnector(connector);
+
+        server.start();
+
+        try
+        {
+
+            String rawRequest = """
+                GET /ctxA/dispatcher/x?foo=bar HTTP/1.1
+                Host: local
+                Connection: close
+                            
+                """;
+
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+            assertThat(response.getStatus(), is(200));
+            assertThat(events, Matchers.containsInRelativeOrder("Request Initialized: /ctxA", "Request Destroyed: /ctxA"));
+            assertThat(response.getContent(), containsString("Dispatched to ctxB in test-servlet"));
+            assertThat(response.getContent(), containsString("foo=bar"));
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
     @Test
     public void testSessionWithCrossContextAsync() throws Exception
     {
@@ -160,10 +299,12 @@ public class AsyncTest
 
         ServletContextHandler contextA = server.addContext("/ctxA");
         CrossContextServlet ccServlet = new CrossContextServlet();
+        contextA.setCrossContextDispatchSupported(true);
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");
 
         ServletContextHandler contextB = server.addContext("/ctxB");
+        contextB.setCrossContextDispatchSupported(true);
         TestServlet testServlet = new TestServlet();
         ServletHolder testHolder = new ServletHolder(testServlet);
         contextB.addServlet(testHolder, "/*");
@@ -244,7 +385,6 @@ public class AsyncTest
         }   
     }
 
-    @Disabled //TODO cross context not supported
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
@@ -259,11 +399,13 @@ public class AsyncTest
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler contextA = server.addContext("/ctxA");
+        contextA.setCrossContextDispatchSupported(true);
         CrossContextServlet ccServlet = new CrossContextServlet();
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");
 
         ServletContextHandler contextB = server.addContext("/ctxB");
+        contextB.setCrossContextDispatchSupported(true);
         TestServlet testServlet = new TestServlet();
         ServletHolder testHolder = new ServletHolder(testServlet);
         contextB.addServlet(testHolder, "/*");
@@ -274,7 +416,6 @@ public class AsyncTest
 
         try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
-
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 
@@ -369,6 +510,9 @@ public class AsyncTest
                     {
                         if (out.isReady())
                         {
+                            //This test is a really BAD idea - you should not be
+                            //creating a HttpSession in a thread that should merely
+                            //be performing writes on the response.
                             HttpSession s = request.getSession(true);
                             out.print("OK\n");
                             acontext.complete();

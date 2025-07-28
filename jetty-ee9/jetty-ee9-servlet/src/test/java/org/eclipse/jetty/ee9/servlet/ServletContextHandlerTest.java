@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -34,6 +36,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.GenericServlet;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
@@ -60,6 +63,7 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
 import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -67,6 +71,7 @@ import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.RoleInfo;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.UserIdentity;
@@ -81,13 +86,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -2338,5 +2347,103 @@ public class ServletContextHandlerTest
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("OK2"));
+    }
+
+    public static Stream<Arguments> getRequestDispatcherCases()
+    {
+        List<String> inputs = List.of(
+            // Bad path examples
+            "/..%2fbar/",
+            // Bad Query examples
+            "/test?foo=%7=",
+            "/test?foo=abc%",
+            "/test?Name=%FF%FF%FF",
+            "/test?Name=%EF%EF%EF",
+            "/test?Name=X%c0%afZ",
+            "/test?Name=%E%F%F"
+        );
+
+        List<Arguments> cases = new ArrayList<>();
+        for (String input : inputs)
+        {
+            cases.add(Arguments.of(input, "forward"));
+            cases.add(Arguments.of(input, "include"));
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestDispatcherCases")
+    public void testGetRequestDispatcherLegacyException(String requestDispatcherPath, String dispatcherMode) throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(null, "/context", ServletContextHandler.NO_SESSIONS);
+        context.setCrossContextDispatchSupported(true);
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(400, "/error");
+        context.setErrorHandler(errorPageErrorHandler);
+
+        context.addServlet(new ServletHolder("dispatcher-servlet", new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.setAttribute("reached.testcase", "true");
+                String base64Path = req.getHeader("X-GetRequestDispatcher");
+                String path = new String(Base64.getDecoder().decode(base64Path));
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(path); // This can trigger an exception on bad path
+                String mode = req.getHeader("X-DispatcherMode");
+                req.setAttribute("mode.testcase", mode);
+                switch (mode)
+                {
+                    case "forward" -> requestDispatcher.forward(req, resp); // This can trigger an exception on bad query
+                    case "include" -> requestDispatcher.include(req, resp); // This can trigger an exception on bad query
+                }
+                // If we reached this point, then the input path isn't sufficiently bad enough to trigger
+                // a BadMessageException.  That means the testcase input is itself not valid, and should be changed or removed.
+                fail("Input path is not triggering an Exception: \"%s\"".formatted(path));
+            }
+        }), "/dispatcher/*");
+        context.addServlet(new ServletHolder("error-servlet", new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setCharacterEncoding("UTF-8");
+                resp.setContentType("text/plain");
+                PrintWriter out = resp.getWriter();
+                out.printf("ERROR %s\n", req.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+                // Make sure we actually reached the testcase servlet
+                out.printf("reached.testcase=%s\n", req.getAttribute("reached.testcase"));
+                out.printf("mode.testcase=%s\n", req.getAttribute("mode.testcase"));
+                out.close();
+            }
+        }), "/error");
+
+        _server.setHandler(context);
+        _server.start();
+
+        // We want to test how HttpServletRequest.getRequestDispatcher(String) behaves with bad input.
+        // So we encode the raw path into Base64 here to send over an HTTP header without the HTTP Parser freaking out
+        // over badly formatted values in an HTTP Header (like invalid pct-encoding, truncated pct-encoding, or bad utf-8 sequences).
+        String base64Path = Base64.getEncoder().encodeToString(requestDispatcherPath.getBytes(UTF_8));
+
+        String rawRequest = """
+            GET /context/dispatcher/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            X-GetRequestDispatcher: %s\r
+            X-DispatcherMode: %s\r
+            \r
+            """.formatted(base64Path, dispatcherMode);
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        // Test response output to ensure we actually reached the getRequestDispatcher testcase code
+        assertThat(response.getContent(), containsString("""
+            ERROR 400
+            reached.testcase=true
+            mode.testcase=%s
+            """.formatted(dispatcherMode)));
     }
 }

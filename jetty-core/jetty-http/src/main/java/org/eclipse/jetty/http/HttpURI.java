@@ -29,14 +29,14 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Http URI.
- *
- * Both {@link Mutable} and {@link Immutable} implementations are available
- * via the static methods such as {@link #build()} and {@link #from(String)}.
- *
- * A URI such as
+ * <p>Representation of HTTP URIs.</p>
+ * <p>Both {@link Mutable} and {@link Immutable} implementations are available
+ * via the static methods such as {@link #build()} and {@link #from(String)},
+ * and {@link Unsafe} can be used for tests or invalid URIs.</p>
+ * <p>An HTTP URI such as
  * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar%20bob;param2?query#fragment}
- * is split into the following optional elements:<ul>
+ * is split into the following optional elements:</p>
+ * <ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
@@ -58,26 +58,17 @@ import org.eclipse.jetty.util.URIUtil;
  * expansion. A literal interpretation of the RFC can result in URI paths with ambiguities
  * when viewed as strings. For example, a URI of {@code /foo%2f..%2fbar} is technically a single
  * segment of "/foo/../bar", but could easily be misinterpreted as 3 segments resolving to "/bar"
- * by a file system.
- * </p>
- * <p>
- * Thus this class avoid and/or detects such ambiguities. Furthermore, by decoding characters and
+ * by a file system.</p>
+ * <p>Thus this class avoid and/or detects such ambiguities. Furthermore, by decoding characters and
  * removing parameters before relative path normalization, ambiguous paths will be resolved in such
- * a way to be non-standard-but-non-ambiguous to down stream interpretation of the decoded path string.
- * </p>
- * <p>
- * This class collates any {@link UriCompliance.Violation violations} against the specification
+ * a way to be non-standard-but-non-ambiguous to down stream interpretation of the decoded path string.</p>
+ * <p>This class collates any {@link UriCompliance.Violation violations} against the specification
  * and/or best practises in the {@link #getViolations()}.  Users of this class should check against a
  * configured {@link UriCompliance} mode if the {@code HttpURI} is suitable for use
- * (see {@link UriCompliance#checkUriCompliance(UriCompliance, HttpURI, ComplianceViolation.Listener)}).
- * </p>
- * <p>
- * For example, implementations that wish to process ambiguous URI paths must configure the compliance modes
- * to accept them and then perform their own decoding of {@link #getPath()}.
- * </p>
- * <p>
- * If there are multiple path parameters, only the last one is returned by {@link #getParam()}.
- * </p>
+ * (see {@link UriCompliance#checkUriCompliance(UriCompliance, HttpURI, ComplianceViolation.Listener)}).</p>
+ * <p>For example, implementations that wish to process ambiguous URI paths must configure the compliance
+ * modes to accept them and then perform their own decoding of {@link #getPath()}.</p>
+ * <p>If there are multiple path parameters, only the last one is returned by {@link #getParam()}.</p>
  **/
 public interface HttpURI
 {
@@ -152,9 +143,20 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
+    /**
+     * <p>Creates a new {@code HttpURI} with the given arguments.</p>
+     *
+     * @param scheme the URI scheme (normalized to lower-case)
+     * @param host the URI host
+     * @param port the URI port, or {@code -1} for no port
+     * @param path the URI path
+     * @param query the URI query
+     * @param fragment the URI fragment
+     * @return a new {@code HttpURI}
+     */
     static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
     {
-        return new Immutable(scheme, host, port, path, query, fragment);
+        return new Immutable(scheme, host, port, path, query, fragment, false);
     }
 
     Immutable asImmutable();
@@ -300,16 +302,15 @@ public interface HttpURI
                 _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
-        private Immutable(String scheme, String host, int port, String path, String query, String fragment)
+        private Immutable(String scheme, String host, int port, String path, String query, String fragment, boolean unsafe)
         {
             _uri = null;
-
-            _scheme = URIUtil.normalizeScheme(scheme);
+            _scheme = unsafe ? scheme : URIUtil.normalizeScheme(scheme);
             _user = null;
             _host = host;
-            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
+            _port = unsafe || port > 0 ? port : URIUtil.UNDEFINED_PORT;
             _path = path;
-            _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
+            _canonicalPath = unsafe || path == null ? path : URIUtil.canonicalPath(path);
             _param = null;
             _query = query;
             _fragment = fragment;
@@ -503,6 +504,29 @@ public interface HttpURI
         public String toString()
         {
             return asString();
+        }
+    }
+
+    /**
+     * <p>An unsafe {@link HttpURI} that accepts URI parts without checking whether they are valid.</p>
+     * <p>This class should be primarily used for testing, since possibly invalid URI may break
+     * arbitrary code.</p>
+     */
+    class Unsafe extends Immutable
+    {
+        /**
+         * <p>Creates a new unsafe {@link HttpURI} with the given arguments.</p>
+         *
+         * @param scheme the URI scheme
+         * @param host the URI host
+         * @param port the URI port, or {@code -1} for no port
+         * @param path the URI path
+         * @param query the URI query
+         * @param fragment the URI fragment
+         */
+        public Unsafe(String scheme, String host, int port, String path, String query, String fragment)
+        {
+            super(scheme, host, port, path, query, fragment, true);
         }
     }
 
@@ -1692,7 +1716,7 @@ public interface HttpURI
             if (ambiguous != null)
             {
                 // The segment is always ambiguous.
-                if (Boolean.TRUE.equals(ambiguous))
+                if (ambiguous)
                     addViolation(Violation.AMBIGUOUS_PATH_SEGMENT);
                 // The segment is ambiguous only when followed by a parameter.
                 if (param)

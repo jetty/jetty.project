@@ -83,17 +83,22 @@ public class HttpParserTest
         }
     }
 
-    @Test
-    public void testHttpMethod()
+    public static Stream<Arguments> httpMethodValues()
     {
-        for (HttpMethod m : HttpMethod.values())
-        {
-            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0, 2))));
-            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
-            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
-            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
-            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
-        }
+        return List.of(HttpMethod.values())
+            .stream()
+            .map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("httpMethodValues")
+    public void testHttpMethod(HttpMethod m)
+    {
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0, 2))));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
+        assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
+        assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
 
         ByteBuffer b = BufferUtil.allocateDirect(128);
         BufferUtil.append(b, BufferUtil.toBuffer("GET"));
@@ -512,57 +517,147 @@ public class HttpParserTest
         assertThat(_bad, containsString("Illegal character"));
     }
 
-    @Test // TODO: Parameterize Test
-    public void testWhiteSpaceBeforeRequest()
+    public static Stream<Arguments> headerFieldValues()
     {
-        HttpCompliance[] compliances = new HttpCompliance[]
-            {
-                HttpCompliance.RFC7230, HttpCompliance.RFC2616
-            };
+        List<Arguments> cases = new ArrayList<>();
 
-        String[][] whitespaces = new String[][]
-            {
-                {" ", "Illegal character SPACE"},
-                {"\t", "Illegal character HTAB"},
-                {"\n", null},
-                {"\r", "Bad EOL"},
-                {"\r\n", null},
-                {"\r\n\r\n", null},
-                {"\r\n \r\n", "Illegal character SPACE"},
-                {"\r\n\t\r\n", "Illegal character HTAB"},
-                {"\r\t\n", "Bad EOL"},
-                {"\r\r\n", "Bad EOL"},
-                {"\t\r\t\r\n", "Illegal character HTAB"},
-                {" \t \r \t \n\n", "Illegal character SPACE"},
-                {" \r \t \r\n\r\n\r\n", "Illegal character SPACE"}
-            };
-
-        for (HttpCompliance compliance : compliances)
+        for (HttpCompliance httpCompliance : List.of(HttpCompliance.RFC7230, HttpCompliance.RFC2616))
         {
-            for (int j = 0; j < whitespaces.length; j++)
-            {
-                String request =
-                    whitespaces[j][0] +
-                        "GET / HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Name: value" + j + "\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-
-                ByteBuffer buffer = BufferUtil.toBuffer(request);
-                HttpParser.RequestHandler handler = new Handler();
-                HttpParser parser = new HttpParser(handler, 4096, compliance);
-                _bad = null;
-                parseAll(parser, buffer);
-
-                String test = "whitespace.[" + compliance + "].[" + j + "]";
-                String expected = whitespaces[j][1];
-                if (expected == null)
-                    assertThat(test, _bad, is(nullValue()));
-                else
-                    assertThat(test, _bad, containsString(expected));
-            }
+            cases.add(Arguments.of(httpCompliance, "Value", "Value"));
+            cases.add(Arguments.of(httpCompliance, " Value", "Value"));
+            // HTAB is valid OWS when at the start or end of a value.
+            // But is preserved as field-content within a value
+            cases.add(Arguments.of(httpCompliance, "\tValue", "Value"));
+            cases.add(Arguments.of(httpCompliance, "\t \tValue", "Value"));
+            cases.add(Arguments.of(httpCompliance, "\t\t\tValue", "Value"));
+            cases.add(Arguments.of(httpCompliance, "Value\t", "Value"));
+            cases.add(Arguments.of(httpCompliance, "Va\tlue", "Va\tlue"));
+            // SPACE is valid OWS when at the start or end of value.
+            // But is preserved as field-content within a value
+            cases.add(Arguments.of(httpCompliance, "   Value", "Value"));
+            cases.add(Arguments.of(httpCompliance, "   Value   ", "Value"));
+            cases.add(Arguments.of(httpCompliance, "V a l u e", "V a l u e"));
+            cases.add(Arguments.of(httpCompliance, " V a l u e ", "V a l u e"));
+            // Mix of WS
+            cases.add(Arguments.of(httpCompliance, " \t V a l u e \t ", "V a l u e"));
+            // Characters above US-ASCII (should be replaced)
+            // OBS: This character 0x8B falls into the `obs-text` portion of ABNF, even though it's not visible, and is a control character.
+            cases.add(Arguments.of(httpCompliance, ((char)0x8B) + "Value", ((char)0x8B) + "Value"));
+            // ... like Unicode (should be sanitized replaced)
+            cases.add(Arguments.of(httpCompliance, "(€)Euro", "(?)Euro"));
         }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("headerFieldValues")
+    public void testHeaderFieldValue(HttpCompliance compliance, String rawValue, String expectedValue)
+    {
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Name: %s\r
+                Connection: close\r
+                \r
+                """.formatted(rawValue);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(request);
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, 4096, compliance);
+        _bad = null;
+        parseAll(parser, buffer);
+
+        assertThat(_bad, nullValue());
+
+        assertEquals(2, _headers);
+        assertEquals("Name", _hdr[1]);
+        assertEquals(expectedValue, _val[1]);
+    }
+
+    public static Stream<Arguments> illegalFieldCharacter()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        for (HttpCompliance httpCompliance : List.of(HttpCompliance.RFC7230, HttpCompliance.RFC2616))
+        {
+            // BELL (control character) is replaced with '?'
+            cases.add(Arguments.of(httpCompliance, ((char)0x07) + "Value", "Illegal character CNTL=0x7"));
+            // DEL (control character) is replaced with '?'
+            cases.add(Arguments.of(httpCompliance, ((char)0x7F) + "Value", "Illegal character CNTL=0x7f"));
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("illegalFieldCharacter")
+    public void testIllegalFieldCharacter(HttpCompliance compliance, String rawValue, String expectedError)
+    {
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Name: %s\r
+                Connection: close\r
+                \r
+                """.formatted(rawValue);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(request);
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, 4096, compliance);
+        _bad = null;
+        parseAll(parser, buffer);
+
+        assertThat(_bad, is(expectedError));
+    }
+
+    public static Stream<Arguments> whiteSpaceBeforeRequest()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        for (HttpCompliance httpCompliance : List.of(HttpCompliance.RFC7230, HttpCompliance.RFC2616))
+        {
+            cases.add(Arguments.of(httpCompliance, " ", "Illegal character SPACE"));
+            cases.add(Arguments.of(httpCompliance, "\t", "Illegal character HTAB"));
+            cases.add(Arguments.of(httpCompliance, "\n", null));
+            cases.add(Arguments.of(httpCompliance, "\r", "Bad EOL"));
+            cases.add(Arguments.of(httpCompliance, "\r\n", null));
+            cases.add(Arguments.of(httpCompliance, "\r\n\r\n", null));
+            cases.add(Arguments.of(httpCompliance, "\r\n \r\n", "Illegal character SPACE"));
+            cases.add(Arguments.of(httpCompliance, "\r\n\t\r\n", "Illegal character HTAB"));
+            cases.add(Arguments.of(httpCompliance, "\r\t\n", "Bad EOL"));
+            cases.add(Arguments.of(httpCompliance, "\r\r\n", "Bad EOL"));
+            cases.add(Arguments.of(httpCompliance, "\t\r\t\r\n", "Illegal character HTAB"));
+            cases.add(Arguments.of(httpCompliance, " \t \r \t \n\n", "Illegal character SPACE"));
+            cases.add(Arguments.of(httpCompliance, " \r \t \r\n\r\n\r\n", "Illegal character SPACE"));
+        }
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("whiteSpaceBeforeRequest")
+    public void testWhiteSpaceBeforeRequest(HttpCompliance compliance, String whitespace, String expected)
+    {
+        String request =
+            """
+                %sGET / HTTP/1.1\r
+                Host: localhost\r
+                Name: value\r
+                Connection: close\r
+                \r
+                """.formatted(whitespace);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(request);
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, 4096, compliance);
+        _bad = null;
+        parseAll(parser, buffer);
+
+        if (expected == null)
+            assertThat(_bad, is(nullValue()));
+        else
+            assertThat(_bad, containsString(expected));
     }
 
     @ParameterizedTest
@@ -913,38 +1008,33 @@ public class HttpParserTest
         assertThat(_bad, Matchers.notNullValue());
     }
 
-    @Test // TODO: Parameterize Test
-    public void testBadHeaderNames()
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Foo\\Bar: value\r\n",
+        "Foo@Bar: value\r\n",
+        "Foo,Bar: value\r\n",
+        "Foo}Bar: value\r\n",
+        "Foo{Bar: value\r\n",
+        "Foo=Bar: value\r\n",
+        "Foo>Bar: value\r\n",
+        "Foo<Bar: value\r\n",
+        "Foo)Bar: value\r\n",
+        "Foo(Bar: value\r\n",
+        "Foo?Bar: value\r\n",
+        "Foo\"Bar: value\r\n",
+        "Foo/Bar: value\r\n",
+        "Foo]Bar: value\r\n",
+        "Foo[Bar: value\r\n"
+    })
+    public void testBadHeaderNames(String bad)
     {
-        String[] bad = new String[]
-            {
-                "Foo\\Bar: value\r\n",
-                "Foo@Bar: value\r\n",
-                "Foo,Bar: value\r\n",
-                "Foo}Bar: value\r\n",
-                "Foo{Bar: value\r\n",
-                "Foo=Bar: value\r\n",
-                "Foo>Bar: value\r\n",
-                "Foo<Bar: value\r\n",
-                "Foo)Bar: value\r\n",
-                "Foo(Bar: value\r\n",
-                "Foo?Bar: value\r\n",
-                "Foo\"Bar: value\r\n",
-                "Foo/Bar: value\r\n",
-                "Foo]Bar: value\r\n",
-                "Foo[Bar: value\r\n"
-            };
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.0\r\n" + bad + "\r\n");
 
-        for (String s : bad)
-        {
-            ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.0\r\n" + s + "\r\n");
-
-            HttpParser.RequestHandler handler = new Handler();
-            HttpParser parser = new HttpParser(handler);
-            parseAll(parser, buffer);
-            assertThat(s, _bad, Matchers.notNullValue());
-        }
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+        assertThat(bad, _bad, Matchers.notNullValue());
     }
 
     @ParameterizedTest

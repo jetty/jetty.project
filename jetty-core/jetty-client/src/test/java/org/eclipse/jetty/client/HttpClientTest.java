@@ -87,7 +87,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -999,7 +1001,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .onRequestContent(listener)
             .onRequestSuccess(listener)
             .onRequestFailure(listener)
-            .listener(listener)
+            .onRequestListener(listener)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -1090,6 +1092,44 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int expectedEventsTriggeredBySendListener = 4;
         int expected = expectedEventsTriggeredByResponseListeners + expectedEventsTriggeredBySendListener;
         assertEquals(expected, counter.get());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRequestListenerResponseListener(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        class MetricsListener implements Request.Listener, Response.Listener
+        {
+            private long responseNanoTime;
+
+            @Override
+            public void onQueued(Request request)
+            {
+                request.attribute("queued", NanoTime.now());
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                long queuedNanoTime = (Long)result.getRequest().getAttributes().get("queued");
+                responseNanoTime = NanoTime.since(queuedNanoTime);
+            }
+        }
+
+        MetricsListener metricsListener = new MetricsListener();
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Separate orthogonal concerns such as metrics (e.g. responseTime)
+            // from the handling of the response (e.g. accumulate response content).
+            .onRequestListener(metricsListener)
+            .onResponseListener(metricsListener);
+        ContentResponse response = new CompletableResponseListener(request).send().get(5, TimeUnit.SECONDS);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(metricsListener.responseNanoTime, greaterThan(0L));
     }
 
     @ParameterizedTest

@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
@@ -24,6 +25,7 @@ import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.RetryableStreamException;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -110,15 +112,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         sender.send(exchange);
     }
 
+    void acquire()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("channel acquired {} {}", this, stream);
+    }
+
     @Override
     public void release()
     {
         setStream(null);
-        boolean released = connection.release(this);
+        connection.release(this);
         if (LOG.isDebugEnabled())
-            LOG.debug("released channel? {} {}", released, this);
-        if (released)
-            getHttpDestination().release(getHttpConnection());
+            LOG.debug("channel released {} {}", this, stream);
     }
 
     @Override
@@ -218,7 +224,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onFailure(failure, callback), false);
+            if (failure instanceof RetryableStreamException)
+                failure = new RetryableRequestException(failure);
+            Runnable task = channel.onFailure(failure, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("offering failure task {} {}", stream, task);
+            connection.offerTask(task, false);
         }
     }
 }

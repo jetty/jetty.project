@@ -22,10 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -40,12 +42,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -73,6 +79,7 @@ public class AsyncServletIOTest
     protected AsyncIOServlet3 _servlet3 = new AsyncIOServlet3();
     protected AsyncIOServlet4 _servlet4 = new AsyncIOServlet4();
     protected StolenAsyncReadServlet _servletStolenAsyncRead = new StolenAsyncReadServlet();
+    protected AsyncReadServlet _servletAsyncRead = new AsyncReadServlet();
     protected int _port;
     protected Server _server;
     protected ServletHandler _servletHandler;
@@ -113,6 +120,10 @@ public class AsyncServletIOTest
         ServletHolder holder5 = new ServletHolder(_servletStolenAsyncRead);
         holder5.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder5, "/stolen/*");
+
+        ServletHolder holder6 = new ServletHolder(_servletAsyncRead);
+        holder6.setAsyncSupported(true);
+        _servletHandler.addServletWithMapping(holder6, "/asyncRead/*");
 
         _server.start();
         _port = _connector.getLocalPort();
@@ -229,6 +240,33 @@ public class AsyncServletIOTest
 
         assertEquals(list.get(0), "data");
         assertTrue(_servlet2.completed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testEarlyEofDuringClientAsyncRequestBlockingRead() throws Exception
+    {
+        int port = _port;
+        try (Socket socket = new Socket("localhost", port))
+        {
+            String request =
+                "GET /ctx/asyncRead HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "\r\n" +
+                    "01234";
+
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            // Close.
+        }
+
+        // Assert that the blocking read throws EofException.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> _servletAsyncRead.exceptionRef.get() instanceof EofException);
+
+        // Assert that no async event was generated as the blocking read got notified of the error.
+        await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(_servletAsyncRead.listener.events, empty()));
     }
 
     @Test
@@ -881,6 +919,60 @@ public class AsyncServletIOTest
             {
                 t.printStackTrace();
                 asyncContext.complete();
+            }
+        }
+    }
+
+    public static class AsyncReadServlet extends HttpServlet
+    {
+        final AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
+        final TestAsyncListener listener = new TestAsyncListener();
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            AsyncContext asyncContext = req.startAsync();
+            asyncContext.addListener(listener);
+            new Thread(() ->
+            {
+                try
+                {
+                    IO.readBytes(req.getInputStream());
+                    throw new AssertionError("expected IOException");
+                }
+                catch (Throwable x)
+                {
+                    exceptionRef.set(x);
+                }
+            }).start();
+        }
+
+        static class TestAsyncListener implements AsyncListener
+        {
+            final List<String> events = new CopyOnWriteArrayList<>();
+
+            @Override
+            public void onComplete(AsyncEvent event)
+            {
+                events.add("complete");
+            }
+
+            @Override
+            public void onTimeout(AsyncEvent event)
+            {
+                events.add("timeout");
+            }
+
+            @Override
+            public void onError(AsyncEvent event)
+            {
+                events.add("error");
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event)
+            {
+                events.add("startAsync");
             }
         }
     }

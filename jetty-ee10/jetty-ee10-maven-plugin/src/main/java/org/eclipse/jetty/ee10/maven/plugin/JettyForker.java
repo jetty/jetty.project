@@ -25,8 +25,9 @@ public class JettyForker extends AbstractServerForker
     protected MavenWebAppContext webApp;
     QuickStartGenerator generator;
 
-    public JettyForker()
+    public JettyForker(String javaPath)
     {
+        super(javaPath);
         executionClassName = JettyForkedChild.class.getCanonicalName();
     }
 

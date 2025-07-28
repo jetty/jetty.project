@@ -165,7 +165,8 @@ public class CookieCompliance implements ComplianceViolation.Mode
     );
 
     /**
-     * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
+     * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance, but with
+     * exceptions that match the behavior of legacy Jetty releases.
      */
     public static final CookieCompliance RFC2965_LEGACY = new CookieCompliance("RFC2965_LEGACY", allOf(Violation.class));
 
@@ -174,12 +175,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * but does <b>not</b> allow:
      * <ul>
      * <li>{@link Violation#BAD_QUOTES}</li>
-     * <li>{@link Violation#COMMA_NOT_VALID_OCTET}</li>
      * <li>{@link Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</li>
      * </ul>
      */
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(
-        Violation.BAD_QUOTES, Violation.COMMA_NOT_VALID_OCTET, Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED)
+        Violation.BAD_QUOTES, Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED)
     ));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC6265_STRICT, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY);
@@ -211,9 +211,9 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * with a '-' to exclude them from the mode.  Examples are:
      * </p>
      * <dl>
-     * <dt>{@code 0,RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Only allow {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
-     * <dt>{@code *,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Allow all violations, except {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
-     * <dt>{@code RFC2965,RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Same as RFC2965, but allows {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
+     * <dt>{@code 0,ESCAPE_IN_QUOTES}</dt><dd>Only allow {@link CookieCompliance.Violation#ESCAPE_IN_QUOTES}</dd>
+     * <dt>{@code *,-ESCAPE_IN_QUOTES}</dt><dd>Allow all violations, except {@link CookieCompliance.Violation#ESCAPE_IN_QUOTES}</dd>
+     * <dt>{@code RFC2965,ESCAPE_IN_QUOTES}</dt><dd>Same as RFC2965, but allows {@link CookieCompliance.Violation#ESCAPE_IN_QUOTES}</dd>
      * </dl>
      *
      * @param spec A string describing the compliance

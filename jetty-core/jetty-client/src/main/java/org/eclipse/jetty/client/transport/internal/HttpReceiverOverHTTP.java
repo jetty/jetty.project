@@ -126,6 +126,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (LOG.isDebugEnabled())
             LOG.debug("ParseAndFill needFillInterest {} in {}", needFillInterest, this);
         chunk = consumeChunk();
+        if (state == State.COMPLETE)
+            responseSuccess(getHttpExchange(), receiveNext);
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
@@ -339,12 +341,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     boolean isUpgrade = status == HttpStatus.SWITCHING_PROTOCOLS_101;
                     boolean isTunnel = getHttpChannel().isTunnel(method, status);
 
-                    Runnable task = isUpgrade || isTunnel ? null : this.receiveNext;
-                    responseSuccess(exchange, task);
-
                     // Connection upgrade, bail out.
                     if (isUpgrade || isTunnel)
+                    {
+                        responseSuccess(exchange, null);
                         return true;
+                    }
 
                     if (byteBuffer.hasRemaining())
                     {
@@ -359,9 +361,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Discarding unexpected content after response {}: {} in {}", status, BufferUtil.toDetailString(byteBuffer), this);
                             BufferUtil.clear(byteBuffer);
-                            return false;
                         }
                     }
+
+                    // When notifyContentAvailable==false, this method is called from read(boolean),
+                    // and the call to responseSuccess() is performed by read().
+                    if (notifyContentAvailable)
+                        responseSuccess(exchange, receiveNext);
 
                     // Continue to read from the network.
                     return false;

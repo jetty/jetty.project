@@ -1728,6 +1728,75 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
     }
 
+    /** A request has come in via an async dispatch from a different context.
+     *
+     * @param channel the HttpChannel associated with the request
+     * @throws IOException
+     * @throws ServletException
+     */
+    public void handleCrossContextAsync(HttpChannel channel) throws IOException, ServletException
+    {
+        AsyncContextEvent event = channel.getState().getAsyncContextEvent();
+
+        // we must mutate the request
+        Request request = event.getHttpChannelState().getBaseRequest();
+        HttpURI baseUri = event.getBaseURI();
+        APIContext oldContext = request.getContext();
+        HttpURI oldURI = request.getHttpURI();
+        String oldPathInContext = request.getPathInContext();
+        Fields oldQueryFields = request.getQueryFields();
+
+        //the path in the context (encoded with possible query string)
+        String encodedPathQuery = event.getDispatchPath();
+        if (encodedPathQuery == null && baseUri == null)
+        {
+            //TODO - what would this mean?
+        }
+        else
+        {
+            try
+            {
+                if (encodedPathQuery == null)
+                {
+                    request.setHttpURI(baseUri);
+                }
+                else
+                {
+                    String encodedContextPath = URIUtil.encodePath(getContextPath());
+                    if (!StringUtil.isEmpty(encodedContextPath))
+                    {
+                        encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        if (encodedPathQuery == null)
+                            throw new BadMessageException(500, "Bad dispatch path");
+                    }
+
+                    if (baseUri == null)
+                        baseUri = request.getHttpURI();
+                    HttpURI.Mutable builder = HttpURI.build(baseUri, encodedPathQuery);
+
+                    if (StringUtil.isEmpty(builder.getParam()))
+                        builder.param(baseUri.getParam());
+                    if (StringUtil.isEmpty(builder.getQuery()))
+                        builder.query(baseUri.getQuery());
+
+                    request.setHttpURI(builder);
+
+                    if (baseUri.getQuery() != null && request.getQueryString() != null)
+                        request.mergeQueryParameters(request.getHttpURI().getQuery(), request.getQueryString());
+                }
+
+                request.setContext(_apiContext, event.getDispatchPath());
+                handleAsync(channel, event, request);
+            }
+            finally
+            {
+                request.setContext(oldContext, oldPathInContext);
+                request.setHttpURI(oldURI);
+                request.setQueryFields(oldQueryFields);
+            }
+        }
+    }
+
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
      * or after the entire request has been received (for short requests of known length), or
@@ -1983,15 +2052,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
-            if (path == null)
-                return null;
-            Resource resource = ContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
-                return resource.getURI().toURL();
+            try
+            {
+                // This is an API call from the application which may pass non-canonical paths.
+                // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+                // ContextHandler.this.getResource(path).
+                String canonicalPath = URIUtil.canonicalPath(path);
+                if (canonicalPath == null)
+                    return null;
+
+                if (!canonicalPath.startsWith("/"))
+                    throw new MalformedURLException(path);
+
+                Resource resource = ContextHandler.this.getResource(canonicalPath);
+                if (resource != null && resource.exists())
+                    return resource.getURI().toURL();
+            }
+            catch (MalformedURLException e)
+            {
+                throw e;
+            }
+            catch (Throwable e)
+            {
+                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+            }
             return null;
         }
 
@@ -2009,8 +2094,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     return null;
                 return IOResources.asInputStream(r);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
+                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
                 LOG.trace("IGNORED", e);
                 return null;
             }

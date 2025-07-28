@@ -92,7 +92,14 @@ public interface Quiche
         QUICHE_ERR_KEY_UPDATE = -19,
 
         // The peer sent more data in CRYPTO frames than we can buffer.
-        QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED = -20;
+        QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED = -20,
+
+        // The peer sent an ACK frame with an invalid range.
+        QUICHE_ERR_INVALID_ACK_RANGE = -21,
+
+        // The peer send an ACK frame for a skipped packet used for Optimistic ACK
+        // mitigation.
+        QUICHE_ERR_OPTIMISTIC_ACK_DETECTED = -22;
 
         static String errToString(long err)
         {
@@ -136,6 +143,10 @@ public interface Quiche
                 return "QUICHE_ERR_KEY_UPDATE";
             if (err == QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED)
                 return "QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED";
+            if (err == QUICHE_ERR_INVALID_ACK_RANGE)
+                return "QUICHE_ERR_INVALID_ACK_RANGE";
+            if (err == QUICHE_ERR_OPTIMISTIC_ACK_DETECTED)
+                return "QUICHE_ERR_OPTIMISTIC_ACK_DETECTED";
             return "?? " + err;
         }
     }

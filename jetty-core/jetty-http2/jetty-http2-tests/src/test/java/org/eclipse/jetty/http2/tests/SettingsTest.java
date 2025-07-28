@@ -431,7 +431,17 @@ public class SettingsTest extends AbstractTest
             }
         });
 
-        Session clientSession = newClientSession(new Session.Listener() {});
+        CountDownLatch clientSettingsLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame settingsFrame)
+            {
+                clientSettingsLatch.countDown();
+            }
+        });
+        assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+
         HttpFields requestHeaders = HttpFields.build()
             .put("X-Large", "x".repeat(maxHeadersSize * 2));
         MetaData.Request request = newRequest("GET", requestHeaders);
@@ -467,7 +477,17 @@ public class SettingsTest extends AbstractTest
         });
         http2Client.setMaxRequestHeadersSize(maxHeadersSize / 2);
 
-        Session clientSession = newClientSession(new Session.Listener() {});
+        CountDownLatch clientSettingsLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame settingsFrame)
+            {
+                clientSettingsLatch.countDown();
+            }
+        });
+        assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+
         HttpFields requestHeaders = HttpFields.build()
             .put("X-Large", "x".repeat(maxHeadersSize - 256)); // 256 bytes to account for the other headers
         MetaData.Request request = newRequest("GET", requestHeaders);
@@ -487,8 +507,15 @@ public class SettingsTest extends AbstractTest
     {
         int maxHeadersSize = 512;
         AtomicReference<CompletableFuture<Stream>> responseRef = new AtomicReference<>();
+        CountDownLatch settingsLatch = new CountDownLatch(2);
         start(new ServerSessionListener()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
@@ -504,6 +531,12 @@ public class SettingsTest extends AbstractTest
         Session clientSession = newClientSession(new Session.Listener()
         {
             @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
+            @Override
             public Map<Integer, Integer> onPreface(Session session)
             {
                 return Map.of(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
@@ -515,6 +548,8 @@ public class SettingsTest extends AbstractTest
                 goAwayLatch.countDown();
             }
         });
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, true);
         clientSession.newStream(frame, new Stream.Listener() {});

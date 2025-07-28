@@ -45,6 +45,9 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.toolchain.Toolchain;
+import org.apache.maven.toolchain.ToolchainManager;
+import org.apache.maven.toolchain.java.JavaToolchainImpl;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.jetty.maven.MavenProjectHelper;
@@ -379,7 +382,38 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected List<String> supportedPackagings = Collections.singletonList("war");
-    
+
+    /**
+     * Requirements for this JDK toolchain for using a different {@code javac} than the one of the JDK used by Maven.
+     * This overrules the toolchain selected by the
+     * <a href="https://maven.apache.org/plugins/maven-toolchains-plugin/">maven-toolchain-plugin</a>.
+     * See <a href="https://maven.apache.org/guides/mini/guide-using-toolchains.html"> Guide to Toolchains</a>
+     * for more info.
+     *
+     * <pre>
+     * &lt;configuration&gt;
+     *   &lt;jdkToolchain&gt;
+     *     &lt;version&gt;11&lt;/version&gt;
+     *   &lt;/jdkToolchain&gt;
+     *   ...
+     * &lt;/configuration&gt;
+     *
+     * &lt;configuration&gt;
+     *   &lt;jdkToolchain&gt;
+     *     &lt;version&gt;1.8&lt;/version&gt;
+     *     &lt;vendor&gt;zulu&lt;/vendor&gt;
+     *   &lt;/jdkToolchain&gt;
+     *   ...
+     * &lt;/configuration&gt;
+     * </pre>
+     *
+     */
+    @Parameter
+    protected Map<String, String> jdkToolchain;
+
+    @Component
+    protected ToolchainManager toolchainManager;
+
     /**
      * List of deps that are wars
      */
@@ -476,6 +510,30 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     protected abstract void startJettyHome() throws MojoExecutionException;
 
+    /**
+     * {@return the tool chain specified by the user in plugin parameters}.
+     */
+    protected final Toolchain getToolchain()
+    {
+        Toolchain tc = null;
+
+        if (jdkToolchain != null)
+        {
+            List<Toolchain> tcs = toolchainManager.getToolchains(session, "jdk", jdkToolchain);
+            if (tcs != null && !tcs.isEmpty())
+            {
+                tc = tcs.get(0);
+            }
+        }
+
+        if (tc == null)
+        {
+            tc = toolchainManager.getToolchainFromBuildContext("jdk", session);
+        }
+
+        return tc;
+    }
+
     protected JettyEmbedder newJettyEmbedder()
         throws Exception
     {
@@ -497,7 +555,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected JettyForker newJettyForker()
         throws Exception
     {
-        JettyForker jetty = new JettyForker();
+        Toolchain toolchain = getToolchain();
+        String javaPath = null;
+        if (toolchain instanceof JavaToolchainImpl javaToolChain)
+        {
+            javaPath = javaToolChain.getJavaHome();
+        }
+        JettyForker jetty = new JettyForker(javaPath);
         jetty.setServer(server);
         jetty.setWorkDir(project.getBasedir());
         jetty.setStopKey(stopKey);
@@ -521,7 +585,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected JettyHomeForker newJettyHomeForker()
         throws Exception
     {
-        JettyHomeForker jetty = new JettyHomeForker();
+        Toolchain toolchain = getToolchain();
+        String javaPath = null;
+        if (toolchain instanceof JavaToolchainImpl javaToolChain)
+        {
+            javaPath = javaToolChain.getJavaHome();
+        }
+        JettyHomeForker jetty = new JettyHomeForker(javaPath);
         jetty.setStopKey(stopKey);
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);

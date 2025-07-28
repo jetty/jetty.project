@@ -73,7 +73,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (_request == null)
             return null;
-        return Request.as(_request, ServletContextRequest.class).getServletApiRequest();
+        return Request.asInContext(_request, ServletContextRequest.class).getServletApiRequest();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (_response == null)
             return null;
-        return Response.as(_response, ServletContextResponse.class).getServletApiResponse();
+        return Response.asInContext(_response, ServletContextResponse.class).getServletApiResponse();
     }
 
     @Override

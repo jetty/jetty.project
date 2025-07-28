@@ -42,8 +42,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionPromise";
 
-    private final Connection.Listener connectionListener = new ConnectionListener();
-
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
@@ -70,7 +68,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         context.put(HTTP2Connection.class.getName(), connection);
-        connection.addEventListener(connectionListener);
+        connection.addEventListener(client.getSessionContainer());
+        client.getEventListeners().forEach(session::addEventListener);
         parser.init(connection);
 
         return customize(connection, context);
@@ -95,7 +94,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void onOpen()
         {
-            Map<Integer, Integer> settings = listener.onPreface(getSession());
+            HTTP2Session session = getSession();
+            session.notifyLifeCycleOpen();
+
+            Map<Integer, Integer> settings = listener.onPreface(session);
             settings = settings == null ? new HashMap<>() : new HashMap<>(settings);
 
             // Below we want to populate any settings to send to the server
@@ -147,8 +149,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-            HTTP2Session session = getSession();
-
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             session.updateRecvWindow(windowDelta);
             if (windowDelta > 0)
@@ -179,23 +179,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private static class ConnectionListener implements Connection.Listener
-    {
-        @Override
-        public void onOpened(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.addManaged(http2Connection.getSession());
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            HTTP2ClientConnection http2Connection = (HTTP2ClientConnection)connection;
-            http2Connection.client.removeBean(http2Connection.getSession());
         }
     }
 }

@@ -14,9 +14,10 @@
 package org.eclipse.jetty.ee9.osgi.test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.jar.JarInputStream;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
@@ -29,8 +30,8 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -51,9 +52,8 @@ public class TestJettyOSGiClasspathResources
 
     @Configuration
     public static Option[] configure()
-    {        
-        ArrayList<Option> options = new ArrayList<>();
-        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+    {
+        ArrayList<Option> options = new ArrayList<>(TestOSGiUtil.configurePaxExamLogging());
 
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
@@ -67,12 +67,12 @@ public class TestJettyOSGiClasspathResources
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
-        //Note: we have to back down the version of bnd used here because tinybundles expects only this version
-        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
+        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").versionAsInProject().start());
+        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bnd.util").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
    
     @Test
@@ -83,8 +83,7 @@ public class TestJettyOSGiClasspathResources
 
         //Test the test-jetty-ee9-osgi-webapp-resource bundle with a
         //Bundle-Classpath that does NOT include WEB-INF/classes
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -95,10 +94,6 @@ public class TestJettyOSGiClasspathResources
             String content = response.getContentAsString();
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 
@@ -114,18 +109,17 @@ public class TestJettyOSGiClasspathResources
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
         File warFile = new File("target/test-jetty-ee9-osgi-webapp-resources.war");
         TinyBundle tiny = TinyBundles.bundle();
-        tiny.read(new FileInputStream(warFile));
-        tiny.set(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
-        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
-        InputStream is = tiny.build(TinyBundles.withBnd());
+        tiny.readIn(new JarInputStream(Files.newInputStream(warFile.toPath())));
+        tiny.setHeader(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
+        tiny.setHeader(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
+        InputStream is = tiny.build(TinyBundles.bndBuilder());
         bundleContext.installBundle("dummyAltLocation", is);
 
         webappBundle.stop();
         Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
         bundle.start();
-        
-        HttpClient client = new HttpClient();
-        try
+
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -136,10 +130,6 @@ public class TestJettyOSGiClasspathResources
             assertEquals(HttpStatus.OK_200, response.getStatus());
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

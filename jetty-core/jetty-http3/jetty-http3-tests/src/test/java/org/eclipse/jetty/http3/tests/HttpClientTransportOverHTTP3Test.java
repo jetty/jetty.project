@@ -338,5 +338,4 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     {
         assertThat(response.getHeaders().getValuesList(header), equalTo(Arrays.asList(values)));
     }
-
 }

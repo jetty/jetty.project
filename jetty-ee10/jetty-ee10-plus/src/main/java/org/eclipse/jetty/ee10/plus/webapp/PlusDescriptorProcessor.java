@@ -19,6 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.Descriptor;
 import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee10.webapp.IterativeDescriptorProcessor;
@@ -868,6 +869,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
         //try the server's environment
         scope = context.getServer();
+        bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
+        if (bound)
+            return;
+
+        //try the ee environment next
+        scope = ServletContextHandler.ENVIRONMENT.getName();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;

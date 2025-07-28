@@ -156,6 +156,22 @@ public class Content
     public interface Source
     {
         /**
+         * Factory of {@link Content.Source}.
+         */
+        interface Factory
+        {
+            /**
+             * Creates a new {@link Content.Source}.
+             *
+             * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
+             * @param first the first byte of the resource to start from.
+             * @param length the length of the content to make available, -1 for the full length.
+             * @return a {@link Content.Source}.
+             */
+            Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long first, long length);
+        }
+
+        /**
          * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
          * @param byteBuffers The {@link ByteBuffer}s to use as the source.
          * @return A {@code Content.Source}
@@ -256,7 +272,7 @@ public class Content
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
+         * @param length The number of bytes to read from the source, or -1 for the full length.
          * @return A {@code Content.Source}
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
@@ -277,10 +293,17 @@ public class Content
 
                     if (toRead == 0)
                         return -1;
+
+                    if (toRead < 0)
+                        return inputStream.read(buffer, 0, buffer.length);
+
                     int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
-                    int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
+                    int len = Math.min(toReadInt, buffer.length);
                     int read = inputStream.read(buffer, 0, len);
-                    toRead -= read;
+
+                    if (read > 0)
+                        toRead -= read;
+
                     return read;
                 }
             };

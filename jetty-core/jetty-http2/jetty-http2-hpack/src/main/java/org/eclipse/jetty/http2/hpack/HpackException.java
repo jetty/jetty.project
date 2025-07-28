@@ -20,6 +20,11 @@ public abstract class HpackException extends Exception
         super(String.format(messageFormat, args));
     }
 
+    HpackException(Throwable cause, String messageFormat, Object... args)
+    {
+        super(String.format(messageFormat, args), cause);
+    }
+
     /**
      * A Stream HPACK exception.
      * <p>Stream exceptions are not fatal to the connection and the
@@ -29,9 +34,31 @@ public abstract class HpackException extends Exception
      */
     public static class StreamException extends HpackException
     {
-        public StreamException(String messageFormat, Object... args)
+        private final boolean request;
+        private final boolean response;
+
+        public StreamException(boolean request, boolean response, String messageFormat, Object... args)
         {
             super(messageFormat, args);
+            this.request = request;
+            this.response = response;
+        }
+
+        public StreamException(Throwable cause, boolean request, boolean response, String messageFormat, Object... args)
+        {
+            super(cause, messageFormat, args);
+            this.request = request;
+            this.response = response;
+        }
+
+        public boolean isRequest()
+        {
+            return request;
+        }
+
+        public boolean isResponse()
+        {
+            return response;
         }
     }
 

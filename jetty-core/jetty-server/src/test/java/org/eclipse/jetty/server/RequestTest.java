@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RequestTest
@@ -75,6 +76,49 @@ public class RequestTest
     {
         LifeCycle.stop(server);
         connector = null;
+    }
+
+    @Test
+    public void testAsInContext() throws Exception
+    {
+        // no request
+        assertNull(Request.asInContext(null, MockRequest.Wrapper.class));
+
+        // request with no context is the same as Request.as
+        MockRequest request = new MockRequest(new MockContext());
+        MockContext wrappedContext = new MockContext();
+        MockRequest.MockWrapper wrapperA = new MockRequest.MockWrapper(request, wrappedContext);
+        MockRequest.MockWrapper wrapperB = new MockRequest.MockWrapper(wrapperA, null);
+        Request asInContext = Request.asInContext(wrapperB, MockRequest.MockWrapper.class);
+        Request as = Request.as(wrapperB, MockRequest.MockWrapper.class);
+        assertSame(asInContext, as);
+        assertSame(wrapperB, asInContext);
+        assertSame(wrapperB, as);
+
+        // request with context must not cross boundary
+        wrapperB = new MockRequest.MockWrapper(wrapperA, new MockContext());
+        Request.Wrapper wrapperC = new Request.Wrapper(wrapperB)
+        {
+            @Override
+            public Context getContext()
+            {
+                return new MockContext();
+            }
+        };
+        assertNull(Request.asInContext(wrapperC, MockRequest.MockWrapper.class));
+
+        // request with same context in more than one wrap returns first matching class
+        wrapperB = new MockRequest.MockWrapper(wrapperA, wrapperA.getContext());
+        wrapperC = new Request.Wrapper(wrapperB)
+        {
+            @Override
+            public Context getContext()
+            {
+                return getWrapped().getContext();
+            }
+        };
+
+        assertSame(wrapperB, Request.asInContext(wrapperC, MockRequest.MockWrapper.class));
     }
 
     @Test
@@ -871,7 +915,8 @@ public class RequestTest
     @MethodSource("queryBehaviorsBadUtf8Allowed")
     public void testQueryExtractionBehaviorBadUtf8Allowed(String inputQuery, int expectedStatus, String expectedKey, String expectedValue) throws Exception
     {
-        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.BAD_PERCENT_ENCODING);
+        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING,
+            UriCompliance.Violation.BAD_PERCENT_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
         testQueryExtractionBehavior(uriCompliance, inputQuery, expectedStatus, expectedKey, expectedValue);
     }
 

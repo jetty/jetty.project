@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -757,52 +758,60 @@ public class SessionHandlerTest
 
         _sessionHandler.setSessionCache(cache);
 
+        _server.insertHandler(new GracefulHandler());
+        _server.setStopTimeout(5_000);
         _server.start();
 
-        LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET /create HTTP/1.1
-            Host: localhost
+        String id;
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        {
+            endPoint.addInput("""
+                GET /create HTTP/1.1
+                Host: localhost
+                
+                """);
 
-            """);
+            HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+            assertThat(response.getStatus(), equalTo(200));
+            String setCookie = response.get(HttpHeader.SET_COOKIE);
+            id = setCookie.substring(setCookie.indexOf("SESSION_ID=") + 11, setCookie.indexOf("; Path=/"));
+            String content = response.getContent();
+            assertThat(content, startsWith("Session="));
 
-        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
-        assertThat(response.getStatus(), equalTo(200));
-        String setCookie = response.get(HttpHeader.SET_COOKIE);
-        String id = setCookie.substring(setCookie.indexOf("SESSION_ID=") + 11, setCookie.indexOf("; Path=/"));
-        String content = response.getContent();
-        assertThat(content, startsWith("Session="));
+            endPoint.addInput("""
+                GET /set/attribute/value HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+                
+                """.formatted(id));
 
-        endPoint.addInput("""
-            GET /set/attribute/value HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-
-            """.formatted(id));
-
-        response = HttpTester.parseResponse(endPoint.getResponse());
-        assertThat(response.getStatus(), equalTo(200));
-        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
-        content = response.getContent();
-        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
-        assertThat(content, containsString("attribute = value"));
+            response = HttpTester.parseResponse(endPoint.getResponse());
+            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
+            content = response.getContent();
+            assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("attribute = value"));
+        }
 
         // Session should persist through restart
         _server.stop();
         _server.start();
 
-        endPoint.addInput("""
-            GET /set/attribute/value HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        {
+            endPoint.addInput("""
+                GET /set/attribute/value HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+                
+                """.formatted(id));
 
-            """.formatted(id));
-
-        response = HttpTester.parseResponse(endPoint.getResponse());
-        assertThat(response.getStatus(), equalTo(200));
-        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
-        content = response.getContent();
-        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
-        assertThat(content, containsString("attribute = value"));
+            HttpTester.Response  response = HttpTester.parseResponse(endPoint.getResponse());
+            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
+            String content = response.getContent();
+            assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("attribute = value"));
+        }
     }
 }

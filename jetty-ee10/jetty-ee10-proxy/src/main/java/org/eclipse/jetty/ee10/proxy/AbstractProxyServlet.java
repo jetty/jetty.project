@@ -255,13 +255,18 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
      * </tr>
      * <tr>
+     * <td>maxRequestHeadersSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The maximum request headers size, see {@link HttpClient#setMaxRequestHeadersSize(int)}</td>
+     * </tr>
+     * <tr>
      * <td>maxResponseHeadersSize</td>
      * <td>HttpClient's default</td>
      * <td>The maximum response headers size, see {@link HttpClient#setMaxResponseHeadersSize(int)}</td>
      * </tr>
      * <tr>
      * <td>selectors</td>
-     * <td>cores / 2</td>
+     * <td>1</td>
      * <td>The number of NIO selectors used by {@link HttpClient}</td>
      * </tr>
      * </tbody>
@@ -326,6 +331,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
         value = config.getInitParameter("responseBufferSize");
         if (value != null)
             client.setResponseBufferSize(Integer.parseInt(value));
+
+        value = getInitParameter("maxRequestHeadersSize");
+        if (value != null)
+            client.setMaxRequestHeadersSize(Integer.parseInt(value));
 
         value = config.getInitParameter("maxResponseHeadersSize");
         if (value != null)
@@ -650,13 +659,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onClientRequestFailure(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Throwable failure)
     {
-        proxyRequest.abort(failure).whenComplete((aborted, x) ->
-        {
-            if (aborted)
-                return;
-            int status = clientRequestStatus(failure);
-            sendProxyResponseError(clientRequest, proxyResponse, status);
-        });
+        proxyResponse.setStatus(clientRequestStatus(failure));
+        proxyRequest.abort(failure);
     }
 
     protected int clientRequestStatus(Throwable failure)
@@ -726,7 +730,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_log.isDebugEnabled())
             _log.debug("{} proxying failed", getRequestId(clientRequest), failure);
 
-        int status = proxyResponseStatus(failure);
+        int status = proxyResponse.getStatus();
+        if (!HttpStatus.isError(status))
+            status = proxyResponseStatus(failure);
         int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
         if (expects100Continue(clientRequest) && serverStatus >= HttpStatus.OK_200)
             status = serverStatus;

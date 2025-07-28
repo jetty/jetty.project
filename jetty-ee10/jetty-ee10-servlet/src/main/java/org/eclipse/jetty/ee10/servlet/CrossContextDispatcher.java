@@ -152,9 +152,26 @@ class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
+    private class AsyncRequest extends ServletCoreRequest
+    {
+        private final HttpURI _fullyQualifiedURI;
+
+        public AsyncRequest(HttpServletRequest httpServletRequest)
+        {
+            super(httpServletRequest, new ServletAttributes(httpServletRequest));
+            _fullyQualifiedURI = HttpURI.build(httpServletRequest.getRequestURL().toString()).pathQuery(_uri.getPathQuery()).asImmutable();
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return _fullyQualifiedURI;
+        }
+    }
+
     private class ForwardRequest extends ServletCoreRequest
     {
-         private HttpURI _fullyQualifiedURI;
+         private final HttpURI _fullyQualifiedURI;
 
         /**
          * @param httpServletRequest the request to wrap
@@ -215,6 +232,24 @@ class CrossContextDispatcher implements RequestDispatcher
         _targetContext = targetContext;
         _uri = uri;
         _decodedPathInContext = decodedPathInContext;
+    }
+
+    public void async(ServletRequest servletRequest, ServletResponse response) throws ServletException, IOException
+    {
+        HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
+        HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
+
+        AsyncRequest asyncRequest = new AsyncRequest(httpServletRequest);
+        // We must block when do a cross context async dispatch, as we cannot combine the state machines of the servletChannel from the source context and that of the target
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            _targetContext.getTargetContext().getContextHandler().handle(asyncRequest, new ServletCoreResponse(asyncRequest, httpResponse, false), callback);
+            callback.block();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
     }
 
     @Override

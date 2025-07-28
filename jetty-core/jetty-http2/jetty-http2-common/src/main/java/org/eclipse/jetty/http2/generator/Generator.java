@@ -26,6 +26,7 @@ public class Generator
     private final HeaderGenerator headerGenerator;
     private final HpackEncoder hpackEncoder;
     private final FrameGenerator[] generators;
+    private final PrefaceGenerator prefaceGenerator;
     private final DataGenerator dataGenerator;
 
     public Generator(ByteBufferPool bufferPool)
@@ -45,7 +46,7 @@ public class Generator
         headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
         hpackEncoder = new HpackEncoder();
 
-        this.generators = new FrameGenerator[FrameType.values().length];
+        this.generators = new FrameGenerator[FrameType.CONTINUATION.ordinal() + 1];
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder, maxHeaderBlockFragment);
         this.generators[FrameType.PRIORITY.getType()] = new PriorityGenerator(headerGenerator);
         this.generators[FrameType.RST_STREAM.getType()] = new ResetGenerator(headerGenerator);
@@ -55,9 +56,7 @@ public class Generator
         this.generators[FrameType.GO_AWAY.getType()] = new GoAwayGenerator(headerGenerator);
         this.generators[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateGenerator(headerGenerator);
         this.generators[FrameType.CONTINUATION.getType()] = null; // Never generated explicitly.
-        this.generators[FrameType.PREFACE.getType()] = new PrefaceGenerator();
-        this.generators[FrameType.DISCONNECT.getType()] = new NoOpGenerator();
-
+        this.prefaceGenerator = new PrefaceGenerator();
         this.dataGenerator = new DataGenerator(headerGenerator);
     }
 
@@ -83,7 +82,10 @@ public class Generator
 
     public int control(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
-        return generators[frame.getType().getType()].generate(accumulator, frame);
+        int type = frame.getType().getType();
+        if (type == FrameType.PREFACE.getType())
+            return prefaceGenerator.generate(accumulator, frame);
+        return generators[type].generate(accumulator, frame);
     }
 
     public int data(ByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)

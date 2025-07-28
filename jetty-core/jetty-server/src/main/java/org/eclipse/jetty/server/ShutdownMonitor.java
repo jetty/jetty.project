@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.IO;
@@ -246,6 +247,18 @@ public class ShutdownMonitor
             {
                 l.await();
             }
+        }
+    }
+
+    // For test purposes only.
+    protected boolean await(long time, TimeUnit unit) throws InterruptedException
+    {
+        try (AutoLock.WithCondition l = _lock.lock())
+        {
+            if (alive)
+                return l.await(time, unit);
+            else
+                return true;
         }
     }
 

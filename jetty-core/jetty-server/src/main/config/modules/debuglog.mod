@@ -19,7 +19,7 @@ etc/jetty-debuglog.xml
 
 [ini-template]
 #tag::documentation[]
-## Logging directory (relative to $jetty.base)
+## Logging directory (relative to $JETTY_BASE)
 # jetty.debuglog.dir=logs
 
 ## Whether to append to existing file

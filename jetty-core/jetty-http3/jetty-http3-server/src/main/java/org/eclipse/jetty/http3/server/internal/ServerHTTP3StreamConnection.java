@@ -51,13 +51,19 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
+        HttpStreamOverHTTP3 httpStream = newHttpStreamOverHTTP3(stream);
+        return httpStream.onRequest(frame);
+    }
+
+    private HttpStreamOverHTTP3 newHttpStreamOverHTTP3(HTTP3StreamServer stream)
+    {
         // Create new metadata for every request as the local or remote address may have changed.
         HttpChannel httpChannel = httpChannelFactory.newHttpChannel(new MetaData());
         httpChannel.initialize();
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
-        return httpStream.onRequest(frame);
+        return httpStream;
     }
 
     public Runnable onDataAvailable(HTTP3Stream stream)
@@ -81,6 +87,8 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     public Runnable onFailure(HTTP3Stream stream, Throwable failure)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
+        if (httpStream == null)
+            httpStream = newHttpStreamOverHTTP3((HTTP3StreamServer)stream);
         return httpStream.onFailure(failure);
     }
 

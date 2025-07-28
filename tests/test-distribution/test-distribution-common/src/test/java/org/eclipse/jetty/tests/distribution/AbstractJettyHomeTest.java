@@ -20,6 +20,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.tests.testers.ProcessWrapper;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -31,7 +32,7 @@ public class AbstractJettyHomeTest
 {
     protected HttpClient client;
 
-    public static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
+    public static final int START_TIMEOUT = ProcessWrapper.START_TIMEOUT;
 
     public static String toEnvironment(String module, String environment)
     {

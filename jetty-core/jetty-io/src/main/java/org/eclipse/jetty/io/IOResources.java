@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -42,7 +41,7 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to be read.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
      * @param direct the directness of the buffers.
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
@@ -51,6 +50,20 @@ public class IOResources
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+        // Optimize for Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+        {
+            try
+            {
+                ByteBuffer buffer = Content.Source.asByteBuffer(factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, 0), 0L, -1L));
+                return RetainableByteBuffer.wrap(buffer);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
 
         // Optimize for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
@@ -121,8 +134,8 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
@@ -133,21 +146,21 @@ public class IOResources
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
         // Try to find an optimized content source.
+        if (resource instanceof Content.Source.Factory factory)
+            return factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
         Path path = resource.getPath();
         if (path != null)
-        {
-            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
-        }
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path);
         if (resource instanceof MemoryResource memoryResource)
-        {
-            byte[] bytes = memoryResource.getBytes();
-            return new ByteBufferContentSource(ByteBuffer.wrap(bytes));
-        }
+            return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
 
         // Fallback to wrapping InputStream.
         try
         {
-            return new InputStreamContentSource(resource.newInputStream());
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream);
         }
         catch (IOException e)
         {
@@ -163,11 +176,11 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte from which to read from.
-     * @param length the length of the content to read.
+     * @param length the length of the content to read, -1 for the full length.
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
@@ -176,16 +189,18 @@ public class IOResources
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
 
+        // Try Content.Source.Factory.
+        if (resource instanceof Content.Source.Factory factory)
+            return factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
+
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
         Path path = resource.getPath();
         if (path != null)
-        {
             return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
-        }
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return Content.Source.from(ByteBuffer.wrap(memoryResource.getBytes()));
+            return Content.Source.from(BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)));
 
         // Fallback to InputStream.
         try
@@ -235,43 +250,52 @@ public class IOResources
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param callback the callback to notify when the copy is done.
-     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback) throws IllegalArgumentException
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
     {
-        if (resource.isDirectory() || !resource.exists())
-            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
-
-        // Save a Content.Source allocation for resources with a Path.
-        Path path = resource.getPath();
-        if (path != null)
+        try
         {
-            try
+            if (resource.isDirectory() || !resource.exists())
+                throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+            // Check if the resource is a Content.Source.Factory as the first step.
+            if (resource instanceof Content.Source.Factory factory)
+            {
+                Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), 0, -1);
+                Content.copy(source, sink, callback);
+                return;
+            }
+
+            // Save a Content.Source allocation for resources with a Path.
+            Path path = resource.getPath();
+            if (path != null)
             {
                 new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, callback).iterate();
+                return;
             }
-            catch (Throwable x)
+
+            // Directly write the byte array if the resource is a MemoryResource.
+            if (resource instanceof MemoryResource memoryResource)
             {
-                callback.failed(x);
+                sink.write(true, ByteBuffer.wrap(memoryResource.getBytes()), callback);
+                return;
             }
-            return;
-        }
 
-        // Directly write the byte array if the resource is a MemoryResource.
-        if (resource instanceof MemoryResource memoryResource)
+            // Fallback to Content.Source.
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, 0, -1);
+            Content.copy(source, sink, callback);
+        }
+        catch (Throwable x)
         {
-            byte[] bytes = memoryResource.getBytes();
-            sink.write(true, ByteBuffer.wrap(bytes), callback);
-            return;
+            callback.failed(x);
         }
-
-        // Fallback to Content.Source.
-        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct);
-        Content.copy(source, sink, callback);
     }
 
     /**
@@ -283,50 +307,54 @@ public class IOResources
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
-     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value less than 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte of the resource to start from.
      * @param length the length of the resource's contents to copy.
      * @param callback the callback to notify when the copy is done.
-     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IllegalArgumentException
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
     {
-        if (resource.isDirectory() || !resource.exists())
-            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
-
-        // Save a Content.Source allocation for resources with a Path.
-        Path path = resource.getPath();
-        if (path != null)
+        try
         {
-            try
+            if (resource.isDirectory() || !resource.exists())
+                throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+            // Check if the resource is a Content.Source.Factory as the first step.
+            if (resource instanceof Content.Source.Factory factory)
+            {
+                Content.Source source = factory.newContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
+                Content.copy(source, sink, callback);
+                return;
+            }
+
+            // Save a Content.Source allocation for resources with a Path.
+            Path path = resource.getPath();
+            if (path != null)
             {
                 new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, first, length, callback).iterate();
+                return;
             }
-            catch (Throwable x)
+
+            // Directly write the byte array if the resource is a MemoryResource.
+            if (resource instanceof MemoryResource memoryResource)
             {
-                callback.failed(x);
+                sink.write(true, BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(first), Math.toIntExact(length)), callback);
+                return;
             }
-            return;
-        }
 
-        // Directly write the byte array if the resource is a MemoryResource.
-        if (resource instanceof MemoryResource memoryResource)
+            // Fallback to Content.Source.
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            Content.Source source = Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
+            Content.copy(source, sink, callback);
+        }
+        catch (Throwable x)
         {
-            byte[] bytes = memoryResource.getBytes();
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            if (first >= 0)
-                byteBuffer.position((int)first);
-            if (length >= 0)
-                byteBuffer.limit((int)(byteBuffer.position() + length));
-            sink.write(true, byteBuffer, callback);
-            return;
+            callback.failed(x);
         }
-
-        // Fallback to Content.Source.
-        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct, first, length);
-        Content.copy(source, sink, callback);
     }
 
     private static class PathToSinkCopier extends IteratingNestedCallback

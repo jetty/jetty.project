@@ -287,6 +287,31 @@ public class BufferUtil
     }
 
     /**
+     * Slice a buffer given an offset and a length, similar to RFC 7233 ranges.
+     * @param buffer the buffer to slice
+     * @param offset the offset, relative to the current position of the buffer, must be positive
+     * @param length the length, -1 meaning use the current limit
+     * @return the sliced buffer
+     */
+    public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
+    {
+        if (offset < 0)
+            throw new IllegalArgumentException("Invalid offset: " + offset);
+        ByteBuffer slice = buffer.slice();
+        if (offset > 0)
+        {
+            int newPosition = slice.position() + offset;
+            if (newPosition > slice.limit() && length == 0)
+                slice.position(slice.limit());
+            else
+                slice.position(newPosition);
+        }
+        if (length > -1)
+            slice.limit(slice.position() + length);
+        return slice;
+    }
+
+    /**
      * Convert a ByteBuffer to a byte array.
      *
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.

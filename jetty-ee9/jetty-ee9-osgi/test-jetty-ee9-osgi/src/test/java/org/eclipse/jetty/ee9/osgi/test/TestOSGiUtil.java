@@ -28,15 +28,16 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
 import org.ops4j.pax.exam.options.extra.VMOption;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.Constants.START_LEVEL_SYSTEM_BUNDLES;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
@@ -48,6 +49,8 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
     
     /**
      * Null FragmentActivator for the fake bundle
@@ -150,10 +153,10 @@ public class TestOSGiUtil
         /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways) */
 
         TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
-        simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
-        simpleLoggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
-        simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
-        simpleLoggingPropertiesBundle.add(FragmentActivator.class);
+        simpleLoggingPropertiesBundle.addResource("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
+        simpleLoggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
+        simpleLoggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "slf4j-simple");
+        simpleLoggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); // .versionAsInProject()
 
@@ -193,6 +196,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.tracker").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.xml").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
+        res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.repository").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.equinox.http.service.api").versionAsInProject());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
@@ -303,7 +307,13 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-            assertNull(err, prevBundle);
+            if (prevBundle != null)
+            {
+                LOGGER.warn(err);
+            }
+            // we can't fail for this anymore as inject is adding automatically by pax exam framework
+            // but with lower version
+            //assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }

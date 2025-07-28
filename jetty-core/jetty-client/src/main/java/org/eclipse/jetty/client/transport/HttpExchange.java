@@ -292,8 +292,6 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         if (channel == null && abortRequest)
         {
             // Case #2: exchange was not yet associated.
-            // Because this exchange is failed, when associate() is called
-            // it will return false, and the caller will dispose the channel.
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting before association {}", this, failure);
             notifyFailureComplete(failure);

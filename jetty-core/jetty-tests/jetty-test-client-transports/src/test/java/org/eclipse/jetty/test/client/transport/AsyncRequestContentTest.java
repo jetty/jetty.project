@@ -18,14 +18,20 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -33,11 +39,88 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncRequestContentTest extends AbstractTest
 {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEarlyEofWithDemand(Transport transport) throws Exception
+    {
+        CountDownLatch serverHandleLatch = new CountDownLatch(1);
+        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request.addFailureListener(x -> failureRef.compareAndExchange(null, x).addSuppressed(x));
+
+                request.demand(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Content.Chunk read = request.read();
+                        if (read == null)
+                        {
+                            request.demand(this);
+                            return;
+                        }
+
+                        chunks.add(read);
+
+                        if (Content.Chunk.isFailure(read, true))
+                        {
+                            callback.failed(read.getFailure());
+                            return;
+                        }
+
+                        if (!read.isLast())
+                            request.demand(this);
+                    }
+                });
+                serverHandleLatch.countDown();
+
+                return true;
+            }
+        });
+
+        AsyncRequestContent content = new AsyncRequestContent();
+        CompletableFuture<Result> clientResponseFuture = new CompletableFuture<>();
+        var request = client.POST(newURI(transport));
+        request
+            .body(content)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    clientResponseFuture.completeExceptionally(result.getFailure());
+                else
+                    clientResponseFuture.complete(result);
+            });
+
+        assertTrue(serverHandleLatch.await(5, TimeUnit.SECONDS));
+
+        // Abruptly abort the request while an upload is in progress to provoke an early EOF on the server.
+        assertThat(request.abort(new Throwable("test aborts the request")).get(5, TimeUnit.SECONDS), is(Boolean.TRUE));
+        assertThrows(ExecutionException.class, () -> clientResponseFuture.get(5, TimeUnit.SECONDS));
+
+        await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+        {
+            assertThat(chunks.size(), is(1));
+            assertInstanceOf(EofException.class, chunks.get(0).getFailure());
+        });
+        assertThat(failureRef.get(), nullValue());
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testEmptyAsyncContent(Transport transport) throws Exception

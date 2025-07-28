@@ -21,6 +21,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,24 +196,31 @@ public class HeadersBodyParser extends BodyParser
                             return connectionFailure(buffer, ErrorCode.REFUSED_STREAM_ERROR.code, "invalid_headers_frame");
 
                         MetaData metaData = headerBlockParser.parse(buffer, length);
-                        if (metaData == HeaderBlockParser.SESSION_FAILURE)
+
+                        // Not enough bytes to parse the MetaData.
+                        if (metaData == null)
+                            break;
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Parsed {} frame hpack from {}", FrameType.HEADERS, buffer);
+
+                        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+                        if (metaDataFailure instanceof HpackException.SessionException)
                             return false;
-                        if (metaData != null)
+
+                        state = State.PADDING;
+                        loop = paddingLength == 0;
+
+                        if (metaDataFailure != null)
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed {} frame hpack from {}", FrameType.HEADERS, buffer);
-                            state = State.PADDING;
-                            loop = paddingLength == 0;
-                            if (metaData != HeaderBlockParser.STREAM_FAILURE)
-                            {
-                                onHeaders(parentStreamId, weight, exclusive, metaData);
-                            }
-                            else
-                            {
-                                HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
-                                if (!rateControlOnEvent(frame))
-                                    return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
-                            }
+                            HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
+                            if (!rateControlOnEvent(frame))
+                                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+                            onHeaders(frame);
+                        }
+                        else
+                        {
+                            onHeaders(metaData);
                         }
                     }
                     else
@@ -255,7 +263,7 @@ public class HeadersBodyParser extends BodyParser
         return false;
     }
 
-    private void onHeaders(int parentStreamId, int weight, boolean exclusive, MetaData metaData)
+    private void onHeaders(MetaData metaData)
     {
         PriorityFrame priorityFrame = null;
         if (hasFlag(Flags.PRIORITY))

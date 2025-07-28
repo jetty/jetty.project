@@ -16,7 +16,8 @@ package org.eclipse.jetty.plus.jndi;
 import javax.naming.NamingException;
 
 /**
- * Resource
+ * Any type of POJO to be bound that can be retrieved later and linked into
+ * a webapp's java:comp/env namespace.
  */
 public class Resource extends NamingEntry
 {

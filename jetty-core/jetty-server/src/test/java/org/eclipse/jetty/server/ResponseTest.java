@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -44,12 +47,104 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResponseTest
 {
     private Server server;
     private LocalConnector connector;
+
+    private static class MockResponse implements Response
+    {
+        private final Request _request;
+
+        public MockResponse(Request request)
+        {
+            _request = request;
+        }
+
+        @Override
+        public Request getRequest()
+        {
+            return _request;
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return 0;
+        }
+
+        @Override
+        public void setStatus(int code)
+        {
+
+        }
+
+        @Override
+        public HttpFields.Mutable getHeaders()
+        {
+            return null;
+        }
+
+        @Override
+        public Supplier<HttpFields> getTrailersSupplier()
+        {
+            return null;
+        }
+
+        @Override
+        public void setTrailersSupplier(Supplier<HttpFields> trailers)
+        {
+
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasLastWrite()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully()
+        {
+            return false;
+        }
+
+        @Override
+        public void reset()
+        {
+
+        }
+
+        @Override
+        public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
+        {
+            return null;
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+
+        }
+    }
+
+    private static class MockResponseWrapper extends Response.Wrapper
+    {
+        public MockResponseWrapper(Request request, Response wrapped)
+        {
+            super(request, wrapped);
+        }
+    }
 
     @BeforeEach
     public void prepare() throws Exception
@@ -65,6 +160,47 @@ public class ResponseTest
     {
         LifeCycle.stop(server);
         connector = null;
+    }
+
+    @Test
+    public void testAsInContext() throws Exception
+    {
+        // no response
+        assertNull(Response.asInContext(null, MockResponseWrapper.class));
+
+       // response has no request
+       MockResponse mockResponse = new MockResponse(null);
+       assertNull(Response.asInContext(mockResponse, MockResponseWrapper.class));
+
+        // response with request with no context is the same as Response.as
+        MockContext mockContext = new MockContext();
+        MockRequest mockRequest = new MockRequest(mockContext);
+        mockResponse  = new MockResponse(mockRequest);
+        MockRequest.MockWrapper mockRequestWrapperA = new MockRequest.MockWrapper(mockRequest, mockContext);
+        MockResponseWrapper mockResponseWrapperA = new MockResponseWrapper(mockRequestWrapperA, mockResponse);
+        MockRequest.MockWrapper mockRequestWrapperB = new MockRequest.MockWrapper(mockRequestWrapperA, null);
+        MockResponseWrapper mockResponseWrapperB = new MockResponseWrapper(mockRequestWrapperB, mockResponseWrapperA);
+        Response asInContext = Response.asInContext(mockResponseWrapperB, MockResponseWrapper.class);
+        Response as = Response.as(mockResponseWrapperB, MockResponseWrapper.class);
+        assertSame(asInContext, as);
+        assertSame(mockResponseWrapperB, asInContext);
+        assertSame(mockResponseWrapperB, as);
+
+        // response with request with context must not cross context boundary
+        mockRequestWrapperB = new MockRequest.MockWrapper(mockRequestWrapperA, new MockContext());
+        mockResponseWrapperB = new MockResponseWrapper(mockRequestWrapperB, mockResponseWrapperA);
+        Response.Wrapper wrapperC = new Response.Wrapper(new MockRequest.MockWrapper(mockRequestWrapperB, new MockContext()), mockResponseWrapperB)
+        {
+        };
+        assertNull(Response.asInContext(wrapperC, MockResponseWrapper.class));
+
+        // response with request with same context in more than one wrap returns first matching class
+        mockRequestWrapperB = new MockRequest.MockWrapper(mockRequestWrapperA, mockContext);
+        mockResponseWrapperB = new MockResponseWrapper(mockRequestWrapperB, mockResponseWrapperA);
+        wrapperC = new Response.Wrapper(new MockRequest.Wrapper(mockRequestWrapperB), mockResponseWrapperB)
+        {
+        };
+        assertSame(mockResponseWrapperB, Response.asInContext(wrapperC, MockResponseWrapper.class));
     }
 
     @Test

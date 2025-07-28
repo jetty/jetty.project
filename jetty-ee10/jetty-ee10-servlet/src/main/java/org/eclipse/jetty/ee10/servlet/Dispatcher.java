@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 public class Dispatcher implements RequestDispatcher
@@ -177,7 +178,7 @@ public class Dispatcher implements RequestDispatcher
             super(request);
         }
 
-        private Fields getParameters()
+        protected Fields getParameters()
         {
             if (_parameters == null)
             {
@@ -723,7 +724,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public StringBuffer getRequestURL()
         {
-            return _uri == null ? null : new StringBuffer(_uri.asString());
+            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
         }
 
         @Override
@@ -752,6 +753,37 @@ public class Dispatcher implements RequestDispatcher
             names.add(AsyncContextState.ASYNC_MAPPING);
             names.add(AsyncContextState.ASYNC_QUERY_STRING);
             return Collections.enumeration(names);
+        }
+
+        /**
+         * Get the parameters merged from the request wrapped by this {@code AsyncRequest}
+         * and those in the {@code RequestDispatcher}.
+         * If the target path is the same as the request path, then
+         * we do not want to re-extract the query string, as the wrapped request will
+         * have already done the extraction.
+         * @return the request parameters
+         */
+        @Override
+        protected Fields getParameters()
+        {
+            // The AsyncRequest may have been dispatched to the same URI as the request that it is
+            //wrapping. If so, We should not re-extract the parameters, just use what is there.
+            if (getRequest() instanceof HttpServletRequest httpServletRequest)
+            {
+                HttpURI requestURI = HttpURI.build(httpServletRequest.getRequestURI()).query(httpServletRequest.getQueryString());
+                if (requestURI.equals(_uri))
+                {
+                    if (getRequest() instanceof ParameterRequestWrapper parameterRequestWrapper)
+                        return parameterRequestWrapper.getParameters();
+                    else if (getRequest() instanceof ServletApiRequest servletApiRequest)
+                        return servletApiRequest.getParameters();
+                    else
+                        return super.getParameters();
+                }
+                else
+                    return super.getParameters();
+            }
+            return super.getParameters();
         }
     }
 

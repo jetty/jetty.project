@@ -49,6 +49,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,17 +246,28 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             }
             case COMPLETE ->
             {
-                // For the complete event, handle==false, and cannot
-                // differentiate between a complete event and a parse()
-                // with zero or not enough bytes, so the state is reset
-                // here to avoid calling responseSuccess() again.
-                state = State.STATUS;
-                channel.responseSuccess();
+                // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean) a chance to read
+                // the chunk field before channel.responseSuccess() resets it to null.
             }
             default -> throw new IllegalStateException("Invalid state " + state);
         }
 
         return handle;
+    }
+
+    boolean isComplete()
+    {
+        return state == State.COMPLETE;
+    }
+
+    void complete()
+    {
+        // For the complete event, handle==false, and cannot
+        // differentiate between a complete event and a parse()
+        // with zero or not enough bytes, so the state is reset
+        // here to avoid calling responseSuccess() again.
+        state = State.STATUS;
+        channel.responseSuccess();
     }
 
     private void shutdown()
@@ -363,7 +375,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public String toConnectionString()
     {
         return String.format("%s@%x[l:%s<->r:%s]",
-            getClass().getSimpleName(),
+            TypeUtil.toShortName(getClass()),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress());

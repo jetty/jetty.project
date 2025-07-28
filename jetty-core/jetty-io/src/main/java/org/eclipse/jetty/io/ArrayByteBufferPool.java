@@ -874,7 +874,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 super(wrapped);
                 this.size = size;
                 this.acquireInstant = Instant.now();
-                this.acquireStack = new Throwable();
+                this.acquireStack = new Throwable("Acquired by " + Thread.currentThread().getName());
             }
 
             public int getSize()
@@ -896,7 +896,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public void retain()
             {
                 super.retain();
-                retainStacks.add(new Throwable());
+                retainStacks.add(new Throwable("Retained by " + Thread.currentThread().getName()));
             }
 
             @Override
@@ -911,14 +911,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                         if (LOG.isDebugEnabled())
                             LOG.debug("released {}", this);
                     }
-                    releaseStacks.add(new Throwable());
+                    releaseStacks.add(new Throwable("Released by " + Thread.currentThread().getName()));
                     return released;
                 }
                 catch (IllegalStateException e)
                 {
                     buffers.add(this);
-                    overReleaseStacks.add(new Throwable());
-                    throw e;
+                    overReleaseStacks.add(new Throwable("Over-released by " + Thread.currentThread().getName()));
+                    IllegalStateException ise = new IllegalStateException(Thread.currentThread().getName() + " over-released " + this);
+                    releaseStacks.forEach(ise::addSuppressed);
+                    throw ise;
                 }
             }
 
@@ -942,7 +944,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     overReleaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
+                String stacks = w.toString();
+                return ("%s@%x of %d bytes on %s wrapping %s%n" +
+                    " %s%n" +
+                    " acquired at %s")
+                    .formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(),
+                        BufferUtil.toDetailString(getByteBuffer()),
+                        stacks);
             }
         }
     }

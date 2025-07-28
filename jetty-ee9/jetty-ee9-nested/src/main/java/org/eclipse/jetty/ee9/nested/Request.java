@@ -1944,6 +1944,8 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, this, getResponse());
+        //Note that we do not remember the context, httpuri or the path, as null values for these are used by
+        //ContextHandler.handleAsync to recognize a non-cross context async dispatch
         state.startAsync(event);
         return _async;
     }
@@ -1957,6 +1959,7 @@ public class Request implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
+        event.setDispatchPath(URIUtil.encodePath(Request.getBaseRequest(servletRequest).getPathInContext()));
         event.setDispatchContext(getServletContext());
         state.startAsync(event);
         return _async;
@@ -2194,7 +2197,18 @@ public class Request implements HttpServletRequest
         if (newQuery != null)
         {
             newQueryParams = new Fields(true);
-            UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
+            try
+            {
+                UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
+            }
+            catch (BadMessageException e)
+            {
+                throw e;
+            }
+            catch (Throwable th)
+            {
+                throw new BadMessageException("Bad query encoding", th);
+            }
         }
 
         Fields oldQueryParams = _queryParameters;
@@ -2204,6 +2218,10 @@ public class Request implements HttpServletRequest
             try
             {
                 UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
+            }
+            catch (BadMessageException e)
+            {
+                throw e;
             }
             catch (Throwable th)
             {

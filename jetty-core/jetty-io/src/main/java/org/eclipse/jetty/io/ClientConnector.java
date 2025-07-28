@@ -594,17 +594,25 @@ public class ClientConnector extends ContainerLifeCycle
     @Override
     public boolean addEventListener(EventListener listener)
     {
-        if (listener instanceof ConnectListener connectListener)
-            return listeners.add(connectListener);
-        return super.addEventListener(listener);
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof ConnectListener connectListener)
+                listeners.add(connectListener);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean removeEventListener(EventListener listener)
     {
-        if (listener instanceof ConnectListener connectListener)
-            return listeners.remove(connectListener);
-        return super.removeEventListener(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof ConnectListener connectListener)
+                listeners.remove(connectListener);
+            return true;
+        }
+        return false;
     }
 
     private void notifyConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)

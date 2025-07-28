@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.StringTokenizer;
 
@@ -41,7 +42,10 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -53,11 +57,11 @@ import org.slf4j.LoggerFactory;
 /**
  * The default servlet.
  * <p>
- * This servlet, normally mapped to /, provides the handling for static
- * content, OPTION and TRACE methods for the context.
- * The following initParameters are supported, these can be set either
- * on the servlet itself or as ServletContext initParameters with a prefix
- * of org.eclipse.jetty.servlet.Default. :
+ * This servlet, normally mapped to {@code /}, provides the handling for static
+ * content, {@code OPTION} and {@code TRACE} methods for the context.
+ * The following {@code initParameters} are supported, these can be set either
+ * on the servlet itself or as {@link ServletContext} {@code initParameters} with a prefix
+ * of {@code org.eclipse.jetty.servlet.Default}. :
  * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
@@ -106,6 +110,19 @@ import org.slf4j.LoggerFactory;
  *                    to decorate the directory listing html.
  *
  *  etags             If True, weak etags will be generated and handled.
+ *
+ *  allowAliases
+ *                    Allow resource aliases via the {@link AllowedResourceAliasChecker}
+ *                    on the context (if one does not already exist) for this baseResource.
+ *                    This is especially useful if you have a FileSystem that is not
+ *                    case sensitive. (Such as on Windows with FAT or NTFS)
+ *                    Defaults to {@code false}.
+ *
+ *  allowSymlinks
+ *                    Allow resources that are symlinks pointing to other locations via
+ *                    the {@link SymlinkAllowedResourceAliasChecker} on the context (if one
+ *                    does not already exist) for this baseResource.
+ *                    Defaults to {@code false}.
  *
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
  *  maxCachedFileSize The maximum size of a file to cache
@@ -213,6 +230,40 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 LOG.warn("Unable to create baseResource from {}", br, e);
                 throw new UnavailableException(e.toString());
             }
+        }
+
+        if (getInitBoolean("allowAliases", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : _contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker &&
+                    Objects.equals(_baseResource, allowedResourceAliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler.getCoreContextHandler(), _baseResource));
+        }
+
+        if (getInitBoolean("allowSymlinks", false))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : _contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof SymlinkAllowedResourceAliasChecker aliasChecker &&
+                    Objects.equals(_baseResource, aliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                _contextHandler.addAliasCheck(new SymlinkAllowedResourceAliasChecker(_contextHandler.getCoreContextHandler(), _baseResource));
         }
 
         String stylesheet = getInitParameter("stylesheet");

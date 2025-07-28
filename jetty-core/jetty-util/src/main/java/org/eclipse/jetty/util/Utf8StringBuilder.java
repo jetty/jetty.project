@@ -14,12 +14,17 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * <p>
@@ -46,8 +51,6 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 
-    protected int _state = UTF8_ACCEPT;
-
     private static final byte[] BYTE_TABLE =
         {
             // The first part of the table maps bytes to character classes that
@@ -73,13 +76,40 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
         };
 
+    private static final MethodHandle REPORT;
+    private static final MethodHandle REPLACE;
+    private static final MethodHandle IGNORE;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            REPORT = lookup.findVirtual(Utf8StringBuilder.class, "errorActionReport", methodType(void.class));
+            REPLACE = lookup.findVirtual(Utf8StringBuilder.class, "errorActionReplace", methodType(void.class));
+            IGNORE = lookup.findVirtual(Utf8StringBuilder.class, "errorActionIgnore", methodType(void.class));
+        }
+        catch (NoSuchMethodException | IllegalAccessException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected int _state = UTF8_ACCEPT;
     final StringBuilder _buffer;
+    private final MethodHandle _malformedInputMethod;
+    private final MethodHandle _unmappableCharacterMethod;
     private int _codep;
     private boolean _codingErrors;
 
     public Utf8StringBuilder()
     {
-        _buffer = new StringBuilder();
+        this(new StringBuilder());
+    }
+
+    public Utf8StringBuilder(CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
+    {
+        this(new StringBuilder(), onMalformedInput, onUnmappableCharacter);
     }
 
     public Utf8StringBuilder(int capacity)
@@ -89,7 +119,71 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected Utf8StringBuilder(StringBuilder buffer)
     {
+        this(buffer, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
+    }
+
+    protected Utf8StringBuilder(StringBuilder buffer, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
+    {
         _buffer = buffer;
+        _malformedInputMethod = getErrorAction(onMalformedInput);
+        _unmappableCharacterMethod = getErrorAction(onUnmappableCharacter);
+    }
+
+    private MethodHandle getErrorAction(CodingErrorAction codingErrorAction)
+    {
+        if (codingErrorAction == CodingErrorAction.REPORT)
+            return REPORT;
+
+        if (codingErrorAction == CodingErrorAction.REPLACE)
+            return REPLACE;
+
+        return IGNORE;
+    }
+
+    private void errorActionReport()
+    {
+        throw new Utf8IllegalArgumentException();
+    }
+
+    private void errorActionReplace()
+    {
+        bufferAppend(REPLACEMENT);
+    }
+
+    private void errorActionIgnore()
+    {
+    }
+
+    private void handleMalformedInput()
+    {
+        try
+        {
+            _malformedInputMethod.invoke(this);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void handleUnmappableCharacter()
+    {
+        try
+        {
+            _unmappableCharacterMethod.invoke(this);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -101,6 +195,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     /**
      * @return {@code True} if the characters decoded have contained UTF8 coding errors.
      */
+    @Override
     public boolean hasCodingErrors()
     {
         return _codingErrors;
@@ -132,9 +227,9 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         if (_state != UTF8_ACCEPT)
         {
-            bufferAppend(REPLACEMENT);
             _state = UTF8_ACCEPT;
             _codingErrors = true;
+            handleMalformedInput();
         }
     }
 
@@ -143,10 +238,10 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         if (_state == UTF8_ACCEPT)
             return false;
 
-        bufferAppend(REPLACEMENT);
         _state = UTF8_ACCEPT;
         _codep = 0;
         _codingErrors = true;
+        handleMalformedInput();
         return true;
     }
 
@@ -294,8 +389,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                 case UTF8_REJECT ->
                 {
                     _codep = 0;
-                    bufferAppend(REPLACEMENT);
                     _codingErrors = true;
+                    handleUnmappableCharacter();
                     if (_state != UTF8_ACCEPT)
                     {
                         _state = UTF8_ACCEPT;
@@ -325,7 +420,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _codep = 0;
             _state = UTF8_ACCEPT;
             _codingErrors = true;
-            bufferAppend(REPLACEMENT);
+            handleMalformedInput();
         }
     }
 
@@ -361,6 +456,22 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         complete();
         return _buffer.toString();
+    }
+
+    /**
+     * <p>Attempt to build the completed string and reset the buffer,
+     * returning a partial string if there are encoding errors</p>
+     *
+     * @param allowPartialString true if a partial string is allowed to be returned,
+     * false means if complete string cannot be returned, an exception is thrown.
+     * @return The available string (complete or partial)
+     * @throws CharacterCodingException (only if {@code allowPartialString} is false) thrown if the bytes cannot be correctly decoded or a multibyte sequence is incomplete.
+     */
+    @Override
+    public String build(boolean allowPartialString) throws CharacterCodingException
+    {
+        complete();
+        return takePartialString(allowPartialString ? () -> null : Utf8IllegalArgumentException::new);
     }
 
     /**
@@ -425,7 +536,12 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     {
         public Utf8IllegalArgumentException()
         {
-            super(new Utf8CharacterCodingException());
+            this(new Utf8CharacterCodingException());
+        }
+
+        public Utf8IllegalArgumentException(IOException cause)
+        {
+            super(cause);
         }
     }
 }

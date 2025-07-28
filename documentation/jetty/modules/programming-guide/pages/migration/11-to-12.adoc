@@ -99,6 +99,53 @@
 | `org.eclipse.jetty.websocket.api.**WebSocketPolicy**` | `org.eclipse.jetty.websocket.api.**Configurable**`
 |===
 
+[[jetty-module-names]]
+== Jetty Module Changes
+[cols="1a,1a", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| `annotations.mod` | `{ee-all}-annotations.mod` +
+| `apache-jsp.mod` | `{ee-all}-apache-jsp.mod` +
+| `bytebufferpool-logarithmic.mod` | `bytebufferpool-quadratic.mod`
+| `cdi.mod` +
+`cdi-*.mod` | `{ee-all}-cdi.mod` +
+`{ee-all}-cdi-*.mod`
+| `deploy.mod` | `core-deploy.mod` +
+`{ee-all}-deploy.mod`
+| `fcgi.mod` | `{ee-all}-fcgi-proxy.mod`
+| `glassfish-jstl.mod` | `{ee-all}-glassfish-jstl.mod`
+| `jaspi.mod` +
+`jaspi-*.mod` | `{ee-all}-jaspi.mod` +
+`{ee-all}-jaspi-*.mod`
+| `jsp.mod` | `{ee-all}-jsp.mod`
+| `jstl.mod` | `{ee-all}-jstl.mod`
+| `openid.mod` | `openid.mod` +
+`{ee-all}-openid.mod`
+| `plus.mod` | `plus.mod` +
+`{ee-all}-plus.mod`
+| `proxy.mod` | `proxy.mod` +
+`{ee-all}-proxy.mod`
+| `security.mod` | `security.mod` +
+`{ee-all}-security.mod`
+| `servlet.mod` | `{ee-all}-servlet.mod`
+| `servlets.mod` | `{ee-all}-servlets.mod`
+| `stats.mod` | `statistics.mod`
+| `webapp.mod` | `{ee-all}-webapp.mod`
+| `websocket.mod` | N/A
+| `websocket-jakarta.mod` | `{ee-all}-websocket-jakarta.mod`
+| `websocket-jetty.mod` | `websocket-jetty.mod` +
+`{ee-all}-websocket-jetty.mod`
+|===
+
+With the introduction of the <<jetty-core-apis,Jetty Core APIs>>, modules that in Jetty 11 were implicitly based on the Servlet APIs, in Jetty 12 have been renamed to `{ee-all}-<name>.mod`.
+
+Modules that retain the same name, such as `openid.mod`, `security.mod`, etc., in Jetty 12 enable the same functionality using the Jetty Core APIs, not the Servlet APIs.
+For the correspondent module that uses the Servlet API, use `{ee-all}-openid.mod`, `{ee-all}-security.mod`, etc.
+
+This is particularly important for the Jetty 11 `deploy.mod`, that in Jetty 12 must be explicitly changed to one of the `{ee-all}-deploy.mod`, otherwise web applications will not be deployed.
+Refer to xref:operations-guide:deploy/index.adoc[web application deployment] section for more information.
+
+[[jetty-core-apis]]
 == Server-Side Web Application APIs Changes
 
 Jetty 12 introduced redesigned server-side APIs for web applications.

@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -33,12 +32,13 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
+import org.ops4j.pax.tinybundles.TinyBundle;
+import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
@@ -67,13 +67,12 @@ public class TestJettyOSGiAnnotationParser
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         //get a reference to a pre-prepared module-info
-        Path path = Paths.get("target", "test-classes", "module-info.clazz");
-        File moduleInfo = path.toFile();
-        assertTrue(moduleInfo.exists());
+        Path moduleInfo = Paths.get("target", "test-classes", "module-info.clazz");
+        assertThat(moduleInfo.toFile(), anExistingFile());
         
         TinyBundle bundle = TinyBundles.bundle();
-        bundle.set(Constants.BUNDLE_SYMBOLICNAME, "bundle.with.module.info");
-        bundle.add("module-info.class", new FileInputStream(moduleInfo)); //copy it into the fake bundle
+        bundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "bundle.with.module.info");
+        bundle.addResource("module-info.class", Files.newInputStream(moduleInfo)); //copy it into the fake bundle
         options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         return options.toArray(new Option[options.size()]);
     }

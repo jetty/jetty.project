@@ -21,9 +21,15 @@ public abstract class QpackException extends Exception
     public static final long H3_GENERAL_PROTOCOL_ERROR = 0x0101;
     private final long _errorCode;
 
-    QpackException(long errorCode, String messageFormat, Throwable cause)
+    QpackException(long errorCode, String message)
     {
-        super(messageFormat, cause);
+        super(message);
+        _errorCode = errorCode;
+    }
+
+    QpackException(long errorCode, String message, Throwable cause)
+    {
+        super(message, cause);
         _errorCode = errorCode;
     }
 
@@ -41,14 +47,31 @@ public abstract class QpackException extends Exception
      */
     public static class StreamException extends QpackException
     {
-        public StreamException(long errorCode, String messageFormat)
+        private final boolean request;
+        private final boolean response;
+
+        public StreamException(boolean request, boolean response, long errorCode, String message)
         {
-            this(errorCode, messageFormat, null);
+            super(errorCode, message);
+            this.request = request;
+            this.response = response;
         }
 
-        public StreamException(long errorCode, String messageFormat, Throwable cause)
+        public StreamException(boolean request, boolean response, long errorCode, String message, Throwable cause)
         {
-            super(errorCode, messageFormat, cause);
+            super(errorCode, message, cause);
+            this.request = request;
+            this.response = response;
+        }
+
+        public boolean isRequest()
+        {
+            return request;
+        }
+
+        public boolean isResponse()
+        {
+            return response;
         }
     }
 

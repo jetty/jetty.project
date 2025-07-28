@@ -530,6 +530,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (filled <= 0)
             {
                 releaseRequestBuffer();
+                // If fillRequestBuffer() read -1, it may be because of an early EOF;
+                // force the parser check its state again so its handler can generate
+                // an error chunk if appropriate. Doing this saves returning a null
+                // chunk followed by an immediately served demand where the next read()
+                // actually makes the parser generate the error chunk.
+                if (filled < 0)
+                    _parser.parseNext(BufferUtil.EMPTY_BUFFER);
                 break;
             }
         }
@@ -1091,8 +1098,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         chunk.release();
                     stream._chunk = Content.Chunk.from(bad);
                 }
-
-                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }

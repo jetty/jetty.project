@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -68,6 +69,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -79,6 +81,92 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientTest extends AbstractTest
 {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientUseContentSourceInSpawnedThreadEmptyResponseContent(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                return true;
+            }
+        });
+
+        var listener = new OnContentSourceListener();
+
+        client.newRequest(newURI(transport))
+            .method("POST")
+            .send(listener);
+
+        OnContentSourceListener.ClientResponseContent clientResponseContent = listener.clientResponseContent.get(5, TimeUnit.SECONDS);
+        assertThat(clientResponseContent.body(), is(""));
+        assertThat(clientResponseContent.status(), is(200));
+        assertThat(clientResponseContent.trailers(), nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientUseContentSourceInSpawnedThreadWithResponseContent(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                return true;
+            }
+        });
+
+        var listener = new OnContentSourceListener();
+
+        client.newRequest(newURI(transport))
+            .method("POST")
+            .send(listener);
+
+        OnContentSourceListener.ClientResponseContent clientResponseContent = listener.clientResponseContent.get(5, TimeUnit.SECONDS);
+        assertThat(clientResponseContent.body(), is("some response content"));
+        assertThat(clientResponseContent.status(), is(200));
+        assertThat(clientResponseContent.trailers(), nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testClientUseContentSourceInSpawnedThreadWithTrailer(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws IOException
+            {
+                response.setTrailersSupplier(() -> HttpFields.build().add("X-Trailer-test", "foobar"));
+                // start chunked mode
+                try (Blocker.Callback blocker = Blocker.callback())
+                {
+                    response.write(false, BufferUtil.EMPTY_BUFFER, blocker);
+                    blocker.block();
+                }
+
+                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                return true;
+            }
+        });
+
+        var listener = new OnContentSourceListener();
+
+        client.newRequest(newURI(transport))
+            .method("POST")
+            .send(listener);
+
+        OnContentSourceListener.ClientResponseContent clientResponseContent = listener.clientResponseContent.get(5, TimeUnit.SECONDS);
+        assertThat(clientResponseContent.body(), is("some response content"));
+        assertThat(clientResponseContent.status(), is(200));
+        assertThat(clientResponseContent.trailers().get("X-Trailer-test"), is("foobar"));
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testRequestWithoutResponseContent(Transport transport) throws Exception
@@ -1153,6 +1241,47 @@ public class HttpClientTest extends AbstractTest
         public boolean await(long timeout, TimeUnit unit) throws InterruptedException
         {
             return latch.await(timeout, unit);
+        }
+    }
+
+    private static class OnContentSourceListener implements Response.Listener
+    {
+        record ClientResponseContent(int status, String body, HttpFields trailers)
+        {
+        }
+
+        final CompletableFuture<ClientResponseContent> clientResponseContent = new CompletableFuture<>();
+        final StringBuffer buffer = new StringBuffer();
+
+        @Override
+        public void onContentSource(Response response, Content.Source contentSource)
+        {
+            new Thread(() ->
+            {
+                Content.Chunk chunk = contentSource.read();
+                if (chunk == null)
+                {
+                    contentSource.demand(() -> onContentSource(response, contentSource));
+                    return;
+                }
+
+                buffer.append(BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8));
+                chunk.release();
+
+                if (!chunk.isLast())
+                {
+                    contentSource.demand(() -> onContentSource(response, contentSource));
+                }
+                else
+                {
+                    Content.Chunk afterLastChunk = contentSource.read();
+                    if (afterLastChunk != chunk)
+                        clientResponseContent.completeExceptionally(new AssertionError("afterLastChunk != chunk"));
+                    else
+                        clientResponseContent.complete(new ClientResponseContent(response.getStatus(), buffer.toString(), response.getTrailers()));
+                }
+            }
+            ).start();
         }
     }
 }

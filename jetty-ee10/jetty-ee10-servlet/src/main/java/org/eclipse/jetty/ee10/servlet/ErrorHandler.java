@@ -88,7 +88,7 @@ public class ErrorHandler implements Request.Handler
             return true;
         }
 
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
@@ -380,10 +380,9 @@ public class ErrorHandler implements Request.Handler
             writer.write("\"/>\n");
         }
         writer.write("<title>Error ");
-        // TODO this code is duplicated in writeErrorPageMessage
         String status = Integer.toString(code);
         writer.write(status);
-        if (message != null && !message.equals(status))
+        if (isShowMessageInTitle() && message != null && !message.equals(status))
         {
             writer.write(' ');
             writer.write(StringUtil.sanitizeXmlString(message));
@@ -596,7 +595,16 @@ public class ErrorHandler implements Request.Handler
         _showMessageInTitle = showMessageInTitle;
     }
 
+    /**
+     * @deprecated use {@link #isShowMessageInTitle()} instead
+     */
+    @Deprecated
     public boolean getShowMessageInTitle()
+    {
+        return _showMessageInTitle;
+    }
+
+    public boolean isShowMessageInTitle()
     {
         return _showMessageInTitle;
     }

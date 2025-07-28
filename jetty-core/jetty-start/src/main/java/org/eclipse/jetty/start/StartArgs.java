@@ -670,6 +670,18 @@ public class StartArgs
         return mainClass;
     }
 
+    public boolean useMavenOffline()
+    {
+        String offline = getJettyEnvironment().getProperties().getString("maven.offline");
+        if (Utils.isBlank(offline))
+            offline = System.getenv("JETTY_MAVEN_OFFLINE");
+
+        if (Utils.isBlank(offline))
+            offline = System.getenv("MAVEN_OFFLINE");
+
+        return Boolean.parseBoolean(offline);
+    }
+
     public String getMavenLocalRepoDir()
     {
         String localRepo = getJettyEnvironment().getProperties().getString("maven.local.repo");

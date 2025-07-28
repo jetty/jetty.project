@@ -26,6 +26,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
@@ -100,8 +101,15 @@ public class Dispatcher implements RequestDispatcher
             else
             {
                 Objects.requireNonNull(_uri);
-                // Check any URI violations against the compliance for this request
-                checkUriViolations(_uri, baseRequest);
+                try
+                {
+                    // Check any URI violations against the compliance for this request
+                    checkUriViolations(_uri, baseRequest);
+                }
+                catch (IllegalStateException e)
+                {
+                    throw new BadMessageException(e.getMessage(), e);
+                }
 
                 IncludeAttributes attr = new IncludeAttributes(
                     old_attr,
@@ -165,8 +173,15 @@ public class Dispatcher implements RequestDispatcher
             else
             {
                 Objects.requireNonNull(_uri);
-                // Check any URI violations against the compliance for this request
-                checkUriViolations(_uri, baseRequest);
+                try
+                {
+                    // Check any URI violations against the compliance for this request
+                    checkUriViolations(_uri, baseRequest);
+                }
+                catch (IllegalStateException e)
+                {
+                    throw new BadMessageException(e.getMessage(), e);
+                }
 
                 // If we have already been forwarded previously, then keep using the established
                 // original value. Otherwise, this is the first forward, and we need to establish the values.

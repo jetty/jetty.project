@@ -309,6 +309,7 @@ public class HTTPClientDocs
             .onRequestContent((request, content) -> { /* ... */ })
             .onRequestFailure((request, failure) -> { /* ... */ })
             .onRequestSuccess(request -> { /* ... */ })
+            .onRequestListener(new Request.Listener() {}) // For all request events.
             // Add response hooks.
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
@@ -316,6 +317,7 @@ public class HTTPClientDocs
             .onResponseContentAsync((response, chunk, demander) -> demander.run())
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
+            .onResponseListener(new Response.Listener() {}) // For all response events.
             // Result hook.
             .send(result -> { /* ... */ });
         // end::listeners[]

@@ -19,6 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
@@ -62,6 +63,8 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor3;
     protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
+    protected Object eeObject1;
+    protected Object eeObject2;
 
     public static class TestInjections
     {
@@ -129,14 +132,14 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visbility of the TestInjections class
+        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visibility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
         Context compCtx = (Context)icontext.lookup("java:comp");
         Context envCtx = compCtx.createSubcontext("env");
 
-        @SuppressWarnings("unused")
+        //A resource declared in the webapp scope
         Resource ds = new Resource(context, "jdbc/mydatasource", new Object());
         
         //An EnvEntry that should override any value supplied in a web.xml file
@@ -154,6 +157,14 @@ public class PlusDescriptorProcessorTest
         //An EnvEntry that will NOT override an empty value in web.xml
         EnvEntry vacuumStringEnvEntry = new EnvEntry("vacuum", "VACUUM", false);
         doEnvConfiguration(envCtx, vacuumStringEnvEntry);
+
+        //Resource 1 declared in environment scope
+        eeObject1 = new Object();
+        Resource res1 = new Resource(ServletContextHandler.ENVIRONMENT.getName(), "eeObject1", eeObject1);
+
+        //Resource 2 declared in environment scope
+        eeObject2 = new Object();
+        Resource res2 = new Resource(ServletContextHandler.ENVIRONMENT.getName(), "eeObject2", eeObject2);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");
         webDescriptor = new WebDescriptor(context.getResourceFactory().newResource(webXml));
@@ -235,6 +246,54 @@ public class PlusDescriptorProcessorTest
 
             pdp.process(context, fragDescriptor1);
             pdp.process(context, fragDescriptor2);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    @Test
+    public void testResourceRefs() throws Exception
+    {
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        try
+        {
+            PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
+            //process web.xml
+            pdp.process(context, webDescriptor);
+
+            //test that <resource-ref> for eeObject1 is correctly linked to
+            //eeObject1 declared with ee9 scope
+            Context icontext = new InitialContext();
+            Context compCtx = (Context)icontext.lookup("java:comp");
+            Context envCtx = (Context)compCtx.lookup("env");
+            assertEquals(eeObject1, envCtx.lookup("eeObject1"));
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    @Test
+    public void testResourceEnvRefs() throws Exception
+    {
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        try
+        {
+            PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
+            //process web.xml
+            pdp.process(context, webDescriptor);
+
+            //test that <resource-env-ref> for eeObject2 is correctly linked to
+            //eeObject2 declared with ee9 scope
+            Context icontext = new InitialContext();
+            Context compCtx = (Context)icontext.lookup("java:comp");
+            Context envCtx = (Context)compCtx.lookup("env");
+            assertEquals(eeObject2, envCtx.lookup("eeObject2"));
         }
         finally
         {

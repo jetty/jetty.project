@@ -39,14 +39,12 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
 {
     private final JettyLoggerConfiguration configuration;
     private final JettyLogger rootLogger;
-    private final ConcurrentMap<String, JettyLogger> loggerMap;
+    private final ConcurrentMap<String, JettyLogger> loggerMap = new ConcurrentHashMap<>();
     private MBeanInfo mBeanInfo;
 
     public JettyLoggerFactory(JettyLoggerConfiguration config)
     {
         configuration = Objects.requireNonNull(config, "JettyLoggerConfiguration");
-
-        loggerMap = new ConcurrentHashMap<>();
 
         StdErrAppender appender = new StdErrAppender(configuration);
 
