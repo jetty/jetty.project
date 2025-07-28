@@ -97,6 +97,7 @@ public class HttpRequest implements Request
     private Supplier<HttpFields> trailers;
     private Object tag;
     private boolean normalized;
+    private boolean queued;
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -319,9 +320,14 @@ public class HttpRequest implements Request
     @Override
     public Request version(HttpVersion version)
     {
-        this.version = Objects.requireNonNull(version);
+        setVersion(Objects.requireNonNull(version));
         this.versionExplicit = true;
         return this;
+    }
+
+    public void setVersion(HttpVersion version)
+    {
+        this.version = version;
     }
 
     @Override
@@ -813,7 +819,8 @@ public class HttpRequest implements Request
     }
 
     /**
-     * <p>Marks this request as <em>normalized</em>.</p>
+     * <p>Marks this request as <em>normalized</em>, and returns whether
+     * this request was already normalized.</p>
      * <p>A request is normalized by setting things that applications give
      * for granted such as defaulting the method to {@code GET}, adding the
      * {@code Host} header, adding the cookies, adding {@code Authorization}
@@ -822,10 +829,23 @@ public class HttpRequest implements Request
      * @return whether this request was already normalized
      * @see HttpConnection#normalizeRequest(HttpRequest)
      */
-    boolean normalized()
+    boolean getAndSetNormalized()
     {
         boolean result = normalized;
         normalized = true;
+        return result;
+    }
+
+    /**
+     * <p>Marks this request as queued, and returns whether this request
+     * was already queued.</p>
+     *
+     * @return whether this request was already queued
+     */
+    boolean getAndSetQueued()
+    {
+        boolean result = queued;
+        queued = true;
         return result;
     }
 

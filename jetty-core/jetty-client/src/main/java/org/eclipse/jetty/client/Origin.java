@@ -232,6 +232,8 @@ public class Origin
      */
     public static class Protocol
     {
+        public static final String EXCLUDED_PROTOCOLS_ATTRIBUTE = Protocol.class.getName() + ".excluded";
+
         private final List<String> protocols;
         private final boolean negotiate;
 

@@ -108,6 +108,11 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         boolean secure = HttpScheme.isSecure(request.getScheme());
 
         List<Info> matchingInfos = new ArrayList<>();
+
+        @SuppressWarnings("unchecked")
+        List<String> excludedProtocols = (List<String>)request.getAttributes().get(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE);
+        excludedProtocols = excludedProtocols != null ? excludedProtocols : List.of();
+
         if (((HttpRequest)request).isVersionExplicit())
         {
             HttpVersion version = request.getVersion();
@@ -117,11 +122,12 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 // Find the first protocol that matches the version.
                 for (String p : info.getProtocols(secure))
                 {
-                    if (wanted.contains(p))
-                    {
-                        matchingInfos.add(info);
+                    if (excludedProtocols.contains(p))
                         break;
-                    }
+                    if (!wanted.contains(p))
+                        continue;
+                    matchingInfos.add(info);
+                    break;
                 }
                 if (matchingInfos.isEmpty())
                     continue;
@@ -130,27 +136,17 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            if (secure)
+            for (Info info : clientConnectionFactoryInfos)
             {
-                for (Info info : clientConnectionFactoryInfos)
-                {
-                    List<String> protocols = info.getProtocols(secure);
-                    if (protocols.isEmpty())
-                        continue;
-                    matchingInfos.add(info);
-                }
-            }
-            else
-            {
-                // Only pick the first non-secure because we cannot negotiate.
-                for (Info info : clientConnectionFactoryInfos)
-                {
-                    List<String> protocols = info.getProtocols(secure);
-                    if (protocols.isEmpty())
-                        continue;
-                    matchingInfos.add(info);
+                List<String> protocols = info.getProtocols(secure);
+                if (protocols.isEmpty())
+                    continue;
+                if (excludedProtocols.stream().anyMatch(protocols::contains))
+                    continue;
+                matchingInfos.add(info);
+                // Only pick the first non-secure because cannot negotiate.
+                if (!secure)
                     break;
-                }
             }
         }
 
@@ -196,15 +192,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        String protocol = (String)context.get(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY);
+        String alpnProtocol = (String)context.get(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY);
 
         Info factoryInfo;
-        if (protocol != null)
+        if (alpnProtocol != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ALPN protocol {}", protocol);
-            factoryInfo = findClientConnectionFactoryInfo(List.of(protocol), true)
-                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
+                LOG.debug("ALPN protocol {}", alpnProtocol);
+            factoryInfo = findClientConnectionFactoryInfo(List.of(alpnProtocol), true)
+                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + alpnProtocol));
         }
         else
         {
@@ -212,8 +208,10 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             // In case of a forward proxy, the destination has been set to the proxy destination.
             Origin origin = destination.getOrigin();
-            factoryInfo = findClientConnectionFactoryInfo(origin.getProtocol().getProtocols(), origin.isSecure())
-                .orElseThrow();
+            Origin.Protocol protocol = origin.getProtocol();
+            List<String> protocols = protocol != null ? protocol.getProtocols() : List.of();
+            factoryInfo = findClientConnectionFactoryInfo(protocols, origin.isSecure())
+                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for protocol " + protocol));
             if (LOG.isDebugEnabled())
                 LOG.debug("No ALPN protocol, using {}", factoryInfo);
         }
@@ -226,8 +224,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
         Origin origin = destination.getOrigin();
         Origin.Protocol protocol = origin.getProtocol();
-        Info info = findClientConnectionFactoryInfo(protocol.getProtocols(), origin.isSecure())
-            .orElseThrow(() -> new IllegalStateException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " to upgrade to " + protocol));
+        List<String> protocols = protocol != null ? protocol.getProtocols() : List.of();
+        Info info = findClientConnectionFactoryInfo(protocols, origin.isSecure())
+            .orElseThrow(() -> new IllegalStateException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " to upgrade to protocol " + protocol));
         info.upgrade(endPoint, context);
     }
 
