@@ -99,12 +99,18 @@ public class WebSocketOverHTTP2Test
     private ServletContextHandler context;
     private Runnable onComplete;
 
-    private void startServer() throws Exception
+    private void prepareAndStartServer() throws Exception
     {
-        startServer(new TestJettyWebSocketServlet());
+        prepareServer();
+        server.start();
     }
 
-    private void startServer(TestJettyWebSocketServlet servlet) throws Exception
+    private void prepareServer() throws Exception
+    {
+        prepareServer(new TestJettyWebSocketServlet());
+    }
+
+    private void prepareServer(TestJettyWebSocketServlet servlet) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -144,8 +150,6 @@ public class WebSocketOverHTTP2Test
                     onComplete.run();
             }
         });
-
-        server.start();
     }
 
     private void startClient(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
@@ -185,7 +189,7 @@ public class WebSocketOverHTTP2Test
 
     private void testWebSocketOverDynamicTransport(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(protocolFn);
 
         EventSocket wsEndPoint = new EventSocket();
@@ -208,7 +212,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testConnectProtocolDisabled() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         AbstractHTTP2ServerConnectionFactory h2c = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
         h2c.setConnectProtocolEnabled(false);
 
@@ -227,7 +231,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testSlowWebSocketUpgradeWithHTTP2DataFramesQueued() throws Exception
     {
-        startServer(new TestJettyWebSocketServlet()
+        prepareServer(new TestJettyWebSocketServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -247,6 +251,7 @@ public class WebSocketOverHTTP2Test
                 }
             }
         });
+        server.start();
 
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
@@ -270,7 +275,7 @@ public class WebSocketOverHTTP2Test
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Issue #6660 - Windows does not throw ConnectException")
     public void testWebSocketConnectPortDoesNotExist() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         // Port 293 is not assigned by IANA, so
@@ -290,7 +295,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testWebSocketNotFound() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
@@ -307,7 +312,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testNotNegotiated() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
@@ -324,7 +329,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testThrowFromCreator() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -350,7 +355,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testServerConnectionClose() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
@@ -366,7 +371,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testServerTimeout() throws Exception
     {
-        startServer();
+        prepareAndStartServer();
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
         EchoSocket serverEndpoint = new EchoSocket();
@@ -402,12 +407,14 @@ public class WebSocketOverHTTP2Test
     @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
     public void testNetworkConnectionLimit() throws Exception
     {
-        startServer();
+        prepareServer();
 
         int maxNetworkConnectionCount = 5;
         NetworkConnectionLimit networkConnectionLimit = new NetworkConnectionLimit(maxNetworkConnectionCount, connector, tlsConnector);
         connector.addBean(networkConnectionLimit);
         tlsConnector.addBean(networkConnectionLimit);
+
+        server.start();
 
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
