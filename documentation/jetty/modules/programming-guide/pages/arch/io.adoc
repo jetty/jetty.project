@@ -132,10 +132,7 @@ This is useful in many cases, for example:
 `Connection.Listener` implementations must be added as beans to a server-side `Connector`, or to client-side `HttpClient`, `WebSocketClient`, `HTTP2Client` or `HTTP3Client`.
 You can add as beans many `Connection.Listener` objects, each with its own logic, so that you can separate different logics into different `Connection.Listener` implementations.
 
-The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own:
-
-* link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics.html[`ConnectionStatistics`]
-* link:{javadoc-url}/org/eclipse/jetty/server/ConnectionLimit.html[`ConnectionLimit`]
+The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own, for example link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics.html[`ConnectionStatistics`].
 
 Here is a simple example of a `Connection.Listener` used both on the client and on the server:
 
