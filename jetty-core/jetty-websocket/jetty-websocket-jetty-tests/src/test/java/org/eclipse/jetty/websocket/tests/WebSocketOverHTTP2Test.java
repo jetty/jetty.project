@@ -17,6 +17,7 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -62,14 +64,17 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
@@ -91,10 +96,22 @@ public class WebSocketOverHTTP2Test
 
     private void startServer(Consumer<ServerWebSocketContainer> configurator) throws Exception
     {
-        startServer((server, context) -> WebSocketUpgradeHandler.from(server, context, configurator));
+        prepareServer(configurator);
+        server.start();
     }
 
     private void startServer(BiFunction<Server, ContextHandler, Handler> wsHandlerFactory) throws Exception
+    {
+        prepareServer(wsHandlerFactory);
+        server.start();
+    }
+
+    private void prepareServer(Consumer<ServerWebSocketContainer> configurator)
+    {
+        prepareServer((server, context) -> WebSocketUpgradeHandler.from(server, context, configurator));
+    }
+
+    private void prepareServer(BiFunction<Server, ContextHandler, Handler> wsHandlerFactory)
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -136,8 +153,6 @@ public class WebSocketOverHTTP2Test
 
         Handler wsHandler = wsHandlerFactory.apply(server, context);
         context.setHandler(wsHandler);
-
-        server.start();
     }
 
     private void startClient(Function<ClientConnector, List<ClientConnectionFactory.Info>> protocolFn) throws Exception
@@ -229,6 +244,7 @@ public class WebSocketOverHTTP2Test
                 return handled;
             }
         });
+        server.start();
 
         startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
@@ -438,5 +454,59 @@ public class WebSocketOverHTTP2Test
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
 
         assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
+    public void testNetworkConnectionLimit() throws Exception
+    {
+        prepareServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+
+        int maxNetworkConnectionCount = 5;
+        NetworkConnectionLimit networkConnectionLimit = new NetworkConnectionLimit(maxNetworkConnectionCount, connector, tlsConnector);
+        connector.addBean(networkConnectionLimit);
+        tlsConnector.addBean(networkConnectionLimit);
+
+        server.start();
+
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        List<EventSocket> clientHandlers = new ArrayList<>();
+        for (int i = 0; i < maxNetworkConnectionCount; i++)
+        {
+            EventSocket clientEndpoint = new EventSocket();
+            clientHandlers.add(clientEndpoint);
+            wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+            assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+            assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
+            awaitConnections(1, networkConnectionLimit);
+        }
+
+        // We only have 1 HTTP2Connection, and the WebSocket connections are over HTTP/2 streams so do not count toward the limit.
+        assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+        assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
+
+        // Close all the sessions.
+        for (EventSocket handler : clientHandlers)
+        {
+            handler.session.close();
+            assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
+        }
+
+        assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+        assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
+    }
+
+    private static void awaitConnections(int connections, NetworkConnectionLimit networkConnectionLimit)
+    {
+        await().atMost(1, TimeUnit.SECONDS)
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(() ->
+            {
+                assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
+                assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+            });
     }
 }

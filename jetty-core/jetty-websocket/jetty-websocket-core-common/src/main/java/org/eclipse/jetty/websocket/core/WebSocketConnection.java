@@ -65,15 +65,20 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     /*
      * The state of the WebSocketConnection, used to serialize fillingAndParsing with connection close events.
      * <pre>
-     *   IDLE   <------> FILLING_AND_PARSING  <------> MORE_FILLING_AND_PARSING
-     *     |                 |                           |
-     *     |                 |                           |
-     *     v                 v                           |
-     *   CLOSED <-------- CLOSING <----------------------+
+     *
+     *   OPENING <-----> IDLE   <------> FILLING_AND_PARSING  <------> MORE_FILLING_AND_PARSING
+     *      |            |                 |                           |
+     *      |            |                 |                           |
+     *      |            v                 v                           |
+     *      |          CLOSED <-------- CLOSING <----------------------+
+     *      |                              ^
+     *      |                              |
+     *      +------------------------------+
      * </pre>
      */
     private enum State
     {
+        OPENING,
         IDLE,
         FILLING_AND_PARSING,
         MORE_FILLING_AND_PARSING,
@@ -235,6 +240,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     close = true;
                     break;
                 }
+                case OPENING:
                 case FILLING_AND_PARSING:
                 case MORE_FILLING_AND_PARSING:
                 {
@@ -609,10 +615,43 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}", this);
 
-        // Open Session
+        try (AutoLock ignored = lock.lock())
+        {
+            switch (state)
+            {
+                case IDLE -> state = State.OPENING;
+                case CLOSED ->
+                {
+                    // Nothing to do.
+                    return;
+                }
+                default -> throw new IllegalStateException(state.name());
+            }
+        }
+
         super.onOpen();
         coreSession.onOpen();
-        if (moreDemand())
+
+        boolean close = false;
+        Throwable closeCause = null;
+        try (AutoLock ignored = lock.lock())
+        {
+            switch (state)
+            {
+                case OPENING -> state = State.IDLE;
+                case CLOSING ->
+                {
+                    state = State.CLOSED;
+                    close = true;
+                    closeCause = this.closeCause;
+                }
+                default -> throw new IllegalStateException(state.name());
+            }
+        }
+
+        if (close)
+            doOnClose(closeCause);
+        else if (moreDemand())
             fillAndParse();
     }
 
