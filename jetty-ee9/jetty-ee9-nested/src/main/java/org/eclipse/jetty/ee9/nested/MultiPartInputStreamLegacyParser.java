@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * this class accepts non-compliant RFC formats that the new {@link MultiPartFormInputStream} does not accept.
  * This class is unavailable on <em>ee10</em> and newer environments.
  */
+@SuppressWarnings("removal")
 @Deprecated (forRemoval = true, since = "10.0.10")
 public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
 {
@@ -608,9 +609,10 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             // check compliance of preamble
             // this will show up as whitespace before the boundary that exists after the preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
-                nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY,
-                    String.format("0x%02x", untrimmed.charAt(0))));
+            {
+                complianceAllows(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY,
+                    String.format("0x%02x", untrimmed.charAt(0)));
+            }
 
             // Read each part
             boolean lastPart = false;
@@ -712,37 +714,41 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 InputStream partInput = null;
                 if ("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding));
-                    if (_multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
+                    if (complianceAllows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding))
+                        //noinspection removal
                         partInput = new Base64InputStream((ReadLineInputStream)_in);
                     else
                         partInput = _in;
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, contentTransferEncoding));
-                    partInput = new FilterInputStream(_in)
+                    if (complianceAllows(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, contentTransferEncoding))
                     {
-                        @Override
-                        public int read() throws IOException
+                        partInput = new FilterInputStream(_in)
                         {
-                            int c = in.read();
-                            if (c >= 0 && c == '=')
+                            @Override
+                            public int read() throws IOException
                             {
-                                int hi = in.read();
-                                int lo = in.read();
-                                if (hi < 0 || lo < 0)
+                                int c = in.read();
+                                if (c >= 0 && c == '=')
                                 {
-                                    throw new IOException("Unexpected end to quoted-printable byte");
+                                    int hi = in.read();
+                                    int lo = in.read();
+                                    if (hi < 0 || lo < 0)
+                                    {
+                                        throw new IOException("Unexpected end to quoted-printable byte");
+                                    }
+                                    char[] chars = new char[]{(char)hi, (char)lo};
+                                    c = Integer.parseInt(new String(chars), 16);
                                 }
-                                char[] chars = new char[]{(char)hi, (char)lo};
-                                c = Integer.parseInt(new String(chars), 16);
+                                return c;
                             }
-                            return c;
-                        }
-                    };
+                        };
+                    }
+                    else
+                    {
+                        partInput = _in;
+                    }
                 }
                 else
                     partInput = _in;
@@ -857,11 +863,13 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 EnumSet<ReadLineInputStream.Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
 
                 if (term.contains(ReadLineInputStream.Termination.CR))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x13"));
+                {
+                    complianceAllows(MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x0D");
+                }
                 if (term.contains(ReadLineInputStream.Termination.LF))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
+                {
+                    complianceAllows(MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x0A");
+                }
             }
             else
                 throw new IOException("Incomplete Multipart");
@@ -933,7 +941,15 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             return unquoteOnly(value, true);
     }
 
+    private boolean complianceAllows(ComplianceViolation violation, String reason)
+    {
+        boolean allowed = _multiPartCompliance.allows(violation);
+        nonComplianceWarnings.add(new ComplianceViolation.Event(_multiPartCompliance, violation, reason, allowed));
+        return allowed;
+    }
+
     // TODO: consider switching to Base64.getMimeDecoder().wrap(InputStream)
+    @SuppressWarnings("removal")
     private static class Base64InputStream extends InputStream
     {
         private static final byte[] CRLF = "\r\n".getBytes(StandardCharsets.UTF_8);

@@ -656,9 +656,12 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
-                    if (badMessage != null)
-                        throw new BadMessageException(badMessage);
+                    UriCompliance uriCompliance = getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                    uriCompliance.assertAllowed(
+                        uri,
+                        getComplianceViolationListener(),
+                        BadMessageException::new
+                    );
                 }
 
                 // Customize before processing.

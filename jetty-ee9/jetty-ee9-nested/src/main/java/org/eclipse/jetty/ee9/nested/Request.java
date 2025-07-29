@@ -431,9 +431,10 @@ public class Request implements HttpServletRequest
                     boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
                     if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                     {
-                        ComplianceViolation.Listener complianceViolationListener = getComplianceViolationListener();
-                        if (complianceViolationListener != null)
-                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                        uriCompliance.assertAllowed(UriCompliance.Violation.BAD_UTF8_ENCODING,
+                            getComplianceViolationListener(),
+                            "query=" + query,
+                            BadMessageException::new);
                     }
                 }
                 else
@@ -2083,7 +2084,8 @@ public class Request implements HttpServletRequest
             {
                 throw new BadMessageException("Unable to parse form content", e);
             }
-            reportComplianceViolations();
+            // Only report compliance violations after the whole multipart has been read.
+            multipartComplianceCheck();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2152,12 +2154,21 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private void reportComplianceViolations()
+    private void multipartComplianceCheck()
     {
         ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
         List<ComplianceViolation.Event> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (ComplianceViolation.Event nc : nonComplianceWarnings)
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
+        {
+            if (nc.mode() instanceof MultiPartCompliance multiPartCompliance)
+            {
+                MultiPartCompliance.Violation violation = (MultiPartCompliance.Violation)nc.violation();
+                multiPartCompliance.assertAllowed(violation,
+                    complianceViolationListener,
+                    nc.details(),
+                    BadMessageException::new);
+            }
+        }
     }
 
     private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException

@@ -374,8 +374,9 @@ public class HttpParser
 
     protected void reportComplianceViolation(Violation violation, String reason)
     {
+        boolean allowed = _complianceMode.allows(violation);
         if (_requestParser)
-            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)

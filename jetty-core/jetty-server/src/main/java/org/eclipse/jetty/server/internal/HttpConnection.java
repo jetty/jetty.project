@@ -1204,13 +1204,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            UriCompliance compliance;
             if (_uri.hasViolations())
             {
-                compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
-                if (badMessage != null)
-                    throw new BadMessageException(badMessage);
+                UriCompliance uriCompliance = getHttpConfiguration().getUriCompliance();
+                uriCompliance.assertAllowed(_uri,
+                    getHttpChannel().getComplianceViolationListener(),
+                    BadMessageException::new);
             }
 
             // Check host field matches the authority in the absolute URI or is not blank
@@ -1221,12 +1220,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                        {
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        }
-                        else
-                            throw new BadMessageException("Authority!=Host");
+                        httpCompliance.assertAllowed(MISMATCHED_AUTHORITY,
+                            getHttpChannel().getComplianceViolationListener(),
+                            "Authority!=Host",
+                            BadMessageException::new);
                     }
                 }
                 else

@@ -81,13 +81,13 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
-    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details, boolean allowed)
     {
         @Override
         public String toString()
         {
-            return String.format("%s (see %s) in mode %s for %s",
-                violation.getDescription(), violation.getURL(), mode, details);
+            return String.format("%s (see %s) in mode %s for %s during %s (%s)",
+                violation.getDescription(), violation.getURL(), mode, details, allowed ? "allowed" : "forbidden");
         }
     }
 

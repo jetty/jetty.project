@@ -577,8 +577,10 @@ public interface Request extends Attributes, Content.Source
                 if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                 {
                     HttpChannel httpChannel = HttpChannel.from(request);
-                    if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
-                        httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                    uriCompliance.assertAllowed(UriCompliance.Violation.BAD_UTF8_ENCODING,
+                        httpChannel.getComplianceViolationListener(),
+                        "query=" + query,
+                        BadMessageException::new);
                 }
             }
             else

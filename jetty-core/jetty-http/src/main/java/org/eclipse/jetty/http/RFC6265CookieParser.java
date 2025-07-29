@@ -83,7 +83,7 @@ public class RFC6265CookieParser implements CookieParser
 
             if (token == null)
             {
-                if (!complianceAllows(INVALID_COOKIES))
+                if (!complianceAllows(INVALID_COOKIES, field))
                      throw new InvalidCookieException("Invalid Cookie character");
                 state = State.INVALID_COOKIE;
                 continue;
@@ -99,7 +99,7 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (token.isRfc2616Token())
                     {
-                        if (!StringUtil.isBlank(cookieName) && !(c == '$' && (complianceAllows(ATTRIBUTES) || complianceAllows(ATTRIBUTE_VALUES))))
+                        if (!StringUtil.isBlank(cookieName) && !(c == '$' && (complianceAllows(ATTRIBUTES, field) || complianceAllows(ATTRIBUTE_VALUES, field))))
                         {
                             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
@@ -270,7 +270,7 @@ public class RFC6265CookieParser implements CookieParser
                         value = string.toString();
                         state = State.AFTER_QUOTED_VALUE;
                     }
-                    else if (c == '\\' && complianceAllows(ESCAPE_IN_QUOTES))
+                    else if (c == '\\' && complianceAllows(ESCAPE_IN_QUOTES, field))
                     {
                         state = State.ESCAPED_VALUE;
                     }
@@ -418,16 +418,17 @@ public class RFC6265CookieParser implements CookieParser
             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
     }
 
-    private boolean complianceAllows(ComplianceViolation violation)
+    @Override
+    public CookieCompliance getCookieCompliance()
     {
-        return complianceAllows(violation, violation.getDescription());
+        return _complianceMode;
     }
 
     private boolean complianceAllows(ComplianceViolation violation, String reason)
     {
-        boolean ret = _complianceMode.allows(violation);
-        if (ret && _complianceListener != null)
-            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
-        return ret;
+        boolean allowed = _complianceMode.allows(violation);
+        if (_complianceListener != null)
+            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
+        return allowed;
     }
 }

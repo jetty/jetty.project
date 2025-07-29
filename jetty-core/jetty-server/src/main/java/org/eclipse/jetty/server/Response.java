@@ -401,9 +401,10 @@ public interface Response extends Content.Sink
         UriCompliance redirectCompliance = httpConfiguration.getRedirectUriCompliance();
         if (redirectCompliance != null)
         {
-            String violations = UriCompliance.checkUriCompliance(redirectCompliance, HttpURI.from(location), null);
-            if (StringUtil.isNotBlank(violations))
-                throw new IllegalArgumentException(violations);
+            HttpChannel channel = HttpChannel.from(request);
+            redirectCompliance.assertAllowed(HttpURI.from(location),
+                channel.getComplianceViolationListener(),
+                IllegalArgumentException::new);
         }
 
         return location;
