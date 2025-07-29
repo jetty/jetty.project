@@ -16,9 +16,19 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
+/**
+ * <p>A connection pool that provides connections for both directions of communication.
+ * This pool uses a concurrent pool with FIRST strategy to manage connections efficiently.</p>
+ */
 @ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool
 {
+    /**
+     * Creates a duplex connection pool for the given destination.
+     *
+     * @param destination the destination for which this pool provides connections
+     * @param maxConnections the maximum number of connections in the pool
+     */
     public DuplexConnectionPool(Destination destination, int maxConnections)
     {
         super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections), 1);

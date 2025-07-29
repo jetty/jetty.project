@@ -123,11 +123,17 @@ public interface SocketAddressResolver
             this.timeout = timeout;
         }
 
+        /**
+         * @return the executor used for DNS resolution
+         */
         public Executor getExecutor()
         {
             return executor;
         }
 
+        /**
+         * @return the scheduler used for timeout operations
+         */
         public Scheduler getScheduler()
         {
             return scheduler;
