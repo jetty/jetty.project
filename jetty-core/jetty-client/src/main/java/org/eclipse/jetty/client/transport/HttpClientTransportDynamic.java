@@ -200,7 +200,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             if (LOG.isDebugEnabled())
                 LOG.debug("ALPN protocol {}", alpnProtocol);
             factoryInfo = findClientConnectionFactoryInfo(List.of(alpnProtocol), true)
-                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + alpnProtocol));
+                .orElseThrow(() -> new IOException("Cannot create connection: no factory for negotiated protocol " + alpnProtocol));
         }
         else
         {
@@ -209,9 +209,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             // In case of a forward proxy, the destination has been set to the proxy destination.
             Origin origin = destination.getOrigin();
             Origin.Protocol protocol = origin.getProtocol();
-            List<String> protocols = protocol != null ? protocol.getProtocols() : List.of();
-            factoryInfo = findClientConnectionFactoryInfo(protocols, origin.isSecure())
-                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for protocol " + protocol));
+            List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
+            boolean secure = origin.isSecure();
+            factoryInfo = findClientConnectionFactoryInfo(protocols, secure)
+                .orElseThrow(() ->
+                {
+                    if (protocol == null)
+                        return new IOException("Cannot create connection: no protocol enabled among " + clientConnectionFactoryInfos.stream().flatMap(i -> i.getProtocols(secure).stream()).toList());
+                    return new IOException("Cannot create connection: no factory for protocol " + protocol);
+                });
             if (LOG.isDebugEnabled())
                 LOG.debug("No ALPN protocol, using {}", factoryInfo);
         }

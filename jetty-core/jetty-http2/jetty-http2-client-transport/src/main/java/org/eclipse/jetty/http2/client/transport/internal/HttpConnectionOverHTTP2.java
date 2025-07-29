@@ -241,13 +241,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 if (!dynamic)
                     throw new HttpRequestException("Could not upgrade to WebSocket: CONNECT with :protocol disabled", request);
 
-                Origin.Protocol protocol = getHttpDestination().getOrigin().getProtocol();
-                if (protocol == null)
-                    throw new HttpRequestException("Could not upgrade to WebSocket: no Origin.Protocol", request);
-
                 // We may be able to retry with another HttpClientTransport,
                 // therefore exclude this protocol from the next attempt.
-                List<String> excluded = new ArrayList<>(protocol.getProtocols());
+                List<String> excluded = new ArrayList<>(List.of("h2c", "h2"));
                 @SuppressWarnings("unchecked")
                 List<String> attribute = (List<String>)request.getAttributes().get(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE);
                 if (attribute == null)

@@ -209,12 +209,7 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
 
-        ExecutionException failure = assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
-
-        Throwable cause = failure.getCause();
-        assertThat(cause, instanceOf(UpgradeException.class));
-        assertThat(cause.getMessage(), containsStringIgnoringCase("Could not upgrade to WebSocket"));
+        assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -442,7 +437,6 @@ public class WebSocketOverHTTP2Test
         // Force WebSocket upgrade with HTTP/2.
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
 
-        ExecutionException failure = assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
-        failure.printStackTrace();
+        assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
     }
 }
