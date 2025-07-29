@@ -130,10 +130,10 @@ public class ComplianceTest
         });
 
         String rawRequest = """
-            GET /test?%s HTTP/1.1
-            Host: local
-            Connection: close
-            
+            GET /test?%s HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
             """.formatted(rawQuery);
 
         String rawResponse = localConnector.getResponse(rawRequest);

@@ -36,7 +36,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class ConnectionLimitTest
+public class NetworkConnectionLimitTest
 {
     private Server server;
     private ServerConnector connector;
@@ -58,7 +58,7 @@ public class ConnectionLimitTest
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1})
-    public void testConnectionLimitWithConnector(int acceptors) throws Exception
+    public void testNetworkConnectionLimitWithConnector(int acceptors) throws Exception
     {
         prepare(acceptors, new Handler.Abstract()
         {
@@ -70,7 +70,7 @@ public class ConnectionLimitTest
             }
         });
         int maxConnections = 2;
-        ConnectionLimit limiter = new ConnectionLimit(maxConnections, connector);
+        NetworkConnectionLimit limiter = new NetworkConnectionLimit(maxConnections, connector);
         connector.addBean(limiter);
         server.start();
 
@@ -81,7 +81,7 @@ public class ConnectionLimitTest
             channels.add(channel);
         }
         // On the client connections may be accepted, but on server not yet.
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
         // The limit was reached.
         assertFalse(connector.isAccepting());
 
@@ -93,21 +93,21 @@ public class ConnectionLimitTest
             SocketChannel channel = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()));
             extraChannels.add(channel);
         }
-        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
 
         // Closing one existing connection may accept
         // all the extra connections when acceptors=0.
         channels.remove(0).close();
         // Verify that we are still correctly limited
         // and that we have accepted a pending connection.
-        await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
 
         extraChannels.forEach(IO::close);
         channels.forEach(IO::close);
     }
 
     @Test
-    public void testConnectionLimitWithServer() throws Exception
+    public void testNetworkConnectionLimitWithServer() throws Exception
     {
         prepare(1, new Handler.Abstract()
         {
@@ -121,20 +121,20 @@ public class ConnectionLimitTest
         ServerConnector connector2 = new ServerConnector(server, 0, 1);
         server.addConnector(connector2);
         int maxConnections = 2;
-        ConnectionLimit limiter = new ConnectionLimit(maxConnections, server);
+        NetworkConnectionLimit limiter = new NetworkConnectionLimit(maxConnections, server);
         server.addBean(limiter);
         server.start();
 
         // Max out the connections.
         SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()));
         SocketChannel.open(new InetSocketAddress("localhost", connector2.getLocalPort()));
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
 
         // Try to create more, should not be possible.
         SocketChannel extraChannel1 = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()));
-        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
         SocketChannel extraChannel2 = SocketChannel.open(new InetSocketAddress("localhost", connector2.getLocalPort()));
-        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getConnections()));
+        await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(maxConnections, limiter.getNetworkConnectionCount()));
 
         extraChannel2.close();
         extraChannel1.close();
@@ -160,7 +160,7 @@ public class ConnectionLimitTest
             }
         });
         int maxConnections = 2;
-        ConnectionLimit limiter = new ConnectionLimit(maxConnections, connector);
+        NetworkConnectionLimit limiter = new NetworkConnectionLimit(maxConnections, connector);
         connector.addBean(limiter);
         server.start();
 
@@ -179,7 +179,7 @@ public class ConnectionLimitTest
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(16);
             assertEquals(-1, channel.read(byteBuffer));
-            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, limiter.getPendingConnections()));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, limiter.getPendingNetworkConnectionCount()));
         }
 
         // Release the blocked task.
