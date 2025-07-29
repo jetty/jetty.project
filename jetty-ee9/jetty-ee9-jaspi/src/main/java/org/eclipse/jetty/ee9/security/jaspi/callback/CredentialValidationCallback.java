@@ -38,6 +38,9 @@ public class CredentialValidationCallback implements Callback
         _credential = credential;
     }
 
+    /**
+     * @return the credential for validation
+     */
     public Credential getCredential()
     {
         return _credential;
@@ -48,16 +51,25 @@ public class CredentialValidationCallback implements Callback
         _credential = null;
     }
 
+    /**
+     * @return true if validation was successful, false otherwise
+     */
     public boolean getResult()
     {
         return _result;
     }
 
+    /**
+     * @return the subject associated with this credential validation
+     */
     public javax.security.auth.Subject getSubject()
     {
         return _subject;
     }
 
+    /**
+     * @return the username associated with the credential
+     */
     public java.lang.String getUsername()
     {
         return _userName;

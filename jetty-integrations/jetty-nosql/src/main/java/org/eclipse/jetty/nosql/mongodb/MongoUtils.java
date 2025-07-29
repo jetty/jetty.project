@@ -35,6 +35,9 @@ import org.eclipse.jetty.util.URIUtil;
 public class MongoUtils
 {
 
+    /**
+     * @return the decoded object value from MongoDB binary data
+     */
     public static Object decodeValue(final Object valueToDecode) throws IOException, ClassNotFoundException
     {
         if (valueToDecode == null || valueToDecode instanceof Number || valueToDecode instanceof String || valueToDecode instanceof Boolean || valueToDecode instanceof Date)
@@ -71,16 +74,25 @@ public class MongoUtils
         }
     }
 
+    /**
+     * @return the decoded name with special characters unescaped
+     */
     public static String decodeName(String name)
     {
         return URIUtil.decodeSpecific(name, ".%");
     }
 
+    /**
+     * @return the encoded name with special characters escaped for MongoDB
+     */
     public static String encodeName(String name)
     {
         return URIUtil.encodeSpecific(name, ".%");
     }
 
+    /**
+     * @return the encoded object value suitable for MongoDB storage
+     */
     public static Object encodeName(Object value) throws IOException
     {
         if (value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)
