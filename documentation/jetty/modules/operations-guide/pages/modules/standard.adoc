@@ -92,7 +92,7 @@ For more information, refer to xref:programming-guide:server/http.adoc#connector
 The module file is `$JETTY_HOME/modules/network-connection-limit.mod`:
 
 ----
-include::{jetty-home}/modules/network-connection-limit-limit.mod[tags=documentation]
+include::{jetty-home}/modules/network-connection-limit.mod[tags=documentation]
 ----
 
 [[console-capture]]
