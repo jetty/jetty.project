@@ -154,7 +154,7 @@ public class SecurityUtils
     }
 
     /**
-     * <p>Runs the given action as the given subject.</p>
+     * <p>Runs the action as the specified subject.</p>
      *
      * @param subject the subject this action runs as
      * @param action the action to run

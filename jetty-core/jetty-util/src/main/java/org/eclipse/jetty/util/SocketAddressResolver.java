@@ -109,8 +109,8 @@ public interface SocketAddressResolver
         private final long timeout;
 
         /**
-         * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
-         * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
+         * Creates a new instance with the specified executor (to perform DNS resolution in a separate thread),
+         * scheduler (to cancel the operation if it takes too long) and timeout, in milliseconds.
          *
          * @param executor the thread pool to use to perform DNS resolution in pooled threads
          * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
