@@ -320,7 +320,7 @@ public class ResponseTest
     private void assertHasFields(HttpFields.Mutable headers, Map<String, String> expectedFields)
     {
         assertEquals(expectedFields.size(), headers.size(), "Field count mismatch");
-        expectedFields.forEach((k,v) ->
+        expectedFields.forEach((k, v) ->
         {
             assertTrue(headers.contains(k), "Headers has name: " + k);
             String actualValue = headers.get(k);
