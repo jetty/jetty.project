@@ -25,9 +25,9 @@ public interface Attachable
     Object getAttachment();
 
     /**
-     * Attaches the given object to this stream for later retrieval.
+     * Attaches the given object for later retrieval.
      *
-     * @param attachment the object to attach to this instance
+     * @param attachment the object to attach
      */
     void setAttachment(Object attachment);
 }

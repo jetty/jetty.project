@@ -334,7 +334,7 @@ public class ServletUpgradeTest
             }
 
             LOG.debug("[ServletTestUtil] Found search string: '" + search + "' at index '" + searchIdx + "' in the server's " + "response");
-            // the new searchIdx is the old index plus the lenght of the
+            // the new searchIdx is the old index plus the length of the
             // search string.
             startIdx = searchIdx + search.length();
         }
