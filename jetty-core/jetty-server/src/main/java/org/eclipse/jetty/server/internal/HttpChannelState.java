@@ -1429,6 +1429,14 @@ public class HttpChannelState implements HttpChannel, Components
             _trailers = null;
             _contentBytesWritten = 0;
             _request.getHttpChannelState().resetResponse();
+
+            HttpConfiguration httpConfiguration = _request.getHttpChannelState().getHttpConfiguration();
+            if (httpConfiguration.getSendServerVersion())
+                getHeaders().put(SERVER_VERSION);
+            if (httpConfiguration.getSendXPoweredBy())
+                getHeaders().put(POWERED_BY);
+            if (httpConfiguration.getSendDateHeader())
+                getHeaders().put(_request.getConnectionMetaData().getConnector().getServer().getDateField());
         }
 
         @Override

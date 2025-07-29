@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -46,10 +47,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseTest
 {
@@ -237,57 +237,68 @@ public class ResponseTest
                 String date = response.getHeaders().get(HttpHeader.DATE);
                 String server = response.getHeaders().get(HttpHeader.SERVER);
 
+                // Test behavior of HttpFields.Mutable.remove()
                 response.getHeaders().add("Temp", "field");
                 response.getHeaders().add("Test", "before reset");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.DATE));
+                response.getHeaders().remove(HttpHeader.SERVER);
+                response.getHeaders().remove(HttpHeader.DATE);
                 response.getHeaders().remove("Temp");
-
                 response.getHeaders().add("Temp", "field");
+
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset"));
+
+                // Test behavior of Iterator.
+                response.getHeaders().put(HttpHeader.DATE, date);
+                response.getHeaders().put(HttpHeader.SERVER, server);
+
                 Iterator<HttpField> iterator = response.getHeaders().iterator();
-                assertThat(iterator.next().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, iterator::remove);
-                assertThat(iterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, iterator::remove);
-                assertThat(iterator.next().getName(), is("Test"));
-                assertThat(iterator.next().getName(), is("Temp"));
-                iterator.remove();
-                assertFalse(response.getHeaders().contains("Temp"));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
-                assertFalse(iterator.hasNext());
+                while (iterator.hasNext())
+                {
+                    HttpField field = iterator.next();
+                    if (field.getHeader() == HttpHeader.SERVER || field.getHeader() == HttpHeader.DATE)
+                        iterator.remove();
+                }
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset"));
+
+                // Test behavior of ListIterator.
+                response.getHeaders().put(HttpHeader.DATE, date);
+                response.getHeaders().put(HttpHeader.SERVER, server);
 
                 ListIterator<HttpField> listIterator = response.getHeaders().listIterator();
-                assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
-                assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, () -> listIterator.set(new HttpField("Something", "else")));
-                listIterator.set(new HttpField(HttpHeader.DATE, "1970-01-01"));
-                assertThat(listIterator.previous().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
-                assertThat(listIterator.previous().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
-                assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
-                assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
-                listIterator.add(new HttpField("Temp", "value"));
-                assertThat(listIterator.previous().getName(), is("Temp"));
-                listIterator.remove();
-                assertFalse(response.getHeaders().contains("Temp"));
+                while (listIterator.hasNext())
+                {
+                    HttpField field = listIterator.next();
+                    if (field.getHeader() == HttpHeader.SERVER || field.getHeader() == HttpHeader.DATE)
+                        listIterator.remove();
+                }
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset"));
 
-                response.getHeaders().add("Temp", "field");
+                // Test arbitrary put
                 response.getHeaders().put(HttpHeader.DATE, "1970-02-02");
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset", "Date", "1970-02-02"));
 
+                // Test setHeader(name, null) removal of headers.
+                response.getHeaders().put(HttpHeader.DATE, date);
+                response.getHeaders().put(HttpHeader.SERVER, server);
+
+                response.getHeaders().put(HttpHeader.DATE, (String)null);
+                response.getHeaders().put(HttpHeader.SERVER, (String)null);
+
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset"));
+
+                // Set headers to arbitrary value (now that they aren't there)
+                response.getHeaders().putDate(HttpHeader.DATE, 1L);
+                response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
+
+                assertHasFields(response.getHeaders(), Map.of("Temp", "field", "Test", "before reset", "Date", "Thu, 01 Jan 1970 00:00:00 GMT", "Server", "jettyrocks"));
+
+                // Test reset - will restore original headers
                 response.reset();
+                response.getHeaders().add("Test", "after reset");
 
                 assertThat(response.getHeaders().get(HttpHeader.DATE), is(date));
                 assertThat(response.getHeaders().get(HttpHeader.SERVER), is(server));
 
-                response.getHeaders().add("Test", "after reset");
-
-                response.getHeaders().putDate("Date", 1L);
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
-                response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
                 callback.succeeded();
                 return true;
             }
@@ -304,6 +315,17 @@ public class ResponseTest
         assertThat(response.get(HttpHeader.SERVER), notNullValue());
         assertThat(response.get(HttpHeader.DATE), notNullValue());
         assertThat(response.get("Test"), is("after reset"));
+    }
+
+    private void assertHasFields(HttpFields.Mutable headers, Map<String, String> expectedFields)
+    {
+        assertEquals(expectedFields.size(), headers.size(), "Field count mismatch");
+        expectedFields.forEach((k,v) ->
+        {
+            assertTrue(headers.contains(k), "Headers has name: " + k);
+            String actualValue = headers.get(k);
+            assertEquals(v, actualValue, "Value of name: " + k);
+        });
     }
 
     @Test
