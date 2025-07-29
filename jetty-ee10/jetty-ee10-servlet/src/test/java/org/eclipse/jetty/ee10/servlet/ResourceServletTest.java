@@ -1306,7 +1306,7 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
-        // Let's try deleting the `index.html` and accesing the welcome file at `index.htm`
+        // Let's try deleting the `index.html` and accessing the welcome file at `index.htm`
         // We skip this section of the test if the OS or filesystem doesn't support instantaneous delete
         // such as what happens on Microsoft Windows.
         if (deleteFile(altIndex))
