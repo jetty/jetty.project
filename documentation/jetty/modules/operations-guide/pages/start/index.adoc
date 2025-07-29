@@ -305,14 +305,7 @@ args=--dry-run
 replace=( ),$1\\\n
 ----
 
-You can then run the generated command line.
-
-For example, in the Linux `bash` shell you can run it by wrapping it into `$(\...)`:
-
-[source,bash]
-----
-$ $(java -jar $JETTY_HOME/start.jar --dry-run)
-----
+You can then run the generated command line by copying the output generated using the `--dry-run` option, and pasting it in a terminal window.
 
 The `--dry-run` option is quite flexible and below you can find a few examples of how to use it to avoid forking a second JVM, or generating scripts or creating an arguments file that can be passed to (a possibly alternative) `java` executable.
 
@@ -427,29 +420,50 @@ replace=( ),$1\\\n
 
 Note how the program arguments are a list of properties in the form `<name>=<value>` and a list of Jetty XML files.
 
-The various parts of the full JVM command line can be combined to leverage the arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
+To display the xref:deploy/index.adoc[environments] configuration:
 
 [source,bash,subs=+quotes]
 ----
-$ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args## > /tmp/jvm_cmd_line.txt
+$ java -jar $JETTY_HOME/start.jar --dry-run=##envs##
+----
+
+[jetty%nowrap]
+----
+[jetty]
+setupModules=code:example$jetty-modules/postgresql.mod
+setupArgs=--add-modules=http,ee10-deploy
+args=--dry-run=args
+replace=( ),$1\\\n
+----
+
+Note how the environments configuration specifies additional class-path and Jetty XML files for every environment.
+
+The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
+
+[source,bash,subs=+quotes]
+----
+$ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args,envs## > /tmp/jvm_cmd_line.txt
 $ /some/other/java @/tmp/jvm_cmd_line.txt
 ----
 
-Using `--dry-run=opts,path,main,args` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking:
+Using `--dry-run=opts,path,main,args,envs` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking.
+
+In the Linux `bash` shell you can run the output of `--dry-run` in this way:
 
 [source,bash]
 ----
-$ java $(java -jar $JETTY_HOME/start.jar --dry-run=opts,path,main,args)
+$ java -jar $JETTY_HOME/start.jar --dry-run=opts,path,main,args,envs | xargs java
 ----
 
-The output of different `--dry-run` executions can be creatively combined in a shell script:
+The output of different `--dry-run` executions can be creatively combined in a script, for example in the Linux `bash` shell:
 
 [source,bash,subs=+quotes]
 ----
 $ OPTS=$(java -jar start.jar --dry-run=##opts,path##)
 $ MAIN=$(java -jar start.jar --dry-run=##main##)
 $ ARGS=$(java -jar start.jar --dry-run=##args##)
-$ java $OPTS -Dextra=opt $MAIN $ARGS extraProp=value extra.xml
+$ ENVS=$(java -jar start.jar --dry-run=##envs##)
+$ echo $OPTS -Dextra=opt $MAIN $ARGS $ENVS extraProp=value extra.xml | xargs java
 ----
 
 [[start]]
