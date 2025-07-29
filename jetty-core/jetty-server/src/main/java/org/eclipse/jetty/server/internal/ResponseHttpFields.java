@@ -23,8 +23,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.server.internal.ResponseHttpFields.Persistent.isPersistent;
-
 public class ResponseHttpFields extends HttpFields.Mutable.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
@@ -66,8 +64,6 @@ public class ResponseHttpFields extends HttpFields.Mutable.Wrapper
     {
         if (isCommitted())
             return false;
-        if (isPersistent(field))
-            throw new UnsupportedOperationException("Persistent field");
         return true;
     }
 

@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
@@ -49,6 +51,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseHeadersTest
@@ -168,6 +171,28 @@ public class ResponseHeadersTest
         }
     }
 
+    public static class RemovePersistentHeadersServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // Remove persistent headers
+            response.setHeader("Date", null);
+            response.setHeader("Server", null);
+            response.setHeader("X-Powered-By", null);
+
+            List<String> headerNames = response.getHeaderNames()
+                    .stream()
+                    .map(name -> name.toLowerCase(Locale.ENGLISH))
+                    .toList();
+            assertFalse(headerNames.contains("date"));
+            assertFalse(headerNames.contains("server"));
+            assertFalse(headerNames.contains("x-powered-by"));
+
+            response.getOutputStream().print("OK");
+        }
+    }
+
     public static class HeadersServlet extends HttpServlet
     {
         @Override
@@ -217,6 +242,7 @@ public class ResponseHeadersTest
         context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
         context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
         context.addServlet(new ServletHolder(new HeadersServlet()), "/headers/*");
+        context.addServlet(new ServletHolder(new RemovePersistentHeadersServlet()), "/remove-persistent-headers/*");
         context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
         context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
         context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
@@ -260,6 +286,24 @@ public class ResponseHeadersTest
         assertThat(response.get("AddHeaderOnce"), is("Once"));
         assertThat(response.get("AddHeaderTwice"), is("Once"));
         assertThat(response.getValuesList("AddHeaderTwice"), contains("Once", "Twice"));
+    }
+
+    @Test
+    public void testRemovePersistentHeaders() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/remove-persistent-headers/test");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        assertTrue(response.getContent().startsWith("OK"));
+
+        assertThat(response.getFieldNamesCollection(), not(hasItem("Server")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("X-Powered-By")));
+        assertThat(response.getFieldNamesCollection(), not(hasItem("Date")));
     }
 
     @Test
