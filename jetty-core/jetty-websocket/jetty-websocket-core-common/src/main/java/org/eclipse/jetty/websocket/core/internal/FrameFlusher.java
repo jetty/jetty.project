@@ -107,7 +107,7 @@ public class FrameFlusher extends IteratingCallback
             protected void iterate()
             {
                 // We need to acquire the lock before we can iterate over the queue and entries.
-                try (AutoLock l = _lock.lock())
+                try (AutoLock ignored = _lock.lock())
                 {
                     super.iterate();
                 }
@@ -147,7 +147,7 @@ public class FrameFlusher extends IteratingCallback
         List<FlusherEntry> failedEntries = null;
         CloseStatus closeStatus = null;
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (!_canEnqueue || _closedCause != null)
             {
@@ -222,7 +222,7 @@ public class FrameFlusher extends IteratingCallback
 
     public void onClose(Throwable cause)
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _closedCause = cause == null ? new ClosedChannelException() : cause;
         }
@@ -236,7 +236,7 @@ public class FrameFlusher extends IteratingCallback
             LOG.debug("Flushing {}", this);
 
         boolean flush = false;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_closedCause != null)
                 throw _closedCause;
@@ -369,7 +369,7 @@ public class FrameFlusher extends IteratingCallback
 
     private int getQueueSize()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _queue.size();
         }
@@ -378,7 +378,7 @@ public class FrameFlusher extends IteratingCallback
     @Override
     protected void onSuccess()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             assert _completedEntries.isEmpty();
             _completedEntries.addAll(_currentEntries);
@@ -404,7 +404,7 @@ public class FrameFlusher extends IteratingCallback
         if (_batchBuffer != null)
             _batchBuffer.clear();
         releaseAggregateIfEmpty();
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // Ensure no more entries can be enqueued.
             _canEnqueue = false;

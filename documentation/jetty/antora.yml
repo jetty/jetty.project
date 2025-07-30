@@ -9,6 +9,7 @@ asciidoc:
     idprefix: ''
     idseparator: ''
     ee-all: ee{8,9,10,11}
+    ee-all-caps: EE {8,9,10,11}
     ee-current: ee11
     ee-current-caps: EE 11
     ee-prev: ee10

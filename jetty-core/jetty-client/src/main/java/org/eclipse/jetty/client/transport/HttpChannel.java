@@ -76,7 +76,7 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         {
             request.setConnection(getConnection());
             if (LOG.isDebugEnabled())
-                LOG.debug("{} associated {} to {}", exchange, result, this);
+                LOG.debug("associated {} {} to {}", result, exchange, this);
         }
 
         return result;
@@ -103,7 +103,7 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} disassociated {} from {}", exchange, result, this);
+            LOG.debug("disassociated {} {} from {}", result, exchange, this);
         return result;
     }
 

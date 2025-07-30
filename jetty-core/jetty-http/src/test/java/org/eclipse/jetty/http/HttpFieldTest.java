@@ -15,9 +15,11 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -165,6 +167,16 @@ public class HttpFieldTest
         assertEquals("a", values[0]);
         assertEquals("x,\"p,q\",z", values[1]);
         assertEquals("c", values[2]);
+    }
+
+    @Test
+    public void testEtagsValues()
+    {
+        String[] values = new HttpField(HttpHeader.ETAG, "W/\"000000000\",W/\"123456789\",W/\"999999999\"").getValues();
+        assertThat(List.of(values), Matchers.contains(
+            "W/\"000000000\"",
+            "W/\"123456789\"",
+            "W/\"999999999\""));
     }
 
     @Test

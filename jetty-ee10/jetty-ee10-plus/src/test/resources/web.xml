@@ -8,6 +8,19 @@
 
   <display-name>Test WebApp</display-name>
 
+  <!-- reference to eeObject1 in ee scope -->
+  <resource-ref>
+    <res-ref-name>eeObject1</res-ref-name>
+    <res-type>java.lang.Object</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+
+  <!-- reference to eeObject2 in ee scope -->
+  <resource-env-ref>
+    <resource-env-ref-name>eeObject2</resource-env-ref-name>
+    <resource-env-ref-type>java.lang.Object</resource-env-ref-type>
+  </resource-env-ref>
+
   <resource-ref>
     <res-ref-name>jdbc/mydatasource</res-ref-name>
     <res-type>javax.sql.DataSource</res-type>

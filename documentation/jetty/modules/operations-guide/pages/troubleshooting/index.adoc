@@ -177,7 +177,7 @@ If you want to avoid to fork a second JVM to pass the `-agentlib:jdwp` JVM optio
 
 Jetty's `StateTrackingHandler` (described in xref:modules/standard.adoc#state-tracking[this module]) can be used to troubleshoot problems in web applications.
 
-`StateTrackingHandler` tracks the usages of `Handler`/`Request`/`Response` asynchronous APIs by web applications, emitting events (logged at warning level) when an invalid usage of the APIs is detected.
+`StateTrackingHandler` tracks the usages of `Handler`/`Request`/`Response` asynchronous APIs by web applications, emitting events (logged at `WARN` level) when an invalid usage of the APIs is detected.
 
 In conjunction with <<dump,dumping the Jetty component tree>>, it dumps the state of current requests, detailing whether they have reads or writes that are pending, whether callbacks have been completed, along with thread stack traces (including virtual threads) of operations that have been started but not completed, or are stuck in blocking code.
 

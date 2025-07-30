@@ -2358,9 +2358,9 @@ public class HttpParser
         }
 
         @Override
-        protected QuotedCSV newQuotedCSV(String value)
+        protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
-            return new QuotedCSV(false, value)
+            return new QuotedCSV(keepQuotes, value)
             {
                 @Override
                 protected void onComplianceViolation(ComplianceViolation violation)

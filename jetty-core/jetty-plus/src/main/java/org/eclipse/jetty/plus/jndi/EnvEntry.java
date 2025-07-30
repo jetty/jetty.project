@@ -16,7 +16,11 @@ package org.eclipse.jetty.plus.jndi;
 import javax.naming.NamingException;
 
 /**
- * EnvEntry
+ * This is an object that will be linked into a webapp's java:comp/env namespace as if it
+ * was an &lt;env-entry&gt; from web.xml.
+ *
+ * The Servlet Specification mandates that only String, Integer etc can be bound as an
+ * &lt;env-entry&gt;, however Jetty is more lenient and allows a POJO.
  */
 public class EnvEntry extends NamingEntry
 {

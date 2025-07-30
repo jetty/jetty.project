@@ -21,7 +21,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MimeTypesTest
@@ -147,5 +149,39 @@ public class MimeTypesTest
     public void testMimeTypesGetBaseType(String contentTypeWithCharset, MimeTypes.Type expectedType)
     {
         assertThat(MimeTypes.getBaseType(contentTypeWithCharset), is(expectedType));
+    }
+
+    /**
+     * Test of a use case where the webapp wants a specific set of mime types,
+     * no defaults. This is accomplished by replacing getting the MimeTypes.Mutable
+     * associated with the webapp, calling clear, and then setting the values you want.
+     */
+    @Test
+    public void testMimeTypesMutableClear()
+    {
+        MimeTypes.Mutable webappMimeTypes = new MimeTypes.Mutable();
+
+        // Verify that "defaults" behavior is still there.
+        assertEquals("UTF-8", webappMimeTypes.getAssumedCharsetName("application/json"));
+        assertThat(webappMimeTypes._mimeMap.size(), greaterThan(100));
+
+        // Clear out the mime-types
+        webappMimeTypes.clear();
+        assertThat(webappMimeTypes._mimeMap.size(), is(0));
+        assertThat(webappMimeTypes._assumedEncodings.size(), is(0));
+        assertThat(webappMimeTypes._assumedNoEncodings.size(), is(0));
+        assertThat(webappMimeTypes._inferredEncodings.size(), is(0));
+
+        // Set a few new values
+        webappMimeTypes.addMimeMapping("html", "text/html");
+        // HTML is inferred to be UTF-8, and will always have a 'charset' on the content-type header
+        webappMimeTypes.addInferred("text/html", "utf-8");
+
+        webappMimeTypes.addMimeMapping("json", "application/json");
+        // JSON is always UTF-8, and is never represented as a 'charset' on the content-type header
+        webappMimeTypes.addAssumed("application/json", "utf-8");
+
+        // Images never have a 'charset' on the content-type field
+        webappMimeTypes.addAssumed("image/*", null);
     }
 }

@@ -16,9 +16,13 @@ package org.eclipse.jetty.http;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 
 /**
- * Implements a quoted comma separated list parser
- * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
+ * Implements a quoted comma-separated list parser
+ * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.5">RFC9110 section 5.5</a>
+ * and <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
  * OWS is removed and quoted characters ignored for parsing.
+ *
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.5"
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.6"
  */
 public abstract class QuotedCSVParser
 {
@@ -127,19 +131,6 @@ public abstract class QuotedCSVParser
                         onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
                     continue;
 
-                case '"':
-                    quoted = true;
-                    if (_keepQuotes)
-                    {
-                        if (state == State.PARAM_VALUE && paramValue < 0)
-                            paramValue = nwsLength;
-                        buffer.append(c);
-                    }
-                    else if (state == State.PARAM_VALUE && paramValue < 0)
-                        paramValue = nwsLength;
-                    nwsLength = buffer.length();
-                    continue;
-
                 case ';':
                     buffer.setLength(nwsLength); // trim following OWS
                     if (state == State.VALUE)
@@ -222,6 +213,19 @@ public abstract class QuotedCSVParser
                         default:
                             throw new IllegalStateException(state.toString());
                     }
+
+                case '"':
+                    if (state == State.VALUE && buffer.isEmpty() || state == State.PARAM_VALUE && paramValue < 0)
+                    {
+                        quoted = true;
+                        if (state == State.PARAM_VALUE)
+                            paramValue = nwsLength;
+                        if (_keepQuotes)
+                            buffer.append(c);
+                        nwsLength = buffer.length();
+                        continue;
+                    }
+                    // fall through to handle embedded quote as a normal character
 
                 default:
                 {

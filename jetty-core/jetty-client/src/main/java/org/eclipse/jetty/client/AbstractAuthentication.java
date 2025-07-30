@@ -15,11 +15,21 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 
+/**
+ * <p>Abstract base class for authentication implementations.
+ * Provides common functionality for URI and realm matching.</p>
+ */
 public abstract class AbstractAuthentication implements Authentication
 {
     private final URI uri;
     private final String realm;
 
+    /**
+     * Creates an authentication for the given URI and realm.
+     *
+     * @param uri the URI this authentication applies to
+     * @param realm the authentication realm
+     */
     public AbstractAuthentication(URI uri, String realm)
     {
         this.uri = uri;
@@ -28,11 +38,17 @@ public abstract class AbstractAuthentication implements Authentication
 
     public abstract String getType();
 
+    /**
+     * @return the URI this authentication applies to
+     */
     public URI getURI()
     {
         return uri;
     }
 
+    /**
+     * @return the authentication realm
+     */
     public String getRealm()
     {
         return realm;

@@ -49,8 +49,9 @@
                   <value>${jetty.port.file}</value>
                 </systemProperty>
               </systemProperties>
-              <nonBlocking>true</nonBlocking>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
               <contextXml>${basedir}/src/config/context.xml</contextXml>
               <useTestScope>true</useTestScope>
               <supportedPackagings>
