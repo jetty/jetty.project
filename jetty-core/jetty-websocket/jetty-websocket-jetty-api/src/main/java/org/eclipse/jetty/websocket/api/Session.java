@@ -341,6 +341,16 @@ public interface Session extends Configurable, Closeable
         }
 
         /**
+         * <p>The WebSocket {@link Session} has been closed.</p>
+         *
+         * @param statusCode the close {@link StatusCode status code}
+         * @param reason the optional reason for the close
+         */
+        default void onWebSocketClose(int statusCode, String reason, Callback callback)
+        {
+        }
+
+        /**
          * <p>Tag interface that signals that the WebSocket endpoint
          * is demanding for WebSocket frames automatically.</p>
          *
