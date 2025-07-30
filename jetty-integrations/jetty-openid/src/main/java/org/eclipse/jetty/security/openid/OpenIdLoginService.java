@@ -82,16 +82,6 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
             LOG.debug("login({}, {}, {})", identifier, credentials, getOrCreateSession);
 
         OpenIdCredentials openIdCredentials = (OpenIdCredentials)credentials;
-        try
-        {
-            openIdCredentials.redeemAuthCode(configuration);
-        }
-        catch (Throwable e)
-        {
-            LOG.warn("Unable to redeem auth code", e);
-            return null;
-        }
-
         OpenIdUserPrincipal userPrincipal = new OpenIdUserPrincipal(openIdCredentials);
         Subject subject = new Subject();
         subject.getPrincipals().add(userPrincipal);
