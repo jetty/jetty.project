@@ -40,6 +40,7 @@ labels: Build
   - [ ] Push release tags `jetty-<ver>` to https://github.com/jetty/jetty.project
   - [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/jetty/jetty.project/releases). Content is generated with the "changelog tool".
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
+    - [ ] Update Webtide website with staged release
   - [ ] Test [CometD](https://github.com/cometd/cometd).
   - [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
   - [ ] Test [Load Generator](https://github.com/jetty-project/jetty-load-generator).
