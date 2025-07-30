@@ -159,6 +159,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 data.release();
             shutdownOutput();
             stream.close();
+            connection.onClose(cause);
             onClose(cause);
         }
     }

@@ -86,7 +86,7 @@ If an object with the id `mystring` already exists, then it is not created again
 
 Within element `<Configure>`, the created object (if any) is in <<syntax-scope,scope>> and may be the implicit target of other, nested, elements.
 
-Typically the `<Configure>` element is used to configure a `Server` instance or `ContextHandler` subclasses such as `WebAppContext` that represent web applications.
+Typically, the `<Configure>` element is used to configure a `Server` instance or `ContextHandler` subclasses such as `WebAppContext` that represent web applications.
 
 [[syntax-arg]]
 === `<Arg>`
@@ -388,12 +388,12 @@ The `default` attribute allows you to specify a default value for the property, 
 
 For example, you may want to configure the context path of your web application in this way:
 
-[,xml,subs=+quotes]
+[,xml,subs="+attributes,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">
     #<Property name="com.myapps.mywiki.context.path" default="/wiki" />#
   </Set>

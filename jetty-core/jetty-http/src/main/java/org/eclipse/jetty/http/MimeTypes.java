@@ -588,6 +588,29 @@ public class MimeTypes
         }
 
         /**
+         * <p>
+         * Clear the MimeTypes references.
+         * </p>
+         * 
+         * <p>
+         * Once you have cleared out the MimeTypes object, make sure to properly
+         * set it up with extension to mime-type maps, along with inferred and
+         * assumed charsets for the relevant mime-types (eg: html, text, json, etc).
+         * </p>
+         *
+         * @see #addMimeMapping(String, String) 
+         * @see #addAssumed(String, String) 
+         * @see #addInferred(String, String)
+         */
+        public void clear()
+        {
+            _mimeMap.clear();
+            _assumedEncodings.clear();
+            _assumedNoEncodings.clear();
+            _inferredEncodings.clear();
+        }
+
+        /**
          * Set a mime mapping
          *
          * @param extension the extension
@@ -735,13 +758,10 @@ public class MimeTypes
          */
         public void setFrom(MimeTypes other)
         {
-            _mimeMap.clear();
+            clear();
             _mimeMap.putAll(other.getMimeMap());
-            _assumedEncodings.clear();
             _assumedEncodings.putAll(other._assumedEncodings);
-            _inferredEncodings.clear();
             _inferredEncodings.putAll(other._inferredEncodings);
-            _assumedNoEncodings.clear();
             _assumedNoEncodings.addAll(other._assumedNoEncodings);
         }
 

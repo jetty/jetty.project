@@ -8,7 +8,9 @@ ee9
 
 [depend]
 server
-ee9-deploy
+ee9-annotations
+ee9-webapp
+ee9-plus
 
 [lib]
 lib/jetty-ee9-quickstart-${jetty.version}.jar

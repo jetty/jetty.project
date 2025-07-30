@@ -96,26 +96,41 @@ public class Origin
         this.transport = transport;
     }
 
+    /**
+     * @return the URI scheme (http, https, etc.)
+     */
     public String getScheme()
     {
         return scheme;
     }
 
+    /**
+     * @return the network address (host and port)
+     */
     public Address getAddress()
     {
         return address;
     }
 
+    /**
+     * @return the tag object that distinguishes destinations with the same scheme, host, port and protocol
+     */
     public Object getTag()
     {
         return tag;
     }
 
+    /**
+     * @return the network protocol, or null if not specified
+     */
     public Protocol getProtocol()
     {
         return protocol;
     }
 
+    /**
+     * @return the transport mechanism (TCP/IP, Unix domain socket, etc.)
+     */
     public Transport getTransport()
     {
         return transport;
@@ -147,6 +162,9 @@ public class Origin
                Objects.equals(transport, that.transport);
     }
 
+    /**
+     * @return a string representation of this origin as a URI
+     */
     public String asString()
     {
         return HttpURI.from(scheme, address.host, address.port, null).asString();
@@ -178,11 +196,17 @@ public class Origin
             this.address = InetSocketAddress.createUnresolved(getHost(), getPort());
         }
 
+        /**
+         * @return the host name or IP address
+         */
         public String getHost()
         {
             return host;
         }
 
+        /**
+         * @return the port number
+         */
         public int getPort()
         {
             return port;
@@ -205,11 +229,17 @@ public class Origin
             return Objects.hash(host, port);
         }
 
+        /**
+         * @return a string representation of this address as host:port
+         */
         public String asString()
         {
             return String.format("%s:%d", host, port);
         }
 
+        /**
+         * @return the socket address for this host and port
+         */
         public SocketAddress getSocketAddress()
         {
             return address;
@@ -248,11 +278,17 @@ public class Origin
             this.negotiate = negotiate;
         }
 
+        /**
+         * @return the list of protocol names associated with this protocol
+         */
         public List<String> getProtocols()
         {
             return protocols;
         }
 
+        /**
+         * @return true if this protocol should be negotiated, false otherwise
+         */
         public boolean isNegotiate()
         {
             return negotiate;
@@ -275,6 +311,9 @@ public class Origin
             return Objects.hash(protocols, negotiate);
         }
 
+        /**
+         * @return a string representation of this protocol
+         */
         public String asString()
         {
             return String.format("proto=%s,nego=%b", protocols, negotiate);

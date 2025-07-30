@@ -156,6 +156,9 @@ public class RewriteHandler extends Handler.Wrapper
         @Override
         protected boolean handle(Response response, Callback callback) throws Exception
         {
+            if (_handler == null)
+                throw new IllegalStateException("RewriteHandler: Child handler is not set.");
+
             return _handler.handle(getWrapped(), response, callback);
         }
     }

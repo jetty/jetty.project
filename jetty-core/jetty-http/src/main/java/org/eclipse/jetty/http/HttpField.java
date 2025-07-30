@@ -512,10 +512,24 @@ public class HttpField
      */
     public List<String> getValueList()
     {
+        return getValueList(false);
+    }
+
+    /**
+     * <p>Returns a list of the field values.</p>
+     * <p>If the field value is multi-valued, the encoded field value is split
+     * into multiple values using {@link QuotedCSV} and the different values
+     * returned in a list.</p>
+     * <p>If the field value is single-valued, the value is wrapped into a list.</p>
+     *
+     * @return a list of the field values
+     */
+    public List<String> getValueList(boolean keepQuotes)
+    {
         String value = getValue();
         if (value == null)
             return null;
-        QuotedCSV list = newQuotedCSV(value);
+        QuotedCSV list = newQuotedCSV(keepQuotes, value);
         return list.getValues();
     }
 
@@ -625,7 +639,12 @@ public class HttpField
 
     protected QuotedCSV newQuotedCSV(String value)
     {
-        return new QuotedCSV(false, value);
+        return newQuotedCSV(false, value);
+    }
+
+    protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
+    {
+        return new QuotedCSV(keepQuotes, value);
     }
 
     @Override

@@ -20,7 +20,7 @@ The Jetty libraries provide the client-side and server-side APIs to work with va
 
 You may use the xref:client/index.adoc[Jetty client-side library] in your application to make calls to third party REST services, or to other REST microservices in your system.
 
-Likewise, you may use the xref:server/index.adoc[Jetty server-side library] to quickly create an HTTP or REST service without having to create a web application archive file (a `+*.war+` file) and without having to deploy it to a Jetty standalone server that you would have to download and install.
+Likewise, you may use the xref:server/index.adoc[Jetty server-side library] to quickly create an HTTP or REST service without having to create a full Jakarta EE web application archive file (a `+*.war+` file) and without having to deploy it to a Jetty standalone server that you would have to download and install.
 
 This guide will walk you through the design of the Jetty libraries and how to use its classes to write your applications.
 

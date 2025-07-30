@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.osgi</groupId>
     <artifactId>jetty-ee8-osgi</artifactId>
-    <version>12.1.0-SNAPHOT</version>
+    <version>12.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee8-osgi</artifactId>
   <name>EE8 :: OSGi :: Test</name>
@@ -14,7 +14,7 @@
     <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <bundle.debug>true</bundle.debug>
+    <bundle.debug>false</bundle.debug>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
@@ -567,7 +567,7 @@
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <pax.exam.debug.port>${pax.exam.debug.port}</pax.exam.debug.port>
               <pax.exam.LEVEL>${pax.exam.LEVEL}</pax.exam.LEVEL>
-              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <settingsFilePath>${settings.path}</settingsFilePath>
               <servlet.artifactId>${servlet.artifactId}</servlet.artifactId>
               <inject.groupId>${inject.groupId}</inject.groupId>
               <inject.artifactId>${inject.artifactId}</inject.artifactId>

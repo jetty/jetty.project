@@ -53,7 +53,7 @@ If you don't want to put your login module configuration file here, you can chan
 See more about the contents of this file in the <<loginconf,Configuring JAAS>> section.
 
 [[webapp]]
-=== Configure the webapp for JAAS
+=== Configure the Jakarta EE web application for JAAS
 
 The `<realm-name>` in `web.xml` will be used to identify the `org.eclipse.jetty.security.jaas.JAASLoginService` declaration that integrates JAAS with Jetty.
 
@@ -87,7 +87,7 @@ Here's an example of a suitable XML snippet:
 
 The `org.eclipse.jetty.security.jaas.JAASLoginService` can be declared in a couple of different places, pick whichever suits your purposes best:
 
-* If you have more than one webapp that you would like to use the same security infrastructure, then you can declare your `org.eclipse.jetty.security.jaas.JAASLoginService` as a bean that is added to the `org.eclipse.jetty.server.Server`.
+* If you have more than one web application that you would like to use the same security infrastructure, then you can declare your `org.eclipse.jetty.security.jaas.JAASLoginService` as a bean that is added to the `org.eclipse.jetty.server.Server`.
 The file in which you declare this needs to be on Jetty's execution path.
 The recommended procedure is to create a file in your `$JETTY_BASE/etc` directory and then ensure it is on the classpath either by adding it to the Jetty xref:start/index.adoc[start command line], or more conveniently to a xref:modules/custom.adoc[custom module].
 +
@@ -109,15 +109,15 @@ Here's an example of this type of XML file:
 </Configure>
 ----
 
-* Alternatively, if you want to use JAAS with a specific webapp only, you declare your `org.eclipse.jetty.security.jaas.JAASLoginService` in a context XLM file specific to that webapp:
+* Alternatively, if you want to use JAAS with a specific web application only, you declare your `org.eclipse.jetty.security.jaas.JAASLoginService` in a Jetty context XML file specific to that web application:
 +
-[,xml]
+[,xml,subs=+attributes]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="securityHandler">
-    <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
+    <New class="org.eclipse.jetty.{ee-current}.servlet.security.ConstraintSecurityHandler">
      <Set name="loginService">
        <New class="org.eclipse.jetty.security.jaas.JAASLoginService">
          <Set name="name">Test JAAS Realm</Set>
@@ -132,7 +132,7 @@ Here's an example of this type of XML file:
 [[loginconf]]
 === Configure JAAS
 
-We now need to setup the contents of the file we specified as the `jetty.jaas.login.conf` property when we <<module,configured the `jaas` module>>.
+We now need to set up the contents of the file we specified as the `jetty.jaas.login.conf` property when we <<module,configured the `jaas` module>>.
 Refer to the https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[syntax rules] of this file for a full description.
 
 Remembering the example we set up <<webapp,previously>>, the contents of the `$JETTY_BASE/etc/login.conf` file could look as follows:

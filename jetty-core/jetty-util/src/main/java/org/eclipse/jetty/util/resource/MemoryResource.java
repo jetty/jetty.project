@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 
 /**
- * <p>An in memory Resource created from a {@link URL}</p>
+ * <p>An in memory Resource</p>
  */
 public class MemoryResource extends Resource
 {
@@ -53,6 +53,12 @@ public class MemoryResource extends Resource
         {
             throw new RuntimeException(e);
         }
+    }
+
+    public MemoryResource(URI uri, byte[] bytes)
+    {
+        _uri = Objects.requireNonNull(uri);
+        _bytes = Objects.requireNonNull(bytes);
     }
 
     public byte[] getBytes()

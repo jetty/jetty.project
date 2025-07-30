@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,9 +42,10 @@ public interface SocketAddressResolver
      *
      * @param host the host to resolve
      * @param port the port of the resulting socket address
+     * @param context the context information
      * @param promise the callback invoked when the resolution succeeds or fails
      */
-    public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
+    public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise);
 
     /**
      * <p>Creates {@link InetSocketAddress} instances synchronously in the caller thread.</p>
@@ -52,7 +54,7 @@ public interface SocketAddressResolver
     public static class Sync implements SocketAddressResolver
     {
         @Override
-        public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+        public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
         {
             try
             {
@@ -109,8 +111,8 @@ public interface SocketAddressResolver
         private final long timeout;
 
         /**
-         * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
-         * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
+         * Creates a new instance with the specified executor (to perform DNS resolution in a separate thread),
+         * scheduler (to cancel the operation if it takes too long) and timeout, in milliseconds.
          *
          * @param executor the thread pool to use to perform DNS resolution in pooled threads
          * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
@@ -123,11 +125,17 @@ public interface SocketAddressResolver
             this.timeout = timeout;
         }
 
+        /**
+         * @return the executor used for DNS resolution
+         */
         public Executor getExecutor()
         {
             return executor;
         }
 
+        /**
+         * @return the scheduler used for timeout operations
+         */
         public Scheduler getScheduler()
         {
             return scheduler;
@@ -140,7 +148,7 @@ public interface SocketAddressResolver
         }
 
         @Override
-        public void resolve(final String host, final int port, final Promise<List<InetSocketAddress>> promise)
+        public void resolve(final String host, final int port, Map<String, Object> context, final Promise<List<InetSocketAddress>> promise)
         {
             executor.execute(() ->
             {

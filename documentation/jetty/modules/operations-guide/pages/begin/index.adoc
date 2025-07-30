@@ -22,18 +22,18 @@ Jetty is distributed in an artifact that expands in a directory called `$JETTY_H
 Configuration for Jetty is typically done in a directory called `$JETTY_BASE`.
 There may be more than one `$JETTY_BASE` directories with different configurations.
 
-Jetty supports the deployment of EE8, EE9, EE10 and EE11 standard web applications, as well as the deployment of Jetty-specific web applications.
+Jetty supports the deployment of Jakarta {ee-all-caps} web applications, as well as the deployment of Jetty specific web applications, as discussed in xref:deploy/index.adoc[this section].
 
-For example, the following commands can be used to set up a `$JETTY_BASE` directory that supports deployment of EE11 `+*.war+` files and a clear-text HTTP connector:
+For example, the following commands can be used to set up a `$JETTY_BASE` directory that supports deployment of Jakarta {ee-current-caps} `+*.war+` files and a clear-text HTTP connector:
 
 ----
 $ export JETTY_HOME=/path/to/jetty-home
 $ mkdir /path/to/jetty-base
 $ cd /path/to/jetty-base
-$ java -jar $JETTY_HOME/start.jar --add-modules=server,http,ee11-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee11-deploy
 ----
 
-The last command creates a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which standard EE11 `+*.war+` files can be deployed.
+The last command creates a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which Jakarta {ee-current-caps} `+*.war+` files can be deployed.
 
 To deploy Jetty's demo web applications, run this command:
 
@@ -49,7 +49,7 @@ $ java -jar $JETTY_HOME/start.jar
 
 Point your browser at `+http://localhost:8080+` to see the demo web applications deployed in Jetty.
 
-The Jetty server can be stopped with `ctrl+c` in the terminal window.
+The Jetty server can be stopped with kbd:[Ctrl+C] in the terminal window.
 
 The following sections will guide you in details about <<download,downloading>>, <<install,installing>> and <<start,starting>> Jetty, and <<deploy,deploying>> your web applications to Jetty.
 
@@ -228,25 +228,18 @@ For more detailed information about the Jetty start mechanism, you can read the 
 [[deploy]]
 == Deploying Web Applications
 
-You can deploy two types of web application resources with Jetty:
+Deployments of web applications in Jetty is detailed in xref:deploy/index.adoc[this section].
 
-* *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the https://jakarta.ee/specifications/servlet/[Servlet specification].
-Their deployment is described in <<deploy-war,this section>>.
-* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you to use Jetty components -- and possibly custom components written by you -- to assemble and deploy your web applications.
-Their deployment is described in xref:deploy/index.adoc[this section].
-
-Jetty supports the deployment of both standard web applications and Jetty context XML files in a specific EE _environment_, such as the old Java EE 8, or Jakarta EE 9, or Jakarta {ee-current-caps}.
+Each web application is deployed to a specific _environment_, such as the old Java EE 8, or Jakarta {ee-current-caps}, or Jetty specific environments.
 
 Jetty supports _simultaneous_ deployment of web applications each to a possibly different environment, for example an old Java EE 8 web application alongside a new Jakarta {ee-current-caps} web application.
-
-Refer to the section about xref:deploy/index.adoc[deployment] for further information about how to deploy to different environments.
 
 In the following sections you can find simple examples of deployments of Jakarta {ee-current-caps} web applications.
 
 [[deploy-war]]
 === Deploying +*.war+ Files
 
-A standard Servlet web application is packaged in either a `+*.war+` file or in a directory with the structure of a `+*.war+` file.
+A Jakarta {ee-current-caps} web application is packaged in either a `+*.war+` file or in a directory with the structure of a `+*.war+` file.
 
 [NOTE]
 ====
@@ -268,11 +261,11 @@ mywebapp.war
 <5> `WEB-INF/web.xml` is the web application deployment descriptor, which defines the components and the configuration of your web application.
 ====
 
-To deploy a standard web application, you need to enable the xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy` module].
+To deploy a Jakarta {ee-current-caps} web application, you need to enable the xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy` module].
 
 [NOTE]
 ====
-The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+The following examples assume you are deploying a Jakarta {ee-current-caps} web application; for other versions of Jakarta EE, or for Jetty web applications, make sure to activate the corresponding deploy module.
 
 Refer to the section about xref:deploy/index.adoc[deployment] for further information about how to deploy to different environments.
 ====
@@ -291,7 +284,7 @@ args=--add-modules={ee-current}-deploy
 
 The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
 
-Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment.
+Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment for that specific environment.
 Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on whether the correspondent Jetty protocol modules have been enabled.
 Refer to the xref:protocols/index.adoc[section about protocols] for further information.
 
@@ -311,7 +304,8 @@ $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties
 ├── start.d
-│   ├── deploy.ini
+│   ├── ...
+│   ├── {ee-current}-deploy.ini
 │   ├── {ee-current}-demo-simple.ini
 │   └── http.ini
 └── webapps

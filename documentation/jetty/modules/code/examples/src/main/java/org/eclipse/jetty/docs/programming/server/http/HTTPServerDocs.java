@@ -64,7 +64,6 @@ import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.ConnectionLimit;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.FormFields;
@@ -73,6 +72,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
+import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -90,6 +90,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -361,14 +362,14 @@ public class HTTPServerDocs
         // end::sameRandomPort[]
     }
 
-    public void connectionLimit()
+    public void networkConnectionLimit()
     {
-        // tag::connectionLimit[]
+        // tag::networkConnectionLimit[]
         Server server = new Server();
 
-        // Limit connections to the server, across all connectors.
-        ConnectionLimit serverConnectionLimit = new ConnectionLimit(1024, server);
-        server.addBean(serverConnectionLimit);
+        // Limit TCP connections to the server, across all connectors.
+        NetworkConnectionLimit serverNetworkConnectionLimit = new NetworkConnectionLimit(1024, server);
+        server.addBean(serverNetworkConnectionLimit);
 
         ServerConnector connector1 = new ServerConnector(server);
         connector1.setPort(8080);
@@ -378,9 +379,9 @@ public class HTTPServerDocs
         connector2.setPort(9090);
         server.addConnector(connector2);
         // Limit connections for this connector only.
-        ConnectionLimit connectorConnectionLimit = new ConnectionLimit(64, connector2);
-        connector2.addBean(connectorConnectionLimit);
-        // end::connectionLimit[]
+        NetworkConnectionLimit connectorNetworkConnectionLimit = new NetworkConnectionLimit(64, connector2);
+        connector2.addBean(connectorNetworkConnectionLimit);
+        // end::networkConnectionLimit[]
     }
 
     public void sslHandshakeListener() throws Exception
@@ -1846,6 +1847,28 @@ public class HTTPServerDocs
 
         server.start();
         // end::gracefulHandler[]
+    }
+
+    public void movedContextHandler() throws Exception
+    {
+        // tag::movedContextHandler[]
+        Server server = new Server();
+
+        // Install the MovedContextHandler to redirect from
+        // http://olddomain.com/path to http://newdomain.com/ctx/path.
+        MovedContextHandler movedContextHandler = new MovedContextHandler();
+        movedContextHandler.setVirtualHosts(List.of("olddomain.com"));
+        movedContextHandler.setContextPath("/");
+        // Redirect permanently.
+        movedContextHandler.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+        // Redirect to the new domain.
+        movedContextHandler.setRedirectURI("https://newdomain.com/ctx");
+        // Keep the URI path, but discard the query.
+        movedContextHandler.setDiscardQuery(true);
+
+        server.setHandler(movedContextHandler);
+        server.start();
+        // end::movedContextHandler[]
     }
 
     public void continue100()
