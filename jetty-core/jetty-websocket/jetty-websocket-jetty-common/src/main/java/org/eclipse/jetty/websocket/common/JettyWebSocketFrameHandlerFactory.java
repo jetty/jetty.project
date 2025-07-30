@@ -276,7 +276,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
             try
             {
-                Object value = getWrapped().invoke(args);
+                Object value = super.invoke(args);
                 callback.succeed();
                 return value;
             }
@@ -288,12 +288,17 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         }
 
         @Override
+        public MethodHolder bindTo(Object arg)
+        {
+            return new CallbackCompletingCloseHolder(super.bindTo(arg));
+        }
+
+        @Override
         public MethodHolder bindTo(Object arg, int idx)
         {
-            return new CallbackCompletingCloseHolder(getWrapped().bindTo(arg, idx));
+            return new CallbackCompletingCloseHolder(super.bindTo(arg, idx));
         }
     }
-
 
     private Method findMethod(Class<?> klass, String name, Class<?>... parameters)
     {

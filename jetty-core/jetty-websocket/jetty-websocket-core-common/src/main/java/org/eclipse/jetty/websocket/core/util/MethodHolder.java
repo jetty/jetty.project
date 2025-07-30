@@ -243,7 +243,7 @@ public interface MethodHolder
 
         public Wrapper(MethodHolder methodHolder)
         {
-            _methodHolder = methodHolder;
+            _methodHolder = Objects.requireNonNull(methodHolder);
         }
 
         public MethodHolder getWrapped()
@@ -254,19 +254,31 @@ public interface MethodHolder
         @Override
         public Object invoke(Object... args) throws Throwable
         {
-            return _methodHolder.invoke(args);
+            return getWrapped().invoke(args);
+        }
+
+        @Override
+        public MethodHolder bindTo(Object arg)
+        {
+            return getWrapped().bindTo(arg);
+        }
+
+        @Override
+        public MethodHolder bindTo(Object arg, int idx)
+        {
+            return getWrapped().bindTo(arg, idx);
         }
 
         @Override
         public Class<?> parameterType(int idx)
         {
-            return _methodHolder.parameterType(idx);
+            return getWrapped().parameterType(idx);
         }
 
         @Override
         public Class<?> returnType()
         {
-            return _methodHolder.returnType();
+            return getWrapped().returnType();
         }
     }
 }

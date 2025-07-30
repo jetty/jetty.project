@@ -68,7 +68,7 @@ public class AsyncCloseTest
         @Override
         public void onWebSocketText(String message)
         {
-            _session.sendText(message, Callback.from(() -> _session.demand(), t-> _session.disconnect()));
+            _session.sendText(message, Callback.from(() -> _session.demand(), t -> _session.disconnect()));
         }
 
         @Override
@@ -141,9 +141,9 @@ public class AsyncCloseTest
         {
             switch (frame.getEffectiveOpCode())
             {
-                case OpCode.TEXT -> _session.sendPartialText(BufferUtil.toUTF8String(frame.getPayload()), frame.isFin(), Callback.from(callback,() -> _session.demand()));
-                case OpCode.BINARY -> _session.sendPartialBinary(frame.getPayload(), frame.isFin(), Callback.from(callback,() -> _session.demand()));
-                case OpCode.PING -> _session.sendPong(frame.getPayload(), Callback.from(callback,() -> _session.demand()));
+                case OpCode.TEXT -> _session.sendPartialText(BufferUtil.toUTF8String(frame.getPayload()), frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                case OpCode.BINARY -> _session.sendPartialBinary(frame.getPayload(), frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                case OpCode.PING -> _session.sendPong(frame.getPayload(), Callback.from(callback, () -> _session.demand()));
                 case OpCode.CLOSE -> new Thread(() ->
                 {
                     awaitClose(_closeLatch);
