@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -253,7 +252,7 @@ public class HttpChannelState implements HttpChannel, Components
         if (_cache == null)
         {
             if (getConnectionMetaData().isPersistent())
-                _cache = new Attributes.Mapped(new HashMap<>());
+                _cache = new Attributes.Mapped();
             else
                 _cache = Attributes.NULL;
         }
