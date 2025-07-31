@@ -1,9 +1,9 @@
 name: jetty
-version: '12-1'
+version: '12.1'
 title: Eclipse Jetty
 asciidoc:
   attributes:
-    javadoc-url: https://javadoc.jetty.org/jetty-12-1
+    javadoc-url: https://javadoc.jetty.org/jetty-12.1
     jetty-home: ${jetty.home}@
     jetty-version: ${project.version}
     idprefix: ''
