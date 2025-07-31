@@ -630,7 +630,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             {
                 // too late to change the character encoding;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null && (mimeTypes.isCharsetAssumed(_contentType) || !_mimeType.isCharsetAssumed()))
+                if (_characterEncoding != null && (mimeTypes.isCharsetAssumed(_contentType) || (_mimeType != null && !_mimeType.isCharsetAssumed())))
                     _contentType = _contentType + ";charset=" + _characterEncoding;
                 _mimeType = MimeTypes.CACHE.get(_contentType);
                 field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
