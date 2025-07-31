@@ -677,9 +677,9 @@ public class ResponseHeadersTest
                 String type = response.getContentType();
                 if (type != null)
                 {
-                    if ((type.toLowerCase().contains("text/html"))
-                        && (type.toLowerCase().contains("charset"))
-                        && (type.toLowerCase().contains("iso-8859-1")))
+                    if ((type.toLowerCase().contains("text/html")) &&
+                        (type.toLowerCase().contains("charset")) &&
+                        (type.toLowerCase().contains("iso-8859-1")))
                     {
                         pw.println("ALL OK");
                     }
