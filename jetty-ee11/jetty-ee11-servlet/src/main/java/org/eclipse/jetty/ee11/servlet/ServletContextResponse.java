@@ -571,8 +571,6 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 else
                 {
                     charset = MimeTypes.getCharsetFromContentType(_contentType);
-                    if (charset != null)
-                        charset = MimeTypes.normalizeCharset(charset);
                     charsetFrom = EncodingFrom.SET_CONTENT_TYPE;
                 }
             }
