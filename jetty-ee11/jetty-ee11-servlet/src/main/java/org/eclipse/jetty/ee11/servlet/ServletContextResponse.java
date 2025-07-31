@@ -571,6 +571,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 else
                 {
                     charset = MimeTypes.getCharsetFromContentType(_contentType);
+                    if (charset != null)
+                        charset = MimeTypes.normalizeCharset(charset);
                     charsetFrom = EncodingFrom.SET_CONTENT_TYPE;
                 }
             }
@@ -628,9 +630,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             }
             else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
             {
-                // too late to change the character encoding;
+                // too late to change the character encoding, use what we have:
+                // this could be the default encoding, or it could be an assumed encoding from the content type
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null && (mimeTypes.isCharsetAssumed(_contentType) || (_mimeType != null && !_mimeType.isCharsetAssumed())))
+                if (_characterEncoding != null &&
+                    ((_encodingFrom == EncodingFrom.DEFAULT) ||
+                        (mimeTypes.isCharsetAssumed(_contentType) || (_mimeType != null && !_mimeType.isCharsetAssumed())))
+                )
                     _contentType = _contentType + ";charset=" + _characterEncoding;
                 _mimeType = MimeTypes.CACHE.get(_contentType);
                 field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);

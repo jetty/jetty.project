@@ -663,6 +663,55 @@ public class ResponseHeadersTest
     }
 
     @Test
+    public void testGetWriterDefaultCharset() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        contextHandler.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                PrintWriter pw = response.getWriter();
+                response.setContentType("text/html;charset=ISO-8859-7");
+                String type = response.getContentType();
+                if (type != null)
+                {
+                    if ((type.toLowerCase().contains("text/html"))
+                        && (type.toLowerCase().contains("charset"))
+                        && (type.toLowerCase().contains("iso-8859-1")))
+                    {
+                        pw.println("ALL OK");
+                    }
+                    else
+                    {
+                        pw.println("Expecting text/html; charset=ISO-8859-1");
+                        pw.println("getContentType returns incorrect type: " + type);
+                    }
+                }
+                else
+                {
+                    pw.println("getContentType return null");
+                }
+            }
+        }, "/get");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/get");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=iso-8859-1"));
+        assertThat(response.getContent(), containsString("ALL OK"));
+    }
+
+    @Test
     public void testContentTypeNoCharset() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
