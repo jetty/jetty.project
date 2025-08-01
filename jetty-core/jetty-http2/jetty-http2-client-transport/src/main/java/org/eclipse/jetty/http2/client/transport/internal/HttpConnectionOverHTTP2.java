@@ -239,7 +239,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 // Check whether we can fall back to another HttpClientTransport.
                 boolean dynamic = getHttpDestination().getHttpClient().getHttpClientTransport() instanceof HttpClientTransportDynamic;
                 if (!dynamic)
-                    throw new HttpRequestException("Could not upgrade to WebSocket: CONNECT with :protocol disabled", request);
+                    throw new HttpRequestException("Could not upgrade: CONNECT with :protocol disabled", request);
 
                 // We may be able to retry with another HttpClientTransport,
                 // therefore exclude this protocol from the next attempt.
@@ -251,7 +251,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 else
                     attribute.addAll(excluded);
                 request.attribute(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE, attribute);
-                throw new RetryableRequestException("Could not upgrade to WebSocket from protocols " + attribute);
+                throw new RetryableRequestException("Could not upgrade from protocols " + attribute);
             }
         }
     }
