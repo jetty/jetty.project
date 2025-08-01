@@ -425,26 +425,19 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:
-                _pcMode.increment();
-                runTask(task);
+                pcRunTask(task);
                 return true;
 
             case PRODUCE_INVOKE_CONSUME:
-                _picMode.increment();
-                invokeAsNonBlocking(task);
+                picRunTask(task);
                 return true;
 
             case PRODUCE_EXECUTE_CONSUME:
-                _pecMode.increment();
-                execute(task);
+                pecRunTask(task);
                 return true;
 
             case EXECUTE_PRODUCE_CONSUME:
-                _epcMode.increment();
-                Integer depth = _epcDepth.get();
-                _epcDepth.set(1 + depth);
-                runTask(task);
-                _epcDepth.set(depth);
+                epcRunTask(task);
 
                 // Race the pending producer to produce again.
                 while (true)
@@ -471,11 +464,65 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
+     * Runs a task in produce-consume mode.
+     *
+     * @param task the task to run
+     */
+    protected void pcRunTask(Runnable task)
+    {
+        _pcMode.increment();
+        runTask(task);
+    }
+
+    /**
+     * Runs a task in execute-produce-consume mode.
+     *
+     * @param task the task to run
+     */
+    protected void epcRunTask(Runnable task)
+    {
+        _epcMode.increment();
+        Integer depth = _epcDepth.get();
+        _epcDepth.set(1 + depth);
+        runTask(task);
+        _epcDepth.set(depth);
+    }
+
+    /**
+     * Runs a task in produce-execute-consume mode.
+     *
+     * @param task the task to run
+     */
+    protected void pecRunTask(Runnable task)
+    {
+        _pecMode.increment();
+        execute(task);
+    }
+
+    /**
+     * Runs a task in produce-invoke-consume mode.
+     *
+     * @param task the task to run
+     */
+    protected void picRunTask(Runnable task)
+    {
+        try
+        {
+            _picMode.increment();
+            Invocable.invokeNonBlocking(task);
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("Task invoke failed", x);
+        }
+    }
+
+    /**
      * Runs a Runnable task, logging any thrown exception.
      *
      * @param task The task to run.
      */
-    private void runTask(Runnable task)
+    protected static void runTask(Runnable task)
     {
         try
         {
@@ -484,23 +531,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         catch (Throwable x)
         {
             LOG.warn("Task run failed", x);
-        }
-    }
-
-    /**
-     * Runs a task in non-blocking mode.
-     *
-     * @param task The task to run in non-blocking mode.
-     */
-    private void invokeAsNonBlocking(Runnable task)
-    {
-        try
-        {
-            Invocable.invokeNonBlocking(task);
-        }
-        catch (Throwable x)
-        {
-            LOG.warn("Task invoke failed", x);
         }
     }
 
