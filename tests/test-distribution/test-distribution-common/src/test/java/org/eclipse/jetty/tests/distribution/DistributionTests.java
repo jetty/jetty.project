@@ -1503,6 +1503,65 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
+    public void testLimitHandlers(String env) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        String[] modules = {
+            "http",
+            "qos",
+            "size-limit",
+            "thread-limit",
+            "accept-rate-limit",
+            "network-connection-limit",
+            toEnvironment("webapp", env),
+            toEnvironment("deploy", env)
+        };
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            String coordinates = "org.eclipse.jetty.demos:jetty-%s-demo-simple-webapp:war:%s".formatted(
+                "ee8".equals(env) ? "servlet4" : "servlet5",
+                jettyVersion
+            );
+            Path war = distribution.resolveArtifact(coordinates);
+            distribution.installWar(war, "test");
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.selectors=1", "jetty.http.port=" + port))
+            {
+                try
+                {
+                    assertTrue(run2.awaitForJettyStart());
+
+                    startHttpClient();
+                    URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                    ContentResponse response = client.newRequest(serverUri)
+                        .timeout(15, TimeUnit.SECONDS)
+                        .send();
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                }
+                finally
+                {
+                    run2.getLogs().forEach(System.err::println);
+                }
+            }
+        }
+    }
+
     @Test
     public void testForwardedWithHTTP2() throws Exception
     {

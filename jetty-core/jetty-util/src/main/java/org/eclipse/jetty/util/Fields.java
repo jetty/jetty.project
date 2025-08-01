@@ -47,7 +47,7 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>**
+     * <p>Creates an empty, modifiable {@code Fields} instance.</p>
      *
      * @param caseSensitive whether this {@code Fields} instance must be case sensitive
      */
@@ -56,16 +56,31 @@ public class Fields implements Iterable<Fields.Field>
         this(caseSensitive ? new LinkedHashMap<>() : new TreeMap<>(String::compareToIgnoreCase));
     }
 
+    /**
+     * Creates a {@code Fields} instance from a MultiMap.
+     *
+     * @param params the multimap to convert to fields
+     */
     public Fields(MultiMap<String> params)
     {
         this(multiMapToMapOfFields(params));
     }
 
+    /**
+     * Creates a {@code Fields} instance from a map of fields.
+     *
+     * @param fields the map of fields to use
+     */
     public Fields(Map<String, Field> fields)
     {
         this.fields = fields;
     }
 
+    /**
+     * Creates a copy of the given {@code Fields} instance.
+     *
+     * @param fields the fields to copy
+     */
     public Fields(Fields fields)
     {
         if (fields.fields instanceof TreeMap<String, Field>)
@@ -87,6 +102,9 @@ public class Fields implements Iterable<Fields.Field>
         }
     }
 
+    /**
+     * @return an immutable view of this fields instance
+     */
     public Fields asImmutable()
     {
         Map<String, Field> unmodifiable = Collections.unmodifiableMap(fields);

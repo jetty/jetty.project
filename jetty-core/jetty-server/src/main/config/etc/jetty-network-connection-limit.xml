@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.server.NetworkConnectionLimit">
+        <Arg name= "maxNetworkConnectionCount" type="int">
+          <Property name="jetty.networkConnectionLimit.maxNetworkConnectionCount" default="1000" />
+        </Arg>
+        <Arg name="server">
+          <Ref refid="Server" />
+        </Arg>
+        <Set name="endPointIdleTimeout"><Property name="jetty.networkConnectionLimit.endPointIdleTimeout" default="1000" /></Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

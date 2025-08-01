@@ -40,21 +40,38 @@ public class HashLoginService extends AbstractLoginService
     private UserStore _userStore;
     private boolean _userStoreAutoCreate = false;
 
+    /**
+     * Creates a hash login service with no name or configuration.
+     */
     public HashLoginService()
     {
     }
 
+    /**
+     * Creates a hash login service with the specified name.
+     *
+     * @param name the name of this login service
+     */
     public HashLoginService(String name)
     {
         setName(name);
     }
 
+    /**
+     * Creates a hash login service with the specified name and configuration.
+     *
+     * @param name the name of this login service
+     * @param config the resource containing user configuration
+     */
     public HashLoginService(String name, Resource config)
     {
         setName(name);
         setConfig(config);
     }
 
+    /**
+     * @return the configuration resource containing user data
+     */
     public Resource getConfig()
     {
         return _config;

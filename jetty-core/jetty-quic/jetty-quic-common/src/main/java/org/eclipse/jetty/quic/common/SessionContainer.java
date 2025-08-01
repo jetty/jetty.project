@@ -23,6 +23,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.util.component.Graceful;
 /**
  * <p>A container that tracks {@link Session} instances.</p>
  */
+@ManagedObject("The container of QUIC sessions")
 public class SessionContainer extends AbstractLifeCycle implements EventListener, Session.Listener, Graceful, Dumpable
 {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -110,6 +113,12 @@ public class SessionContainer extends AbstractLifeCycle implements EventListener
     public boolean isEmpty()
     {
         return sessions.isEmpty();
+    }
+
+    @ManagedAttribute("The number of QUIC sessions in this container")
+    public int getSize()
+    {
+        return sessions.size();
     }
 
     @Override

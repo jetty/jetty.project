@@ -56,7 +56,9 @@ import org.slf4j.LoggerFactory;
  * @see LowResourceMonitor
  * @see Connection.Listener
  * @see SelectorManager.AcceptListener
+ * @deprecated use {@link NetworkConnectionLimit} instead
  */
+@Deprecated(forRemoval = true, since = "12.1.0")
 @ManagedObject
 public class ConnectionLimit extends AbstractLifeCycle implements Listener, SelectorManager.AcceptListener
 {
