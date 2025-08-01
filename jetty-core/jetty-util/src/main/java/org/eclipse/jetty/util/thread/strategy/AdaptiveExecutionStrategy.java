@@ -135,7 +135,15 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
     private final AtomicInteger _state = new AtomicInteger();
-    private final ThreadLocal<Boolean> _inEPC = new ThreadLocal<>();
+    private final ThreadLocal<Integer> _epcDepth = new ThreadLocal<>()
+    {
+        @Override
+        protected Integer initialValue()
+        {
+            return 0;
+        }
+    };
+    private int _maxEpcDepth = 8;
 
     /**
      * @param producer The producer of tasks to be consumed.
@@ -152,6 +160,24 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         installBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("created {}", this);
+    }
+
+    /**
+     * @return The maximum recursion depth of a a thread calling EPC (default 8)
+     */
+    public int getMaxEpcDepth()
+    {
+        return _maxEpcDepth;
+    }
+
+    /**
+     * EPC can call a task with a previous producing thread, which can then itself
+     * call {@link #produce()}. This field limits the possible recursion depth.
+     * @param maxEpcDepth The maximum recursion depth of a a thread calling EPC (default 8)
+     */
+    public void setMaxEpcDepth(int maxEpcDepth)
+    {
+        _maxEpcDepth = maxEpcDepth;
     }
 
     @Override
@@ -351,7 +377,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         int state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (state == PRODUCING && _inEPC.get() != Boolean.TRUE && _state.compareAndSet(state, IDLE))
+        if ((state == PRODUCING || state == REPRODUCING) && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
@@ -415,9 +441,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
             case EXECUTE_PRODUCE_CONSUME:
                 _epcMode.increment();
-                _inEPC.set(true);
+                Integer depth = _epcDepth.get();
+                _epcDepth.set(1 + depth);
                 runTask(task);
-                _inEPC.set(false);
+                _epcDepth.set(depth);
 
                 // Race the pending producer to produce again.
                 while (true)

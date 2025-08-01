@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.VirtualThreads;
@@ -217,6 +218,48 @@ public class ExecutionStrategyTest
         assertTrue(latch.await(30, TimeUnit.SECONDS),
             String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d q=%d%n%s",
                 strategy, TASKS, latch.getCount(), q.size(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : ""));
+
+        LifeCycle.stop(threadPool);
+    }
+
+    @ParameterizedTest
+    @MethodSource("pooledStrategies")
+    public void recursiveTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    {
+        ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
+        LifeCycle.start(threadPool);
+        System.err.printf("threadPool=%s%n", threadPool);
+        final int TASKS = 10000;
+        final CountDownLatch latch = new CountDownLatch(TASKS);
+        AtomicReference<ExecutionStrategy> strategyRef = new AtomicReference<>();
+        Producer producer = new TestProducer()
+        {
+            int tasks = TASKS;
+
+            @Override
+            public Runnable produce()
+            {
+                if (tasks-- > 0)
+                {
+                    latch.countDown();
+                    return strategyRef.get()::produce;
+                }
+
+                return null;
+            }
+        };
+
+        ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, threadPool);
+        strategyRef.set(strategy);
+        strategy.produce();
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS),
+            () ->
+            {
+                // Dump state on failure
+                return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
+                    strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
+            });
 
         LifeCycle.stop(threadPool);
     }
