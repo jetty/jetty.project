@@ -173,7 +173,7 @@ public class DispatcherTest
     }
 
     @Test
-    public void testFowardThenForward() throws Exception
+    public void testForwardThenForward() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");

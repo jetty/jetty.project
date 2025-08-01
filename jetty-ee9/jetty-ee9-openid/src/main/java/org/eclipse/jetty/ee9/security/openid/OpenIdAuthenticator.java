@@ -431,17 +431,38 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             // Handle a request for authentication.
             if (isJSecurityCheck(uri))
             {
-                String authCode = request.getParameter("code");
-                if (authCode == null)
-                {
-                    sendError(request, response, "auth failed: no code parameter");
-                    return Authentication.SEND_FAILURE;
-                }
-
                 String state = request.getParameter("state");
                 if (state == null)
                 {
                     sendError(request, response, "auth failed: no state parameter");
+                    return Authentication.SEND_FAILURE;
+                }
+
+                // Handle error response defined by Section 3.1.2.6 of OpenID Connect Core 1.0.
+                String errorCode = request.getParameter("error");
+                if (errorCode != null)
+                {
+                    String errorDescription = request.getParameter("error_description");
+                    String errorUri = request.getParameter("error_uri");
+                    Fields fields = new Fields();
+                    fields.add("error", errorCode);
+                    if (errorDescription != null)
+                        fields.add("error_description", errorDescription);
+                    if (errorUri != null)
+                        fields.add("error_uri", errorUri);
+                    StringBuilder errorMessage = new StringBuilder();
+                    errorMessage.append("auth failed: ").append(errorCode);
+                    if (errorDescription != null)
+                        errorMessage.append(" - ").append(errorDescription);
+                    fields.add(ERROR_PARAMETER, errorMessage.toString());
+                    sendError(request, response, fields);
+                    return Authentication.SEND_FAILURE;
+                }
+
+                String authCode = request.getParameter("code");
+                if (authCode == null)
+                {
+                    sendError(request, response, "auth failed: no code parameter");
                     return Authentication.SEND_FAILURE;
                 }
 
@@ -459,10 +480,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
                 // Attempt to login with the provided authCode.
                 OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
+                credentials.redeemAuthCode(_openIdConfiguration);
+                if (credentials.getErrorFields() != null)
+                {
+                    sendError(request, response, credentials.getErrorFields());
+                    return Authentication.SEND_FAILURE;
+                }
+
                 UserIdentity user = login(null, credentials, request);
                 if (user == null)
                 {
-                    sendError(request, response, null);
+                    sendError(request, response, "auth failed: no user identity");
                     return Authentication.SEND_FAILURE;
                 }
 
@@ -565,11 +593,27 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      */
     private void sendError(HttpServletRequest request, HttpServletResponse response, String message) throws IOException
     {
+        Fields fields = new Fields();
+        fields.add(ERROR_PARAMETER, message);
+        sendError(request, response, fields);
+    }
+
+    /**
+     * Report an error case either by redirecting to the error page if it is defined, otherwise sending a 403 response.
+     * If the message parameter is not null, a query parameter with a key of {@link #ERROR_PARAMETER} and value of the error
+     * message will be logged and added to the error redirect URI if the error page is defined.
+     * @param request the request.
+     * @param response the response.
+     * @param fields the list of query parameters to be included in the error redirect.
+     * @throws IOException if sending the error fails for any reason.
+     */
+    private void sendError(HttpServletRequest request, HttpServletResponse response, Fields fields) throws IOException
+    {
         final Request baseRequest = Request.getBaseRequest(request);
         final Response baseResponse = Objects.requireNonNull(baseRequest).getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("OpenId authentication FAILED: {}", message);
+            LOG.debug("OpenId authentication FAILED: {}", fields);
 
         if (_errorPage == null)
         {
@@ -584,9 +628,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 LOG.debug("auth failed {}", _errorPage);
 
             String redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPage);
-            if (message != null)
+            if (fields != null)
             {
-                String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                String query = _errorQuery;
+                for (Fields.Field f : fields)
+                {
+                    query = URIUtil.addQueries(query, UrlEncoded.encodeString(f.getName()) + "=" + UrlEncoded.encodeString(f.getValue()));
+                }
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(request.getContextPath(), _errorPath), query);
             }
 

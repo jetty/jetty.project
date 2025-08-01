@@ -37,14 +37,33 @@ import org.eclipse.jetty.util.Callback;
 public interface AuthenticationState extends Request.AuthenticationState
 {
     /**
-     * Get the authentication state of a request
-     * @param request The request to query
+     * Get the authentication state of a request.
+     * @param request The request to query.
      * @return The authentication state of the request or null if none.
      */
     static AuthenticationState getAuthenticationState(Request request)
     {
         Request.AuthenticationState state = Request.getAuthenticationState(request);
         return state instanceof AuthenticationState authenticationState ? authenticationState : null;
+    }
+
+    /**
+     * Get the authentication state of a request resolving any {@link Deferred} authentication.
+     * @param request The request to query.
+     * @return The authentication state of the request or null if none or {@link Deferred} authentication could not be resolved.
+     */
+    static AuthenticationState getUndeferredAuthenticationState(Request request)
+    {
+        AuthenticationState authenticationState = getAuthenticationState(request);
+        if (authenticationState instanceof AuthenticationState.Deferred deferred)
+        {
+            AuthenticationState undeferred = deferred.authenticate(request);
+            if (undeferred == null || undeferred instanceof AuthenticationState.Deferred)
+                return null;
+            authenticationState = undeferred;
+            AuthenticationState.setAuthenticationState(request, authenticationState);
+        }
+        return authenticationState;
     }
 
     /**

@@ -404,22 +404,22 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 [[connector-limiting]]
 === Limiting Connections
 
-It is possible to limit the number of connections accepted by the whole server (and therefore across all connectors), or by a specific connector.
+It is possible to limit the number of TCP connections accepted by the whole server (and therefore across all connectors), or by a specific connector.
 
-This feature is implemented by class `org.eclipse.jetty.server.ConnectionLimit` and you can use it in this way:
+This feature is implemented by class `org.eclipse.jetty.server.NetworkConnectionLimit` and you can use it in this way:
 
 [,java,indent=0,options=nowrap]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=connectionLimit]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=networkConnectionLimit]
 ----
 
 [NOTE]
 ====
-When the maximum number of connections is reached, no more connections will be accepted _at the JVM level_ -- but they could be accepted at the OS level.
+When the maximum number of TCP connections is reached, no more TCP connections will be accepted _at the JVM level_ -- but they could be accepted at the OS level.
 
-This means that if you are using OS tools (like Linux's `ss`) to count the number of established connections, you may find a number that may be greater than the maximum number of connections configured in a `ConnectionLimit`.
+This means that if you are using OS tools (like Linux's `ss`) to count the number of established TCP connections, you may find a number that may be greater than the maximum number of TCP connections configured in a `NetworkConnectionLimit`.
 
-Note also that different operative systems may behave differently when Jetty is not accepting connections: some OS accepts connections at the TCP level anyway (but does not notify this event to the JVM), some other OS may not accept connections at the TCP level.
+Note also that different operative systems may behave differently when Jetty is not accepting TCP connections: some OS accepts connections at the TCP level anyway (but does not notify this event to the JVM), some other OS may not accept connections at the TCP level.
 ====
 
 [[connector-protocol]]

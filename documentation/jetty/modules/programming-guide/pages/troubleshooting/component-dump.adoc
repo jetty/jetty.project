@@ -97,8 +97,9 @@ Below you can find a simple example of a Jetty Component Dump, with annotations 
 setupArgs=--add-modules=http
 args=jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true
 delete=^[0-9]\{4}
-callouts= <$N>,Server@,= QueuedThreadPool,HandlerCollection@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged
+callouts= <$N>,Server@,= oejut.QueuedThreadPool,ContextHandlerCollection@, oejs.ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged
 ....
+
 ifdef::run-jetty[]
 <1> The `Server` instance at the root of the tree
 <2> The thread pool component
