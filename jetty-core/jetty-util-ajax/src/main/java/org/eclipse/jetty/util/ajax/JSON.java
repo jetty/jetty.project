@@ -137,8 +137,8 @@ public class JSON
             {
                 // Special cases for quotation-mark, reverse-solidus, and solidus.
                 if ((c == '"') || (c == '\\')
-                  /* solidus is optional - per Carsten Bormann (IETF)
-                     || (c == '/') */)
+                /* solidus is optional - per Carsten Bormann (IETF)
+                   || (c == '/') */)
                 {
                     buffer.append('\\').append(c);
                 }
@@ -1662,7 +1662,7 @@ public class JSON
             }
         }
     }
-    
+
     public String toJSON(final Object o, String ident)
     {
         return toString(o, ident, 0);
@@ -1693,32 +1693,32 @@ public class JSON
 
             sb.append('\n');
             putIndent(sb, ident, nest + 1);
-            sb.append(putQuote(entry.getKey()));
+            quotedEscape(sb, entry.getKey());
             sb.append(": ");
             putIndent(sb, ident, 0);
 
             Object value = entry.getValue();
-            if (value instanceof Boolean)
+            if (value instanceof Boolean b)
             {
-                sb.append(value);
+                sb.append(b);
                 isCommaNeede = true;
                 continue;
             }
-            if (value instanceof Double)
+            if (value instanceof Double d)
             {
-                sb.append(value);
+                sb.append(d);
                 isCommaNeede = true;
                 continue;
             }
-            if (value instanceof Long)
+            if (value instanceof Long l)
             {
-                sb.append(value);
+                sb.append(l);
                 isCommaNeede = true;
                 continue;
             }
-            if (value instanceof String)
+            if (value instanceof String s)
             {
-                sb.append(putQuote(value));
+                quotedEscape(sb, s);
                 isCommaNeede = true;
                 continue;
             }
@@ -1742,24 +1742,21 @@ public class JSON
                 continue;
             }
 
-            if (value instanceof Object[])
+            if (value instanceof Object[] a)
             {
-                sb.append(parseArray((Object[])value));
+                sb.append(parseArray(a));
                 isCommaNeede = true;
                 continue;
             }
 
             if (value instanceof Object)
             {
-                sb.append(parseArray((Object[])value));
+                sb.append(value);
                 isCommaNeede = true;
                 continue;
             }
-
-            sb.append(putQuote(value));
-            isCommaNeede = true;
         }
-        
+
         sb.append('\n');
         // Zero value means it is the most outermost nest
         if (nest == 0)
@@ -1768,7 +1765,7 @@ public class JSON
         }
         return sb.toString();
     }
-    
+
     private String parseArray(Object[] o)
     {
         ArrayList<Object> array = new ArrayList<>();
@@ -1789,41 +1786,7 @@ public class JSON
         }
         return array.toString();
     }
-    
-    private String putQuote(Object o)
-    {
-        String s = (String)o;
-        StringBuilder newString = new StringBuilder();
-        for (Character v : s.toCharArray())
-        {
-            switch (v)
-            {
-                case '\\':
-                case '"':
-                    newString.append("\"");
-                    break;
-                case '\n':
-                    newString.append("\\n");
-                    break;
-                case '\t':
-                    newString.append("\\t");
-                    break;
-                case '\b':
-                    newString.append("\\b");
-                    break;
-                case '\f':
-                    newString.append("\\f");
-                    break;
-                case '\r':
-                    newString.append("\\r");
-                    break;
-                default:
-                    newString.append(v);
-            }
-        }
-        return String.format("\"%s\"", newString.toString());
-    }
-    
+
     private void putIndent(StringBuilder sb, String ident, int indentFactor)
     {
         for (; indentFactor > 0; indentFactor--)
