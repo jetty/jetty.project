@@ -19,12 +19,13 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Implements a quoted comma separated list of values
- * in accordance with RFC7230.
+ * Implements a quoted comma-separated list of values
+ * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.5">RFC9110 section 5.5</a>
+ * and <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
  * OWS is removed and quoted characters ignored for parsing.
  *
- * @see "https://tools.ietf.org/html/rfc7230#section-3.2.6"
- * @see "https://tools.ietf.org/html/rfc7230#section-7"
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.5"
+ * @see "https://datatracker.ietf.org/doc/html/rfc9110#section-5.6"
  */
 public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 {

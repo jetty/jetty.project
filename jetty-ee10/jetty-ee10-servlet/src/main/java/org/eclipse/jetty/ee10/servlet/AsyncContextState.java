@@ -89,7 +89,11 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void dispatch(ServletContext context, String path)
     {
-        state().dispatch(context, path);
+        //check for dispatch to current context
+        if (context != null && context == state().getContextHandler().getContext().getServletContext())
+            state().dispatch(null, path);
+        else
+            state().dispatch(context, path);
     }
 
     @Override

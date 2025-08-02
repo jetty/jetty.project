@@ -44,7 +44,7 @@ public interface WebSocketConnectionListener
     /**
      * A WebSocket exception has occurred.
      * <p>
-     * This is a way for the internal implementation to notify of exceptions occured during the processing of websocket.
+     * This is a way for the internal implementation to notify of exceptions occurred during the processing of websocket.
      * <p>
      * Usually this occurs from bad / malformed incoming packets. (example: bad UTF8 data, frames that are too big, violations of the spec)
      * <p>

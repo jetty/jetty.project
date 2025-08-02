@@ -29,6 +29,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     private String _host;
     private String _projectId;
 
+    /**
+     * @return the entity data model for Google Cloud Datastore
+     */
     public GCloudSessionDataStore.EntityDataModel getEntityDataModel()
     {
         return _model;
@@ -39,6 +42,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _model = model;
     }
 
+    /**
+     * @return the maximum number of retries for Google Cloud operations
+     */
     public int getMaxRetries()
     {
         return _maxRetries;
@@ -49,6 +55,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _maxRetries = maxRetries;
     }
 
+    /**
+     * @return the backoff time in milliseconds between retries
+     */
     public int getBackoffMs()
     {
         return _backoffMs;
@@ -82,6 +91,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _host = host;
     }
 
+    /**
+     * @return the host for the Google Cloud Datastore connection
+     */
     public String getHost()
     {
         return _host;
@@ -92,6 +104,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _projectId = projectId;
     }
 
+    /**
+     * @return the Google Cloud project ID
+     */
     public String getProjectId()
     {
         return _projectId;

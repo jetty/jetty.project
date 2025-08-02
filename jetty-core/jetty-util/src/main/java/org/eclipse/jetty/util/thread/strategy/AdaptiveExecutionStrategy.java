@@ -429,12 +429,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         {
             case PRODUCE_CONSUME:
                 _pcMode.increment();
-                runTask(task);
+                pcRunTask(task);
                 return true;
 
             case PRODUCE_INVOKE_CONSUME:
                 _picMode.increment();
-                invokeAsNonBlocking(task);
+                picRunTask(task);
                 return true;
 
             case PRODUCE_EXECUTE_CONSUME:
@@ -444,7 +444,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
             case EXECUTE_PRODUCE_CONSUME:
                 _epcMode.increment();
-                runTask(task);
+                epcRunTask(task);
 
                 // Race the pending producer to produce again.
                 while (true)
@@ -473,28 +473,31 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * Runs a Runnable task, logging any thrown exception.
+     * Runs a task in produce-consume mode.
      *
-     * @param task The task to run.
+     * @param task the task to run
      */
-    private void runTask(Runnable task)
+    private void pcRunTask(Runnable task)
     {
-        try
-        {
-            task.run();
-        }
-        catch (Throwable x)
-        {
-            LOG.warn("Task run failed", x);
-        }
+        runTask(task);
     }
 
     /**
-     * Runs a task in non-blocking mode.
+     * Runs a task in execute-produce-consume mode.
      *
-     * @param task The task to run in non-blocking mode.
+     * @param task the task to run
      */
-    private void invokeAsNonBlocking(Runnable task)
+    private void epcRunTask(Runnable task)
+    {
+        runTask(task);
+    }
+
+    /**
+     * Runs a task in produce-invoke-consume mode.
+     *
+     * @param task the task to run
+     */
+    private void picRunTask(Runnable task)
     {
         try
         {
@@ -503,6 +506,23 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         catch (Throwable x)
         {
             LOG.warn("Task invoke failed", x);
+        }
+    }
+
+    /**
+     * Runs a Runnable task, logging any thrown exception.
+     *
+     * @param task The task to run.
+     */
+    private static void runTask(Runnable task)
+    {
+        try
+        {
+            task.run();
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("Task run failed", x);
         }
     }
 

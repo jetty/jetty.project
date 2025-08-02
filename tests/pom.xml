@@ -22,6 +22,7 @@
     <module>test-jpms</module>
   </modules>
   <properties>
+    <home.start.timeout>30</home.start.timeout>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.source.skip>true</maven.source.skip>

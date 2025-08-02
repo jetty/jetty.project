@@ -16,10 +16,12 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
@@ -72,7 +74,14 @@ public abstract class WriteThroughWriter extends Writer
             return new Iso88591Writer(outputStream);
         if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charset))
             return new Utf8Writer(outputStream);
-        return new EncodingWriter(outputStream, StringUtil.isBlank(charset) ? StandardCharsets.ISO_8859_1 : Charset.forName(charset));
+        try
+        {
+            return new EncodingWriter(outputStream, StringUtil.isBlank(charset) ? StandardCharsets.ISO_8859_1 : Charset.forName(charset));
+        }
+        catch (UnsupportedCharsetException e)
+        {
+            throw new UnsupportedEncodingException(e.getMessage());
+        }
     }
 
     /**
