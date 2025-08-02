@@ -668,6 +668,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         builder.append(getPECTasksExecuted());
         builder.append(",epc=");
         builder.append(getEPCTasksConsumed());
+        builder.append(",med=");
+        builder.append(getMaxEpcDepth());
         builder.append("]");
         builder.append("@");
         builder.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
