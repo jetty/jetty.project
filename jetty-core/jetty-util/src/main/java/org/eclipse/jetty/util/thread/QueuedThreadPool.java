@@ -1266,26 +1266,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         @Override
-        protected void startReservedThread()
-        {
-            // If we have more jobs queued than the number of pending reserved threads,
-            // then we have some real jobs in the queue.
-            // So we will not start a reserved thread as it may stop a real job from being executed.
-            if (isTaskWaiting())
-                return;
-            super.startReservedThread();
-        }
-
-        @Override
-        protected boolean isTaskWaiting()
+        protected boolean isReservable()
         {
             long counts = _counts.get();
             int threads = Math.max(0, AtomicBiInteger.getHi(counts));
+            // If we are not at max threads, then we can reserve a thread
             if (threads < getMaxThreads())
                 return false;
+            // otherwise we can reserve a thread if the queue of tasks is empty
             int queueSize = Math.max(0, -AtomicBiInteger.getLo(counts));
-            int pending = getPending();
-            return pending >= 0 && queueSize > pending;
+            return queueSize != 0;
         }
     }
 }

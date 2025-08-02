@@ -226,7 +226,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     protected void startReservedThread()
     {
-        if (_pending.incrementAndGet() > _maxPending && _maxPending > 0)
+        if (isReservable() || _pending.incrementAndGet() > _maxPending && _maxPending > 0)
         {
             _pending.decrementAndGet();
             return;
@@ -272,9 +272,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             _thread = Thread.currentThread();
             try
             {
-                if (_pending.decrementAndGet() < 0)
-                    System.err.println("XXXXXXXXXXXXXXXXX " + this);
-
+                _pending.decrementAndGet();
                 while (true)
                 {
                     int slot = _threads.offer(this);
@@ -323,7 +321,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                             LOG.debug("{} was interrupted", _thread);
 
                     }
-                    if (isTaskWaiting())
+                    if (isReservable())
                         return;
                 }
             }
@@ -391,11 +389,11 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     }
 
     /**
-     * Test if there is a better task for a thread to do other than to become a reserved thread?
+     * Test if there are enough available threads to reserve another one?
      *
-     * @return true if a thread could be used to do something better than be reserved.
+     * @return true if a thread can be reserved.
      */
-    protected boolean isTaskWaiting()
+    protected boolean isReservable()
     {
         return false;
     }
