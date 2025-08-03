@@ -1,16 +1,17 @@
 ---
 name: 'Release Process'
 about: 'COMMITTER ONLY: Managing the Jetty release process'
-title: 'Jetty Releases 9.4.x, 10.0.y, 11.0.y, 12.0.y'
+title: 'Jetty Release Checklist 12.x'
 assignees: ''
 labels: Build
 
 ---
 
 **Jetty Versions:**
-This release process will produce releases:
+
 
 **Target Date:**
+
 
 **Tasks:**
 - [x] Create the release(s) issue.
@@ -28,19 +29,18 @@ This release process will produce releases:
       Such updates should only be included in the week before a release if there is a compelling security or stability reason to do so.
 - [ ] Wait 24 hours from last change to the issues/PRs included in FROZEN GitHub Project(s).
 - [ ] Verify target [project(s)](https://github.com/jetty/jetty.project/projects) are complete.
-- [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.
+- [ ] Verify that branch `jetty-12.0.x` is merged to branch `jetty-12.1.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
   - [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   - [ ] Ensure `git fetch --tags` (as we potentially rewrite tag when re staging local tag can be out of sync and this command will fail and so fail the release script)
   - [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
-  - [ ] Stage 9.4 release with Java 11.
-  - [ ] Stage 10 release with Java 21.
-  - [ ] Stage 11 release with Java 21.
-  - [ ] Stage 12 release with Java 22. 
+  - [ ] Deploy 12 release with Java 22 to central.sonatype.com
+  - [ ] Deploy 12 release to Nexus on CI system to help with testing of release (shows up on release-staging repo)
   - [ ] Push release branches `release/<ver>` to to https://github.com/jetty/jetty.project
   - [ ] Push release tags `jetty-<ver>` to https://github.com/jetty/jetty.project
   - [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/jetty/jetty.project/releases). Content is generated with the "changelog tool".
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
+    - [ ] Update Webtide website with staged release
   - [ ] Test [CometD](https://github.com/cometd/cometd).
   - [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
   - [ ] Test [Load Generator](https://github.com/jetty-project/jetty-load-generator).
@@ -51,8 +51,9 @@ This release process will produce releases:
   - [ ] Check CI for performance regressions.
   - [ ] Assign issue back to "release manager".
 - [ ] Collect release votes from committers.
-- [ ] Promote staged releases.
+- [ ] Push "Publish" button on central.sonatype.com to publish the release to Maven Central.
 - [ ] Merge release branches back to main branches and delete release branches.
+- [ ] Once release is on central.sonatype.com remove the release from CI nexus release-staging location.
 - [ ] Verify release existence in Maven Central by triggering the Jenkins builds of CometD.
 - [ ] Update Jetty versions on the website ( follow instructions in [jetty-website](https://github.com/jetty/jetty.website/blob/main/README.adoc) ).
   - [ ] Update (or check) [Download](https://jetty.org/download.html) page is updated.
