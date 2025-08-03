@@ -254,8 +254,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
                 case REPRODUCING:
                     // Another thread is already producing and will already try again to produce.
-                    if (!_state.compareAndSet(state, state))
-                        continue;
                     return;
 
                 default:
@@ -273,41 +271,40 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             try
             {
                 Runnable task = produceTask();
-
-                // If we did not produce a task
-                if (task == null)
+                if (task != null)
                 {
-                    // determine if we should keep producing.
-                    while (true)
-                    {
-                        int state = _state.get();
-
-                        switch (state)
-                        {
-                            case PRODUCING:
-                                // The calling thread was the only producer, so it is now IDLE and we stop producing.
-                                if (!_state.compareAndSet(state, IDLE))
-                                    continue;
-                                return;
-
-                            case REPRODUCING:
-                                // Another thread may have queued a task and tried to produce
-                                // so the calling thread should continue to produce.
-                                if (!_state.compareAndSet(state, PRODUCING))
-                                    continue;
-                                continue running;
-
-                            default:
-                                throw new IllegalStateException(toString(state));
-                        }
-                    }
+                    // Consume the task according to a selected substrategy.
+                    if (consumeTask(task, selectSubStrategy(task, nonBlocking)))
+                        // continue producing
+                        continue;
+                    // do not continue producing
+                    return;
                 }
 
-                // Consume the task according the selected sub-strategy, then
-                // continue producing only if the sub-strategy returns true.
-                if (consumeTask(task, selectSubStrategy(task, nonBlocking)))
-                    continue;
-                return;
+                // No task produce, so determine if we should keep producing.
+                while (true)
+                {
+                    int state = _state.get();
+
+                    switch (state)
+                    {
+                        case PRODUCING:
+                            // This thread is still the producer, so it is now IDLE and we stop producing.
+                            if (!_state.compareAndSet(state, IDLE))
+                                continue;
+                            return;
+
+                        case REPRODUCING:
+                            // Another thread may have queued a task and tried to produce
+                            // so the calling thread should continue to produce.
+                            if (!_state.compareAndSet(state, PRODUCING))
+                                continue;
+                            continue running;
+
+                        default:
+                            throw new IllegalStateException(toString(state));
+                    }
+                }
             }
             catch (Throwable th)
             {
@@ -377,7 +374,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         int state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if ((state == PRODUCING || state == REPRODUCING) && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, IDLE))
+        if (state != IDLE && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
@@ -485,7 +482,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         Integer depth = _epcDepth.get();
         _epcDepth.set(1 + depth);
         runTask(task);
-        _epcDepth.set(depth);
+        if (depth > 0 || !isUseVirtualThreads())
+            _epcDepth.set(depth);
+        else
+            _epcDepth.remove();
     }
 
     /**
