@@ -1269,13 +1269,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         protected boolean isReservable()
         {
             long counts = _counts.get();
-            int threads = Math.max(0, AtomicBiInteger.getHi(counts));
-            // If we are not at max threads, then we can reserve a thread
-            if (threads < getMaxThreads())
-                return false;
-            // otherwise we can reserve a thread if the queue of tasks is empty
             int queueSize = Math.max(0, -AtomicBiInteger.getLo(counts));
-            return queueSize != 0;
+            if (queueSize == 0)
+                return true;
+            int threads = Math.max(0, AtomicBiInteger.getHi(counts));
+            int idle = Math.max(0, AtomicBiInteger.getLo(counts));
+            int available = Math.max(0, getMaxThreads() - threads);
+            return (queueSize - idle - available) > 0;
         }
     }
 }
