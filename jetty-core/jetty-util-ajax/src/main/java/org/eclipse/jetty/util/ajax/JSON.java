@@ -1698,6 +1698,12 @@ public class JSON
             putIndent(sb, ident, 0);
 
             Object value = entry.getValue();
+            if (value == null)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
             if (value instanceof Boolean b)
             {
                 sb.append(b);
@@ -1733,7 +1739,7 @@ public class JSON
                 }
                 else
                 {
-                    String v = toString(value, ident, nest + 2);
+                    String v = toString(value, ident, nest + 1);
                     sb.append(v);
                     putIndent(sb, ident, nest + 1);
                 }
