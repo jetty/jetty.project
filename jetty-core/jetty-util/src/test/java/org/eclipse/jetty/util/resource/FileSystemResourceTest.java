@@ -184,7 +184,6 @@ public class FileSystemResourceTest
     }
 
     @Test
-    @Tag("flaky")
     public void testNotFileURI()
     {
         assertThrows(IllegalArgumentException.class,
