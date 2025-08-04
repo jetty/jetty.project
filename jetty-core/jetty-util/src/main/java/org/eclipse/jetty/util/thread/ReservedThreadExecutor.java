@@ -395,6 +395,6 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      */
     protected boolean isReservable()
     {
-        return false;
+        return true;
     }
 }
