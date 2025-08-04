@@ -278,20 +278,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             if (closeHandle != null)
             {
-                var apiCallback = new org.eclipse.jetty.websocket.api.Callback()
-                {
-                    @Override
-                    public void succeed()
-                    {
-                        callback.succeeded();
-                    }
-
-                    @Override
-                    public void fail(Throwable x)
-                    {
-                        callback.failed(x);
-                    }
-                };
+                var apiCallback = org.eclipse.jetty.websocket.api.Callback.from(callback::succeeded, callback::failed);
                 closeHandle.invoke(closeStatus.getCode(), closeStatus.getReason(), apiCallback);
             }
             else
