@@ -1,3 +1,5 @@
+jetty-12.0.25-SNAPSHOT
+
 12.0.24 - 04 August 2025
  + 9794 Jetty 12 - jetty-ee9-proxy.xml broken
  + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because "this.networkBuffer" is null
