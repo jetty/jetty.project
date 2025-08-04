@@ -1275,7 +1275,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             int threads = Math.max(0, AtomicBiInteger.getHi(counts));
             int idle = Math.max(0, AtomicBiInteger.getLo(counts));
             int available = Math.max(0, getMaxThreads() - threads);
-            return (queueSize - idle - available) > 0;
+            return (queueSize - idle - available) <= 0;
         }
     }
 }

@@ -226,7 +226,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     protected void startReservedThread()
     {
-        if (isReservable() || _pending.incrementAndGet() > _maxPending && _maxPending > 0)
+        if (!isReservable() || _pending.incrementAndGet() > _maxPending && _maxPending > 0)
         {
             _pending.decrementAndGet();
             return;
@@ -321,7 +321,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                             LOG.debug("{} was interrupted", _thread);
 
                     }
-                    if (isReservable())
+                    if (!isReservable())
                         return;
                 }
             }
