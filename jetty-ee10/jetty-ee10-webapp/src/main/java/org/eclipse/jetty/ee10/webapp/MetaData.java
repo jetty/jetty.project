@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -487,12 +488,18 @@ public class MetaData
         resources.addAll(_webInfClasses); //next everything from web-inf classes
         resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
 
+        // Create mapping ensuring that no implementation-differences between resources and webFragmentResourcesMap
+        // prohibits query success
+        Map<URI, Map<Path, Resource>> queryAbleResources = buildQueryableResourcesMap();
+
         for (Resource r : resources)
         {
+            Resource queryAbleResource = lookupInQueryableResourcesMap(queryAbleResources, r);
+
             //Process the web-fragment.xml before applying annotations from a fragment.
             //Note that some fragments, or resources that aren't fragments won't have
             //a descriptor.
-            FragmentDescriptor fd = _webFragmentResourceMap.get(r);
+            FragmentDescriptor fd = _webFragmentResourceMap.get(queryAbleResource);
             if (fd != null)
             {
                 for (DescriptorProcessor p : _descriptorProcessors)
@@ -505,6 +512,8 @@ public class MetaData
             //Then apply the annotations - note that if metadata is complete
             //either overall or for a fragment, those annotations won't have
             //been discovered.
+            //Note that these are inserted into the map as MountedPathResources, and not PathResources, thus we do
+            //lookup without the ensureNotMounted() call.
             List<DiscoveredAnnotation> annotations = _annotations.get(r);
             if (annotations != null)
             {
@@ -515,6 +524,35 @@ public class MetaData
                 }
             }
         }
+    }
+
+    private Map<URI, Map<Path, Resource>> buildQueryableResourcesMap()
+    {
+        Map<URI, Map<Path, Resource>> queryAbleResources = new HashMap<>();
+        _webFragmentResourceMap.keySet()
+                .forEach(
+                    r ->
+                    {
+                        URI uri = r.getURI();
+                        Path path = r.getPath();
+                        queryAbleResources.computeIfAbsent(uri, k -> new HashMap<>()).put(path, r);
+                    }
+                );
+        return queryAbleResources;
+    }
+
+    private Resource lookupInQueryableResourcesMap(
+        Map<URI, Map<Path, Resource>> queryAbleResources,
+        Resource resource)
+    {
+        if (resource == null)
+        {
+            return null;
+        }
+
+        URI uri = resource.getURI();
+        Path path = resource.getPath();
+        return queryAbleResources.getOrDefault(uri, Collections.emptyMap()).get(path);
     }
 
     /**
