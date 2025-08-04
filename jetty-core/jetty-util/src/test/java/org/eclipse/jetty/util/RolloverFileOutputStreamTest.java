@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,26 +45,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(WorkDirExtension.class)
 public class RolloverFileOutputStreamTest
 {
-
     public WorkDir workDir;
 
-    private static ZoneId toZoneId(String timezoneId)
+    private static ZonedDateTime toDateTime(String timendate)
     {
-        ZoneId zone = TimeZone.getTimeZone(timezoneId).toZoneId();
-        // System.out.printf(".toZoneId(\"%s\") = [id=%s,normalized=%s]%n", timezoneId, zone.getId(), zone.normalized());
-        return zone;
-    }
-
-    private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
-    {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-            .withZone(zone);
+        // Use full timezone names instead of abbreviations like "PDT", "PST" to avoid parsing issues on different JVM implementations
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a VV")
+            .withLocale(java.util.Locale.US);
         return ZonedDateTime.parse(timendate, formatter);
     }
 
     private static String toString(TemporalAccessor date)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z");
+        // Format with full timezone names for consistent parsing across JVM implementations
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a VV")
+            .withLocale(java.util.Locale.US);
         return formatter.format(date);
     }
 
@@ -87,19 +83,19 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMidnightRolloverCalcPDTIssue1507()
     {
-        ZoneId zone = toZoneId("PST");
-        ZonedDateTime initialDate = toDateTime("2017.04.26-08:00:00.0 PM PDT", zone);
+        // Use full timezone name instead of abbreviation "PDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime initialDate = toDateTime("2017.04.26-08:00:00.0 PM America/Los_Angeles");
 
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
-        assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM PDT"));
+        assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM America/Los_Angeles"));
 
         Object[][] expected = {
-            {"2017.04.27-12:00:00.0 AM PDT", 14_400_000L},
-            {"2017.04.28-12:00:00.0 AM PDT", 86_400_000L},
-            {"2017.04.29-12:00:00.0 AM PDT", 86_400_000L},
-            {"2017.04.30-12:00:00.0 AM PDT", 86_400_000L},
-            {"2017.05.01-12:00:00.0 AM PDT", 86_400_000L},
-            {"2017.05.02-12:00:00.0 AM PDT", 86_400_000L},
+            {"2017.04.27-12:00:00.0 AM America/Los_Angeles", 14_400_000L},
+            {"2017.04.28-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2017.04.29-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2017.04.30-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2017.05.01-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2017.05.02-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
             };
 
         assertSequence(initialDate, expected);
@@ -108,18 +104,18 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMidnightRolloverCalcPSTDSTStart()
     {
-        ZoneId zone = toZoneId("PST");
-        ZonedDateTime initialDate = toDateTime("2016.03.10-01:23:45.0 PM PST", zone);
+        // Use full timezone name instead of abbreviation "PST" to avoid parsing issues on different JVM implementations
+        ZonedDateTime initialDate = toDateTime("2016.03.10-01:23:45.0 PM America/Los_Angeles");
 
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
-        assertThat("Midnight", toString(midnight), is("2016.03.11-12:00:00.0 AM PST"));
+        assertThat("Midnight", toString(midnight), is("2016.03.11-12:00:00.0 AM America/Los_Angeles"));
 
         Object[][] expected = {
-            {"2016.03.12-12:00:00.0 AM PST", 86_400_000L},
-            {"2016.03.13-12:00:00.0 AM PST", 86_400_000L},
-            {"2016.03.14-12:00:00.0 AM PDT", 82_800_000L}, // the short day
-            {"2016.03.15-12:00:00.0 AM PDT", 86_400_000L},
-            {"2016.03.16-12:00:00.0 AM PDT", 86_400_000L},
+            {"2016.03.12-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.03.13-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.03.14-12:00:00.0 AM America/Los_Angeles", 82_800_000L}, // the short day
+            {"2016.03.15-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.03.16-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
             };
 
         assertSequence(midnight, expected);
@@ -128,18 +124,18 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMidnightRolloverCalcPSTDSTEnd()
     {
-        ZoneId zone = toZoneId("PST");
-        ZonedDateTime initialDate = toDateTime("2016.11.03-11:22:33.0 AM PDT", zone);
+        // Use full timezone name instead of abbreviation "PDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime initialDate = toDateTime("2016.11.03-11:22:33.0 AM America/Los_Angeles");
 
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
-        assertThat("Midnight", toString(midnight), is("2016.11.04-12:00:00.0 AM PDT"));
+        assertThat("Midnight", toString(midnight), is("2016.11.04-12:00:00.0 AM America/Los_Angeles"));
 
         Object[][] expected = {
-            {"2016.11.05-12:00:00.0 AM PDT", 86_400_000L},
-            {"2016.11.06-12:00:00.0 AM PDT", 86_400_000L},
-            {"2016.11.07-12:00:00.0 AM PST", 90_000_000L}, // the long day
-            {"2016.11.08-12:00:00.0 AM PST", 86_400_000L},
-            {"2016.11.09-12:00:00.0 AM PST", 86_400_000L},
+            {"2016.11.05-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.11.06-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.11.07-12:00:00.0 AM America/Los_Angeles", 90_000_000L}, // the long day
+            {"2016.11.08-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
+            {"2016.11.09-12:00:00.0 AM America/Los_Angeles", 86_400_000L},
             };
 
         assertSequence(midnight, expected);
@@ -148,18 +144,18 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMidnightRolloverCalcSydneyDSTStart()
     {
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime initialDate = toDateTime("2016.09.31-01:23:45.0 PM AEST", zone);
+        // Use full timezone name instead of abbreviation "AEST" to avoid parsing issues on different JVM implementations
+        ZonedDateTime initialDate = toDateTime("2016.09.31-01:23:45.0 PM Australia/Sydney");
 
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
-        assertThat("Midnight", toString(midnight), is("2016.10.01-12:00:00.0 AM AEST"));
+        assertThat("Midnight", toString(midnight), is("2016.10.01-12:00:00.0 AM Australia/Sydney"));
 
         Object[][] expected = {
-            {"2016.10.02-12:00:00.0 AM AEST", 86_400_000L},
-            {"2016.10.03-12:00:00.0 AM AEDT", 82_800_000L}, // the short day
-            {"2016.10.04-12:00:00.0 AM AEDT", 86_400_000L},
-            {"2016.10.05-12:00:00.0 AM AEDT", 86_400_000L},
-            {"2016.10.06-12:00:00.0 AM AEDT", 86_400_000L},
+            {"2016.10.02-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.10.03-12:00:00.0 AM Australia/Sydney", 82_800_000L}, // the short day
+            {"2016.10.04-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.10.05-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.10.06-12:00:00.0 AM Australia/Sydney", 86_400_000L},
             };
 
         assertSequence(midnight, expected);
@@ -168,18 +164,18 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMidnightRolloverCalcSydneyDSTEnd()
     {
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime initialDate = toDateTime("2016.04.01-11:22:33.0 AM AEDT", zone);
+        // Use full timezone name instead of abbreviation "AEDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime initialDate = toDateTime("2016.04.01-11:22:33.0 AM Australia/Sydney");
 
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
-        assertThat("Midnight", toString(midnight), is("2016.04.02-12:00:00.0 AM AEDT"));
+        assertThat("Midnight", toString(midnight), is("2016.04.02-12:00:00.0 AM Australia/Sydney"));
 
         Object[][] expected = {
-            {"2016.04.03-12:00:00.0 AM AEDT", 86_400_000L},
-            {"2016.04.04-12:00:00.0 AM AEST", 90_000_000L}, // The long day
-            {"2016.04.05-12:00:00.0 AM AEST", 86_400_000L},
-            {"2016.04.06-12:00:00.0 AM AEST", 86_400_000L},
-            {"2016.04.07-12:00:00.0 AM AEST", 86_400_000L},
+            {"2016.04.03-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.04.04-12:00:00.0 AM Australia/Sydney", 90_000_000L}, // The long day
+            {"2016.04.05-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.04.06-12:00:00.0 AM Australia/Sydney", 86_400_000L},
+            {"2016.04.07-12:00:00.0 AM Australia/Sydney", 86_400_000L},
             };
 
         assertSequence(midnight, expected);
@@ -208,14 +204,14 @@ public class RolloverFileOutputStreamTest
     public void testFileHandling() throws Exception
     {
         Path testPath = workDir.getEmptyPathDir();
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
+        // Use full timezone name instead of abbreviation "AEDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM Australia/Sydney");
 
         Path template = testPath.resolve("test-rofos-yyyy_mm_dd.log");
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(now.getZone()), null, null, now))
         {
             rofos.write("TICK".getBytes());
             rofos.flush();
@@ -224,7 +220,7 @@ public class RolloverFileOutputStreamTest
         now = now.plus(5, ChronoUnit.MINUTES);
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(now.getZone()), null, null, now))
         {
             rofos.write("TOCK".getBytes());
             rofos.flush();
@@ -310,14 +306,14 @@ public class RolloverFileOutputStreamTest
     public void testRollover() throws Exception
     {
         Path testPath = workDir.getEmptyPathDir();
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
+        // Use full timezone name instead of abbreviation "AEDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM Australia/Sydney");
 
         Path template = testPath.resolve("test-rofos-yyyy_mm_dd.log");
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), null, null, now))
+                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(now.getZone()), null, null, now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
@@ -349,14 +345,14 @@ public class RolloverFileOutputStreamTest
     public void testRolloverBackup() throws Exception
     {
         Path testPath = workDir.getEmptyPathDir();
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
+        // Use full timezone name instead of abbreviation "AEDT" to avoid parsing issues on different JVM implementations
+        ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM Australia/Sydney");
 
         Path template = testPath.resolve("test-rofosyyyy_mm_dd.log");
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), "", null, now))
+                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(now.getZone()), "", null, now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
