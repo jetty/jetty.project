@@ -389,7 +389,8 @@ public class RFC6265CookieParser implements CookieParser
                                 case "$port" -> cookieComment = "$port=" + value;
                                 case "$version" -> cookieVersion = Integer.parseInt(value);
                                 // Known and Valid attribute $NAMES that we don't do anything special with.
-                                case "$expires", "$max-age", "$commenturl", "$comment", "$discard", "$secure" -> {
+                                case "$expires", "$max-age", "$commenturl", "$comment", "$discard", "$secure" ->
+                                {
                                     // ignore
                                 }
                                 default ->
