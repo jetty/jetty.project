@@ -1,3 +1,22 @@
+12.0.24 - 04 August 2025
+ + 9794 Jetty 12 - jetty-ee9-proxy.xml broken
+ + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because "this.networkBuffer" is null
+ + 13190 Introduce ability to decode and/or canonicalize URIs in a RewriteRule
+ + 13234 Regression in 12.0.21 on handling empty query parameters
+ + 13259 `org.eclipse.jetty.plus.jndi.Transaction` should support `javax.naming.Referenceable` as a constructor option too.
+ + 13261 Improve handling of failed HTTP/2 requests
+ + 13263 NPE from SslEndPoint.isInputShutdown
+ + 13268 `charset=null` is automatically added when using `Content-Type: application/problem+json` in Servlet ee10
+ + 13274 `JettyWebSocketTest` sometimes fails with `ConcurrentModificationException`
+ + 13280 `TLSHandshakeFailureTest.testTLSWrapAbruptSSLEngineClose()` with HTTPS is flaky
+ + 13284 jetty-openid library swallows provider errors when getting auth code
+ + 13295 Fix comments in NamingEntry; add support for simple scope name
+ + 13300 `o.e.j.plus.jndi.Resource`s declared in `eeX` scope then linked via `<resource-ref>` or `<resource-env-ref>` in web.xml not found
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13356 Executing `--dry-run` via shell `$()` can fail when certain JVM options are used.
+ + 13364 Deploy warnings for ee8 demos
+ + 13368 Valid query sequences are still reported as violations to ComplianceViolation.Listener
+
 jetty-12.0.23 - 02 July 2025
  + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke
    "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because
