@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -56,14 +57,19 @@ public class RolloverFileOutputStreamTest
 
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-            .withZone(zone);
-        return ZonedDateTime.parse(timendate, formatter);
+        // Workaround parsing issues with different JVM implementations:
+        // Parse date/time without timezone abbreviation, then use provided zone
+        String dateTimeWithoutTz = timendate.substring(0, timendate.lastIndexOf(' '));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a")
+            .withLocale(java.util.Locale.US);
+        LocalDateTime localDateTime = LocalDateTime.parse(dateTimeWithoutTz, formatter);
+        return localDateTime.atZone(zone);
     }
 
     private static String toString(TemporalAccessor date)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
+            .withLocale(java.util.Locale.US);
         return formatter.format(date);
     }
 
