@@ -57,13 +57,10 @@ public class RolloverFileOutputStreamTest
 
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
-        // Workaround parsing issues with different JVM implementations:
-        // Parse date/time without timezone abbreviation, then use provided zone
-        String dateTimeWithoutTz = timendate.substring(0, timendate.lastIndexOf(' '));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a")
-            .withLocale(java.util.Locale.US);
-        LocalDateTime localDateTime = LocalDateTime.parse(dateTimeWithoutTz, formatter);
-        return localDateTime.atZone(zone);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
+            .withLocale(java.util.Locale.US)
+            .withZone(zone);
+        return ZonedDateTime.parse(timendate, formatter);
     }
 
     private static String toString(TemporalAccessor date)
