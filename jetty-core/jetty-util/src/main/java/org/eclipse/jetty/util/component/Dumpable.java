@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.thread.Invocable;
 
 @ManagedObject("Dumpable Object")
 public interface Dumpable
@@ -159,10 +160,12 @@ public interface Dumpable
                 s = StringUtil.replace(s, '\n', '|');
             }
 
-            if (o instanceof LifeCycle)
-                out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
-            else
-                out.append(s).append("\n");
+            out.append(s);
+            if (o instanceof Invocable invocable)
+                out.append(" ~ ").append(invocable.getInvocationType().toString());
+            if (o instanceof LifeCycle lifecycle)
+                out.append(" - ").append(AbstractLifeCycle.getState(lifecycle));
+            out.append("\n");
         }
         catch (Throwable th)
         {
