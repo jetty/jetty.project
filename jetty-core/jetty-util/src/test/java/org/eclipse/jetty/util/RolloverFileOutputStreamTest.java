@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -57,13 +58,15 @@ public class RolloverFileOutputStreamTest
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
+            .withLocale(Locale.ENGLISH)
             .withZone(zone);
         return ZonedDateTime.parse(timendate, formatter);
     }
 
     private static String toString(TemporalAccessor date)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
+            .withLocale(Locale.ENGLISH);
         return formatter.format(date);
     }
 
