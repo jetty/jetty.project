@@ -40,13 +40,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965ModeParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC2965;
         assertTrue(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -61,13 +63,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC6265;
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         // Normal cookies with attributes, so no violations
         assertThat(parser.violations.size(), is(0));
@@ -81,13 +85,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265StrictModeParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC6265_STRICT;
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         // Normal cookies with attributes, so no violations
         assertThat(parser.violations.size(), is(0));
@@ -101,13 +107,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributesParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTES");
         assertTrue(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -122,13 +130,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributesAndAttributeValuesParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTES,ATTRIBUTE_VALUES");
         assertTrue(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -143,13 +153,15 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributeValuesParseOldSingleCookie()
     {
+        // Example field from RFC2109 and RFC2965
+        String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES");
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
-        // Example field from RFC2109 and RFC2965
-        List<Cookie> cookies = parser.parseFields("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"");
+        List<Cookie> cookies = parser.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -162,15 +174,41 @@ public class RFC6265CookieParserTest
     }
 
     @Test
+    public void testRFC6265ModeWithAttributeValuesParseCookieWithAttributeSyntax()
+    {
+        // This uses a $NAME style cookie, but with ATTRIBUTE_VALUES enabled, the `$Type` cookie will not be valid.
+        String rawCookie = "Customer=\"WILE_E_COYOTE\"; $Type=\"toon\"";
+
+        CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES");
+        assertFalse(cookieCompliance.allows(ATTRIBUTES));
+        assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
+
+        TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
+        List<Cookie> cookies = parser.parseFields(rawCookie);
+
+        String[] expectedViolations = {
+            "ATTRIBUTES: $Type",
+            "INVALID_COOKIES: $Type"
+        };
+        assertHasViolations(parser, expectedViolations);
+
+        assertThat("Cookies.length", cookies.size(), is(1));
+        assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 0, null);
+    }
+
+    @Test
     public void testRFC2965ModeParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC2965;
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -187,14 +225,17 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC6265;
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         assertThat("No violations present", cutter.violations, empty());
 
@@ -209,14 +250,17 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265StrictModeParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC6265_STRICT;
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         assertThat("No violations present", cutter.violations, empty());
 
@@ -231,14 +275,17 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributesParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTES");
         assertTrue(cookieCompliance.allows(ATTRIBUTES));
         assertFalse(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -255,14 +302,17 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributeValuesParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES");
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -279,14 +329,17 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC6265ModeWithAttributesAndAttributeValuesParseOldDoubleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES");
         assertFalse(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -306,15 +359,18 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965ParseOldTripleCookie()
     {
+        // Example from RFC2965
+        String rawCookie = "$Version=\"1\"; " +
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
+            "Shipping=\"FedEx\"; $Path=\"/acme\"";
+
         CookieCompliance cookieCompliance = CookieCompliance.RFC2965;
         assertTrue(cookieCompliance.allows(ATTRIBUTES));
         assertTrue(cookieCompliance.allows(ATTRIBUTE_VALUES));
 
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
-        List<Cookie> cookies = cutter.parseFields("$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
-            "Shipping=\"FedEx\"; $Path=\"/acme\"");
+        List<Cookie> cookies = cutter.parseFields(rawCookie);
 
         String[] expectedViolations = {
             "ATTRIBUTES: $Version",
@@ -630,13 +686,13 @@ public class RFC6265CookieParserTest
             Arguments.of("A=\"1; B=2\"; C=3",
                 List.of("C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=\"1; B=2\"; C=3", // TODO: why?
+                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2\"; C=3",
                     "SPACE_IN_VALUES: A=\"1; B=2\"; C=3"
                 }),
             Arguments.of("A=\"1; B=2; C=3",
                 List.of(),
                 new String[]{
-                    "INVALID_COOKIES: A=\"1; B=2; C=3", // TODO: unclosed quote?
+                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2; C=3", // TODO: unclosed quote?
                     "SPACE_IN_VALUES: A=\"1; B=2; C=3",
                     "SPACE_IN_VALUES: A=\"1; B=2; C=3"
                 }),
@@ -658,17 +714,17 @@ public class RFC6265CookieParserTest
             Arguments.of("A=1\"\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=1\"\"; B=2; C=3"
+                    "INVALID_COOKIES: Illegal character '\"' in A=1\"\"; B=2; C=3"
                 }),
             Arguments.of("A=1\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=1\"; B=2; C=3"
+                    "INVALID_COOKIES: Illegal character '\"' in A=1\"; B=2; C=3"
                 }),
             Arguments.of("A=1\"1; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=1\"1; B=2; C=3"
+                    "INVALID_COOKIES: Illegal character '\"' in A=1\"1; B=2; C=3"
                 }),
             Arguments.of("A= 1; B=2; C=3",
                 List.of("A=1", "B=2", "C=3"),
@@ -688,36 +744,36 @@ public class RFC6265CookieParserTest
             Arguments.of("A=1,; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: Illegal character ',' in A=1,; B=2; C=3" // TODO: shouldn't this be COMMA_SEPARATOR?
+                    "INVALID_COOKIES: Illegal character ',' in A=1,; B=2; C=3"
                 }),
             Arguments.of("A=\"1,\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=\"1,\"; B=2; C=3"
+                    "INVALID_COOKIES: Illegal character ',' in quoted section in A=\"1,\"; B=2; C=3"
                 }),
             Arguments.of("A=\\1; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=\\1; B=2; C=3" // TODO: why?
+                    "INVALID_COOKIES: Illegal character '\\' in A=\\1; B=2; C=3"
                 }),
             Arguments.of("A=\"\\1\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=\"\\1\"; B=2; C=3" // TODO: why?
+                    "INVALID_COOKIES: Illegal character '\\' in quoted section in A=\"\\1\"; B=2; C=3"
                 }),
             Arguments.of("A=1\u0007; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=1\u0007; B=2; C=3" // TODO: why?
+                    "INVALID_COOKIES: Illegal character '\u0007' in A=1\u0007; B=2; C=3" // TODO: why?
                 }),
             Arguments.of("A=\"1\u0007\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
-                    "INVALID_COOKIES: A=\"1\u0007\"; B=2; C=3" // TODO: why?
+                    "INVALID_COOKIES: Illegal character '\u0007' in quoted section in A=\"1\u0007\"; B=2; C=3"
                 }),
             Arguments.of("€",
                 List.of(),
-                NO_VIOLATIONS), // TODO: this should be a violation about an invalid cookie
+                NO_VIOLATIONS), // TODO: should this be a violation about an invalid cookie?
             Arguments.of("@={}",
                 List.of(),
                 new String[]{

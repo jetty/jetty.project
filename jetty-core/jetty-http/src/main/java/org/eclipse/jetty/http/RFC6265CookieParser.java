@@ -86,7 +86,7 @@ public class RFC6265CookieParser implements CookieParser
             if (token == null)
             {
                 if (!_complianceMode.allows(INVALID_COOKIES))
-                     throw new InvalidCookieException("Invalid Cookie character");
+                     throw new InvalidCookieException("Invalid Cookie character: 0x%02x [%s]: %s".formatted((byte)c, c, field));
                 state = State.INVALID_COOKIE;
                 continue;
             }
@@ -211,7 +211,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(INVALID_COOKIES, field);
+                        reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in %s".formatted(c, field));
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -239,7 +239,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(INVALID_COOKIES, field);
+                        reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in %s".formatted(c, field));
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -310,7 +310,7 @@ public class RFC6265CookieParser implements CookieParser
                         if (!cookieInvalid)
                         {
                             cookieInvalid = true;
-                            reportComplianceViolation(INVALID_COOKIES, field);
+                            reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in quoted section in %s".formatted(c, field));
                         }
                         // Try to find the closing double quote by staying in the current state.
                     }
@@ -395,9 +395,9 @@ public class RFC6265CookieParser implements CookieParser
                                 }
                                 default ->
                                 {
-                                    if (!_complianceMode.allows(INVALID_COOKIES))
-                                        throw new IllegalArgumentException("Invalid Cookie attribute");
                                     reportComplianceViolation(INVALID_COOKIES, attributeName);
+                                    if (!_complianceMode.allows(INVALID_COOKIES))
+                                        throw new IllegalArgumentException("Invalid Cookie attribute: " + attributeName);
                                     state = State.INVALID_COOKIE;
                                 }
                             }
