@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -86,6 +87,6 @@ public class MavenMetadataTest
 
     private DateTimeFormatter getTimestampFormatter()
     {
-        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
+        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withLocale(Locale.ENGLISH).withZone(ZoneId.of("UTC"));
     }
 }

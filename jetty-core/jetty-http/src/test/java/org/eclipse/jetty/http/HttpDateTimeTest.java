@@ -17,9 +17,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -94,8 +94,9 @@ public class HttpDateTimeTest
     public void testParseValid(String input, String expected)
     {
         ZonedDateTime actual = HttpDateTime.parse(input);
-        DateTimeFormatterBuilder formatter = new DateTimeFormatterBuilder();
-        String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O").format(actual);
+        String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O")
+            .withLocale(Locale.ENGLISH)
+            .format(actual);
         assertEquals(expected, actualStr);
     }
 
