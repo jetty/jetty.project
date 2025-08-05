@@ -683,7 +683,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             @Override
             public String toString()
             {
-                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),non-pooled/evicts/removes=%d/%d/%d".formatted(
+                return String.format(java.util.Locale.ROOT, "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),non-pooled/evicts/removes=%d/%d/%d",
                     capacity,
                     inUseEntries,
                     totalEntries,
