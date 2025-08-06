@@ -122,17 +122,17 @@ public class DumpableTest
             .filter(s -> !s.startsWith("UTC:"))
             .filter(s -> !s.startsWith("JVM:"))
             .map(s -> s.replaceAll("@[a-z0-9]*", "@xxx"))
-            .map(s -> s.replaceAll("0x[a-z0-9]*", "0x"))
+            .map(s -> s.replaceAll("\\$\\$Lambda[^@]*@", "\\$\\$Lambda@"))
             .toList();
         assertThat(dump, Matchers.contains(
             "oejuc.DumpableTest$InvocableContainer@xxx{STARTED} ~ BLOCKING - STARTED",
-            "+- oejut.Invocable$ReadyTask@xxx[EITHER][org.eclipse.jetty.util.thread.Invocable$$Lambda/0x@xxx] ~ EITHER",
+            "+- oejut.Invocable$ReadyTask@xxx[EITHER][org.eclipse.jetty.util.thread.Invocable$$Lambda@xxx] ~ EITHER",
             "+~ oejuc.DumpableTest$@xxx{STOPPED} - STOPPED",
             "+~ oejuc.DumpableTest$@xxx{STARTED} - STARTED",
             "+~ oejuc.DumpableTest$@xxx{FAILED} - FAILED",
             "+~ oejuc.DumpableTest$InvocableContainer@xxx{STOPPED} ~ BLOCKING - STOPPED",
-            "   +- oejut.Invocable$ReadyTask@xxx[NON_BLOCKING][org.eclipse.jetty.util.thread.Invocable$$Lambda/0x@xxx] ~ NON_BLOCKING",
-            "   +- oejut.Invocable$ReadyTask@xxx[BLOCKING][org.eclipse.jetty.util.thread.Invocable$$Lambda/0x@xxx] ~ BLOCKING",
+            "   +- oejut.Invocable$ReadyTask@xxx[NON_BLOCKING][org.eclipse.jetty.util.thread.Invocable$$Lambda@xxx] ~ NON_BLOCKING",
+            "   +- oejut.Invocable$ReadyTask@xxx[BLOCKING][org.eclipse.jetty.util.thread.Invocable$$Lambda@xxx] ~ BLOCKING",
             "legend: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +} map, +> pojo; @xxx visited"
         ));
     }
