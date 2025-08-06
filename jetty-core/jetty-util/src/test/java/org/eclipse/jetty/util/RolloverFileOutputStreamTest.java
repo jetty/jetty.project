@@ -58,7 +58,7 @@ public class RolloverFileOutputStreamTest
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-            .withLocale(Locale.ENGLISH)
+            .withLocale(Locale.ROOT)
             .withZone(zone);
         return ZonedDateTime.parse(timendate, formatter);
     }
@@ -66,7 +66,7 @@ public class RolloverFileOutputStreamTest
     private static String toString(TemporalAccessor date)
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-            .withLocale(Locale.ENGLISH);
+            .withLocale(Locale.ROOT);
         return formatter.format(date);
     }
 

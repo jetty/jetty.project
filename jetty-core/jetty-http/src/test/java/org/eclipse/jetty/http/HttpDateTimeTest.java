@@ -95,7 +95,7 @@ public class HttpDateTimeTest
     {
         ZonedDateTime actual = HttpDateTime.parse(input);
         String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O")
-            .withLocale(Locale.ENGLISH)
+            .withLocale(Locale.ROOT)
             .format(actual);
         assertEquals(expected, actualStr);
     }

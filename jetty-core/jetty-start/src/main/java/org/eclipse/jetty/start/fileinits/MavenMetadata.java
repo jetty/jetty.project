@@ -129,7 +129,7 @@ public class MavenMetadata
     {
         ZoneId utc = ZoneId.of("UTC");
         LocalDate today = LocalDate.now(utc);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withLocale(Locale.ENGLISH).withZone(utc);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withLocale(Locale.ROOT).withZone(utc);
 
         try
         {

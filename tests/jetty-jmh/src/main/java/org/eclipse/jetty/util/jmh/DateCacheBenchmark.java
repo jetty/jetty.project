@@ -41,7 +41,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 public class DateCacheBenchmark
 {
     TimeZone timeZone = TimeZone.getDefault();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withLocale(Locale.ENGLISH).withZone(timeZone.toZoneId());
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withLocale(Locale.ROOT).withZone(timeZone.toZoneId());
     DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, true);
 
     @Benchmark

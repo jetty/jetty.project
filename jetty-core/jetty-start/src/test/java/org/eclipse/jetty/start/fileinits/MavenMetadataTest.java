@@ -87,6 +87,6 @@ public class MavenMetadataTest
 
     private DateTimeFormatter getTimestampFormatter()
     {
-        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withLocale(Locale.ENGLISH).withZone(ZoneId.of("UTC"));
+        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withLocale(Locale.ROOT).withZone(ZoneId.of("UTC"));
     }
 }
