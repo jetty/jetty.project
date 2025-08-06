@@ -1,3 +1,32 @@
+12.1.0.beta2 - 18 July 2025
+
+ + 9632 Jetty 12 - conditional headers handling for welcome files
+ + 9794 Jetty 12 - jetty-ee9-proxy.xml broken
+ + 11952 Remove usages of `ByteBufferCallbackAccumulator`
+ + 12735 Provide better documentation of JettyWebSocketServletContainerInitializer and jetty-${ee-version}-websocket-jetty-server modules
+ + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because "this.networkBuffer" is null
+ + 13043 Review WebSocket flushers
+ + 13087 Why doesn't SocketAddressResolver API receive the context map?
+ + 13127 Support Digest authentication with SHA-256
+ + 13190 Introduce ability to decode and/or canonicalize URIs in a RewriteRule
+ + 13228 Update Core Deploy Documentation
+ + 13232 Regression in ee9/ee8 getRequestDispatcher() exceptions
+ + 13234 Regression in 12.0.21 on handling empty query parameters
+ + 13238 stop.host property always uses the default 127.0.0.1
+ + 13242 Keep extracted query params as attribute for jetty-core
+ + 13259 `org.eclipse.jetty.plus.jndi.Transaction` should support `javax.naming.Referenceable` as a constructor option too.
+ + 13261 Improve handling of failed HTTP/2 requests
+ + 13263 NPE from SslEndPoint.isInputShutdown
+ + 13268 `charset=null` is automatically added when using `Content-Type: application/problem+json` in Servlet ee10
+ + 13274 `JettyWebSocketTest` sometimes fails with `ConcurrentModificationException`
+ + 13291 Remove unnecessary old slf4j osgi compatibility
+ + 13295 Fix comments in NamingEntry; add support for simple scope name
+ + 13300 `o.e.j.plus.jndi.Resource`s declared in `eeX` scope then linked via `<resource-ref>` or `<resource-env-ref>` in web.xml not found
+ + 13321 Cleanup plus and annotations hierarchy
+ + 13330 Content negotiation for Accept-Language (static pages) ?
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13343 Module `eeN-quickstart` should depend on `eeN-annotations`
+
 jetty-12.1.0.beta1 - 19 June 2025
  + 4493 Document ThreadPoolBudget behavior
  + 5442 Allow multiple authentication options for a web app
