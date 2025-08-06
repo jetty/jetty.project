@@ -181,7 +181,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         mvn org.codehaus.mojo:versions-maven-plugin:2.18.0:set \
             -Dmaven.build.cache.enabled=false \
             -Peclipse-release \
-            -DgenerateBackupPoms=false
+            -DgenerateBackupPoms=false \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \
             -DprocessAllModules=true 
