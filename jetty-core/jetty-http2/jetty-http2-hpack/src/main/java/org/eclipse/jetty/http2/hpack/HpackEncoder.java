@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -187,10 +188,13 @@ public class HpackEncoder
             {
                 for (HttpField field : fields)
                 {
-                    String name = field.getName();
-                    char firstChar = name.charAt(0);
-                    if (firstChar <= ' ' || firstChar == ':')
+                    String name = field.getLowerCaseName();
+                    if (!HttpTokens.isLegalFieldName(name) || name.charAt(0) == ':')
                         throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", name);
+
+                    String value = field.getValue();
+                    if (!HttpTokens.isLegalFieldValue(value))
+                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header value: '%s'", value);
                 }
             }
 

@@ -75,6 +75,7 @@ public class HeadersGenerator extends FrameGenerator
         }
         catch (QpackException x)
         {
+            // TODO: handle SessionException and StreamException differently.
             if (fail != null)
                 fail.accept(x);
             return -1;

@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.Instruction;
@@ -119,12 +120,8 @@ public class QpackTestUtil
 
     public static MetaData toMetaData(String method, String path, String scheme, HttpFields.Mutable fields)
     {
-        fields = HttpFields.build()
-            .put(":scheme", scheme)
-            .put(":method", method)
-            .put(":path", path)
-            .add(fields);
-        return new MetaData(HttpVersion.HTTP_3, fields);
+        HttpURI.Immutable uri = HttpURI.from(scheme, path);
+        return new MetaData.Request(method, uri, HttpVersion.HTTP_3, fields);
     }
 
     public static MetaData toMetaData(HttpFields fields)

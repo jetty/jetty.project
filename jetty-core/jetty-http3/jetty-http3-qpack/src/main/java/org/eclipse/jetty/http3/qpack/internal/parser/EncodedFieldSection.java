@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_MESSAGE_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 
 public class EncodedFieldSection
@@ -104,6 +106,16 @@ public class EncodedFieldSection
         for (EncodedField encodedField : _encodedFields)
         {
             HttpField decodedField = encodedField.decode(context);
+
+            // TODO: we require that a stream cancellation is called so we don't deadlock waiting for a section acknowledgment.
+            if (!HttpTokens.isLegalFieldName(decodedField.getName()))
+                throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
+                H3_MESSAGE_ERROR, "Invalid field name: " + decodedField.getName());
+
+            if (!HttpTokens.isLegalFieldValue(decodedField.getValue()))
+                throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
+                    H3_MESSAGE_ERROR, "Invalid field value: " + decodedField.getName());
+
             metaDataBuilder.emit(decodedField);
         }
         metaDataBuilder.setBeginNanoTime(_beginNanoTime);
