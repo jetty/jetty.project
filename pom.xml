@@ -1493,7 +1493,7 @@
         <plugin>
           <groupId>net.webtide.tools</groupId>
           <artifactId>webtide-release-tools-plugin</artifactId>
-          <version>1.0</version>
+          <version>1.1</version>
           <configuration>
             <configFile>${project.basedir}/build/release-tools-config.json</configFile>
             <gitCacheDir>${project.build.directory}/.gitCacheDir</gitCacheDir>
