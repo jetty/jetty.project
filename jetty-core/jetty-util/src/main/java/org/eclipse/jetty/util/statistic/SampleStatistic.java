@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.statistic;
 
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
@@ -125,6 +126,6 @@ public class SampleStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{count=%d,max=%d,mean=%f,total=%d,variance=%f,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getVariance(), getStdDev());
+        return String.format(Locale.ROOT, "%s@%x{count=%d,max=%d,mean=%f,total=%d,variance=%f,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getVariance(), getStdDev());
     }
 }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -258,7 +259,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,q=%f,i=%d]",
+            return String.format(Locale.ROOT, "%s@%x[%s,q=%f,i=%d]",
                 getClass().getSimpleName(),
                 hashCode(),
                 _value,

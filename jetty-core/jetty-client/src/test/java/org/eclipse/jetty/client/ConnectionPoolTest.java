@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -222,7 +223,7 @@ public class ConnectionPoolTest
         }
         long elapsed = NanoTime.millisSince(begin);
         if (LOG.isInfoEnabled())
-            LOG.info("%d requests in %d ms, %.3f req/s".formatted(iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
+            LOG.info(String.format(Locale.ROOT, "%d requests in %d ms, %.3f req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
         latch.countDown();
     }
 
