@@ -18,7 +18,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.IO;
@@ -99,10 +99,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     /**
      * The production state of the strategy.
      */
-    private static final int IDLE = 0;        // No tasks or producers.
-    private static final int PRODUCING = 1;   // There is an active producing thread.
-    private static final int REPRODUCING = 2; // There is an active producing thread and demand for more production.
-
+    private enum State
+    {
+        IDLE,       // No tasks or producers. 
+        PRODUCING,  // There is an active producing thread.
+        REPRODUCING // There is an active producing thread and demand for more production.
+    }
+    
     /**
      * The sub-strategies used by the strategy to consume tasks that are produced.
      */
@@ -134,15 +137,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final AtomicInteger _state = new AtomicInteger();
-    private final ThreadLocal<Integer> _epcDepth = new ThreadLocal<>()
-    {
-        @Override
-        protected Integer initialValue()
-        {
-            return 0;
-        }
-    };
+    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
+    private final ThreadLocal<Integer> _epcDepth = ThreadLocal.withInitial(() -> 0);
     private int _maxEpcDepth = 8;
 
     /**
@@ -163,7 +159,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * @return The maximum recursion depth of a a thread calling EPC (default 8)
+     * @return The maximum recursion depth of a thread calling EPC (default 8)
      */
     public int getMaxEpcDepth()
     {
@@ -173,7 +169,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     /**
      * EPC can call a task with a previous producing thread, which can then itself
      * call {@link #produce()}. This field limits the possible recursion depth.
-     * @param maxEpcDepth The maximum recursion depth of a a thread calling EPC (default 8)
+     * @param maxEpcDepth The maximum recursion depth of a thread calling EPC (default 8)
      */
     public void setMaxEpcDepth(int maxEpcDepth)
     {
@@ -186,7 +182,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         boolean execute = false;
         loop: while (true)
         {
-            int state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case IDLE:
@@ -194,7 +190,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     break loop;
 
                 case PRODUCING:
-                    if (!_state.compareAndSet(PRODUCING, REPRODUCING))
+                    if (!_state.compareAndSet(State.PRODUCING, State.REPRODUCING))
                         continue;
                     break loop;
 
@@ -234,13 +230,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         // check if the thread can produce.
         loop: while (true)
         {
-            int state = _state.get();
+            State state = _state.get();
 
             switch (state)
             {
                 case IDLE:
                     // The strategy was IDLE, so this thread can become the producer.
-                    if (!_state.compareAndSet(state, PRODUCING))
+                    if (!_state.compareAndSet(state, State.PRODUCING))
                         continue;
                     break loop;
 
@@ -248,7 +244,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     // The strategy is already producing, so another thread must be the producer.
                     // However, it may be just about to stop being the producer so we set the
                     // REPRODUCING state to force it to produce at least once more.
-                    if (!_state.compareAndSet(state, REPRODUCING))
+                    if (!_state.compareAndSet(state, State.REPRODUCING))
                         continue;
                     return;
 
@@ -284,20 +280,20 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 // No task produce, so determine if we should keep producing.
                 while (true)
                 {
-                    int state = _state.get();
+                    State state = _state.get();
 
                     switch (state)
                     {
                         case PRODUCING:
                             // This thread is still the producer, so it is now IDLE and we stop producing.
-                            if (!_state.compareAndSet(state, IDLE))
+                            if (!_state.compareAndSet(state, State.IDLE))
                                 continue;
                             return;
 
                         case REPRODUCING:
                             // Another thread may have queued a task and tried to produce
                             // so the calling thread should continue to produce.
-                            if (!_state.compareAndSet(state, PRODUCING))
+                            if (!_state.compareAndSet(state, State.PRODUCING))
                                 continue;
                             continue running;
 
@@ -371,17 +367,17 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private boolean tryExecuteProduceConsume()
     {
-        int state = _state.get();
+        State state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (state != IDLE && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, IDLE))
+        if (state != State.IDLE && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, State.IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
                 return true;
 
             // No reserved thread available, so we need to try to return to production
-            if (!_state.compareAndSet(IDLE, PRODUCING))
+            if (!_state.compareAndSet(State.IDLE, State.PRODUCING))
             {
                 // Simple state reversion didn't work, so do it properly
                 while (true)
@@ -390,15 +386,15 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     switch (state)
                     {
                         case IDLE:
-                            if (!_state.compareAndSet(state, PRODUCING))
+                            if (!_state.compareAndSet(state, State.PRODUCING))
                                 continue;
                             // We are the producer again, so we are not EPC
                             return false;
                         case PRODUCING:
                         case REPRODUCING:
-                            if (!_state.compareAndSet(state, REPRODUCING))
+                            if (!_state.compareAndSet(state, State.REPRODUCING))
                                 continue;
-                            // Somebody else is producing so we can be EPC after reducing pending count
+                            // Somebody else is producing so we can be EPC
                             return true;
                     }
                 }
@@ -439,14 +435,14 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 // Race the pending producer to produce again.
                 while (true)
                 {
-                    int state = _state.get();
+                    State state = _state.get();
 
-                    if (state == IDLE)
+                    if (state == State.IDLE)
                     {
                         // We beat the pending producer, so we will become the producer instead.
                         // The pending produce will become a noop if it arrives whilst we are producing,
                         // or it may take over if we subsequently do another EPC consumption.
-                        if (!_state.compareAndSet(state, PRODUCING))
+                        if (!_state.compareAndSet(state, State.PRODUCING))
                             continue;
                         return true;
                     }
@@ -612,7 +608,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        return _state.get() == IDLE;
+        return _state.get() == State.IDLE;
     }
 
     @ManagedOperation(value = "resets the task counts", impact = "ACTION")
@@ -630,7 +626,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return toString(_state.get());
     }
 
-    public String toString(int state)
+    public String toString(State state)
     {
         StringBuilder builder = new StringBuilder();
         getString(builder);
@@ -640,38 +636,33 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private void getString(StringBuilder builder)
     {
-        builder.append(TypeUtil.toShortName(getClass()));
-        builder.append('@');
-        builder.append(Integer.toHexString(hashCode()));
-        builder.append('/');
-        builder.append(_producer);
-        builder.append('/');
+        builder
+            .append(TypeUtil.toShortName(getClass()))
+            .append('@')
+            .append(Integer.toHexString(hashCode()))
+            .append('/')
+            .append(_producer)
+            .append('/');
     }
 
-    private void getState(StringBuilder builder, int state)
+    private void getState(StringBuilder builder, State state)
     {
-        builder.append(
-            switch (state)
-            {
-                case IDLE -> "IDLE";
-                case PRODUCING -> "PRODUCING";
-                case REPRODUCING -> "REPRODUCING";
-                default -> "UNKNOWN(%d)".formatted(state);
-            });
-        builder.append('/');
-        builder.append(_tryExecutor);
-        builder.append("[pc=");
-        builder.append(getPCTasksConsumed());
-        builder.append(",pic=");
-        builder.append(getPICTasksExecuted());
-        builder.append(",pec=");
-        builder.append(getPECTasksExecuted());
-        builder.append(",epc=");
-        builder.append(getEPCTasksConsumed());
-        builder.append(",med=");
-        builder.append(getMaxEpcDepth());
-        builder.append("]");
-        builder.append("@");
-        builder.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
+        builder
+            .append(state)
+            .append('/')
+            .append(_tryExecutor)
+            .append("[pc=")
+            .append(getPCTasksConsumed())
+            .append(",pic=")
+            .append(getPICTasksExecuted())
+            .append(",pec=")
+            .append(getPECTasksExecuted())
+            .append(",epc=")
+            .append(getEPCTasksConsumed())
+            .append(",med=")
+            .append(getMaxEpcDepth())
+            .append("]")
+            .append("@")
+            .append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
     }
 }
