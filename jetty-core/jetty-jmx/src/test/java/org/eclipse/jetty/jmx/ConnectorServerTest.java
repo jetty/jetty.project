@@ -247,7 +247,7 @@ public class ConnectorServerTest
         System.setProperty("javax.net.ssl.trustStore", keyStorePath);
         System.setProperty("javax.net.ssl.trustStorePassword", keyStorePassword);
 
-        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 1100, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
+        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 0, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
         connectorServer.start();
 
         // The client needs to talk TLS to the RMI registry to download
