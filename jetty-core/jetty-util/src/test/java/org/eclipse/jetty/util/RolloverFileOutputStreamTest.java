@@ -65,6 +65,8 @@ public class RolloverFileOutputStreamTest
         }
         catch (Exception e)
         {
+            // Skip the test when timezone abbreviation parsing fails (e.g., on macOS).
+            // DST information is crucial for the tests and cannot be lost by using timezone full names.
             Assumptions.assumeTrue(false, 
                 "Timezone abbreviation parsing not supported on this system for: " + timendate);
             return null;
