@@ -510,13 +510,16 @@ public interface ResourceFactory
                     // ensure it is absolute. Otherwise, comparisons between Resources
                     // that point to the same resource but one is relative and one is absolute
                     // will fail.
-                    if (URIUtil.hasScheme(reference) && unwrap)
+                    if (URIUtil.hasScheme(reference))
                     {
                         // Could be a jar:file url, ensure it is unwrapped back to the file
                         // otherwise it will be a MountedPathResource and consume a mount point
                         // that might be unnecessary - the caller should always decide whether to mount
                         URI uri = new URI(reference);
-                        list.add(newResource(URIUtil.unwrapContainer(uri)));
+                        if (unwrap)
+                            list.add(newResource(URIUtil.unwrapContainer(uri)));
+                        else
+                            list.add(newResource(uri.toASCIIString()));
                     }
                     else
                     {
@@ -529,7 +532,10 @@ public interface ResourceFactory
             }
             catch (Exception e)
             {
-                LOG.warn("Invalid Resource Reference: {}", reference);
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Invalid Resource Reference: {}", reference, e);
+                else
+                    LOG.warn("Invalid Resource Reference: {}", reference);
             }
         }
 

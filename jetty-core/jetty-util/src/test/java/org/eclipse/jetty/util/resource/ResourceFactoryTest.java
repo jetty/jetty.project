@@ -50,6 +50,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -320,7 +321,7 @@ public class ResourceFactoryTest
             Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
             String input = testJar.toUri().toASCIIString();
             List<Resource> resources = resourceFactory.split(input);
-            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            String expected = testJar.toUri().toASCIIString();
             assertThat(resources.get(0).getURI().toString(), is(expected));
         }
     }
@@ -333,7 +334,7 @@ public class ResourceFactoryTest
             Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
             String input = testJar.toString();
             List<Resource> resources = resourceFactory.split(input);
-            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            String expected = testJar.toUri().toASCIIString();
             assertThat(resources.get(0).getURI().toString(), is(expected));
         }
     }
@@ -344,15 +345,23 @@ public class ResourceFactoryTest
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             String config = String.format("%s,%s,%s,%s,%s,%s", "dir/a", "foo/b", "bar/c", "jar:file:///foo/bar.jar!/", "file:///foo/bar.jar", "/foo/bar.jar");
-
-            List<Resource> resources = resourceFactory.split(config, File.pathSeparator, true);
-
+            List<Resource> resources = resourceFactory.split(config, ",", true);
             resources.stream().forEach(r ->
             {
                 //Note: do not test the value of absolute resolution of the relative references as this is system dependent.
-                assertFalse(r instanceof MountedPathResource);
-                assertThat(r.getPath().isAbsolute(), is(true));
+                assertThat(r, not(instanceOf(MountedPathResource.class))); //unwrapped so cannot be mounted
+                assertThat(r.getPath().isAbsolute(), is(true)); //must be absolute
             });
+
+            //test that an unwrapped jar:file will try to be mounted and fail because it isn't a real location
+            resources = resourceFactory.split("jar:file:///foo/bar.jar!/", ",", false);
+            assertThat(resources.size(), is(0));
+
+            //test that uri with a scheme, but is not unwrapped returns a Resource
+            resources = resourceFactory.split("file:///foo/bar.jar", ",", false);
+            assertThat(resources.size(), is(1));
+            assertThat(resources.get(0), not(instanceOf(MountedPathResource.class)));
+            assertThat(resources.get(0).getPath().isAbsolute(), is(true));
         }
     }
 
@@ -468,10 +477,9 @@ public class ResourceFactoryTest
             URI[] expected = new URI[]{
                 dir.toUri(),
                 foo.toUri(),
-                // Should see the two archives as `jar:file:` URI entries
-                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
-                URIUtil.toJarFileUri(exampleJar.toUri())
+                bar.resolve("lib-foo.jar").toUri(),
+                bar.resolve("lib-zed.zip").toUri(),
+                exampleJar.toUri()
             };
 
             assertThat(uris, contains(expected));
@@ -509,10 +517,9 @@ public class ResourceFactoryTest
             URI[] expected = new URI[]{
                 dir.toUri(),
                 foo.toUri(),
-                // Should see the two archives as `jar:file:` URI entries
-                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
-                URIUtil.toJarFileUri(exampleJar.toUri())
+                bar.resolve("lib-foo.jar").toUri(),
+                bar.resolve("lib-zed.zip").toUri(),
+                exampleJar.toUri()
             };
 
             assertThat(uris, contains(expected));
