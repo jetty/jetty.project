@@ -20,7 +20,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -169,15 +168,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String classPath = System.getProperty("java.class.path");
         if (classPath != null)
         {
-            //The classpath may contain relative paths of jar files etc. We
-            //must convert these relative paths to full paths. This is because
-            //in eg scanForFragment, the web-fragment.xml Resource is a
-            //fully qualified path. In MetaData.resolve() we compare this
-            //fully qualified path with the container Resources, and thus both
-            //must be fully qualified for a match (as per PathResource.equals() method).
-            Stream.of(classPath.split(File.pathSeparator))
-                .map(Paths::get)
-                .map(p -> resourceFactory.newResource(p.toUri().toASCIIString()))
+            resourceFactory.split(classPath, File.pathSeparator, true)
+                .stream()
                 .filter(Objects::nonNull)
                 .filter(r -> uriPatternPredicate.test(r.getURI()))
                 .forEach(addContainerResource);

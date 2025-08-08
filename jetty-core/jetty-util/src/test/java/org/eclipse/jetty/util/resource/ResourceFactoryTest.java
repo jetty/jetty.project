@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -50,6 +51,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -311,7 +313,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitSingleJar()
+    public void testSplitSingleJar() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -324,7 +326,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitSinglePath()
+    public void testSplitSinglePath() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -337,7 +339,25 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnComma()
+    public void testSplitIsAbsolute() throws Exception
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            String config = String.format("%s,%s,%s,%s,%s,%s", "dir/a", "foo/b", "bar/c", "jar:file:///foo/bar.jar!/", "file:///foo/bar.jar", "/foo/bar.jar");
+
+            List<Resource> resources = resourceFactory.split(config, File.pathSeparator, true);
+
+            resources.stream().forEach(r ->
+            {
+                //Note: do not test the value of absolute resolution of the relative references as this is system dependent.
+                assertFalse(r instanceof MountedPathResource);
+                assertThat(r.getPath().isAbsolute(), is(true));
+            });
+        }
+    }
+
+    @Test
+    public void testSplitOnComma() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -365,7 +385,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnPipe()
+    public void testSplitOnPipe() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -393,7 +413,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnSemicolon()
+    public void testSplitOnSemicolon() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -421,7 +441,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnPathSeparatorWithGlob() throws IOException
+    public void testSplitOnPathSeparatorWithGlob() throws IOException, URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -443,7 +463,7 @@ public class ResourceFactoryTest
             ));
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config, File.pathSeparator).stream().map(Resource::getURI).toList();
+            List<URI> uris = resourceFactory.split(config, File.pathSeparator, false).stream().map(Resource::getURI).toList();
 
             URI[] expected = new URI[]{
                 dir.toUri(),
@@ -460,7 +480,7 @@ public class ResourceFactoryTest
 
     @ParameterizedTest
     @ValueSource(strings = {";", "|", ","})
-    public void testSplitOnDelimWithGlob(String delimChar) throws IOException
+    public void testSplitOnDelimWithGlob(String delimChar) throws IOException, URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {

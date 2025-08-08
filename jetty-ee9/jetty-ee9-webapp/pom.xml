@@ -110,6 +110,7 @@
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
             <additionalClasspathElement>${project.build.testOutputDirectory}/mods/foo-bar-janb.jar</additionalClasspathElement>
+            <additionalClasspathElement>src/test/resources/mods/com-acme-janb.jar</additionalClasspathElement>
           </additionalClasspathElements>
           <excludes>
             <exclude>org.eclipse.jetty.ee9.webapp.WebAppClassLoaderUrlStreamTest</exclude>

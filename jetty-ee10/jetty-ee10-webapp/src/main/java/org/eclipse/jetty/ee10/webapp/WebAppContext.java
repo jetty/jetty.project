@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -1259,7 +1260,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath)
     {
-        setExtraClasspath(getResourceFactory().split(extraClasspath));
+        setExtraClasspath(getResourceFactory().split(extraClasspath, File.pathSeparator, true));
     }
 
     public void setExtraClasspath(List<Resource> extraClasspath)

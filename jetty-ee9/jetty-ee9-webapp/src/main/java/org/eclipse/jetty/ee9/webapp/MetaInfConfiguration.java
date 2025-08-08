@@ -170,7 +170,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String classPath = System.getProperty("java.class.path");
         if (classPath != null)
         {
-            resourceFactory.split(classPath, File.pathSeparator)
+            resourceFactory.split(classPath, File.pathSeparator, true)
                 .stream()
                 .filter(Objects::nonNull)
                 .filter(r -> uriPatternPredicate.test(URIUtil.unwrapContainer(r.getURI())))
