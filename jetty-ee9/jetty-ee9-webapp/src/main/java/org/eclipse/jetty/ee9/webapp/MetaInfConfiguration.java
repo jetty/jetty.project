@@ -173,7 +173,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             resourceFactory.split(classPath, File.pathSeparator, true)
                 .stream()
                 .filter(Objects::nonNull)
-                .filter(r -> uriPatternPredicate.test(URIUtil.unwrapContainer(r.getURI())))
+                .filter(r -> uriPatternPredicate.test(r.getURI()))
                 .forEach(addContainerResource);
         }
 
