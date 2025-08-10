@@ -1170,8 +1170,9 @@ public class Request implements HttpServletRequest
 
         if (_reader != null && encoding.equalsIgnoreCase(_readerEncoding))
         {
-            // Try to write a 100 continue, ignoring failure result if it was not necessary.
-            _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+            // Try to write a 100 continue if it is necessary.
+            if (_inputState == INPUT_NONE && _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         }
         else
         {
