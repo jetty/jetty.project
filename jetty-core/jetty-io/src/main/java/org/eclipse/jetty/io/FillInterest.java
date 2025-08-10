@@ -91,16 +91,20 @@ public abstract class FillInterest
      */
     public boolean fillable()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("fillable {}", this);
         Callback callback = _interested.get();
-        if (callback != null && _interested.compareAndSet(callback, null))
+        if (callback == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("fillable, no callback {}", this);
+            return false;
+        }
+        if (_interested.compareAndSet(callback, null))
         {
             callback.succeeded();
             return true;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} lost race {}", this, callback);
+            LOG.debug("fillable, callback lost race {} {}", callback, this);
         return false;
     }
 

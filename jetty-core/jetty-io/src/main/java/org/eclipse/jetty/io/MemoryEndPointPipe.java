@@ -20,11 +20,11 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HexFormat;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -62,7 +62,17 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
     {
         return remoteEndPoint;
     }
+
+    public void setLocalEndPointMaxCapacity(int maxCapacity)
+    {
+        localEndPoint.setMaxCapacity(maxCapacity);
+    }
     
+    public void setRemoteEndPointMaxCapacity(int maxCapacity)
+    {
+        remoteEndPoint.setMaxCapacity(maxCapacity);
+    }
+
     private class MemoryEndPoint extends AbstractEndPoint
     {
         private static final ByteBuffer EOF = ByteBuffer.allocate(0);
@@ -135,60 +145,77 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             if (isInputShutdown())
                 return -1;
 
-            int filled;
-            ByteBuffer data;
-            try (AutoLock ignored = peerEndPoint.lock.lock())
-            {
-                Queue<ByteBuffer> byteBuffers = peerEndPoint.byteBuffers;
-                data = byteBuffers.peek();
-
-                if (data == null)
-                {
-                    filled = 0;
-                }
-                else if (data == EOF)
-                {
-                    filled = -1;
-                }
-                else
-                {
-                    int length = data.remaining();
-                    int space = BufferUtil.space(buffer);
-                    if (length <= space)
-                        byteBuffers.poll();
-
-                    filled = Math.min(length, space);
-                    peerEndPoint.capacity -= filled;
-                }
-            }
+            int filled = peerEndPoint.fillInto(buffer);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("filled {} from {}", filled, this);
-
-            if (data == null)
-                return 0;
-
-            if (data == EOF)
-            {
-                shutdownInput();
-                return -1;
-            }
-
-            int copied = BufferUtil.append(buffer, data);
-            assert copied == filled;
 
             if (filled > 0)
             {
                 notIdle();
                 onFilled();
             }
+            else if (filled < 0)
+            {
+                shutdownInput();
+            }
 
             return filled;
         }
 
+        private int fillInto(ByteBuffer buffer)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                ByteBuffer data = byteBuffers.peek();
+                if (data == null)
+                    return 0;
+                if (data == EOF)
+                    return -1;
+                int length = data.remaining();
+                int copied = BufferUtil.append(buffer, data);
+                capacity -= copied;
+                if (copied == length)
+                    byteBuffers.poll();
+                return copied;
+            }
+        }
+
         private void onFilled()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("filled, notifying completeWrite {}", this);
             taskConsumer.accept(completeWriteTask);
+        }
+
+        @Override
+        public void fillInterested(Callback callback)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                if (peerEndPoint.byteBuffers.isEmpty())
+                {
+                    super.fillInterested(callback);
+                    return;
+                }
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("fill interested, data available {}", this);
+            callback.succeeded();
+        }
+
+        @Override
+        public boolean tryFillInterested(Callback callback)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                if (peerEndPoint.byteBuffers.isEmpty())
+                    return super.tryFillInterested(callback);
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("try fill interested, data available {}", this);
+            callback.succeeded();
+            return false;
         }
 
         @Override
@@ -209,18 +236,35 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     if (remaining == 0)
                         continue;
 
-                    long newCapacity = capacity + remaining;
+                    ByteBuffer slice;
                     long maxCapacity = getMaxCapacity();
-                    if (maxCapacity > 0 && newCapacity > maxCapacity)
+                    if (maxCapacity > 0)
+                    {
+                        long space = maxCapacity - capacity;
+                        if (space == 0)
+                        {
+                            result = false;
+                            break;
+                        }
+                        if (remaining <= space)
+                            slice = buffer.slice();
+                        else
+                            slice = buffer.slice(buffer.position(), (int)space);
+                    }
+                    else
+                    {
+                        slice = buffer.slice();
+                    }
+                    byteBuffers.offer(slice);
+                    int length = slice.remaining();
+                    buffer.position(buffer.position() + length);
+                    capacity += length;
+                    flushed += length;
+                    if (length < remaining)
                     {
                         result = false;
                         break;
                     }
-
-                    byteBuffers.offer(BufferUtil.copy(buffer));
-                    buffer.position(buffer.limit());
-                    capacity = newCapacity;
-                    flushed += remaining;
                 }
             }
 
@@ -262,6 +306,8 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
         private void onFlushed()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushed, notifying fillable {}", this);
             taskConsumer.accept(fillableTask);
         }
     }
