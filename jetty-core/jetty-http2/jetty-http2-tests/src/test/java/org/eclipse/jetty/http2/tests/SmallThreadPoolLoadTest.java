@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.WindowRateControl;
+import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -71,7 +71,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     {
         start(new LoadHandler());
         AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
-        h2.setRateControlFactory(new WindowRateControl.Factory(512));
+        h2.setRateControlFactory(new RateControl.Factory() {});
 
         // Only one connection to the server.
         Session session = newClientSession(new Session.Listener() {});
