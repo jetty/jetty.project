@@ -1,3 +1,10 @@
+12.0.25 - 11 August 2025
+ + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
+ + 13403 EE8 Servlet API throws exceptions in normal control flow
+ + 13419 testRemoveAndReleaseFromCompoundPool fails when user locale is en_DE (@afarber)
+ + 13429 ConnectionLimit has inacurate deprecation version
+ + 13439 ServletHolder::initJspServlet() throws NPE after #13363
+
 12.0.24 - 04 August 2025
  + 9794 Jetty 12 - jetty-ee9-proxy.xml broken
  + 12818 NPE with websocket java.lang.NullPointerException: Cannot invoke "org.eclipse.jetty.io.RetainableByteBuffer.hasRemaining()" because "this.networkBuffer" is null
