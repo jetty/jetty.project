@@ -121,6 +121,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
+            if (threads < cpus)
+                return 0;
             return Math.max(1, MathUtils.ceilToNextPowerOfTwo(Math.min(cpus, threads / 8)));
         }
         return cpus;
