@@ -1268,17 +1268,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         @Override
         protected boolean isReservable()
         {
-            System.err.println("isReservable");
+//            System.err.println("isReservable");
             long counts = _counts.get();
             int queueSize = Math.max(0, -AtomicBiInteger.getLo(counts));
-            System.err.println("queueSize=" + queueSize);
+//            System.err.println("queueSize=" + queueSize);
             if (queueSize == 0)
                 return true;
             int threads = Math.max(0, AtomicBiInteger.getHi(counts));
             int idle = Math.max(0, AtomicBiInteger.getLo(counts));
             int available = Math.max(0, getMaxThreads() - threads);
-            System.err.println("isReservable: queueSize=" + queueSize + " threads=" + threads + " idle=" + idle + " available=" + available +
-                " result = " + (queueSize - idle - available));
+//            System.err.println("isReservable: queueSize=" + queueSize + " threads=" + threads + " idle=" + idle + " available=" + available +
+//                " result = " + (queueSize - idle - available));
             return (queueSize - idle - available) <= 0;
         }
     }
