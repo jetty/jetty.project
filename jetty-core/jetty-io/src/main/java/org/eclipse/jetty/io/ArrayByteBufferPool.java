@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -684,7 +685,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             @Override
             public String toString()
             {
-                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),avgSize=%d,non-pooled/evicts/removes=%d/%d/%d".formatted(
+                return String.format(Locale.ROOT, "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),avgSize=%d,non-pooled/evicts/removes=%d/%d/%d",
                     capacity,
                     inUseEntries,
                     totalEntries,

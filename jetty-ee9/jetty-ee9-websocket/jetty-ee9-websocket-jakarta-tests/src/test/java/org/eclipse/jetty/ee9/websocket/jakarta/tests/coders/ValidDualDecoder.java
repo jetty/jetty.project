@@ -15,7 +15,9 @@ package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
+import java.util.Locale;
 
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
@@ -40,7 +42,7 @@ public class ValidDualDecoder implements Decoder.Text<Integer>, Decoder.Binary<L
     @Override
     public Integer decode(String s) throws DecodeException
     {
-        DecimalFormat numberFormat = new DecimalFormat("[#,###]");
+        DecimalFormat numberFormat = new DecimalFormat("[#,###]", DecimalFormatSymbols.getInstance(Locale.ROOT));
         try
         {
             Number number = numberFormat.parse(s);
