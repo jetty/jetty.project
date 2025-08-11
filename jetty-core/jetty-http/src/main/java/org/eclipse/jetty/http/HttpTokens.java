@@ -298,7 +298,7 @@ public class HttpTokens
             return (header != null && header.isPseudo());
         }
 
-        for (int i = fieldName.length(); i-- > 0; )
+        for (int i = 0; i < fieldName.length(); i++)
         {
             char c = fieldName.charAt(i);
             if (c > 0xFF)
@@ -335,7 +335,7 @@ public class HttpTokens
         if (fieldValue.isEmpty())
             return true;
 
-        for (int i = fieldValue.length(); i-- > 0; )
+        for (int i = 0; i < fieldValue.length(); i++)
         {
             char c = fieldValue.charAt(i);
 
