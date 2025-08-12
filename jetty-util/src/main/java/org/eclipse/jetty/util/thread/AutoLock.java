@@ -46,6 +46,22 @@ public class AutoLock implements AutoCloseable, Serializable
     }
 
     /**
+     * <p>Tries to acquire the lock.</p>
+     * <p>Whether the lock was acquired can be tested
+     * with {@link #isHeldByCurrentThread()}.</p>
+     * <p>Typical usage of this method is in {@code toString()},
+     * to avoid deadlocks when the implementation needs to lock
+     * to retrieve a consistent state to produce the string.</p>
+     *
+     * @return this AutoLock for unlocking
+     */
+    public AutoLock tryLock()
+    {
+        _lock.tryLock();
+        return this;
+    }
+
+    /**
      * @see ReentrantLock#isHeldByCurrentThread()
      * @return whether this lock is held by the current thread
      */

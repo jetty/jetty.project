@@ -15,14 +15,13 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.ConnectionPool;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +51,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP2.class);
 
-    private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
-    private final Queue<HttpChannelOverHTTP2> idleChannels = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AutoLock lock = new AutoLock();
+    private final Set<HttpChannel> activeChannels = new HashSet<>();
+    private final Queue<HttpChannelOverHTTP2> idleChannels = new ArrayDeque<>();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
+    private boolean closed;
     private boolean recycleHttpChannels = true;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
@@ -100,7 +101,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
-        return activeChannels.iterator();
+        Set<HttpChannel> channels;
+        try (AutoLock ignored = lock.lock())
+        {
+            channels = Set.copyOf(activeChannels);
+        }
+        return channels.iterator();
     }
 
     @Override
@@ -112,9 +118,17 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
         // One connection maps to N channels, so one channel for each exchange.
         HttpChannelOverHTTP2 channel = acquireHttpChannel();
-        activeChannels.add(channel);
 
-        return send(channel, exchange);
+        SendFailure result = send(channel, exchange);
+        if (result != null)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                activeChannels.remove(channel);
+            }
+            channel.destroy();
+        }
+        return result;
     }
 
     public void upgrade(Map<String, Object> context)
@@ -166,10 +180,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected HttpChannelOverHTTP2 acquireHttpChannel()
     {
-        HttpChannelOverHTTP2 channel = idleChannels.poll();
-        if (channel == null)
-            channel = newHttpChannel();
-        return channel;
+        try (AutoLock ignored = lock.lock())
+        {
+            HttpChannelOverHTTP2 channel = idleChannels.poll();
+            if (channel == null)
+                channel = newHttpChannel();
+            activeChannels.add(channel);
+            channel.acquire();
+            return channel;
+        }
     }
 
     protected HttpChannelOverHTTP2 newHttpChannel()
@@ -177,24 +196,23 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
-    protected boolean release(HttpChannelOverHTTP2 channel)
+    protected void release(HttpChannelOverHTTP2 channel)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Released {}", channel);
-        if (activeChannels.remove(channel))
+        boolean removed;
+        boolean destroy;
+        try (AutoLock ignored = lock.lock())
         {
+            removed = activeChannels.remove(channel);
+            destroy = closed || !removed || channel.isFailed();
             // Recycle only non-failed channels.
-            if (channel.isFailed())
-                channel.destroy();
-            else if (isRecycleHttpChannels())
+            if (isRecycleHttpChannels() && !destroy)
                 idleChannels.offer(channel);
-            return true;
         }
-        else
-        {
+        if (LOG.isDebugEnabled())
+            LOG.debug("released={} destroy={} {}", removed, destroy, channel);
+        if (destroy)
             channel.destroy();
-            return false;
-        }
+        getHttpDestination().release(this);
     }
 
     @Override
@@ -219,45 +237,57 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected void close(Throwable failure)
     {
-        if (closed.compareAndSet(false, true))
+        if (LOG.isDebugEnabled())
+            LOG.debug("Close {}", this);
+        try (AutoLock ignored = lock.lock())
         {
-            getHttpDestination().remove(this);
-
-            abort(failure);
-
-            session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
-
-            HttpChannel channel = idleChannels.poll();
-            while (channel != null)
-            {
-                channel.destroy();
-                channel = idleChannels.poll();
-            }
-
-            destroy();
+            if (closed)
+                return;
+            closed = true;
         }
+
+        abort(failure);
+
+        session.close(ErrorCode.NO_ERROR.code, "close", Callback.from(() ->
+        {
+            remove();
+            destroy();
+        }));
     }
 
     @Override
     public boolean isClosed()
     {
-        return closed.get();
+        try (AutoLock ignored = lock.lock())
+        {
+            return closed;
+        }
     }
 
     private void abort(Throwable failure)
     {
+        Set<HttpChannel> activeChannels;
+        try (AutoLock ignored = lock.lock())
+        {
+            activeChannels = new HashSet<>(this.activeChannels);
+            this.activeChannels.clear();
+        }
         for (HttpChannel channel : activeChannels)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
         }
-        activeChannels.clear();
-        HttpChannel channel = idleChannels.poll();
-        while (channel != null)
+
+        Queue<HttpChannelOverHTTP2> idleChannels;
+        try (AutoLock ignored = lock.lock())
         {
-            channel.destroy();
-            channel = idleChannels.poll();
+            idleChannels = new ArrayDeque<>(this.idleChannels);
+            this.activeChannels.clear();
+        }
+        for (HttpChannelOverHTTP2 idleChannel : idleChannels)
+        {
+            idleChannel.destroy();
         }
     }
 
@@ -272,10 +302,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     public String toString()
     {
-        return String.format("%s@%x(closed=%b)[%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            isClosed(),
+        String closeState;
+        try (AutoLock l = lock.tryLock())
+        {
+            boolean held = l.isHeldByCurrentThread();
+            closeState = held ? Boolean.toString(closed) : "undefined";
+        }
+        return String.format("%s(closed=%s)[%s]",
+            super.toString(),
+            closeState,
             session);
     }
 }
