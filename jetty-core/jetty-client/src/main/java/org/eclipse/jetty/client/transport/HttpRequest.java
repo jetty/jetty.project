@@ -49,6 +49,7 @@ import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.RequestListeners;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -312,6 +313,10 @@ public class HttpRequest implements Request
         return version;
     }
 
+    /**
+     * @return whether the HTTP version has been set explicitly
+     * by applications, using {@link #version(HttpVersion)}.
+     */
     public boolean isVersionExplicit()
     {
         return versionExplicit;
@@ -325,6 +330,13 @@ public class HttpRequest implements Request
         return this;
     }
 
+    /**
+     * <p>Sets the HTTP version, but non-explicitly.</p>
+     * <p>Use {@link #version(HttpVersion)} to set the version explicitly.</p>
+     *
+     * @param version the HTTP version
+     * @see #isVersionExplicit()
+     */
     public void setVersion(HttpVersion version)
     {
         this.version = version;
@@ -754,8 +766,16 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        Destination destination = client.resolveDestination(this);
-        destination.send(this, listener);
+        try
+        {
+            Destination destination = client.resolveDestination(this);
+            destination.send(this, listener);
+        }
+        catch (Throwable x)
+        {
+            Result result = new Result(this, x, new HttpResponse(this), null);
+            abort(x).thenRun(() -> ResponseListeners.notifyComplete(listener, result));
+        }
     }
 
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)

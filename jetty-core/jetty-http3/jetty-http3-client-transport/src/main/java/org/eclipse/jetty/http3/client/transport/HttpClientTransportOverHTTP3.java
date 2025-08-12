@@ -23,10 +23,13 @@ import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
@@ -93,6 +96,10 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public Origin newOrigin(Request request)
     {
+        HttpVersion version = request.getVersion();
+        HttpVersion http3 = HttpVersion.HTTP_3;
+        if (((HttpRequest)request).isVersionExplicit() && version != http3)
+            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, http3), request);
         Transport provided = request.getTransport();
         if (provided == null)
             request.transport(transport);

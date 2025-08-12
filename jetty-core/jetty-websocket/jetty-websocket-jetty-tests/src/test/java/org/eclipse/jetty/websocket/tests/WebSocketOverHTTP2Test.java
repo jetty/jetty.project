@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
@@ -54,7 +55,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -339,7 +339,7 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/throw");
 
         ExecutionException failure;
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             failure = assertThrows(ExecutionException.class, () ->
                 wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
@@ -453,7 +453,12 @@ public class WebSocketOverHTTP2Test
         // Force WebSocket upgrade with HTTP/2.
         upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
 
-        assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
+        Throwable cause1 = failure.getCause();
+        assertThat(cause1, instanceOf(UpgradeException.class));
+        // The WebSocket API UpgradeException wraps a WebSocket core UpgradeException, which wraps the original cause.
+        Throwable cause2 = cause1.getCause().getCause();
+        assertThat(cause2, instanceOf(HttpRequestException.class));
     }
 
     @Test

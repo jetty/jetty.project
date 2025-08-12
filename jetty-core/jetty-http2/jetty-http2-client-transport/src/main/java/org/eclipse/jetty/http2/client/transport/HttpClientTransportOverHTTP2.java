@@ -22,11 +22,14 @@ import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -98,6 +101,10 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public Origin newOrigin(Request request)
     {
+        HttpVersion version = request.getVersion();
+        HttpVersion http2 = HttpVersion.HTTP_2;
+        if (((HttpRequest)request).isVersionExplicit() && version != http2)
+            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, http2), request);
         if (request.getTransport() == null)
             request.transport(Transport.TCP_IP);
         String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";

@@ -16,12 +16,14 @@ package org.eclipse.jetty.client.transport;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
@@ -30,7 +32,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,9 +153,12 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 
         if (matchingInfos.isEmpty())
         {
-            if (request.getTransport() == null)
-                request.transport(Transport.TCP_IP);
-            return getHttpClient().createOrigin(request, null);
+            List<String> available = clientConnectionFactoryInfos.stream()
+                .flatMap(info -> info.getProtocols(secure).stream())
+                .toList();
+            String explicit = String.valueOf(request.getVersion()).toLowerCase(Locale.ROOT);
+            throw new HttpRequestException("Cannot send request, no protocol match: available %s, explicit %s, excluded %s"
+                .formatted(available, explicit, excludedProtocols), request);
         }
 
         Info preferredInfo = matchingInfos.get(0);

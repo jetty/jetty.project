@@ -219,8 +219,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     protected void normalizeRequest(HttpRequest request)
     {
         super.normalizeRequest(request);
-        // Do not set the version explicitly, in case the
-        // request needs to be retried with a different version.
+        // Do not set the HTTP version explicitly using Request.version(),
+        // in case the request needs to be retried with a different version.
         request.setVersion(HttpVersion.HTTP_2);
 
         HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
