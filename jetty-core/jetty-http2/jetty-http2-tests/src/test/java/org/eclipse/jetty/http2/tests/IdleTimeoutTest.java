@@ -671,6 +671,7 @@ public class IdleTimeoutTest extends AbstractTest
         long idleTimeout = 750;
         // Use a small thread pool to cause request queueing.
         QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
+        serverExecutor.setDetailedDump(true);
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
@@ -757,7 +758,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         // Wait for the server to finish serving requests.
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
-        assertThat(requests.get(), is(count));
+        assertThat(requests.get(), is(count - 1));
 
         // The first 3 requests are handled normally and responded with 200, the last one is
         // not handled due to timeout while queued, but they are responded anyway with a 500.
