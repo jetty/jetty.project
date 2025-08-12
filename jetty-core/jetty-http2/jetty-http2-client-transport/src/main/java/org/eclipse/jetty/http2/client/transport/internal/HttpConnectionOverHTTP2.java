@@ -243,14 +243,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
                 // We may be able to retry with another HttpClientTransport,
                 // therefore exclude this protocol from the next attempt.
-                List<String> excluded = new ArrayList<>(List.of("h2c", "h2"));
                 @SuppressWarnings("unchecked")
                 List<String> attribute = (List<String>)request.getAttributes().get(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE);
                 if (attribute == null)
-                    attribute = excluded;
-                else
-                    attribute.addAll(excluded);
-                request.attribute(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE, attribute);
+                {
+                    attribute = new ArrayList<>();
+                    request.attribute(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE, attribute);
+                }
+                attribute.addAll(List.of("h2c", "h2"));
                 throw new RetryableRequestException("Could not upgrade from protocols " + attribute);
             }
         }
