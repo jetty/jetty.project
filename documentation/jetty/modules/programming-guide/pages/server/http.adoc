@@ -786,7 +786,7 @@ Server
 [[handler-use-context-collection]]
 ==== ContextHandlerCollection
 
-Server applications may need to deploy to Jetty more than one web application.
+You may need to deploy to Jetty more than one web application.
 
 Recall from the <<handler,introduction>> that Jetty offers `Handler.Collection` that contains a sequence of child ``Handler``s.
 However, this has no knowledge of the concept of _context_ and just iterates through the sequence of ``Handler``s.
@@ -813,6 +813,11 @@ Server
     └── ContextHandler /api
         └── RESTHandler
 ----
+
+[NOTE]
+====
+It is possible to split the handling of HTTP requests _within_ the same web application using <<handler-use-path-mappings,`PathMappingsHandler`>>.
+====
 
 [[handler-use-resource]]
 ==== ResourceHandler -- Static Content
@@ -1513,7 +1518,9 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 [[handler-use-path-mappings]]
 ==== PathMappingsHandler
 
-A web application may want to split the handling of HTTP requests so that they are handled by different ``Handler``s, to separate different web application concerns.
+The section about <<handler-use-context-collection,`ContextHandlerCollection`>> showed how it is possible to split handling of HTTP requests across different web applications.
+
+You can also split the handling of HTTP requests _within_ the same web application, so that they are handled by different ``Handler``s, to separate different concerns within a single web application.
 
 For example, a shop web application with a context path of `/shop` may want to handle requests to browse the shop catalog separately from requests that manage the shopping cart, separately from requests that perform the checkout.
 
@@ -1545,6 +1552,13 @@ Server
 The paths configured in `PathMappingsHandler` are the paths _after_ the <<handler-use,context path>>.
 
 Class link:{javadoc-url}/org/eclipse/jetty/http/pathmap/PathSpec.html[`PathSpec`] is used to specify the paths, and supports both Servlet path mappings and regular expression path mappings.
+====
+
+[TIP]
+====
+The ``Handler``s children of `PathMappingsHandler` may extend <<handler-use-conditional,`ConditionalHandler`>> to further control the conditions under which the `Handler` is invoked.
+
+For example, a `LoginHandler` that extends `ConditionalHandler` may be configured to only accept `POST` requests.
 ====
 
 [[handler-use-servlet]]
