@@ -33,7 +33,7 @@ public class InsufficientThreadsDetectionTest
     @Test
     public void testInsufficientThreadsForMultipleHttpClients() throws Exception
     {
-        QueuedThreadPool clientThreads = new QueuedThreadPool(3);
+        QueuedThreadPool clientThreads = new QueuedThreadPool(3, 1, 60_000, 1, null, null);
         HttpClient httpClient1 = new HttpClient(new HttpClientTransportOverHTTP(1));
         httpClient1.setExecutor(clientThreads);
         httpClient1.start();
