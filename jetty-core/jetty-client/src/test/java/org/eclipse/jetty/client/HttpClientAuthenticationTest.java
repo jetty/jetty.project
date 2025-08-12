@@ -70,12 +70,22 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         BasicAuthenticator authenticator = new BasicAuthenticator();
         if (charset != null)
             authenticator.setCharset(charset);
+        authenticator.setProxy(isProxyMode());
+
         start(scenario, authenticator, handler);
     }
 
     public void startDigest(Scenario scenario, Handler handler) throws Exception
     {
-        start(scenario, new DigestAuthenticator(), handler);
+        DigestAuthenticator authenticator = new DigestAuthenticator();
+        authenticator.setProxy(isProxyMode());
+
+        start(scenario, authenticator, handler);
+    }
+
+    protected boolean isProxyMode()
+    {
+        return false;
     }
 
     private void start(Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
@@ -166,11 +176,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         client.getRequestListeners().addListener(requestListener);
 
-        // Request without Authentication causes a 401
+        // Request without Authentication causes 401 / 407
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
-        assertEquals(401, response.getStatus());
+        assertEquals(getUnauthorizedStatus(), response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().removeListener(requestListener);
 
@@ -187,7 +197,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         client.getRequestListeners().addListener(requestListener);
 
-        // Request with authentication causes a 401 (no previous successful authentication) + 200
+        // Request with authentication causes a 401 / 407 (no previous successful authentication) + 200
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
@@ -206,7 +216,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         client.getRequestListeners().addListener(requestListener);
 
-        // Further requests do not trigger 401 because there is a previous successful authentication
+        // Further requests do not trigger 401 / 407 because there is a previous successful authentication
         // Remove existing header to be sure it's added by the implementation
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
@@ -358,7 +368,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
-        assertEquals(401, response.getStatus());
+        assertEquals(getUnauthorizedStatus(), response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
     }
 
@@ -376,7 +386,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
-        assertEquals(401, response.getStatus());
+        assertEquals(getUnauthorizedStatus(), response.getStatus());
 
         Authentication.Result authenticationResult = authenticationStore.findAuthenticationResult(uri);
         assertNull(authenticationResult);
@@ -415,6 +425,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             .send(result ->
             {
                 assertTrue(result.isFailed());
+                assertEquals(getUnauthorizedStatus(), result.getResponse().getStatus());
                 assertEquals(cause, result.getFailure().getMessage());
                 latch.countDown();
             });
@@ -430,7 +441,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        authenticationStore.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "basic", "basic"));
+        authenticationStore.addAuthenticationResult(
+            isProxyMode()
+                ? new BasicAuthentication.BasicResult(uri, HttpHeader.PROXY_AUTHORIZATION, "basic", "basic")
+                : new BasicAuthentication.BasicResult(uri, "basic", "basic")
+        );
 
         AtomicInteger requests = new AtomicInteger();
         client.getRequestListeners().addListener(new Request.Listener()
@@ -471,7 +486,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             .body(content);
         request.send(result ->
         {
-            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.UNAUTHORIZED_401)
+            if (result.isSucceeded() && result.getResponse().getStatus() == getUnauthorizedStatus())
                 resultLatch.countDown();
         });
 
@@ -495,29 +510,12 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         });
 
         CountDownLatch authLatch = new CountDownLatch(1);
-        client.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
-        client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client)
-        {
-            @Override
-            public Response.Listener getResponseListener()
-            {
-                Response.Listener listener = super.getResponseListener();
-                return new Response.Listener()
-                {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        authLatch.countDown();
-                    }
-
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        listener.onComplete(result);
-                    }
-                };
-            }
-        });
+        client.getProtocolHandlers().remove(
+            isProxyMode()
+                ? ProxyAuthenticationProtocolHandler.NAME
+                : WWWAuthenticationProtocolHandler.NAME
+        );
+        client.getProtocolHandlers().put(newAuthenticationProtocolHandler(authLatch));
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
@@ -589,8 +587,13 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             {
                 // Always reply with a 401 to see if the client
                 // can handle an infinite authentication loop.
-                response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, authType);
+                response.setStatus(getUnauthorizedStatus());
+                response.getHeaders().put(
+                    isProxyMode()
+                        ? HttpHeader.PROXY_AUTHENTICATE
+                        : HttpHeader.WWW_AUTHENTICATE,
+                    authType
+                );
                 callback.succeeded();
                 return true;
             }
@@ -629,7 +632,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .send();
 
-        assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+        assertEquals(getUnauthorizedStatus(), response.getStatus());
     }
 
     @Test
@@ -808,6 +811,57 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals(",Digest realm=hello", headerInfo.getParameter("qop"));
         assertEquals("thermostat", headerInfo.getParameter("realm"));
         assertEquals(headerInfo.getParameter("nonce"), "1523430383=");
+    }
+
+    private int getUnauthorizedStatus()
+    {
+        return isProxyMode()
+            ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407
+            : HttpStatus.UNAUTHORIZED_401;
+    }
+
+    private AuthenticationProtocolHandler newAuthenticationProtocolHandler(CountDownLatch authLatch)
+    {
+        if (isProxyMode())
+        {
+            return new ProxyAuthenticationProtocolHandler(client)
+            {
+                @Override
+                public Response.Listener getResponseListener()
+                {
+                    return wrapAuthenticationSuccess(super.getResponseListener(), authLatch);
+                }
+            };
+        }
+        else
+        {
+            return new WWWAuthenticationProtocolHandler(client)
+            {
+                @Override
+                public Response.Listener getResponseListener()
+                {
+                    return wrapAuthenticationSuccess(super.getResponseListener(), authLatch);
+                }
+            };
+        }
+    }
+
+    private Response.Listener wrapAuthenticationSuccess(Response.Listener base, CountDownLatch latch)
+    {
+        return new Response.Listener()
+        {
+            @Override
+            public void onSuccess(Response response)
+            {
+                latch.countDown();
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                base.onComplete(result);
+            }
+        };
     }
 
     private static class GeneratingRequestContent implements Request.Content
