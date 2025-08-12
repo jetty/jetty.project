@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -664,10 +665,9 @@ public class IdleTimeoutTest extends AbstractTest
     }
 
     @Test
+    @Tag("flaky") // This test is fragile with regards to reserved thread strategies.
     public void testServerIdleTimeoutIsEnforcedForQueuedRequest() throws Exception
     {
-        // This test is fragile with regards to reserved thread strategies.
-
         long idleTimeout = 750;
         // Use a small thread pool to cause request queueing.
         QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
