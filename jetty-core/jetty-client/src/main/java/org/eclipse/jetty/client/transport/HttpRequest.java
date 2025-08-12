@@ -127,13 +127,11 @@ public class HttpRequest implements Request
     public HttpRequest copy(URI newURI)
     {
         if (newURI == null)
-        {
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
-        }
 
         HttpRequest newRequest = copyInstance(newURI);
+        newRequest.setVersion(getVersion());
         newRequest.method(getMethod())
-            .version(getVersion())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
             .timeout(getTimeout(), TimeUnit.MILLISECONDS)
