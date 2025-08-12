@@ -37,7 +37,6 @@ import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
@@ -126,7 +125,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = request.getHeader(getAuthorizationHeader().asString());
 
         try
         {
@@ -205,13 +204,13 @@ public class DigestAuthenticator extends LoginAuthenticator
                 String domain = request.getContextPath();
                 if (domain == null)
                     domain = "/";
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+                response.setHeader(getChallengeHeader().asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
                     "\", nonce=\"" + newNonce(baseRequest) +
                     "\", algorithm=" + getAlgorithm() +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                response.sendError(getChallengeStatusCode());
 
                 return Authentication.SEND_CONTINUE;
             }

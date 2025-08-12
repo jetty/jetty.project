@@ -123,7 +123,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
 
-        String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String header = request.getHeader(getAuthorizationHeader().asString());
         String spnegoToken = getSpnegoToken(header);
         HttpSession httpSession = request.getSession(false);
 
@@ -200,7 +200,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         try
         {
             setSpnegoToken(response, token);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.sendError(getChallengeStatusCode());
         }
         catch (IOException x)
         {
@@ -213,7 +213,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         String value = HttpHeader.NEGOTIATE.asString();
         if (token != null)
             value += " " + token;
-        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        response.setHeader(getChallengeHeader().asString(), value);
     }
 
     private String getSpnegoToken(String header)

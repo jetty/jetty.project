@@ -17,6 +17,8 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.function.Function;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
@@ -39,9 +41,41 @@ public abstract class LoginAuthenticator implements Authenticator
     protected IdentityService _identityService;
     private boolean _sessionRenewedOnAuthentication;
     private int _sessionMaxInactiveIntervalOnAuthentication;
+    private boolean _proxy;
 
     protected LoginAuthenticator()
     {
+    }
+
+    public boolean isProxy()
+    {
+        return _proxy;
+    }
+
+    public void setProxy(boolean proxy)
+    {
+        _proxy = proxy;
+    }
+
+    protected final HttpHeader getAuthorizationHeader()
+    {
+        return _proxy
+            ? HttpHeader.PROXY_AUTHORIZATION
+            : HttpHeader.AUTHORIZATION;
+    }
+
+    protected final HttpHeader getChallengeHeader()
+    {
+        return _proxy
+            ? HttpHeader.PROXY_AUTHENTICATE
+            : HttpHeader.WWW_AUTHENTICATE;
+    }
+
+    protected final int getChallengeStatusCode()
+    {
+        return _proxy
+            ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407
+            : HttpStatus.UNAUTHORIZED_401;
     }
 
     /**
