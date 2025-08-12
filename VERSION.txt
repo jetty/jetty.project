@@ -1,3 +1,23 @@
+12.1.0.beta3 - 11 August 2025
+ + 12300 Use of RewriteHandler.LastRuleHandler without a child handler should produce a clear error message. (@sanjerai)
+ + 12735 Provide better documentation of JettyWebSocketServletContainerInitializer and jetty-${ee-version}-websocket-jetty-server modules
+ + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
+ + 13284 jetty-openid library swallows provider errors when getting auth code
+ + 13330 Content negotiation for Accept-Language (static pages) ?
+ + 13356 Executing `--dry-run` via shell `$()` can fail when certain JVM options are used.
+ + 13364 Deploy warnings for ee8 demos
+ + 13366 Introduce MimeTypes.Mutable.clear() API
+ + 13368 Valid query sequences are still reported as violations to ComplianceViolation.Listener
+ + 13375 WebSocketClient attempts to use HTTP/2 on servers without SETTINGS_ENABLE_CONNECT_PROTOCOL
+ + 13393 EE11 TCK failure: getWriter
+ + 13395 EE11 TCK failure: AsyncContext.dispatch(context, path)
+ + 13403 EE8 Servlet API throws exceptions in normal control flow
+ + 13405 Use distinct method names for task consumption in AdaptiveExecutionStrategy
+ + 13419 testRemoveAndReleaseFromCompoundPool fails when user locale is en_DE (@afarber)
+ + 13422 moved context demo fails with ee10 environment
+ + 13429 ConnectionLimit has inacurate deprecation version
+ + 13439 ServletHolder::initJspServlet() throws NPE after #13363
+
 12.1.0.beta2 - 18 July 2025
 
  + 9632 Jetty 12 - conditional headers handling for welcome files
