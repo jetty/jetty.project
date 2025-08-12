@@ -100,6 +100,8 @@ public abstract class FillInterest
         }
         if (_interested.compareAndSet(callback, null))
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("fillable, notifying callback {} {}", callback, this);
             callback.succeeded();
             return true;
         }

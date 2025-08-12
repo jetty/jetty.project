@@ -193,6 +193,8 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         {
             try (AutoLock ignored = lock.lock())
             {
+                // Checking for data and setting the callback must be atomic,
+                // otherwise the notification issued by a write() may be lost.
                 if (peerEndPoint.byteBuffers.isEmpty())
                 {
                     super.fillInterested(callback);
@@ -209,6 +211,8 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         {
             try (AutoLock ignored = lock.lock())
             {
+                // Checking for data and setting the callback must be atomic,
+                // otherwise the notification issued by a write() may be lost.
                 if (peerEndPoint.byteBuffers.isEmpty())
                     return super.tryFillInterested(callback);
             }
