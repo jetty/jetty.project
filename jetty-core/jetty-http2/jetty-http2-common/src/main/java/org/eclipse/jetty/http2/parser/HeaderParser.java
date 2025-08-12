@@ -45,6 +45,11 @@ public class HeaderParser
         return rateControl;
     }
 
+    boolean rateControlOnEvent(Object event)
+    {
+        return getRateControl().onEvent(event);
+    }
+
     protected void reset()
     {
         state = State.LENGTH;

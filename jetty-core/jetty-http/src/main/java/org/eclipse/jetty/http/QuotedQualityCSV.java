@@ -16,11 +16,11 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,8 +291,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,q=%.3f,i=%d]",
-                TypeUtil.toShortName(getClass()),
+            return String.format(Locale.ROOT, "%s@%x[%s,q=%f,i=%d]",
+                getClass().getSimpleName(),
                 hashCode(),
                 getValue(),
                 getWeight(),

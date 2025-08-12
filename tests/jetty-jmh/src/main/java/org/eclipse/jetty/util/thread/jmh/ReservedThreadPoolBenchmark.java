@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -113,7 +114,7 @@ public class ReservedThreadPoolBenchmark
         qtp = null;
         System.err.println("Stopped");
         long hits = hit.sum();
-        System.err.printf("hit:miss = %.1f%% (%d:%d)", 100.0D * hits / (hits + miss.sum()), hits, miss.sum());
+        System.err.printf(Locale.ROOT, "hit:miss = %.1f%% (%d:%d)", 100.0D * hits / (hits + miss.sum()), hits, miss.sum());
     }
 
     @Benchmark

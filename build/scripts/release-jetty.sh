@@ -139,9 +139,6 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
         mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false -Dwebtide.release.tools.releaseVersion=$VER_RELEASE \
             -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG
-        cp VERSION.txt VERSION.txt.backup
-        cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
-        rm VERSION.txt.backup
         echo "VERIFY the following files (in a different console window) before continuing."
         echo "   VERSION.txt - top section"
         echo "   target/version-tag.txt - for the tag commit message"
@@ -181,7 +178,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         mvn org.codehaus.mojo:versions-maven-plugin:2.18.0:set \
             -Dmaven.build.cache.enabled=false \
             -Peclipse-release \
-            -DgenerateBackupPoms=false
+            -DgenerateBackupPoms=false \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \
             -DprocessAllModules=true 
