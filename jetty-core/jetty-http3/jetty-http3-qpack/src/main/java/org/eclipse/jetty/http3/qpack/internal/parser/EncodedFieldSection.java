@@ -107,7 +107,6 @@ public class EncodedFieldSection
         {
             HttpField decodedField = encodedField.decode(context);
 
-            // TODO: we require that a stream cancellation is called so we don't deadlock waiting for a section acknowledgment.
             if (!HttpTokens.isLegalFieldName(decodedField.getName()))
                 throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
                 H3_MESSAGE_ERROR, "Invalid field name: " + decodedField.getName());

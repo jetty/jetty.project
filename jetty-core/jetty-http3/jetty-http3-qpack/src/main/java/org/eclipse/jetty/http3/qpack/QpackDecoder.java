@@ -185,8 +185,6 @@ public class QpackDecoder implements Dumpable
             // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
             if (requiredInsertCount <= insertCount)
             {
-                // TODO: if this throws session exception we really need to send the cancellation instruction.
-                //  This should be done externally by the caller once it sends the stream cancellation.
                 MetaData metaData = encodedFieldSection.decode(_context, maxHeaderSize);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
