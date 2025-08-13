@@ -25,7 +25,7 @@ The available environments are:
 
 This means that you can simultaneously deploy an old Java EE 8 web application, say `old-ee8.war`, alongside a new Jakarta {ee-current-caps} web application, say `new-{ee-current}.war`, alongside a web application that only uses the Jetty `Handler` APIs, say `app-jetty.xml`.
 
-The customization of the deployment (for example, web application context path, etc.) is performed by processing <<jetty,Jetty context XML files>>.
+The customization of the deployment (for example, web application context path, etc.) is performed by processing <<context-xml,Jetty context XML files>>.
 
 The `deploy` module contains the `DeploymentManager` component that scans the `$JETTY_BASE/webapps` directory for changes, following the deployment rules described in <<rules,this section>>.
 
@@ -86,7 +86,7 @@ The `contextPath` would be `/mywebapp` (that is, the web application is reachabl
 * If the file name is `ROOT.war`, case-insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
 * If both the `mywebapp.war` file and the `mywebapp/` directory exist, only the file is deployed.
 This allows the directory with the same name to be the `+*.war+` file unpack location and avoid that the web application is deployed twice.
-* A <<jetty,Jetty context XML file>> named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`, which could be different from the name of the XML file.
+* A <<context-xml,Jetty context XML file>> named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`, which could be different from the name of the XML file.
 * If both `mywebapp.xml` and `mywebapp.war` exist, only the XML file is deployed.
 This allows the XML file to reference the `+*.war+` file and avoid that the web application is deployed twice.
 
