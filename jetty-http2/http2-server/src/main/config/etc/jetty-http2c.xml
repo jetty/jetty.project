@@ -12,7 +12,7 @@
         <Set name="maxSettingsKeys" property="jetty.http2c.maxSettingsKeys"/>
         <Set name="rateControlFactory">
           <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
-            <Arg type="int"><Property name="jetty.http2c.rateControl.maxEventsPerSecond" default="50"/></Arg>
+            <Arg type="int"><Property name="jetty.http2c.rateControl.maxEventsPerSecond" default="128"/></Arg>
           </New>
         </Set>
       </New>

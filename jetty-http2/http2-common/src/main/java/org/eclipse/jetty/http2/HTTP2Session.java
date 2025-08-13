@@ -524,8 +524,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                if (!isStreamClosed(streamId))
+                if (isStreamClosed(streamId))
+                {
+                    // SPEC: this case must not be treated as an error.
+                    // However, we want to rate control it.
+                    if (!rateControlOnEvent(frame))
+                        onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_window_update_frame_rate");
+                }
+                else
+                {
                     onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
+                }
             }
         }
         else
@@ -703,14 +712,26 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     void reset(IStream stream, ResetFrame frame, Callback callback)
     {
-        control(stream, Callback.from(() ->
+        if (rateControlOnEvent(frame))
         {
-            if (stream != null)
+            control(stream, Callback.from(() ->
             {
-                stream.close();
-                removeStream(stream);
-            }
-        }, callback), frame);
+                if (stream != null)
+                {
+                    stream.close();
+                    removeStream(stream);
+                }
+            }, callback), frame);
+        }
+        else
+        {
+            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
+        }
+    }
+
+    private boolean rateControlOnEvent(Object event)
+    {
+        return getParser().rateControlOnEvent(event);
     }
 
     /**

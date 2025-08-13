@@ -101,6 +101,11 @@ public class Parser
         bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
     }
 
+    public boolean rateControlOnEvent(Object event)
+    {
+        return headerParser.rateControlOnEvent(event);
+    }
+
     protected Listener getListener()
     {
         return listener;

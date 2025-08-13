@@ -31,5 +31,5 @@ etc/jetty-http2c.xml
 
 ## Specifies the maximum number of bad frames and pings per second,
 ## after which a session is closed to avoid denial of service attacks.
-# jetty.http2c.rateControl.maxEventsPerSecond=50
+# jetty.http2c.rateControl.maxEventsPerSecond=128
 # end::documentation[]

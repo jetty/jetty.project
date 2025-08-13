@@ -138,6 +138,13 @@ public class FrameFloodTest
     }
 
     @Test
+    public void testWindowUpdateFrameFlood()
+    {
+        byte[] payload = {0, 0, 0, 0};
+        testFrameFlood(null, frameFrom(payload.length, FrameType.WINDOW_UPDATE.getType(), 0, 13, payload));
+    }
+
+    @Test
     public void testUnknownFrameFlood()
     {
         byte[] payload = {0, 0, 0, 0};

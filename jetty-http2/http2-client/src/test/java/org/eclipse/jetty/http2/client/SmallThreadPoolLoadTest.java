@@ -35,6 +35,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
@@ -73,6 +74,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     public void testConcurrentWithSmallServerThreadPool() throws Exception
     {
         start(new LoadServlet());
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        h2.setRateControlFactory(new RateControl.Factory() {});
 
         // Only one connection to the server.
         Session session = newClient(new Session.Listener.Adapter());
