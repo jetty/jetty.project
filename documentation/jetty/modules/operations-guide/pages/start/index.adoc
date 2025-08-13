@@ -241,12 +241,12 @@ $ java -jar $JETTY_HOME/start.jar --list-config
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod,code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=server,http,postgresql,jvm
 args=--list-config
-----
+....
 
 Note how the configuration displayed above includes:
 
@@ -281,13 +281,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run
 replace=( ),$1\\\n
-----
+....
 
 You can then run the generated command line by copying the output generated using the `--dry-run` option, and pasting it in a terminal window.
 
@@ -301,11 +301,11 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##java##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupArgs=--add-modules=http
 args=--dry-run=java
-----
+....
 
 To display the JVM options:
 
@@ -315,13 +315,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##opts##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/jvm.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run=opts
 replace=( ),$1\\\n
-----
+....
 
 To display the JVM class-path:
 
@@ -331,13 +331,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##path##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http,jvm
 args=--dry-run=path
 replace=( |:),$1\\\n
-----
+....
 
 To display the JVM class-path and module-path, if you want to xref:start/start-jpms.adoc[start Jetty using JPMS] with the `--jpms` option:
 
@@ -347,13 +347,13 @@ $ java -jar $JETTY_HOME/start.jar ##--jpms## --dry-run=##path##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http,jvm
 args=--jpms --dry-run=path
 replace=( |:),$1\\\n
-----
+....
 
 To display the JVM main class:
 
@@ -363,11 +363,11 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##main##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupArgs=--add-modules=http
 args=--dry-run=main
-----
+....
 
 To display the JVM main class when xref:start/start-jpms.adoc[starting Jetty using JPMS]:
 
@@ -377,11 +377,11 @@ $ java -jar $JETTY_HOME/start.jar --jpms --dry-run=##main##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupArgs=--add-modules=http
 args=--jpms --dry-run=main
-----
+....
 
 The main class is typically Jetty's `XmlConfiguration` class that accepts, as program arguments, a list of properties and a list of Jetty XML files to process.
 The Jetty XML files compose together the Jetty components that are then configured with the values from the command line properties.
@@ -394,13 +394,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##args##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http
 args=--dry-run=args
 replace=( ),$1\\\n
-----
+....
 
 Note how the program arguments are a list of properties in the form `<name>=<value>` and a list of Jetty XML files.
 
@@ -412,13 +412,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##envs##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupModules=code:example$jetty-modules/postgresql.mod
 setupArgs=--add-modules=http,ee10-deploy
 args=--dry-run=args
 replace=( ),$1\\\n
-----
+....
 
 Note how the environments configuration specifies additional class-path and Jetty XML files for every environment.
 
