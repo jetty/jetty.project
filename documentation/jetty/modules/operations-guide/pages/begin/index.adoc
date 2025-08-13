@@ -140,6 +140,7 @@ $ java -jar $JETTY_HOME/start.jar
 
 [jetty%nowrap]
 ....
+[jetty]
 args=--module=http
 highlight=(\{.*:8080})
 ....
