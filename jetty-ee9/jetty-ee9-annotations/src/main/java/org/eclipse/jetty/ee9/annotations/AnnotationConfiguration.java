@@ -309,8 +309,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
     {
-        private Set<Class<?>> _handlesTypes = new HashSet<>();
-        private Set<String> _discoveredClassNames = new HashSet<>();
+        private final Set<Class<?>> _handlesTypes = new HashSet<>();
+        private final Set<String> _discoveredClassNames = new HashSet<>();
         
         public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
         {
@@ -329,7 +329,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         @Override
         public void addStartupClasses(String... names)
         {
-            _discoveredClassNames.addAll(Arrays.asList(names));
+            synchronized (_discoveredClassNames)
+            {
+                _discoveredClassNames.addAll(Arrays.asList(names));
+            }
         }
 
         /**
@@ -382,12 +385,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(c.getName()));
                 }
 
-                for (String classname:_discoveredClassNames)
+                synchronized (_discoveredClassNames)
                 {
-                    //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
-                    finalClassnames.add(classname);
-                    //walk its hierarchy and find all types that extend or implement the class
-                    addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(classname));
+                    for (String classname : _discoveredClassNames)
+                    {
+                        //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
+                        finalClassnames.add(classname);
+                        //walk its hierarchy and find all types that extend or implement the class
+                        addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(classname));
+                    }
                 }
             }
             

@@ -333,7 +333,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         @Override
         public void addStartupClasses(String... names)
         {
-            _discoveredClassNames.addAll(Arrays.asList(names));
+            synchronized (_discoveredClassNames)
+            {
+                _discoveredClassNames.addAll(Arrays.asList(names));
+            }
         }
 
         /**
@@ -386,12 +389,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         addInheritedTypes(finalClassnames, classMap, classMap.get(c.getName()));
                 }
 
-                for (String classname:_discoveredClassNames)
+                synchronized (_discoveredClassNames)
                 {
-                    //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
-                    finalClassnames.add(classname);
-                    //walk its hierarchy and find all types that extend or implement the class
-                    addInheritedTypes(finalClassnames, classMap, classMap.get(classname));
+                    for (String classname : _discoveredClassNames)
+                    {
+                        //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
+                        finalClassnames.add(classname);
+                        //walk its hierarchy and find all types that extend or implement the class
+                        addInheritedTypes(finalClassnames, classMap, classMap.get(classname));
+                    }
                 }
             }
             
