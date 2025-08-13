@@ -653,12 +653,12 @@ $ java -jar $JETTY_HOME/start.jar ##stop.port=8181##
 ----
 
 [jetty%nowrap]
-----
+....
 [jetty]
 setupArgs=--add-modules=http
 args=stop.port=8181
 highlight=(?i)stop.key
-----
+....
 
 In the example above, Jetty is started with just the `stop.port` property, and the `stop.key` is printed on the terminal when Jetty starts.
 
@@ -715,7 +715,7 @@ This is useful for capturing startup issues where the Jetty-specific logger has 
 == Usage Reference
 
 [jetty]
-----
+....
 [jetty]
 args=--help
-----
+....
