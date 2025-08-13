@@ -47,31 +47,65 @@ public abstract class LoginAuthenticator implements Authenticator
     {
     }
 
-    public boolean isProxy()
+    /**
+     * @return true if this authenticator is in proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public boolean isProxyMode()
     {
         return _proxy;
     }
 
-    public void setProxy(boolean proxy)
+    /**
+     * Sets the authenticator to operate in proxy authentication mode.
+     * <p>
+     * When set to {@code true}, this mode changes the behavior of the
+     * authentication helpers:
+     * <ul>
+     *  <li>{@link #getChallengeHeader()} will return {@code Proxy-Authenticate}.</li>
+     *  <li>{@link #getUnauthorizedStatusCode()} will return {@code 407}.</li>
+     *  <li>{@link #getAuthorizationHeader()} will read the {@code Proxy-Authorization} header.</li>
+     * </ul>
+     * The default is {@code false}, which uses the standard {@code WWW-Authenticate}
+     * and {@code Authorization} headers with a {@code 401} status code.
+     *
+     * @param proxy {@code true} to enable proxy authentication mode.
+     */
+    public void setProxyMode(boolean proxy)
     {
         _proxy = proxy;
     }
 
-    protected final HttpHeader getAuthorizationHeader()
+    /**
+     * @return The authorization header to read credentials from, either
+     * {@code Authorization} or {@code Proxy-Authorization}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public HttpHeader getAuthorizationHeader()
     {
         return _proxy
             ? HttpHeader.PROXY_AUTHORIZATION
             : HttpHeader.AUTHORIZATION;
     }
 
-    protected final HttpHeader getChallengeHeader()
+    /**
+     * @return The challenge header to send to the client, either
+     * {@code WWW-Authenticate} or {@code Proxy-Authenticate}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public HttpHeader getChallengeHeader()
     {
         return _proxy
             ? HttpHeader.PROXY_AUTHENTICATE
             : HttpHeader.WWW_AUTHENTICATE;
     }
 
-    protected final int getChallengeStatusCode()
+    /**
+     * @return The status code for an authentication challenge, either
+     * {@code 401} or {@code 407}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public int getUnauthorizedStatusCode()
     {
         return _proxy
             ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407

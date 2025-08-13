@@ -95,7 +95,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (charset != null)
                 value += ", charset=\"" + charset.name() + "\"";
             response.setHeader(getChallengeHeader().asString(), value);
-            response.sendError(getChallengeStatusCode());
+            response.sendError(getUnauthorizedStatusCode());
             return Authentication.SEND_CONTINUE;
         }
         catch (IOException e)

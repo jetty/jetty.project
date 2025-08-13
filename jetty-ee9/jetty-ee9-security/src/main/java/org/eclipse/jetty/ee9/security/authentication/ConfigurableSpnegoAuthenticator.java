@@ -200,7 +200,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         try
         {
             setSpnegoToken(response, token);
-            response.sendError(getChallengeStatusCode());
+            response.sendError(getUnauthorizedStatusCode());
         }
         catch (IOException x)
         {

@@ -87,7 +87,7 @@ public class BasicAuthenticator extends LoginAuthenticator
         res.getHeaders().put(getChallengeHeader().asString(), value);
 
         // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
-        Response.writeError(req, res, callback, getChallengeStatusCode());
+        Response.writeError(req, res, callback, getUnauthorizedStatusCode());
         return AuthenticationState.CHALLENGE;
     }
 

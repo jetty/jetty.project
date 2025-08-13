@@ -210,7 +210,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     "\", algorithm=" + getAlgorithm() +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
-                response.sendError(getChallengeStatusCode());
+                response.sendError(getUnauthorizedStatusCode());
 
                 return Authentication.SEND_CONTINUE;
             }
