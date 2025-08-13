@@ -121,14 +121,18 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             for (Info info : clientConnectionFactoryInfos)
             {
                 // Find the first protocol that matches the version.
-                for (String p : info.getProtocols(secure))
+                List<String> protocols = info.getProtocols(secure);
+                if (protocols.isEmpty())
+                    continue;
+                if (excludedProtocols.stream().anyMatch(protocols::contains))
+                    continue;
+                for (String p : protocols)
                 {
-                    if (excludedProtocols.contains(p))
+                    if (wanted.contains(p))
+                    {
+                        matchingInfos.add(info);
                         break;
-                    if (!wanted.contains(p))
-                        continue;
-                    matchingInfos.add(info);
-                    break;
+                    }
                 }
                 if (matchingInfos.isEmpty())
                     continue;
