@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
@@ -580,15 +581,24 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void testInfiniteAuthentication(Scenario scenario) throws Exception
     {
         String authType = "Authenticate";
-        startBasic(scenario, new Handler.Abstract()
+        start(scenario, new Handler.Abstract()
         {
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Always reply with a 401 / 407 to see if the client
                 // can handle an infinite authentication loop.
-                response.setStatus(authenticator.getUnauthorizedStatusCode());
-                response.getHeaders().put(authenticator.getChallengeHeader(), authType);
+                response.setStatus(
+                    isProxyMode()
+                        ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407
+                        : HttpStatus.UNAUTHORIZED_401
+                );
+                response.getHeaders().put(
+                    isProxyMode()
+                        ? HttpHeader.PROXY_AUTHENTICATE
+                        : HttpHeader.WWW_AUTHENTICATE,
+                    authType
+                );
                 callback.succeeded();
                 return true;
             }
@@ -627,7 +637,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .send();
 
-        assertEquals(authenticator.getUnauthorizedStatusCode(), response.getStatus());
+        assertEquals(
+            isProxyMode() ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407 : HttpStatus.UNAUTHORIZED_401,
+            response.getStatus()
+        );
     }
 
     @Test

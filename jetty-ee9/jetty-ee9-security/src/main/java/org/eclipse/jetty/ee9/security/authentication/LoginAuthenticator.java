@@ -65,7 +65,7 @@ public abstract class LoginAuthenticator implements Authenticator
      * <ul>
      *  <li>{@link #getChallengeHeader()} will return {@code Proxy-Authenticate}.</li>
      *  <li>{@link #getUnauthorizedStatusCode()} will return {@code 407}.</li>
-     *  <li>{@link #getAuthorizationHeader()} will read the {@code Proxy-Authorization} header.</li>
+     *  <li>{@link #getAuthorizationHeader()} will return the {@code Proxy-Authorization} header.</li>
      * </ul>
      * The default is {@code false}, which uses the standard {@code WWW-Authenticate}
      * and {@code Authorization} headers with a {@code 401} status code.
