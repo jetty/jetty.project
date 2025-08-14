@@ -1,3 +1,8 @@
+11.0.26 - 14 August 2025
+ + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond (@jebeaudet, @slovdahl, @markslater)
+ + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no longer possible with Jetty 10
+ + 13462 HTTP2Session cleanups
+
 jetty-11.0.25 - 12 March 2025
  + 12268 `IteratingCallback` may iterate too much when `process()` returns
    Action.IDLE
