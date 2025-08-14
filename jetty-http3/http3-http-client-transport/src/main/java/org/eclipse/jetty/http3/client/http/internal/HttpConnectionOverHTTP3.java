@@ -94,7 +94,13 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         HttpChannelOverHTTP3 channel = newHttpChannel();
         activeChannels.add(channel);
 
-        return send(channel, exchange);
+        SendFailure result = send(channel, exchange);
+        if (result != null)
+        {
+            activeChannels.remove(channel);
+            channel.destroy();
+        }
+        return result;
     }
 
     protected HttpChannelOverHTTP3 newHttpChannel()
@@ -104,9 +110,10 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     public void release(HttpChannelOverHTTP3 channel)
     {
+        boolean removed = activeChannels.remove(channel);
         if (LOG.isDebugEnabled())
-            LOG.debug("released {}", channel);
-        if (activeChannels.remove(channel))
+            LOG.debug("released {} {}", removed, channel);
+        if (removed)
             getHttpDestination().release(this);
         else
             channel.destroy();
@@ -152,5 +159,14 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         if (super.onIdleTimeout(idleTimeout, failure))
             close(failure);
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s(closed=%b)[%s]",
+            super.toString(),
+            isClosed(),
+            session);
     }
 }

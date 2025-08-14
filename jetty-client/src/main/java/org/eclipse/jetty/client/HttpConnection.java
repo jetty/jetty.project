@@ -112,9 +112,8 @@ public abstract class HttpConnection implements IConnection, Attachable
             }
             else
             {
-                // Association may fail, for example if the application
-                // aborted the request, so we must release the channel.
-                channel.release();
+                // Association may fail, for example if
+                // the application aborted the request.
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
 

@@ -168,7 +168,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().newHttpChannel();
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, List.of(listener));
                 pushChannel.associate(pushExchange);
                 pushChannel.setStream(stream);
