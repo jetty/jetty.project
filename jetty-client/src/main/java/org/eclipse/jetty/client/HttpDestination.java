@@ -384,8 +384,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
         {
-            if (!connectionPool.release(connection))
-                connection.close();
+            releaseOrClose(connection);
             if (!client.isRunning())
             {
                 if (LOG.isDebugEnabled())
@@ -403,9 +402,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
                 // Won't use this connection, release it back.
-                boolean released = connectionPool.release(connection);
-                if (!released)
-                    connection.close();
+                releaseOrClose(connection);
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
@@ -428,9 +425,11 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 // Resend this exchange, likely on another connection,
                 // and return false to avoid to re-enter this method.
                 send(exchange);
+                releaseOrClose(connection);
                 return false;
             }
             request.abort(failure.failure);
+            releaseOrClose(connection);
             return getQueuedRequestCount() > 0;
         }
     }
@@ -468,23 +467,16 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public void release(Connection connection)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Released {}", connection);
         HttpClient client = getHttpClient();
         if (client.isRunning())
         {
             if (connectionPool.isActive(connection))
             {
                 // Trigger the next request after releasing the connection.
-                if (connectionPool.release(connection))
-                {
-                    send(false);
-                }
-                else
-                {
-                    connection.close();
-                    send(true);
-                }
+                boolean released = releaseOrClose(connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released: {} {}", released, connection);
+                send(!released);
             }
             else
             {
@@ -495,9 +487,17 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} is stopped", client);
+                LOG.debug("Closing {}, {} is stopped", connection, client);
             connection.close();
         }
+    }
+
+    private boolean releaseOrClose(Connection connection)
+    {
+        boolean released = connectionPool.release(connection);
+        if (!released)
+            connection.close();
+        return released;
     }
 
     public boolean remove(Connection connection)

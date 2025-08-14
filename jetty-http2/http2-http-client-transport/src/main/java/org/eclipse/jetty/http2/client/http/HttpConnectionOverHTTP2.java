@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -117,7 +118,17 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         normalizeRequest(request);
 
         // One connection maps to N channels, so one channel for each exchange.
-        HttpChannelOverHTTP2 channel = acquireHttpChannel();
+        HttpChannelOverHTTP2 channel;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (closed)
+            {
+                // The exchange may be retried on a different connection.
+                return new SendFailure(new ClosedChannelException(), true);
+            }
+            // One connection maps to N channels, so one channel for each exchange.
+            channel = acquireHttpChannel();
+        }
 
         SendFailure result = send(channel, exchange);
         if (result != null)
@@ -139,9 +150,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         HttpResponse response = (HttpResponse)context.get(HttpResponse.class.getName());
         HttpRequest request = (HttpRequest)response.getRequest();
 
-        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
         HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
-        activeChannels.add(http2Channel);
+
+        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
         HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), exchange.getRequest(), List.of());
         http2Channel.associate(newExchange);
 
@@ -267,23 +278,19 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private void abort(Throwable failure)
     {
         Set<HttpChannel> activeChannels;
+        Queue<HttpChannelOverHTTP2> idleChannels;
         try (AutoLock ignored = lock.lock())
         {
             activeChannels = new HashSet<>(this.activeChannels);
             this.activeChannels.clear();
+            idleChannels = new ArrayDeque<>(this.idleChannels);
+            this.idleChannels.clear();
         }
         for (HttpChannel channel : activeChannels)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
-        }
-
-        Queue<HttpChannelOverHTTP2> idleChannels;
-        try (AutoLock ignored = lock.lock())
-        {
-            idleChannels = new ArrayDeque<>(this.idleChannels);
-            this.activeChannels.clear();
         }
         for (HttpChannelOverHTTP2 idleChannel : idleChannels)
         {
