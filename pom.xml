@@ -325,7 +325,7 @@
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
-    <njord.version>0.8.2</njord.version>
+    <njord.version>0.8.3</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
@@ -1534,6 +1534,15 @@
           <version>${njord.version}</version>
         </plugin>
         <plugin>
+          <groupId>net.webtide.tools</groupId>
+          <artifactId>webtide-release-tools-plugin</artifactId>
+          <version>1.1</version>
+          <configuration>
+            <configFile>${project.basedir}/build-resources/release-tools-config.json</configFile>
+            <gitCacheDir>${project.build.directory}/.gitCacheDir</gitCacheDir>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
@@ -2021,7 +2030,6 @@
                   <version>[11,)</version>
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 11 or newer</message>
                 </requireJavaVersion>
-                <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule"></versionTxtRule>
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"></versionOsgiRule>
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule"></versionRedhatRule>
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule"></versionDebianRule>
@@ -2474,8 +2482,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-version-maven-plugin</artifactId>
+            <groupId>net.webtide.tools</groupId>
+            <artifactId>webtide-release-tools-plugin</artifactId>
             <executions>
               <execution>
                 <id>gen-versiontxt</id>
@@ -2484,26 +2492,6 @@
                   <goal>tag</goal>
                 </goals>
                 <phase>generate-resources</phase>
-                <configuration>
-                  <refreshTags>true</refreshTags>
-                  <copyGenerated>true</copyGenerated>
-                  <attachArtifact>false</attachArtifact>
-                  <updateDate>true</updateDate>
-                  <filenameExcludes>
-                    <filenameExclude>jetty-documentation/.*</filenameExclude>
-                    <filenameExclude>examples/.*</filenameExclude>
-                    <filenameExclude>demos/.*</filenameExclude>
-                    <filenameExclude>aggregates/.*</filenameExclude>
-                    <filenameExclude>.*/test-.*</filenameExclude>
-                    <filenameExclude>.*/.*-test/.*</filenameExclude>
-                    <filenameExclude>.*/.*-tests/.*</filenameExclude>
-                    <filenameExclude>.*/src/test/.*</filenameExclude>
-                    <filenameExclude>\.git.*</filenameExclude>
-                    <filenameExclude>.*\.md$</filenameExclude>
-                    <filenameExclude>.*\.txt$</filenameExclude>
-                    <filenameExclude>Jenkinsfile</filenameExclude>
-                  </filenameExcludes>
-                </configuration>
               </execution>
             </executions>
           </plugin>

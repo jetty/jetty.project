@@ -70,7 +70,9 @@ VER_CURRENT=`sed -e "s/xmlns/ignore/" pom.xml | xmllint --xpath "/project/versio
 echo "Current pom.xml Version: ${VER_CURRENT}"
 read -e -p "Release Version  ? " VER_RELEASE
 read -e -p "Next Dev Version ? " VER_NEXT
+read -e -p "Previous Version ? " PREV_VER
 TAG_NAME="jetty-$VER_RELEASE"
+PREV_TAG="jetty-$PREV_VER"
 
 # Ensure tag doesn't exist (yet)
 git rev-parse --quiet --verify "$TAG_NAME" 2>&1 > /dev/null
@@ -88,10 +90,11 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests"
+DEPLOY_OPTS="-DskipTests -Dtest=None"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
+# export MAVEN_OPTS="-Xmx1g -XX:MaxPermSize=128m"
 export MAVEN_OPTS="-Xmx4g"
 
 echo ""
@@ -105,6 +108,7 @@ echo "Current Version  : $VER_CURRENT"
 echo "Release Version  : $VER_RELEASE"
 echo "Next Dev Version : $VER_NEXT"
 echo "Tag name         : $TAG_NAME"
+echo "Previous Tag name: $PREV_TAG"
 echo "MAVEN_OPTS       : $MAVEN_OPTS"
 echo "Maven Deploy Opts: $DEPLOY_OPTS"
 
@@ -134,10 +138,8 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     mvn clean install -pl build-resources
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version generate-resources
-        cp VERSION.txt VERSION.txt.backup
-        cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
-        rm VERSION.txt.backup
+        mvn -N -Pupdate-version generate-resources -Dwebtide.release.tools.releaseVersion=$VER_RELEASE \
+            -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG
         echo "VERIFY the following files (in a different console window) before continuing."
         echo "   VERSION.txt - top section"
         echo "   target/version-tag.txt - for the tag commit message"
@@ -149,7 +151,8 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
             -Peclipse-release \
             -DoldVersion="$VER_CURRENT" \
             -DnewVersion="$VER_RELEASE" \
-            -DprocessAllModules=true 
+            -DgenerateBackupPoms=false \
+            -DprocessAllModules=true
     fi
     if proceedyn "Commit $VER_RELEASE updates? (Y/n)" y; then
         git commit -a -m "Updating to version $VER_RELEASE"
@@ -166,17 +169,13 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         mvn njord:publish -Ddrop=false $DEPLOY_OPTS
     fi
     if proceedyn "Update working directory for $VER_NEXT? (Y/n)" y; then
-        echo "Update VERSION.txt for $VER_NEXT"
-        cp VERSION.txt VERSION.txt.backup
-        echo "jetty-$VER_NEXT" > VERSION.txt
-        echo "" >> VERSION.txt
-        cat VERSION.txt.backup >> VERSION.txt
         echo "Update project.versions for $VER_NEXT"
         mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
             -Peclipse-release \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \
-            -DprocessAllModules=true 
+            -DgenerateBackupPoms=false \
+            -DprocessAllModules=true
         echo "Commit $VER_NEXT"
         if proceedyn "Commit updates in working directory for $VER_NEXT? (Y/n)" y; then
             git commit -a -m "Updating to version $VER_NEXT"
@@ -186,7 +185,17 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         git push $GIT_REMOTE_ID $GIT_BRANCH_ID
         git push $GIT_REMOTE_ID $TAG_NAME
     fi
-    echo "you can now eventually deploy to staging repo using mvn njord:publish  -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging"
+
+    if proceedyn "Do you want to build changelog.md in target/changelog.md? (Y/n)" y; then
+        mvn -N net.webtide.tools:webtide-release-tools-plugin:gh-release \
+            -Dwebtide.release.tools.refVersionCurrent=$TAG_NAME \
+            -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG -e
+    fi
+
+    # here we need to add something to publish to our staging repo
+    # mvn njord:publish -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging
+    # need an entry in settings.xml for id jetty-staging
+
 else
     echo "Not performing release"
 fi
