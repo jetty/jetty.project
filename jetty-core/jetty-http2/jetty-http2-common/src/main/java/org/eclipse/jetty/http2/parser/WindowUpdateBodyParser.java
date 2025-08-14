@@ -89,15 +89,16 @@ public class WindowUpdateBodyParser extends BodyParser
     private boolean onWindowUpdate(ByteBuffer buffer, int windowDelta)
     {
         int streamId = getStreamId();
+        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);
+        reset();
         if (windowDelta == 0)
         {
             if (streamId == 0)
                 return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
-            else
+            if (rateControlOnEvent(frame))
                 return streamFailure(streamId, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_window_update_frame_rate");
         }
-        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);
-        reset();
         notifyWindowUpdate(frame);
         return true;
     }

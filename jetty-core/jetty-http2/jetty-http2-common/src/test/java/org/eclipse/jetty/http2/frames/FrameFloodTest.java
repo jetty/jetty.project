@@ -15,10 +15,11 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FrameFloodTest
 {
@@ -145,6 +147,13 @@ public class FrameFloodTest
     }
 
     @Test
+    public void testWindowUpdateFrameFlood()
+    {
+        byte[] payload = {0, 0, 0, 0};
+        testFrameFlood(null, frameFrom(payload.length, FrameType.WINDOW_UPDATE.getType(), 0, 13, payload));
+    }
+
+    @Test
     public void testUnknownFrameFlood()
     {
         byte[] payload = {0, 0, 0, 0};
@@ -153,14 +162,14 @@ public class FrameFloodTest
 
     private void testFrameFlood(byte[] preamble, byte[] bytes)
     {
-        AtomicBoolean failed = new AtomicBoolean();
+        AtomicInteger failed = new AtomicInteger();
         Parser parser = new Parser(bufferPool, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
         parser.init(new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
-                failed.set(true);
+                failed.set(error);
             }
         });
 
@@ -174,7 +183,7 @@ public class FrameFloodTest
         }
 
         int count = 0;
-        while (!failed.get())
+        while (failed.get() == 0)
         {
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             while (buffer.hasRemaining())
@@ -183,5 +192,7 @@ public class FrameFloodTest
             }
             assertThat("too many frames allowed", ++count, lessThan(1024));
         }
+
+        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, failed.get());
     }
 }

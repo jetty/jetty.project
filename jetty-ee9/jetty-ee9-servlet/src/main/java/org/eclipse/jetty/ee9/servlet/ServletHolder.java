@@ -680,6 +680,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         if (getInitParameter("scratchdir") == null)
         {
             File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
+            if (tmp == null)
+                throw new ServletException("ServletContext Temp Directory is required for JSP to function.");
             scratchDir = tmp.toPath().resolve("jsp");
             setInitParameter("scratchdir", scratchDir.toAbsolutePath().toString());
         }

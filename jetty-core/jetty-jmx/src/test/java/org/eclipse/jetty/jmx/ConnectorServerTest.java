@@ -29,6 +29,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.matchesRegex;
@@ -223,6 +225,7 @@ public class ConnectorServerTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.MAC, disabledReason = "Fails on macOS due to SSL socket binding issue when RMI registry and server use same port")
     public void testJMXOverTLS() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
