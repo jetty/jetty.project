@@ -1,3 +1,5 @@
+jetty-12.1.1-SNAPSHOT
+
 12.1.0 - 15 August 2025
  + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
  + 13346 TCP half-close during WebSocket session close causes ClosedChannelException
