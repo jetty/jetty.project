@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLHandshakeException;
@@ -36,6 +39,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -121,8 +125,21 @@ public class HostnameVerificationTest
     @Test
     public void simpleGetWithHostnameVerificationEnabledTest()
     {
+        String bindAddress = "127.0.0.2";
+
+        // Pre-check if 127.0.0.2 is bindable (on macOS probably not)
+        try (ServerSocket testSocket = new ServerSocket())
+        {
+            testSocket.bind(new InetSocketAddress(bindAddress, 0));
+        }
+        catch (IOException e)
+        {
+            Assumptions.assumeTrue(false,
+                "Cannot bind to " + bindAddress + " address on this system");
+        }
+
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-        String uri = "https://127.0.0.2:" + connector.getLocalPort() + "/";
+        String uri = "https://" + bindAddress + ":" + connector.getLocalPort() + "/";
 
         ExecutionException x = assertThrows(ExecutionException.class, () -> client.GET(uri));
         Throwable cause = x.getCause();
