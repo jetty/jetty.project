@@ -165,19 +165,24 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
         private int fillInto(ByteBuffer buffer)
         {
+            int filled = 0;
             try (AutoLock ignored = lock.lock())
             {
-                ByteBuffer data = byteBuffers.peek();
-                if (data == null)
-                    return 0;
-                if (data == EOF)
-                    return -1;
-                int length = data.remaining();
-                int copied = BufferUtil.append(buffer, data);
-                capacity -= copied;
-                if (copied == length)
+                while (true)
+                {
+                    ByteBuffer data = byteBuffers.peek();
+                    if (data == null)
+                        return filled;
+                    if (data == EOF)
+                        return -1;
+                    int length = data.remaining();
+                    int copied = BufferUtil.append(buffer, data);
+                    capacity -= copied;
+                    filled += copied;
+                    if (copied < length)
+                        return filled;
                     byteBuffers.poll();
-                return copied;
+                }
             }
         }
 
@@ -240,28 +245,17 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     if (remaining == 0)
                         continue;
 
-                    ByteBuffer slice;
-                    long maxCapacity = getMaxCapacity();
-                    if (maxCapacity > 0)
+                    // The buffer must be copied, otherwise a write() would complete
+                    // and return it to the buffer pool where its backing store would
+                    // be overwritten before it is read by the peer EndPoint.
+                    ByteBuffer copy = copy(buffer);
+                    if (copy == null)
                     {
-                        long space = maxCapacity - capacity;
-                        if (space == 0)
-                        {
-                            result = false;
-                            break;
-                        }
-                        if (remaining <= space)
-                            slice = buffer.slice();
-                        else
-                            slice = buffer.slice(buffer.position(), (int)space);
+                        result = false;
+                        break;
                     }
-                    else
-                    {
-                        slice = buffer.slice();
-                    }
-                    byteBuffers.offer(slice);
-                    int length = slice.remaining();
-                    buffer.position(buffer.position() + length);
+                    byteBuffers.offer(copy);
+                    int length = copy.remaining();
                     capacity += length;
                     flushed += length;
                     if (length < remaining)
@@ -282,6 +276,24 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             }
 
             return result;
+        }
+
+        private ByteBuffer copy(ByteBuffer buffer)
+        {
+            int length = buffer.remaining();
+            long maxCapacity = getMaxCapacity();
+            if (maxCapacity > 0)
+            {
+                long space = maxCapacity - capacity;
+                if (space == 0)
+                    return null;
+                length = (int)Math.min(length, space);
+            }
+            // TODO: Use RetainableByteBuffer.DynamicCapacity in Jetty 12.1.x.
+            ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
+            copy.put(0, buffer, buffer.position(), length);
+            buffer.position(buffer.position() + length);
+            return copy;
         }
 
         @Override
