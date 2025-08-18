@@ -20,7 +20,7 @@ nav:
 - modules/programming-guide/nav.adoc
 ext:
   collector:
-  - run: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty -Dmaven.build.cache.enabled=false
+  - run: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty 
     scan: ./target/collector
   - scan:
       dir: jetty-core/jetty-server/src/main/java
