@@ -45,7 +45,7 @@ Once a task has been produced, it may be consumed using these modes:
 
 [[execution-strategy-pc]]
 === Produce-Consume
-In the `Produce-Consume` mode, the `Producer Thread` loops to produce a task that is run directly by the `Producer Thread`.
+In the `Produce-Consume` mode, the `Producer Thread` loops between producing tasks (`Pn`); and directly running those tasks (`Rn`).
 
 [plantuml]
 ----
@@ -55,12 +55,12 @@ compact concise "Producer Thread" as PT
 hide time-axis
 
 @PT
-0 is T1 #lightgreen
-1 is "Run T1" #dodgerblue
-5 is T2 #lightgreen
-6 is "Run T2" #dodgerblue
-8 is T3 #lightgreen
-9 is "Run T3" #dodgerblue
+0 is P1 #lightgreen
+1 is R1 #dodgerblue
+5 is P2 #lightgreen
+6 is R2 #dodgerblue
+8 is P3 #lightgreen
+9 is R3 #dodgerblue
 12 is {hidden}
 ----
 
@@ -72,36 +72,36 @@ This mode is equivalent to the "selector loop" or "event loop" models typical of
 
 [[execution-strategy-pec]]
 === Produce-Execute-Consume
-In the `Produce-Execute-Consume` mode, the `Producer Thread` loops to produce tasks that are submitted to a `java.util.concurrent.Executor` to be run by a `Worker Thread` different from the `Producer Thread`.
+In the `Produce-Execute-Consume` mode, the `Producer Thread` is in a production loop (`Pn`, `Pn+1`, ...) producing tasks that are submitted to a `java.util.concurrent.Executor` to be run (`Rn`, `Rn+1`, ...) by a `Worker Thread` different from the `Producer Thread`.
 
 [plantuml]
 ----
 skinparam backgroundColor transparent
 
 compact concise "Producer Thread" as PT
-compact concise "Worker Thread 1" as WT1
-compact concise "Worker Thread 2" as WT2
-compact concise "Worker Thread 3" as WT3
+compact concise "Worker Thread A" as WT1
+compact concise "Worker Thread B" as WT2
+compact concise "Worker Thread C" as WT3
 hide time-axis
 
 @PT
-0 is T1 #lightgreen
-1 is T2 #lightgreen
-2 is T3 #lightgreen
-3 is T4 #lightgreen
+0 is P1 #lightgreen
+1 is P2 #lightgreen
+2 is P3 #lightgreen
+3 is P4 #lightgreen
 4 is {hidden}
 
 @WT1
-1 is "Run T1" #dodgerblue
+1 is R1 #dodgerblue
 5 is {hidden}
 
 @WT2
-2 is "Run T2" #dodgerblue
-4 is "Run T4" #dodgerblue
+2 is R2 #dodgerblue
+4 is R4 #dodgerblue
 8 is {hidden}
 
 @WT3
-3 is "Run T3" #dodgerblue
+3 is R3 #dodgerblue
 6 is {hidden}
 ----
 
@@ -115,48 +115,45 @@ This mode solves the head-of-line blocking discussed in the <<execution-strategy
 
 [[execution-strategy-epc]]
 === Execute-Produce-Consume
-In the `Execute-Produce-Consume` mode, the producer thread `Thread 1` loops to produce a task, then submits one internal task to an `Executor` to take over production on the new producer thread `Thread 2`, and then runs the task in `Thread 1` (which therefore becomes a worker thread).
+In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` runs the task it produced (`Rn`).
 
 [plantuml]
 ----
 skinparam backgroundColor transparent
 
-compact concise "Thread 1" as WT1
-compact concise "Thread 2" as WT2
-compact concise "Thread 3" as WT3
-compact concise "Thread 4" as WT4
+compact concise "Thread A" as WT1
+compact concise "Thread B" as WT2
+compact concise "Thread C" as WT3
+compact concise "Thread D" as WT4
 hide time-axis
 
 @WT1
-0 is T1 #lightgreen
-1 is "Run T1" #dodgerblue
+0 is P1 #lightgreen
+1 is R1 #dodgerblue
 5 is {hidden}
 
 @WT2
-1 is T2 #lightgreen
-2 is "Run T2" #dodgerblue
-4 is T5 #lightgreen
-5 is "Run T5" #dodgerblue
+1 is P2 #lightgreen
+2 is R2 #dodgerblue
+4 is P5 #lightgreen
+5 is R5 #dodgerblue
 10 is {hidden}
 
 @WT3
-2 is T3 #lightgreen
-3 is "Run T3" #dodgerblue
+2 is P3 #lightgreen
+3 is R3 #dodgerblue
 6 is {hidden}
 
 @WT4
-3 is T4 #lightgreen
-4 is "Run T4" #dodgerblue
+3 is P4 #lightgreen
+4 is R4 #dodgerblue
 8 is {hidden}
 
 ----
 
-This mode may operate like <<execution-strategy-pc,`Produce-Consume`>> when the take-over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` behaves exactly like the `Produce-Consume` mode.
-By the time thread `Thread 3` takes over task production from `Thread 2`, all the work might already be done.
+This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after running a task (`Rn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` the take-over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` does above.
 
-This mode may also operate similarly to <<execution-strategy-pec,`Produce-Execute-Consume`>> when the take-over production task always finds a free CPU core immediately (for example, in a mostly idle server): thread `Thread 1` will produce a task, yield production to `Thread 2` while `Thread 1` is running the task; `Thread 2` will produce a task, yield production to `Thread 3` while `Thread 2` is running the task, etc.
-
-Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient).
+Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient). However, if an idle thread is not immediately available then this using this strategy can result in production being queued for an available thread, which can result in dead lock.
 
 [[execution-strategy-adaptive]]
 === Adaptive Execution Strategy
@@ -166,7 +163,7 @@ The modes of task consumption discussed above are captured by the `org.eclipse.j
 * `org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume` for the `Produce-Execute-Consume` mode.
 * `org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume` for the `Execute-Produce-Consume` mode.
 
-There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that takes into account the `InvocationType` of the task when the task implements `Invocable` (otherwise it assumes `BLOCKING`).
+There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that takes into account both the availability of idle threads and the `InvocationType` of the task when the task implements `Invocable` (otherwise it assumes `BLOCKING`).
 
 For example, a task that declares itself with `InvocationType` `NON_BLOCKING` can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block (although there is the risk of <<execution-strategy-pc,head-of-line blocking>>).
 
@@ -184,6 +181,36 @@ When all tasks are `NON_BLOCKING`, `AdaptiveExecutionStrategy` functions in `Pro
 When tasks are `BLOCKING` and no reserved threads are available, `AdaptiveExecutionStrategy` functions in `Produce-Execute-Consume` mode, resembling the classic model of a dedicated "selector thread" that always queues tasks to an `Executor`, to be executed by worker threads.
 
 When tasks are `BLOCKING` and reserved threads are available, it functions in `Execute-Produce-Consume` mode, so that tasks are processed more efficiently.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+
+compact concise "Thread A" as WT1
+compact concise "Thread B" as WT2
+compact concise "Thread C" as WT3
+hide time-axis
+
+@WT1
+0 is P1 #lightgreen
+1 is R1 #dodgerblue
+5 is R3 #dodgerblue
+8 is {hidden}
+
+@WT2
+1 is P2 #lightgreen
+2 is R2 #dodgerblue
+4 is P5 #lightgreen
+5 is R5 #dodgerblue
+10 is {hidden}
+
+@WT3
+2 is P3 #lightgreen
+3 is P4 #lightgreen
+4 is R4 #dodgerblue
+6 is {hidden}
+
+----
 
 [NOTE]
 ====
