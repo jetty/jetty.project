@@ -45,7 +45,7 @@ Once a task has been produced, it may be consumed using these modes:
 
 [[execution-strategy-pc]]
 === Produce-Consume
-In the `Produce-Consume` mode, the `Producer Thread` loops between producing tasks (`Pn`); and directly running those tasks (`Rn`).
+In the `Produce-Consume` mode, the `Producer Thread` loops between producing tasks (`Pn`); and directly consuming (aka running) those tasks (`Cn`).
 
 [plantuml]
 ----
@@ -56,15 +56,15 @@ hide time-axis
 
 @PT
 0 is P1 #lightgreen
-1 is R1 #dodgerblue
+1 is C1 #dodgerblue
 5 is P2 #lightgreen
-6 is R2 #dodgerblue
+6 is C2 #dodgerblue
 8 is P3 #lightgreen
-9 is R3 #dodgerblue
+9 is C3 #dodgerblue
 12 is {hidden}
 ----
 
-If the task is a NIO selection event, then this mode is the thread-per-selector mode which is very CPU core cache efficient, but suffers from the http://en.wikipedia.org/wiki/Head-of-line_blocking[head-of-line blocking]: if one of the tasks blocks or runs slowly, then subsequent tasks cannot be produced (and therefore cannot be consumed either) and will pay in latency the cost of running previous, possibly unrelated, tasks.
+If the task is a NIO selection event, then this mode is the thread-per-selector mode which is very CPU core cache efficient, but suffers from the http://en.wikipedia.org/wiki/Head-of-line_blocking[head-of-line blocking]: if one of the tasks blocks or runs slowly, then subsequent tasks cannot be produced (and therefore cannot be consumed either) and will pay in latency the cost of consuming previous, possibly unrelated, tasks.
 
 This mode should only be used if the produced task is known to never block, or if the system tolerates well (or does not care about) head-of-line blocking.
 
@@ -72,7 +72,7 @@ This mode is equivalent to the "selector loop" or "event loop" models typical of
 
 [[execution-strategy-pec]]
 === Produce-Execute-Consume
-In the `Produce-Execute-Consume` mode, the `Producer Thread` is in a production loop (`Pn`, `Pn+1`, ...) producing tasks that are submitted to a `java.util.concurrent.Executor` to be run (`Rn`, `Rn+1`, ...) by a `Worker Thread` different from the `Producer Thread`.
+In the `Produce-Execute-Consume` mode, the `Producer Thread` is in a production loop (`Pn`, `Pn+1`, ...) producing tasks that are submitted to a `java.util.concurrent.Executor` to be run (`Cn`, `Cn+1`, ...) by a `Worker Thread` different from the `Producer Thread`.
 
 [plantuml]
 ----
@@ -92,16 +92,16 @@ hide time-axis
 4 is {hidden}
 
 @WT1
-1 is R1 #dodgerblue
+1 is C1 #dodgerblue
 5 is {hidden}
 
 @WT2
-2 is R2 #dodgerblue
+2 is C2 #dodgerblue
 4 is R4 #dodgerblue
 8 is {hidden}
 
 @WT3
-3 is R3 #dodgerblue
+3 is C3 #dodgerblue
 6 is {hidden}
 ----
 
@@ -115,7 +115,7 @@ This mode solves the head-of-line blocking discussed in the <<execution-strategy
 
 [[execution-strategy-epc]]
 === Execute-Produce-Consume
-In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` directly runs the task it produced (`Rn`).
+In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` directly runs the task it produced (`Cn`).
 
 [plantuml]
 ----
@@ -129,19 +129,19 @@ hide time-axis
 
 @WT1
 0 is P1 #lightgreen
-1 is R1 #dodgerblue
+1 is C1 #dodgerblue
 5 is {hidden}
 
 @WT2
 1 is P2 #lightgreen
-2 is R2 #dodgerblue
+2 is C2 #dodgerblue
 4 is P5 #lightgreen
 5 is R5 #dodgerblue
 10 is {hidden}
 
 @WT3
 2 is P3 #lightgreen
-3 is R3 #dodgerblue
+3 is C3 #dodgerblue
 6 is {hidden}
 
 @WT4
@@ -151,9 +151,9 @@ hide time-axis
 
 ----
 
-This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after running a task (`Rn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` does above.
+This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after consuming a task (`Cn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` does above.
 
-Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient). However, if the executor does not have an idle thread immediately available then using this strategy may result in production being queued waiting for an available thread, which can result in dead lock.
+Differently from `Produce-Execute-Consume`, tasks are run by the same thread that produced it (which is CPU core cache efficient and production happens on a different thread. However, if the executor does not have an idle thread immediately available then without a thread to continue production the strategy may delay or even hang.
 
 [[execution-strategy-adaptive]]
 === Adaptive Execution Strategy
@@ -163,7 +163,7 @@ The modes of task consumption discussed above are captured by the `org.eclipse.j
 * `org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume` for the `Produce-Execute-Consume` mode.
 * `org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume` for the `Execute-Produce-Consume` mode.
 
-There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that takes into account both the availability of idle threads and the `InvocationType` of the task when the task implements `Invocable` (otherwise it assumes `BLOCKING`).
+There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that heuristically chooses between the other strategies. The implementation takes into account both the availability of idle threads and the `InvocationType` of the task when choosing which specific strategy to apply.
 
 For example, a task that declares itself with `InvocationType` `NON_BLOCKING` can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block (although there is the risk of <<execution-strategy-pc,head-of-line blocking>>).
 
@@ -193,13 +193,13 @@ hide time-axis
 
 @WT1
 0 is P1 #lightgreen
-1 is R1 #dodgerblue
-5 is R3 #dodgerblue
+1 is C1 #dodgerblue
+5 is C3 #dodgerblue
 8 is {hidden}
 
 @WT2
 1 is P2 #lightgreen
-2 is R2 #dodgerblue
+2 is C2 #dodgerblue
 4 is P5 #lightgreen
 5 is R5 #dodgerblue
 10 is {hidden}
