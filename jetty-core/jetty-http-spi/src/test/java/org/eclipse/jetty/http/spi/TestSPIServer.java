@@ -16,13 +16,19 @@ package org.eclipse.jetty.http.spi;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.security.KeyStore;
 import java.util.List;
 import java.util.Set;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -30,6 +36,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -195,5 +202,95 @@ public class TestSPIServer
             if (server != null)
                 server.stop(5);
         }
+    }  
+    
+    /** Test using a server that is configured for SSL */
+    @Test
+    void testHttpsServer() throws Exception 
+    {
+
+      HttpsServer server = null;
+
+      try 
+      {
+        server =
+            new JettyHttpServerProvider()
+                .createHttpsServer(new InetSocketAddress("localhost", 0), 10);
+        server.setHttpsConfigurator(configurator());
+
+        final HttpContext httpContext =
+            server.createContext(
+                "/",
+                exchange -> 
+                {
+                  Headers responseHeaders = exchange.getResponseHeaders();
+                  responseHeaders.set("Content-Type", "text/plain");
+                  responseHeaders.add("Multi-Value", "1");
+                  responseHeaders.add("Multi-Value", "2");
+                  exchange.sendResponseHeaders(200, 0);
+
+                  OutputStream responseBody = exchange.getResponseBody();
+                  Headers requestHeaders = exchange.getRequestHeaders();
+                  Set<String> keySet = requestHeaders.keySet();
+                  for (String key : keySet) 
+                  {
+                    List<String> values = requestHeaders.get(key);
+                    String s = key + " = " + values.toString() + "\n";
+                    responseBody.write(s.getBytes());
+                  }
+                  responseBody.close();
+                });
+
+        server.start();
+
+        // find out the port jetty picked
+        Server jetty = ((JettyHttpServer)server).getServer();
+        int port = ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
+
+        HttpClient client = new HttpClient();
+        client.setSslContextFactory(new SslContextFactory.Client(true));
+        client.start();
+
+        try 
+        {
+          Request request = client.newRequest("https://localhost:" + port + "/");
+          ContentResponse response = request.send();
+          assertEquals(HttpStatus.OK_200, response.getStatus());
+          String headers = response.getHeaders().asString();
+          assertTrue(headers.contains("Multi-value: 2"));
+          assertTrue(headers.contains("Multi-value: 1"));
+        } 
+        finally 
+        {
+          client.stop();
+        }
+      } 
+      finally 
+      {
+        if (server != null) server.stop(5);
+      }
+    }
+
+    HttpsConfigurator configurator() throws Exception 
+    {
+      char[] passphrase = "password".toCharArray();
+
+      // Load the keystore
+      KeyStore ks = KeyStore.getInstance("JKS");
+      ks.load(getClass().getResourceAsStream("/keystore.jks"), passphrase);
+
+      // Set up the key manager factory
+      KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+      kmf.init(ks, passphrase);
+
+      // Set up the trust manager factory
+      TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+      tmf.init(ks);
+
+      // Set up the SSL context
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+      return new HttpsConfigurator(sslContext);
     }
 }
