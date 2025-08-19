@@ -102,9 +102,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     public Origin newOrigin(Request request)
     {
         HttpVersion version = request.getVersion();
-        HttpVersion http2 = HttpVersion.HTTP_2;
-        if (((HttpRequest)request).isVersionExplicit() && version != http2)
-            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, http2), request);
+        if (((HttpRequest)request).isVersionExplicit() && version != HttpVersion.HTTP_2)
+            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, HttpVersion.HTTP_2), request);
         if (request.getTransport() == null)
             request.transport(Transport.TCP_IP);
         String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";

@@ -97,9 +97,8 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     public Origin newOrigin(Request request)
     {
         HttpVersion version = request.getVersion();
-        HttpVersion http3 = HttpVersion.HTTP_3;
-        if (((HttpRequest)request).isVersionExplicit() && version != http3)
-            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, http3), request);
+        if (((HttpRequest)request).isVersionExplicit() && version != HttpVersion.HTTP_3)
+            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, HttpVersion.HTTP_3), request);
         Transport provided = request.getTransport();
         if (provided == null)
             request.transport(transport);

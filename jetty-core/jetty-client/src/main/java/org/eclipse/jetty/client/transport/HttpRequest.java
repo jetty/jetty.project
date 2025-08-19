@@ -130,7 +130,7 @@ public class HttpRequest implements Request
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
 
         HttpRequest newRequest = copyInstance(newURI);
-        newRequest.setVersion(getVersion());
+        newRequest.useVersion(getVersion());
         newRequest.method(getMethod())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
@@ -323,7 +323,7 @@ public class HttpRequest implements Request
     @Override
     public Request version(HttpVersion version)
     {
-        setVersion(Objects.requireNonNull(version));
+        useVersion(Objects.requireNonNull(version));
         this.versionExplicit = true;
         return this;
     }
@@ -335,7 +335,7 @@ public class HttpRequest implements Request
      * @param version the HTTP version
      * @see #isVersionExplicit()
      */
-    public void setVersion(HttpVersion version)
+    public void useVersion(HttpVersion version)
     {
         this.version = version;
     }
