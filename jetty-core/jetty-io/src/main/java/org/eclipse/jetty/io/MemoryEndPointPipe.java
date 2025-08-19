@@ -36,8 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MemoryEndPointPipe implements EndPoint.Pipe
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPointPipe.class);
-
     private final LocalEndPoint localEndPoint;
     private final RemoteEndPoint remoteEndPoint;
     private final Consumer<Invocable.Task> taskConsumer;
@@ -75,6 +73,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
     private class MemoryEndPoint extends AbstractEndPoint
     {
+        private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
         private static final ByteBuffer EOF = ByteBuffer.allocate(0);
 
         private final AutoLock lock = new AutoLock();
@@ -174,7 +173,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     if (data == null)
                         return filled;
                     if (data == EOF)
-                        return -1;
+                        return filled > 0 ? filled : -1;
                     int length = data.remaining();
                     int copied = BufferUtil.append(buffer, data);
                     capacity -= copied;
