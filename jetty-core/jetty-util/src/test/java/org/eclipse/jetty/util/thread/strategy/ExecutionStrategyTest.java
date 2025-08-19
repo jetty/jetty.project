@@ -168,7 +168,7 @@ public class ExecutionStrategyTest
 
         Producer producer = new TestProducer()
         {
-            AtomicInteger tasks = new AtomicInteger(TASKS);
+            final AtomicInteger tasks = new AtomicInteger(TASKS);
 
             @Override
             public Runnable produce()
@@ -206,7 +206,7 @@ public class ExecutionStrategyTest
                 for (int t = TASKS; t-- > 0; )
                 {
                     Thread.sleep(5);
-                    q.offer(latch);
+                    assertTrue(q.offer(latch));
                 }
             }
             catch (Exception e)

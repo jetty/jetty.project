@@ -138,8 +138,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-    private final ThreadLocal<Integer> _epcDepth = ThreadLocal.withInitial(() -> 0);
-    private int _maxEpcDepth = 8;
+    private final ThreadLocal<Integer> _consumeDepth = ThreadLocal.withInitial(() -> 0);
+    private int _maxConsumeDepth = 8;
 
     /**
      * @param producer The producer of tasks to be consumed.
@@ -159,21 +159,21 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * @return The maximum recursion depth of a thread calling EPC (default 8)
+     * @return The maximum recursion depth of a thread using PC, PIC or EPC (default 8)
      */
-    public int getMaxEpcDepth()
+    public int getMaxConsumeDepth()
     {
-        return _maxEpcDepth;
+        return _maxConsumeDepth;
     }
 
     /**
-     * EPC can call a task with a previous producing thread, which can then itself
+     * PC, EPC and PIC strategies can call a task with a previous producing thread, which can then itself
      * call {@link #produce()}. This field limits the possible recursion depth.
-     * @param maxEpcDepth The maximum recursion depth of a thread calling EPC (default 8)
+     * @param maxConsumeDepth The maximum recursion depth of a thread calling EPC (default 8)
      */
-    public void setMaxEpcDepth(int maxEpcDepth)
+    public void setMaxConsumeDepth(int maxConsumeDepth)
     {
-        _maxEpcDepth = maxEpcDepth;
+        _maxConsumeDepth = maxConsumeDepth;
     }
 
     @Override
@@ -208,24 +208,25 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @Override
     public void produce()
     {
-        tryProduce(false);
+        // Avoid recursion if a reserved thread is available
+        if (_consumeDepth.get() > 0 && _tryExecutor.tryExecute(this::tryProduce))
+            return;
+        tryProduce();
     }
 
     @Override
     public void run()
     {
-        tryProduce(true);
+        tryProduce();
     }
 
     /**
      * Tries to become the producing thread and then produces and consumes tasks.
-     *
-     * @param wasPending True if the calling thread was started as a pending producer.
      */
-    private void tryProduce(boolean wasPending)
+    private void tryProduce()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("try producing pending={} {}", wasPending, this);
+            LOG.debug("try producing pending={}", this);
 
         // check if the thread can produce.
         loop: while (true)
@@ -258,7 +259,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("producing pending={} {}", wasPending, this);
+            LOG.debug("producing pending={}", this);
 
         // Determine the thread's invocation type once, outside of the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
@@ -370,7 +371,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         State state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (state != State.IDLE && _epcDepth.get() < _maxEpcDepth && _state.compareAndSet(state, State.IDLE))
+        if (state != State.IDLE && _consumeDepth.get() < _maxConsumeDepth && _state.compareAndSet(state, State.IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
@@ -475,13 +476,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     protected void epcRunTask(Runnable task)
     {
         _epcMode.increment();
-        Integer depth = _epcDepth.get();
-        _epcDepth.set(1 + depth);
         runTask(task);
-        if (depth > 0 || !isUseVirtualThreads())
-            _epcDepth.set(depth);
-        else
-            _epcDepth.remove();
     }
 
     /**
@@ -502,6 +497,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      */
     protected void picRunTask(Runnable task)
     {
+        Integer depth = _consumeDepth.get();
+        _consumeDepth.set(1 + depth);
         try
         {
             _picMode.increment();
@@ -511,6 +508,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         {
             LOG.warn("Task invoke failed", x);
         }
+        finally
+        {
+            if (depth > 0 || !isUseVirtualThreads())
+                _consumeDepth.set(depth);
+            else
+                _consumeDepth.remove();
+        }
     }
 
     /**
@@ -518,8 +522,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      *
      * @param task The task to run.
      */
-    protected static void runTask(Runnable task)
+    protected void runTask(Runnable task)
     {
+        Integer depth = _consumeDepth.get();
+        _consumeDepth.set(1 + depth);
         try
         {
             task.run();
@@ -527,6 +533,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         catch (Throwable x)
         {
             LOG.warn("Task run failed", x);
+        }
+        finally
+        {
+            if (depth > 0 || !isUseVirtualThreads())
+                _consumeDepth.set(depth);
+            else
+                _consumeDepth.remove();
         }
     }
 
@@ -626,7 +639,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return toString(_state.get());
     }
 
-    public String toString(State state)
+    private String toString(State state)
     {
         StringBuilder builder = new StringBuilder();
         getString(builder);
@@ -660,7 +673,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             .append(",epc=")
             .append(getEPCTasksConsumed())
             .append(",med=")
-            .append(getMaxEpcDepth())
+            .append(getMaxConsumeDepth())
             .append("]")
             .append("@")
             .append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
