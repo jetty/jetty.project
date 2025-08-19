@@ -115,7 +115,7 @@ This mode solves the head-of-line blocking discussed in the <<execution-strategy
 
 [[execution-strategy-epc]]
 === Execute-Produce-Consume
-In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` runs the task it produced (`Rn`).
+In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` directly runs the task it produced (`Rn`).
 
 [plantuml]
 ----
@@ -151,9 +151,9 @@ hide time-axis
 
 ----
 
-This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after running a task (`Rn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` the take-over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` does above.
+This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after running a task (`Rn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` does above.
 
-Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient). However, if an idle thread is not immediately available then this using this strategy can result in production being queued for an available thread, which can result in dead lock.
+Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient). However, if the executor does not have an idle thread immediately available then using this strategy may result in production being queued waiting for an available thread, which can result in dead lock.
 
 [[execution-strategy-adaptive]]
 === Adaptive Execution Strategy
