@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -507,7 +512,35 @@ public class JSONTest
         person = (Person)object;
         assertThat(person, is(original));
     }
-
+    
+    @Test
+    public void testPrettyOutput()
+    {
+        JSON j = new JSON();
+        Object jData = j.parse(new JSON.StringSource(JSON_STRING));
+        System.out.println(j.toJSON(jData, "\t"));
+        try (BufferedReader reader = new BufferedReader(new StringReader(j.toJSON(jData, "  ")));)
+        {
+            assertEquals("{", reader.readLine());
+            assertEquals("  \"small\": -0.2, ", reader.readLine());
+            assertEquals("  \"array\": [\"a\", true, false], ", reader.readLine());
+            assertEquals("  \"name\": \"fred\", ", reader.readLine());
+            assertEquals("  \"w0\": woggle0<<woggle1<<null>>-101>>100, ", reader.readLine());
+            assertEquals("  \"onehundred\": 100, ", reader.readLine());
+            assertEquals("  \"NaN\": null, ", reader.readLine());
+            assertEquals("  \"map\": {", reader.readLine());
+            assertEquals("    \"a\": -100.0", reader.readLine());
+            assertEquals("  }, ", reader.readLine());
+            assertEquals("  \"empty\": {}, ", reader.readLine());
+            assertEquals("  \"undefined\": null", reader.readLine());
+            
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
     public static class Gizmo
     {
         String name;
