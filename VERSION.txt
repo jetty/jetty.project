@@ -2,8 +2,9 @@
  + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
  + 13403 EE8 Servlet API throws exceptions in normal control flow
  + 13419 testRemoveAndReleaseFromCompoundPool fails when user locale is en_DE (@afarber)
- + 13429 ConnectionLimit has inacurate deprecation version
+ + 13429 ConnectionLimit has inaccurate deprecation version
  + 13439 ServletHolder::initJspServlet() throws NPE after #13363
+ + 13449 HTTP2Session Cleanup - Addresses CVE-2025-5115
 
 12.0.24 - 04 August 2025
  + 9794 Jetty 12 - jetty-ee9-proxy.xml broken
@@ -19,7 +20,7 @@
  + 13284 jetty-openid library swallows provider errors when getting auth code
  + 13295 Fix comments in NamingEntry; add support for simple scope name
  + 13300 `o.e.j.plus.jndi.Resource`s declared in `eeX` scope then linked via `<resource-ref>` or `<resource-env-ref>` in web.xml not found
- + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is converted into "?"
  + 13356 Executing `--dry-run` via shell `$()` can fail when certain JVM options are used.
  + 13364 Deploy warnings for ee8 demos
  + 13368 Valid query sequences are still reported as violations to ComplianceViolation.Listener
@@ -283,7 +284,7 @@ jetty-12.0.13 - 03 September 2024
 jetty-11.0.26 - 14 August 2025
  + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond (@jebeaudet, @slovdahl, @markslater)
  + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no longer possible with Jetty 10
- + 13462 HTTP2Session cleanups
+ + 13462 HTTP2Session cleanups - Addresses CVE-2025-5115
 
 jetty-11.0.25 - 12 March 2025
  + 12268 `IteratingCallback` may iterate too much when `process()` returns
@@ -302,7 +303,7 @@ jetty-11.0.24 - 26 August 2024
 jetty-10.0.26 - 14 August 2025
  + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond (@jebeaudet, @slovdahl, @markslater)
  + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no longer possible with Jetty 10
- + 13462 HTTP2Session cleanups
+ + 13462 HTTP2Session cleanups - Addresses CVE-2025-5115
 
 jetty-10.0.25 - 12 March 2025
  + 12268 `IteratingCallback` may iterate too much when `process()` returns
@@ -318,6 +319,7 @@ jetty-10.0.24 - 26 August 2024
 jetty-9.4.58.v20250814 - 14 August 2025
  + 461 Move ServletTester to the test source directory
  + 13261 Improve handling of failed HTTP/2 requests
+ + 13461 HTTP2Session cleanups - Addresses CVE-2025-5115
 
 jetty-9.4.57.v20241219 - 19 December 2024
  + 12268 `IteratingCallback` may iterate too much when `process()` returns Action.IDLE
