@@ -221,7 +221,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             throw new BadMessageException(400, "Invalid TLS Message");
 
         String serverName = Request.getServerName(request);
-        String sniHost = retrieveSni(request, session);
+        String sniHost = retrieveSni(session);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Host={}, SNI={}, Certificate={}", serverName, sniHost, x509);
@@ -233,7 +233,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             throw new BadMessageException(400, "Host header value is not a subject in the certificate");
     }
 
-    protected String retrieveSni(Request request, SSLSession session)
+    protected String retrieveSni(SSLSession session)
     {
         // Quick retrieval of the SNI from a SSLSession attribute put by SniX509ExtendedKeyManager.
         String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
