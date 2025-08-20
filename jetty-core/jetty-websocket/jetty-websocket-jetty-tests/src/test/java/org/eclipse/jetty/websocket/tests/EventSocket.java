@@ -83,6 +83,7 @@ public class EventSocket
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onPingMessage(): {}", this, payload);
         pingMessages.add(BufferUtil.copy(payload));
+        session.sendPong(payload, Callback.NOOP);
     }
 
     @OnWebSocketPong
