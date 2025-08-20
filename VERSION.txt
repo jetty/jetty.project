@@ -23,6 +23,7 @@
  + 13422 moved context demo fails with ee10 environment
  + 13429 ConnectionLimit has inacurate deprecation version
  + 13439 ServletHolder::initJspServlet() throws NPE after #13363
+ + 13449 HTTP2Session Cleanup - Addresses CVE-2025-5115
 
 12.1.0.beta2 - 18 July 2025
 
