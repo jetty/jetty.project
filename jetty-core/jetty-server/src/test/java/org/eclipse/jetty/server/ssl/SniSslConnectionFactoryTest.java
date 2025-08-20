@@ -242,7 +242,7 @@ public class SniSslConnectionFactoryTest
 
         String response = getResponse("www.example.com", "some.other.com", "www.example.com");
         assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
-        assertThat(response, Matchers.containsString("Invalid SNI"));
+        assertThat(response, Matchers.containsString("Invalid TLS Message"));
     }
 
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
@@ -387,7 +387,7 @@ public class SniSslConnectionFactoryTest
             response = HttpTester.parseResponse(input);
             assertNotNull(response);
             assertThat(response.getStatus(), is(400));
-            assertThat(response.getContent(), containsString("Invalid SNI"));
+            assertThat(response.getContent(), containsString("Host header value is not a subject in the certificate"));
         }
         finally
         {
@@ -447,7 +447,7 @@ public class SniSslConnectionFactoryTest
             response = HttpTester.parseResponse(input);
             assertNotNull(response);
             assertThat(response.getStatus(), is(400));
-            assertThat(response.getContent(), containsString("Invalid SNI"));
+            assertThat(response.getContent(), containsString("Host header value is not a subject in the certificate"));
         }
         finally
         {
