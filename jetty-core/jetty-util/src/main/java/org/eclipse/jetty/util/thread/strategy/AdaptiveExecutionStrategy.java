@@ -323,6 +323,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         switch (taskType)
         {
             case NON_BLOCKING:
+                // If we are recursing too deep, then we must fall back to PEC
+                if (_consumeDepth.get() >= _maxConsumeDepth)
+                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
                 // The produced task will not block, so use PC: consume task directly
                 // and then resume production.
                 return SubStrategy.PRODUCE_CONSUME;
