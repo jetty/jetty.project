@@ -35,6 +35,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketPing;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketPong;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
@@ -304,6 +306,28 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg CALLBACK = new InvokerUtils.Arg(Callback.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME, CALLBACK);
             metadata.setFrameHandle(methodHandle, onmethod);
+        }
+
+        // OnWebSocketPing [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketPing.class);
+        if (onmethod != null)
+        {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketPing.class);
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
+            final InvokerUtils.Arg BUFFER = new InvokerUtils.Arg(ByteBuffer.class).required();
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, BUFFER);
+            metadata.setPingHandle(methodHandle, onmethod);
+        }
+
+        // OnWebSocketPong [0..1]
+        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketPong.class);
+        if (onmethod != null)
+        {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketPong.class);
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
+            final InvokerUtils.Arg BUFFER = new InvokerUtils.Arg(ByteBuffer.class).required();
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, BUFFER);
+            metadata.setPongHandle(methodHandle, onmethod);
         }
 
         // OnWebSocketMessage [0..2]
