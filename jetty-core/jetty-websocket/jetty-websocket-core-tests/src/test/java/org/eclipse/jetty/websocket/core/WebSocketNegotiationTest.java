@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.Request;
@@ -46,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -493,4 +495,30 @@ public class WebSocketNegotiationTest extends WebSocketTester
         }
         assertThat(negotiatedExtensions.toString(), is(negExts));
     }
+
+    @Test
+    public void testThrowFromOnHandshakeResponse() throws Exception
+    {
+        AtomicInteger onHandshakeResponseCounter = new AtomicInteger();
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        upgradeRequest.setSubProtocols("test");
+        upgradeRequest.addListener(new UpgradeListener()
+        {
+            @Override
+            public void onHandshakeResponse(Request request, Response response)
+            {
+                throw new RuntimeException("error from onHandshakeResponse " + onHandshakeResponseCounter.incrementAndGet());
+            }
+        });
+
+        try (StacklessLogging ignored = new StacklessLogging(CoreClientUpgradeRequest.class))
+        {
+            ExecutionException exception = assertThrows(ExecutionException.class, () -> client.connect(upgradeRequest).get(5, TimeUnit.SECONDS));
+            assertThat(exception.getCause(), instanceOf(UpgradeException.class));
+            assertThat(exception.getCause().getMessage(), equalTo("onHandshakeResponse error"));
+            assertThat(onHandshakeResponseCounter.get(), is(1));
+        }
+    }
+
 }
