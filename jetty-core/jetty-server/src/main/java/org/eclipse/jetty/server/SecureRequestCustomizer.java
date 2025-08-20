@@ -216,23 +216,21 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     protected void checkSni(Request request, SSLSession session)
     {
-        if (isSniRequired() || isSniHostCheck())
-        {
-            String sniHost = retrieveSni(request, session);
+        X509 x509 = getX509(session);
+        if (x509 == null)
+            throw new BadMessageException(400, "Invalid TLS Message");
 
-            X509 x509 = getX509(session);
-            if (x509 == null)
-                throw new BadMessageException(400, "Invalid SNI");
-            String serverName = Request.getServerName(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
+        String serverName = Request.getServerName(request);
+        String sniHost = retrieveSni(request, session);
 
-            if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
-                throw new BadMessageException(400, "Invalid SNI");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Host={}, SNI={}, Certificate={}", serverName, sniHost, x509);
 
-            if (isSniHostCheck() && !x509.matches(serverName))
-                throw new BadMessageException(400, "Invalid SNI");
-        }
+        if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
+            throw new BadMessageException(400, "Invalid SNI");
+
+        if (isSniHostCheck() && !x509.matches(serverName))
+            throw new BadMessageException(400, "Host header value is not a subject in the certificate");
     }
 
     protected String retrieveSni(Request request, SSLSession session)
