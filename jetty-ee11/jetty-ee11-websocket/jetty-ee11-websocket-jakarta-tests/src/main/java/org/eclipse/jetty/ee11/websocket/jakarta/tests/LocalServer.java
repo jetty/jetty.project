@@ -15,39 +15,25 @@ package org.eclipse.jetty.ee11.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSessionListener;
 import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
+public class LocalServer extends ContainerLifeCycle
 {
     @ServerEndpoint("/echo/text")
     public static class TextEchoSocket
@@ -60,16 +46,11 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalServer.class);
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
-    private Server server;
-    private ServerConnector connector;
-    private LocalConnector localConnector;
+    private final Server server;
     private ServletContextHandler servletContextHandler;
-    private TrackingListener trackingListener = new TrackingListener();
+    private final TrackingListener trackingListener = new TrackingListener();
     private URI serverUri;
     private URI wsUri;
-    private boolean ssl = false;
-    private SslContextFactory.Server sslContextFactory;
 
     public LocalServer()
     {
@@ -80,16 +61,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         server = new Server(threadPool);
     }
 
-    public void enableSsl(boolean ssl)
-    {
-        this.ssl = ssl;
-    }
-
-    public LocalConnector getLocalConnector()
-    {
-        return localConnector;
-    }
-
     public URI getServerUri()
     {
         return serverUri;
@@ -98,11 +69,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public ServletContextHandler getServletContextHandler()
     {
         return servletContextHandler;
-    }
-
-    public SslContextFactory getSslContextFactory()
-    {
-        return sslContextFactory;
     }
 
     public URI getWsUri()
@@ -127,95 +93,38 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         return wsUri.resolve("/test/" + clazz.getSimpleName() + "/" + testName);
     }
 
-    public boolean isSslEnabled()
+    public WebSocketTester newWebSocketTester(String requestPath) throws Exception
     {
-        return ssl;
+        return new WebSocketTester(getWsUri().resolve(requestPath));
     }
 
-    @Override
-    public Parser newClientParser()
+    public WebSocketTester newWebSocketTester(String requestPath, Map<String, String> upgradeRequest) throws Exception
     {
-        return new Parser(bufferPool);
+        return new WebSocketTester(getWsUri().resolve(requestPath), upgradeRequest);
     }
 
-    @Override
-    public LocalConnector.LocalEndPoint newLocalConnection()
-    {
-        return getLocalConnector().connect();
-    }
-
-    public Fuzzer newNetworkFuzzer() throws Exception
-    {
-        return new NetworkFuzzer(this);
-    }
-
-    public Fuzzer newNetworkFuzzer(CharSequence requestPath) throws Exception
-    {
-        return new NetworkFuzzer(this, getWsUri().resolve(requestPath.toString()));
-    }
-
-    public Fuzzer newNetworkFuzzer(CharSequence requestPath, Map<String, String> upgradeRequest) throws Exception
-    {
-        return new NetworkFuzzer(this, getWsUri().resolve(requestPath.toString()), upgradeRequest);
-    }
-
-    protected Handler createRootHandler(Server server) throws Exception
+    protected Handler createRootHandler(Server server)
     {
         servletContextHandler = new ServletContextHandler("/", true, false);
         server.setHandler(servletContextHandler);
         servletContextHandler.setContextPath("/");
         JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
             ((JakartaWebSocketServerContainer)container).addSessionListener(trackingListener));
-        configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
-    }
-
-    protected void configureServletContextHandler(ServletContextHandler context) throws Exception
-    {
-        /* override to change context handler */
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        if (ssl)
-        {
-            // HTTP Configuration
-            HttpConfiguration httpConfig = new HttpConfiguration();
-            httpConfig.setSecureScheme("https");
-            httpConfig.setSecurePort(0);
-            httpConfig.setOutputBufferSize(32768);
-            httpConfig.setRequestHeaderSize(8192);
-            httpConfig.setResponseHeaderSize(8192);
-            httpConfig.setSendServerVersion(true);
-            httpConfig.setSendDateHeader(false);
-
-            sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourcePath("keystore.p12").toAbsolutePath().toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-
-            // SSL HTTP Configuration
-            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-            httpsConfig.addCustomizer(new SecureRequestCustomizer());
-
-            // SSL Connector
-            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(httpsConfig));
-        }
-        else
-        {
-            // Basic HTTP connector
-            connector = new ServerConnector(server);
-        }
+        ServerConnector connector;
+        // Basic HTTP connector
+        connector = new ServerConnector(server);
 
         // Add network connector
         server.addConnector(connector);
 
         // Add Local Connector
-        localConnector = new LocalConnector(server);
+        LocalConnector localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
 
         Handler rootHandler = createRootHandler(server);
@@ -229,11 +138,9 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         // Establish the Server URI
         String host = connector.getHost();
         if (host == null)
-        {
             host = "localhost";
-        }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "https" : "http", host, port));
+        serverUri = new URI(String.format("%s://%s:%d/", "http", host, port));
         wsUri = WSURI.toWebsocket(serverUri);
 
         // Some debugging
@@ -241,12 +148,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         {
             LOG.debug(server.dump());
         }
-    }
-
-    public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
-    {
-        ServletHolder holder = new ServletHolder(new BiConsumerServiceServlet(serviceConsumer));
-        servletContextHandler.addServlet(holder, urlPattern);
     }
 
     public JakartaWebSocketServerContainer getServerContainer()
@@ -269,8 +170,8 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 
     public static class TrackingListener implements JakartaWebSocketSessionListener
     {
-        private BlockingArrayQueue<JakartaWebSocketSession> openedSessions = new BlockingArrayQueue<>();
-        private BlockingArrayQueue<JakartaWebSocketSession> closedSessions = new BlockingArrayQueue<>();
+        private final BlockingArrayQueue<JakartaWebSocketSession> openedSessions = new BlockingArrayQueue<>();
+        private final BlockingArrayQueue<JakartaWebSocketSession> closedSessions = new BlockingArrayQueue<>();
 
         @Override
         public void onJakartaWebSocketSessionOpened(JakartaWebSocketSession session)
