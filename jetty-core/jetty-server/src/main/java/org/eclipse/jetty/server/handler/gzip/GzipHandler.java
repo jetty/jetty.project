@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated use the new {@code CompressionHandler} available in {@code org.eclipse.jetty.compression:jetty-compression-server}
  *             with your choice of compression implementation (gzip is {@code org.eclipse.jetty.compression:jetty-compression-gzip},
- *             brolti is {@code org.eclipse.jetty.compression:jetty-compression-gzip}, and zstandard is
+ *             brotli is {@code org.eclipse.jetty.compression:jetty-compression-brotli}, and zstandard is
  *             {@code org.eclipse.jetty.compression:jetty-compression-zstandard})
  */
 @Deprecated(since = "12.1.1", forRemoval = true)
