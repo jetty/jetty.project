@@ -45,7 +45,8 @@ Once a task has been produced, it may be consumed using these modes:
 
 [[execution-strategy-pc]]
 === Produce-Consume
-In the `Produce-Consume` mode, the `Producer Thread` loops between producing tasks (`Pn`); and directly consuming (aka running) those tasks (`Cn`).
+In the `Produce-Consume` mode, the `Producer Thread` loops producing tasks and directly consumes those tasks by running them.
+In the diagrams below, `Pn` represents production of task `n` and `Cn` represents running the task 'n' to consume it.
 
 [plantuml]
 ----
@@ -115,7 +116,8 @@ This mode solves the head-of-line blocking discussed in the <<execution-strategy
 
 [[execution-strategy-epc]]
 === Execute-Produce-Consume
-In the `Execute-Produce-Consume` mode, there is no dedicated producer thread. Rather a `Thread x` is initially the producer and when it has produced a task (`Pn`) it submits an internal task to an `Executor` so `Thread y` can take over production (`Pn+1`), and the original `Thread x` directly runs the task it produced (`Cn`).
+In the `Execute-Produce-Consume` mode, there is no dedicated producer thread.
+Rather a thread that is acting as the producer (`Pn`) will consume (`Cn`) the tasks that it produces and it submits an internal task to an `Executor` so that a different thread can take over production (`Pn+1`).
 
 [plantuml]
 ----
@@ -153,7 +155,9 @@ hide time-axis
 
 This mode may operate similar to <<execution-strategy-pc,`Produce-Consume`>> as after consuming a task (`Cn`) a thread may try to become a producer again (`Pn+m`), as `Thread B` does above.
 
-Differently from `Produce-Execute-Consume`, tasks are run by the same thread that produced it (which is CPU core cache efficient and production happens on a different thread. However, if the executor does not have an idle thread immediately available then without a thread to continue production the strategy may delay or even hang.
+Differently from `Produce-Execute-Consume`, a task is consumed by the same thread that produced it (which is CPU core cache efficient).
+A different thread will be used to continue producing.
+However, if the executor does not have an idle thread immediately available then without a thread to continue production the strategy may delay or even hang.
 
 [[execution-strategy-adaptive]]
 === Adaptive Execution Strategy
@@ -163,14 +167,15 @@ The modes of task consumption discussed above are captured by the `org.eclipse.j
 * `org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume` for the `Produce-Execute-Consume` mode.
 * `org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume` for the `Execute-Produce-Consume` mode.
 
-There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that heuristically chooses between the other strategies. The implementation takes into account both the availability of idle threads and the `InvocationType` of the task when choosing which specific strategy to apply.
+There is an additional implementation of `ExecutionStrategy`, namely `org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy`, that heuristically chooses between the other strategies.
+The implementation takes into account both the availability of another thread and the `InvocationType` of the task when choosing which specific strategy to apply.
 
 For example, a task that declares itself with `InvocationType` `NON_BLOCKING` can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block (although there is the risk of <<execution-strategy-pc,head-of-line blocking>>).
 
 Conversely, a task that declares itself with `InvocationType` `BLOCKING` may block and therefore stop production, and must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
 Deciding between these two modes depends on whether there is a free thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
 
-An implementation of `TryExecutor` can be asked whether a thread can be immediately and exclusively allocated to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
+The availability of another thread is determined by an implementation of `TryExecutor` that be asked whether a thread can be immediately and exclusively allocated to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
 
 The concept of task consumption modes, coupled with `Invocable` tasks that expose their own `InvocationType`, coupled with a `TryExecutor` that guarantees whether production can be immediately taken over, are all captured by `AdaptiveExecutionStrategy`, which is the default Jetty execution strategy.
 
