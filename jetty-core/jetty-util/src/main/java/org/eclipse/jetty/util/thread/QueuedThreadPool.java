@@ -244,6 +244,30 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         ensureThreads();
     }
 
+    /**
+     * Rejects a job that cannot be executed.
+     * @param job The job to be rejected
+     * @return True if the job was closed, false if it was not a {@link Closeable} job.
+     */
+    protected boolean reject(Runnable job)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} rejected {}", this, job);
+        if (job instanceof Closeable)
+        {
+            try
+            {
+                ((Closeable)job).close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to close rejected job: {}", job, e);
+            }
+            return true;
+        }
+        return false;
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -311,18 +335,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             Runnable job = _jobs.poll();
             if (job == null)
                 break;
-            if (job instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)job).close();
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Unable to close job: {}", job, t);
-                }
-            }
-            else if (job != NOOP)
+            if (!reject(job) && job != NOOP)
                 LOG.warn("Stopped without executing or closing {}", job);
         }
 
@@ -789,47 +802,68 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     {
         // Determine if we need to start a thread, use and idle thread or just queue this job
         int startThread;
+        long counts = _counts.get();
         while (true)
         {
-            // Get the atomic counts
-            long counts = _counts.get();
-
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
+            {
+                reject(job);
                 throw new RejectedExecutionException(job.toString());
+            }
 
             // Get the number of truly idle threads. This count is reduced by the
             // job queue size so that any threads that are idle but are about to take
             // a job from the queue are not counted.
             int idle = AtomicBiInteger.getLo(counts);
 
-            // Start a thread if we have insufficient idle threads to meet demand
+            // Start a thread if we have not enough idle threads to meet demand
             // and we are not at max threads.
             startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
 
             // Add 1|0 or 0|-1 to counts depending upon the decision to start a thread or not;
             // idle can become negative which means there are queued tasks.
-            if (!_counts.compareAndSet(counts, threads + startThread, idle + startThread - 1))
-                continue;
-
-            break;
+            long nextCounts = AtomicBiInteger.encode(threads + startThread, idle + startThread - 1);
+            if (_counts.compareAndSet(counts, nextCounts))
+            {
+                counts = nextCounts;
+                break;
+            }
+            counts = _counts.get();
         }
 
-        if (!_jobs.offer(job))
-        {
-            // reverse our changes to _counts.
-            if (addCounts(-startThread, 1 - startThread))
-                LOG.warn("{} rejected {}", this, job);
-            throw new RejectedExecutionException(job.toString());
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("queue {} startThread={}", job, startThread);
-
-        // Start a thread if one was needed
+        // Start threads if they are needed
+        boolean started = startThread > 0;
         while (startThread-- > 0)
             startThread();
+
+        // Return if we were able to queue the job
+        if (_jobs.offer(job))
+            return;
+
+        // The queue is full, so let's spin until we see some started threads
+        if (started)
+        {
+            while (true)
+            {
+                // Spin wait to allow threads to start
+                Thread.onSpinWait();
+                if (_counts.get() != counts)
+                {
+                    // Yield to allow time for the started threads to take jobs from the queue.
+                    Thread.yield();
+                    if (_jobs.offer(job))
+                        return; // We were able to queue the job after all.
+                    break;
+                }
+            }
+        }
+
+        // unable to queue the job, so we need to reset idle count and reject the job.
+        addCounts(0, 1);
+        reject(job);
+        throw new RejectedExecutionException(job.toString());
     }
 
     @Override
