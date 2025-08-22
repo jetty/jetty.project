@@ -237,7 +237,7 @@ public interface MethodHolder
         }
     }
 
-    class Wrapper implements MethodHolder
+    abstract class Wrapper implements MethodHolder
     {
         public MethodHolder _methodHolder;
 
@@ -255,18 +255,6 @@ public interface MethodHolder
         public Object invoke(Object... args) throws Throwable
         {
             return getWrapped().invoke(args);
-        }
-
-        @Override
-        public MethodHolder bindTo(Object arg)
-        {
-            return getWrapped().bindTo(arg);
-        }
-
-        @Override
-        public MethodHolder bindTo(Object arg, int idx)
-        {
-            return getWrapped().bindTo(arg, idx);
         }
 
         @Override
