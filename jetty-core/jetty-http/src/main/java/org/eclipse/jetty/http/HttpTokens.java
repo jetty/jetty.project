@@ -281,22 +281,15 @@ public class HttpTokens
     }
 
     /**
-     * Check if the {@code fieldName} string is compliant with RFC9110 and RFC7540.
+     * Check if the {@code fieldName} string is compliant with RFC9110 and RFC9113.
+     * <p>This method does not valid whether HTTP/2 and HTTP/3 pseudo headers are known, this must be done externally.</p>
      * @param fieldName the field name to check.
      * @return true if this is a legal field name.
      */
-    public static boolean isLegalFieldName(String fieldName)
+    public static boolean isLegalH2H3FieldName(String fieldName)
     {
         if (StringUtil.isEmpty(fieldName))
             return false;
-
-        // RFC7540 8.1.2.1. - Endpoints MUST treat a request or response that contains undefined or
-        // invalid pseudo-header fields as malformed.
-        if (fieldName.charAt(0) == ':')
-        {
-            HttpHeader header = HttpHeader.CACHE.get(fieldName);
-            return (header != null && header.isPseudo());
-        }
 
         for (int i = 0; i < fieldName.length(); i++)
         {

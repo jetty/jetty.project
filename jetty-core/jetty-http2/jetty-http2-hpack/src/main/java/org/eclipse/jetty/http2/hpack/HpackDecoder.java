@@ -206,7 +206,7 @@ public class HpackDecoder
                         name = toISO88591String(buffer, length);
                 }
 
-                if (!HttpTokens.isLegalFieldName(name))
+                if (!HttpTokens.isLegalH2H3FieldName(name))
                     _builder.streamException("Illegal header name %s", name);
                 else
                     header = HttpHeader.CACHE.get(name);

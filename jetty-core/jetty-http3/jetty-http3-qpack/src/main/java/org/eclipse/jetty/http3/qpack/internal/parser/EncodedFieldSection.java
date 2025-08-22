@@ -107,7 +107,7 @@ public class EncodedFieldSection
         {
             HttpField decodedField = encodedField.decode(context);
 
-            if (!HttpTokens.isLegalFieldName(decodedField.getName()))
+            if (!HttpTokens.isLegalH2H3FieldName(decodedField.getName()))
                 throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
                 H3_MESSAGE_ERROR, "Invalid field name: " + decodedField.getName());
 

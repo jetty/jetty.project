@@ -203,7 +203,7 @@ public class QpackEncoder implements Dumpable
             for (HttpField field : metadata.getHttpFields())
             {
                 String name = field.getLowerCaseName();
-                if (!HttpTokens.isLegalFieldName(name) || name.charAt(0) == ':')
+                if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
                     throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
                         H3_MESSAGE_ERROR, String.format("Invalid header name: '%s'", name));
 

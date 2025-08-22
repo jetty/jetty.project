@@ -189,7 +189,7 @@ public class HpackEncoder
                 for (HttpField field : fields)
                 {
                     String name = field.getLowerCaseName();
-                    if (!HttpTokens.isLegalFieldName(name) || name.charAt(0) == ':')
+                    if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
                         throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", name);
 
                     String value = field.getValue();

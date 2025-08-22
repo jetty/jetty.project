@@ -418,7 +418,7 @@ public class QpackDecoder implements Dumpable
             Entry entry = new Entry(new HttpField(name, value));
 
             // Verify the field name and value before inserting into the table.
-            if (!HttpTokens.isLegalFieldName(name))
+            if (!HttpTokens.isLegalH2H3FieldName(name))
                 throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "Invalid header name: " + name);
             if (!HttpTokens.isLegalFieldValue(value))
                 throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "Invalid header value: " + value);
