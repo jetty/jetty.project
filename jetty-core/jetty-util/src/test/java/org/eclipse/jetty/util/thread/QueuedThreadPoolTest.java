@@ -23,11 +23,13 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
@@ -1156,6 +1158,59 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
         }
         qtp.stop();
+    }
+
+    @Test
+    public void testBoundedQueue() throws Exception
+    {
+        QueuedThreadPool qtp = new QueuedThreadPool(2, 1, 60000, 0, new BlockingArrayQueue<>(2), null);
+        qtp.start();
+
+        BlockingTask[] tasks = {
+            new BlockingTask(),
+            new BlockingTask(),
+            new BlockingTask(),
+            new BlockingTask(),
+            new BlockingTask()
+        };
+
+        qtp.execute(tasks[0]);
+        qtp.execute(tasks[1]);
+        qtp.execute(tasks[2]);
+        qtp.execute(tasks[3]);
+
+        // Queue is full!
+        assertThrows(RejectedExecutionException.class, () -> qtp.execute(tasks[4]));
+
+        // Allow one more thread to run
+        qtp.setMaxThreads(3);
+        // Can immediately execute the 5th task
+        qtp.execute(tasks[4]);
+
+        for (BlockingTask task : tasks)
+            task.countDown();
+        qtp.stop();
+    }
+
+    private class BlockingTask extends CountDownLatch implements Runnable
+    {
+        BlockingTask()
+        {
+            super(1);
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     Runnable job(CountDownLatch started, int duration)

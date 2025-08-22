@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -263,7 +264,15 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public void execute(Runnable command)
     {
-        _executor.execute(command);
+        try
+        {
+            _executor.execute(command);
+        }
+        catch (RejectedExecutionException e)
+        {
+            ThreadPool.reject(command, e);
+            throw e;
+        }
     }
 
     @Override
