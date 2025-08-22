@@ -20,7 +20,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <p>Annotation for methods to receive WebSocket ping events.</p>
+ * <p>Annotation for methods to receive WebSocket PONG events.</p>
  * <p>Acceptable method patterns:</p>
  * <ol>
  * <li>{@code public void <methodName>(ByteBuffer payload)}</li>
