@@ -168,6 +168,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String classPath = System.getProperty("java.class.path");
         if (classPath != null)
         {
+            //convert classpath into Resources. Any jar:file: references will be
+            //unwrapped, because we need the location of the file, not the contents
+            //of the file
             resourceFactory.split(classPath, File.pathSeparator, true)
                 .stream()
                 .filter(Objects::nonNull)
