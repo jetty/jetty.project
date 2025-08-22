@@ -801,10 +801,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void execute(Runnable job)
     {
         // Determine if we need to start a thread, use and idle thread or just queue this job
-        int startThread;
-        long counts = _counts.get();
+        boolean startThread;
         while (true)
         {
+            long counts = _counts.get();
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
@@ -818,46 +818,31 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // a job from the queue are not counted.
             int idle = AtomicBiInteger.getLo(counts);
 
-            // Start a thread if we have not enough idle threads to meet demand
+            // Start a thread if we have not enough idle threads to meet demand,
             // and we are not at max threads.
-            startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
+            startThread = (idle <= 0 && threads < _maxThreads);
 
             // Add 1|0 or 0|-1 to counts depending upon the decision to start a thread or not;
-            // idle can become negative which means there are queued tasks.
-            long nextCounts = AtomicBiInteger.encode(threads + startThread, idle + startThread - 1);
+            // idle can become negative, which means there are queued tasks.
+            long nextCounts = AtomicBiInteger.encode(threads + (startThread ? 1 : 0), idle + (startThread ? 0 : -1));
             if (_counts.compareAndSet(counts, nextCounts))
-            {
-                counts = nextCounts;
                 break;
-            }
-            counts = _counts.get();
         }
-
-        // Start threads if they are needed
-        boolean started = startThread > 0;
-        while (startThread-- > 0)
-            startThread();
 
         // Return if we were able to queue the job
         if (_jobs.offer(job))
-            return;
-
-        // The queue is full, so let's spin until we see some started threads
-        if (started)
         {
-            while (true)
-            {
-                // Spin wait to allow threads to start
-                Thread.onSpinWait();
-                if (_counts.get() != counts)
-                {
-                    // Yield to allow time for the started threads to take jobs from the queue.
-                    Thread.yield();
-                    if (_jobs.offer(job))
-                        return; // We were able to queue the job after all.
-                    break;
-                }
-            }
+            // Start additional threads
+            if (startThread)
+                startThread();
+            return;
+        }
+
+        // if we are starting a thread, we can use a PendingRunner
+        if (startThread)
+        {
+            startThread(job);
+            return;
         }
 
         // unable to queue the job, so we need to reset idle count and reject the job.
@@ -925,6 +910,27 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             Thread thread = _threadFactory.newThread(_runnable);
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
+            _threads.add(thread);
+            // Update the evict threshold to prevent thrashing of newly started threads.
+            _evictThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
+            thread.start();
+            started = true;
+        }
+        finally
+        {
+            if (!started)
+                addCounts(-1, -1); // threads, idle
+        }
+    }
+
+    protected void startThread(Runnable pendingJob)
+    {
+        boolean started = false;
+        try
+        {
+            Thread thread = _threadFactory.newThread(new PendingRunner(pendingJob));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Starting {} Pending {}", thread, pendingJob);
             _threads.add(thread);
             // Update the evict threshold to prevent thrashing of newly started threads.
             _evictThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
@@ -1186,11 +1192,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private class Runner implements Runnable
     {
-        private Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
+        Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
         {
-            if (idleTimeoutNanos <= 0)
-                return _jobs.take();
-            return _jobs.poll(idleTimeoutNanos, TimeUnit.NANOSECONDS);
+            return (idleTimeoutNanos <= 0) ? _jobs.take() : _jobs.poll(idleTimeoutNanos, TimeUnit.NANOSECONDS);
         }
 
         @Override
@@ -1270,6 +1274,57 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             {
                 // Clear any thread interrupted status.
                 Thread.interrupted();
+            }
+        }
+    }
+
+    class PendingRunner extends Runner
+    {
+        private Runnable _pendingJob;
+
+        PendingRunner(Runnable pendingJob)
+        {
+            _pendingJob = pendingJob;
+        }
+
+        @Override
+        Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
+        {
+            Runnable job = super.idleJobPoll(idleTimeoutNanos);
+            if (job == null)
+            {
+                // No jobs in the queue, so return the pending job if we have one
+                if (_pendingJob != null)
+                {
+                    job = _pendingJob;
+                    _pendingJob = null;
+                }
+            }
+            else if (_pendingJob != null)
+            {
+                // we took a job from the queue, so offer our pending job
+                if (_jobs.offer(_pendingJob))
+                    _pendingJob = null;
+            }
+
+            return job;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                super.run();
+            }
+            finally
+            {
+                // If we have a pending job. belatedly reject it
+                if (_pendingJob != null)
+                {   addCounts(0, 1);
+                    reject(_pendingJob);
+                    _pendingJob = null;
+                }
             }
         }
     }
