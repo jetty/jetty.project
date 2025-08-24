@@ -17,8 +17,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -50,7 +48,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
+        String credentials = req.getHeaders().get(getAuthorizationHeader());
 
         if (credentials != null)
         {
@@ -86,10 +84,10 @@ public class BasicAuthenticator extends LoginAuthenticator
         Charset charset = getCharset();
         if (charset != null)
             value += ", charset=\"" + charset.name() + "\"";
-        res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        res.getHeaders().put(getChallengeHeader().asString(), value);
 
         // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
-        Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
+        Response.writeError(req, res, callback, getUnauthorizedStatusCode());
         return AuthenticationState.CHALLENGE;
     }
 
