@@ -93,17 +93,17 @@ public class CookieCompliance implements ComplianceViolation.Mode
         ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Obsolete Style Cookie attribute"),
 
         /**
-         * An old style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
+         * An obsolete style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
          *
          * <p>
-         *     An old style attribute starts with {@code $} (such as {@code $Path}).
+         *     An obsolete style attribute starts with {@code $} (such as {@code $Path}).
          * </p>
          * <p>
-         *     When this violation is present, these old style attributes are parsed as attributes, not as cookies,
+         *     When this violation is present, these obsolete style attributes are parsed as attributes, not as cookies,
          *     and interpreted as an attribute.  If you are not interested in the value, use {@link #ATTRIBUTES} instead.
          * </p>
          */
-        ATTRIBUTE_VALUES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Old Style Cookie attribute value"),
+        ATTRIBUTE_VALUES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Obsolete Style Cookie attribute value"),
 
         /**
          * Whitespace was found around the cookie name and/or around the cookie value.

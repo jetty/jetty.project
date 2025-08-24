@@ -74,7 +74,7 @@ public class RFC6265CookieParser implements CookieParser
         boolean cookieInvalid = false;
         int spaces = 0;
 
-        boolean supportOldAttributes = (_complianceMode.allows(ATTRIBUTE_VALUES) || _complianceMode.allows(ATTRIBUTES));
+        boolean supportObsoleteAttributes = _complianceMode.allows(ATTRIBUTE_VALUES) || _complianceMode.allows(ATTRIBUTES);
 
         int length = field.length();
         StringBuilder string = new StringBuilder();
@@ -101,7 +101,7 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (token.isRfc2616Token())
                     {
-                        if (StringUtil.isNotBlank(cookieName) && !(c == '$' && supportOldAttributes))
+                        if (StringUtil.isNotBlank(cookieName) && !(c == '$' && supportObsoleteAttributes))
                         {
                             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
