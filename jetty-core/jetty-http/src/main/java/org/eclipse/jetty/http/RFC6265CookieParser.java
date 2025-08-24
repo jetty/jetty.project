@@ -75,6 +75,8 @@ public class RFC6265CookieParser implements CookieParser
         boolean cookieInvalid = false;
         int spaces = 0;
 
+        boolean supportObsoleteAttributes = _complianceMode.allows(ATTRIBUTE_VALUES) || _complianceMode.allows(ATTRIBUTES);
+
         int length = field.length();
         StringBuilder string = new StringBuilder();
         for (int i = 0; i <= length; i++)
@@ -85,7 +87,7 @@ public class RFC6265CookieParser implements CookieParser
             if (token == null)
             {
                 if (!_complianceMode.allows(INVALID_COOKIES))
-                     throw new InvalidCookieException("Invalid Cookie character");
+                     throw new InvalidCookieException("Invalid Cookie character: 0x%02x [%s]: %s".formatted((byte)c, c, field));
                 state = State.INVALID_COOKIE;
                 continue;
             }
@@ -100,7 +102,7 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (token.isRfc2616Token())
                     {
-                        if (!StringUtil.isBlank(cookieName) && !(c == '$' && (_complianceMode.allows(ATTRIBUTES) || _complianceMode.allows(ATTRIBUTE_VALUES))))
+                        if (StringUtil.isNotBlank(cookieName) && !(c == '$' && supportObsoleteAttributes))
                         {
                             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
@@ -153,7 +155,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(INVALID_COOKIES, field);
+                        reportComplianceViolation(INVALID_COOKIES, string.toString());
                         state = c == ';' ? State.START : State.INVALID_COOKIE;
                     }
                     else
@@ -212,7 +214,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(INVALID_COOKIES, field);
+                        reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in %s".formatted(c, field));
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -240,7 +242,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(INVALID_COOKIES))
                     {
-                        reportComplianceViolation(INVALID_COOKIES, field);
+                        reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in %s".formatted(c, field));
                         state = State.INVALID_COOKIE;
                     }
                     else
@@ -301,7 +303,7 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else if (_complianceMode.allows(SPECIAL_CHARS_IN_QUOTES))
                     {
-                        reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, field);
+                        reportComplianceViolation(SPECIAL_CHARS_IN_QUOTES, "Character [" + c + "] is not allowed - " + field);
                         string.append(c);
                     }
                     else if (c == ',' && _complianceMode.allows(COMMA_NOT_VALID_OCTET))
@@ -320,7 +322,7 @@ public class RFC6265CookieParser implements CookieParser
                         if (!cookieInvalid)
                         {
                             cookieInvalid = true;
-                            reportComplianceViolation(INVALID_COOKIES, field);
+                            reportComplianceViolation(INVALID_COOKIES, "Illegal character '%s' in quoted section in %s".formatted(c, field));
                         }
                         // Try to find the closing double quote by staying in the current state.
                     }
@@ -366,7 +368,7 @@ public class RFC6265CookieParser implements CookieParser
                         }
                         else if (_complianceMode.allows(INVALID_COOKIES))
                         {
-                            reportComplianceViolation(INVALID_COOKIES, field);
+                            reportComplianceViolation(INVALID_COOKIES, "Illegal character ',' in " + field);
                             state = State.INVALID_COOKIE;
                             continue;
                         }
@@ -390,32 +392,31 @@ public class RFC6265CookieParser implements CookieParser
                         // We have an attribute.
                         if (_complianceMode.allows(ATTRIBUTE_VALUES))
                         {
-                            reportComplianceViolation(ATTRIBUTES, field);
+                            reportComplianceViolation(ATTRIBUTES, attributeName);
+                            // Handle $NAME entries from the older https://www.rfc-editor.org/rfc/rfc2965#section-3.4 spec
                             switch (attributeName.toLowerCase(Locale.ENGLISH))
                             {
-                                case "$path":
-                                    cookiePath = value;
-                                    break;
-                                case "$domain":
-                                    cookieDomain = value;
-                                    break;
-                                case "$port":
-                                    cookieComment = "$port=" + value;
-                                    break;
-                                case "$version":
-                                    cookieVersion = Integer.parseInt(value);
-                                    break;
-                                default:
+                                case "$path" -> cookiePath = value;
+                                case "$domain" -> cookieDomain = value;
+                                case "$port" -> cookieComment = "$port=" + value;
+                                case "$version" -> cookieVersion = Integer.parseInt(value);
+                                // Known and Valid attribute $NAMES that we don't do anything special with.
+                                case "$expires", "$max-age", "$commenturl", "$comment", "$discard", "$secure" ->
+                                {
+                                    // ignore
+                                }
+                                default ->
+                                {
+                                    reportComplianceViolation(INVALID_COOKIES, attributeName);
                                     if (!_complianceMode.allows(INVALID_COOKIES))
-                                        throw new IllegalArgumentException("Invalid Cookie attribute");
-                                    reportComplianceViolation(INVALID_COOKIES, field);
+                                        throw new IllegalArgumentException("Invalid Cookie attribute: " + attributeName);
                                     state = State.INVALID_COOKIE;
-                                    break;
+                                }
                             }
                         }
                         else if (_complianceMode.allows(ATTRIBUTES))
                         {
-                            reportComplianceViolation(ATTRIBUTES, field);
+                            reportComplianceViolation(ATTRIBUTES, attributeName);
                         }
                         else
                         {
