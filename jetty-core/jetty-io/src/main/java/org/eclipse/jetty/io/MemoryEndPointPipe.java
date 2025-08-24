@@ -247,7 +247,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     // The buffer must be copied, otherwise a write() would complete
                     // and return it to the buffer pool where its backing store would
                     // be overwritten before it is read by the peer EndPoint.
-                    ByteBuffer copy = copy(buffer);
+                    ByteBuffer copy = lockedCopy(buffer);
                     if (copy == null)
                     {
                         result = false;
@@ -277,7 +277,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return result;
         }
 
-        private ByteBuffer copy(ByteBuffer buffer)
+        private ByteBuffer lockedCopy(ByteBuffer buffer)
         {
             int length = buffer.remaining();
             long maxCapacity = getMaxCapacity();
