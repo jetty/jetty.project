@@ -80,13 +80,13 @@ public class CookieCompliance implements ComplianceViolation.Mode
         INVALID_COOKIES("https://tools.ietf.org/html/rfc6265", "Invalid cookie"),
 
         /**
-         * An old style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
+         * An obsolete style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
          *
          * <p>
-         *     An old style attribute starts with {@code $} (such as {@code $Path}).
+         *     An obsolete style attribute starts with {@code $} (such as {@code $Path}).
          * </p>
          * <p>
-         *     When this violation is present, these old style attributes are parsed as attributes, not as cookies,
+         *     When this violation is present, these obsolete style attributes are parsed as attributes, not as cookies,
          *     and dropped.  If you want to retain their meaning, use {@link #ATTRIBUTE_VALUES}.
          * </p>
          */
