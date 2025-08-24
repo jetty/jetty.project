@@ -28,13 +28,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK24") {
+        stage("Build / Test - JDK25") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk24", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk24", name: "Static Analysis jdk24", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
@@ -46,7 +46,7 @@ pipeline {
               checkout scm
               withEnv(["JAVA_HOME=${ tool 'jdk17' }",
                        "PATH+MAVEN=${ tool 'jdk17' }/bin:${tool 'maven3'}/bin",
-                       "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+                       "MAVEN_OPTS=-Xms3G -Xmx5G -Djava.awt.headless=true"]) {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
                          configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
@@ -125,7 +125,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+               "MAVEN_OPTS=-Xms3G -Xmx5G -Djava.awt.headless=true"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
