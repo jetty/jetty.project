@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 public abstract class WriteFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(WriteFlusher.class);
-    private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
@@ -104,7 +103,7 @@ public abstract class WriteFlusher
             throw new IllegalStateException();
 
         boolean updated = _state.compareAndSet(previous, next);
-        if (DEBUG)
+        if (LOG.isDebugEnabled())
             LOG.debug("update {}:{}{}{}", this, previous, updated ? "-->" : "!->", next);
         return updated;
     }
@@ -225,9 +224,7 @@ public abstract class WriteFlusher
     public InvocationType getCallbackInvocationType()
     {
         State s = _state.get();
-        return (s instanceof PendingState)
-            ? ((PendingState)s).getCallbackInvocationType()
-            : Invocable.InvocationType.BLOCKING;
+        return (s instanceof PendingState p) ? p.getCallbackInvocationType() : Invocable.InvocationType.BLOCKING;
     }
 
     /**
@@ -264,7 +261,7 @@ public abstract class WriteFlusher
             return;
         }
 
-        if (DEBUG)
+        if (LOG.isDebugEnabled())
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
         if (!updateState(__IDLE, __WRITING))
@@ -276,7 +273,7 @@ public abstract class WriteFlusher
 
             if (buffers != null)
             {
-                if (DEBUG)
+                if (LOG.isDebugEnabled())
                     LOG.debug("flush incomplete {}", this);
                 PendingState pending = new PendingState(callback, address, buffers);
                 if (updateState(__WRITING, pending))
@@ -294,7 +291,7 @@ public abstract class WriteFlusher
         }
         catch (Throwable e)
         {
-            if (DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("write exception", e);
             if (updateState(__WRITING, new FailedState(e)))
                 callback.failed(e);
@@ -356,7 +353,7 @@ public abstract class WriteFlusher
      */
     public void completeWrite()
     {
-        if (DEBUG)
+        if (LOG.isDebugEnabled())
             LOG.debug("completeWrite: {}", this);
 
         State previous = _state.get();
@@ -378,7 +375,7 @@ public abstract class WriteFlusher
 
             if (buffers != null)
             {
-                if (DEBUG)
+                if (LOG.isDebugEnabled())
                     LOG.debug("flushed incomplete {}", BufferUtil.toDetailString(buffers));
                 if (buffers != pending._buffers)
                     pending = new PendingState(callback, address, buffers);
@@ -396,7 +393,7 @@ public abstract class WriteFlusher
         }
         catch (Throwable e)
         {
-            if (DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("completeWrite exception", e);
             if (updateState(__COMPLETING, new FailedState(e)))
                 callback.failed(e);
@@ -419,7 +416,7 @@ public abstract class WriteFlusher
         while (progress && buffers != null)
         {
             long before = BufferUtil.remaining(buffers);
-            boolean flushed = address == null ? _endPoint.flush(buffers) : ((DatagramChannelEndPoint)_endPoint).send(address, buffers);
+            boolean flushed = address == null ? _endPoint.flush(buffers) : _endPoint.send(address, buffers);
             long after = BufferUtil.remaining(buffers);
             long written = before - after;
 
@@ -486,7 +483,7 @@ public abstract class WriteFlusher
             {
                 case IDLE:
                 case FAILED:
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                     {
                         LOG.debug("ignored: {} {}", cause, this);
                         LOG.trace("IGNORED", cause);
@@ -494,7 +491,7 @@ public abstract class WriteFlusher
                     return false;
 
                 case PENDING:
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                         LOG.debug("failed: {}", this, cause);
 
                     PendingState pending = (PendingState)current;
@@ -507,7 +504,7 @@ public abstract class WriteFlusher
 
                 case WRITING:
                 case COMPLETING:
-                    if (DEBUG)
+                    if (LOG.isDebugEnabled())
                         LOG.debug("failed: {}", this, cause);
                     if (updateState(current, new FailedState(cause)))
                         return true;
@@ -554,21 +551,14 @@ public abstract class WriteFlusher
 
     public String toStateString()
     {
-        switch (_state.get().getType())
+        return switch (_state.get().getType())
         {
-            case WRITING:
-                return "W";
-            case PENDING:
-                return "P";
-            case COMPLETING:
-                return "C";
-            case IDLE:
-                return "-";
-            case FAILED:
-                return "F";
-            default:
-                return "?";
-        }
+            case WRITING -> "W";
+            case PENDING -> "P";
+            case COMPLETING -> "C";
+            case IDLE -> "-";
+            case FAILED -> "F";
+        };
     }
 
     @Override
