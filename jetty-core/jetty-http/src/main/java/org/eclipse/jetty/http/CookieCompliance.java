@@ -90,7 +90,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
          *     and dropped.  If you want to retain their meaning, use {@link #ATTRIBUTE_VALUES}.
          * </p>
          */
-        ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Old Style Cookie attribute"),
+        ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Obsolete Style Cookie attribute"),
 
         /**
          * An old style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
