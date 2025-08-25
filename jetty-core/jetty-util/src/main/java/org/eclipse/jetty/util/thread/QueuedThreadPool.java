@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
@@ -101,13 +100,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-    private final AtomicInteger _pending = new AtomicInteger();
     private final AtomicLong _evictThreshold = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
+    private final int _capacity;
+    private boolean _putSupported = true;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -183,7 +183,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
+        {
             LOG.warn("Detected thread pool queue {} bounded at {} entries, which can lead to unexpected behavior. Use an unbounded queue instead.", queue.getClass(), queue.remainingCapacity());
+            _capacity = queue.remainingCapacity();
+        }
+        else
+        {
+            _capacity = -1;
+        }
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
@@ -785,10 +792,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
-            {
-                ThreadPool.reject(job, null);
                 throw new RejectedExecutionException(job.toString());
-            }
 
             // Get the number of truly idle threads. This count is reduced by the
             // job queue size so that any threads that are idle but are about to take
@@ -799,12 +803,18 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // and we are not at max threads.
             startThread = (idle <= 0 && threads < _maxThreads);
 
+            // If the job queue is bounded and we are at capacity, then we reject the job
+            if (_capacity >= 0 && idle <= 0 && !startThread && (threads - idle) >=  (_maxThreads + _capacity))
+                throw new RejectedExecutionException(job.toString());
+
             // Add 1|0 or 0|-1 to counts depending upon the decision to start a thread or not;
             // idle can become negative, which means there are queued tasks.
             if (_counts.compareAndSet(counts, threads + (startThread ? 1 : 0), idle + (startThread ? 0 : -1)))
                 break;
         }
 
+        // We should always be able to add the job to the queue as we checked the capacity above,
+        // However, a starting thread may not yet have polled the queue, so this could fail in a race.
         // Return if we are able to queue the job
         if (_jobs.offer(job))
         {
@@ -814,32 +824,46 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             return;
         }
 
-        // The job queue is full!
-
-        // if we are starting a thread, we can use a PendingRunner
+        // Start additional threads
         if (startThread)
+            startThread();
+
+        // We lost the race with a starting thread, so we can do a blocking put that will wait for the starting thread
+        if (_putSupported)
         {
-            startThread(job);
-            return;
+            try
+            {
+                _jobs.put(job);
+                return;
+            }
+            catch (InterruptedException e)
+            {
+                addCounts(0, 1);
+                throw new RejectedExecutionException(e);
+            }
+            catch (UnsupportedOperationException uoe)
+            {
+                LOG.warn("Detected bounded thread pool queue {} without put support", _jobs.getClass());
+                _putSupported = false;
+            }
         }
 
-        // Otherwise, if we have pending threads started, let's wait for them to start
-        while (_pending.get() > 0)
+        // Put was not supported, so we will just spin instead
+        while (true)
+        {
             Thread.onSpinWait();
+            long counts = _counts.get();
+            // Get the number of threads started (might not yet be running)
+            int threads = AtomicBiInteger.getHi(counts);
+            if (threads == Integer.MIN_VALUE)
+                break;
 
-        // This is still a little racy as thread may have decrement the pending count, but has not yet polled the job queue.
-        // So we yield to allow the pending thread to poll the job queue.
-        // This is a bit of a hack, but it is the best we can do without
-        // introducing a new state to the thread pool.
-        Thread.yield();
-
-        // Return if we are now able to queue the job
-        if (_jobs.offer(job))
-            return;
+            if (_jobs.offer(job))
+                return;
+        }
 
         // unable to queue the job, so we need to reset idle count and reject the job.
         addCounts(0, 1);
-        ThreadPool.reject(job, null);
         throw new RejectedExecutionException(job.toString());
     }
 
@@ -905,29 +929,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             _threads.add(thread);
             // Update the evict threshold to prevent thrashing of newly started threads.
             _evictThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
-            _pending.incrementAndGet();
-            thread.start();
-            started = true;
-        }
-        finally
-        {
-            if (!started)
-                addCounts(-1, -1); // threads, idle
-        }
-    }
-
-    protected void startThread(Runnable pendingJob)
-    {
-        boolean started = false;
-        try
-        {
-            Thread thread = _threadFactory.newThread(new PendingRunner(pendingJob));
-            if (LOG.isDebugEnabled())
-                LOG.debug("Starting {} Pending {}", thread, pendingJob);
-            _threads.add(thread);
-            // Update the evict threshold to prevent thrashing of newly started threads.
-            _evictThreshold.set(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(_idleTimeout));
-            _pending.incrementAndGet();
             thread.start();
             started = true;
         }
@@ -1196,7 +1197,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
-            _pending.decrementAndGet();
+
             boolean idle = true;
             try
             {
@@ -1268,57 +1269,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             {
                 // Clear any thread interrupted status.
                 Thread.interrupted();
-            }
-        }
-    }
-
-    class PendingRunner extends Runner
-    {
-        private Runnable _pendingJob;
-
-        PendingRunner(Runnable pendingJob)
-        {
-            _pendingJob = pendingJob;
-        }
-
-        @Override
-        Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
-        {
-            Runnable job = super.idleJobPoll(idleTimeoutNanos);
-            if (job == null)
-            {
-                // No jobs in the queue, so return the pending job if we have one
-                if (_pendingJob != null)
-                {
-                    job = _pendingJob;
-                    _pendingJob = null;
-                }
-            }
-            else if (_pendingJob != null)
-            {
-                // we took a job from the queue, so offer our pending job
-                if (_jobs.offer(_pendingJob))
-                    _pendingJob = null;
-            }
-
-            return job;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                super.run();
-            }
-            finally
-            {
-                // If we have a pending job. belatedly reject it
-                if (_pendingJob != null)
-                {   addCounts(0, 1);
-                    ThreadPool.reject(_pendingJob, null);
-                    _pendingJob = null;
-                }
             }
         }
     }

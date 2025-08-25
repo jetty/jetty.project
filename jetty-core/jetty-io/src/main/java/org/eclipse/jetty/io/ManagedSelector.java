@@ -333,7 +333,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (RejectedExecutionException x)
         {
-            // ignored.
+            if (task instanceof Closeable)
+                IO.close((Closeable)task);
         }
     }
 
