@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -70,6 +71,7 @@ public class FrameFlusher extends IteratingCallback
     private final List<FlusherEntry> _currentEntries;
     private final List<FlusherEntry> _completedEntries = new ArrayList<>();
     private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
+    private final Behavior _behavior;
     private long _currentMessageExpiry;
 
     private RetainableByteBuffer _batchBuffer;
@@ -77,8 +79,9 @@ public class FrameFlusher extends IteratingCallback
     private Throwable _closedCause;
     private boolean _useDirectByteBuffers;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
+    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
     {
+        _behavior = behavior;
         _bufferPool = bufferPool;
         _endPoint = endPoint;
         _bufferSize = bufferSize;
@@ -387,7 +390,7 @@ public class FrameFlusher extends IteratingCallback
 
         for (FlusherEntry entry : _completedEntries)
         {
-            if (entry.getFrame().getOpCode() == OpCode.CLOSE)
+            if (entry.getFrame().getOpCode() == OpCode.CLOSE && _behavior == Behavior.SERVER)
                 _endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.getCallback());
         }

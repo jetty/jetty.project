@@ -68,7 +68,6 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -462,7 +461,6 @@ public class WebSocketOverHTTP2Test
     }
 
     @Test
-    @Disabled("This test fails due to an issue with the WebSocket over HTTP/2 implementation, see https://github.com/jetty/jetty.project/issues/13349")
     public void testNetworkConnectionLimit() throws Exception
     {
         prepareServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));

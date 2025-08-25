@@ -19,7 +19,6 @@ import java.time.Instant;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.RoleDelegateUserIdentity;
@@ -110,7 +109,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        String header = req.getHeaders().get(HttpHeader.AUTHORIZATION);
+        String header = req.getHeaders().get(getAuthorizationHeader());
         String spnegoToken = getSpnegoToken(header);
         Session httpSession = req.getSession(false);
 
@@ -186,7 +185,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     {
         setSpnegoToken(res, token);
         // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
-        Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
+        Response.writeError(req, res, callback, getUnauthorizedStatusCode());
     }
 
     private void setSpnegoToken(Response response, String token)
@@ -194,7 +193,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
         String value = HttpHeader.NEGOTIATE.asString();
         if (token != null)
             value += " " + token;
-        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        response.getHeaders().put(getChallengeHeader().asString(), value);
     }
 
     private String getSpnegoToken(String header)
