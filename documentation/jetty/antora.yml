@@ -1,9 +1,9 @@
 name: jetty
-version: '12'
+version: '12.1'
 title: Eclipse Jetty
 asciidoc:
   attributes:
-    javadoc-url: https://javadoc.jetty.org/jetty-12
+    javadoc-url: https://javadoc.jetty.org/jetty-12.1
     jetty-home: ${jetty.home}@
     jetty-version: ${project.version}
     idprefix: ''
@@ -20,7 +20,7 @@ nav:
 - modules/programming-guide/nav.adoc
 ext:
   collector:
-  - run: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty
+  - run: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty 
     scan: ./target/collector
   - scan:
       dir: jetty-core/jetty-server/src/main/java

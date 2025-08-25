@@ -39,6 +39,13 @@ import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated use the new {@code CompressionHandler} available in {@code org.eclipse.jetty.compression:jetty-compression-server}
+ *             with your choice of compression implementation (gzip is {@code org.eclipse.jetty.compression:jetty-compression-gzip},
+ *             brotli is {@code org.eclipse.jetty.compression:jetty-compression-brotli}, and zstandard is
+ *             {@code org.eclipse.jetty.compression:jetty-compression-zstandard})
+ */
+@Deprecated(since = "12.1.1", forRemoval = true)
 public class GzipHandler extends Handler.Wrapper implements GzipFactory
 {
     public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";

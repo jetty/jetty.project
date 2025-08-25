@@ -26,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -112,7 +110,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
+        String credentials = req.getHeaders().get(getAuthorizationHeader());
 
         boolean stale = false;
         if (credentials != null)
@@ -185,7 +183,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             String domain = req.getContext().getContextPath();
             if (domain == null)
                 domain = "/";
-            res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+            res.getHeaders().put(getChallengeHeader().asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
                     "\", nonce=\"" + newNonce(req) +
                     "\", algorithm=" + getAlgorithm() +
@@ -193,7 +191,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     ", stale=" + stale);
 
             // Don't use AuthenticationState.writeError, to avoid possibility of doing a Servlet error dispatch.
-            Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
+            Response.writeError(req, res, callback, getUnauthorizedStatusCode());
             return AuthenticationState.CHALLENGE;
         }
 

@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
+import com.github.luben.zstd.util.Native;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
@@ -61,6 +62,9 @@ public class ZstandardCompression extends Compression
     public ZstandardCompression()
     {
         super(ENCODING_NAME);
+        // Zstandard's Native uses a static class block to link
+        // the native library, so it is thread-safe by definition.
+        Native.load();
         setMinCompressSize(DEFAULT_MIN_ZSTD_SIZE);
     }
 

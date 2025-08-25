@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -136,8 +137,8 @@ public class JSON
             {
                 // Special cases for quotation-mark, reverse-solidus, and solidus.
                 if ((c == '"') || (c == '\\')
-                  /* solidus is optional - per Carsten Bormann (IETF)
-                     || (c == '/') */)
+                /* solidus is optional - per Carsten Bormann (IETF)
+                   || (c == '/') */)
                 {
                     buffer.append('\\').append(c);
                 }
@@ -1659,6 +1660,144 @@ public class JSON
             {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public String toJSON(final Object o, String ident)
+    {
+        return toString(o, ident, 0);
+    }
+
+    private String toString(final Object o, String ident, int nest)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.ensureCapacity(9);
+        HashMap<String, ?> hm;
+
+        try
+        {
+            hm = (HashMap<String, ?>)o;
+        }
+        catch (ClassCastException e)
+        {
+            throw new ClassCastException("The given object is instance of " + o.getClass().toString());
+        }
+        sb.append('{');
+        boolean isCommaNeede = false;
+        for (Entry<String, ?> entry : hm.entrySet())
+        {
+            if (isCommaNeede)
+            {
+                sb.append(", ");
+            }
+
+            sb.append('\n');
+            putIndent(sb, ident, nest + 1);
+            quotedEscape(sb, entry.getKey());
+            sb.append(": ");
+            putIndent(sb, ident, 0);
+
+            Object value = entry.getValue();
+            if (value == null)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof Boolean b)
+            {
+                sb.append(b);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof Double d)
+            {
+                sb.append(d);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof Long l)
+            {
+                sb.append(l);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof String s)
+            {
+                quotedEscape(sb, s);
+                isCommaNeede = true;
+                continue;
+            }
+            if (value instanceof HashMap<?, ?>)
+            {
+                HashMap<?, ?> valueMap = (HashMap<?, ?>)value;
+                if (valueMap.size() == 0)
+                {
+                    sb.append("{}");
+                    isCommaNeede = true;
+                    continue;
+                }
+                else
+                {
+                    String v = toString(value, ident, nest + 1);
+                    sb.append(v);
+                    putIndent(sb, ident, nest + 1);
+                }
+                sb.append('}');
+                isCommaNeede = true;
+                continue;
+            }
+
+            if (value instanceof Object[] a)
+            {
+                sb.append(parseArray(a));
+                isCommaNeede = true;
+                continue;
+            }
+
+            if (value instanceof Object)
+            {
+                sb.append(value);
+                isCommaNeede = true;
+                continue;
+            }
+        }
+
+        sb.append('\n');
+        // Zero value means it is the most outermost nest
+        if (nest == 0)
+        {
+            sb.append('}');
+        }
+        return sb.toString();
+    }
+
+    private String parseArray(Object[] o)
+    {
+        ArrayList<Object> array = new ArrayList<>();
+        for (Object val : o)
+        {
+            if (val instanceof Long)
+            {
+                array.add((Long)val);
+            }
+            else if (val instanceof String)
+            {
+                array.add("\"" + (String)val + "\"");
+            }
+            else if (val instanceof Boolean)
+            {
+                array.add((Boolean)val);
+            }
+        }
+        return array.toString();
+    }
+
+    private void putIndent(StringBuilder sb, String ident, int indentFactor)
+    {
+        for (; indentFactor > 0; indentFactor--)
+        {
+            sb.append(ident);
         }
     }
 }

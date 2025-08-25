@@ -14,6 +14,7 @@
 package org.eclipse.jetty.tests;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +38,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
@@ -165,6 +168,15 @@ public class OpenIdProvider extends ContainerLifeCycle
         redirectUris.add(uri);
     }
 
+    /**
+     * @return the map of issued authentication codes for outstanding authentication flows,
+     * usually claimed by a request from jetty to the token endpoint in exchange for an id_token.
+     */
+    public Map<String, User> getIssuedAuthCodes()
+    {
+        return issuedAuthCodes;
+    }
+
     public class OpenIdProviderHandler extends Handler.Abstract
     {
         @Override
@@ -199,31 +211,10 @@ public class OpenIdProvider extends ContainerLifeCycle
     {
         Fields parameters = Request.getParameters(request);
 
-        if (!clientId.equals(parameters.getValue("client_id")))
-        {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid client_id");
-            return;
-        }
-
         String redirectUri = parameters.getValue("redirect_uri");
         if (!redirectUris.contains(redirectUri))
         {
-            LOG.warn("invalid redirectUri {}", redirectUri);
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid redirect_uri");
-            return;
-        }
-
-        String scopeString = parameters.getValue("scope");
-        List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
-        if (!scopes.contains("openid"))
-        {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no openid scope");
-            return;
-        }
-
-        if (!"code".equals(parameters.getValue("response_type")))
-        {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "response_type must be code");
             return;
         }
 
@@ -231,6 +222,26 @@ public class OpenIdProvider extends ContainerLifeCycle
         if (state == null)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no state param");
+            return;
+        }
+
+        if (!clientId.equals(parameters.getValue("client_id")))
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request_object", "invalid client_id", "example.com/client_id");
+            return;
+        }
+
+        String scopeString = parameters.getValue("scope");
+        List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
+        if (!scopes.contains("openid"))
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request_object", "no openid scope", null);
+            return;
+        }
+
+        if (!"code".equals(parameters.getValue("response_type")))
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request_object", "response_type must be code", null);
             return;
         }
 
@@ -274,7 +285,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         String username = parameters.getValue("username");
         if (username == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "no username");
+            sendError(response, callback, redirectUri, state, "login_required");
             return;
         }
 
@@ -282,7 +293,26 @@ public class OpenIdProvider extends ContainerLifeCycle
         redirectUser(request, response, callback, user, redirectUri, state);
     }
 
-    public void redirectUser(Request request, Response response, Callback callback, User user, String redirectUri, String state) throws IOException
+    public void sendError(Response response, Callback callback, String redirectUri, String state, String error)
+    {
+        sendError(response, callback, redirectUri, state, error, null, null);
+    }
+
+    public void sendError(Response response, Callback callback, String redirectUri, String state,
+                          String error, String errorDescription, String errorUri)
+    {
+        MultiMap<String> queryParams = new MultiMap<>();
+        queryParams.put("state", state);
+        queryParams.put("error", error);
+        if (errorDescription != null)
+            queryParams.put("error_description", errorDescription);
+        if (errorUri != null)
+            queryParams.put("error_uri", errorUri);
+        String query = UrlEncoded.encode(queryParams, StandardCharsets.UTF_8, false);
+        Response.sendRedirect(response.getRequest(), response, callback, redirectUri + "?" + query);
+    }
+
+    public void redirectUser(Request request, Response response, Callback callback, User user, String redirectUri, String state)
     {
         String authCode = UUID.randomUUID().toString().replace("-", "");
         issuedAuthCodes.put(authCode, user);
@@ -304,6 +334,8 @@ public class OpenIdProvider extends ContainerLifeCycle
         if (!HttpMethod.POST.is(request.getMethod()))
             throw new BadMessageException("Unsupported HTTP method for token Endpoint: " + request.getMethod());
 
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
+
         Fields parameters = Request.getParameters(request);
         String code = parameters.getValue("code");
 
@@ -313,14 +345,25 @@ public class OpenIdProvider extends ContainerLifeCycle
             !"authorization_code".equals(parameters.getValue("grant_type")) ||
             code == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "bad auth request");
+            response.setStatus(HttpStatus.BAD_REQUEST_400);
+            String responseContent = "{" +
+                "\"error\": \"invalid_request\"," +
+                "\"error_description\": \"bad request description\"," +
+                "\"error_uri\":\"https://example.com/description\"" +
+                "}";
+            response.write(true, BufferUtil.toBuffer(responseContent), callback);
             return;
         }
 
         User user = issuedAuthCodes.remove(code);
         if (user == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "invalid auth code");
+            response.setStatus(HttpStatus.BAD_REQUEST_400);
+            String responseContent = "{" +
+                "\"error\": \"invalid_grant\"," +
+                "\"error_description\": \"bad auth code\"," +
+                "}";
+            response.write(true, BufferUtil.toBuffer(responseContent), callback);
             return;
         }
 
@@ -334,7 +377,6 @@ public class OpenIdProvider extends ContainerLifeCycle
             "}";
 
         loggedInUsers.increment();
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
         response.write(true, BufferUtil.toBuffer(responseContent), callback);
     }
 

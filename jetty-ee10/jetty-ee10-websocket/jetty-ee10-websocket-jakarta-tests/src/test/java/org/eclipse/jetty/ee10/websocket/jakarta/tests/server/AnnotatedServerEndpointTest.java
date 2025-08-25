@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.DateDecoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.TimeEncoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
@@ -73,7 +73,7 @@ public class AnnotatedServerEndpointTest
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer(path, headers))
+        try (WebSocketTester session = server.newWebSocketTester(path, headers))
         {
             session.sendFrames(send);
             session.expect(expect);

@@ -263,12 +263,21 @@ public class ServletApiRequest implements HttpServletRequest
         _servletChannel = _servletContextRequest.getServletChannel();
     }
 
+    /**
+     * @deprecated use {@link #getAuthenticationState()} instead.
+     */
+    @Deprecated(since = "12.0.24", forRemoval = true)
     public AuthenticationState getAuthentication()
+    {
+        return getAuthenticationState();
+    }
+
+    public AuthenticationState getAuthenticationState()
     {
         return AuthenticationState.getAuthenticationState(getRequest());
     }
 
-    private AuthenticationState getUndeferredAuthentication()
+    private AuthenticationState getUndeferredAuthenticationState()
     {
         AuthenticationState authenticationState = getAuthentication();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
@@ -280,7 +289,7 @@ public class ServletApiRequest implements HttpServletRequest
         return authenticationState;
     }
 
-    private AuthenticationState getUndeferredAuthentication(HttpServletResponse response) throws IOException
+    private AuthenticationState getUndeferredAuthenticationState(HttpServletResponse response) throws IOException
     {
         AuthenticationState authenticationState = getAuthentication();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
@@ -392,7 +401,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getAuthType()
     {
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
             return succeededAuthentication.getAuthenticationType();
         return null;
@@ -498,7 +507,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         //obtain any substituted role name from the destination servlet
         String linkedRole = getServletRequestInfo().getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
             return succeededAuthentication.isUserInRole(linkedRole);
@@ -508,7 +517,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Principal getUserPrincipal()
     {
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
         {
@@ -614,7 +623,7 @@ public class ServletApiRequest implements HttpServletRequest
             return true;
 
         // Get the AuthenticationState to resolve the reason why Authentication failed.
-        AuthenticationState authenticationState = getUndeferredAuthentication(response);
+        AuthenticationState authenticationState = getUndeferredAuthenticationState(response);
 
         // A response has been sent by the Authenticator.
         if (authenticationState instanceof AuthenticationState.ResponseSent)
@@ -1494,8 +1503,9 @@ public class ServletApiRequest implements HttpServletRequest
 
         if (_reader != null && charset.equals(_readerCharset))
         {
-            // Try to write a 100 continue, ignoring failure result if it was not necessary.
-            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+            // Try to write a 100 continue if it is necessary
+            if (_inputState == ServletContextRequest.INPUT_NONE && _servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         }
         else
         {
