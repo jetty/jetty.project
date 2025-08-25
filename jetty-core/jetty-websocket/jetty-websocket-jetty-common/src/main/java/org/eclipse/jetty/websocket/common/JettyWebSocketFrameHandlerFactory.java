@@ -290,13 +290,13 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         @Override
         public MethodHolder bindTo(Object arg)
         {
-            return new CallbackCompletingCloseHolder(super.bindTo(arg));
+            return new CallbackCompletingCloseHolder(getWrapped().bindTo(arg));
         }
 
         @Override
         public MethodHolder bindTo(Object arg, int idx)
         {
-            return new CallbackCompletingCloseHolder(super.bindTo(arg, idx));
+            return new CallbackCompletingCloseHolder(getWrapped().bindTo(arg, idx));
         }
     }
 
