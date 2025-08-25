@@ -404,14 +404,17 @@ public class CookieCutter implements CookieParser
         for (int i = 0; i < name.length(); i++)
             if (!isLegacyCookieNameToken(name.charAt(i)))
                 return false;
-        return !name.equalsIgnoreCase("Comment") && // rfc2019
-            !name.equalsIgnoreCase("Discard") && // 2019++
-            !name.equalsIgnoreCase("Domain") &&
-            !name.equalsIgnoreCase("Expires") && // (old cookies)
-            !name.equalsIgnoreCase("Max-Age") && // rfc2019
-            !name.equalsIgnoreCase("Path") &&
-            !name.equalsIgnoreCase("Secure") &&
-            !name.equalsIgnoreCase("Version") &&
+        // Note: The ancient netscape cookie spec can be found at https://curl.se/rfc/cookie_spec.html
+        return !name.equalsIgnoreCase("Comment") && // rfc2019 & rfc2965 only
+            !name.equalsIgnoreCase("CommentURL") && // rfc2965 only
+            !name.equalsIgnoreCase("Discard") && // rfc2965 only
+            !name.equalsIgnoreCase("Domain") && // netscape spec, rfc2109 and newer
+            !name.equalsIgnoreCase("Expires") && // netscape spec, then rfc6265 and newer (not in rfc2109 or rfc2965)
+            !name.equalsIgnoreCase("Max-Age") && // rfc2109 and newer
+            !name.equalsIgnoreCase("Path") && // netscape spec, rfc2109 and newer
+            !name.equalsIgnoreCase("Port") && // rfc2965 only
+            !name.equalsIgnoreCase("Secure") && // netscape spec, rfc2109 and newer
+            !name.equalsIgnoreCase("Version") && // rfc2019 & rfc2965 only
             !name.startsWith("$");
     }
 }

@@ -17,6 +17,8 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.function.Function;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
@@ -39,9 +41,75 @@ public abstract class LoginAuthenticator implements Authenticator
     protected IdentityService _identityService;
     private boolean _sessionRenewedOnAuthentication;
     private int _sessionMaxInactiveIntervalOnAuthentication;
+    private boolean _proxy;
 
     protected LoginAuthenticator()
     {
+    }
+
+    /**
+     * @return true if this authenticator is in proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public boolean isProxyMode()
+    {
+        return _proxy;
+    }
+
+    /**
+     * Sets the authenticator to operate in proxy authentication mode.
+     * <p>
+     * When set to {@code true}, this mode changes the behavior of the
+     * authentication helpers:
+     * <ul>
+     *  <li>{@link #getChallengeHeader()} will return {@code Proxy-Authenticate}.</li>
+     *  <li>{@link #getUnauthorizedStatusCode()} will return {@code 407}.</li>
+     *  <li>{@link #getAuthorizationHeader()} will return the {@code Proxy-Authorization} header.</li>
+     * </ul>
+     * The default is {@code false}, which uses the standard {@code WWW-Authenticate}
+     * and {@code Authorization} headers with a {@code 401} status code.
+     *
+     * @param proxy {@code true} to enable proxy authentication mode.
+     */
+    public void setProxyMode(boolean proxy)
+    {
+        _proxy = proxy;
+    }
+
+    /**
+     * @return The authorization header to read credentials from, either
+     * {@code Authorization} or {@code Proxy-Authorization}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public HttpHeader getAuthorizationHeader()
+    {
+        return _proxy
+            ? HttpHeader.PROXY_AUTHORIZATION
+            : HttpHeader.AUTHORIZATION;
+    }
+
+    /**
+     * @return The challenge header to send to the client, either
+     * {@code WWW-Authenticate} or {@code Proxy-Authenticate}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public HttpHeader getChallengeHeader()
+    {
+        return _proxy
+            ? HttpHeader.PROXY_AUTHENTICATE
+            : HttpHeader.WWW_AUTHENTICATE;
+    }
+
+    /**
+     * @return The status code for an authentication challenge, either
+     * {@code 401} or {@code 407}, depending on the proxy mode.
+     * @see #setProxyMode(boolean)
+     */
+    public int getUnauthorizedStatusCode()
+    {
+        return _proxy
+            ? HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407
+            : HttpStatus.UNAUTHORIZED_401;
     }
 
     /**
