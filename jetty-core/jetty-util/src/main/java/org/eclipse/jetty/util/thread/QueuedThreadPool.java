@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -761,7 +762,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("utilization rate of threads executing unleased jobs")
     public double getUtilizationRate()
     {
-        return (double)getUtilizedThreads() / (getMaxThreads() - getLeasedThreads());
+        int available = getMaxThreads() - getLeasedThreads();
+        if (available <= 0)
+            return available == 0 ? 1.0D : 0.0D;
+        return (double)getUtilizedThreads() / available;
     }
 
     /**
@@ -839,6 +843,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             catch (InterruptedException e)
             {
                 addCounts(0, 1);
+                Thread.currentThread().interrupt();
                 throw new RejectedExecutionException(e);
             }
             catch (UnsupportedOperationException uoe)
@@ -849,9 +854,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
 
         // Put was not supported, so we will just spin instead
+        long spins = 0;
         while (true)
         {
-            Thread.onSpinWait();
+            // Backoff after some spins to reduce CPU.
+            if (++spins % 1024 == 0)
+                LockSupport.parkNanos(10L);
+            else
+                Thread.onSpinWait();
             long counts = _counts.get();
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
