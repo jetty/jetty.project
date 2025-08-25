@@ -71,6 +71,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     private final AtomicInteger _size = new AtomicInteger();
     private final Lock _headLock = new ReentrantLock();
     private final Condition _notEmpty = _headLock.newCondition();
+    private final Condition _notFull = _headLock.newCondition();
     private Object[] _elements;
 
     /**
@@ -187,6 +188,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
                 if (_size.decrementAndGet() > 0)
                     _notEmpty.signal();
+                _notFull.signal();
             }
         }
         finally
@@ -226,6 +228,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
+            _notFull.signal();
 
             return e;
         }
@@ -514,10 +517,48 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     @Override
-    public void put(E o) throws InterruptedException
+    public void put(E e) throws InterruptedException
     {
-        // The mechanism to await and signal when the queue is full is not implemented
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(e);
+
+        boolean notEmpty;
+        _tailLock.lock(); // Size cannot grow... only shrink
+        try
+        {
+            _headLock.lock();
+            try
+            {
+                if (!grow())
+                    _notFull.await();
+            }
+            finally
+            {
+                _headLock.unlock();
+            }
+
+            // Re-read head and tail after a possible grow
+            int tail = _indexes[TAIL_OFFSET];
+            _elements[tail] = e;
+            _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
+            notEmpty = _size.getAndIncrement() == 0;
+        }
+        finally
+        {
+            _tailLock.unlock();
+        }
+
+        if (notEmpty)
+        {
+            _headLock.lock();
+            try
+            {
+                _notEmpty.signal();
+            }
+            finally
+            {
+                _headLock.unlock();
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -547,6 +588,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
             if (_size.decrementAndGet() > 0)
                 _notEmpty.signal();
+            _notFull.signal();
 
             return e;
         }
