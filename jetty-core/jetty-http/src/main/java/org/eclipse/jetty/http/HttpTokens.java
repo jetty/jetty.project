@@ -246,7 +246,7 @@ public class HttpTokens
      * @return the original character or the replacement character ' ' or '?',
      * the return value is guaranteed to be a valid ISO-8859-1 character.
      */
-    @Deprecated(since = "12.0.25", forRemoval = true)
+    @Deprecated(since = "12.0.26", forRemoval = true)
     public static char sanitizeFieldVchar(char c)
     {
         switch (c)
@@ -281,8 +281,8 @@ public class HttpTokens
     }
 
     /**
-     * Check if the {@code fieldName} string is compliant with RFC9110 and RFC9113.
-     * <p>This method does not valid whether HTTP/2 and HTTP/3 pseudo headers are known, this must be done externally.</p>
+     * Check if the {@code fieldName} string is compliant with RFC9110, RFC9113 and RFC9114.
+     * <p>This method does not validate whether HTTP/2 and HTTP/3 pseudo headers are known (this must be done by caller code).</p>
      * @param fieldName the field name to check.
      * @return true if this is a legal field name.
      */
@@ -290,6 +290,10 @@ public class HttpTokens
     {
         if (StringUtil.isEmpty(fieldName))
             return false;
+
+        // If it is a pseudo header we do not validate it further, as only known pseudo headers are valid.
+        if (fieldName.startsWith(":"))
+            return true;
 
         for (int i = 0; i < fieldName.length(); i++)
         {
