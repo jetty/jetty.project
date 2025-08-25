@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -207,6 +208,73 @@ public class BlockingArrayQueueTest
         assertEquals("one", data[1]);
         assertEquals("two", data[2]);
         assertNull(data[3]);
+    }
+
+    @Test
+    public void testBlockingPutOffer() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(2, 2, 4);
+        assertTrue(queue.offer("one", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("two", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("three", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("four", Integer.MAX_VALUE, TimeUnit.SECONDS));
+
+        // Test poll
+        assertFalse(queue.offer("five", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch5 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                assertTrue(queue.offer("five", Integer.MAX_VALUE, TimeUnit.SECONDS));
+                latch5.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch5.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("one", queue.poll());
+        assertTrue(latch5.await(5, TimeUnit.SECONDS));
+
+        // Test remove
+        assertFalse(queue.offer("six", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch6 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                queue.put("six");
+                latch6.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch6.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("three", queue.remove(1));
+        assertTrue(latch6.await(5, TimeUnit.SECONDS));
+
+        // Test take
+        assertFalse(queue.offer("7", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch7 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                assertTrue(queue.offer("7", Integer.MAX_VALUE, TimeUnit.SECONDS));
+                latch7.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch7.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("two", queue.take());
+        assertTrue(latch7.await(5, TimeUnit.SECONDS));
     }
 
     @Test
