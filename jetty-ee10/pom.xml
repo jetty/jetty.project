@@ -49,7 +49,7 @@
     <ee10.jakarta.xml.bind.impl.version>4.0.5</ee10.jakarta.xml.bind.impl.version>
     <ee10.jakarta.xml.jaxws.impl.version>4.0.2</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jersey.version>3.1.10</ee10.jersey.version>
-    <ee10.jsp.impl.version>10.1.43</ee10.jsp.impl.version>
+    <ee10.jsp.impl.version>10.1.44</ee10.jsp.impl.version>
     <ee10.mail.impl.version>2.0.1</ee10.mail.impl.version>
     <ee10.weld.version>5.1.5.Final</ee10.weld.version>
   </properties>
