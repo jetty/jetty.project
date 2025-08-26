@@ -848,7 +848,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             catch (UnsupportedOperationException uoe)
             {
-                LOG.warn("Detected bounded thread pool queue {} without put support", _jobs.getClass());
+                LOG.warn("Detected bounded thread pool queue {} without put() support", _jobs.getClass());
                 _putSupported = false;
             }
         }
@@ -1199,7 +1199,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     {
         Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
         {
-            return (idleTimeoutNanos <= 0) ? _jobs.take() : _jobs.poll(idleTimeoutNanos, TimeUnit.NANOSECONDS);
+            if (idleTimeoutNanos <= 0)
+                return _jobs.take();
+            return _jobs.poll(idleTimeoutNanos, TimeUnit.NANOSECONDS);
         }
 
         @Override
