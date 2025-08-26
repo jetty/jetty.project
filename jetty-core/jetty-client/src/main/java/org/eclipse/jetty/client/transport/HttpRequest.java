@@ -57,9 +57,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -762,11 +762,7 @@ public class HttpRequest implements Request
     void sent()
     {
         if (timeoutNanoTime == Long.MAX_VALUE)
-        {
-            long timeout = getTimeout();
-            if (timeout > 0)
-                timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
-        }
+            timeoutNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getTimeout());
     }
 
     /**

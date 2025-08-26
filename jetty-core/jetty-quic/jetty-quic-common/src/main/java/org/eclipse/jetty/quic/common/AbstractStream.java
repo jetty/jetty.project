@@ -82,11 +82,7 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
 
     protected void notIdle()
     {
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
-        else
-            expireNanoTime = Long.MAX_VALUE;
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
     }
 
     @Override
