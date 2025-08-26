@@ -224,13 +224,13 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-el</artifactId>
+        <artifactId>mortbay-apache-el</artifactId>
         <version>${ee11.jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE11 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>mortbay-apache-jsp</artifactId>
         <version>${ee11.jsp.impl.version}</version>
       </dependency>
     </dependencies>
