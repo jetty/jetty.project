@@ -29,12 +29,14 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -313,7 +315,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Queued {} for {}", request, this);
-                    request.notifyQueued();
+                    if (!request.getAndSetQueued())
+                        request.notifyQueued();
                     send();
                 }
             }
@@ -419,11 +422,21 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
         if (failure.retry)
         {
-            // Resend this exchange, likely on another connection,
-            // and return false to avoid to re-enter this method.
-            send(exchange);
-            releaseOrClose(connection);
-            return false;
+            try
+            {
+                // Resend this exchange, on another connection or another
+                // destination, and return false to avoid re-entering this method.
+                HttpDestination newDestination = (HttpDestination)client.resolveDestination(request);
+                newDestination.send(exchange);
+                releaseOrClose(connection);
+                return false;
+            }
+            catch (Throwable x)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(x, failure.failure);
+                failure = new SendFailure(x, false);
+                // Fall through.
+            }
         }
 
         request.abort(failure.failure);
@@ -433,7 +446,14 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
     protected SendFailure send(IConnection connection, HttpExchange exchange)
     {
-        return connection.send(exchange);
+        try
+        {
+            return connection.send(exchange);
+        }
+        catch (Throwable x)
+        {
+            return new SendFailure(x, x instanceof RetryableRequestException);
+        }
     }
 
     @Override

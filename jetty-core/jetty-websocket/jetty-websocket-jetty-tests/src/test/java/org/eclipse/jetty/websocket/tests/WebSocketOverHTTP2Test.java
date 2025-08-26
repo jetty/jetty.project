@@ -11,10 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
@@ -24,26 +22,18 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee11.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
@@ -53,16 +43,18 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -70,10 +62,12 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -87,6 +81,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketOverHTTP2Test
@@ -95,21 +90,27 @@ public class WebSocketOverHTTP2Test
     private ServerConnector connector;
     private ServerConnector tlsConnector;
     private WebSocketClient wsClient;
-    private ServletContextHandler context;
+    private ContextHandler context;
     private Runnable onComplete;
 
-    private void prepareAndStartServer() throws Exception
+    private void startServer(Consumer<ServerWebSocketContainer> configurator) throws Exception
     {
-        prepareServer();
+        prepareServer(configurator);
         server.start();
     }
 
-    private void prepareServer() throws Exception
+    private void startServer(BiFunction<Server, ContextHandler, Handler> wsHandlerFactory) throws Exception
     {
-        prepareServer(new TestJettyWebSocketServlet());
+        prepareServer(wsHandlerFactory);
+        server.start();
     }
 
-    private void prepareServer(TestJettyWebSocketServlet servlet) throws Exception
+    private void prepareServer(Consumer<ServerWebSocketContainer> configurator)
+    {
+        prepareServer((server, context) -> WebSocketUpgradeHandler.from(server, context, configurator));
+    }
+
+    private void prepareServer(BiFunction<Server, ContextHandler, Handler> wsHandlerFactory)
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -135,12 +136,7 @@ public class WebSocketOverHTTP2Test
         tlsConnector = new ServerConnector(server, 1, 1, ssl, alpn, h1s, h2s);
         server.addConnector(tlsConnector);
 
-        context = new ServletContextHandler("/");
-        server.setHandler(context);
-        context.addServlet(new ServletHolder(servlet), "/ws/*");
-        JettyWebSocketServletContainerInitializer.configure(context, null);
-
-        server.setHandler(new EventsHandler(server.getHandler())
+        EventsHandler eventsHandler = new EventsHandler()
         {
             @Override
             protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
@@ -148,17 +144,24 @@ public class WebSocketOverHTTP2Test
                 if (onComplete != null)
                     onComplete.run();
             }
-        });
+        };
+        server.setHandler(eventsHandler);
+
+        context = new ContextHandler("/");
+        eventsHandler.setHandler(context);
+
+        Handler wsHandler = wsHandlerFactory.apply(server, context);
+        context.setHandler(wsHandler);
     }
 
-    private void startClient(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
+    private void startClient(Function<ClientConnector, List<ClientConnectionFactory.Info>> protocolFn) throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn.apply(clientConnector)));
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn.apply(clientConnector).toArray(ClientConnectionFactory.Info[]::new)));
         wsClient = new WebSocketClient(httpClient);
         wsClient.start();
     }
@@ -176,23 +179,23 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testWebSocketOverDynamicHTTP1() throws Exception
     {
-        testWebSocketOverDynamicTransport(clientConnector -> HttpClientConnectionFactory.HTTP11);
+        testWebSocketOverDynamicTransport(clientConnector -> List.of(HttpClientConnectionFactory.HTTP11));
     }
 
     @Test
     @Tag("flaky") // See analysis in #12235.
     public void testWebSocketOverDynamicHTTP2() throws Exception
     {
-        testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        testWebSocketOverDynamicTransport(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
     }
 
-    private void testWebSocketOverDynamicTransport(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
+    private void testWebSocketOverDynamicTransport(Function<ClientConnector, List<ClientConnectionFactory.Info>> protocolFn) throws Exception
     {
-        prepareAndStartServer();
+        startServer(container -> container.addMapping("/echo/*", (rq, rs, cb) -> new EchoSocket()));
         startClient(protocolFn);
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo/query?param=value");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo/query?param=value");
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
 
         String text = "websocket";
@@ -211,53 +214,43 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testConnectProtocolDisabled() throws Exception
     {
-        prepareAndStartServer();
+        startServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
         AbstractHTTP2ServerConnectionFactory h2c = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
         h2c.setConnectProtocolEnabled(false);
 
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
-
-        Throwable cause = failure.getCause();
-        assertThat(cause.getMessage(), containsStringIgnoringCase(ErrorCode.PROTOCOL_ERROR.name()));
+        assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testSlowWebSocketUpgradeWithHTTP2DataFramesQueued() throws Exception
     {
-        prepareServer(new TestJettyWebSocketServlet()
+        startServer((server, context) -> new Handler.Wrapper(WebSocketUpgradeHandler.from(server, context, container ->
+            container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket())))
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public boolean handle(Request request, Response response, org.eclipse.jetty.util.Callback callback) throws Exception
             {
-                try
-                {
-                    super.service(request, response);
-                    // Flush the response to the client then wait before exiting
-                    // this method so that the client can send HTTP/2 DATA frames
-                    // that will be processed by the server while this method sleeps.
-                    response.flushBuffer();
-                    Thread.sleep(1000);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
-                }
+                boolean handled = super.handle(request, response, callback);
+                // The response has been sent to the client; wait before exiting
+                // this method so that the client can send HTTP/2 DATA frames
+                // that will be processed by the server while this method sleeps.
+                Thread.sleep(1000);
+                return handled;
             }
         });
         server.start();
 
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         // Connect and send immediately a message, so the message
         // arrives to the server while the server is still upgrading.
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("wss://localhost:" + tlsConnector.getLocalPort() + "/ws/echo");
+        URI uri = URI.create("wss://localhost:" + tlsConnector.getLocalPort() + "/echo");
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
         String text = "websocket";
         session.sendText(text, Callback.NOOP);
@@ -274,16 +267,16 @@ public class WebSocketOverHTTP2Test
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Issue #6660 - Windows does not throw ConnectException")
     public void testWebSocketConnectPortDoesNotExist() throws Exception
     {
-        prepareAndStartServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         // Port 293 is not assigned by IANA, so
         // it should be impossible to connect.
         int nonExistingPort = 293;
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + nonExistingPort + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + nonExistingPort + "/echo");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+        ExecutionException failure = assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
@@ -294,30 +287,35 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testWebSocketNotFound() throws Exception
     {
-        prepareAndStartServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startServer(container ->
+        {});
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/nothing");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+        ExecutionException failure = assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(UpgradeException.class));
-        assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 501"));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 404"));
     }
 
     @Test
     public void testNotNegotiated() throws Exception
     {
-        prepareAndStartServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startServer(container -> container.addMapping("/null", (rq, rs, cb) ->
+        {
+            Response.writeError(rq, rs, cb, HttpStatus.SERVICE_UNAVAILABLE_503);
+            return null;
+        }));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/null");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/null");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+        ExecutionException failure = assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
@@ -328,18 +326,21 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testThrowFromCreator() throws Exception
     {
-        prepareAndStartServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startServer(container -> container.addMapping("/throw", (rq, rs, cb) ->
+        {
+            throw new RuntimeException("throwing from creator");
+        }));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         CountDownLatch latch = new CountDownLatch(1);
         onComplete = latch::countDown;
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/throw");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/throw");
 
         ExecutionException failure;
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            failure = Assertions.assertThrows(ExecutionException.class, () ->
+            failure = assertThrows(ExecutionException.class, () ->
                 wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
         }
 
@@ -354,13 +355,17 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testServerConnectionClose() throws Exception
     {
-        prepareAndStartServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        startServer(container -> container.addMapping("/close", (rq, rs, cb) ->
+        {
+            rq.getConnectionMetaData().getConnection().getEndPoint().close();
+            return new EchoSocket();
+        }));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/connectionClose");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/close");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+        ExecutionException failure = assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
@@ -370,15 +375,16 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testServerTimeout() throws Exception
     {
-        prepareAndStartServer();
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        // Set up idle timeout.
+        long serverIdleTimeout = 1000;
         EchoSocket serverEndpoint = new EchoSocket();
-        container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
+        startServer(container ->
+        {
+            container.addMapping("/specialEcho", (rq, rs, cb) -> serverEndpoint);
+            container.setIdleTimeout(Duration.ofMillis(serverIdleTimeout));
+        });
 
-        // Set up idle timeouts.
-        long timeout = 1000;
-        container.setIdleTimeout(Duration.ofMillis(timeout));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
         wsClient.setIdleTimeout(Duration.ZERO);
 
         // Setup a websocket connection.
@@ -390,22 +396,74 @@ public class WebSocketOverHTTP2Test
         assertThat(received, equalTo("hello world"));
 
         // Wait for timeout on server.
-        assertTrue(serverEndpoint.closeLatch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(serverEndpoint.closeLatch.await(serverIdleTimeout * 2, TimeUnit.MILLISECONDS));
         assertThat(serverEndpoint.closeCode, equalTo(StatusCode.SHUTDOWN));
         assertThat(serverEndpoint.closeReason, containsStringIgnoringCase("timeout"));
         assertNotNull(serverEndpoint.error);
 
         // Wait for timeout on client.
-        assertTrue(clientEndpoint.closeLatch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(serverIdleTimeout * 2, TimeUnit.MILLISECONDS));
         assertThat(clientEndpoint.closeCode, equalTo(StatusCode.SHUTDOWN));
         assertThat(clientEndpoint.closeReason, containsStringIgnoringCase("timeout"));
         assertNull(clientEndpoint.error);
     }
 
     @Test
+    public void testHTTP2DisabledFallbackToHTTP1() throws Exception
+    {
+        startServer(container -> container.addMapping("/echo", (rq, rs, cb) ->
+        {
+            assertThat(rq.getConnectionMetaData().getHttpVersion(), equalTo(HttpVersion.HTTP_1_1));
+            return new EchoSocket();
+        }));
+        AbstractHTTP2ServerConnectionFactory h2c = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
+        h2c.setConnectProtocolEnabled(false);
+
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)), HttpClientConnectionFactory.HTTP11));
+
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        Session session = wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+
+        String text = "websocket";
+        session.sendText(text, Callback.NOOP);
+
+        String message = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertNotNull(message);
+        assertEquals(text, message);
+
+        session.close(StatusCode.NORMAL, null, Callback.NOOP);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(StatusCode.NORMAL, clientEndpoint.closeCode);
+    }
+
+    @Test
+    public void testHTTP2DisabledButForced() throws Exception
+    {
+        startServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+        AbstractHTTP2ServerConnectionFactory h2c = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
+        h2c.setConnectProtocolEnabled(false);
+
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)), HttpClientConnectionFactory.HTTP11));
+
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
+        // Force WebSocket upgrade with HTTP/2.
+        upgradeRequest.setHttpVersion(HttpVersion.HTTP_2.asString());
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS));
+        Throwable cause1 = failure.getCause();
+        assertThat(cause1, instanceOf(UpgradeException.class));
+        // The WebSocket API UpgradeException wraps a WebSocket core UpgradeException, which wraps the original cause.
+        Throwable cause2 = cause1.getCause().getCause();
+        assertThat(cause2, instanceOf(HttpRequestException.class));
+    }
+
+    @Test
     public void testNetworkConnectionLimit() throws Exception
     {
-        prepareServer();
+        prepareServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
 
         int maxNetworkConnectionCount = 5;
         NetworkConnectionLimit networkConnectionLimit = new NetworkConnectionLimit(maxNetworkConnectionCount, connector, tlsConnector);
@@ -414,12 +472,9 @@ public class WebSocketOverHTTP2Test
 
         server.start();
 
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
-        EchoSocket serverEndpoint = new EchoSocket();
-        container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/specialEcho");
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
 
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
         List<EventSocket> clientHandlers = new ArrayList<>();
         for (int i = 0; i < maxNetworkConnectionCount; i++)
         {
@@ -456,34 +511,5 @@ public class WebSocketOverHTTP2Test
                 assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
                 assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
             });
-    }
-
-    private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
-    {
-        @Override
-        protected void configure(JettyWebSocketServletFactory factory)
-        {
-            factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
-            factory.addMapping("/ws/echo/query", (request, response) ->
-            {
-                assertNotNull(request.getQueryString());
-                return new EchoSocket();
-            });
-            factory.addMapping("/ws/null", (request, response) ->
-            {
-                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503, "null");
-                return null;
-            });
-            factory.addMapping("/ws/throw", (request, response) ->
-            {
-                throw new RuntimeException("throwing from creator");
-            });
-            factory.addMapping("/ws/connectionClose", (request, response) ->
-            {
-                Request coreRequest = ((DelegatedServerUpgradeRequest)request).getServerUpgradeRequest();
-                coreRequest.getConnectionMetaData().getConnection().getEndPoint().close();
-                return new EchoSocket();
-            });
-        }
     }
 }

@@ -87,9 +87,6 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
-        request = webSocketClient.getHttpClient().newRequest(requestURI);
-        request.attribute(HttpUpgrader.Factory.class.getName(), this);
-
         // Validate websocket URI
         if (!requestURI.isAbsolute())
             throw new IllegalArgumentException("WebSocket URI must be absolute");
@@ -104,9 +101,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         if (requestURI.getHost() == null)
             throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
 
-        this.wsClient = webSocketClient;
-        this.futureCoreSession = new CompletableFuture<>();
-        this.futureCoreSession.whenComplete((session, throwable) ->
+        request = webSocketClient.getHttpClient().newRequest(requestURI);
+        request.attribute(HttpUpgrader.Factory.class.getName(), this);
+        wsClient = webSocketClient;
+        futureCoreSession = new CompletableFuture<>();
+        futureCoreSession.whenComplete((session, throwable) ->
         {
             if (throwable != null)
                 request.abort(throwable);
@@ -282,7 +281,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             Throwable failure = result.getFailure();
             boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
-                failure = new UpgradeException(requestURI, status, responseLine, failure);
+                failure = new UpgradeException(requestURI, failure);
             handleException(failure);
         }
     }
