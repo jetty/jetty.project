@@ -541,7 +541,7 @@
                              ee10 starts with version 10.0.x
                              ee11 TODO -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-jsp</artifactId>
+                        <artifactId>mortbay-apache-jsp</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
@@ -682,7 +682,7 @@
                              ee10 starts with version 10.0.x
                              ee11 TODO -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-jsp</artifactId>
+                        <artifactId>mortbay-apache-jsp</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
