@@ -21,7 +21,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -504,12 +503,7 @@ public class FrameFlusher extends IteratingCallback
         private Entry(Frame frame, Callback callback, boolean batch)
         {
             super(frame, callback, batch);
-
-            long currentTime = NanoTime.now();
-            long expiry = Long.MAX_VALUE;
-            if (_frameTimeout > 0)
-                expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(_frameTimeout);
-            _expiry = expiry;
+            _expiry = CyclicTimeouts.Expirable.calcExpireNanoTime(_frameTimeout);
         }
 
         @Override
