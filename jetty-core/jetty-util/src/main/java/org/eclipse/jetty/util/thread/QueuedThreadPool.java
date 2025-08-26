@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -180,7 +180,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         setReservedThreads(reservedThreads);
         if (queue == null)
         {
-            queue = new LinkedTransferQueue<>();
+            int capacity = Math.max(_minThreads, 8) * 1024;
+            queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
         {
