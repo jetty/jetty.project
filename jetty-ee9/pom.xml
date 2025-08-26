@@ -297,13 +297,13 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-el</artifactId>
+        <artifactId>mortbay-apache-el</artifactId>
         <version>${ee9.jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE 9 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>mortbay-apache-jsp</artifactId>
         <version>${ee9.jsp.impl.version}</version>
       </dependency>
     </dependencies>
@@ -497,7 +497,7 @@
                       <rule>
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-el</artifactId>
+                        <artifactId>mortbay-apache-el</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
@@ -762,7 +762,7 @@
                       <rule>
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-el</artifactId>
+                        <artifactId>mortbay-apache-el</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
