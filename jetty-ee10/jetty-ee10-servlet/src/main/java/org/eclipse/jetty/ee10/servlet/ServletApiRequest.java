@@ -94,6 +94,8 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.ee10.servlet.Dispatcher.WRAPPED_REQUEST_ATTRIBUTE;
+
 /**
  * The Jetty implementation of the ee10 {@link HttpServletRequest} object.
  * This provides the bridge from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request}
@@ -634,7 +636,8 @@ public class ServletApiRequest implements HttpServletRequest
         {
             try
             {
-                _parts = ServletMultiPartFormData.getParts(this);
+                ServletRequest dispatchedRequest = (ServletRequest)getAttribute(WRAPPED_REQUEST_ATTRIBUTE);
+                _parts = ServletMultiPartFormData.getParts(dispatchedRequest == null ? this : dispatchedRequest);
 
                 Collection<Part> parts = _parts.getParts();
 

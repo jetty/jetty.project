@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 public class Dispatcher implements RequestDispatcher
@@ -59,13 +58,18 @@ public class Dispatcher implements RequestDispatcher
      * Dispatch include attribute names
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
-    
+
     /**
      * Name of original request attribute
      */ 
     public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+
+    /**
+     * This attribute is used to store the wrapped request for internal use during a dispatch.
+     */
+    public static final String WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.server.wrappedRequest";
 
     private final ServletContextHandler _contextHandler;
     private final HttpURI _uri;
@@ -124,7 +128,18 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
         servletContextRequest.getServletContextResponse().resetForForward();
-        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
+
+        Object oldWrappedRequest = httpRequest.getAttribute(WRAPPED_REQUEST_ATTRIBUTE);
+        try
+        {
+            ForwardRequest forwardRequest = new ForwardRequest(httpRequest);
+            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, forwardRequest);
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, forwardRequest, httpResponse);
+        }
+        finally
+        {
+            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, oldWrappedRequest);
+        }
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
@@ -150,12 +165,16 @@ public class Dispatcher implements RequestDispatcher
         ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
         IncludeResponse includeResponse = new IncludeResponse(httpResponse);
+        Object oldWrappedRequest = httpRequest.getAttribute(WRAPPED_REQUEST_ATTRIBUTE);
         try
         {
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
+            IncludeRequest includeRequest = new IncludeRequest(httpRequest);
+            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, includeRequest);
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, includeRequest, includeResponse);
         }
         finally
         {
+            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, oldWrappedRequest);
             includeResponse.onIncluded();
             servletContextResponse.included();
         }
@@ -434,6 +453,14 @@ public class Dispatcher implements RequestDispatcher
                 case RequestDispatcher.INCLUDE_REQUEST_URI -> (_uri == null) ? null : _uri.getPath();
                 case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _httpServletRequest.getContextPath();
                 case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
+                case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
+                {
+                    // If we already have future parts, return the configuration of the wrapped request.
+                    if (super.getAttribute(ServletMultiPartFormData.class.getName()) != null)
+                        yield super.getAttribute(name);
+                    // otherwise, return the configuration of this mapping
+                    yield  _mappedServlet.getServletHolder().getMultipartConfigElement();
+                }
                 default -> super.getAttribute(name);
             };
         }
@@ -443,6 +470,11 @@ public class Dispatcher implements RequestDispatcher
         {
             //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+
+            //only return the multipart attribute name if this servlet mapping has multipart config
+            if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
+                names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+
             if (_named != null)
                 return Collections.enumeration(names);
             
