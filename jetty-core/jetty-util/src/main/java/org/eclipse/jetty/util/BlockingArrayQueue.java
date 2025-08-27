@@ -38,8 +38,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated),
  * which defaults to {@link Integer#MAX_VALUE}.
  * </p>
- * <h3>Using {@link Condition#signalAll()} vs {@link Condition#signal()}</h3>
  * <p>
+ * <b>Using {@link Condition#signalAll()} vs {@link Condition#signal()}</b><br/>
  * This class uses two {@link Condition Conditions} ({@code _notFull} on {@code _tailLock} and {@code _notEmpty} on {@code _headLock}) to implement blocking operations.
  * Several strategies for using these {@code Conditions} are possible:
  * </p>
@@ -73,6 +73,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * It is the "best of both worlds", strategy.
  * </li>
  * </ul>
+ * <p>
  * This implementation uses the latter strategy, as it provides better throughput, especially for {@code QueuedThreadPool} usage.
  * </p>
  *
