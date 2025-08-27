@@ -20,7 +20,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -64,9 +66,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -563,5 +567,139 @@ public class CoreMultiPartTest
         assertEquals(200, response.getStatus());
         assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
             "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+    }
+
+    @Test
+    public void testTemporaryPart() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                MultiPartConfig conf = new MultiPartConfig.Builder().location(tmpDir)
+                    .maxMemoryPartSize(0)
+                    .build();
+                MultiPartFormData.Parts parts = getParts(request, conf);
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                MultiPart.Part part = parts.iterator().next();
+                assertEquals("part1", part.getName());
+                HttpFields headers = part.getHeaders();
+                assertNotNull(headers);
+                assertEquals(2, headers.size());
+                InputStream inputStream = Content.Source.asInputStream(part.getContentSource());
+                String content1 = IO.toString(inputStream, UTF_8);
+                assertEquals("content1", content1);
+
+                System.err.println(part.getClass());
+                System.err.println("Temporary files: " + getTempDirFiles());
+
+                callback.succeeded();
+                return true;
+            }
+        }, multiPartConfig(null, -1, MAX_FILE_SIZE, -1, 0));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String content = """
+                --A1B2C3
+                Content-Disposition: form-data; name="part1"; filename="part1.txt"
+                Content-Type: text/plain; charset="UTF-8"
+
+                content1
+                --A1B2C3--
+                """;
+            String header = """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+
+        // The temp file should be automatically deleted after the request is processed.
+        await().atMost(Duration.ofSeconds(5)).pollDelay(Duration.ofMillis(200)).until(() -> getTempDirFiles().isEmpty());
+    }
+
+    @Test
+    public void testPermanentPart() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                MultiPartConfig conf = new MultiPartConfig.Builder().location(tmpDir)
+                    .maxMemoryPartSize(0)
+                    .build();
+                MultiPartFormData.Parts parts = getParts(request, conf);
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                MultiPart.Part part = parts.iterator().next();
+                assertEquals("part1", part.getName());
+                HttpFields headers = part.getHeaders();
+                assertNotNull(headers);
+                assertEquals(2, headers.size());
+                InputStream inputStream = Content.Source.asInputStream(part.getContentSource());
+                String content1 = IO.toString(inputStream, UTF_8);
+                assertEquals("content1", content1);
+
+                part.writeTo(tmpDir.resolve(part.getFileName()));
+
+                callback.succeeded();
+                return true;
+            }
+        }, multiPartConfig(null, -1, MAX_FILE_SIZE, -1, 0));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String content = """
+                --A1B2C3
+                Content-Disposition: form-data; name="part1"; filename="part1.txt"
+                Content-Type: text/plain; charset="UTF-8"
+
+                content1
+                --A1B2C3--
+                """;
+            String header = """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+
+        // Even after the request is processed, the temp file should remain in the tmpDir.
+        Thread.sleep(1000);
+        assertThat(getTempDirFiles(), hasSize(1));
+    }
+
+    @SuppressWarnings("resource")
+    private Collection<Path> getTempDirFiles() throws IOException
+    {
+        return Files.list(tmpDir).toList();
     }
 }
