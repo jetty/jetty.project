@@ -48,7 +48,7 @@ In the diagrams below, `Pn` represents production of task `n` and `Cn` represent
 
 [[execution-strategy-pc]]
 === Produce-Consume
-In the `Produce-Consume` mode, the `Producer Thread` loops producing tasks and directly consumes those tasks itself by running them.
+In the `Produce-Consume` mode, the `Producer Thread` loops producing tasks (`Pn`) and directly consumes those tasks (`Cn`) itself by running them.
 
 [plantuml]
 ----
