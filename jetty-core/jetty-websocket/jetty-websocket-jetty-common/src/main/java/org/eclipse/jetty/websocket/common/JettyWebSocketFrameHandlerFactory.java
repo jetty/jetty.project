@@ -395,7 +395,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg BUFFER = new InvokerUtils.Arg(ByteBuffer.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, BUFFER);
-            metadata.setPingHandle(methodHandle, onmethod);
+            metadata.setPingHandle(MethodHolder.from(methodHandle), onmethod);
         }
 
         // OnWebSocketPong [0..1]
@@ -406,7 +406,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg BUFFER = new InvokerUtils.Arg(ByteBuffer.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, BUFFER);
-            metadata.setPongHandle(methodHandle, onmethod);
+            metadata.setPongHandle(MethodHolder.from(methodHandle), onmethod);
         }
 
         // OnWebSocketMessage [0..2]
