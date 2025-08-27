@@ -100,8 +100,8 @@ public class MultiPartServletTest
         start(servletContextHandler ->
         {
             ServletHolder servletHolder = new ServletHolder(servlet);
-            servletHolder.getRegistration().setMultipartConfig(config == null ?
-                new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0) : config);
+            servletHolder.getRegistration().setMultipartConfig(config == null
+                ? new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0) : config);
             servletContextHandler.addServlet(servletHolder, "/");
         }, eager);
     }
