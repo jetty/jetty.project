@@ -20,8 +20,10 @@ import java.util.Map;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
@@ -60,6 +62,10 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public Origin newOrigin(Request request)
     {
+        HttpVersion version = request.getVersion();
+        HttpVersion http1 = HttpVersion.HTTP_1_1;
+        if (((HttpRequest)request).isVersionExplicit() && version.compareTo(http1) > 0)
+            throw new HttpRequestException("Cannot send explicit %s requests with %s transport".formatted(version, http1), request);
         if (request.getTransport() == null)
             request.transport(Transport.TCP_IP);
         return getHttpClient().createOrigin(request, HTTP11);

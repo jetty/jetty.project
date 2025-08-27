@@ -99,9 +99,9 @@ public class ErrorCloseTest
         }
 
         @Override
-        public void onMessage(String message) throws IOException
+        public void onTextMessage(String message) throws IOException
         {
-            super.onMessage(message);
+            super.onTextMessage(message);
             if (methodsToThrow.contains("onMessage"))
                 throw new RuntimeException("throwing from onMessage");
         }

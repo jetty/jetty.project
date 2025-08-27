@@ -346,7 +346,7 @@ public class ResponseListeners
         notifyComplete(completeListener, result);
     }
 
-    private static void notifyComplete(Response.CompleteListener listener, Result result)
+    static void notifyComplete(Response.CompleteListener listener, Result result)
     {
         try
         {

@@ -422,9 +422,9 @@ public class WebSocketProxyTest
     public static class OnTextThrowingSocket extends EventSocket
     {
         @Override
-        public void onMessage(String message) throws IOException
+        public void onTextMessage(String message) throws IOException
         {
-            super.onMessage(message);
+            super.onTextMessage(message);
             throw new IllegalStateException("simulated onMessage error");
         }
     }

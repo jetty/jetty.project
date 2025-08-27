@@ -567,7 +567,7 @@ then
   fi
 fi
 
-# Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
+# Collect the dry-run (of opts,path,main,args,envs) from the jetty.base configuration
 JETTY_DRY_RUN=$(echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs)
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 

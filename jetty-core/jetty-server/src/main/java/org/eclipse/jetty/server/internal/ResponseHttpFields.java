@@ -64,25 +64,18 @@ public class ResponseHttpFields extends HttpFields.Mutable.Wrapper
     @Override
     public boolean onRemoveField(HttpField field)
     {
-        if (isCommitted())
-            return false;
-        if (isPersistent(field))
-            throw new UnsupportedOperationException("Persistent field");
-        return true;
+        return !isCommitted() && !isPersistent(field);
     }
 
     @Override
     public HttpField onReplaceField(HttpField oldField, HttpField newField)
     {
-        if (isCommitted())
+        // If the fields are committed, we cannot replace them, nor can we delete or change the name.
+        if (isCommitted() || newField == null || !newField.isSameName(oldField))
             return oldField;
 
         if (oldField instanceof Persistent persistent)
         {
-            // cannot change the field name
-            if (newField == null || !newField.isSameName(oldField))
-                throw new UnsupportedOperationException("Persistent field");
-
             // new field must also be persistent and clear back to the previous value
             newField = (newField instanceof PreEncodedHttpField)
                 ? new PersistentPreEncodedHttpField(oldField.getHeader(), newField.getValue(), persistent.getOriginal())

@@ -750,7 +750,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(byteBufferPool, scheduler, generator, endpoint, bufferSize, 8);
+            super(byteBufferPool, scheduler, generator, endpoint, bufferSize, 8, coreSession.getBehavior());
             setUseDirectByteBuffers(isUseOutputDirectByteBuffers());
         }
 

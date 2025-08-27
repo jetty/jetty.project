@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.hpack;
 import java.io.File;
 import java.io.FileReader;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -46,7 +47,7 @@ public class HpackPerfTest
     @AfterEach
     public void after()
     {
-        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
+        System.err.printf(Locale.ROOT, "dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
     }
 
     @Test

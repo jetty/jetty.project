@@ -44,7 +44,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -211,8 +210,8 @@ public class ContextHandlerTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Server", null));
-                Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Date", null));
+                response.setHeader("Server", null);
+                response.setHeader("Date", null);
                 String server = response.getHeader(HttpHeader.SERVER.asString());
                 String date = response.getHeader(HttpHeader.DATE.asString());
                 response.setHeader("Server", "testing123");

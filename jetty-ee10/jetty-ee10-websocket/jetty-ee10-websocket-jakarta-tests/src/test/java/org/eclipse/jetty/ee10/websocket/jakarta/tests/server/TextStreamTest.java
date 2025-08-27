@@ -39,9 +39,9 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.DataUtils;
-import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEndpointTracker;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -115,7 +115,7 @@ public class TextStreamTest
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
-        try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
+        try (WebSocketTester fuzzer = server.newWebSocketTester("/echo"))
         {
             fuzzer.sendBulk(send);
             BlockingQueue<Frame> receivedFrames = fuzzer.getOutputFrames();
@@ -145,7 +145,7 @@ public class TextStreamTest
         byte[] expectedData = new byte[data.length];
         System.arraycopy(data, 0, expectedData, 0, data.length);
 
-        try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
+        try (WebSocketTester fuzzer = server.newWebSocketTester("/echo"))
         {
             fuzzer.sendBulk(send);
 

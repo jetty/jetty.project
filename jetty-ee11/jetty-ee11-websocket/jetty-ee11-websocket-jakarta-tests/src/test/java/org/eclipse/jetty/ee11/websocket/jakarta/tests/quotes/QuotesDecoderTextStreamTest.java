@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee11.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee11.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -77,7 +77,7 @@ public class QuotesDecoderTextStreamTest
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
+        try (WebSocketTester session = server.newWebSocketTester("/quotes/echo/string"))
         {
             session.sendBulk(send);
 
@@ -97,7 +97,7 @@ public class QuotesDecoderTextStreamTest
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
+        try (WebSocketTester session = server.newWebSocketTester("/quotes/echo/string"))
         {
             session.sendSegmented(send, 3);
 
@@ -117,7 +117,7 @@ public class QuotesDecoderTextStreamTest
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
+        try (WebSocketTester session = server.newWebSocketTester("/quotes/echo/string"))
         {
             session.sendFrames(send);
 

@@ -49,6 +49,7 @@ import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.RequestListeners;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -57,9 +58,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -97,6 +98,7 @@ public class HttpRequest implements Request
     private Supplier<HttpFields> trailers;
     private Object tag;
     private boolean normalized;
+    private boolean queued;
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -125,13 +127,11 @@ public class HttpRequest implements Request
     public HttpRequest copy(URI newURI)
     {
         if (newURI == null)
-        {
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
-        }
 
         HttpRequest newRequest = copyInstance(newURI);
+        newRequest.useVersion(getVersion());
         newRequest.method(getMethod())
-            .version(getVersion())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
             .timeout(getTimeout(), TimeUnit.MILLISECONDS)
@@ -311,6 +311,10 @@ public class HttpRequest implements Request
         return version;
     }
 
+    /**
+     * @return whether the HTTP version has been set explicitly
+     * by applications, using {@link #version(HttpVersion)}.
+     */
     public boolean isVersionExplicit()
     {
         return versionExplicit;
@@ -319,9 +323,21 @@ public class HttpRequest implements Request
     @Override
     public Request version(HttpVersion version)
     {
-        this.version = Objects.requireNonNull(version);
+        useVersion(Objects.requireNonNull(version));
         this.versionExplicit = true;
         return this;
+    }
+
+    /**
+     * <p>Sets the HTTP version, but non-explicitly.</p>
+     * <p>Use {@link #version(HttpVersion)} to set the version explicitly.</p>
+     *
+     * @param version the HTTP version
+     * @see #isVersionExplicit()
+     */
+    public void useVersion(HttpVersion version)
+    {
+        this.version = version;
     }
 
     @Override
@@ -748,8 +764,16 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        Destination destination = client.resolveDestination(this);
-        destination.send(this, listener);
+        try
+        {
+            Destination destination = client.resolveDestination(this);
+            destination.send(this, listener);
+        }
+        catch (Throwable x)
+        {
+            Result result = new Result(this, x, new HttpResponse(this), null);
+            abort(x).thenRun(() -> ResponseListeners.notifyComplete(listener, result));
+        }
     }
 
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
@@ -762,11 +786,7 @@ public class HttpRequest implements Request
     void sent()
     {
         if (timeoutNanoTime == Long.MAX_VALUE)
-        {
-            long timeout = getTimeout();
-            if (timeout > 0)
-                timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
-        }
+            timeoutNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getTimeout());
     }
 
     /**
@@ -813,7 +833,8 @@ public class HttpRequest implements Request
     }
 
     /**
-     * <p>Marks this request as <em>normalized</em>.</p>
+     * <p>Marks this request as <em>normalized</em>, and returns whether
+     * this request was already normalized.</p>
      * <p>A request is normalized by setting things that applications give
      * for granted such as defaulting the method to {@code GET}, adding the
      * {@code Host} header, adding the cookies, adding {@code Authorization}
@@ -822,10 +843,23 @@ public class HttpRequest implements Request
      * @return whether this request was already normalized
      * @see HttpConnection#normalizeRequest(HttpRequest)
      */
-    boolean normalized()
+    boolean getAndSetNormalized()
     {
         boolean result = normalized;
         normalized = true;
+        return result;
+    }
+
+    /**
+     * <p>Marks this request as queued, and returns whether this request
+     * was already queued.</p>
+     *
+     * @return whether this request was already queued
+     */
+    boolean getAndSetQueued()
+    {
+        boolean result = queued;
+        queued = true;
         return result;
     }
 

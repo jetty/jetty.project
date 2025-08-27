@@ -315,9 +315,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
     {
-        private final Set<Class<?>> _handlesTypes = new HashSet<>();
-        private final Set<String> _discoveredClassNames = new HashSet<>();
-        
+        private final Set<Class<?>> _handlesTypes = ConcurrentHashMap.newKeySet();
+        private final Set<String> _discoveredClassNames = ConcurrentHashMap.newKeySet();
+
         public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
         {
             super(source, sci);
