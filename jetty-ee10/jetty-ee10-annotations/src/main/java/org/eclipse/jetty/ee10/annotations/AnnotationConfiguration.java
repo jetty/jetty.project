@@ -313,9 +313,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
     {
-        private final Set<Class<?>> _handlesTypes = new HashSet<>();
-        private final Set<String> _discoveredClassNames = new HashSet<>();
-        
+        private final Set<Class<?>> _handlesTypes = ConcurrentHashMap.newKeySet();
+        private final Set<String> _discoveredClassNames = ConcurrentHashMap.newKeySet();
+
         public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
         {
             super(source, sci);
@@ -386,7 +386,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         addInheritedTypes(finalClassnames, classMap, classMap.get(c.getName()));
                 }
 
-                for (String classname:_discoveredClassNames)
+                for (String classname : _discoveredClassNames)
                 {
                     //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
                     finalClassnames.add(classname);

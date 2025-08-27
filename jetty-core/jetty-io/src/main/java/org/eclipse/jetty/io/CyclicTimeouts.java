@@ -190,7 +190,31 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
          *
          * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if this entity does not expire
          */
-        public long getExpireNanoTime();
+        long getExpireNanoTime();
+
+        /**
+         * <p>Calculates the expiration time in nanoseconds.</p>
+         * <p>If the given {@code timeoutMs} is positive, the returned value is calculated from the
+         * current nanoTime: {@code NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeoutMs)}.</p>
+         * <p>If the given {@code timeoutMs} is zero or negative, {@link Long#MAX_VALUE} is returned.</p>
+         *
+         * @param timeoutMs the timeout to add to the current nanoTime to calculate the expiration time
+         * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if the timeout is zero or negative
+         */
+        static long calcExpireNanoTime(long timeoutMs)
+        {
+            if (timeoutMs > 0)
+            {
+                long value = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+                if (value == Long.MAX_VALUE)
+                    ++value;
+                return value;
+            }
+            else
+            {
+                return Long.MAX_VALUE;
+            }
+        }
     }
 
     private class Timeouts extends CyclicTimeout

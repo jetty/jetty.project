@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -140,8 +138,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void notIdle()
     {
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
     }
 }
