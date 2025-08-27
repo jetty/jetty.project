@@ -335,8 +335,22 @@ public interface Session extends Configurable, Closeable
          *
          * @param statusCode the close {@link StatusCode status code}
          * @param reason the optional reason for the close
+         * @deprecated use {@link #onWebSocketClose(int, String, Callback)} instead.
          */
+        @Deprecated(since = "12.1.0", forRemoval = true)
         default void onWebSocketClose(int statusCode, String reason)
+        {
+        }
+
+        /**
+         * <p>The WebSocket {@link Session} has been closed.</p>
+         *
+         * @param statusCode the close {@link StatusCode status code}.
+         * @param reason the optional reason for the close.
+         * @param callback the callback used to signal that the close processing is complete.
+         *
+         */
+        default void onWebSocketClose(int statusCode, String reason, Callback callback)
         {
         }
 

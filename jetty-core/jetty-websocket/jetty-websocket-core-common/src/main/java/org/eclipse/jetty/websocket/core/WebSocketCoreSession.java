@@ -22,6 +22,7 @@ import java.nio.channels.WritePendingException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +70,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
-    private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
+    private Duration idleTimeout;
     private ClassLoader classLoader;
     private Predicate<WebSocketTimeoutException> _onIdleTimeout;
 
@@ -131,13 +132,13 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public Duration getIdleTimeout()
     {
-        return idleTimeout;
+        return idleTimeout != null ? idleTimeout : WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
-        idleTimeout = timeout;
+        idleTimeout = Objects.requireNonNull(timeout);
         if (connection != null)
             connection.getEndPoint().setIdleTimeout(timeout.toMillis());
     }
@@ -175,7 +176,13 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
      */
     public void setWebSocketConnection(WebSocketConnection connection)
     {
-        connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
+        // If the idle timeout is not initialized by a WebSocket
+        // configurator, then inherit that of the EndPoint; otherwise
+        // force the EndPoint to use the WebSocket configured idle timeout.
+        if (idleTimeout == null)
+            idleTimeout = Duration.ofMillis(connection.getEndPoint().getIdleTimeout());
+        else
+            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }

@@ -33,7 +33,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -423,11 +422,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             this.response = response;
             this.callback = callback;
             this.priority = priority;
-            Duration maxSuspend = getMaxSuspend();
-            long suspendNanos = NanoTime.now() + maxSuspend.toNanos();
-            if (suspendNanos == Long.MAX_VALUE)
-                --suspendNanos;
-            this.expireNanoTime = maxSuspend.isZero() ? Long.MAX_VALUE : suspendNanos;
+            this.expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getMaxSuspend().toMillis());
         }
 
         @Override

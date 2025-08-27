@@ -78,16 +78,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.endpointInstance = endpointInstance;
         this.metadata = metadata;
 
-        this.openHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getOpenHandle()), endpointInstance);
-        this.closeHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getCloseHandle()), endpointInstance);
-        this.errorHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getErrorHandle()), endpointInstance);
-        this.textHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getTextHandle()), endpointInstance);
-        this.binaryHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getBinaryHandle()), endpointInstance);
+        this.openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
+        this.closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
+        this.errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
+        this.textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
+        this.binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
         this.textSinkClass = metadata.getTextSink();
         this.binarySinkClass = metadata.getBinarySink();
-        this.frameHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getFrameHandle()), endpointInstance);
-        this.pingHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPingHandle()), endpointInstance);
-        this.pongHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPongHandle()), endpointInstance);
+        this.frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
+        this.pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
+        this.pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
     }
 
     public void setUpgradeRequest(UpgradeRequest upgradeRequest)
@@ -277,8 +277,14 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             if (closeHandle != null)
-                closeHandle.invoke(closeStatus.getCode(), closeStatus.getReason());
-            callback.succeeded();
+            {
+                var apiCallback = org.eclipse.jetty.websocket.api.Callback.from(callback::succeeded, callback::failed);
+                closeHandle.invoke(closeStatus.getCode(), closeStatus.getReason(), apiCallback);
+            }
+            else
+            {
+                callback.succeeded();
+            }
         }
         catch (Throwable cause)
         {

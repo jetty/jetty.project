@@ -305,7 +305,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             _bucketSize = (bucketSize < 0)
                 ? _maxRequestsPerSecond
                 : bucketSize;
-            _idleTimeout = idleTimeout == null ? 0 : idleTimeout.toNanos();
+            _idleTimeout = idleTimeout == null || idleTimeout.isNegative() ? 0 : idleTimeout.toNanos();
         }
 
         @Override
@@ -328,6 +328,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                 long now = NanoTime.now();
                 _lastDripNanoTime = now;
                 _expireNanoTime = now + _nanosPerDrip + _idleTimeout;
+                if (_expireNanoTime == Long.MAX_VALUE)
+                    ++_expireNanoTime;
             }
 
             @Override

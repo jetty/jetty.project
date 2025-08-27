@@ -136,7 +136,8 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
      * <p>If an item returned by the {@link #iterator()} has been modified or added so that it may
      * now be the earliest expiring item, then this method should be called to schedule the timeout.  This need not be called
      * for a recurrent timeout during {@code Expirable#onTimeoutExpired()}, nor if the timeout of an existing item is increased.
-     * However, it is safe and inexpensive to always call this when modifying an items expiry.</p>
+     * However, it is safe and inexpensive to always call this when modifying an item expiration time.</p>
+     *
      * @param expirable the new entity to manage the timeout for
      */
     public void schedule(T expirable)
@@ -194,6 +195,32 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
          * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if this entity does not expire
          */
         long getExpireNanoTime();
+
+        /**
+         * <p>Calculates the expiration time in nanoseconds.</p>
+         * <p>If the given {@code timeoutMs} is positive, the returned value is calculated from the
+         * current nanoTime: {@code NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeoutMs)}.
+         * If the calculated value is {@link Long#MAX_VALUE}, then an additional nanosecond is added
+         * to avoid ever returning {@link Long#MAX_VALUE} when {@code timeoutMs} is positive.</p>
+         * <p>If the given {@code timeoutMs} is zero or negative, {@link Long#MAX_VALUE} is returned.</p>
+         *
+         * @param timeoutMs the timeout to add to the current nanoTime to calculate the expiration time
+         * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if the timeout is zero or negative
+         */
+        static long calcExpireNanoTime(long timeoutMs)
+        {
+            if (timeoutMs > 0)
+            {
+                long value = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+                if (value == Long.MAX_VALUE)
+                    ++value;
+                return value;
+            }
+            else
+            {
+                return Long.MAX_VALUE;
+            }
+        }
     }
 
     private class Timeouts extends CyclicTimeout

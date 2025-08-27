@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.RetainingResponseListener;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -44,8 +46,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
@@ -53,11 +53,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -399,19 +403,16 @@ public class HttpClientTimeoutTest extends AbstractTest
         long timeout = 1000;
         Request request = client.newRequest("badscheme://0.0.0.1/");
 
-        // TODO: assert a more specific Throwable
-        assertThrows(Exception.class, () ->
-        {
-            request.timeout(timeout, TimeUnit.MILLISECONDS)
-                .send(result ->
-                {
-                });
-        });
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> request.timeout(timeout, TimeUnit.MILLISECONDS).send());
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(IllegalArgumentException.class));
+        assertThat(cause.getMessage(), containsString(request.getScheme()));
+        assertSame(cause, request.getAbortCause());
 
         Thread.sleep(2 * timeout);
 
-        // If the task was not cancelled, it aborted the request.
-        assertNull(request.getAbortCause());
+        // The timeout was never used.
+        assertEquals(Long.MAX_VALUE, ((HttpRequest)request).getTimeoutNanoTime());
     }
 
     @ParameterizedTest
@@ -495,7 +496,7 @@ public class HttpClientTimeoutTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isFailed());
-                MatcherAssert.assertThat(result.getFailure(), Matchers.instanceOf(TimeoutException.class));
+                assertThat(result.getFailure(), instanceOf(TimeoutException.class));
                 latch2.countDown();
             });
 

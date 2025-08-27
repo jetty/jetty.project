@@ -190,6 +190,7 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
+    <detectOfflineLinks>false</detectOfflineLinks>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.41.0</eclipse.jdt.ecj.version>
 
