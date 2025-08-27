@@ -154,6 +154,16 @@ public class HttpRedirector
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Redirecting to {} (Location: {})", newURI, location);
+
+                if (listener == null)
+                {
+                    listener = result ->
+                    {
+                        if (result.isFailed())
+                            fail(result);
+                    };
+                }
+
                 return redirect(request, response, listener, newURI);
             }
             else
@@ -371,6 +381,11 @@ public class HttpRedirector
     protected void fail(Request request, Throwable failure, Response response)
     {
         fail(request, failure, response, failure);
+    }
+
+    private void fail(Result result)
+    {
+        fail(result.getRequest(), result.getRequestFailure(), result.getResponse(), result.getResponseFailure());
     }
 
     private void fail(Request request, Throwable requestFailure, Response response, Throwable responseFailure)

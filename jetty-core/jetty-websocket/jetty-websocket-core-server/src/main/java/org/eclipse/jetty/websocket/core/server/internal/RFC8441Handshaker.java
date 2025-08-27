@@ -16,12 +16,10 @@ package org.eclipse.jetty.websocket.core.server.internal;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConnection;
@@ -59,10 +57,8 @@ public class RFC8441Handshaker extends AbstractHandshaker
     protected WebSocketConnection createWebSocketConnection(Request request, WebSocketCoreSession coreSession)
     {
         Connector connector = request.getConnectionMetaData().getConnector();
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        TunnelSupport tunnelSupport = request.getTunnelSupport();
-        EndPoint endPoint = tunnelSupport.getEndPoint();
-        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
+        EndPoint endPoint = request.getTunnelSupport().getEndPoint();
+        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
     }
 
     @Override

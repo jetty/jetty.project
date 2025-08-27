@@ -171,9 +171,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
 
     private void notIdle()
     {
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
     }
 
     private class StreamsProducerTask extends Invocable.Task.Abstract
