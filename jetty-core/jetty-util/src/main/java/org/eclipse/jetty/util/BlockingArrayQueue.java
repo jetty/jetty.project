@@ -44,16 +44,22 @@ import java.util.concurrent.locks.ReentrantLock;
  * Two strategies for using these {@code Conditions} are common:
  * </p>
  * <ul>
- *   <li><b>Always signal one:</b> signal a single waiter on every operation that satisfies the condition
- *   (e.g., every {@code put} signals {@code _notEmpty}, every {@code poll} signals {@code _notFull}).
- *   This tends to wake exactly one waiter per event, but forces each operation to acquire both locks,
- *   increasing producer/consumer contention and largely defeating the two-lock design.</li>
- *   <li><b>Signal-all on edge transitions (chosen):</b> signal all waiters only when the condition flips:
- *   signal {@code _notEmpty} only on a transition from empty to non-empty ({@code 0 → 1}),
- *   and signal {@code _notFull} only on a transition from full to not-full ({@code max → max-1}).
- *   This keeps most operations under a single lock (producer vs consumer), greatly reducing contention.
- *   Although {@code signalAll} may wake multiple waiters for a single event, under load there are
- *   typically few waiters, so the cost is modest while throughput is significantly higher.</li>
+ * <li>
+ * <b>Always signal one:</b>
+ * signal a single waiter on every operation that satisfies the condition
+ * (e.g., every {@code put} signals {@code _notEmpty}, every {@code poll} signals {@code _notFull}).
+ * This tends to wake exactly one waiter per event, but forces each operation to acquire both locks,
+ * increasing producer/consumer contention and largely defeating the two-lock design.
+ * </li>
+ * <li>
+ * <b>Signal-all on edge transitions (chosen):</b>
+ * signal all waiters only when the condition flips:
+ * signal {@code _notEmpty} only on a transition from empty to non-empty ({@code 0 → 1}),
+ * and signal {@code _notFull} only on a transition from full to not-full ({@code max → max-1}).
+ * This keeps most operations under a single lock (producer vs consumer), greatly reducing contention.
+ * Although {@code signalAll} may wake multiple waiters for a single event, under load there are
+ * typically few waiters, so the cost is modest while throughput is significantly higher.
+ * </li>
  * </ul>
  * This implementation uses the second strategy, as it provides better throughput, especially for {@code QueuedThreadPool} usage.
  * </p>
