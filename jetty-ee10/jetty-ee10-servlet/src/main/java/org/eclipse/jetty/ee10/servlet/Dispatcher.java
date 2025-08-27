@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -38,6 +39,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.Part;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -67,7 +69,7 @@ public class Dispatcher implements RequestDispatcher
     public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     /**
-     * This attribute is used to store the wrapped request for internal use during a dispatch.
+     * This attribute is used to store the wrapped request for internal use during a dispatch if needed.
      */
     public static final String WRAPPED_REQUEST_ATTRIBUTE = "org.eclipse.jetty.server.wrappedRequest";
 
@@ -128,18 +130,7 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
         servletContextRequest.getServletContextResponse().resetForForward();
-
-        Object oldWrappedRequest = httpRequest.getAttribute(WRAPPED_REQUEST_ATTRIBUTE);
-        try
-        {
-            ForwardRequest forwardRequest = new ForwardRequest(httpRequest);
-            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, forwardRequest);
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, forwardRequest, httpResponse);
-        }
-        finally
-        {
-            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, oldWrappedRequest);
-        }
+        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
@@ -165,16 +156,12 @@ public class Dispatcher implements RequestDispatcher
         ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
         IncludeResponse includeResponse = new IncludeResponse(httpResponse);
-        Object oldWrappedRequest = httpRequest.getAttribute(WRAPPED_REQUEST_ATTRIBUTE);
         try
         {
-            IncludeRequest includeRequest = new IncludeRequest(httpRequest);
-            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, includeRequest);
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, includeRequest, includeResponse);
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
         }
         finally
         {
-            httpRequest.setAttribute(WRAPPED_REQUEST_ATTRIBUTE, oldWrappedRequest);
             includeResponse.onIncluded();
             servletContextResponse.included();
         }
@@ -417,6 +404,34 @@ public class Dispatcher implements RequestDispatcher
             names.add(RequestDispatcher.FORWARD_QUERY_STRING);
             return Collections.enumeration(names);
         }
+
+        @Override
+        public Collection<Part> getParts() throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getParts();
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
+        }
+
+        @Override
+        public Part getPart(String name) throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getPart(name);
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
+        }
     }
 
     private class IncludeRequest extends ParameterRequestWrapper
@@ -491,6 +506,34 @@ public class Dispatcher implements RequestDispatcher
         public String getQueryString()
         {
             return _httpServletRequest.getQueryString();
+        }
+
+        @Override
+        public Collection<Part> getParts() throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getParts();
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
+        }
+
+        @Override
+        public Part getPart(String name) throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getPart(name);
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
         }
     }
 
@@ -770,6 +813,14 @@ public class Dispatcher implements RequestDispatcher
                 case AsyncContextState.ASYNC_PATH_INFO -> _httpServletRequest.getPathInfo();
                 case AsyncContextState.ASYNC_SERVLET_PATH -> _httpServletRequest.getServletPath();
                 case AsyncContextState.ASYNC_QUERY_STRING -> _httpServletRequest.getQueryString();
+                case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
+                {
+                    // If we already have future parts, return the configuration of the wrapped request.
+                    if (super.getAttribute(ServletMultiPartFormData.class.getName()) != null)
+                        yield super.getAttribute(name);
+                    // otherwise, return the configuration of this mapping
+                    yield  _mappedServlet.getServletHolder().getMultipartConfigElement();
+                }
                 default -> super.getAttribute(name);
             };
         }
@@ -778,6 +829,11 @@ public class Dispatcher implements RequestDispatcher
         public Enumeration<String> getAttributeNames()
         {
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+
+            //only return the multipart attribute name if this servlet mapping has multipart config
+            if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
+                names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+
             names.add(AsyncContextState.ASYNC_REQUEST_URI);
             names.add(AsyncContextState.ASYNC_SERVLET_PATH);
             names.add(AsyncContextState.ASYNC_PATH_INFO);
@@ -816,6 +872,34 @@ public class Dispatcher implements RequestDispatcher
                     return super.getParameters();
             }
             return super.getParameters();
+        }
+
+        @Override
+        public Collection<Part> getParts() throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getParts();
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
+        }
+
+        @Override
+        public Part getPart(String name) throws IOException, ServletException
+        {
+            try
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, this);
+                return super.getPart(name);
+            }
+            finally
+            {
+                setAttribute(WRAPPED_REQUEST_ATTRIBUTE, null);
+            }
         }
     }
 

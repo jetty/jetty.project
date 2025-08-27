@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -64,6 +65,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -580,80 +583,21 @@ public class MultiPartServletTest
         assertThat(responseContent, not(containsString("Parameter: partFileName=" + contentString)));
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testForwardDispatch(boolean eager) throws Exception
+    public static Stream<Arguments> dispatchTestArgs()
     {
-        start(servletContextHandler ->
-        {
-            servletContextHandler.addServlet(new HttpServlet()
-            {
-                @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-                {
-                    request.getRequestDispatcher("/multipart").forward(request, response);
-                }
-            }, "/");
-
-            ServletHolder servletHolder = new ServletHolder(new HttpServlet()
-            {
-                @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-                {
-                    Collection<Part> parts = request.getParts();
-                    assertNotNull(parts);
-                    assertEquals(1, parts.size());
-                    Part part = parts.iterator().next();
-                    assertEquals("part1", part.getName());
-                    Collection<String> headerNames = part.getHeaderNames();
-                    assertNotNull(headerNames);
-                    assertEquals(2, headerNames.size());
-                    String content1 = IO.toString(part.getInputStream(), UTF_8);
-                    assertEquals("content1", content1);
-                    response.getWriter().print("success!");
-                }
-            });
-            servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0));
-            servletContextHandler.addServlet(servletHolder, "/multipart");
-        }, eager);
-
-        if (server.getErrorHandler() instanceof ErrorHandler errorHandler)
-            errorHandler.setShowStacks(true);
-
-        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
-        {
-            OutputStream output = socket.getOutputStream();
-
-            String content = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part1"
-                Content-Type: text/plain; charset="UTF-8"
-                
-                content1
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary="A1B2C3"
-                Content-Length: $L
-                
-                """.replace("$L", String.valueOf(content.length()));
-
-            output.write(header.getBytes(UTF_8));
-            output.write(content.getBytes(UTF_8));
-            output.flush();
-
-            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat(response.getContent(), equalTo("success!"));
-        }
+        return Stream.of(
+            Arguments.of(true, "forward"),
+            Arguments.of(false, "forward"),
+            Arguments.of(true, "include"),
+            Arguments.of(false, "include"),
+            Arguments.of(true, "async"),
+            Arguments.of(false, "async")
+        );
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testIncludeDispatch(boolean eager) throws Exception
+    @MethodSource("dispatchTestArgs")
+    public void testDispatch(boolean eager, String dispatchType) throws Exception
     {
         start(servletContextHandler ->
         {
@@ -662,7 +606,17 @@ public class MultiPartServletTest
                 @Override
                 protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
                 {
-                    request.getRequestDispatcher("/multipart").include(request, response);
+                    switch (dispatchType)
+                    {
+                        case "forward" -> request.getRequestDispatcher("/multipart").forward(request, response);
+                        case "include" -> request.getRequestDispatcher("/multipart").include(request, response);
+                        case "async" ->
+                        {
+                            request.startAsync();
+                            request.getAsyncContext().dispatch("/multipart");
+                        }
+                        default -> throw new ServletException("Unknown dispatch type: " + dispatchType);
+                    }
                 }
             }, "/");
 
@@ -717,8 +671,6 @@ public class MultiPartServletTest
 
             HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
             assertNotNull(response);
-            System.err.println(response);
-            System.err.println(response.getContent());
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertThat(response.getContent(), equalTo("success!"));
         }
