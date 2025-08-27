@@ -764,7 +764,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     {
         int available = getMaxThreads() - getLeasedThreads();
         if (available <= 0)
-            return available == 0 ? 1.0D : 0.0D;
+            throw new IllegalStateException("too many leased threads");
         return (double)getUtilizedThreads() / available;
     }
 
@@ -832,9 +832,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (startThread)
             startThread();
 
-        // We lost the race with a starting thread, so we can do a blocking put that will wait for the starting thread
         if (_putSupported)
         {
+            // We lost the race with a starting thread, so we can do a blocking put that will wait for the starting thread
             try
             {
                 _jobs.put(job);
