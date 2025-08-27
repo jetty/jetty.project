@@ -38,6 +38,25 @@ import java.util.concurrent.locks.ReentrantLock;
  * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated),
  * which defaults to {@link Integer#MAX_VALUE}.
  * </p>
+ * <h3>Using {@link Condition#signalAll()} vs {@link Condition#signal()}</h3>
+ * <p>
+ * This class uses two {@link Condition Conditions} ({@code _notFull} on {@code _tailLock} and {@code _notEmpty} on {@code _headLock}) to implement blocking operations.
+ * Two strategies for using these {@code Conditions} are common:
+ * </p>
+ * <ul>
+ *   <li><b>Always signal one:</b> signal a single waiter on every operation that satisfies the condition
+ *   (e.g., every {@code put} signals {@code _notEmpty}, every {@code poll} signals {@code _notFull}).
+ *   This tends to wake exactly one waiter per event, but forces each operation to acquire both locks,
+ *   increasing producer/consumer contention and largely defeating the two-lock design.</li>
+ *   <li><b>Signal-all on edge transitions (chosen):</b> signal all waiters only when the condition flips:
+ *   signal {@code _notEmpty} only on a transition from empty to non-empty ({@code 0 → 1}),
+ *   and signal {@code _notFull} only on a transition from full to not-full ({@code max → max-1}).
+ *   This keeps most operations under a single lock (producer vs consumer), greatly reducing contention.
+ *   Although {@code signalAll} may wake multiple waiters for a single event, under load there are
+ *   typically few waiters, so the cost is modest while throughput is significantly higher.</li>
+ * </ul>
+ * This implementation uses the second strategy, as it provides better throughput, especially for {@code QueuedThreadPool} usage.
+ * </p>
  *
  * @param <E> The element type
  */
@@ -191,8 +210,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 // we can't signal notFull here as we don't hold the tail lock,
                 // and we cannot take the tail lock here as that would be lock inversion
                 wasFull = size == _maxCapacity;
-                if (size > 1)
-                    _notEmpty.signal();
             }
         }
         finally
@@ -200,7 +217,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             _headLock.unlock();
         }
         if (wasFull)
-            signal(_tailLock, _notFull);
+            signalAll(_tailLock, _notFull);
         return e;
     }
 
@@ -238,15 +255,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             // we can't signal notFull here as we don't hold the tail lock,
             // and we cannot take the tail lock here as that would be lock inversion
             wasFull = size == _maxCapacity;
-            if (size > 1)
-                _notEmpty.signal();
         }
         finally
         {
             _headLock.unlock();
         }
         if (wasFull)
-            signal(_tailLock, _notFull);
+            signalAll(_tailLock, _notFull);
         return e;
     }
 
@@ -324,9 +339,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
                 int size = _size.getAndDecrement();
                 if (size == _maxCapacity)
-                    _notFull.signal();
-                if (size > 1)
-                    _notEmpty.signal();
+                    _notFull.signalAll();
 
                 return old;
             }
@@ -399,7 +412,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         Objects.requireNonNull(e);
 
-        boolean notEmpty;
+        boolean wasEmpty;
         _tailLock.lock(); // Size cannot grow... only shrink
         try
         {
@@ -428,15 +441,17 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             int tail = _indexes[TAIL_OFFSET];
             _elements[tail] = e;
             _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-            notEmpty = _size.getAndIncrement() == 0;
+            wasEmpty = _size.getAndIncrement() == 0;
         }
         finally
         {
             _tailLock.unlock();
         }
 
-        if (notEmpty)
-            signal(_headLock, _notEmpty);
+        if (wasEmpty)
+            // We signalAll here because there may be many threads waiting to take,
+            // this is more efficient than always grabbing the head lock to always signal 1.
+            signalAll(_headLock, _notEmpty);
 
         return true;
     }
@@ -446,7 +461,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         Objects.requireNonNull(o);
 
-        boolean notEmpty;
+        boolean wasEmpty;
         _tailLock.lockInterruptibly(); // Size cannot grow... only shrink
         try
         {
@@ -456,7 +471,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int size = _size.get();
 
                 // If we are full, then we can wait for space to become available
-                if (size >= _maxCapacity || _growCapacity <= 0 && size == _elements.length)
+                if (size >= _maxCapacity || (_growCapacity <= 0 && size == _elements.length))
                 {
                     if (nanos <= 0L)
                         return false;
@@ -486,7 +501,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int tail = _indexes[TAIL_OFFSET];
                 _elements[tail] = o;
                 _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-                notEmpty = _size.getAndIncrement() == 0;
+                wasEmpty = _size.getAndIncrement() == 0;
                 break;
             }
         }
@@ -495,8 +510,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             _tailLock.unlock();
         }
 
-        if (notEmpty)
-            signal(_headLock, _notEmpty);
+        if (wasEmpty)
+            // We signalAll here because there may be many threads waiting to take,
+            // this is more efficient than always grabbing the head lock to always signal 1.
+            signalAll(_headLock, _notEmpty);
         return true;
     }
 
@@ -536,8 +553,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     {
                         if (_growCapacity <= 0 || _size.get() == _maxCapacity)
                             throw new IllegalStateException("full");
+                        lockedGrow();
                     }
-                    lockedGrow();
 
                     // Re-read head and tail after a possible grow
                     int i = _indexes[HEAD_OFFSET] + index;
@@ -584,7 +601,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         Objects.requireNonNull(e);
 
-        boolean notEmpty;
+        boolean wasEmpty;
         _tailLock.lockInterruptibly(); // Size cannot grow... only shrink
         try
         {
@@ -593,7 +610,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int size = _size.get();
 
                 // If we are full, then we can wait for space to become available
-                if (size >= _maxCapacity || _growCapacity <= 0 && size == _elements.length)
+                if (size >= _maxCapacity || (_growCapacity <= 0 && size == _elements.length))
                 {
                     _notFull.await();
                     continue; // recheck size
@@ -621,7 +638,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int tail = _indexes[TAIL_OFFSET];
                 _elements[tail] = e;
                 _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-                notEmpty = _size.getAndIncrement() == 0;
+                wasEmpty = _size.getAndIncrement() == 0;
                 break;
             }
         }
@@ -630,8 +647,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             _tailLock.unlock();
         }
 
-        if (notEmpty)
-            signal(_headLock, _notEmpty);
+        if (wasEmpty)
+            // We signalAll here because there may be many threads waiting to take,
+            // this is more efficient than always grabbing the head lock to always signal 1.
+            signalAll(_headLock, _notEmpty);
     }
 
     @SuppressWarnings("unchecked")
@@ -662,15 +681,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             // we can't signal notFull here as we don't hold the tail lock,
             // and we cannot take the tail lock here as that would be lock inversion
             wasFull = size == _maxCapacity;
-            if (size > 1)
-                _notEmpty.signal();
         }
         finally
         {
             _headLock.unlock();
         }
         if (wasFull)
-            signal(_tailLock, _notFull);
+            signalAll(_tailLock, _notFull);
         return e;
     }
 
@@ -920,12 +937,12 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _indexes[TAIL_OFFSET] = newTail;
     }
 
-    private void signal(Lock lock, Condition condition)
+    private void signalAll(Lock lock, Condition condition)
     {
         lock.lock();
         try
         {
-            condition.signal();
+            condition.signalAll();
         }
         finally
         {
