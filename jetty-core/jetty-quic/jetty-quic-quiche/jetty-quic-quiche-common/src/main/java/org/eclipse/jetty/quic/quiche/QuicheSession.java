@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
@@ -373,13 +372,20 @@ public abstract class QuicheSession extends AbstractSession
         return quiche.feedClearBytesForStream(stream.getId(), buffer, last);
     }
 
+    /**
+     * @param task  The task to offer to the connection.
+     * @param dispatch {@code true} to dispatch the task, {@code false} to produce in the calling thread.
+     *                 Callers from application threads should use {@code true}, otherwise they may be arbitrarily
+     *                 delayed. Callers from I/O threads should use {@code false} to avoid thread hops.
+     */
     @Override
-    public void offerTask(Runnable task)
+    public void offerTask(Runnable task, boolean dispatch)
     {
         producer.offer(task);
-        // Tasks may be offered when the production is idle, due to no
-        // network traffic and with the DatagramChannel read interested.
-        Invocable.invokeNonBlocking(strategy::produce);
+        if (dispatch)
+            strategy.dispatch();
+        else
+            strategy.produce();
     }
 
     boolean isFinished(QuicheStream stream)

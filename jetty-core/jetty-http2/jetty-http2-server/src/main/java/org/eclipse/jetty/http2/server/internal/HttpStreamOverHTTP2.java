@@ -221,7 +221,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             Runnable task = _httpChannel.onContentAvailable();
             if (task != null)
-                _connection.offerTask(task, false);
+            {
+                // We must dispatch, so an application thread does not become a producer and then consume another request.
+                _connection.offerTask(task, true);
+            }
         }
         else if (demand)
         {

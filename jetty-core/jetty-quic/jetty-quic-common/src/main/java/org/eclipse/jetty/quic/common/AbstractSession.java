@@ -82,7 +82,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
             .forEach(this::notifyDisconnect);
     }
 
-    public abstract void offerTask(Runnable task);
+    public abstract void offerTask(Runnable task, boolean dispatch);
 
     public CompletableFuture<Session> shutdown()
     {

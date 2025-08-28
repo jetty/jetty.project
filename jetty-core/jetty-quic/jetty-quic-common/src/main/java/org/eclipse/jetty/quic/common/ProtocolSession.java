@@ -252,12 +252,18 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         getSession().disconnect(frame, failure, Promise.Invocable.toPromise(promise, s -> this));
     }
 
-    public void offerTask(Runnable task)
+    /**
+     * @param task The task to offer to the connection.
+     * @param dispatch {@code true} to dispatch the task, {@code false} to produce in the calling thread.
+     * Callers from application threads should use {@code true}, otherwise they may be arbitrarily
+     * delayed. Callers from I/O threads should use {@code false} to avoid thread hops.
+     */
+    public void offerTask(Runnable task, boolean dispatch)
     {
         if (task == null)
             return;
         AbstractSession session = (AbstractSession)getSession();
-        session.offerTask(task);
+        session.offerTask(task, false);
     }
 
     @Override

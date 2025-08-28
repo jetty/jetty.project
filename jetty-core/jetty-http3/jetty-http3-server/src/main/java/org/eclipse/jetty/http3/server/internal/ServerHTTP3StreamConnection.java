@@ -53,7 +53,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     {
         HttpStreamOverHTTP3 httpStream = newHttpStreamOverHTTP3(stream);
         Runnable task = httpStream.onRequest(frame);
-        offerTask(task);
+        offerTask(task, false);
     }
 
     private HttpStreamOverHTTP3 newHttpStreamOverHTTP3(HTTP3StreamServer stream)
@@ -71,20 +71,20 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
         Runnable task = httpStream.onDataAvailable();
-        offerTask(task);
+        offerTask(task, false);
     }
 
     public void onTrailer(HTTP3Stream stream, HeadersFrame frame)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
         Runnable task = httpStream.onTrailer(frame);
-        offerTask(task);
+        offerTask(task, false);
     }
 
-    void offerTask(Runnable task)
+    void offerTask(Runnable task, boolean dispatch)
     {
         if (task != null)
-            session.offerTask(task);
+            session.offerTask(task, dispatch);
     }
 
     public void onIdleTimeout(HTTP3Stream stream, TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)

@@ -187,7 +187,7 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     void offerTask(Runnable task)
     {
         if (task != null)
-            getSession().getProtocolSession().offerTask(task);
+            getSession().getProtocolSession().offerTask(task, false);
     }
 
     @Override

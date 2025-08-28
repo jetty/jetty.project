@@ -202,7 +202,11 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         if (LOG.isDebugEnabled())
             LOG.debug("dispatch {} {}", execute, this);
         if (execute)
-            _executor.execute(this);
+        {
+            // Try to avoid queuing a producer if we can run it directly.
+            if (!_tryExecutor.tryExecute(this))
+                _executor.execute(this);
+        }
     }
 
     @Override

@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,13 +207,19 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         return false;
     }
 
+    /**
+     * @param task  The task to offer to the connection.
+     * @param dispatch {@code true} to dispatch the task, {@code false} to produce in the calling thread.
+     *                 Callers from application threads should use {@code true}, otherwise they may be arbitrarily
+     *                 delayed. Callers from I/O threads should use {@code false} to avoid thread hops.
+     */
     public void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
         if (dispatch)
             dispatch();
         else
-            Invocable.invokeNonBlocking(this::produce);
+            this.produce();
     }
 
     private void offerTask(Runnable task)
