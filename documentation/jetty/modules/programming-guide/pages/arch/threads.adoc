@@ -44,6 +44,27 @@ Once a task has been produced, it may be consumed using these modes:
 * <<execution-strategy-epc,`Execute-Produce-Consume`>>
 * <<execution-strategy-adaptive,Adaptive Execution Strategy>>
 
+In the diagrams below, the green color refers to task production, and the blue color refers to task consumption.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+
+Title Legend
+
+compact concise "Producer Thread" as PT
+compact concise "Consumer Thread" as CT
+hide time-axis
+
+@PT
+0 is "This Thread Produced Task T1" #lightgreen
+4 is {hidden}
+
+@CT
+4 is "This Thread Consumes Task T1" #dodgerblue
+9 is {hidden}
+----
+
 In the diagrams below, `Pn` represents production of task `n` and `Cn` represents consuming task 'n' by running it.
 
 [[execution-strategy-pc]]
@@ -108,11 +129,11 @@ hide time-axis
 6 is {hidden}
 ----
 
-The `Executor` implementation typically adds the task to a queue, and dequeues the task when there is a worker thread available to run it.
+The `Executor` implementation typically adds the task to a queue, and dequeues the task when there is a worker thread available to consume it.
 
 This mode solves the head-of-line blocking discussed in the <<execution-strategy-pc,`Produce-Consume` section>>, but suffers from other issues:
 
-* It is not CPU core cache efficient, as the data available to the producer thread will need to be accessed by another thread that likely is going to run on a CPU core that will not have that data in its caches.
+* It is not CPU cache efficient, because the data available to the producer thread will likely be consumed by another thread running on a different CPU core, which won’t already have that data in its cache.
 * The `Executor` queue may grow indefinitely, if there are fewer threads than tasks, and the tasks take time to run.
 * A small latency is added to the processing of every task: the time it waits in the `Executor` queue.
 
@@ -175,8 +196,8 @@ There is an additional implementation of `ExecutionStrategy`, namely `org.eclips
 
 For example, a task that declares itself with `InvocationType` `NON_BLOCKING` can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block (although there is the risk of <<execution-strategy-pc,head-of-line blocking>>).
 
-Conversely, a task that declares itself with `InvocationType` `BLOCKING` (or the task does not implement `Invocable`) may block and therefore stop production, and must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
-Deciding between these two modes depends on whether there is a free thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
+Conversely, a task that declares itself with `InvocationType` `BLOCKING` (or a task that does not implement `Invocable`) may block and therefore stop production, and must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
+Deciding between these two modes depends on whether there is an idle thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
 
 The immediate availability of another thread is determined by an implementation of `TryExecutor` that can be asked whether a thread can be immediately assigned to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
 
@@ -219,7 +240,7 @@ hide time-axis
 6 is {hidden}
 ----
 
-In the diagram above, `Thread C` produces task `T3`, and because there is not an immediately available thread, it uses `Produce-Execute-Consume`, queueing T3 for later execution.
+In the diagram above, `Thread C` produces task `T3`, and because there is not an immediately available thread, it uses `Produce-Execute-Consume`, queueing task `T3` for later execution.
 It then continues production by producing `T4`, but now `Thread B` has become immediately available to take over production, so `Thread C` uses `Execute-Produce-Consume` to consume `T4` directly.
 
 [NOTE]
