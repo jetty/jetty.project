@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,7 +214,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         if (dispatch)
             dispatch();
         else
-            produce();
+            Invocable.invokeNonBlocking(this::produce);
     }
 
     private void offerTask(Runnable task)

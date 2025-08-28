@@ -170,7 +170,7 @@ public class MemoryConnector extends AbstractConnector
             if (LOG.isDebugEnabled())
                 LOG.debug("offer {} to {}", task, MemoryConnector.this);
             tasks.offer(task);
-            strategy.produce();
+            Invocable.invokeNonBlocking(strategy::produce);
         }
     }
 

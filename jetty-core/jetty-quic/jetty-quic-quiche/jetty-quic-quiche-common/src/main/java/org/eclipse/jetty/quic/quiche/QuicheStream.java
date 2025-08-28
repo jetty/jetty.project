@@ -254,7 +254,7 @@ public class QuicheStream extends AbstractStream
         // The production might have idled, as all the network
         // data was fed to Quiche, but there was no demand.
         // Restart production now that there is demand.
-        session.produce();
+        Invocable.invokeNonBlocking(session::produce);
     }
 
     @Override

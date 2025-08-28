@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
@@ -378,7 +379,7 @@ public abstract class QuicheSession extends AbstractSession
         producer.offer(task);
         // Tasks may be offered when the production is idle, due to no
         // network traffic and with the DatagramChannel read interested.
-        strategy.produce();
+        Invocable.invokeNonBlocking(strategy::produce);
     }
 
     boolean isFinished(QuicheStream stream)
