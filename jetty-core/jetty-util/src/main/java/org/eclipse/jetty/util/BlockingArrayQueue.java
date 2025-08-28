@@ -38,49 +38,51 @@ import java.util.concurrent.locks.ReentrantLock;
  * The queue has both a capacity (the size of the array currently allocated) and a max capacity (the maximum size that may be allocated),
  * which defaults to {@link Integer#MAX_VALUE}.
  * </p>
- * <p>
- * <b>Using {@link Condition#signalAll()} vs {@link Condition#signal()}</b><br/>
- * This class uses two {@link Condition Conditions} ({@code _notFull} on {@code _tailLock} and {@code _notEmpty} on {@code _headLock}) to implement blocking operations.
- * Several strategies for using these {@code Conditions} are possible:
- * </p>
- * <ul>
- * <li>
- * <b>Always signal one:</b>
- * signal a single waiter on every operation that satisfies the condition
- * (e.g., every {@code put} signals {@code _notEmpty}, every {@code poll} signals {@code _notFull}).
- * This tends to wake exactly one waiter per event, but forces each operation to acquire both locks,
- * increasing producer/consumer contention and largely defeating the two-lock design.
- * </li>
- * <li>
- * <b>Signal-all on edge transitions:</b>
- * signal all waiters only when the condition flips:
- * signal {@code _notEmpty} only on a transition from empty to non-empty ({@code 0 → 1}),
- * and signal {@code _notFull} only on a transition from full to not-full ({@code max → max-1}).
- * This keeps most operations under a single lock (producer vs consumer), greatly reducing contention.
- * Although {@code signalAll} may wake multiple waiters for a single event, under load there are
- * typically few waiters, so the cost is modest while throughput is significantly higher.
- * </li>
- * <li>
- * <b>Signal one on edge transitions and signal one on condition continuity:</b>
- * signal only one waiter when the condition flips:
- * signal one {@code _notEmpty} only on a transition from empty to non-empty ({@code 0 → 1}),
- * and signal {@code _notFull} only on a transition from full to not-full ({@code max → max-1}).
- * The woken operation then is recruited to cascade the signal to another waiter, if the operation maintains the condition:
- * A poll that leaves the queue non-empty ({@code > 1}) signals {@code _notEmpty},
- * and a put that leaves the queue non-full ({@code < max-1}) signals {@code _notFull}.
- * This keeps most operations under a single lock (producer vs consumer), greatly reducing contention without waking multiple waiters per transition.
- * Bulk operations (e.g., {@link #drainTo(Collection)}) can signal all, as there no woken operations to recruit.
- * It is the "best of both worlds", strategy.
- * </li>
- * </ul>
- * <p>
- * This implementation uses the latter strategy, as it provides better throughput, especially for {@code QueuedThreadPool} usage.
- * </p>
  *
  * @param <E> The element type
  */
 public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQueue<E>
 {
+    /*
+     *
+     * # Using signalAll() vs signal()
+     *
+     * This class uses two Conditions (`_notFull` on `_tailLock` and `_notEmpty` on `_headLock`) to implement blocking operations.
+     * Several strategies for using these {@code Conditions} are possible:
+     *
+     * ### Always signal one:
+     * signal a single waiter on every operation that satisfies the condition
+     * (e.g., every put() signals `_notEmpty`, every poll() signals `_notFull`).
+     * This tends to wake exactly one waiter per event, but forces each operation to acquire both locks,
+     * as in order for a put() to wakeup a poll() it must acquire the head lock to signal `_notEmpty`,
+     * and similarly for a poll() to wakeup a put(). This can lead to
+     * an increase in producer/consumer contention and largely defeating the two-lock design.
+     *
+     * ### Signal-all on edge transitions:
+     * signal all waiters only when the condition flips:
+     *  + signal `_notEmpty` only on a transition from empty to non-empty (0 → 1),
+     *  + signal `_notFull` only on a transition from full to not-full (max → max-1).
+     * This keeps most operations under a single lock (producer vs consumer), greatly reducing contention.
+     * However, signalAll may wake multiple waiters for a single event, with all but one being forced to loop and wait again.
+     *
+     * ### Signal one on edge transitions and signal one on condition continuity:
+     * signal only one waiter when the condition flips:
+     *  + signal one `_notEmpty` only on a transition from empty to non-empty ({@code 0 → 1}),
+     *  + signal `_notFull` only on a transition from full to not-full ({@code max → max-1}).
+     * The woken operation then is recruited to cascade the signal to another waiter, if the operation maintains the condition:
+     *  + a poll that leaves the queue non-empty ({@code > 1}) signals `_notEmpty`,
+     *  + a put that leaves the queue non-full ({@code < max-1}) signals `_notFull`.
+     * This keeps most operations under a single lock as the woken operation already holds the lock required to cascade the
+     * signal. This greatly reducing contention without waking multiple waiters per transition.
+     * Both locks are only acquired when the condition flips, and only one waiter is woken per operation.
+     *
+     * This implementation uses the latter strategy, as it provides better throughput, especially for {@code QueuedThreadPool} usage.
+     *
+     * Bulk operations (e.g., {@link #drainTo(Collection)}) can signal all, as there no woken operations to recruit.
+     * It is the "best of both worlds", strategy.
+     *
+     */
+
     /**
      * The head offset in the {@link #_indexes} array, displaced by 15 slots to avoid false sharing with the array length (stored before the first element of
      * the array itself).
@@ -216,7 +218,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
         E e = null;
         boolean wasFull = false;
-        _headLock.lock(); // Size cannot shrink
+        _headLock.lock(); // Size can grow but not shrink
         try
         {
             if (_size.get() > 0)
@@ -225,11 +227,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 e = (E)_elements[head];
                 _elements[head] = null;
                 _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
-                int size = _size.getAndDecrement();
-                // we can't signal notFull here as we don't hold the tail lock,
-                // and we cannot take the tail lock here as that would be lock inversion
-                wasFull = size == _maxCapacity;
-                if (size > 1)
+                int oldSize = _size.getAndDecrement();
+                wasFull = oldSize == _maxCapacity;
+                if (oldSize > 1)
                     _notEmpty.signal();
             }
         }
@@ -249,7 +249,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         long nanos = unit.toNanos(time);
         E e;
         boolean wasFull;
-        _headLock.lockInterruptibly(); // Size cannot shrink
+        _headLock.lockInterruptibly(); // Size can grow but not shrink
         try
         {
             try
@@ -272,9 +272,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             _elements[head] = null;
             _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
 
-            int size = _size.getAndDecrement();
-            wasFull = size == _maxCapacity;
-            if (size > 1)
+            int oldSize = _size.getAndDecrement();
+            wasFull = oldSize == _maxCapacity;
+            if (oldSize > 1)
                 _notEmpty.signal();
         }
         finally
@@ -358,10 +358,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     _elements[_indexes[TAIL_OFFSET]] = null;
                 }
 
-                int size = _size.getAndDecrement();
-                if (size == _maxCapacity)
+                int oldSize = _size.getAndDecrement();
+                if (oldSize == _maxCapacity)
                     _notFull.signal();
-                if (size > 1)
+                if (oldSize > 1)
                     _notEmpty.signal();
 
                 return old;
@@ -464,8 +464,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             int tail = _indexes[TAIL_OFFSET];
             _elements[tail] = e;
             _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-            wasEmpty = _size.getAndIncrement() == 0;
-            if (size + 1 < _maxCapacity)
+            int oldSize = _size.getAndIncrement();
+            wasEmpty = oldSize == 0;
+            if (oldSize + 1 < _maxCapacity)
                 _notFull.signal();
         }
         finally
@@ -526,8 +527,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int tail = _indexes[TAIL_OFFSET];
                 _elements[tail] = o;
                 _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-                wasEmpty = _size.getAndIncrement() == 0;
-                if (size + 1 < _maxCapacity)
+
+                int oldSize = _size.getAndIncrement();
+                wasEmpty = oldSize == 0;
+                if (oldSize + 1 < _maxCapacity)
                     _notFull.signal();
                 break;
             }
@@ -670,8 +673,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int tail = _indexes[TAIL_OFFSET];
                 _elements[tail] = e;
                 _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-                wasEmpty = _size.getAndIncrement() == 0;
-                if (size + 1 < _maxCapacity)
+                int oldSize = _size.getAndIncrement();
+                wasEmpty = oldSize == 0;
+                if (oldSize + 1 < _maxCapacity)
                     _notFull.signal();
                 break;
             }
@@ -709,9 +713,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             e = (E)_elements[head];
             _elements[head] = null;
             _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
-            int size = _size.getAndDecrement();
-            wasFull = size == _maxCapacity;
-            if (size > 1)
+            int oldSize = _size.getAndDecrement();
+            wasFull = oldSize == _maxCapacity;
+            if (oldSize > 1)
                 _notEmpty.signal();
         }
         finally
