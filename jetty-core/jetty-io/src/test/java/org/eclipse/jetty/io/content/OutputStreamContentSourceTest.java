@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class OutputStreamContentSourceTest
 {
     @Test
-    public void testNoDuplicateExceptionThrown() throws Exception
+    public void testNoDuplicateExceptionThrown()
     {
         EofException cause = new EofException();
         IOException failure = assertThrows(IOException.class, () ->
@@ -43,7 +43,7 @@ public class OutputStreamContentSourceTest
                 try (BufferedOutputStream buffered = new BufferedOutputStream(source.getOutputStream()))
                 {
                     buffered.write(new byte[16]);
-                    // Flushing the first write causes the failure to be thrown.
+                    // Flushing the first write causes the failure cause to be thrown.
                     buffered.flush();
                     fail("expecting IOException to be thrown");
                 }
@@ -54,7 +54,7 @@ public class OutputStreamContentSourceTest
             }
         });
 
-        assertThat(failure, not(sameInstance(cause)));
+        assertThat(failure, sameInstance(cause));
 
         StringWriter stringWriter = new StringWriter();
         failure.printStackTrace(new PrintWriter(stringWriter));
