@@ -72,6 +72,8 @@ public class OutputStreamContentSource implements Content.Source, Closeable
 
     private class AsyncOutputStream extends OutputStream
     {
+        private boolean failed;
+
         @Override
         public void write(int b) throws IOException
         {
@@ -89,7 +91,7 @@ public class OutputStreamContentSource implements Content.Source, Closeable
             }
             catch (Throwable x)
             {
-                throw IO.rethrow(x);
+                handleException(x);
             }
         }
 
@@ -103,6 +105,15 @@ public class OutputStreamContentSource implements Content.Source, Closeable
         public void close()
         {
             async.close();
+        }
+
+        private void handleException(Throwable x) throws IOException
+        {
+            IOException failure = IO.rethrow(x);
+            if (failed)
+                throw new IOException(failure.toString());
+            failed = true;
+            throw failure;
         }
     }
 }
