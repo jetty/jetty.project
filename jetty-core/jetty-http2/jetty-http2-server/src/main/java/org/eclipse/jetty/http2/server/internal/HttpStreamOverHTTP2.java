@@ -637,11 +637,24 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                // If the stream is not closed, it is still reading the request content.
-                // Send a reset to the other end so that it stops sending data.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
+                if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+                {
+                    // It was a tunnel attempt, but it failed with a non-200 response.
+                    // Implicitly close the request side of the stream that was left
+                    // open by the client to tunnel opaque bytes via DATA frames.
+                    // Don't send RST_STREAM, since we have already sent a response.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: tunnel failed with {} response", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), _responseMetaData.getStatus());
+                    _stream.close();
+                }
+                else
+                {
+                    // If the stream is not closed, it is still reading the request content.
+                    // Send a reset to the other end so that it stops sending data.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                    _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
+                }
             }
         }
         _httpChannel.recycle();
