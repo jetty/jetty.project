@@ -107,12 +107,23 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      * Array that holds the head and tail indexes, separated by a cache line to avoid false sharing
      */
     private final int[] _indexes = new int[TAIL_OFFSET + 1];
-    private final Lock _tailLock = new ReentrantLock();
+    /**
+     * The array that holds the elements of the queue.
+     */
+    private Object[] _elements;
     private final AtomicInteger _size = new AtomicInteger();
+    /**
+     * Lock for head operations.
+     * The head lock is only acquired when taking entries from the queue, thus when held, the size can shrink but not grow.
+     */
     private final Lock _headLock = new ReentrantLock();
     private final Condition _notEmpty = _headLock.newCondition();
+    /**
+     * Lock for tail operations.
+     * The tail lock is only acquired when adding entries to the queue, thus when held, the size can grow but not shrink.
+     */
+    private final Lock _tailLock = new ReentrantLock();
     private final Condition _notFull = _tailLock.newCondition();
-    private Object[] _elements;
 
     /**
      * Creates an unbounded {@link BlockingArrayQueue} with default initial capacity and grow factor.
@@ -173,7 +184,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public void clear()
     {
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
             _headLock.lock();
@@ -209,7 +220,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
     /* Queue methods */
 
-    @SuppressWarnings("unchecked")
     @Override
     public E poll()
     {
@@ -218,19 +228,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
         E e = null;
         boolean wasFull = false;
-        _headLock.lock(); // Size can grow but not shrink
+        _headLock.lock(); // _size can grow but not shrink
         try
         {
             if (_size.get() > 0)
             {
-                final int head = _indexes[HEAD_OFFSET];
-                e = (E)_elements[head];
-                _elements[head] = null;
-                _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
-                int oldSize = _size.getAndDecrement();
-                wasFull = oldSize == _maxCapacity;
-                if (oldSize > 1)
-                    _notEmpty.signal();
+                e = lockedTakeFromHead();
+                wasFull = lockedDecrementSize();
             }
         }
         finally
@@ -242,7 +246,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return e;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public E poll(long time, TimeUnit unit) throws InterruptedException
     {
@@ -267,15 +270,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 throw x;
             }
 
-            int head = _indexes[HEAD_OFFSET];
-            e = (E)_elements[head];
-            _elements[head] = null;
-            _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
-
-            int oldSize = _size.getAndDecrement();
-            wasFull = oldSize == _maxCapacity;
-            if (oldSize > 1)
-                _notEmpty.signal();
+            e = lockedTakeFromHead();
+            wasFull = lockedDecrementSize();
         }
         finally
         {
@@ -295,7 +291,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
         E e = null;
 
-        _headLock.lock(); // Size cannot shrink
+        _headLock.lock(); // _size can grow but not shrink
         try
         {
             if (_size.get() > 0)
@@ -321,10 +317,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public E remove(int index)
     {
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 if (index < 0 || index >= _size.get())
@@ -380,10 +376,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public boolean remove(Object o)
     {
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 if (isEmpty())
@@ -436,7 +432,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         Objects.requireNonNull(e);
 
         boolean wasEmpty;
-        _tailLock.lock(); // Size cannot grow... only shrink
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
             int size = _size.get();
@@ -446,7 +442,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             // Should we expand array?
             if (_growCapacity > 0 && size == _elements.length)
             {
-                _headLock.lock();
+                _headLock.lock(); // _size can grow but not shrink
                 try
                 {
                     size = _size.get(); // recheck size under both locks
@@ -460,14 +456,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
             }
 
-            // Re-read head and tail after a possible grow
-            int tail = _indexes[TAIL_OFFSET];
-            _elements[tail] = e;
-            _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-            int oldSize = _size.getAndIncrement();
-            wasEmpty = oldSize == 0;
-            if (oldSize + 1 < _maxCapacity)
-                _notFull.signal();
+            lockedAddToTail(e);
+            wasEmpty = lockedIncrementSize();
         }
         finally
         {
@@ -475,8 +465,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
 
         if (wasEmpty)
-            // We signalAll here because there may be many threads waiting to take,
-            // this is more efficient than always grabbing the head lock to always signal 1.
             signal(_headLock, _notEmpty);
 
         return true;
@@ -507,7 +495,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 // Otherwise, can we grow?
                 else if (_growCapacity > 0 && size == _elements.length)
                 {
-                    _headLock.lock();
+                    _headLock.lock(); // _size can grow but not shrink
                     try
                     {
                         // recheck size under both locks
@@ -524,14 +512,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
 
                 // We can add now after a possible grow
-                int tail = _indexes[TAIL_OFFSET];
-                _elements[tail] = o;
-                _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
+                lockedAddToTail(o);
 
-                int oldSize = _size.getAndIncrement();
-                wasEmpty = oldSize == 0;
-                if (oldSize + 1 < _maxCapacity)
-                    _notFull.signal();
+                wasEmpty = lockedIncrementSize();
                 break;
             }
         }
@@ -541,8 +524,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
 
         if (wasEmpty)
-            // We signalAll here because there may be many threads waiting to take,
-            // this is more efficient than always grabbing the head lock to always signal 1.
             signal(_headLock, _notEmpty);
         return true;
     }
@@ -562,10 +543,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         if (e == null)
             throw new NullPointerException();
 
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 int size = _size.get();
@@ -593,7 +574,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     if (i >= capacity)
                         i -= capacity;
 
-                    size = _size.incrementAndGet();
                     int tail = _indexes[TAIL_OFFSET];
                     _indexes[TAIL_OFFSET] = tail = (tail + 1) % capacity;
 
@@ -614,6 +594,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                         _elements[i] = e;
                     }
 
+                    size = _size.incrementAndGet();
                     if (size >= 1)
                         _notEmpty.signal();
                     if (size < _maxCapacity)
@@ -653,7 +634,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 // Otherwise, can we grow?
                 else if (_growCapacity > 0 && size == _elements.length)
                 {
-                    _headLock.lock();
+                    _headLock.lock(); // _size can grow but not shrink
                     try
                     {
                         // recheck size under both locks
@@ -670,13 +651,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 }
 
                 // We can add now after a possible grow
-                int tail = _indexes[TAIL_OFFSET];
-                _elements[tail] = e;
-                _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
-                int oldSize = _size.getAndIncrement();
-                wasEmpty = oldSize == 0;
-                if (oldSize + 1 < _maxCapacity)
-                    _notFull.signal();
+                lockedAddToTail(e);
+                wasEmpty = lockedIncrementSize();
                 break;
             }
         }
@@ -689,7 +665,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             signal(_headLock, _notEmpty);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public E take() throws InterruptedException
     {
@@ -709,14 +684,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 throw ex;
             }
 
-            final int head = _indexes[HEAD_OFFSET];
-            e = (E)_elements[head];
-            _elements[head] = null;
-            _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
-            int oldSize = _size.getAndDecrement();
-            wasFull = oldSize == _maxCapacity;
-            if (oldSize > 1)
-                _notEmpty.signal();
+            e = lockedTakeFromHead();
+            wasFull = lockedDecrementSize();
         }
         finally
         {
@@ -746,10 +715,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     public int drainTo(Collection<? super E> c, int maxElements)
     {
         int elements = 0;
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 if (_size.get() == 0)
@@ -766,7 +735,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                         break;
 
                     elements++;
-                    c.add((E)_elements[i]);
+                    @SuppressWarnings("unchecked")
+                    E e = (E)_elements[i];
+                    c.add(e);
                     ++i;
                     if (i == capacity)
                         i = 0;
@@ -803,10 +774,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public E get(int index)
     {
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 if (index < 0 || index >= _size.get())
@@ -834,10 +805,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         Objects.requireNonNull(e);
 
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 if (index < 0 || index >= _size.get())
@@ -865,10 +836,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public ListIterator<E> listIterator(int index)
     {
-        _tailLock.lock();
+        _tailLock.lock(); // _size cannot grow but can shrink
         try
         {
-            _headLock.lock();
+            _headLock.lock(); // _size can grow but not shrink
             try
             {
                 Object[] elements = new Object[size()];
@@ -906,7 +877,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      */
     public int getCapacity()
     {
-        _tailLock.lock();
+        _tailLock.lock(); // capacity cannot change without the tail lock
         try
         {
             return _elements.length;
@@ -970,17 +941,61 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
     }
 
-    private void signalAll(Lock lock, Condition condition)
+    /**
+     * Add an element to the tail of the queue with the tail lock held.
+     * The size must be &lt; max capacity when this method is called.
+     * @param e the element to add
+     */
+    private void lockedAddToTail(E e)
     {
-        lock.lock();
-        try
-        {
-            condition.signalAll();
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        int tail = _indexes[TAIL_OFFSET];
+        _elements[tail] = e;
+        _indexes[TAIL_OFFSET] = (tail + 1) % _elements.length;
+    }
+
+    /**
+     * Take an element from the head of the queue with the head lock held.
+     * The size must be &gt; 0 when this method is called.
+     * @return the head element
+     */
+    private E lockedTakeFromHead()
+    {
+        final int head = _indexes[HEAD_OFFSET];
+        @SuppressWarnings("unchecked")
+        E e = (E)_elements[head];
+        _elements[head] = null;
+        _indexes[HEAD_OFFSET] = (head + 1) % _elements.length;
+        return e;
+    }
+
+    /**
+     * Increment size under tail lock.
+     * Signal {@link #_notFull} if size remains &lt; max capacity.
+     * @return true if the queue was empty prior to the increment
+     */
+    private boolean lockedIncrementSize()
+    {
+        boolean wasEmpty;
+        int oldSize = _size.getAndIncrement();
+        wasEmpty = oldSize == 0;
+        if (oldSize + 1 < _maxCapacity)
+            _notFull.signal();
+        return wasEmpty;
+    }
+
+    /**
+     * Decrement size under head lock.
+     * Signal {@link #_notEmpty} if size remains &gt; 0.
+     * @return true if the queue was full prior to the decrement
+     */
+    private boolean lockedDecrementSize()
+    {
+        boolean wasFull;
+        int oldSize = _size.getAndDecrement();
+        wasFull = oldSize == _maxCapacity;
+        if (oldSize > 1)
+            _notEmpty.signal();
+        return wasFull;
     }
 
     private class Itr implements ListIterator<E>

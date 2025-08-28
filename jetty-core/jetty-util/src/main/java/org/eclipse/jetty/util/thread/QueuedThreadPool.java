@@ -24,7 +24,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -108,7 +107,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
     private final int _capacity;
-    private boolean _putSupported = true;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -762,10 +760,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("utilization rate of threads executing unleased jobs")
     public double getUtilizationRate()
     {
-        int available = getMaxThreads() - getLeasedThreads();
-        if (available <= 0)
-            throw new IllegalStateException("too many leased threads");
-        return (double)getUtilizedThreads() / available;
+        return (double)getUtilizedThreads() / (getMaxThreads() - getLeasedThreads());
     }
 
     /**
@@ -819,7 +814,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         // We should always be able to add the job to the queue as we checked the capacity above,
         // However, a starting thread may not yet have polled the queue, so this could fail in a race.
-        // Return if we are able to queue the job
+
+        // We first try a non-blocking offer, as we mostly use unbounded queues, this will ensure a job is
+        // ready for any starting thread
         if (_jobs.offer(job))
         {
             // Start additional threads
@@ -828,53 +825,21 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             return;
         }
 
-        // Start additional threads
+        // The queue was full, so lets start any additional threads and then try a blocking put
         if (startThread)
             startThread();
 
-        if (_putSupported)
+        // Do a blocking put as we know enough threads have been started to eventually take this job
+        try
         {
-            // We lost the race with a starting thread, so we can do a blocking put that will wait for the starting thread
-            try
-            {
-                _jobs.put(job);
-                return;
-            }
-            catch (InterruptedException e)
-            {
-                addCounts(0, 1);
-                Thread.currentThread().interrupt();
-                throw new RejectedExecutionException(e);
-            }
-            catch (UnsupportedOperationException uoe)
-            {
-                LOG.warn("Detected bounded thread pool queue {} without put() support", _jobs.getClass());
-                _putSupported = false;
-            }
+            _jobs.put(job);
         }
-
-        // Put was not supported, so we will just spin instead
-        long spins = 0;
-        while (true)
+        catch (InterruptedException e)
         {
-            // Backoff after some spins to reduce CPU.
-            if (++spins % 1024 == 0)
-                LockSupport.parkNanos(10L);
-            else
-                Thread.onSpinWait();
-            long counts = _counts.get();
-            // Get the number of threads started (might not yet be running)
-            int threads = AtomicBiInteger.getHi(counts);
-            if (threads == Integer.MIN_VALUE)
-                break;
-
-            if (_jobs.offer(job))
-                return;
+            addCounts(0, 1);
+            Thread.currentThread().interrupt();
+            throw new RejectedExecutionException(e);
         }
-
-        // unable to queue the job, so we need to reset idle count and reject the job.
-        addCounts(0, 1);
-        throw new RejectedExecutionException(job.toString());
     }
 
     @Override
