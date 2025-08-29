@@ -491,7 +491,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         String scheme = request.getScheme();
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
             !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
-            throw new IllegalArgumentException("Invalid protocol " + scheme);
+            throw new IllegalArgumentException("Invalid URI scheme " + scheme);
         scheme = scheme.toLowerCase(Locale.ENGLISH);
         String host = request.getHost();
         host = host.toLowerCase(Locale.ENGLISH);
