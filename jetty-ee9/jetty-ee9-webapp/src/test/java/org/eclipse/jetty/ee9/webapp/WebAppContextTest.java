@@ -775,7 +775,6 @@ public class WebAppContextTest
                 .filter(FileID::isLibArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
-                .map(URIUtil::toJarFileUri)
                 .collect(Collectors.toList());
         }
         List<URI> actualURIs = new ArrayList<>();
