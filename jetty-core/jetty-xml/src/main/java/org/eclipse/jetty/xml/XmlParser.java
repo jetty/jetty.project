@@ -288,6 +288,18 @@ public class XmlParser
             _dtd = null;
             Handler handler = new Handler();
             XMLReader reader = _parser.getXMLReader();
+            // Secure the reader against XXE attacks
+            try
+            {
+                reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+                reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            }
+            catch (SAXException e)
+            {
+                if (LOG.isWarnEnabled())
+                    LOG.warn("Unable to secure XMLReader against XXE: " + e.getMessage(), e);
+            }
             reader.setContentHandler(handler);
             reader.setErrorHandler(handler);
             reader.setEntityResolver(handler);
