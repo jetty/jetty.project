@@ -1051,8 +1051,10 @@ public class WebAppContextTest
         context.stop();
         LOG.info("Stopped Initial Context - waiting 2 seconds");
         assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        //the TEMPDIR should be a persistent attribute
         assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
-        // assertNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+        //as the TEMPDIR is a persistent attribute, it should exist even afer a stop
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
 
         Thread.sleep(2000);
         LOG.info("Touch War File: {}", warFile);
