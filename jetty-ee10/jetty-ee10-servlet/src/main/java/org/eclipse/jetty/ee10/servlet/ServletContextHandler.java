@@ -1133,8 +1133,6 @@ public class ServletContextHandler extends ContextHandler
             // reset the classloader
             if ((oldClassloader == null || (oldClassloader != oldWebapploader)) && currentThread != null)
                 currentThread.setContextClassLoader(oldClassloader);
-
-            context.clearAttributes();
         }
 
         ExceptionUtil.ifExceptionThrow(multiException);

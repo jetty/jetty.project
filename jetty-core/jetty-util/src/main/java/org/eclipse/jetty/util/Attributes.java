@@ -503,22 +503,35 @@ public interface Attributes
             return getWrapped();
         }
 
+        /**
+         * Clear the layer attributes, leaving the persistent attributes intact / restored
+         */
+        public void clearLayer()
+        {
+            _layer.clearAttributes();
+        }
+
         @Override
         public Object removeAttribute(String name)
         {
-            Object p = super.getAttribute(name);
+            Object persistentValue = super.getAttribute(name);
             try
             {
-                Object v = _layer.setAttribute(name, REMOVED);
-                if (v == REMOVED)
+                if (persistentValue == null)
+                {
+                    Object oldValue = _layer.removeAttribute(name);
+                    return oldValue == REMOVED ? null : oldValue;
+                }
+                Object oldValue = _layer.setAttribute(name, REMOVED);
+                if (oldValue == REMOVED)
                     return null;
-                if (v != null)
-                    return v;
-                return p;
+                if (oldValue != null)
+                    return oldValue;
+                return persistentValue;
             }
             finally
             {
-                if (p == null)
+                if (persistentValue == null)
                     _layer.removeAttribute(name);
             }
         }
