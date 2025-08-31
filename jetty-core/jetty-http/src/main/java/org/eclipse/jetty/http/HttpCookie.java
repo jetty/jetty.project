@@ -560,33 +560,12 @@ public interface HttpCookie
             // Sanity checks on the values, expensive but necessary to avoid to store garbage.
             switch (name.toLowerCase(Locale.ENGLISH))
             {
-                case "expires" -> expires(parseExpires(value));
-                case "httponly" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid HttpOnly attribute");
-                    httpOnly(true);
-                }
-                case "max-age" -> maxAge(Long.parseLong(value));
-                case "samesite" ->
-                {
-                    SameSite sameSite = SameSite.from(value);
-                    if (sameSite == null)
-                        throw new IllegalArgumentException("Invalid SameSite attribute");
-                    sameSite(sameSite);
-                }
-                case "secure" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid Secure attribute");
-                    secure(true);
-                }
-                case "partitioned" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid Partitioned attribute");
-                    partitioned(true);
-                }
+                case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
+                case "httponly" -> httpOnly(isTruthy(value));
+                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "samesite" -> sameSite(SameSite.from(value));
+                case "secure" -> secure(isTruthy(value));
+                case "partitioned" -> partitioned(isTruthy(value));
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
@@ -653,7 +632,7 @@ public interface HttpCookie
 
         public Builder sameSite(SameSite sameSite)
         {
-            _attributes = lazyAttributePut(_attributes, SAME_SITE_ATTRIBUTE, sameSite.attributeValue);
+            _attributes = lazyAttributePut(_attributes, SAME_SITE_ATTRIBUTE, sameSite == null ? null : sameSite.attributeValue);
             return this;
         }
 
