@@ -764,15 +764,31 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
+        Destination destination = resolveDestination(listener);
+        if (destination == null)
+            return;
         try
         {
-            Destination destination = client.resolveDestination(this);
             destination.send(this, listener);
         }
         catch (Throwable x)
         {
+            abort(x);
+        }
+    }
+
+    private Destination resolveDestination(Response.CompleteListener listener)
+    {
+        try
+        {
+            return client.resolveDestination(this);
+        }
+        catch (Throwable x)
+        {
+            // Must notify the listener, since it is not yet associated with this request.
             Result result = new Result(this, x, new HttpResponse(this), null);
             abort(x).thenRun(() -> ResponseListeners.notifyComplete(listener, result));
+            return null;
         }
     }
 
