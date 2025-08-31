@@ -40,6 +40,12 @@ public class JettyHttpServerProvider extends HttpServerProvider
     public HttpServer createHttpServer(InetSocketAddress addr, int backlog)
         throws IOException
     {
+        return createHttpsServer(addr, backlog);
+    }
+
+    @Override
+    public HttpsServer createHttpsServer(InetSocketAddress addr, int backlog) throws IOException
+    {
         Server server = _server;
         boolean shared = true;
 
@@ -52,16 +58,9 @@ public class JettyHttpServerProvider extends HttpServerProvider
 
             shared = false;
         }
-
-        JettyHttpServer jettyHttpServer = new JettyHttpServer(server, shared);
-        if (addr != null)
-            jettyHttpServer.bind(addr, backlog);
-        return jettyHttpServer;
-    }
-
-    @Override
-    public HttpsServer createHttpsServer(InetSocketAddress addr, int backlog) throws IOException
-    {
-        throw new UnsupportedOperationException();
+        var jettyServer = new JettyHttpServer(server, shared);
+        jettyServer.setAddr(addr);
+        jettyServer.setBacklog(backlog);
+        return jettyServer;
     }
 }
