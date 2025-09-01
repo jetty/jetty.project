@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,6 +106,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
+    private final int _capacity;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -182,7 +182,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
+        {
             LOG.warn("Detected thread pool queue {} bounded at {} entries, which can lead to unexpected behavior. Use an unbounded queue instead.", queue.getClass(), queue.remainingCapacity());
+            _capacity = queue.remainingCapacity();
+        }
+        else
+        {
+            _capacity = -1;
+        }
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
@@ -311,18 +318,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             Runnable job = _jobs.poll();
             if (job == null)
                 break;
-            if (job instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)job).close();
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Unable to close job: {}", job, t);
-                }
-            }
-            else if (job != NOOP)
+            if (!ThreadPool.reject(job, null) && job != NOOP)
                 LOG.warn("Stopped without executing or closing {}", job);
         }
 
@@ -788,12 +784,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void execute(Runnable job)
     {
         // Determine if we need to start a thread, use and idle thread or just queue this job
-        int startThread;
+        boolean startThread;
         while (true)
         {
-            // Get the atomic counts
             long counts = _counts.get();
-
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
@@ -804,32 +798,48 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             // a job from the queue are not counted.
             int idle = AtomicBiInteger.getLo(counts);
 
-            // Start a thread if we have insufficient idle threads to meet demand
+            // Start a thread if we have not enough idle threads to meet demand,
             // and we are not at max threads.
-            startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
+            startThread = (idle <= 0 && threads < _maxThreads);
+
+            // If the job queue is bounded and we are at capacity, then we reject the job
+            if (_capacity >= 0 && idle <= 0 && !startThread && (threads - idle) >=  (_maxThreads + _capacity))
+                throw new RejectedExecutionException(job.toString());
 
             // Add 1|0 or 0|-1 to counts depending upon the decision to start a thread or not;
-            // idle can become negative which means there are queued tasks.
-            if (!_counts.compareAndSet(counts, threads + startThread, idle + startThread - 1))
-                continue;
-
-            break;
+            // idle can become negative, which means there are queued tasks.
+            if (_counts.compareAndSet(counts, threads + (startThread ? 1 : 0), idle + (startThread ? 0 : -1)))
+                break;
         }
 
-        if (!_jobs.offer(job))
+        // We should always be able to add the job to the queue as we checked the capacity above,
+        // However, a starting thread may not yet have polled the queue, so this could fail in a race.
+
+        // We first try a non-blocking offer, as we mostly use unbounded queues, this will ensure a job is
+        // ready for any starting thread
+        if (_jobs.offer(job))
         {
-            // reverse our changes to _counts.
-            if (addCounts(-startThread, 1 - startThread))
-                LOG.warn("{} rejected {}", this, job);
-            throw new RejectedExecutionException(job.toString());
+            // Start additional threads
+            if (startThread)
+                startThread();
+            return;
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("queue {} startThread={}", job, startThread);
-
-        // Start a thread if one was needed
-        while (startThread-- > 0)
+        // The queue was full, so lets start any additional threads and then try a blocking put
+        if (startThread)
             startThread();
+
+        // Do a blocking put as we know enough threads have been started to eventually take this job
+        try
+        {
+            _jobs.put(job);
+        }
+        catch (InterruptedException e)
+        {
+            addCounts(0, 1);
+            Thread.currentThread().interrupt();
+            throw new RejectedExecutionException(e);
+        }
     }
 
     @Override
@@ -1152,7 +1162,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private class Runner implements Runnable
     {
-        private Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
+        Runnable idleJobPoll(long idleTimeoutNanos) throws InterruptedException
         {
             if (idleTimeoutNanos <= 0)
                 return _jobs.take();

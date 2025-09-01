@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.Closeable;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A pool for threads.</p>
@@ -132,5 +136,32 @@ public interface ThreadPool extends Executor
         {
             task.run();
         }
+    }
+
+    /**
+     * Rejects a job that cannot be executed.
+     * @param task The job to be rejected
+     * @param cause The reason for the rejection
+     * @return True if the job was closed, false if it was not a {@link Closeable} job.
+     */
+    static boolean reject(Runnable task, Throwable cause)
+    {
+        Logger log = LoggerFactory.getLogger(ThreadPool.class);
+        if (log.isDebugEnabled())
+            log.debug("rejected {}", task, cause);
+        if (task instanceof Closeable closeable)
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch (Throwable t)
+            {
+                log.warn("Unable to close rejected job: {}", task, t);
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, t);
+            }
+            return true;
+        }
+        return false;
     }
 }
