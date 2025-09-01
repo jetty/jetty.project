@@ -795,7 +795,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
     private void signal(AutoLock.WithCondition lock)
     {
-        try (var ignored = lock)
+        try (var ignored = lock.lock())
         {
             lock.signal();
         }
