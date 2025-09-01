@@ -24,21 +24,28 @@ import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DetectorConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 
 @SuppressWarnings("unused")
 public class ServerDocs
@@ -337,5 +344,121 @@ public class ServerDocs
         MultiPartCompliance custom = MultiPartCompliance.from("RFC7578,-CONTENT_TRANSFER_ENCODING");
         httpConfiguration.setMultiPartCompliance(custom);
         // end::multiPartCompliance[]
+    }
+
+    public void simpleHandlerTreeInvocationType()
+    {
+        // tag::simpleHandlerTreeInvocationType[]
+        class ShopHandler extends Handler.Abstract
+        {
+            public ShopHandler()
+            {
+                // Specifies that the handle() implementation is non-blocking.
+                super(InvocationType.NON_BLOCKING); // <1>
+            }
+
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the shop application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        Server server = new Server();
+
+        ContextHandler contextHandler = new ContextHandler("/shop");
+        server.setHandler(contextHandler);
+
+        contextHandler.setHandler(new ShopHandler());
+        // end::simpleHandlerTreeInvocationType[]
+    }
+
+    public void webSocketInvocationType()
+    {
+        // tag::webSocketInvocationType[]
+        Server server = new Server();
+
+        ContextHandler contextHandler = new ContextHandler("/ws");
+        server.setHandler(contextHandler);
+
+        // The InvocationType for both WebSocket EndPoints and HTTP requests.
+        Invocable.InvocationType invocationType = Invocable.InvocationType.NON_BLOCKING;
+
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, contextHandler,
+            wsContainer -> wsContainer.setInvocationType(invocationType)); // <1>
+
+        contextHandler.setHandler(wsHandler);
+
+        wsHandler.setHandler(new Handler.Abstract(invocationType) // <2>
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Handle HTTP requests here.
+                callback.succeeded();
+                return true;
+            }
+        });
+        // end::webSocketInvocationType[]
+    }
+
+    public void demandInvocationType()
+    {
+        // tag::demandInvocationType[]
+        class NonBlockingHandler extends Handler.Abstract
+        {
+            public NonBlockingHandler()
+            {
+                super(InvocationType.NON_BLOCKING); // <1>
+            }
+
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Read the request content in non-blocking way.
+                request.demand(new Invocable.Task.Abstract(InvocationType.NON_BLOCKING) // <2>
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = request.read();
+
+                            if (chunk == null)
+                            {
+                                request.demand(this); // <2>
+                                return;
+                            }
+
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                callback.failed(chunk.getFailure());
+                                return;
+                            }
+
+                            // Process the Chunk in non-blocking way.
+                            processNonBlocking(chunk);
+
+                            chunk.release();
+
+                            if (chunk.isLast())
+                            {
+                                callback.succeeded();
+                                return;
+                            }
+                        }
+                    }
+                });
+                return true;
+            }
+        }
+        // end::demandInvocationType[]
+    }
+
+    private static void processNonBlocking(Content.Chunk chunk)
+    {
     }
 }
