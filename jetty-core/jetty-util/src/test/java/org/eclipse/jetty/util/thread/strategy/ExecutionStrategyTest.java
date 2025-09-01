@@ -40,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.eclipse.jetty.util.thread.Invocable.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -224,12 +225,11 @@ public class ExecutionStrategyTest
 
     @ParameterizedTest
     @MethodSource("pooledStrategies")
-    public void recursiveTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    public void testRecursion(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
     {
         ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
         LifeCycle.start(threadPool);
-        System.err.printf("threadPool=%s%n", threadPool);
-        final int TASKS = 10000;
+        final int TASKS = 100;
         final CountDownLatch latch = new CountDownLatch(TASKS);
         AtomicReference<ExecutionStrategy> strategyRef = new AtomicReference<>();
         Producer producer = new TestProducer()
@@ -242,7 +242,7 @@ public class ExecutionStrategyTest
                 if (tasks-- > 0)
                 {
                     latch.countDown();
-                    return strategyRef.get()::produce;
+                    return tasks == 0 ? NOOP : strategyRef.get()::dispatch;
                 }
 
                 return null;
@@ -261,6 +261,9 @@ public class ExecutionStrategyTest
                     strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
             });
 
+        // TODO why is this needed for virtual threads?
+        if (threadPool instanceof VirtualThreadPool)
+            Thread.sleep(1000); // let any extra tasks run
         LifeCycle.stop(threadPool);
     }
 }

@@ -133,14 +133,11 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _picMode = new LongAdder();
     private final LongAdder _pecMode = new LongAdder();
     private final LongAdder _epcMode = new LongAdder();
-    private final LongAdder _epcProduce = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-    private final ThreadLocal<Integer> _consumeDepth = ThreadLocal.withInitial(() -> 0);
-    private int _maxConsumeDepth = 8;
 
     /**
      * @param producer The producer of tasks to be consumed.
@@ -157,24 +154,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         installBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("created {}", this);
-    }
-
-    /**
-     * @return The maximum recursion depth of a thread using PC, PIC or EPC (default 8)
-     */
-    public int getMaxConsumeDepth()
-    {
-        return _maxConsumeDepth;
-    }
-
-    /**
-     * PC, EPC and PIC strategies can call a task with a previous producing thread, which can then itself
-     * call {@link #produce()}. This field limits the possible recursion depth.
-     * @param maxConsumeDepth The maximum recursion depth of a thread calling EPC (default 8)
-     */
-    public void setMaxConsumeDepth(int maxConsumeDepth)
-    {
-        _maxConsumeDepth = maxConsumeDepth;
     }
 
     @Override
@@ -213,9 +192,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @Override
     public void produce()
     {
-        // Avoid recursion if a reserved thread is available
-        if (_consumeDepth.get() > 0 && _tryExecutor.tryExecute(this::tryProduce))
-            return;
         tryProduce();
     }
 
@@ -328,9 +304,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         switch (taskType)
         {
             case NON_BLOCKING:
-                // If we are recursing too deep, then we must fall back to PEC
-                if (_consumeDepth.get() >= _maxConsumeDepth)
-                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
                 // The produced task will not block, so use PC: consume task directly
                 // and then resume production.
                 return SubStrategy.PRODUCE_CONSUME;
@@ -379,33 +352,30 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         State state = _state.get();
 
         // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (state != State.IDLE && _consumeDepth.get() < _maxConsumeDepth && _state.compareAndSet(state, State.IDLE))
+        if (_state.compareAndSet(state, State.IDLE))
         {
             // If we can execute another producer, then we are EPC
             if (_tryExecutor.tryExecute(this))
                 return true;
 
             // No reserved thread available, so we need to try to return to production
-            if (!_state.compareAndSet(State.IDLE, State.PRODUCING))
+            while (true)
             {
-                // Simple state reversion didn't work, so do it properly
-                while (true)
+                state = _state.get();
+                switch (state)
                 {
-                    state = _state.get();
-                    switch (state)
-                    {
-                        case IDLE:
-                            if (!_state.compareAndSet(state, State.PRODUCING))
-                                continue;
-                            // We are the producer again, so we are not EPC
-                            return false;
-                        case PRODUCING:
-                        case REPRODUCING:
-                            if (!_state.compareAndSet(state, State.REPRODUCING))
-                                continue;
-                            // Somebody else is producing so we can be EPC
-                            return true;
-                    }
+                    case IDLE:
+                        if (!_state.compareAndSet(state, State.PRODUCING))
+                            continue;
+                        // We are the producer again, so we are not EPC
+                        return false;
+                    case PRODUCING:
+                        if (!_state.compareAndSet(state, State.REPRODUCING))
+                            continue;
+                        // Somebody else is producing so we can be EPC
+                        return true;
+                    case REPRODUCING:
+                        return true;
                 }
             }
         }
@@ -453,7 +423,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         // or it may take over if we subsequently do another EPC consumption.
                         if (!_state.compareAndSet(state, State.PRODUCING))
                             continue;
-                        _epcProduce.increment();
                         return true;
                     }
 
@@ -471,7 +440,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      *
      * @param task the task to run
      */
-    protected void pcRunTask(Runnable task)
+    private void pcRunTask(Runnable task)
     {
         _pcMode.increment();
         runTask(task);
@@ -482,7 +451,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      *
      * @param task the task to run
      */
-    protected void epcRunTask(Runnable task)
+    private void epcRunTask(Runnable task)
     {
         _epcMode.increment();
         runTask(task);
@@ -493,7 +462,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      *
      * @param task the task to run
      */
-    protected void pecRunTask(Runnable task)
+    private void pecRunTask(Runnable task)
     {
         _pecMode.increment();
         execute(task);
@@ -506,8 +475,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      */
     protected void picRunTask(Runnable task)
     {
-        Integer depth = _consumeDepth.get();
-        _consumeDepth.set(1 + depth);
         try
         {
             _picMode.increment();
@@ -516,13 +483,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         catch (Throwable x)
         {
             LOG.warn("Task invoke failed", x);
-        }
-        finally
-        {
-            if (depth > 0 || !isUseVirtualThreads())
-                _consumeDepth.set(depth);
-            else
-                _consumeDepth.remove();
         }
     }
 
@@ -533,8 +493,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      */
     protected void runTask(Runnable task)
     {
-        Integer depth = _consumeDepth.get();
-        _consumeDepth.set(1 + depth);
         try
         {
             task.run();
@@ -542,13 +500,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         catch (Throwable x)
         {
             LOG.warn("Task run failed", x);
-        }
-        finally
-        {
-            if (depth > 0 || !isUseVirtualThreads())
-                _consumeDepth.set(depth);
-            else
-                _consumeDepth.remove();
         }
     }
 
@@ -627,12 +578,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return _epcMode.longValue();
     }
 
-    @ManagedAttribute(value = "number of times a EPC thread produces again", readonly = true)
-    public long getEPCProduceCount()
-    {
-        return _epcProduce.longValue();
-    }
-
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
@@ -686,11 +631,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             .append(",pec=")
             .append(getPECTasksExecuted())
             .append(",epc=")
-            .append(getEPCProduceCount())
-            .append("/")
             .append(getEPCTasksConsumed())
-            .append(",med=")
-            .append(getMaxConsumeDepth())
             .append("]")
             .append("@")
             .append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));

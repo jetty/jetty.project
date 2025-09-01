@@ -186,7 +186,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
             Runnable task = httpChannel.onContentAvailable();
             if (task != null)
             {
-                // we must dispatch so that an application thread does not become a producer thread.
+                // We must dispatch, so an application thread does not 
+                // become a producer and then consume another request.
                 connection.offerTask(task, true);
             }
         }

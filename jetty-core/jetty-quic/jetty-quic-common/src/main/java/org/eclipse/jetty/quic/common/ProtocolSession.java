@@ -253,7 +253,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     }
 
     /**
-     * @param task The task to offer to the connection.
+     * @param task The task to offer to the execution strategy.
      * @param dispatch {@code true} to dispatch the task, {@code false} to produce in the calling thread.
      * Callers from application threads should use {@code true}, otherwise they may be arbitrarily
      * delayed. Callers from I/O threads should use {@code false} to avoid thread hops.

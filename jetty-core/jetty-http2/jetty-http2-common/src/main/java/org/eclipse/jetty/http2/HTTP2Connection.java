@@ -219,7 +219,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         if (dispatch)
             dispatch();
         else
-            this.produce();
+            produce();
     }
 
     private void offerTask(Runnable task)
