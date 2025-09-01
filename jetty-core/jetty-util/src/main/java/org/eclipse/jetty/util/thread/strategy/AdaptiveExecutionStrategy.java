@@ -133,6 +133,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _picMode = new LongAdder();
     private final LongAdder _pecMode = new LongAdder();
     private final LongAdder _epcMode = new LongAdder();
+    private final LongAdder _epcProduce = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
@@ -452,6 +453,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         // or it may take over if we subsequently do another EPC consumption.
                         if (!_state.compareAndSet(state, State.PRODUCING))
                             continue;
+                        _epcProduce.increment();
                         return true;
                     }
 
@@ -625,6 +627,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return _epcMode.longValue();
     }
 
+    @ManagedAttribute(value = "number of times a EPC thread produces again", readonly = true)
+    public long getEPCProduceCount()
+    {
+        return _epcProduce.longValue();
+    }
+
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
@@ -678,6 +686,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             .append(",pec=")
             .append(getPECTasksExecuted())
             .append(",epc=")
+            .append(getEPCProduceCount())
+            .append("/")
             .append(getEPCTasksConsumed())
             .append(",med=")
             .append(getMaxConsumeDepth())
