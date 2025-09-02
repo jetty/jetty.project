@@ -202,7 +202,7 @@ public class QpackEncoder implements Dumpable
                     H3_MESSAGE_ERROR, String.format("Invalid header name: '%s'", name));
 
             String value = field.getValue();
-            if (!HttpTokens.isLegalFieldValue(name))
+            if (!HttpTokens.isLegalFieldValue(value))
                 throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
                     H3_MESSAGE_ERROR, String.format("Invalid header value: '%s'", value));
 
