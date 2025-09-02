@@ -410,9 +410,12 @@ public interface HttpCookie
          */
         public static SameSite from(String sameSite)
         {
-            if (sameSite == null)
+            if (StringUtil.isBlank(sameSite))
                 return null;
-            return CACHE.get(sameSite);
+            SameSite ss = CACHE.get(sameSite);
+            if (ss == null)
+                throw new IllegalArgumentException("Unknown same site");
+            return ss;
         }
     }
 
@@ -573,7 +576,13 @@ public interface HttpCookie
 
         private boolean isTruthy(String value)
         {
-            return value != null && (value.isEmpty() || "true".equalsIgnoreCase(value));
+            if (value == null)
+                return false;
+            if (value.isEmpty() || "true".equalsIgnoreCase(value))
+                return true;
+            if ("false".equalsIgnoreCase(value))
+                return false;
+            throw new IllegalArgumentException("Invalid value");
         }
 
         public Builder comment(String comment)
