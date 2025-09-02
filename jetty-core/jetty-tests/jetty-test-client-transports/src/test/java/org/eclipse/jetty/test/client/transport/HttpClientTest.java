@@ -1194,9 +1194,9 @@ public class HttpClientTest extends AbstractTest
         for (TransportType transport : transports)
         {
             // NOTE: this entire field value is cached.
-            cases.add(Arguments.of(transport, "text/plain; charset=UTF-8", "text/plain; charset=UTF-8"));
-            cases.add(Arguments.of(transport, "text/plain;charset=UTF-8", "text/plain;charset=UTF-8"));
-            cases.add(Arguments.of(transport, "text/plain; \tcharset=UTF-8", "text/plain; \tcharset=UTF-8"));
+            cases.add(Arguments.of(transport, "text/plain; charset=utf-8", "text/plain; charset=utf-8"));
+            cases.add(Arguments.of(transport, "text/plain;charset=utf-8", "text/plain;charset=utf-8"));
+            cases.add(Arguments.of(transport, "text/plain; \tcharset=utf-8", "text/plain; \tcharset=utf-8"));
         }
 
         return cases.stream();
