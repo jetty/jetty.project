@@ -19,6 +19,8 @@ import java.io.InterruptedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -64,6 +66,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1132,6 +1135,146 @@ public class HttpClientTest extends AbstractTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    public static java.util.stream.Stream<Arguments> validFieldValues()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        Collection<Transport> transports = transports();
+        transports.remove(Transport.FCGI);
+
+        for (Transport transport : transports)
+        {
+            cases.add(Arguments.of(transport, "va ue", "va ue"));
+            cases.add(Arguments.of(transport, "va\tue", "va\tue"));
+        }
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("validFieldValues")
+    public void testValidFieldValues(Transport transport, String rawValue, String expectedValue) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                String value = request.getHeaders().get("name");
+                String msg = "name:[%s]".formatted(value);
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .method("GET")
+            .headers((headers) ->
+            {
+                headers.put("name", rawValue);
+            })
+            .send();
+
+        assertThat(response.getContentAsString(), is("name:[" + expectedValue + "]"));
+        assertThat(response.getStatus(), is(200));
+    }
+
+    public static java.util.stream.Stream<Arguments> validFieldValueContentType()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        Collection<Transport> transports = transports();
+        transports.remove(Transport.FCGI);
+
+        for (Transport transport : transports)
+        {
+            // NOTE: this entire field value is cached.
+            cases.add(Arguments.of(transport, "text/plain; charset=UTF-8", "text/plain; charset=UTF-8"));
+            cases.add(Arguments.of(transport, "text/plain;charset=UTF-8", "text/plain;charset=UTF-8"));
+            cases.add(Arguments.of(transport, "text/plain; \tcharset=UTF-8", "text/plain; \tcharset=UTF-8"));
+        }
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("validFieldValueContentType")
+    public void testValidFieldValueContentType(Transport transport, String rawValue, String expectedValue) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                String value = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                String msg = "content-type:[%s]".formatted(value);
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .method("GET")
+            .headers((headers) ->
+            {
+                headers.put("content-type", rawValue);
+            })
+            .send();
+
+        assertThat(response.getContentAsString(), is("content-type:[" + expectedValue + "]"));
+        assertThat(response.getStatus(), is(200));
+    }
+
+    public static java.util.stream.Stream<Arguments> invalidFieldValues()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        Collection<Transport> transports = transports();
+        transports.remove(Transport.FCGI);
+        transports.remove(Transport.HTTP);
+        transports.remove(Transport.HTTPS);
+
+        for (Transport transport : transports)
+        {
+            cases.add(Arguments.of(transport, "\tvalue"));
+            cases.add(Arguments.of(transport, "value\t"));
+            cases.add(Arguments.of(transport, " value"));
+            cases.add(Arguments.of(transport, " value "));
+        }
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidFieldValues")
+    public void testInvalidFieldValues(Transport transport, String rawValue) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                String value = request.getHeaders().get("name");
+                String msg = "name:[%s]".formatted(value);
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+
+        ExecutionException exception = assertThrows(ExecutionException.class, () ->
+        {
+            client.newRequest(newURI(transport))
+                .method("GET")
+                .headers((headers) ->
+                {
+                    headers.put("name", rawValue);
+                })
+                .send();
+        });
+
+        assertThat(exception.getMessage(), containsString("Invalid header value"));
     }
 
     private static void sleep(long time) throws IOException

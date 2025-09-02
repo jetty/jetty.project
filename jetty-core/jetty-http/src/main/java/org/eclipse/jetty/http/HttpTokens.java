@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
@@ -245,6 +246,7 @@ public class HttpTokens
      * @return the original character or the replacement character ' ' or '?',
      * the return value is guaranteed to be a valid ISO-8859-1 character.
      */
+    @Deprecated(since = "12.0.26", forRemoval = true)
     public static char sanitizeFieldVchar(char c)
     {
         switch (c)
@@ -273,7 +275,77 @@ public class HttpTokens
      */
     public static boolean isIllegalFieldVchar(char c)
     {
-        return (c >= 256 || c < ' ');
+        boolean isValidObsText = c >= 0x80 && c <= 0xFF;
+        boolean isValidVchar = c >= 0x21 && c <= 0x7E;
+        return !isValidVchar && !isValidObsText;
+    }
+
+    /**
+     * Check if the {@code fieldName} string is compliant with RFC9110, RFC9113 and RFC9114.
+     * <p>This method does not validate whether HTTP/2 and HTTP/3 pseudo headers are known (this must be done by caller code).</p>
+     * @param fieldName the field name to check.
+     * @return true if this is a legal field name.
+     */
+    public static boolean isLegalH2H3FieldName(String fieldName)
+    {
+        if (StringUtil.isEmpty(fieldName))
+            return false;
+
+        // If it is a pseudo header we do not validate it further, as only known pseudo headers are valid.
+        if (fieldName.startsWith(":"))
+            return true;
+
+        for (int i = 0; i < fieldName.length(); i++)
+        {
+            char c = fieldName.charAt(i);
+            if (c > 0xFF)
+                return false;
+            HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
+            switch (token.getType())
+            {
+                case ALPHA:
+                {
+                    // HTTP/2 and HTTP/3 do not allow uppercase in field names.
+                    if (c >= 'A' && c <= 'Z')
+                        return false;
+                    break;
+                }
+                case TCHAR:
+                case DIGIT:
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if the provided {@code fieldValue} string is compliant with RFC9110.
+     * @return true if this is a legal field value.
+     */
+    public static boolean isLegalFieldValue(String fieldValue)
+    {
+        if (fieldValue == null)
+            return false;
+        if (fieldValue.isEmpty())
+            return true;
+
+        for (int i = 0; i < fieldValue.length(); i++)
+        {
+            char c = fieldValue.charAt(i);
+
+            // First and last character must be a valid field-vchar.
+            if ((i == 0 || i == fieldValue.length() - 1) && isIllegalFieldVchar(c))
+                return false;
+
+            // All characters must be SP / HTAB / field-vchar.
+            if (c != ' ' && c != '\t' && isIllegalFieldVchar(c))
+                return false;
+        }
+
+        return true;
     }
 }
 

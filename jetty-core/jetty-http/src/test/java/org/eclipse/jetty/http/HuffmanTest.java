@@ -92,21 +92,29 @@ public class HuffmanTest
             Arguments.of("FfFe6f", (char)128),
             Arguments.of("FfFfFbBf", (char)255),
 
-            // RFC9110 specifies these to be replaced as ' ' during decoding.
-            Arguments.of("FfC7", ' '), // (char)0
-            Arguments.of("FfFfFfF7", ' '), // '\r'
-            Arguments.of("FfFfFfF3", ' '), // '\n'
+            // NUL \r \n and control characters are allowed in huffman even though they are not allowed in RFC9110.
+            Arguments.of("FfC7", (char)0),
+            Arguments.of("FfFfFfF7", '\r'),
+            Arguments.of("FfFfFfF3", '\n'),
+            Arguments.of("FfFfFfBf", (char)(' ' - 1)),
 
-            // We replace control chars with the default replacement character of '?'.
-            Arguments.of("FfFfFfBf", '?') // (char)(' ' - 1)
+            // Any value above 255 or below 0 is not decodable.
+            Arguments.of("FfFfFfFf", null)
         );
     }
 
     @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name
     @MethodSource("testDecode8859OnlyArguments")
-    public void testDecode8859Only(String hexString, char expected) throws Exception
+    public void testDecode8859Only(String hexString, Character expected) throws Exception
     {
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(hexString));
+
+        if (expected == null)
+        {
+            assertThrows(EncodingException.class, () -> decode(buffer, buffer.remaining()));
+            return;
+        }
+
         String decoded = decode(buffer, buffer.remaining());
         assertThat(decoded, equalTo("" + expected));
     }
@@ -116,13 +124,15 @@ public class HuffmanTest
         return Stream.of(
             Arguments.of((char)128, (char)128),
             Arguments.of((char)255, (char)255),
-            Arguments.of((char)0, null),
-            Arguments.of('\r', null),
-            Arguments.of('\n', null),
+            Arguments.of((char)0, (char)0),
+            Arguments.of('\r', '\r'),
+            Arguments.of('\n', '\n'),
+            Arguments.of((char)(' ' - 1), (char)(' ' - 1)),
+
+            // Any value above 255 or below 0 is not encodable.
             Arguments.of((char)456, null),
             Arguments.of((char)256, null),
-            Arguments.of((char)-1, null),
-            Arguments.of((char)(' ' - 1), null)
+            Arguments.of((char)-1, null)
         );
     }
 
@@ -144,7 +154,6 @@ public class HuffmanTest
         assertThat(HuffmanEncoder.octetsNeeded(s), greaterThan(0));
         ByteBuffer buffer = encode(s);
         String decode = decode(buffer);
-        System.err.println("decoded: " + decode);
         assertThat(decode, equalTo(expected));
     }
 

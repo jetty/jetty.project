@@ -79,6 +79,16 @@ public class MetaDataBuilder
         return _size;
     }
 
+    public boolean isRequest()
+    {
+        return _request;
+    }
+
+    public boolean isResponse()
+    {
+        return  _response;
+    }
+
     public void emit(HttpField field) throws QpackException.SessionException
     {
         HttpHeader header = field.getHeader();

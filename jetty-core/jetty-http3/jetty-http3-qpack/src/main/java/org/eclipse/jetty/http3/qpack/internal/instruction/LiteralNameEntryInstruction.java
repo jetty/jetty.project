@@ -38,7 +38,7 @@ public class LiteralNameEntryInstruction implements Instruction
     {
         _huffmanName = huffmanName;
         _huffmanValue = huffmanValue;
-        _name = httpField.getName();
+        _name = httpField.getLowerCaseName();
         _value = httpField.getValue();
     }
 

@@ -79,7 +79,7 @@ public class HpackTest
         HttpFields.Mutable fields1 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/plain")
             .add(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength))
-            .add(HttpHeader.CONTENT_ENCODING, " ")
+            .add(HttpHeader.CONTENT_ENCODING, "")
             .add(ServerJetty)
             .add(XPowerJetty)
             .add(Date)
@@ -147,14 +147,14 @@ public class HpackTest
             .add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0);
 
-        HpackException.SessionException throwable = assertThrows(HpackException.SessionException.class, () ->
+        HpackException.StreamException throwable = assertThrows(HpackException.StreamException.class, () ->
         {
             BufferUtil.clearToFill(buffer);
             encoder.encode(buffer, original0);
             BufferUtil.flipToFlush(buffer, 0);
         });
 
-        assertThat(throwable.getMessage(), containsString("Could not hpack encode"));
+        assertThat(throwable.getMessage(), containsString("Invalid header value"));
     }
 
     @Test
