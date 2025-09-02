@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -34,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee9.nested.QuietServletException;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -83,6 +85,104 @@ public class AsyncContextTest
     public void after() throws Exception
     {
         _server.stop();
+    }
+
+    @Test
+    public void testNoAsyncListener() throws Exception
+    {
+        startServer((context) ->
+        {
+            _contextHandler.setServletHandler(new ServletHandler()
+            {
+                @Override
+                public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                {
+                    AsyncContext context = request.startAsync();
+                    context.setTimeout(3000);
+//                    context.addListener(new AsyncListener() {
+//                        @Override
+//                        public void onComplete(AsyncEvent event) throws IOException
+//                        {
+//                            System.err.println("COMPLETED");
+//                        }
+//
+//                        @Override
+//                        public void onTimeout(AsyncEvent event) throws IOException
+//                        {
+//                            System.err.println("TIME OUT!");
+//                        }
+//
+//                        @Override
+//                        public void onError(AsyncEvent event) throws IOException
+//                        {
+//                            System.err.println("ERROR!");
+//                        }
+//
+//                        @Override
+//                        public void onStartAsync(AsyncEvent event) throws IOException
+//                        {
+//                            System.err.println("STARTING ASYNC!");
+//                        }
+//                    });
+
+                    try
+                    {
+                        doit(context, request, response);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        baseRequest.setHandled(true);
+                    }
+                }
+
+                public void doit (final AsyncContext context, final HttpServletRequest request, final HttpServletResponse response) throws InterruptedException
+                {
+                    final CountDownLatch latch = new CountDownLatch(1);
+
+                    context.start(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            try
+                            {
+                                for (int i = 0; i < 100000; i++)
+                                {
+                                    response.getWriter().println(String.valueOf(i));
+                                }
+                                throw new IOException("Fake");
+                            }
+                            catch (IOException e)
+                            {
+                                throw new RuntimeException(e);
+                            }
+                            finally
+                            {
+                                //context.complete();
+                                latch.countDown();
+                            }
+                        }
+                    });
+
+                    latch.await(5, TimeUnit.SECONDS);
+                }
+            });
+        });
+
+        String request = """
+            GET /ctx/x HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        //assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+        System.err.println(response.getContent());
     }
 
     @Test
