@@ -15,9 +15,8 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpTokens;
-
 import static org.eclipse.jetty.http.compression.Huffman.CODES;
+import static org.eclipse.jetty.http.compression.Huffman.EOS;
 import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
 
 /**
@@ -90,7 +89,7 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (HttpTokens.isIllegalFieldVchar(c))
+            if (isIllegalHuffmanChar(c))
                 return -1;
             needed += table[c][1];
         }
@@ -111,7 +110,7 @@ public class HuffmanEncoder
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(i);
-            if (HttpTokens.isIllegalFieldVchar(c))
+            if (isIllegalHuffmanChar(c))
                  throw new IllegalArgumentException();
             int code = table[c][0];
             int bits = table[c][1];
@@ -133,5 +132,15 @@ public class HuffmanEncoder
             current |= (0xFF >>> n);
             buffer.put((byte)(current));
         }
+    }
+
+    /**
+     * Tests whether the given character is valid for Huffman encoding.
+     * @param c the character to test.
+     * @return true if the character is illegal, false otherwise.
+     */
+    private static boolean isIllegalHuffmanChar(char c)
+    {
+        return c >= EOS;
     }
 }

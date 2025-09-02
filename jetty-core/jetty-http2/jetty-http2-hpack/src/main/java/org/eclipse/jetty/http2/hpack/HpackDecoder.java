@@ -148,7 +148,7 @@ public class HpackDecoder
                 // look at the first nibble in detail
                 byte f = (byte)((b & 0xF0) >> 4);
                 String name;
-                HttpHeader header;
+                HttpHeader header = null;
                 String value;
 
                 boolean indexed;
@@ -204,38 +204,12 @@ public class HpackDecoder
                         name = huffmanDecode(buffer, length);
                     else
                         name = toISO88591String(buffer, length);
-                    check:
-                    for (int i = name.length(); i-- > 0; )
-                    {
-                        char c = name.charAt(i);
-                        if (c > 0xff)
-                        {
-                            _builder.streamException("Illegal header name %s", name);
-                            break;
-                        }
-                        HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
-                        switch (token.getType())
-                        {
-                            case ALPHA:
-                                if (c >= 'A' && c <= 'Z')
-                                {
-                                    _builder.streamException("Uppercase header name %s", name);
-                                    break check;
-                                }
-                                break;
-
-                            case COLON:
-                            case TCHAR:
-                            case DIGIT:
-                                break;
-
-                            default:
-                                _builder.streamException("Illegal header name %s", name);
-                                break check;
-                        }
-                    }
-                    header = HttpHeader.CACHE.get(name);
                 }
+
+                if (!HttpTokens.isLegalH2H3FieldName(name))
+                    _builder.streamException("Illegal header name %s", name);
+                else
+                    header = HttpHeader.CACHE.get(name);
 
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
@@ -244,6 +218,9 @@ public class HpackDecoder
                     value = huffmanDecode(buffer, length);
                 else
                     value = toISO88591String(buffer, length);
+
+                if (!HttpTokens.isLegalFieldValue(value))
+                    _builder.streamException("Illegal header value %s", value);
 
                 // Make the new field
                 HttpField field;
@@ -357,7 +334,7 @@ public class HpackDecoder
         CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
         for (int i = 0; i < length; ++i)
         {
-            builder.append(HttpTokens.sanitizeFieldVchar((char)buffer.get()));
+            builder.append((char)buffer.get());
         }
         return builder.build();
     }
