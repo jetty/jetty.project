@@ -119,3 +119,16 @@ In Jetty 12.1.x, `RetainableByteBuffer` has broader usage within the xref:migrat
 * `RetainableByteBuffer.DynamicCapacity` provides an implementation for dynamic capacity buffers.
 This class is useful to retain or copy other buffers such as ``Content.Chunk``s.
 Dynamic capacity buffers are particularly effective to read and accumulate data efficiently (for example for later processing), when processing server-side request content, client-side response content, or WebSocket binary messages.
+
+[[api-changes-httpconfig-maxresponseheadersize]]
+=== `HttpConfiguration.maxResponseHeaderSize`
+
+In Jetty 12.0.x, `HttpConfiguration.maxResponseHeaderSize` defaulted to -1, which means that `HttpConfiguration.responseHeaderSize` (defaulting to `8192`) is used instead to limit the length of the server response headers.
+
+In Jetty 12.1.x, `HttpConfiguration.maxResponseHeaderSize` defaults to `16384`; if it is explicitly configured to `-1` Jetty 12.1.x will behave exactly like Jetty 12.0.x.
+
+In Jetty 12.1.x and HTTP/1.1, this means that server responses are first generated using the smaller `HttpConfiguration.responseHeaderSize`, to use less resources.
+If the generation of the server response overflows `HttpConfiguration.responseHeaderSize`, then `HttpConfiguration.maxResponseHeaderSize` is used.
+If the generation overflows also `HttpConfiguration.maxResponseHeaderSize`, a `500` error response is generated.
+
+In Jetty 12.1.x and HTTP/2 `HttpConfiguration.maxResponseHeaderSize` is used for the link:https://datatracker.ietf.org/doc/html/rfc9113#SETTINGS_MAX_HEADER_LIST_SIZE[`MAX_HEADER_LIST_SIZE`] setting, while in HTTP/3 is used for the link:https://datatracker.ietf.org/doc/html/rfc9114#SETTINGS_MAX_FIELD_SECTION_SIZE[`MAX_FIELD_SECTION_SIZE`] setting.
