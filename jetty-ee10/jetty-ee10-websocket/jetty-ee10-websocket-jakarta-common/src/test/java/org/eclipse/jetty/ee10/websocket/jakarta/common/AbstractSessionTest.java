@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractSessionTest
 {
-    protected JakartaWebSocketContainer container = new DummyContainer();
     protected WebSocketComponents components = new WebSocketComponents();
+    protected JakartaWebSocketContainer container = new DummyContainer(components);
     protected TestCoreSession coreSession = new TestCoreSession(components);
     protected JakartaWebSocketSession session;
 

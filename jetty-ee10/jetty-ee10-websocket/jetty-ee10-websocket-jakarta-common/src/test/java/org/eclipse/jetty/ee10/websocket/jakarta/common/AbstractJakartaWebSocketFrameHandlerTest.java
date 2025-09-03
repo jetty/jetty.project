@@ -29,15 +29,15 @@ import org.junit.jupiter.api.BeforeEach;
 public abstract class AbstractJakartaWebSocketFrameHandlerTest
 {
     protected DummyContainer container;
-    private WebSocketComponents components;
+    protected WebSocketComponents components;
 
     @BeforeEach
     public void startContainer() throws Exception
     {
-        container = new DummyContainer();
-        container.start();
         components = new WebSocketComponents();
+        container = new DummyContainer(components);
         components.start();
+        container.start();
 
         endpointConfig = ClientEndpointConfig.Builder.create().build();
         encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
@@ -48,8 +48,8 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
     @AfterEach
     public void stopContainer()
     {
-        LifeCycle.stop(components);
         LifeCycle.stop(container);
+        LifeCycle.stop(components);
     }
 
     protected AvailableEncoders encoders;

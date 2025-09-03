@@ -21,7 +21,6 @@ import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
@@ -31,15 +30,11 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 public class DummyContainer extends JakartaWebSocketContainer
 {
     private final JakartaWebSocketFrameHandlerFactory frameHandlerFactory;
-    private final QueuedThreadPool executor;
 
-    public DummyContainer()
+    public DummyContainer(WebSocketComponents components)
     {
-        super(new WebSocketComponents());
+        super(components);
         this.frameHandlerFactory = new DummyFrameHandlerFactory(this);
-        this.executor = new QueuedThreadPool();
-        this.executor.setName("qtp-DummyContainer");
-        addBean(this.executor, true);
     }
 
     @Override
@@ -113,7 +108,7 @@ public class DummyContainer extends JakartaWebSocketContainer
     @Override
     public Executor getExecutor()
     {
-        return executor;
+        return getWebSocketComponents().getExecutor();
     }
 
     @Override

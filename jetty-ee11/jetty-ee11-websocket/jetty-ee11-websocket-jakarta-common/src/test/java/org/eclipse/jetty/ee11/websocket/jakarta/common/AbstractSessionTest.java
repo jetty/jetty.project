@@ -29,16 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractSessionTest
 {
-    protected JakartaWebSocketContainer container = new DummyContainer();
     protected WebSocketComponents components = new WebSocketComponents();
+    protected JakartaWebSocketContainer container = new DummyContainer(components);
     protected TestCoreSession coreSession = new TestCoreSession(components);
     protected JakartaWebSocketSession session;
 
     @BeforeEach
     public void initSession() throws Exception
     {
-        container.start();
         components.start();
+        container.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
@@ -49,8 +49,8 @@ public abstract class AbstractSessionTest
     @AfterEach
     public void stopContainer() throws Exception
     {
-        components.stop();
         container.stop();
+        components.stop();
     }
 
     public static class TestCoreSession extends CoreSession.Empty

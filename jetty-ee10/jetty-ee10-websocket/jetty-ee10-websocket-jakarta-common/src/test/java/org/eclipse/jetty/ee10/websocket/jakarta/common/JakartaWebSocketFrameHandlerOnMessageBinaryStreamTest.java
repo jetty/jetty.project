@@ -30,12 +30,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JakartaWebSocketFrameHandlerOnMessageBinaryStreamTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
     @SuppressWarnings("Duplicates")
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<JakartaWebSocketFrameHandler, Void> func) throws Exception
     {
+        assertTrue(components.isStarted());
         JakartaWebSocketFrameHandler localEndpoint = newJakartaFrameHandler(socket);
 
         // This invocation is the same for all tests
