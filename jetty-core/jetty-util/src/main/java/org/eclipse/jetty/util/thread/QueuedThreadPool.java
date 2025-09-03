@@ -179,7 +179,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (queue == null)
         {
             int capacity = Math.max(_minThreads, 8) * 1024;
-            queue = new BlockingArrayQueue<>(capacity, capacity);
+            queue = BlockingArrayQueue.newInstance(capacity, Integer.MAX_VALUE);
         }
         if (queue.remainingCapacity() != Integer.MAX_VALUE)
         {

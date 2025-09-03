@@ -181,7 +181,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     {
         int maxCapacity = client.getMaxRequestsQueuedPerDestination();
         if (maxCapacity > 32)
-            return new BlockingArrayQueue<>(32, 32, maxCapacity);
+            return BlockingArrayQueue.newInstance(32, maxCapacity);
         return new BlockingArrayQueue<>(maxCapacity);
     }
 
