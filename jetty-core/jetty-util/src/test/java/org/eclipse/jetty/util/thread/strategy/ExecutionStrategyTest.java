@@ -40,9 +40,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.eclipse.jetty.util.thread.Invocable.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ExecutionStrategyTest
@@ -229,41 +229,66 @@ public class ExecutionStrategyTest
     {
         ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
         LifeCycle.start(threadPool);
-        final int TASKS = 100;
-        final CountDownLatch latch = new CountDownLatch(TASKS);
-        AtomicReference<ExecutionStrategy> strategyRef = new AtomicReference<>();
-        Producer producer = new TestProducer()
+        try
         {
-            int tasks = TASKS;
-
-            @Override
-            public Runnable produce()
+            final int TASKS = 100;
+            CountDownLatch latch = new CountDownLatch(TASKS);
+            AtomicReference<ExecutionStrategy> strategyRef = new AtomicReference<>();
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+            Producer producer = new TestProducer()
             {
-                if (tasks-- > 0)
+                private static final ThreadLocal<Thread> THREAD = new ThreadLocal<>();
+                int tasks = TASKS;
+
+                @Override
+                public Runnable produce()
                 {
-                    latch.countDown();
-                    return tasks == 0 ? NOOP : strategyRef.get()::dispatch;
+                    if (tasks-- > 0)
+                    {
+                        // Return a BLOCKING task.
+                        return () ->
+                        {
+                            Thread thread = THREAD.get();
+                            if (thread != null)
+                                failureRef.compareAndSet(null, new AssertionError("recursion detected"));
+                            THREAD.set(Thread.currentThread());
+                            try
+                            {
+                                if (tasks > 0)
+                                {
+                                    // Calling produce() here will cause
+                                    // recursion and the test will fail.
+                                    strategyRef.get().dispatch();
+                                }
+                                latch.countDown();
+                            }
+                            finally
+                            {
+                                THREAD.set(null);
+                            }
+                        };
+                    }
+                    return null;
                 }
+            };
 
-                return null;
-            }
-        };
+            ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, threadPool);
+            strategyRef.set(strategy);
+            strategy.produce();
 
-        ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, threadPool);
-        strategyRef.set(strategy);
-        strategy.produce();
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS),
-            () ->
+            assertTrue(latch.await(10, TimeUnit.SECONDS), () ->
             {
-                // Dump state on failure
+                // Dump state on failure.
                 return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
                     strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
             });
 
-        // TODO why is this needed for virtual threads?
-        if (threadPool instanceof VirtualThreadPool)
-            Thread.sleep(1000); // let any extra tasks run
-        LifeCycle.stop(threadPool);
+            Throwable failure = failureRef.get();
+            assertThat(String.valueOf(failure), failure, nullValue());
+        }
+        finally
+        {
+            LifeCycle.stop(threadPool);
+        }
     }
 }

@@ -14,8 +14,6 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.io.Closeable;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -193,12 +191,16 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @Override
     public void produce()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("produce() producing {}", this);
         tryProduce();
     }
 
     @Override
     public void run()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("dispatch() producing {}", this);
         tryProduce();
     }
 
@@ -207,9 +209,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      */
     private void tryProduce()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("try producing pending={}", this);
-
         // check if the thread can produce.
         loop: while (true)
         {
@@ -241,9 +240,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("producing pending={}", this);
+            LOG.debug("producing {}", this);
 
-        // Determine the thread's invocation type once, outside of the production loop.
+        // Determine the thread's invocation type once, outside the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
         running: while (isRunning())
         {
@@ -264,7 +263,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 while (true)
                 {
                     State state = _state.get();
-
                     switch (state)
                     {
                         case PRODUCING:
@@ -350,37 +348,37 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private boolean tryExecuteProduceConsume()
     {
+        // Try to go in EPC mode from PRODUCING/REPRODUCING, but only
+        // if we can guarantee that there is another producer thread.
+
         State state = _state.get();
+        if (!_state.compareAndSet(state, State.IDLE))
+            return false;
 
-        // If we are producing, not already in EPC, then try to switch to IDLE in anticipation of EPC
-        if (_state.compareAndSet(state, State.IDLE))
+        // If we can execute another producer, then we are EPC.
+        if (_tryExecutor.tryExecute(this))
+            return true;
+
+        // No reserved thread available, so we need to try to return to production.
+        while (true)
         {
-            // If we can execute another producer, then we are EPC
-            if (_tryExecutor.tryExecute(this))
-                return true;
-
-            // No reserved thread available, so we need to try to return to production
-            while (true)
+            state = _state.get();
+            switch (state)
             {
-                state = _state.get();
-                switch (state)
-                {
-                    case IDLE:
-                        if (!_state.compareAndSet(state, State.PRODUCING))
-                            continue;
-                        // We are the producer again, so we are not EPC
-                        return false;
-                    case PRODUCING:
-                        if (!_state.compareAndSet(state, State.REPRODUCING))
-                            continue;
-                        // Somebody else is producing so we can be EPC
-                        return true;
-                    case REPRODUCING:
-                        return true;
-                }
+                case IDLE:
+                    if (!_state.compareAndSet(state, State.PRODUCING))
+                        continue;
+                    // We are the producer again, so we are not EPC.
+                    return false;
+                case PRODUCING:
+                    if (!_state.compareAndSet(state, State.REPRODUCING))
+                        continue;
+                    // Somebody else is producing so we can be EPC.
+                    return true;
+                case REPRODUCING:
+                    return true;
             }
         }
-        return false;
     }
 
     /**
@@ -395,96 +393,90 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
             LOG.debug("consumeTask ss={}/{}/{} t={} {}", subStrategy, Invocable.isNonBlockingInvocation(), Invocable.getInvocationType(task), task, this);
-        switch (subStrategy)
+        return switch (subStrategy)
         {
-            case PRODUCE_CONSUME:
-                pcRunTask(task);
-                return true;
-
-            case PRODUCE_INVOKE_CONSUME:
-                picRunTask(task);
-                return true;
-
-            case PRODUCE_EXECUTE_CONSUME:
-                pecRunTask(task);
-                return true;
-
-            case EXECUTE_PRODUCE_CONSUME:
-                epcRunTask(task);
-
-                // Race the pending producer to produce again.
-                while (true)
-                {
-                    State state = _state.get();
-
-                    if (state == State.IDLE)
-                    {
-                        // We beat the pending producer, so we will become the producer instead.
-                        // The pending produce will become a noop if it arrives whilst we are producing,
-                        // or it may take over if we subsequently do another EPC consumption.
-                        if (!_state.compareAndSet(state, State.PRODUCING))
-                            continue;
-                        _epcProduce.increment();
-                        return true;
-                    }
-
-                    // The pending producer is now producing, so this thread no longer produces.
-                    return false;
-                }
-
-            default:
-                throw new IllegalStateException(String.format("ss=%s %s", subStrategy, this));
-        }
+            case PRODUCE_CONSUME -> pcRunTask(task);
+            case PRODUCE_INVOKE_CONSUME -> picRunTask(task);
+            case PRODUCE_EXECUTE_CONSUME -> pecRunTask(task);
+            case EXECUTE_PRODUCE_CONSUME -> epcRunTask(task);
+        };
     }
 
     /**
      * Runs a task in produce-consume mode.
      *
      * @param task the task to run
+     * @return always true, as this thread remains the producer
      */
-    private void pcRunTask(Runnable task)
+    private boolean pcRunTask(Runnable task)
     {
         _pcMode.increment();
         runTask(task);
+        return true;
     }
 
     /**
      * Runs a task in execute-produce-consume mode.
      *
      * @param task the task to run
+     * @return whether this thread remains the producer
      */
-    private void epcRunTask(Runnable task)
+    private boolean epcRunTask(Runnable task)
     {
         _epcMode.increment();
+
         runTask(task);
+
+        // Race the pending producer to produce again.
+        while (true)
+        {
+            State state = _state.get();
+            if (state != State.IDLE)
+                // The pending producer is now producing, so this thread no longer produces.
+                return false;
+
+            if (!_state.compareAndSet(state, State.PRODUCING))
+                continue;
+
+            // We beat the pending producer, so we will become the producer instead.
+            // The pending producer will become a noop if it arrives whilst we are producing,
+            // or it may take over if we subsequently do another EPC consumption.
+            _epcProduce.increment();
+            return true;
+        }
     }
 
     /**
      * Runs a task in produce-execute-consume mode.
      *
      * @param task the task to run
+     * @return always true, as this thread remains the producer
      */
-    private void pecRunTask(Runnable task)
+    private boolean pecRunTask(Runnable task)
     {
         _pecMode.increment();
         execute(task);
+        return true;
     }
 
     /**
      * Runs a task in produce-invoke-consume mode.
      *
      * @param task the task to run
+     * @return always true, as this thread remains the producer
      */
-    protected void picRunTask(Runnable task)
+    private boolean picRunTask(Runnable task)
     {
         try
         {
             _picMode.increment();
             Invocable.invokeNonBlocking(task);
+            return true;
         }
         catch (Throwable x)
         {
             LOG.warn("Task invoke failed", x);
+            return true;
         }
     }
 
@@ -493,7 +485,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      *
      * @param task The task to run.
      */
-    protected void runTask(Runnable task)
+    private void runTask(Runnable task)
     {
         try
         {
@@ -628,8 +620,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
     private void getState(StringBuilder builder, State state)
     {
-        builder
-            .append(state)
+        builder.append(state)
             .append('/')
             .append(_tryExecutor)
             .append("[pc=")
@@ -642,8 +633,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             .append(getEPCProduceCount())
             .append("/")
             .append(getEPCTasksConsumed())
-            .append("]")
-            .append("@")
-            .append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
+            .append("]");
     }
 }
