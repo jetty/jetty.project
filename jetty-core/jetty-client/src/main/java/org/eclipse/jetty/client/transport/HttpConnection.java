@@ -138,7 +138,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
     protected void normalizeRequest(HttpRequest request)
     {
-        boolean normalized = request.normalized();
+        boolean normalized = request.getAndSetNormalized();
         if (LOG.isDebugEnabled())
             LOG.debug("Normalizing {} {}", !normalized, request);
         if (normalized)

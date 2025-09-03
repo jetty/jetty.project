@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -91,6 +92,7 @@ import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
+import org.eclipse.jetty.server.handler.PathMappingsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -1869,6 +1871,51 @@ public class HTTPServerDocs
         server.setHandler(movedContextHandler);
         server.start();
         // end::movedContextHandler[]
+    }
+
+    public void pathMappingsHandler()
+    {
+        class CatalogHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return false;
+            }
+        }
+
+        class CartHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return false;
+            }
+        }
+
+        class CheckoutHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return false;
+            }
+        }
+
+        // tag::pathMappingsHandler[]
+        Server server = new Server();
+
+        ContextHandler contextHandler = new ContextHandler("/shop");
+        server.setHandler(contextHandler);
+
+        PathMappingsHandler pathMappings = new PathMappingsHandler();
+        contextHandler.setHandler(pathMappings);
+
+        // Configure PathMappingsHandler for the different paths in context.
+        pathMappings.addMapping(PathSpec.from("/catalog/*"), new CatalogHandler());
+        pathMappings.addMapping(PathSpec.from("/cart/*"), new CartHandler());
+        pathMappings.addMapping(PathSpec.from("/checkout/*"), new CheckoutHandler());
+        // end::pathMappingsHandler[]
     }
 
     public void continue100()

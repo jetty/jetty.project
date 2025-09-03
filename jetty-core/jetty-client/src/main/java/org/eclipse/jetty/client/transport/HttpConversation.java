@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,6 +143,17 @@ public class HttpConversation extends Attributes.Lazy
     }
 
     /**
+     * <p>Whether the given request is in this conversation.</p>
+     *
+     * @param request the request to test
+     * @return whether the given request is in this conversation
+     */
+    public boolean contains(Request request)
+    {
+        return getExchanges().stream().anyMatch(exchange -> exchange.getRequest() == request);
+    }
+
+    /**
      * <p>Returns the total timeout for the conversation.</p>
      * <p>The conversation total timeout is the total timeout
      * of the first request in the conversation.</p>
@@ -167,6 +179,6 @@ public class HttpConversation extends Attributes.Lazy
     @Override
     public String toString()
     {
-        return String.format("%s[%x]", HttpConversation.class.getSimpleName(), hashCode());
+        return String.format("%s@%x[exchanges=%d]", TypeUtil.toShortName(getClass()), hashCode(), exchanges.size());
     }
 }

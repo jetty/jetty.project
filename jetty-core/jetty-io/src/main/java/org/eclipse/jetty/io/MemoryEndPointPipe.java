@@ -20,11 +20,11 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HexFormat;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -36,8 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MemoryEndPointPipe implements EndPoint.Pipe
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPointPipe.class);
-
     private final LocalEndPoint localEndPoint;
     private final RemoteEndPoint remoteEndPoint;
     private final Consumer<Invocable.Task> taskConsumer;
@@ -62,9 +60,20 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
     {
         return remoteEndPoint;
     }
+
+    public void setLocalEndPointMaxCapacity(int maxCapacity)
+    {
+        localEndPoint.setMaxCapacity(maxCapacity);
+    }
     
+    public void setRemoteEndPointMaxCapacity(int maxCapacity)
+    {
+        remoteEndPoint.setMaxCapacity(maxCapacity);
+    }
+
     private class MemoryEndPoint extends AbstractEndPoint
     {
+        private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
         private static final ByteBuffer EOF = ByteBuffer.allocate(0);
 
         private final AutoLock lock = new AutoLock();
@@ -135,60 +144,86 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             if (isInputShutdown())
                 return -1;
 
-            int filled;
-            ByteBuffer data;
-            try (AutoLock ignored = peerEndPoint.lock.lock())
-            {
-                Queue<ByteBuffer> byteBuffers = peerEndPoint.byteBuffers;
-                data = byteBuffers.peek();
-
-                if (data == null)
-                {
-                    filled = 0;
-                }
-                else if (data == EOF)
-                {
-                    filled = -1;
-                }
-                else
-                {
-                    int length = data.remaining();
-                    int space = BufferUtil.space(buffer);
-                    if (length <= space)
-                        byteBuffers.poll();
-
-                    filled = Math.min(length, space);
-                    peerEndPoint.capacity -= filled;
-                }
-            }
+            int filled = peerEndPoint.fillInto(buffer);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("filled {} from {}", filled, this);
-
-            if (data == null)
-                return 0;
-
-            if (data == EOF)
-            {
-                shutdownInput();
-                return -1;
-            }
-
-            int copied = BufferUtil.append(buffer, data);
-            assert copied == filled;
 
             if (filled > 0)
             {
                 notIdle();
                 onFilled();
             }
+            else if (filled < 0)
+            {
+                shutdownInput();
+            }
 
             return filled;
         }
 
+        private int fillInto(ByteBuffer buffer)
+        {
+            int filled = 0;
+            try (AutoLock ignored = lock.lock())
+            {
+                while (true)
+                {
+                    ByteBuffer data = byteBuffers.peek();
+                    if (data == null)
+                        return filled;
+                    if (data == EOF)
+                        return filled > 0 ? filled : -1;
+                    int length = data.remaining();
+                    int copied = BufferUtil.append(buffer, data);
+                    capacity -= copied;
+                    filled += copied;
+                    if (copied < length)
+                        return filled;
+                    byteBuffers.poll();
+                }
+            }
+        }
+
         private void onFilled()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("filled, notifying completeWrite {}", this);
             taskConsumer.accept(completeWriteTask);
+        }
+
+        @Override
+        public void fillInterested(Callback callback)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                // Checking for data and setting the callback must be atomic,
+                // otherwise the notification issued by a write() may be lost.
+                if (peerEndPoint.byteBuffers.isEmpty())
+                {
+                    super.fillInterested(callback);
+                    return;
+                }
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("fill interested, data available {}", this);
+            callback.succeeded();
+        }
+
+        @Override
+        public boolean tryFillInterested(Callback callback)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                // Checking for data and setting the callback must be atomic,
+                // otherwise the notification issued by a write() may be lost.
+                if (peerEndPoint.byteBuffers.isEmpty())
+                    return super.tryFillInterested(callback);
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("try fill interested, data available {}", this);
+            callback.succeeded();
+            return false;
         }
 
         @Override
@@ -209,18 +244,24 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     if (remaining == 0)
                         continue;
 
-                    long newCapacity = capacity + remaining;
-                    long maxCapacity = getMaxCapacity();
-                    if (maxCapacity > 0 && newCapacity > maxCapacity)
+                    // The buffer must be copied, otherwise a write() would complete
+                    // and return it to the buffer pool where its backing store would
+                    // be overwritten before it is read by the peer EndPoint.
+                    ByteBuffer copy = lockedCopy(buffer);
+                    if (copy == null)
                     {
                         result = false;
                         break;
                     }
-
-                    byteBuffers.offer(BufferUtil.copy(buffer));
-                    buffer.position(buffer.limit());
-                    capacity = newCapacity;
-                    flushed += remaining;
+                    byteBuffers.offer(copy);
+                    int length = copy.remaining();
+                    capacity += length;
+                    flushed += length;
+                    if (length < remaining)
+                    {
+                        result = false;
+                        break;
+                    }
                 }
             }
 
@@ -234,6 +275,24 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             }
 
             return result;
+        }
+
+        private ByteBuffer lockedCopy(ByteBuffer buffer)
+        {
+            int length = buffer.remaining();
+            long maxCapacity = getMaxCapacity();
+            if (maxCapacity > 0)
+            {
+                long space = maxCapacity - capacity;
+                if (space == 0)
+                    return null;
+                length = (int)Math.min(length, space);
+            }
+            // TODO: Use RetainableByteBuffer.DynamicCapacity in Jetty 12.1.x.
+            ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
+            copy.put(0, buffer, buffer.position(), length);
+            buffer.position(buffer.position() + length);
+            return copy;
         }
 
         @Override
@@ -262,6 +321,8 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
         private void onFlushed()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushed, notifying fillable {}", this);
             taskConsumer.accept(fillableTask);
         }
     }

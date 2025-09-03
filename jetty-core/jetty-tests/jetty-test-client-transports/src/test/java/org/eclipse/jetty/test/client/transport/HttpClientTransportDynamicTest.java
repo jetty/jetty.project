@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.RetainingResponseListener;
@@ -64,6 +65,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -762,5 +765,19 @@ public class HttpClientTransportDynamicTest
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testClientOnlySpeaksHTTP1WithExplicitHTTP2Request() throws Exception
+    {
+        startServer(this::h1H2C, new EmptyServerHandler());
+        startClient(HttpClientConnectionFactory.HTTP11);
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+
+        assertThat(failure.getCause(), instanceOf(HttpRequestException.class));
     }
 }

@@ -26,7 +26,6 @@ import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.UserIdentity;
 
 public class BasicAuthenticator extends LoginAuthenticator
@@ -54,7 +53,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = request.getHeader(getAuthorizationHeader().asString());
 
         try
         {
@@ -95,8 +94,8 @@ public class BasicAuthenticator extends LoginAuthenticator
             Charset charset = getCharset();
             if (charset != null)
                 value += ", charset=\"" + charset.name() + "\"";
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setHeader(getChallengeHeader().asString(), value);
+            response.sendError(getUnauthorizedStatusCode());
             return Authentication.SEND_CONTINUE;
         }
         catch (IOException e)

@@ -16,12 +16,14 @@ package org.eclipse.jetty.client.transport;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
@@ -30,7 +32,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,11 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         boolean secure = HttpScheme.isSecure(request.getScheme());
 
         List<Info> matchingInfos = new ArrayList<>();
+
+        @SuppressWarnings("unchecked")
+        List<String> excludedProtocols = (List<String>)request.getAttributes().get(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE);
+        excludedProtocols = excludedProtocols != null ? excludedProtocols : List.of();
+
         if (((HttpRequest)request).isVersionExplicit())
         {
             HttpVersion version = request.getVersion();
@@ -115,7 +121,12 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             for (Info info : clientConnectionFactoryInfos)
             {
                 // Find the first protocol that matches the version.
-                for (String p : info.getProtocols(secure))
+                List<String> protocols = info.getProtocols(secure);
+                if (protocols.isEmpty())
+                    continue;
+                if (excludedProtocols.stream().anyMatch(protocols::contains))
+                    continue;
+                for (String p : protocols)
                 {
                     if (wanted.contains(p))
                     {
@@ -130,35 +141,28 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            if (secure)
+            for (Info info : clientConnectionFactoryInfos)
             {
-                for (Info info : clientConnectionFactoryInfos)
-                {
-                    List<String> protocols = info.getProtocols(secure);
-                    if (protocols.isEmpty())
-                        continue;
-                    matchingInfos.add(info);
-                }
-            }
-            else
-            {
-                // Only pick the first non-secure because we cannot negotiate.
-                for (Info info : clientConnectionFactoryInfos)
-                {
-                    List<String> protocols = info.getProtocols(secure);
-                    if (protocols.isEmpty())
-                        continue;
-                    matchingInfos.add(info);
+                List<String> protocols = info.getProtocols(secure);
+                if (protocols.isEmpty())
+                    continue;
+                if (excludedProtocols.stream().anyMatch(protocols::contains))
+                    continue;
+                matchingInfos.add(info);
+                // Only pick the first non-secure because cannot negotiate.
+                if (!secure)
                     break;
-                }
             }
         }
 
         if (matchingInfos.isEmpty())
         {
-            if (request.getTransport() == null)
-                request.transport(Transport.TCP_IP);
-            return getHttpClient().createOrigin(request, null);
+            List<String> available = clientConnectionFactoryInfos.stream()
+                .flatMap(info -> info.getProtocols(secure).stream())
+                .toList();
+            String explicit = String.valueOf(request.getVersion()).toLowerCase(Locale.ROOT);
+            throw new HttpRequestException("Cannot send request, no protocol match: available %s, explicit %s, excluded %s"
+                .formatted(available, explicit, excludedProtocols), request);
         }
 
         Info preferredInfo = matchingInfos.get(0);
@@ -196,15 +200,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        String protocol = (String)context.get(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY);
+        String alpnProtocol = (String)context.get(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY);
 
         Info factoryInfo;
-        if (protocol != null)
+        if (alpnProtocol != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ALPN protocol {}", protocol);
-            factoryInfo = findClientConnectionFactoryInfo(List.of(protocol), true)
-                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
+                LOG.debug("ALPN protocol {}", alpnProtocol);
+            factoryInfo = findClientConnectionFactoryInfo(List.of(alpnProtocol), true)
+                .orElseThrow(() -> new IOException("Cannot create connection: no factory for negotiated protocol " + alpnProtocol));
         }
         else
         {
@@ -212,8 +216,16 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             // In case of a forward proxy, the destination has been set to the proxy destination.
             Origin origin = destination.getOrigin();
-            factoryInfo = findClientConnectionFactoryInfo(origin.getProtocol().getProtocols(), origin.isSecure())
-                .orElseThrow();
+            Origin.Protocol protocol = origin.getProtocol();
+            List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
+            boolean secure = origin.isSecure();
+            factoryInfo = findClientConnectionFactoryInfo(protocols, secure)
+                .orElseThrow(() ->
+                {
+                    if (protocol == null)
+                        return new IOException("Cannot create connection: no protocol enabled among " + clientConnectionFactoryInfos.stream().flatMap(i -> i.getProtocols(secure).stream()).toList());
+                    return new IOException("Cannot create connection: no factory for protocol " + protocol);
+                });
             if (LOG.isDebugEnabled())
                 LOG.debug("No ALPN protocol, using {}", factoryInfo);
         }
@@ -226,8 +238,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
         Origin origin = destination.getOrigin();
         Origin.Protocol protocol = origin.getProtocol();
-        Info info = findClientConnectionFactoryInfo(protocol.getProtocols(), origin.isSecure())
-            .orElseThrow(() -> new IllegalStateException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " to upgrade to " + protocol));
+        List<String> protocols = protocol != null ? protocol.getProtocols() : List.of();
+        Info info = findClientConnectionFactoryInfo(protocols, origin.isSecure())
+            .orElseThrow(() -> new IllegalStateException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " to upgrade to protocol " + protocol));
         info.upgrade(endPoint, context);
     }
 

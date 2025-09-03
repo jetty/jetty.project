@@ -23,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.StringTokenizer;
 
@@ -482,7 +481,7 @@ public interface ResourceFactory
      *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      * </p>
      * <p>
-     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     *     If the result of processing the input segment is a java archive, it will not automatically be mounted, the caller must perform the mount if necessary
      * </p>
      *
      * @param str the input string of references
@@ -490,7 +489,12 @@ public interface ResourceFactory
      */
     default List<Resource> split(String str)
     {
-        return split(str, ",;|");
+        return split(str, ",;|", false);
+    }
+
+    default List<Resource> split(String str, String delim)
+    {
+        return split(str, delim, false);
     }
 
     /**
@@ -500,13 +504,15 @@ public interface ResourceFactory
      *     Note: that if you use the {@code :} character in your delims, then URI references will be impossible.
      * </p>
      * <p>
-     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     *     If the result of processing the input segment is a java archive it will not be automatically mounted, the caller must mount if necessary
      * </p>
      *
      * @param str the input string of references
+     * @param delims the list of delimiters
+     * @param unwrap if true jar:file references will be unwrapped back to just the container
      * @return list of resources
      */
-    default List<Resource> split(String str, String delims)
+    default List<Resource> split(String str, String delims, boolean unwrap)
     {
         List<Resource> list = new ArrayList<>();
 
@@ -529,23 +535,38 @@ public interface ResourceFactory
                 }
                 else
                 {
-                    // Simple reference
-                    list.add(newResource(reference));
+                    // Simple reference. Could have a scheme like jar:file:, or just file:.
+                    // Or it could be a relative reference, in which case we need to
+                    // ensure it is absolute. Otherwise, comparisons between Resources
+                    // that point to the same resource but one is relative and one is absolute
+                    // will fail.
+                    if (URIUtil.hasScheme(reference))
+                    {
+                        // Could be a jar:file url, ensure it is unwrapped back to the file
+                        // otherwise it will be a MountedPathResource and consume a mount point
+                        // that might be unnecessary - the caller should always decide whether to mount
+                        URI uri = new URI(reference);
+                        if (unwrap)
+                            list.add(newResource(URIUtil.unwrapContainer(uri)));
+                        else
+                            list.add(newResource(uri.toASCIIString()));
+                    }
+                    else
+                    {
+                        Path p = Paths.get(reference);
+                        if (!p.isAbsolute() && LOG.isDebugEnabled())
+                            LOG.warn("Non-absolute path: {}", reference);
+                        list.add(newResource(p.toAbsolutePath()));
+                    }
                 }
             }
             catch (Exception e)
             {
-                LOG.warn("Invalid Resource Reference: {}", reference);
-                throw e;
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Invalid Resource Reference: {}", reference, e);
+                else
+                    LOG.warn("Invalid Resource Reference: {}", reference);
             }
-        }
-
-        // Perform Archive file mounting (if needed)
-        for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
-        {
-            Resource resource = i.next();
-            if (resource.exists() && !resource.isDirectory() && FileID.isLibArchive(resource.getName()))
-                i.set(newResource(URIUtil.toJarFileUri(resource.getURI())));
         }
 
         return list;

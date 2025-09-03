@@ -119,7 +119,7 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated Use {@link org.eclipse.jetty.server.handler.CrossOriginHandler} instead
  */
-@Deprecated
+@Deprecated(since = "12.0.6", forRemoval = true)
 public class CrossOriginFilter implements Filter
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossOriginFilter.class);

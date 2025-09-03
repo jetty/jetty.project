@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
@@ -45,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_MESSAGE_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
@@ -97,7 +99,7 @@ public class QpackEncoder implements Dumpable
     private final InstructionHandler _instructionHandler = new InstructionHandler();
     private int _knownInsertCount;
     private int _blockedStreams;
-    private int _maxHeadersSize;
+    private int _maxHeadersSize = -1;
     private int _maxTableCapacity;
 
     public QpackEncoder(Instruction.Handler handler)
@@ -191,17 +193,29 @@ public class QpackEncoder implements Dumpable
             LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
 
         // Verify that we can encode without errors.
-        if (metadata.getHttpFields() != null)
-        {
-            // TODO: enforce that the length of the header is less than maxHeadersSize.
-            //  See RFC 9114, section 4.2.2.
+        long totalSize = 0;
+        for (HttpField field : metadata.getHttpFields())
+         {
+            String name = field.getLowerCaseName();
+            if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
+                throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                    H3_MESSAGE_ERROR, String.format("Invalid header name: '%s'", name));
 
-            for (HttpField field : metadata.getHttpFields())
+            String value = field.getValue();
+            if (!HttpTokens.isLegalFieldValue(value))
+                throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                    H3_MESSAGE_ERROR, String.format("Invalid header value: '%s'", value));
+
+            if (_maxHeadersSize > 0)
             {
-                String name = field.getName();
-                char firstChar = name.charAt(0);
-                if (firstChar <= ' ')
-                    throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(), H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
+                HttpHeader header = field.getHeader();
+                if (header == null || !header.isPseudo())
+                {
+                    totalSize += 32 + name.length() + value.length();
+                    if (totalSize > _maxHeadersSize)
+                        throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                            H3_GENERAL_PROTOCOL_ERROR, String.format("Max size exceeded: %d > %d", totalSize, _maxHeadersSize));
+                }
             }
         }
 
@@ -267,8 +281,6 @@ public class QpackEncoder implements Dumpable
             }
             catch (BufferOverflowException e)
             {
-                // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
-                //  Can we prevent adding to the table until we know the buffer has enough space?
                 streamInfo.remove(sectionInfo);
                 sectionInfo.release();
                 instructions = takeInstructions();
@@ -332,8 +344,6 @@ public class QpackEncoder implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             DynamicTable dynamicTable = _context.getDynamicTable();
-            if (field.getValue() == null)
-                field = new HttpField(field.getHeader(), field.getName(), "");
 
             // If we should not index this entry or there is no room to insert it, then just return false.
             boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
@@ -353,7 +363,7 @@ public class QpackEncoder implements Dumpable
             {
                 // Can we insert by referencing a name?
                 boolean huffman = shouldHuffmanEncode(field);
-                Entry nameEntry = _context.get(field.getName());
+                Entry nameEntry = _context.get(field.getLowerCaseName());
                 if (nameEntry != null)
                 {
                     int index = _context.indexOf(nameEntry);
@@ -405,10 +415,6 @@ public class QpackEncoder implements Dumpable
     private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
-
-        if (field.getValue() == null)
-            field = new HttpField(field.getHeader(), field.getName(), "");
-
         if (field instanceof PreEncodedHttpField)
             return EncodableEntry.getPreEncodedEntry((PreEncodedHttpField)field);
 
@@ -436,7 +442,7 @@ public class QpackEncoder implements Dumpable
         }
 
         boolean huffman = shouldHuffmanEncode(field);
-        Entry nameEntry = _context.get(field.getName());
+        Entry nameEntry = _context.get(field.getLowerCaseName());
         if (referenceEntry(nameEntry, streamInfo))
         {
             // Should we copy this entry

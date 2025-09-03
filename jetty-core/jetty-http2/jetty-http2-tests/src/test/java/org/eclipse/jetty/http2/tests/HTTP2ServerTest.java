@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -60,6 +62,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -403,20 +407,20 @@ public class HTTP2ServerTest extends AbstractServerTest
                 accumulator.writeTo(Content.Sink.from(output), false);
                 output.flush();
 
-                AtomicBoolean goAway = new AtomicBoolean();
+                AtomicInteger resetFrame = new AtomicInteger();
                 Parser parser = new Parser(bufferPool, 8192);
                 parser.init(new Parser.Listener()
                 {
                     @Override
-                    public void onGoAway(GoAwayFrame frame)
+                    public void onReset(ResetFrame frame)
                     {
-                        goAway.set(true);
+                        resetFrame.set(frame.getError());
                     }
                 });
                 boolean closed = parseResponse(client, parser);
 
                 assertFalse(closed);
-                assertTrue(goAway.get());
+                assertThat(resetFrame.get(), equalTo(ErrorCode.CANCEL_STREAM_ERROR.code));
             }
         }
     }

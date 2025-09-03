@@ -23,13 +23,16 @@ import java.util.concurrent.Executor;
 
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpsConfigurator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -37,9 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Jetty implementation of {@link com.sun.net.httpserver.HttpServer}.
+ * Jetty implementation of {@link com.sun.net.httpserver.HttpsServer}.
  */
-public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
+public class JettyHttpServer extends com.sun.net.httpserver.HttpsServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyHttpServer.class);
     private final HttpConfiguration _httpConfiguration;
@@ -48,18 +51,20 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     private final Map<String, JettyHttpContext> _contexts = new HashMap<>();
     private final Map<String, Connector> _connectors = new HashMap<>();
     private InetSocketAddress _addr;
+    private int _backlog;
+    private HttpsConfigurator _configurator;
 
     public JettyHttpServer(Server server, boolean shared)
     {
         this(server, shared, new HttpConfiguration());
     }
 
-    public JettyHttpServer(Server server, boolean shared, HttpConfiguration configuration)
-    {
-        this._server = server;
-        this._serverShared = shared;
-        this._httpConfiguration = configuration;
-    }
+  public JettyHttpServer(Server server, boolean shared, HttpConfiguration configuration) 
+  {
+    this._server = server;
+    this._serverShared = shared;
+    this._httpConfiguration = configuration;
+  }
 
     public HttpConfiguration getHttpConfiguration()
     {
@@ -90,7 +95,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
 
         if (LOG.isDebugEnabled())
             LOG.debug("binding server to port {}", addr.getPort());
-        ServerConnector connector = new ServerConnector(_server);
+        ServerConnector connector = connector();
         connector.setPort(addr.getPort());
         connector.setHost(addr.getHostName());
 
@@ -99,17 +104,27 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         _connectors.put(addr.getHostName() + addr.getPort(), connector);
     }
 
+  private ServerConnector connector() 
+  {
+    return _configurator == null ? new ServerConnector(_server) : createSecureConnector(_server);
+  }
+
+  private ServerConnector createSecureConnector(Server server) 
+  {
+    _httpConfiguration.addCustomizer(new SecureRequestCustomizer());
+    var params = new JettyHttpsParameters(_configurator, _addr);
+
+    _configurator.configure(params);
+    HttpConnectionFactory http11 = new HttpConnectionFactory(_httpConfiguration);
+
+    SslConnectionFactory tls =
+        new SslConnectionFactory(params.getSSLFactoryServer(), http11.getProtocol());
+    return new ServerConnector(server, tls, http11);
+  }
+
     protected Server getServer()
     {
         return _server;
-    }
-
-    protected ServerConnector newServerConnector(InetSocketAddress addr, int backlog)
-    {
-        ServerConnector connector = new ServerConnector(_server, new HttpConnectionFactory(_httpConfiguration));
-        connector.setPort(addr.getPort());
-        connector.setHost(addr.getHostName());
-        return connector;
     }
 
     @Override
@@ -128,6 +143,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
 
         try
         {
+            bind(_addr, _backlog);
             _server.start();
         }
         catch (Exception ex)
@@ -258,21 +274,17 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     private void checkIfContextIsFree(String path)
     {
         Handler serverHandler = _server.getHandler();
-        if (serverHandler instanceof ContextHandler)
+        if (serverHandler instanceof ContextHandler ctx && ctx.getContextPath().equals(path))
         {
-            ContextHandler ctx = (ContextHandler)serverHandler;
-            if (ctx.getContextPath().equals(path))
-                throw new RuntimeException("another context already bound to path " + path);
+            throw new RuntimeException("another context already bound to path " + path);
         }
 
         List<Handler> handlers = _server.getHandlers();
         for (Handler handler : handlers)
         {
-            if (handler instanceof ContextHandler)
+            if (handler instanceof ContextHandler ctx && ctx.getContextPath().equals(path))
             {
-                ContextHandler ctx = (ContextHandler)handler;
-                if (ctx.getContextPath().equals(path))
-                    throw new RuntimeException("another context already bound to path " + path);
+                throw new RuntimeException("another context already bound to path " + path);
             }
         }
     }
@@ -302,4 +314,26 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     {
         removeContext(context.getPath());
     }
+
+  @Override
+  public void setHttpsConfigurator(HttpsConfigurator config) 
+  {
+    this._configurator = config;
+  }
+
+  @Override
+  public HttpsConfigurator getHttpsConfigurator() 
+  {
+    return this._configurator;
+  }
+
+  void setAddr(InetSocketAddress addr) 
+  {
+    this._addr = addr;
+  }
+  
+  void setBacklog(int backlog) 
+  {
+    this._backlog = backlog;
+  }
 }

@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import com.acme.websocket.IdleTimeoutContextListener;
 import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
 import com.acme.websocket.IdleTimeoutOnOpenSocket;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -67,7 +67,7 @@ public class IdleTimeoutTest
 
     private void assertConnectionTimeout(String requestPath) throws Exception
     {
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath);
+        try (WebSocketTester session = server.newWebSocketTester(requestPath);
              StacklessLogging stacklessLogging = new StacklessLogging(IdleTimeoutOnOpenSocket.class))
         {
             // wait 1 second to allow timeout to fire off

@@ -23,16 +23,16 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class EchoSocket extends EventSocket
 {
     @Override
-    public void onMessage(String message) throws IOException
+    public void onTextMessage(String message) throws IOException
     {
-        super.onMessage(message);
+        super.onTextMessage(message);
         session.sendText(message, Callback.NOOP);
     }
 
     @Override
-    public void onMessage(ByteBuffer message, Callback callback) throws IOException
+    public void onBinaryMessage(ByteBuffer message, Callback callback) throws IOException
     {
-        super.onMessage(message, Callback.NOOP);
+        super.onBinaryMessage(message, Callback.NOOP);
         session.sendBinary(message, callback);
     }
 }

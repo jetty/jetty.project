@@ -42,9 +42,9 @@ public class CookieCompliance implements ComplianceViolation.Mode
         /**
          * A comma was found in a cookie value.
          *
-         * @deprecated Use SPECIAL_CHARS_IN_QUOTES
+         * @deprecated Use {@link #SPECIAL_CHARS_IN_QUOTES} instead.
          */
-        @Deprecated
+        @Deprecated(since = "10.0.14", forRemoval = true)
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.2.1", "Comma not valid as cookie-octet or separator"),
 
         /**
@@ -55,7 +55,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
         /**
          * @deprecated no replacement because was mistakenly considered a violation
          */
-        @Deprecated
+        @Deprecated(since = "10.0.14", forRemoval = true)
         RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.2.1", "Reserved name no longer use '$' prefix"),
 
         /**
@@ -80,16 +80,30 @@ public class CookieCompliance implements ComplianceViolation.Mode
         INVALID_COOKIES("https://tools.ietf.org/html/rfc6265", "Invalid cookie"),
 
         /**
-         * A cookie attribute was found.
-         * The attribute value is retained only if {@link #ATTRIBUTE_VALUES} is allowed.
+         * An obsolete style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
+         *
+         * <p>
+         *     An obsolete style attribute starts with {@code $} (such as {@code $Path}).
+         * </p>
+         * <p>
+         *     When this violation is present, these obsolete style attributes are parsed as attributes, not as cookies,
+         *     and dropped.  If you want to retain their meaning, use {@link #ATTRIBUTE_VALUES}.
+         * </p>
          */
-        ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "Cookie attribute"),
+        ATTRIBUTES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Obsolete Style Cookie attribute"),
 
         /**
-         * A cookie attribute value was found and its value is retained.
-         * Allowing {@code ATTRIBUTE_VALUE} implies allowing {@link #ATTRIBUTES}.
+         * An obsolete style attribute was found in the {@code Cookie} header. (Has no effect on {@code Set-Cookie} header)
+         *
+         * <p>
+         *     An obsolete style attribute starts with {@code $} (such as {@code $Path}).
+         * </p>
+         * <p>
+         *     When this violation is present, these obsolete style attributes are parsed as attributes, not as cookies,
+         *     and interpreted as an attribute.  If you are not interested in the value, use {@link #ATTRIBUTES} instead.
+         * </p>
          */
-        ATTRIBUTE_VALUES("https://www.rfc-editor.org/rfc/rfc6265#section-4.2.1", "Cookie attribute value"),
+        ATTRIBUTE_VALUES("https://www.rfc-editor.org/rfc/rfc2965#section-3.4", "Obsolete Style Cookie attribute value"),
 
         /**
          * Whitespace was found around the cookie name and/or around the cookie value.

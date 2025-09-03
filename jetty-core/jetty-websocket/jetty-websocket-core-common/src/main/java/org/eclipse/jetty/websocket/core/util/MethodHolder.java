@@ -17,6 +17,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.WrongMethodTypeException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -56,7 +57,7 @@ public interface MethodHolder
 
     default MethodHolder bindTo(Object arg)
     {
-        throw new UnsupportedOperationException();
+        return bindTo(arg, 0);
     }
 
     default MethodHolder bindTo(Object arg, int idx)
@@ -105,7 +106,7 @@ public interface MethodHolder
 
     class Binding implements MethodHolder
     {
-        public MethodHandle _methodHandle;
+        public final MethodHandle _methodHandle;
 
         private Binding(MethodHandle methodHandle)
         {
@@ -121,15 +122,13 @@ public interface MethodHolder
         @Override
         public Binding bindTo(Object arg)
         {
-            _methodHandle = _methodHandle.bindTo(arg);
-            return this;
+            return new Binding(_methodHandle.bindTo(arg));
         }
 
         @Override
         public MethodHolder bindTo(Object arg, int idx)
         {
-            _methodHandle = MethodHandles.insertArguments(_methodHandle, idx, arg);
-            return this;
+            return new Binding(MethodHandles.insertArguments(_methodHandle, idx, arg));
         }
 
         @Override
@@ -154,17 +153,25 @@ public interface MethodHolder
     {
         private final MethodHandle _methodHandle;
         private final Object[] _parameters;
-        private final List<Integer> _unboundParamIndexes = new ArrayList<>();
+        private final List<Integer> _unboundParamIndexes;
 
         private NonBinding(MethodHandle methodHandle)
         {
             _methodHandle = Objects.requireNonNull(methodHandle);
             int numParams = methodHandle.type().parameterCount();
             _parameters = new Object[numParams];
+            _unboundParamIndexes = new ArrayList<>(numParams);
             for (int i = 0; i < numParams; i++)
             {
                 _unboundParamIndexes.add(i);
             }
+        }
+
+        private NonBinding(MethodHandle methodHandle, Object[] parameters, List<Integer> unboundParamIndexes)
+        {
+            _methodHandle = Objects.requireNonNull(methodHandle);
+            _parameters = parameters;
+            _unboundParamIndexes = unboundParamIndexes;
         }
 
         @Override
@@ -184,9 +191,11 @@ public interface MethodHolder
         @Override
         public MethodHolder bindTo(Object arg, int idx)
         {
-            _parameters[_unboundParamIndexes.get(idx)] = arg;
-            _unboundParamIndexes.remove(idx);
-            return this;
+            Object[] parameters = Arrays.copyOf(_parameters, _parameters.length);
+            List<Integer> unboundParamIndexes = new ArrayList<>(_unboundParamIndexes);
+            parameters[unboundParamIndexes.get(idx)] = arg;
+            unboundParamIndexes.remove(idx);
+            return new NonBinding(_methodHandle, parameters, unboundParamIndexes);
         }
 
         @Override
@@ -225,6 +234,39 @@ public interface MethodHolder
         public Class<?> returnType()
         {
             return _methodHandle.type().returnType();
+        }
+    }
+
+    abstract class Wrapper implements MethodHolder
+    {
+        public MethodHolder _methodHolder;
+
+        public Wrapper(MethodHolder methodHolder)
+        {
+            _methodHolder = Objects.requireNonNull(methodHolder);
+        }
+
+        public MethodHolder getWrapped()
+        {
+            return _methodHolder;
+        }
+
+        @Override
+        public Object invoke(Object... args) throws Throwable
+        {
+            return getWrapped().invoke(args);
+        }
+
+        @Override
+        public Class<?> parameterType(int idx)
+        {
+            return getWrapped().parameterType(idx);
+        }
+
+        @Override
+        public Class<?> returnType()
+        {
+            return getWrapped().returnType();
         }
     }
 }
