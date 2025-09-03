@@ -124,6 +124,10 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
+
+            // TODO: handle stream exceptions in other cases (see https://github.com/jetty/jetty.project/issues/7676).
+            decoder.streamCancellation(streamId);
+
             if (x.isRequest())
                 onHeaders(MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_3, x), true, false);
             else if (x.isResponse())

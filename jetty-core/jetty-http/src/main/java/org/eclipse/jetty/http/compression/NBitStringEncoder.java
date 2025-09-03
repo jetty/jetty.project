@@ -15,8 +15,6 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpTokens;
-
 public class NBitStringEncoder
 {
     private NBitStringEncoder()
@@ -69,7 +67,6 @@ public class NBitStringEncoder
             for (int i = 0; i < encodedValueSize; i++)
             {
                 char c = value.charAt(i);
-                c = HttpTokens.sanitizeFieldVchar(c);
                 buffer.put((byte)c);
             }
         }

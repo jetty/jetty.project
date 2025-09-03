@@ -19,6 +19,7 @@ public abstract class QpackException extends Exception
     public static final long QPACK_ENCODER_STREAM_ERROR = 0x201;
     public static final long QPACK_DECODER_STREAM_ERROR = 0x202;
     public static final long H3_GENERAL_PROTOCOL_ERROR = 0x0101;
+    public static final long H3_MESSAGE_ERROR = 0x010E;
     private final long _errorCode;
 
     QpackException(long errorCode, String message)
