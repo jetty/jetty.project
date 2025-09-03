@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
@@ -76,8 +77,10 @@ import org.junit.jupiter.api.condition.OS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -331,6 +334,7 @@ public class WebSocketOverHTTP2Test
             throw new RuntimeException("throwing from creator");
         }));
         startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
+        HTTP2Client http2Client = wsClient.getContainedBeans(HTTP2Client.class).stream().findAny().orElseThrow();
 
         CountDownLatch latch = new CountDownLatch(1);
         onComplete = latch::countDown;
@@ -350,6 +354,9 @@ public class WebSocketOverHTTP2Test
 
         // Wait for the request to complete on server before stopping.
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        var session = http2Client.getBean(SessionContainer.class).getSessions().stream().findAny().orElseThrow();
+        assertThat(session.getStreams(), is(empty()));
     }
 
     @Test
