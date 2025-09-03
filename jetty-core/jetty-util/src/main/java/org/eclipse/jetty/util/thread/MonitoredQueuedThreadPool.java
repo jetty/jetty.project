@@ -41,7 +41,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
 
     public MonitoredQueuedThreadPool(int maxThreads)
     {
-        this(maxThreads, maxThreads, 24 * 3600 * 1000, new BlockingArrayQueue<>(maxThreads, 256));
+        this(maxThreads, maxThreads, 24 * 3600 * 1000, BlockingArrayQueue.newInstance(maxThreads, Integer.MAX_VALUE));
     }
 
     public MonitoredQueuedThreadPool(int maxThreads, int minThreads, int idleTimeOut, BlockingQueue<Runnable> queue)

@@ -94,8 +94,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      */
     public static final int DEFAULT_CAPACITY = 128;
     /**
-     * Default growth factor, 64.
+     * Old default growth factor, 64.
+     * @deprecated the growth strategy has changed and doesn't use this constant anymore.
      */
+    @Deprecated(since = "12.1.2", forRemoval = true)
     public static final int DEFAULT_GROWTH = 64;
 
     /**
@@ -120,63 +122,82 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     /**
      * The array that holds the elements of the queue.
      */
-    private final int _maxCapacity;
-    private final int _growCapacity;
     private Object[] _elements;
+    private final int _maxCapacity;
 
     /**
-     * Creates an unbounded instance with default initial capacity and grow factor.
+     * Creates an unbounded instance with default initial capacity.
      *
      * @see #DEFAULT_CAPACITY
-     * @see #DEFAULT_GROWTH
      */
     public BlockingArrayQueue()
     {
-        _elements = new Object[DEFAULT_CAPACITY];
-        _growCapacity = DEFAULT_GROWTH;
-        _maxCapacity = Integer.MAX_VALUE;
+        this(DEFAULT_CAPACITY, Integer.MAX_VALUE, false);
     }
 
     /**
-     * Creates a bounded instance that does not grow.
+     * Creates an instance that does not grow.
      * The capacity of the queue is fixed and equal to the given parameter.
      *
      * @param maxCapacity the maximum capacity
      */
     public BlockingArrayQueue(int maxCapacity)
     {
-        _elements = new Object[maxCapacity];
-        _growCapacity = -1;
-        _maxCapacity = maxCapacity;
+        this(maxCapacity, maxCapacity, false);
     }
 
     /**
-     * Creates an unbounded instance that grows by the given parameter.
+     * Creates an unbounded instance.
      *
      * @param capacity the initial capacity
      * @param growBy the growth factor
+     * @deprecated the growth factor isn't used anymore
      */
+    @Deprecated(since = "12.1.2", forRemoval = true)
     public BlockingArrayQueue(int capacity, int growBy)
     {
-        _elements = new Object[capacity];
-        _growCapacity = growBy;
-        _maxCapacity = Integer.MAX_VALUE;
+        this(capacity, Integer.MAX_VALUE, false);
     }
 
     /**
-     * Create a bounded instance that grows by the given parameter.
+     * Creates an instance with given initial and max capacities.
      *
      * @param capacity the initial capacity
      * @param growBy the growth factor
      * @param maxCapacity the maximum capacity
+     * @deprecated the growth factor isn't used anymore
      */
+    @Deprecated(since = "12.1.2", forRemoval = true)
     public BlockingArrayQueue(int capacity, int growBy, int maxCapacity)
     {
-        if (capacity > maxCapacity)
+        this(capacity, maxCapacity, false);
+    }
+
+    /**
+     * Creates an instance with given initial and max capacities.
+     *
+     * @param capacity the initial capacity
+     * @param maxCapacity the maximum capacity
+     * @param ignored this parameter is ignored but is needed as there is already a
+     *  {@link BlockingArrayQueue#BlockingArrayQueue(int, int) deprecated constructor} that takes two ints.
+     */
+    private BlockingArrayQueue(int capacity, int maxCapacity, boolean ignored)
+    {
+        if (capacity < 0 || maxCapacity < 0 || capacity > maxCapacity)
             throw new IllegalArgumentException();
         _elements = new Object[capacity];
-        _growCapacity = growBy;
         _maxCapacity = maxCapacity;
+    }
+
+    /**
+     * Creates a {@link BlockingArrayQueue} with given initial and max capacities.
+     *
+     * @param capacity the initial capacity
+     * @param maxCapacity the maximum capacity
+     */
+    public static <E> BlockingArrayQueue<E> newInstance(int capacity, int maxCapacity)
+    {
+        return new BlockingArrayQueue<>(capacity, maxCapacity, false);
     }
 
     /* Collection methods */
@@ -225,22 +246,26 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 wasFull = lockedDecrementSize();
             }
         }
+
         if (wasFull)
             signal(_tailLock);
+
         return e;
     }
 
     @Override
     public E poll(long time, TimeUnit unit) throws InterruptedException
     {
-        long nanos = unit.toNanos(time);
         E e;
         boolean wasFull;
+        long nanos = unit.toNanos(time);
         // Lock head, _size can grow but not shrink.
         try (var headLock = _headLock.lockInterruptibly())
         {
             try
             {
+                // Head is locked, _size update 0->1 would signal(),
+                // but must wait for the head lock to be released.
                 while (_size.get() == 0)
                 {
                     if (nanos <= 0)
@@ -257,8 +282,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             e = lockedTakeFromHead();
             wasFull = lockedDecrementSize();
         }
+
         if (wasFull)
             signal(_tailLock);
+
         return e;
     }
 
@@ -391,16 +418,15 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 return false;
 
             // Should we expand array?
-            if (_growCapacity > 0 && size == _elements.length)
+            if (size == _elements.length)
             {
                 // Full lock, _size cannot change.
                 try (var ignoredH = _headLock.lock())
                 {
                     // Recheck size under both locks.
                     size = _size.get();
-                    if (size >= _maxCapacity && size != _elements.length)
-                        return false;
-                    lockedGrow();
+                    if (size == _elements.length)
+                        lockedGrow();
                 }
             }
 
@@ -427,9 +453,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             while (true)
             {
                 int size = _size.get();
-
-                // If we are full, then we can wait for space to become available
-                if (size >= _maxCapacity || (_growCapacity <= 0 && size == _elements.length))
+                // If we are full, then wait for space to become available.
+                // Tail is locked, _size update max->max-1 would signal(),
+                // but must wait for the tail lock to be released.
+                if (size >= _maxCapacity)
                 {
                     if (nanos <= 0L)
                         return false;
@@ -438,23 +465,20 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     continue;
                 }
                 // Otherwise, can we grow?
-                else if (_growCapacity > 0 && size == _elements.length)
+                else if (size == _elements.length)
                 {
                     // Full lock, _size cannot change.
                     try (var ignored = _headLock.lock())
                     {
                         // Recheck the size under both locks.
                         size = _size.get();
-                        if (size >= _maxCapacity && size != _elements.length)
-                            continue; // Loop and wait without holding the head lock.
-
-                        lockedGrow();
+                        if (size == _elements.length)
+                            lockedGrow();
                     }
                 }
 
-                // We can add now after a possible grow
+                // We can add now after a possible grow.
                 lockedAddToTail(o);
-
                 wasEmpty = lockedIncrementSize();
                 break;
             }
@@ -462,6 +486,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
         if (wasEmpty)
             signal(_headLock);
+
         return true;
     }
 
@@ -496,7 +521,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             {
                 if (_indexes[TAIL_OFFSET] == _indexes[HEAD_OFFSET])
                 {
-                    if (_growCapacity <= 0 || _size.get() == _maxCapacity)
+                    if (_size.get() == _maxCapacity)
                         throw new IllegalStateException("full");
                     lockedGrow();
                 }
@@ -550,28 +575,29 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             {
                 int size = _size.get();
 
-                // If we are full, then we can wait for space to become available
-                if (size >= _maxCapacity || (_growCapacity <= 0 && size == _elements.length))
+                // If we are full, then wait for space to become available.
+                // Tail is locked, _size update max->max-1 would signal(),
+                // but must wait for the tail lock to be released.
+                if (size >= _maxCapacity)
                 {
                     tailLock.await();
-                    continue; // recheck size
+                    // Recheck the size.
+                    continue;
                 }
                 // Otherwise, can we grow?
-                else if (_growCapacity > 0 && size == _elements.length)
+                else if (size == _elements.length)
                 {
                     // Full lock, _size cannot change.
                     try (var ignored = _headLock.lock())
                     {
                         // Recheck the size under both locks.
                         size = _size.get();
-                        if (size >= _maxCapacity && size != _elements.length)
-                            continue; // Loop and wait without holding the head lock.
-
-                        lockedGrow();
+                        if (size == _elements.length)
+                            lockedGrow();
                     }
                 }
 
-                // We can add now after a possible grow
+                // We can add now after a possible grow.
                 lockedAddToTail(e);
                 wasEmpty = lockedIncrementSize();
                 break;
@@ -592,8 +618,12 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         {
             try
             {
+                // Head is locked, _size update 0->1 would signal(),
+                // but must wait for the head lock to be released.
                 while (_size.get() == 0)
+                {
                     headLock.await();
+                }
             }
             catch (InterruptedException ex)
             {
@@ -604,8 +634,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             e = lockedTakeFromHead();
             wasFull = lockedDecrementSize();
         }
+
         if (wasFull)
             signal(_tailLock);
+
         return e;
     }
 
@@ -751,8 +783,8 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /**
-     * Get the max capacity of this queue, or -1 if this queue is unbounded.
-     * @return the max capacity of this queue, or -1 if this queue is unbounded
+     * Get the max capacity of this queue.
+     * @return the max capacity of this queue
      */
     public int getMaxCapacity()
     {
@@ -763,13 +795,12 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         assert _tailLock.isHeldByCurrentThread();
         assert _headLock.isHeldByCurrentThread();
-        assert _growCapacity > 0;
         final int head = _indexes[HEAD_OFFSET];
         final int tail = _indexes[TAIL_OFFSET];
         final int newTail;
         final int capacity = _elements.length;
 
-        Object[] elements = new Object[Math.min(_maxCapacity, capacity + _growCapacity)];
+        Object[] elements = new Object[newCapacity(capacity, _maxCapacity)];
 
         if (head < tail)
         {
@@ -803,7 +834,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
     /**
      * Add an element to the tail of the queue with the tail lock held.
-     * The size must be &lt; max capacity when this method is called.
+     * The size must be less than {@code _elements.length} when this method is called.
      * @param e the element to add
      */
     private void lockedAddToTail(E e)
@@ -816,7 +847,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
     /**
      * Take an element from the head of the queue with the head lock held.
-     * The size must be &gt; 0 when this method is called.
+     * The size must be greater than zero when this method is called.
      * @return the head element
      */
     private E lockedTakeFromHead()
@@ -849,7 +880,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
     /**
      * <p>Decrements the size under the head lock.</p>
-     * <p>Signals threads waiting on the head lock if the new size remains greater than {@code 0}.</p>
+     * <p>Signals threads waiting on the head lock if the new size remains greater than zero.</p>
      *
      * @return true if the queue was full prior to the size decrement, false otherwise
      */
@@ -862,6 +893,14 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         if (oldSize > 1)
             _headLock.signal();
         return wasFull;
+    }
+
+    static int newCapacity(int currentCapacity, int maxCapacity)
+    {
+        int newCapacity = currentCapacity + Math.max(8, currentCapacity / 2);
+        if (newCapacity >= maxCapacity || newCapacity < 0)
+            return maxCapacity;
+        return newCapacity;
     }
 
     private class Itr implements ListIterator<E>
