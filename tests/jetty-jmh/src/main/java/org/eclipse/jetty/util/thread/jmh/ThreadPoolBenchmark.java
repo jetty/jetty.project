@@ -64,14 +64,14 @@ public class ThreadPoolBenchmark
         {
             case QTP:
             {
-                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new BlockingArrayQueue<>());
                 qtp.setReservedThreads(0);
                 pool = qtp;
                 break;
             }
 
             case ETP:
-                pool = new ExecutorThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                pool = new ExecutorThreadPool(size, size, new BlockingArrayQueue<>());
                 break;
 
             case LQTP:

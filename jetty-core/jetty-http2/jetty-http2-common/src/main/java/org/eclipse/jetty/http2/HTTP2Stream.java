@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -299,9 +299,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     public void notIdle()
     {
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
     }
 
     @Override
@@ -413,9 +411,10 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
         else
         {
-            HttpFields fields = metaData.getHttpFields();
             long length = -1;
-            if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
+            HttpFields fields = metaData.getHttpFields();
+            boolean connect = HttpMethod.CONNECT.is(request.getMethod());
+            if (fields != null && !connect)
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length;
 
@@ -430,6 +429,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
             else
             {
+                MetaData.Response response = (MetaData.Response)metaData;
+                if (connect && response.getStatus() != HttpStatus.OK_200)
+                {
+                    // A failed tunnel attempt, must close the request side.
+                    updateClose(true, CloseState.Event.AFTER_SEND);
+                }
                 boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(frame, Callback.from(() ->
                 {

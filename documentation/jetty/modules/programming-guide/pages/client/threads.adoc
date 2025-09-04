@@ -1,0 +1,71 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Client Threading Architecture
+
+The Jetty HTTP client libraries are xref:client/http.adoc[non-blocking] and xref:client/http.adoc#listeners[event-based].
+Client applications provide listeners that are notified of request and response events, and the listeners implement the client application logic.
+
+In general, the thread that sends the `Request` is the thread that emits the request events.
+Writing blocking code in a request listener blocks the sending of the `Request`.
+
+The processing of ``Response``s, on the other hand, follows the general xref:arch/io.adoc[Jetty I/O architecture] and xref:arch/threads.adoc[Jetty threading architecture], and it is detailed in <<response-threading,this section>>.
+
+== DNS Lookup Threading
+
+In order to send a request, a connection needs to be established, and this involves a query to the DNS to convert the host name to an IP address (this is necessary only for network transports, see xref:client/io-arch.adoc[here]).
+
+The Java platform only offers blocking APIs to query the DNS, via `InetAddress.getAllByName(String)`.
+While DNS queries are typically fast (few milliseconds), in unfortunate cases they may last several seconds, blocking the thread that sends the request.
+
+To avoid blocking the request sender thread, `HttpClient` is configured by default with `SocketAddressResolver.Async`, that executes the DNS query in a different thread.
+
+If you want to avoid this thread hand-off, especially when the request host is `localhost` or resolved locally (for example configured in `/etc/hosts`), you can configure `HttpClient` with `SocketAddressResolver.Sync` that will perform the DNS query in the request sender thread.
+
+[[response-threading]]
+== Response Processing Threading
+
+As explained in the general xref:arch/threads.adoc[Jetty threading architecture], client applications can specify the `InvocationType` of the Jetty implementation tasks that invoke client application code in `Response` listeners.
+
+There are two main Jetty implementation tasks that invoke client application code in `Response` listeners:
+
+* The task that invokes the `Response` listeners, detailed <<invocation-type-listeners,here>>.
+* The task that invokes the response's `Content.Source` demand callback, detailed <<invocation-type-demand,here>>.
+
+[[invocation-type-listeners]]
+=== `Response` Listener `InvocationType`
+
+The `InvocationType` of the task that invokes the `Response` listeners is configured in the `HttpClientTransport` passed to `HttpClient`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ClientDocs.java[tags=transportInvocationType]
+----
+
+The default `InvocationType` for all ``HttpClientTransport``s is `BLOCKING`.
+
+[[invocation-type-demand]]
+== `Response` Demand `InvocationType`
+
+The `InvocationType` of the task that invokes the `Response` xref:arch/io.adoc#content-source[`Content.Source`] demand callback is determined from the demand callback object passed to link:{javadoc-url}/org/eclipse/jetty/io/Content.Source.html#demand(java.lang.Runnable)[`Content.Source.demand(Runnable)`], and defines the `InvocationType` with which the demand callback is invoked.
+
+Rather than passing a simple `Runnable` or a lambda expression (for which the `InvocationType` is assumed to be `BLOCKING`), you can pass an `Invocable.Task`, that implements both `Invocable` (to specify the `InvocationType`) and `Runnable` (to specify the demand callback).
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ClientDocs.java[tags=demandInvocationType]
+----
+<1> Specifies the `InvocationType` for response listener processing.
+<2> Specifies the demand callback to be an `Invocable.Task` with `InvocationType` `NON_BLOCKING`.

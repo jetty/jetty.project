@@ -49,17 +49,15 @@ public class BrotliCompression extends Compression
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_BROTLI_SIZE = 48;
 
-    static
-    {
-        Brotli4jLoader.ensureAvailability();
-    }
-
     private BrotliEncoderConfig defaultEncoderConfig = new BrotliEncoderConfig();
     private BrotliDecoderConfig defaultDecoderConfig = new BrotliDecoderConfig();
 
     public BrotliCompression()
     {
         super(ENCODING_NAME);
+        // Brotli4jLoader uses a static class block to link the
+        // native library, so it is thread-safe by definition.
+        Brotli4jLoader.ensureAvailability();
         setMinCompressSize(DEFAULT_MIN_BROTLI_SIZE);
     }
 

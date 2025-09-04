@@ -17,7 +17,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,7 @@ public class QpackContext
         Entry entry = __staticTable.get(name);
         if (entry != null)
             return entry;
-        return _dynamicTable.get(StringUtil.asciiToLowerCase(name));
+        return _dynamicTable.get(name);
     }
 
     /**

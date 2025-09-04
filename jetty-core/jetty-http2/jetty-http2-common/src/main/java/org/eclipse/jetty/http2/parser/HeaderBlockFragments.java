@@ -47,7 +47,7 @@ public class HeaderBlockFragments
     {
         if (storage == null)
         {
-            if (length > maxCapacity)
+            if (maxCapacity > 0 && length > maxCapacity)
                 return false;
             int capacity = last ? length : length * 2;
             storage = bufferPool.acquire(capacity, fragment.isDirect());
@@ -58,7 +58,7 @@ public class HeaderBlockFragments
         if (storage.remaining() < length)
         {
             ByteBuffer byteBuffer = storage.getByteBuffer();
-            if (byteBuffer.position() + length > maxCapacity)
+            if (maxCapacity > 0 && (byteBuffer.position() + length) > maxCapacity)
                 return false;
             int space = last ? length : length * 2;
             int capacity = byteBuffer.position() + space;

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -23,10 +25,15 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -120,6 +127,48 @@ public class MetaInfConfigurationTest
         context31false.getServletContext().setEffectiveMajorVersion(3);
         context31false.getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);
+    }
+
+    @Test
+    public void testRelativeContainerPaths() throws Exception
+    {
+        // check to make sure that the test environment is set up correctly
+        // with a relative reference
+        String classPath = System.getProperty("java.class.path");
+        String[] files = classPath.split(File.pathSeparator);
+        String relativeFile = null;
+        for (String f : files)
+        {
+            if (f.endsWith("com-acme-janb.jar"))
+                relativeFile = f;
+        }
+
+        assertThat(relativeFile, notNullValue());
+        assertFalse(Paths.get(relativeFile).isAbsolute());
+
+        // test that the relative reference is converted into a resource with absolute Path
+        MetaInfConfiguration config = new MetaInfConfiguration();
+        WebAppContext context = new WebAppContext();
+        context.setServer(new Server());
+        try
+        {
+            context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/com-acme-janb.jar");
+            WebAppClassLoader loader = new WebAppClassLoader(context);
+            context.setClassLoader(loader);
+            config.preConfigure(context);
+
+            List<Resource> resources = context.getMetaData().getContainerResources();
+            assertThat(resources.size(), is(1));
+            assertTrue(resources.get(0).getPath().isAbsolute());
+            assertFalse(resources.get(0) instanceof MountedPathResource);
+        }
+        finally
+        {
+            config.postConfigure(context);
+            // manually stop ResourceFactory.
+            // normally this would be done via WebAppContext.stop(), but we didn't start the context.
+            LifeCycle.stop(context.getResourceFactory());
+        }
     }
 
     /**

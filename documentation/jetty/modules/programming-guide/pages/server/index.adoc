@@ -18,7 +18,7 @@ A typical example is a HTTP server that needs to expose a REST endpoint.
 Another example is a proxy application that receives HTTP requests, processes them, and then forwards them to third party services, for example using the Jetty xref:client/index.adoc[client libraries].
 
 While historically Jetty is an HTTP server, it is possible to use the Jetty server-side libraries to write a generic network server that interprets any network protocol (not only HTTP).
-If you are interested in the low-level details of how the Eclipse Jetty server libraries work, or are interested in writing a custom protocol, look at the xref:server/io-arch.adoc[Server I/O Architecture].
+If you are interested in the low-level details of how the Eclipse Jetty server libraries work, or are interested in writing a custom protocol, look at the xref:server/io-arch.adoc[server I/O architecture] and the xref:server/threads.adoc[server threading architecture].
 
 The Jetty server-side libraries provide:
 

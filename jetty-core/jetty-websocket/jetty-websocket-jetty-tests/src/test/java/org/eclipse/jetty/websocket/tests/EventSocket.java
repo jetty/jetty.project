@@ -28,6 +28,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketPing;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketPong;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,17 +39,17 @@ public class EventSocket
 {
     private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
 
+    public final BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+    public final BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
+    public final BlockingQueue<ByteBuffer> pongMessages = new BlockingArrayQueue<>();
+    public final BlockingQueue<ByteBuffer> pingMessages = new BlockingArrayQueue<>();
+    public final CountDownLatch openLatch = new CountDownLatch(1);
+    public final CountDownLatch errorLatch = new CountDownLatch(1);
+    public final CountDownLatch closeLatch = new CountDownLatch(1);
     public Session session;
-
-    public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
-    public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
-    public volatile int closeCode = StatusCode.UNDEFINED;
-    public volatile String closeReason;
-    public volatile Throwable error = null;
-
-    public CountDownLatch openLatch = new CountDownLatch(1);
-    public CountDownLatch errorLatch = new CountDownLatch(1);
-    public CountDownLatch closeLatch = new CountDownLatch(1);
+    public int closeCode = StatusCode.UNDEFINED;
+    public String closeReason;
+    public Throwable error = null;
 
     @OnWebSocketOpen
     public void onOpen(Session session)
@@ -59,20 +61,46 @@ public class EventSocket
     }
 
     @OnWebSocketMessage
-    public void onMessage(String message) throws IOException
+    public void onTextMessage(String message) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onMessage(): {}", this, message);
-        textMessages.offer(message);
+            LOG.debug("{}  onTextMessage(): {}", this, message);
+        textMessages.add(message);
     }
 
     @OnWebSocketMessage
-    public void onMessage(ByteBuffer message, Callback callback) throws IOException
+    public void onBinaryMessage(ByteBuffer message, Callback callback) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onMessage(): {}", this, message);
-        binaryMessages.offer(BufferUtil.copy(message));
+            LOG.debug("{}  onBinaryMessage(): {}", this, message);
+        binaryMessages.add(BufferUtil.copy(message));
         callback.succeed();
+    }
+
+    @OnWebSocketPing
+    public void onPingMessage(ByteBuffer payload)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onPingMessage(): {}", this, payload);
+        pingMessages.add(BufferUtil.copy(payload));
+        session.sendPong(payload, Callback.NOOP);
+    }
+
+    @OnWebSocketPong
+    public void onPongMessage(ByteBuffer payload)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onPongMessage(): {}", this, payload);
+        pongMessages.add(BufferUtil.copy(payload));
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onError()", this, cause);
+        error = cause;
+        errorLatch.countDown();
     }
 
     @OnWebSocketClose
@@ -83,15 +111,6 @@ public class EventSocket
         this.closeCode = statusCode;
         this.closeReason = reason;
         closeLatch.countDown();
-    }
-
-    @OnWebSocketError
-    public void onError(Throwable cause)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}  onError(): {}", this, cause);
-        error = cause;
-        errorLatch.countDown();
     }
 
     @Override

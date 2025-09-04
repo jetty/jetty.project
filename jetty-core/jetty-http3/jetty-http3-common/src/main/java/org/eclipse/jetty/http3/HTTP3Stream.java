@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3;
 
 import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http3.api.Stream;
@@ -116,9 +115,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected void notIdle()
     {
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
     }
 
     void onIdleTimeout(TimeoutException timeout, Promise<Boolean> promise)

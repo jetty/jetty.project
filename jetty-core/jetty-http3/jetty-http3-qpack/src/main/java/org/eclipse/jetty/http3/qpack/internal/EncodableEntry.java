@@ -239,7 +239,7 @@ public abstract class EncodableEntry
 
         private String getName()
         {
-            String name = Objects.requireNonNull(_field).getName();
+            String name = Objects.requireNonNull(_field).getLowerCaseName();
             return (name == null) ? "" : name;
         }
 

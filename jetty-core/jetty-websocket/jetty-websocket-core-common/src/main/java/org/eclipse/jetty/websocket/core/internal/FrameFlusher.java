@@ -21,7 +21,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -70,15 +70,17 @@ public class FrameFlusher extends IteratingCallback
     private final List<FlusherEntry> _currentEntries;
     private final List<FlusherEntry> _completedEntries = new ArrayList<>();
     private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
-    private long _currentMessageExpiry;
+    private final Behavior _behavior;
+    private long _currentMessageExpiry = Long.MAX_VALUE;
 
     private RetainableByteBuffer _batchBuffer;
     private boolean _canEnqueue = true;
     private Throwable _closedCause;
     private boolean _useDirectByteBuffers;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
+    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
     {
+        _behavior = behavior;
         _bufferPool = bufferPool;
         _endPoint = endPoint;
         _bufferSize = bufferSize;
@@ -387,7 +389,7 @@ public class FrameFlusher extends IteratingCallback
 
         for (FlusherEntry entry : _completedEntries)
         {
-            if (entry.getFrame().getOpCode() == OpCode.CLOSE)
+            if (entry.getFrame().getOpCode() == OpCode.CLOSE && _behavior == Behavior.SERVER)
                 _endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.getCallback());
         }
@@ -500,33 +502,27 @@ public class FrameFlusher extends IteratingCallback
         public FlusherEntry(OutgoingEntry outgoingEntry)
         {
             _outgoingEntry = outgoingEntry;
-            long frameTimeout = _outgoingEntry.getFrameTimeout();
-            long messageTimeout = _outgoingEntry.getMessageTimeout();
-            long currentTime = NanoTime.now();
-            long expiry = Long.MAX_VALUE;
 
-            if (frameTimeout > 0)
-                expiry = currentTime + TimeUnit.MILLISECONDS.toNanos(frameTimeout);
+            long messageTimeout = outgoingEntry.getMessageTimeout();
+            long frameExpiry = CyclicTimeouts.Expirable.calcExpireNanoTime(outgoingEntry.getFrameTimeout());
 
             Frame frame = outgoingEntry.getFrame();
             if (frame.isDataFrame())
             {
-                // If this is the first frame of the message remember the message timeout.
+                // If this is the first frame of the message, remember the message timeout.
                 if (frame.getOpCode() != OpCode.CONTINUATION)
-                    _currentMessageExpiry = (messageTimeout > 0) ? currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout) : Long.MAX_VALUE;
+                    _currentMessageExpiry = CyclicTimeouts.Expirable.calcExpireNanoTime(messageTimeout);
                 if (_currentMessageExpiry != Long.MAX_VALUE)
-                    expiry = (expiry == Long.MAX_VALUE) ? _currentMessageExpiry : minNanoTime(expiry, _currentMessageExpiry);
+                    frameExpiry = (frameExpiry == Long.MAX_VALUE) ? _currentMessageExpiry : minNanoTime(frameExpiry, _currentMessageExpiry);
             }
             else
             {
-                if (messageTimeout > 0)
-                {
-                    long messageExpiry = currentTime + TimeUnit.MILLISECONDS.toNanos(messageTimeout);
-                    expiry = (expiry == Long.MAX_VALUE) ? messageExpiry : minNanoTime(expiry, messageExpiry);
-                }
+                long messageExpiry = CyclicTimeouts.Expirable.calcExpireNanoTime(messageTimeout);
+                if (messageTimeout != Long.MAX_VALUE)
+                    frameExpiry = (frameExpiry == Long.MAX_VALUE) ? messageExpiry : minNanoTime(frameExpiry, messageExpiry);
             }
 
-            _expiry = expiry;
+            _expiry = frameExpiry;
         }
 
         public Frame getFrame()

@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -641,11 +642,27 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                // If the stream is not closed, it is still reading the request content.
-                // Send a reset to the other end so that it stops sending data.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
+                if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+                {
+                    // It was a tunnel attempt, but it failed with a non-200 response.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: tunnel failed with {} response", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), _responseMetaData.getStatus());
+                    // Implicitly close the request side of the stream that was left
+                    // open by the client to tunnel opaque bytes via DATA frames.
+                    // Don't send RST_STREAM if a response was already sent.
+                    if (_stream.updateClose(true, CloseState.Event.RECEIVED))
+                        _stream.getSession().removeStream(_stream);
+                    else
+                        _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                }
+                else
+                {
+                    // If the stream is not closed, it is still reading the request content.
+                    // Send a reset to the other end so that it stops sending data.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                    _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                }
             }
         }
         _httpChannel.recycle();
@@ -655,10 +672,26 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void failed(Throwable x)
     {
-        ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
-        if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
-        _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
+        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+        {
+            // It was a tunnel attempt, but it failed.
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 response #{}/{}: tunnel failed", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), x);
+            // Implicitly close the request side of the stream that was left
+            // open by the client to tunnel opaque bytes via DATA frames.
+            // Don't send RST_STREAM if a response was already sent.
+            if (_stream.updateClose(true, CloseState.Event.RECEIVED))
+                _stream.getSession().removeStream(_stream);
+            else
+                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }
+        else
+        {
+            ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
+            _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
+        }
     }
 
     private class SendTrailers extends Callback.Nested

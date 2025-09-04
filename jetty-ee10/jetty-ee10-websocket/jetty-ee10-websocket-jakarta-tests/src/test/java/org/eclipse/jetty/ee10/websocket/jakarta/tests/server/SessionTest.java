@@ -31,8 +31,8 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -238,7 +238,7 @@ public class SessionTest
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedResponse));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
+        try (WebSocketTester session = server.newWebSocketTester(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
