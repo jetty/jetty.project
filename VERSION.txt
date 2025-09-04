@@ -1,3 +1,12 @@
+12.0.26 - 04 September 2025
+ + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13409 Jetty fails to discover WebFragments in Library Files on classpath
+ + 13436 AssertionError in MemoryEndPointPipe.MemoryEndPoint.fill()
+ + 13457 ClassCastException due to HashSet being used in a non thread-safe way
+ + 13475 jakarta Websocket served with h2 and timeouts disabled always times out after 30s
+ + 13506 HTTP/2 CONTINUATION frames may cause connection close
+
 12.0.25 - 11 August 2025
  + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
  + 13403 EE8 Servlet API throws exceptions in normal control flow
