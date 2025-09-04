@@ -24,12 +24,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -455,6 +457,15 @@ public class CombinedResourceTest
 
         // To use this, we need to split it (and optionally honor globs)
         List<Resource> resources = resourceFactory.split(config);
+
+        // Perform Archive file mounting (if needed)
+        for (ListIterator<Resource> i = resources.listIterator(); i.hasNext(); )
+        {
+            Resource resource = i.next();
+            if (resource.exists() && !resource.isDirectory() && FileID.isLibArchive(resource.getName()))
+                i.set(resourceFactory.newResource(URIUtil.toJarFileUri(resource.getURI())));
+        }
+
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there

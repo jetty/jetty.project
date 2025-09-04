@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +39,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MultiPartFormData.Parts;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -255,7 +254,7 @@ public class HttpChannelState implements HttpChannel, Components
         if (_cache == null)
         {
             if (getConnectionMetaData().isPersistent())
-                _cache = new Attributes.Mapped(new HashMap<>());
+                _cache = new Attributes.Mapped();
             else
                 _cache = Attributes.NULL;
         }
@@ -767,7 +766,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
 
                 // Clean up any multipart tmp files and release any associated resources.
-                Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
+                MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
                 if (parts != null)
                     parts.close();
 

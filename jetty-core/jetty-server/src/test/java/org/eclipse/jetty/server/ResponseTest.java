@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResponseTest
 {
@@ -246,38 +245,38 @@ public class ResponseTest
                 String date = response.getHeaders().get(HttpHeader.DATE);
                 String server = response.getHeaders().get(HttpHeader.SERVER);
 
-                response.getHeaders().add("Temp", "field");
-                response.getHeaders().add("Test", "before reset");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.DATE));
-                response.getHeaders().remove("Temp");
-
-                response.getHeaders().add("Temp", "field");
+                response.getHeaders()
+                    .add("Temp", "field")
+                    .add("Test", "before reset")
+                    .remove(HttpHeader.SERVER)
+                    .remove(HttpHeader.DATE)
+                    .remove("Temp")
+                    .add("Temp", "field");
                 Iterator<HttpField> iterator = response.getHeaders().iterator();
                 assertThat(iterator.next().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, iterator::remove);
+                iterator.remove();
                 assertThat(iterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, iterator::remove);
+                iterator.remove();
                 assertThat(iterator.next().getName(), is("Test"));
                 assertThat(iterator.next().getName(), is("Temp"));
                 iterator.remove();
                 assertFalse(response.getHeaders().contains("Temp"));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
+                response.getHeaders().remove(HttpHeader.SERVER);
                 assertFalse(iterator.hasNext());
 
                 ListIterator<HttpField> listIterator = response.getHeaders().listIterator();
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
+                listIterator.remove();
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, () -> listIterator.set(new HttpField("Something", "else")));
+                listIterator.set(new HttpField("Something", "else"));
                 listIterator.set(new HttpField(HttpHeader.DATE, "1970-01-01"));
                 assertThat(listIterator.previous().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
+                listIterator.remove();
                 assertThat(listIterator.previous().getHeader(), is(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
+                listIterator.remove();
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, listIterator::remove);
+                listIterator.remove();
                 listIterator.add(new HttpField("Temp", "value"));
                 assertThat(listIterator.previous().getName(), is("Temp"));
                 listIterator.remove();
@@ -294,9 +293,9 @@ public class ResponseTest
                 response.getHeaders().add("Test", "after reset");
 
                 response.getHeaders().putDate("Date", 1L);
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
+                response.getHeaders().put(HttpHeader.SERVER, (String)null);
                 response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
+                response.getHeaders().put(HttpHeader.SERVER, (String)null);
                 callback.succeeded();
                 return true;
             }

@@ -61,9 +61,9 @@ public class ExplicitDemandTest
         }
 
         @Override
-        public void onMessage(String message) throws IOException
+        public void onTextMessage(String message) throws IOException
         {
-            super.onMessage(message);
+            super.onTextMessage(message);
             if (!"suspend".equals(message))
                 session.demand();
         }

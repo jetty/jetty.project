@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -49,7 +50,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -201,16 +204,23 @@ public class ResourceFactoryTest
     public void testCustomUriSchemeRegistered()
     {
         ResourceFactory.registerResourceFactory("custom", new CustomResourceFactory());
-        // Try as a normal String input
-        Resource resource = ResourceFactory.root().newResource("custom://foo");
-        assertThat(resource.getURI(), is(URI.create("custom://foo")));
-        assertThat(resource.getName(), is("custom-impl"));
+        try
+        {
+            // Try as a normal String input
+            Resource resource = ResourceFactory.root().newResource("custom://foo");
+            assertThat(resource.getURI(), is(URI.create("custom://foo")));
+            assertThat(resource.getName(), is("custom-impl"));
 
-        // Try as a formal URI object as input
-        URI uri = URI.create("custom://foo");
-        resource = ResourceFactory.root().newResource(uri);
-        assertThat(resource.getURI(), is(URI.create("custom://foo")));
-        assertThat(resource.getName(), is("custom-impl"));
+            // Try as a formal URI object as input
+            URI uri = URI.create("custom://foo");
+            resource = ResourceFactory.root().newResource(uri);
+            assertThat(resource.getURI(), is(URI.create("custom://foo")));
+            assertThat(resource.getName(), is("custom-impl"));
+        }
+        finally
+        {
+            ResourceFactory.unregisterResourceFactory("custom");
+        }
     }
 
     @Test
@@ -232,20 +242,27 @@ public class ResourceFactoryTest
         }
 
         ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
-        // Try as a normal String input
-        Resource resource = ResourceFactory.root().newResource("https://webtide.com/");
-        assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
-        assertThat(resource.getName(), is("https://webtide.com/"));
+        try
+        {
+            // Try as a normal String input
+            Resource resource = ResourceFactory.root().newResource("https://webtide.com/");
+            assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
+            assertThat(resource.getName(), is("https://webtide.com/"));
 
-        // Try as a formal URI object as input
-        resource = ResourceFactory.root().newResource(uri);
-        assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
-        assertThat(resource.getName(), is("https://webtide.com/"));
+            // Try as a formal URI object as input
+            resource = ResourceFactory.root().newResource(uri);
+            assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
+            assertThat(resource.getName(), is("https://webtide.com/"));
 
-        // Try a sub-resource
-        Resource subResource = resource.resolve("favicon.ico");
-        assertThat(subResource.getFileName(), is("favicon.ico"));
-        assertThat(subResource.length(), greaterThan(0L));
+            // Try a sub-resource
+            Resource subResource = resource.resolve("favicon.ico");
+            assertThat(subResource.getFileName(), is("favicon.ico"));
+            assertThat(subResource.length(), greaterThan(0L));
+        }
+        finally
+        {
+            ResourceFactory.unregisterResourceFactory("https");
+        }
     }
 
     public static Stream<Arguments> newResourceCases()
@@ -296,33 +313,59 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitSingleJar()
+    public void testSplitSingleJar() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
             String input = testJar.toUri().toASCIIString();
             List<Resource> resources = resourceFactory.split(input);
-            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            String expected = testJar.toUri().toASCIIString();
             assertThat(resources.get(0).getURI().toString(), is(expected));
         }
     }
 
     @Test
-    public void testSplitSinglePath()
+    public void testSplitSinglePath() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
             String input = testJar.toString();
             List<Resource> resources = resourceFactory.split(input);
-            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            String expected = testJar.toUri().toASCIIString();
             assertThat(resources.get(0).getURI().toString(), is(expected));
         }
     }
 
     @Test
-    public void testSplitOnComma()
+    public void testSplitIsAbsolute() throws Exception
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            String config = String.format("%s,%s,%s,%s,%s,%s", "dir/a", "foo/b", "bar/c", "jar:file:///foo/bar.jar!/", "file:///foo/bar.jar", "/foo/bar.jar");
+            List<Resource> resources = resourceFactory.split(config, ",", true);
+            resources.stream().forEach(r ->
+            {
+                //Note: do not test the value of absolute resolution of the relative references as this is system dependent.
+                assertThat(r, not(instanceOf(MountedPathResource.class))); //unwrapped so cannot be mounted
+                assertThat(r.getPath().isAbsolute(), is(true)); //must be absolute
+            });
+
+            //test that an unwrapped jar:file will try to be mounted and fail because it isn't a real location
+            resources = resourceFactory.split("jar:file:///foo/bar.jar!/", ",", false);
+            assertThat(resources.size(), is(0));
+
+            //test that uri with a scheme, but is not unwrapped returns a Resource
+            resources = resourceFactory.split("file:///foo/bar.jar", ",", false);
+            assertThat(resources.size(), is(1));
+            assertThat(resources.get(0), not(instanceOf(MountedPathResource.class)));
+            assertThat(resources.get(0).getPath().isAbsolute(), is(true));
+        }
+    }
+
+    @Test
+    public void testSplitOnComma() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -350,7 +393,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnPipe()
+    public void testSplitOnPipe() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -378,7 +421,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnSemicolon()
+    public void testSplitOnSemicolon() throws URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -406,7 +449,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitOnPathSeparatorWithGlob() throws IOException
+    public void testSplitOnPathSeparatorWithGlob() throws IOException, URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -428,15 +471,14 @@ public class ResourceFactoryTest
             ));
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config, File.pathSeparator).stream().map(Resource::getURI).toList();
+            List<URI> uris = resourceFactory.split(config, File.pathSeparator, false).stream().map(Resource::getURI).toList();
 
             URI[] expected = new URI[]{
                 dir.toUri(),
                 foo.toUri(),
-                // Should see the two archives as `jar:file:` URI entries
-                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
-                URIUtil.toJarFileUri(exampleJar.toUri())
+                bar.resolve("lib-foo.jar").toUri(),
+                bar.resolve("lib-zed.zip").toUri(),
+                exampleJar.toUri()
             };
 
             assertThat(uris, contains(expected));
@@ -445,7 +487,7 @@ public class ResourceFactoryTest
 
     @ParameterizedTest
     @ValueSource(strings = {";", "|", ","})
-    public void testSplitOnDelimWithGlob(String delimChar) throws IOException
+    public void testSplitOnDelimWithGlob(String delimChar) throws IOException, URISyntaxException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -474,10 +516,9 @@ public class ResourceFactoryTest
             URI[] expected = new URI[]{
                 dir.toUri(),
                 foo.toUri(),
-                // Should see the two archives as `jar:file:` URI entries
-                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
-                URIUtil.toJarFileUri(exampleJar.toUri())
+                bar.resolve("lib-foo.jar").toUri(),
+                bar.resolve("lib-zed.zip").toUri(),
+                exampleJar.toUri()
             };
 
             assertThat(uris, contains(expected));

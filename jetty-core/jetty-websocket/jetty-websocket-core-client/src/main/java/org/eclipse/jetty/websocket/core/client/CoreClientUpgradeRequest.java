@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -82,14 +83,12 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     private FrameHandler frameHandler;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private final List<UpgradeListener> upgradeListeners = new ArrayList<>();
+    private final AtomicBoolean notifyResponseListeners = new AtomicBoolean(false);
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
     private boolean upgraded;
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
-        request = webSocketClient.getHttpClient().newRequest(requestURI);
-        request.attribute(HttpUpgrader.Factory.class.getName(), this);
-
         // Validate websocket URI
         if (!requestURI.isAbsolute())
             throw new IllegalArgumentException("WebSocket URI must be absolute");
@@ -104,9 +103,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         if (requestURI.getHost() == null)
             throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
 
-        this.wsClient = webSocketClient;
-        this.futureCoreSession = new CompletableFuture<>();
-        this.futureCoreSession.whenComplete((session, throwable) ->
+        request = webSocketClient.getHttpClient().newRequest(requestURI);
+        request.attribute(HttpUpgrader.Factory.class.getName(), this);
+        wsClient = webSocketClient;
+        futureCoreSession = new CompletableFuture<>();
+        futureCoreSession.whenComplete((session, throwable) ->
         {
             if (throwable != null)
                 request.abort(throwable);
@@ -261,14 +262,21 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 return;
 
             // We have failed to upgrade but have received a response, notify the listeners.
-            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
-            if (listenerError != null)
+            if (notifyResponseListeners.compareAndSet(false, true))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure while notifying handshake response listeners", listenerError);
+                // Notify the listeners that we have received a response.
+                Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+                if (listenerError != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure while notifying handshake response listeners", listenerError);
+                }
             }
-            handleException(new UpgradeException(requestURI, status,
-                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+
+            if (result.getFailure() != null)
+                handleException(new UpgradeException(requestURI, status, result.getFailure().getMessage()));
+            else
+                handleException(new UpgradeException(requestURI, status, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
         else
         {
@@ -282,7 +290,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             Throwable failure = result.getFailure();
             boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
-                failure = new UpgradeException(requestURI, status, responseLine, failure);
+                failure = new UpgradeException(requestURI, failure);
             handleException(failure);
         }
     }
@@ -490,9 +498,13 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
+
+        if (!notifyResponseListeners.compareAndSet(false, true))
+            throw new IllegalStateException("Already notified handshake response listeners");
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
+
         upgraded = true;
 
         // Now swap out the connection

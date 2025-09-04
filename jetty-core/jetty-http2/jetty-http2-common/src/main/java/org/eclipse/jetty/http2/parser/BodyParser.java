@@ -226,7 +226,7 @@ public abstract class BodyParser
     protected boolean streamFailure(int streamId, int error, String reason)
     {
         notifyStreamFailure(streamId, error, reason);
-        return false;
+        return true;
     }
 
     private void notifyStreamFailure(int streamId, int error, String reason)
@@ -243,6 +243,6 @@ public abstract class BodyParser
 
     protected boolean rateControlOnEvent(Object o)
     {
-        return headerParser.getRateControl().onEvent(o);
+        return headerParser.rateControlOnEvent(o);
     }
 }

@@ -159,6 +159,127 @@ public class AsyncTest
     }
 
     @Test
+    public void testSameContextAsync() throws Exception
+    {
+        // Test for degenerate case of async dispatch to same context, not using the
+        // AsyncContext.dispatch(path) method as would be expected, but using the
+        // AsyncContext.dispatch(context, path) method, where context is the same
+        // as the current context
+        Server server = new Server();
+        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+
+        final List<String> events = new ArrayList<>();
+
+        ServletContextHandler contextA = new ServletContextHandler();
+        contextA.addEventListener(new ServletRequestListener()
+        {
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                events.add("Request Destroyed: " + sre.getServletRequest().getServletContext().getContextPath());
+                ServletRequestListener.super.requestDestroyed(sre);
+            }
+
+            @Override
+            public void requestInitialized(ServletRequestEvent sre)
+            {
+                events.add("Request Initialized: " + sre.getServletRequest().getServletContext().getContextPath());
+                ServletRequestListener.super.requestInitialized(sre);
+            }
+        });
+        contextA.setContextPath("/ctxA");
+        final String ASYNC_FLAG_NAME = "async.flag";
+
+        ServletHolder serviceHolder = new ServletHolder("service-servlet", new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                if (req.getAttribute(ASYNC_FLAG_NAME) == null)
+                {
+                    AsyncContext asyncContext = req.startAsync(req, resp);
+                    req.setAttribute(ASYNC_FLAG_NAME, new Object());
+                    asyncContext.setTimeout(100);
+                    asyncContext.addListener(new AsyncListener()
+                    {
+                        @Override
+                        public void onComplete(AsyncEvent event)
+                        {
+                            events.add("ON complete");
+                        }
+
+                        @Override
+                        public void onTimeout(AsyncEvent event)
+                        {
+                            events.add("ON timeout");
+                        }
+
+                        @Override
+                        public void onError(AsyncEvent event)
+                        {
+                            events.add("ON error");
+                        }
+
+                        @Override
+                        public void onStartAsync(AsyncEvent event)
+                        {
+                            events.add("ON startasync");
+                        }
+                    });
+                    //perform dispatch to current context
+                    asyncContext.dispatch(req.getServletContext(), "/dispatched/z");
+                }
+            }
+        });
+
+        serviceHolder.setAsyncSupported(true);
+        contextA.addServlet(serviceHolder, "/dispatcher/*");
+        contextHandlerCollection.addHandler(contextA);
+
+        ServletHolder testHolder = new ServletHolder("test-servlet", new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setCharacterEncoding("utf-8");
+                resp.setContentType("text/plain");
+                resp.getWriter().println("Dispatched to ctxA in test-servlet");
+                resp.getWriter().println(req.getQueryString());
+            }
+        });
+
+        contextA.addServlet(testHolder, "/dispatched/*");
+        server.setHandler(contextHandlerCollection);
+        LocalConnector connector = new LocalConnector(server);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        server.addConnector(connector);
+
+        server.start();
+
+        try
+        {
+
+            String rawRequest = """
+                GET /ctxA/dispatcher/x?foo=bar HTTP/1.1
+                Host: local
+                Connection: close
+                            
+                """;
+
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+            assertThat(response.getStatus(), is(200));
+            assertThat(events, Matchers.containsInRelativeOrder("Request Initialized: /ctxA", "Request Destroyed: /ctxA"));
+            assertThat(response.getContent(), containsString("Dispatched to ctxA in test-servlet"));
+            assertThat(response.getContent(), containsString("foo=bar"));
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
     public void testSimpleCrossContextAsync() throws Exception
     {
         //Test async cross context dispatch from context A to context B

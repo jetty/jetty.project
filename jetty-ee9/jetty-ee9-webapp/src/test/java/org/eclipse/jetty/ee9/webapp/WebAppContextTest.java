@@ -903,10 +903,9 @@ public class WebAppContextTest
                 .filter(FileID::isLibArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
-                .filter(notInTempDirectory(context))
-                .map(URIUtil::toJarFileUri)
-                .toList();
+                .collect(Collectors.toList());
         }
+
         List<URI> actualURIs = Stream.of(webAppClassLoader.getURLs())
             .map(WebAppContextTest::toURI)
             .filter(notInTempDirectory(context))

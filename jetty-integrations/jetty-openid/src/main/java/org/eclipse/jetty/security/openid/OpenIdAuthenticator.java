@@ -426,163 +426,186 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             logoutWithoutRedirect(request, response);
         }
 
-        try
+        // Get the Session.
+        if (session == null)
+            session = request.getSession(true);
+        if (session == null)
+            return sendError(request, response, cb, "session could not be created");
+
+        String sessionIdFrom = (String)request.getAttribute("org.eclipse.jetty.session.RequestedSession.sessionIdFrom");
+        if (sessionIdFrom != null && !sessionIdFrom.startsWith("cookie"))
+            return sendError(request, response, cb, "Session ID must be a cookie to support OpenID authentication");
+
+        // Handle a request for authentication.
+        if (isJSecurityCheck(uri))
         {
-            // Get the Session.
-            if (session == null)
-                session = request.getSession(true);
-            if (session == null)
-                return sendError(request, response, cb, "session could not be created");
+            Fields parameters = getParameters(request);
 
-            String sessionIdFrom = (String)request.getAttribute("org.eclipse.jetty.session.RequestedSession.sessionIdFrom");
-            if (sessionIdFrom != null && !sessionIdFrom.startsWith("cookie"))
-                return sendError(request, response, cb, "Session ID must be a cookie to support OpenID authentication");
+            // State parameter must be present even in the error case.
+            String state = parameters.getValue("state");
+            if (state == null)
+                return sendError(request, response, cb, "auth failed: no state parameter");
 
-            // Handle a request for authentication.
-            if (isJSecurityCheck(uri))
+            // Handle error response defined by Section 3.1.2.6 of OpenID Connect Core 1.0.
+            String errorCode = parameters.getValue("error");
+            if (errorCode != null)
             {
-                Fields parameters = getParameters(request);
-                String authCode = parameters.getValue("code");
-                if (authCode == null)
-                    return sendError(request, response, cb, "auth failed: no code parameter");
-
-                String state = parameters.getValue("state");
-                if (state == null)
-                    return sendError(request, response, cb, "auth failed: no state parameter");
-
-                // Verify anti-forgery state token.
-                UriRedirectInfo uriRedirectInfo;
-                synchronized (session)
-                {
-                    uriRedirectInfo = removeAndClearCsrfMap(session, state);
-                }
-                if (uriRedirectInfo == null)
-                    return sendError(request, response, cb, "auth failed: invalid state parameter");
-
-                // Attempt to login with the provided authCode.
-                OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
-                UserIdentity user = login(null, credentials, request, response);
-                if (user == null)
-                    return sendError(request, response, cb, null);
-
-                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
-
-                // Save redirect info in session so original request can be restored after redirect.
-                synchronized (session)
-                {
-                    // TODO: We are duplicating this logic.
-                    session.setAttribute(J_URI, uriRedirectInfo.getUri().asImmutable());
-                    session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
-                    session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
-                }
-
-                // Redirect to the original URI.
-                response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
-                int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                    ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
-                Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri().toString(), true);
-                return openIdAuth;
+                String errorDescription = parameters.getValue("error_description");
+                String errorUri = parameters.getValue("error_uri");
+                Fields fields = new Fields();
+                fields.add("error", errorCode);
+                if (errorDescription != null)
+                    fields.add("error_description", errorDescription);
+                if (errorUri != null)
+                    fields.add("error_uri", errorUri);
+                StringBuilder errorMessage = new StringBuilder();
+                errorMessage.append("auth failed: ").append(errorCode);
+                if (errorDescription != null)
+                    errorMessage.append(" - ").append(errorDescription);
+                fields.add(ERROR_PARAMETER, errorMessage.toString());
+                sendError(request, response, cb, fields);
+                return AuthenticationState.SEND_FAILURE;
             }
 
-            // Look for cached authentication in the Session.
-            AuthenticationState authenticationState = (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
-            if (authenticationState != null)
+            String authCode = parameters.getValue("code");
+            if (authCode == null)
             {
-                // Has authentication been revoked?
-                if (authenticationState instanceof AuthenticationState.Succeeded && _loginService != null &&
-                    !_loginService.validate(((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth revoked {}", authenticationState);
-                    logoutWithoutRedirect(request, response);
-                }
-                else
-                {
-                    synchronized (session)
-                    {
-                        HttpURI jUri = (HttpURI)session.getAttribute(J_URI);
-                        if (jUri != null)
-                        {
-                            // Check if the request is for the same url as the original and restore params if it was a post.
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("auth retry {}->{}", authenticationState, jUri);
-
-                            if (jUri.equals(request.getHttpURI()))
-                            {
-                                @SuppressWarnings("unchecked")
-                                MultiMap<String> jPost = (MultiMap<String>)session.getAttribute(J_POST);
-                                if (jPost != null)
-                                {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("auth rePOST {}->{}", authenticationState, jUri);
-                                    // TODO:
-                                    // baseRequest.setContentParameters(jPost);
-                                }
-                                session.removeAttribute(J_URI);
-                                session.removeAttribute(J_METHOD);
-                                session.removeAttribute(J_POST);
-                            }
-                        }
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth {}", authenticationState);
-                    return authenticationState;
-                }
+                sendError(request, response, cb, "auth failed: no code parameter");
+                return AuthenticationState.SEND_FAILURE;
             }
 
-            // If we can't send challenge.
-            if (AuthenticationState.Deferred.isDeferred(response))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("auth deferred {}", session.getId());
-                return null;
-            }
-
-            // Save the current URI
+            // Verify anti-forgery state token.
+            UriRedirectInfo uriRedirectInfo;
             synchronized (session)
             {
-                // But only if it is not set already, or we save every uri that leads to a login form redirect
-                if (session.getAttribute(J_URI) == null || _alwaysSaveUri)
-                {
-                    HttpURI juri = request.getHttpURI();
-                    session.setAttribute(J_URI, juri.asImmutable());
-                    if (!HttpMethod.GET.is(request.getMethod()))
-                        session.setAttribute(J_METHOD, request.getMethod());
+                uriRedirectInfo = removeAndClearCsrfMap(session, state);
+            }
+            if (uriRedirectInfo == null)
+                return sendError(request, response, cb, "auth failed: invalid state parameter");
 
-                    if (HttpMethod.POST.is(request.getMethod()))
+            // Attempt to log in with the provided authCode.
+            OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
+            credentials.redeemAuthCode(_openIdConfiguration);
+            if (credentials.getErrorFields() != null)
+                return sendError(request, response, cb, credentials.getErrorFields());
+
+            UserIdentity user = login(null, credentials, request, response);
+            if (user == null)
+                return sendError(request, response, cb, "auth failed: no user identity");
+
+            LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
+            if (LOG.isDebugEnabled())
+                LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
+
+            // Save redirect info in session so original request can be restored after redirect.
+            synchronized (session)
+            {
+                // TODO: We are duplicating this logic.
+                session.setAttribute(J_URI, uriRedirectInfo.getUri().asImmutable());
+                session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
+                session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
+            }
+
+            // Redirect to the original URI.
+            response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
+            int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
+            Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri().toString(), true);
+            return openIdAuth;
+        }
+
+        // Look for cached authentication in the Session.
+        AuthenticationState authenticationState = (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
+        if (authenticationState != null)
+        {
+            // Has authentication been revoked?
+            if (authenticationState instanceof AuthenticationState.Succeeded && _loginService != null &&
+                !_loginService.validate(((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth revoked {}", authenticationState);
+                logoutWithoutRedirect(request, response);
+            }
+            else
+            {
+                synchronized (session)
+                {
+                    HttpURI jUri = (HttpURI)session.getAttribute(J_URI);
+                    if (jUri != null)
                     {
-                        try
+                        // Check if the request is for the same url as the original and restore params if it was a post.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("auth retry {}->{}", authenticationState, jUri);
+
+                        if (jUri.equals(request.getHttpURI()))
                         {
-                            session.setAttribute(J_POST, FormFields.getFields(request));
-                        }
-                        catch (CompletionException e)
-                        {
-                            throw new ServerAuthException(e.getCause());
-                        }
-                        catch (Exception e)
-                        {
-                            throw new ServerAuthException(e);
+                            @SuppressWarnings("unchecked")
+                            MultiMap<String> jPost = (MultiMap<String>)session.getAttribute(J_POST);
+                            if (jPost != null)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("auth rePOST {}->{}", authenticationState, jUri);
+                                // TODO:
+                                // baseRequest.setContentParameters(jPost);
+                            }
+                            session.removeAttribute(J_URI);
+                            session.removeAttribute(J_METHOD);
+                            session.removeAttribute(J_POST);
                         }
                     }
                 }
-            }
 
-            // Send the challenge.
-            String challengeUri = getChallengeUri(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("challenge {}->{}", session.getId(), challengeUri);
-            int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
-            Response.sendRedirect(request, response, cb, redirectCode, challengeUri, true);
-            return AuthenticationState.CHALLENGE;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth {}", authenticationState);
+                return authenticationState;
+            }
         }
-        catch (IOException e)
+
+        // If we can't send challenge.
+        if (AuthenticationState.Deferred.isDeferred(response))
         {
-            throw new ServerAuthException(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("auth deferred {}", session.getId());
+            return null;
         }
+
+        // Save the current URI
+        synchronized (session)
+        {
+            // But only if it is not set already, or we save every uri that leads to a login form redirect
+            if (session.getAttribute(J_URI) == null || _alwaysSaveUri)
+            {
+                HttpURI juri = request.getHttpURI();
+                session.setAttribute(J_URI, juri.asImmutable());
+                if (!HttpMethod.GET.is(request.getMethod()))
+                    session.setAttribute(J_METHOD, request.getMethod());
+
+                if (HttpMethod.POST.is(request.getMethod()))
+                {
+                    try
+                    {
+                        session.setAttribute(J_POST, FormFields.getFields(request));
+                    }
+                    catch (CompletionException e)
+                    {
+                        throw new ServerAuthException(e.getCause());
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ServerAuthException(e);
+                    }
+                }
+            }
+        }
+
+        // Send the challenge.
+        String challengeUri = getChallengeUri(request);
+        if (LOG.isDebugEnabled())
+            LOG.debug("challenge {}->{}", session.getId(), challengeUri);
+        int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
+        Response.sendRedirect(request, response, cb, redirectCode, challengeUri, true);
+        return AuthenticationState.CHALLENGE;
     }
 
     /**
@@ -592,12 +615,25 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      * @param request the request.
      * @param response the response.
      * @param message the reason for the error or null.
-     * @throws IOException if sending the error fails for any reason.
      */
-    private AuthenticationState sendError(Request request, Response response, Callback callback, String message) throws IOException
+    private AuthenticationState sendError(Request request, Response response, Callback callback, String message)
+    {
+        Fields fields = new Fields();
+        fields.add(ERROR_PARAMETER, message);
+        return sendError(request, response, callback, fields);
+    }
+
+    /**
+     * Report an error case either by redirecting to the error page if it is defined, otherwise sending a 403 response.
+     * The provided {@link Fields} will be included as query parameters in the error redirect URI if the error page is defined.
+     * @param request the request.
+     * @param response the response.
+     * @param fields the list of query parameters to be included in the error redirect.
+     */
+    private AuthenticationState sendError(Request request, Response response, Callback callback, Fields fields)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("OpenId authentication FAILED: {}", message);
+            LOG.debug("OpenId authentication FAILED: {}", fields);
 
         if (_errorPage == null)
         {
@@ -607,9 +643,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             String contextPath = Request.getContextPath(request);
             String redirectUri = URIUtil.addPaths(contextPath, _errorPage);
-            if (message != null)
+            if (fields != null)
             {
-                String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                String query = _errorQuery;
+                for (Fields.Field f : fields)
+                {
+                    query = URIUtil.addQueries(query, UrlEncoded.encodeString(f.getName()) + "=" + UrlEncoded.encodeString(f.getValue()));
+                }
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(contextPath, _errorPath), query);
             }
 

@@ -16,8 +16,10 @@ package org.eclipse.jetty.http2.client.transport.internal;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -25,8 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.RetryableRequestException;
 import org.eclipse.jetty.client.transport.HttpChannel;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -143,9 +149,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     public SendFailure send(HttpExchange exchange)
     {
-        HttpRequest request = exchange.getRequest();
-        request.version(HttpVersion.HTTP_2);
-        normalizeRequest(request);
+        normalizeRequest(exchange.getRequest());
 
         HttpChannelOverHTTP2 channel;
         try (AutoLock ignored = lock.lock())
@@ -215,12 +219,40 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     protected void normalizeRequest(HttpRequest request)
     {
         super.normalizeRequest(request);
+        // Do not set the HTTP version explicitly using Request.version(),
+        // in case the request needs to be retried with a different version.
+        request.useVersion(HttpVersion.HTTP_2);
+
         HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
         if (upgraderFactory != null)
         {
-            HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
-            request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
-            upgrader.prepare(request);
+            // Check whether the server-side support CONNECT with :protocol pseudo-header.
+            boolean connect = ((HTTP2Session)session).isConnectProtocolEnabled();
+            if (connect)
+            {
+                HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
+                request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
+                upgrader.prepare(request);
+            }
+            else
+            {
+                // Check whether we can fall back to another HttpClientTransport.
+                boolean dynamic = getHttpDestination().getHttpClient().getHttpClientTransport() instanceof HttpClientTransportDynamic;
+                if (!dynamic)
+                    throw new HttpRequestException("Could not upgrade: CONNECT with :protocol disabled", request);
+
+                // We may be able to retry with another HttpClientTransport,
+                // therefore exclude this protocol from the next attempt.
+                @SuppressWarnings("unchecked")
+                List<String> attribute = (List<String>)request.getAttributes().get(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE);
+                if (attribute == null)
+                {
+                    attribute = new ArrayList<>();
+                    request.attribute(Origin.Protocol.EXCLUDED_PROTOCOLS_ATTRIBUTE, attribute);
+                }
+                attribute.addAll(List.of("h2c", "h2"));
+                throw new RetryableRequestException("Could not upgrade from protocols " + attribute);
+            }
         }
     }
 

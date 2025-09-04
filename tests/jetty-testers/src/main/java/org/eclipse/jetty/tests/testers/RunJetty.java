@@ -94,6 +94,9 @@ public class RunJetty
 
     public void run(Map<String, String> config)
     {
+
+        System.out.println("[Running Jetty] :" + config);
+
         try
         {
             Path jettyHome = Path.of(config.get("jetty-home"));
@@ -110,7 +113,7 @@ public class RunJetty
             {
                 try (JettyHomeTester.Run setupRun = jetty.start(setupArgs.split(" ")))
                 {
-                    setupRun.awaitFor(15, TimeUnit.SECONDS);
+                    setupRun.awaitFor(30, TimeUnit.SECONDS);
                 }
             }
 
@@ -119,7 +122,7 @@ public class RunJetty
             args += jettyHome.resolve("etc/jetty-halt.xml");
             try (JettyHomeTester.Run run = jetty.start(args.split(" ")))
             {
-                run.awaitFor(15, TimeUnit.SECONDS);
+                run.awaitFor(30, TimeUnit.SECONDS);
                 System.out.println(captureOutput(config, run));
             }
         }

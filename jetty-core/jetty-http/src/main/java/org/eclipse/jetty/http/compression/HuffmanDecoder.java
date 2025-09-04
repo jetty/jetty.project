@@ -15,7 +15,6 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
@@ -23,9 +22,6 @@ import static org.eclipse.jetty.http.compression.Huffman.rowsym;
 
 /**
  * <p>Used to decoded Huffman encoded strings.</p>
- *
- * <p>Characters which are illegal field-vchar values are replaced with
- * either ' ' or '?' as described in RFC9110</p>
  */
 public class HuffmanDecoder
 {
@@ -37,7 +33,7 @@ public class HuffmanDecoder
     private int _bits = 0;
 
     /**
-     * Set in bytes of the huffman data..
+     * Set length of input bytes of the huffman data.
      * @param length in bytes of the huffman data.
      */
     public void setLength(int length)
@@ -76,7 +72,6 @@ public class HuffmanDecoder
 
                     // terminal node
                     char c = rowsym[_node];
-                    c = HttpTokens.sanitizeFieldVchar(c);
                     _builder.append((byte)c);
                     _bits -= rowbits[_node];
                     _node = 0;
@@ -111,7 +106,6 @@ public class HuffmanDecoder
             }
 
             char c = rowsym[_node];
-            c = HttpTokens.sanitizeFieldVchar(c);
             _builder.append((byte)c);
             _bits -= rowbits[_node];
             _node = 0;
@@ -131,6 +125,7 @@ public class HuffmanDecoder
     public void reset()
     {
         _builder.reset();
+        _length = 0;
         _count = 0;
         _current = 0;
         _node = 0;

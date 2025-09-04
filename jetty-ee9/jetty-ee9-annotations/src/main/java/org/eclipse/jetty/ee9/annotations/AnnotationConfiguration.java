@@ -308,11 +308,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return Integer.compare(i1, i2);
         }
     }
-    
+
     public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
     {
-        private Set<Class<?>> _handlesTypes = new HashSet<>();
-        private Set<String> _discoveredClassNames = new HashSet<>();
+        private final Set<Class<?>> _handlesTypes = ConcurrentHashMap.newKeySet();
+        private final Set<String> _discoveredClassNames = ConcurrentHashMap.newKeySet();
         
         public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
         {
@@ -384,7 +384,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(c.getName()));
                 }
 
-                for (String classname:_discoveredClassNames)
+                for (String classname : _discoveredClassNames)
                 {
                     //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
                     finalClassnames.add(classname);
@@ -392,7 +392,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(classname));
                 }
             }
-            
+
             //finally, add the complete set of startup classnames
             super.addStartupClasses(finalClassnames.toArray(new String[0]));
         }

@@ -94,6 +94,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1948,6 +1949,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testBindAddress(Scenario scenario) throws Exception
     {
         String bindAddress = "127.0.0.2";
+
+        // Pre-check if the address is bindable (on macOS probably not)
+        try (ServerSocket testSocket = new ServerSocket())
+        {
+            testSocket.bind(new InetSocketAddress(bindAddress, 0));
+        }
+        catch (IOException e)
+        {
+            Assumptions.assumeTrue(false, 
+                "Cannot bind to " + bindAddress + " address on this system");
+        }
+
         start(scenario, new EmptyServerHandler()
         {
             @Override
@@ -2082,6 +2095,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .headers(h -> h.put("X-Capacity", capacity))
             .timeout(5, TimeUnit.SECONDS)
             .send());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRequestWithWrongScheme(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme("ssh")
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+
+        assertInstanceOf(IllegalArgumentException.class, failure.getCause());
     }
 
     private void assertCopyRequest(Request original)

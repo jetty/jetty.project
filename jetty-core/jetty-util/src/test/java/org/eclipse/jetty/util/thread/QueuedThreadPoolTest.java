@@ -23,11 +23,13 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
@@ -1126,7 +1128,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         for (int i = 0; i < spikeThreads; i++)
             qtp.execute(job(spike, 100 + random.nextInt(2 * jobDuration)));
         spike.await();
-        System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
+        // System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
 
         // keep threads busy
         long last = System.nanoTime();
@@ -1135,7 +1137,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             if (NanoTime.secondsSince(last) > 1)
             {
                 last = System.nanoTime();
-                System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
+                // System.err.printf("busy=%d %s\n", qtp.getBusyThreads(), qtp);
                 if (qtp.getThreads() < (busyThreads * 3 / 2))
                     break;
             }
@@ -1156,6 +1158,57 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
         }
         qtp.stop();
+    }
+
+    @Test
+    public void testBoundedQueue() throws Exception
+    {
+        LoggerFactory.getLogger(QueuedThreadPool.class).warn("Bound queue warnings expected");
+        final int THREADS = 10;
+        final int QUEUE = 10;
+        QueuedThreadPool qtp = new QueuedThreadPool(THREADS, 1, 60000, 0, new BlockingArrayQueue<>(QUEUE), null);
+        qtp.start();
+
+        BlockingTask[] tasks = new BlockingTask[THREADS + QUEUE + 1];
+        tasks[0] = new BlockingTask();
+        for (int i = 1; i < tasks.length; i++)
+        {
+            tasks[i] = new BlockingTask();
+            qtp.execute(tasks[i]);
+        }
+
+        // Queue is full!
+        assertThrows(RejectedExecutionException.class, () -> qtp.execute(tasks[0]));
+
+        // Allow one more thread to run
+        qtp.setMaxThreads(THREADS + 1);
+        // Can immediately execute the 5th task
+        qtp.execute(tasks[0]);
+
+        for (BlockingTask task : tasks)
+            task.countDown();
+        qtp.stop();
+    }
+
+    private class BlockingTask extends CountDownLatch implements Runnable
+    {
+        BlockingTask()
+        {
+            super(1);
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     Runnable job(CountDownLatch started, int duration)

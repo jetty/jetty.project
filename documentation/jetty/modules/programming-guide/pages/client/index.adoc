@@ -27,4 +27,4 @@ These are the available client libraries:
 * xref:client/http3.adoc[The Low-Level HTTP/3 Client Library] for low-level HTTP/3
 * xref:client/websocket.adoc[The WebSocket client library]
 
-If you are interested in the low-level details of how the Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:client/io-arch.adoc[Client I/O Architecture].
+If you are interested in the low-level details of how the Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:client/io-arch.adoc[Client I/O Architecture] and the xref:client/threads.adoc[client threading architecture].

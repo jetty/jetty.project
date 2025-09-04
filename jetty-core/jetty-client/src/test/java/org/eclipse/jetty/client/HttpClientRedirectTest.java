@@ -47,6 +47,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -314,7 +315,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(303);
-                response.getHeaders().put("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
+                response.getHeaders().put("Location", "ssh://localhost:" + connector.getLocalPort() + "/wrong/scheme");
             }
         });
 
@@ -657,6 +658,40 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 .timeout(3 * timeout, TimeUnit.MILLISECONDS)
                 .send();
         });
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testAbortRedirectRequest(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Throwable
+            {
+                String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
+                String target = Request.getPathInContext(request);
+                if ("/initial".equals(target))
+                {
+                    response.setStatus(HttpStatus.SEE_OTHER_303);
+                    response.getHeaders().put(HttpHeader.LOCATION, serverURI + "/redirect");
+                }
+            }
+        });
+
+        client.getRequestListeners().addBeginListener(r ->
+        {
+            if ("/redirect".equals(r.getPath()))
+                r.abort(new HttpRequestException("aborted by test", r));
+        });
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/initial")
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+
+        assertInstanceOf(HttpRequestException.class, failure.getCause());
     }
 
     private void testSameMethodRedirect(final Scenario scenario, final HttpMethod method, int redirectCode) throws Exception

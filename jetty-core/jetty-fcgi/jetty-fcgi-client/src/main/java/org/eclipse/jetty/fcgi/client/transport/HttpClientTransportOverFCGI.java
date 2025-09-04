@@ -21,12 +21,15 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.transport.internal.HttpConnectionOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
@@ -76,6 +79,9 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public Origin newOrigin(Request request)
     {
+        HttpVersion version = request.getVersion();
+        if (((HttpRequest)request).isVersionExplicit())
+            throw new HttpRequestException("Cannot send explicit %s requests with FastCGI transport".formatted(version), request);
         if (request.getTransport() == null)
             request.transport(Transport.TCP_IP);
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("fastcgi/1.1"), false));

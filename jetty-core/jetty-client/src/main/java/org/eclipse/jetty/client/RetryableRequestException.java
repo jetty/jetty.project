@@ -19,6 +19,11 @@ package org.eclipse.jetty.client;
  */
 public class RetryableRequestException extends RuntimeException
 {
+    public RetryableRequestException(String message)
+    {
+        super(message);
+    }
+
     public RetryableRequestException(Throwable failure)
     {
         super(failure);

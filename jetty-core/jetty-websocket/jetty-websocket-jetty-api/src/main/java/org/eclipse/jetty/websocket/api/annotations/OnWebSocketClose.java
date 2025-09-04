@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
  * <ol>
  * <li>{@code public void <methodName>(int statusCode, String reason)}</li>
  * <li>{@code public void <methodName>(Session session, int statusCode, String reason)}</li>
+ * <li>{@code public void <methodName>(int statusCode, String reason, Callback callback)}</li>
+ * <li>{@code public void <methodName>(Session session, int statusCode, String reason, Callback callback)}</li>
  * </ol>
  */
 @Documented

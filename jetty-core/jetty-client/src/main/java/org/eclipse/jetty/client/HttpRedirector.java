@@ -154,7 +154,27 @@ public class HttpRedirector
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Redirecting to {} (Location: {})", newURI, location);
-                return redirect(request, response, listener, newURI);
+
+                Response.CompleteListener wrapper = result ->
+                {
+                    if (listener != null)
+                        listener.onComplete(result);
+                    if (result.isFailed())
+                    {
+                        // If the redirect request has already been added to the conversation,
+                        // failures will be notified to the original request by HttpClient, and
+                        // we must not do it, otherwise recursion happens and then StackOverflowError.
+                        // If the redirect request has not been added to the conversation yet,
+                        // we must notify the failure by calling fail(), like we do when we
+                        // cannot redirect (see the else branch below where we cannot redirect
+                        // because the Location header is missing).
+                        Request redirectRequest = result.getRequest();
+                        if (!((HttpRequest)request).getConversation().contains(redirectRequest))
+                            fail(result);
+                    }
+                };
+
+                return redirect(request, response, wrapper, newURI);
             }
             else
             {
@@ -283,10 +303,10 @@ public class HttpRedirector
                 String authority = matcher.group(3);
                 String path = matcher.group(4);
                 String query = matcher.group(5);
-                if (query.length() == 0)
+                if (query.isEmpty())
                     query = null;
                 String fragment = matcher.group(6);
-                if (fragment.length() == 0)
+                if (fragment.isEmpty())
                     fragment = null;
                 try
                 {
@@ -373,8 +393,16 @@ public class HttpRedirector
         fail(request, failure, response, failure);
     }
 
+    private void fail(Result result)
+    {
+        fail(result.getRequest(), result.getRequestFailure(), result.getResponse(), result.getResponseFailure());
+    }
+
     private void fail(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
+        // This method should only be called to fail the conversation
+        // when the redirect request has not been sent.
+        // See comment in #redirect(Request, Response, CompleteListener).
         HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
         conversation.getResponseListeners().emitFailureComplete(new Result(request, requestFailure, response, responseFailure));

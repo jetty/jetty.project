@@ -75,35 +75,8 @@ import org.slf4j.LoggerFactory;
 public class Blocker
 {
     private static final Logger LOG = LoggerFactory.getLogger(Blocker.class);
-
-    private static final Throwable ACQUIRED = new Throwable()
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ACQUIRED";
-        }
-    };
-    private static final Throwable SUCCEEDED = new Throwable()
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "SUCCEEDED";
-        }
-    };
+    private static final Throwable ACQUIRED = new StaticException("ACQUIRED");
+    private static final Throwable SUCCEEDED = new StaticException("SUCCEEDED");
 
     public interface Runnable extends java.lang.Runnable, AutoCloseable, Invocable
     {

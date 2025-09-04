@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.HTTP3Session;
+import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -40,16 +42,17 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 
     private final Promise.Invocable<Client> promise;
 
-    public HTTP3SessionClient(Scheduler scheduler, ClientHTTP3Session session, Client.Listener listener, Promise.Invocable<Client> promise)
+    public HTTP3SessionClient(Scheduler scheduler, ProtocolSession session, Client.Listener listener, Promise.Invocable<Client> promise)
     {
         super(scheduler, session, listener);
+        if (!(session instanceof ClientHTTP3Session))
+            throw new IllegalArgumentException("Invalid session: " + session);
         this.promise = promise;
     }
 
-    @Override
-    public ClientHTTP3Session getProtocolSession()
+    private ClientHTTP3Session getClientHTTP3Session()
     {
-        return (ClientHTTP3Session)super.getProtocolSession();
+        return (ClientHTTP3Session)getProtocolSession();
     }
 
     @Override
@@ -61,7 +64,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    protected HTTP3StreamClient newHTTP3Stream(StreamEndPoint endPoint, boolean local)
+    protected HTTP3Stream newHTTP3Stream(StreamEndPoint endPoint, boolean local)
     {
         return new HTTP3StreamClient(this, endPoint, local);
     }
@@ -91,14 +94,14 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {} on {}", frame, this);
-        getProtocolSession().onSettings(frame);
+        getClientHTTP3Session().onSettings(frame);
         super.onSettings(frame);
     }
 
     @Override
     public void newRequest(HeadersFrame frame, Stream.Client.Listener listener, Promise.Invocable<Stream> promise)
     {
-        ClientHTTP3Session protocolSession = getProtocolSession();
+        ClientHTTP3Session protocolSession = getClientHTTP3Session();
         var quicSession = protocolSession.getSession();
         long streamId = quicSession.newStreamId(true);
         AtomicReference<StreamEndPoint> endPointRef = new AtomicReference<>();
@@ -139,7 +142,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             public void failed(Throwable x)
             {
                 stream.updateClose(frame.isLast(), true);
-                Promise.Invocable<Stream> p = Promise.Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+                Invocable<Stream> p = Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
                 stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
             }
         });
@@ -148,13 +151,13 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     @Override
     public void writeControlFrame(Frame frame, Callback callback)
     {
-        getProtocolSession().writeControlFrame(frame, callback);
+        getClientHTTP3Session().writeControlFrame(frame, callback);
     }
 
     @Override
     public void writeMessageFrame(StreamEndPoint streamEndPoint, Frame frame, Callback callback)
     {
-        getProtocolSession().writeMessageFrame(streamEndPoint, frame, callback);
+        getClientHTTP3Session().writeMessageFrame(streamEndPoint, frame, callback);
     }
 
     @Override

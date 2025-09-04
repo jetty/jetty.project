@@ -1502,8 +1502,9 @@ public class ServletApiRequest implements HttpServletRequest
 
         if (_reader != null && charset.equals(_readerCharset))
         {
-            // Try to write a 100 continue, ignoring failure result if it was not necessary.
-            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+            // Try to write a 100 continue if necessary.
+            if (_inputState == ServletContextRequest.INPUT_NONE && _servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         }
         else
         {
