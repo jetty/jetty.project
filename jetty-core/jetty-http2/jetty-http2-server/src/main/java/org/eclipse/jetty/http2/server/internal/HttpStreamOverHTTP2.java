@@ -42,11 +42,9 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -785,31 +783,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         public String toString()
         {
             return "%s[%s]".formatted(TypeUtil.toShortName(getClass()), task);
-        }
-    }
-}
-class H extends Handler.Abstract
-{
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
-    {
-        read(request);
-        return false;
-    }
-
-    private void read(Request request)
-    {
-        while (true)
-        {
-            Content.Chunk chunk = request.read();
-            if (chunk == null)
-            {
-                request.demand(() -> read(request));
-                return;
-            }
-            chunk.release();
-            if (chunk.isLast())
-                return;
         }
     }
 }
