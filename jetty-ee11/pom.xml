@@ -47,7 +47,7 @@
     <ee11.jakarta.xml.bind.impl.version>4.0.5</ee11.jakarta.xml.bind.impl.version>
     <ee11.jakarta.xml.jaxws.impl.version>4.0.2</ee11.jakarta.xml.jaxws.impl.version>
     <ee11.jersey.version>4.0.0-M2</ee11.jersey.version>
-    <ee11.jsp.impl.version>11.0.7</ee11.jsp.impl.version>
+    <ee11.jsp.impl.version>11.0.10.1</ee11.jsp.impl.version>
     <ee11.mail.impl.version>2.0.1</ee11.mail.impl.version>
     <ee11.weld.version>6.0.1.Final</ee11.weld.version>
   </properties>
@@ -224,13 +224,13 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-el</artifactId>
+        <artifactId>mortbay-apache-el</artifactId>
         <version>${ee11.jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE11 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>mortbay-apache-jsp</artifactId>
         <version>${ee11.jsp.impl.version}</version>
       </dependency>
     </dependencies>

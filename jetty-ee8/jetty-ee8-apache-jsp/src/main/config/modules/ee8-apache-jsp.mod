@@ -12,6 +12,6 @@ ee8-annotations
 
 [lib]
 lib/ee8-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee8-apache-jsp/@org.mortbay.jasper:apache-el@
-lib/ee8-apache-jsp/@org.mortbay.jasper:apache-jsp@
+lib/ee8-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
+lib/ee8-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
 lib/jetty-ee8-apache-jsp-${jetty.version}.jar

@@ -258,7 +258,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee9-apache-jsp</outputDirectory>
             </configuration>
@@ -271,7 +271,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee9-apache-jsp</outputDirectory>

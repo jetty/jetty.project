@@ -269,8 +269,8 @@ public class TestOSGiUtil
         //jetty jsp bundles
         res.add(systemProperty("jakarta.el.ExpressionFactory").value("org.apache.el.ExpressionFactoryImpl"));
         res.add(mavenBundle().groupId("jakarta.servlet.jsp").artifactId("jakarta.servlet.jsp-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-el").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject().start());
