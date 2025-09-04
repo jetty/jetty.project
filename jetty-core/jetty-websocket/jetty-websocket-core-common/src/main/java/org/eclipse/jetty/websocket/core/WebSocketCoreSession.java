@@ -228,7 +228,16 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {}", closeStatus, this);
 
-        abort();
+        if (closeStatus.isAbnormal())
+        {
+            abort();
+        }
+        else
+        {
+            connection.cancelDemand();
+            connection.getEndPoint().shutdownOutput();
+        }
+
         extensionStack.close();
 
         // Forward Errors to Local WebSocket EndPoint
