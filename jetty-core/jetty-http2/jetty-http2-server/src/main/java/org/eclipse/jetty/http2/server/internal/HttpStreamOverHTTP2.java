@@ -42,9 +42,11 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -58,6 +60,7 @@ import org.slf4j.LoggerFactory;
 public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
+    private static final ThreadLocal<Boolean> DEMANDING = new ThreadLocal<>();
 
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
@@ -230,7 +233,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
-            _stream.demand();
+            DEMANDING.set(true);
+            try
+            {
+                _stream.demand();
+            }
+            finally
+            {
+                DEMANDING.set(false);
+            }
         }
     }
 
@@ -249,7 +260,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 Integer.toHexString(_stream.getSession().hashCode()));
         }
 
-        return _httpChannel.onContentAvailable();
+        Runnable task = _httpChannel.onContentAvailable();
+        if (DEMANDING.get() == Boolean.TRUE) // May be null.
+        {
+            if (task != null)
+                _connection.offerTask(task, true);
+            return null;
+        }
+        else
+        {
+            return task;
+        }
     }
 
     @Override
@@ -764,6 +785,31 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         public String toString()
         {
             return "%s[%s]".formatted(TypeUtil.toShortName(getClass()), task);
+        }
+    }
+}
+class H extends Handler.Abstract
+{
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    {
+        read(request);
+        return false;
+    }
+
+    private void read(Request request)
+    {
+        while (true)
+        {
+            Content.Chunk chunk = request.read();
+            if (chunk == null)
+            {
+                request.demand(() -> read(request));
+                return;
+            }
+            chunk.release();
+            if (chunk.isLast())
+                return;
         }
     }
 }
