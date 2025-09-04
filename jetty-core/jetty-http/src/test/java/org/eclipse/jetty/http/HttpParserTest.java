@@ -4243,6 +4243,32 @@ public class HttpParserTest
         assertThat(unknowns, empty());
     }
 
+    @Test
+    public void testHeaderSize()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+            
+               
+            
+            GET   /uri   HTTP/1.0\r
+            Host: localhost\r
+            Unknown-Blank-Field:      \r
+            Field-With-Trailing-Whitespace:    value       \r
+            Field-With-Just-LF: value
+            Connection-Partial-Cache-Hit: value\r
+            Content-Length: 0\r
+            \r
+            """
+        );
+        int bytes = buffer.remaining();
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, 10_000, HttpCompliance.RFC2616);
+        parser.atEOF();
+        parseAll(parser, buffer);
+
+        assertThat(parser.getHeaderLength(), is(bytes));
+    }
+
     public static Stream<Scenario> scenarios()
     {
         List<Scenario> scenarios = new ArrayList<>();
