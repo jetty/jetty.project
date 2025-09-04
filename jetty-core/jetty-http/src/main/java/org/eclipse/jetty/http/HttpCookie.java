@@ -564,17 +564,17 @@ public interface HttpCookie
             switch (name.toLowerCase(Locale.ENGLISH))
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
-                case "httponly" -> httpOnly(isTruthy(value));
+                case "httponly" -> httpOnly(asBoolean("httponly", value));
                 case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
                 case "samesite" -> sameSite(SameSite.from(value));
-                case "secure" -> secure(isTruthy(value));
-                case "partitioned" -> partitioned(isTruthy(value));
+                case "secure" -> secure(asBoolean("secure", value));
+                case "partitioned" -> partitioned(asBoolean("partitioned", value));
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
         }
 
-        private boolean isTruthy(String value)
+        private boolean asBoolean(String attribute, String value)
         {
             if (value == null)
                 return false;
@@ -582,7 +582,7 @@ public interface HttpCookie
                 return true;
             if ("false".equalsIgnoreCase(value))
                 return false;
-            throw new IllegalArgumentException("Invalid value");
+            throw new IllegalArgumentException("Invalid value for " + attribute);
         }
 
         public Builder comment(String comment)
