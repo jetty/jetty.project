@@ -112,7 +112,7 @@ In Jetty 12.1.x, `onCompleteFailure(Throwable)` will be called when the asynchro
 
 In Jetty 12.0.x, `RetainableByteBuffer` was primarily used internally, and exposed to users only through `ByteBufferPool.acquire(\...)`.
 
-In Jetty 12.1.x, `RetainableByteBuffer` has broader usage within the xref:migration/11-to-12.adoc#jetty-core-apis[Jetty core APIs]:
+In Jetty 12.1.x, `RetainableByteBuffer` has broader usage within the xref:migration/11-to-12.adoc#jetty-core-apis[Jetty Core APIs]:
 
 * `RetainableByteBuffer` is now a base interface of `Content.Chunk`, the key class to read content (see xref:arch/io.adoc#content-source-chunk[this section]).
 * `RetainableByteBuffer.FixedCapacity` provides an implementation for fixed capacity buffers, such as those returned by `ByteBufferPool`.

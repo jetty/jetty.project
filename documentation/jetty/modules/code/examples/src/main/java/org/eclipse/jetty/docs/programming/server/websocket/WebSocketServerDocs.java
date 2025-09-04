@@ -468,7 +468,7 @@ public class WebSocketServerDocs
         // Set up the JettyWebSocketServerContainer to initialize WebSocket components.
         JettyWebSocketServletContainerInitializer.configure(handler, null);
 
-        // Add your WebSocketServlet subclass to the ServletContextHandler.
+        // Add your JettyWebSocketServlet subclass to the ServletContextHandler.
         handler.addServlet(MyJettyWebSocketServlet.class, "/ws/*");
 
         // Starting the Server will start the ServletContextHandler.
