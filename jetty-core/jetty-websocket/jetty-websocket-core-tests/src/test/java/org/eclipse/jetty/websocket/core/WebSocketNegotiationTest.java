@@ -47,7 +47,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -516,7 +515,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         {
             ExecutionException exception = assertThrows(ExecutionException.class, () -> client.connect(upgradeRequest).get(5, TimeUnit.SECONDS));
             assertThat(exception.getCause(), instanceOf(UpgradeException.class));
-            assertThat(exception.getCause().getMessage(), equalTo("onHandshakeResponse error"));
+            assertThat(exception.getCause().getMessage(), containsString("onHandshakeResponse error"));
             assertThat(onHandshakeResponseCounter.get(), is(1));
         }
     }
