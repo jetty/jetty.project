@@ -256,9 +256,6 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         String responseLine = status + " " + response.getReason();
         boolean receivedResponse = status > 0;
         Throwable cause = result.getFailure();
-        Throwable failure = null;
-        if (cause != null)
-            failure = cause instanceof IOException || cause instanceof UpgradeException ? cause : new UpgradeException(requestURI, cause);
 
         if (receivedResponse)
         {
@@ -277,7 +274,10 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 }
             }
 
-            if (failure == null)
+            Throwable failure;
+            if (cause != null)
+                failure = cause instanceof IOException || cause instanceof UpgradeException ? cause : new UpgradeException(requestURI, status, cause.getMessage(), cause);
+            else
                 failure = new UpgradeException(requestURI, status, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine);
             handleException(failure);
         }
@@ -286,10 +286,11 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             if (LOG.isDebugEnabled())
             {
                 if (result.getRequestFailure() != null)
-                    LOG.debug("Failed to upgrade to WebSocket: request failure", result.getRequestFailure());
+                    LOG.debug("Failed to upgrade to websocket: request failure", result.getRequestFailure());
                 if (result.getResponseFailure() != null)
-                    LOG.debug("Failed to upgrade to WebSocket: response failure", result.getResponseFailure());
+                    LOG.debug("Failed to upgrade to websocket: response failure", result.getResponseFailure());
             }
+            Throwable failure = cause instanceof IOException || cause instanceof UpgradeException ? cause : new UpgradeException(requestURI, cause);
             handleException(failure);
         }
     }
