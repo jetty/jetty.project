@@ -21,9 +21,41 @@ The Jetty libraries (both client and server) use Java NIO to handle I/O, so that
 The main class of The Jetty I/O library is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
 `SelectorManager` manages internally a configurable number of link:{javadoc-url}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
-Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SocketChannel` instances.
+Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SelectionKey` instances, that each wrap a `java.nio.channels.SelectableChannel` instance such as `java.nio.channels.SocketChannel`.
 
-NOTE: TODO: add image
+[plantuml]
+----
+object SM as "SelectorManager"
+object MS1 as "ManagedSelector" {
+  java.nio.channels.Selector
+}
+object MS2 as "ManagedSelector" {
+  java.nio.channels.Selector
+}
+object SC1A as "SelectionKey" {
+  SelectableChannel
+}
+object SC1B as "SelectionKey" {
+  SelectableChannel
+}
+object SC2A as "SelectionKey" {
+  SelectableChannel
+}
+object SC2B as "SelectionKey" {
+  SelectableChannel
+}
+object SC2C as "SelectionKey" {
+  SelectableChannel
+}
+
+SM o-- MS1
+SM o-- MS2
+MS1 o-- SC1A
+MS1 o-- SC1B
+MS2 o-- SC2A
+MS2 o-- SC2B
+MS2 o-- SC2C
+----
 
 `SocketChannel` instances are typically created by the Jetty implementation, on client-side when connecting to a server and on server-side when accepting connections from clients.
 In both cases the `SocketChannel` instance is passed to `SelectorManager` (which passes it to `ManagedSelector` and eventually to `java.nio.channels.Selector`) to be registered for use within Jetty.
