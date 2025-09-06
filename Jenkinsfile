@@ -39,18 +39,19 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17 Javadoc") {
+        stage("Build / Test - JDK22 Javadoc") {
           agent { node { label 'linux-light' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              withEnv(["JAVA_HOME=${ tool 'jdk17' }",
-                       "PATH+MAVEN=${ tool 'jdk17' }/bin:${tool 'maven3'}/bin",
+              withEnv(["JAVA_HOME=${ tool 'jdk22' }",
+                       "PATH+MAVEN=${ tool 'jdk22' }/bin:${tool 'maven3'}/bin",
                        "MAVEN_OPTS=-Xms3G -Xmx5G -Djava.awt.headless=true"]) {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
                          configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
-                  sh "mvn -s $GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
+                  sh "mvn -e -DsettingsPath=$GLOBAL_MVN_SETTINGS clean verify -DskipTests javadoc:jar -Peclipse-release -Dgpg.skip=true"
+                  sh "mvn -e -DsettingsPath=$GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
                 }
               }
             }
