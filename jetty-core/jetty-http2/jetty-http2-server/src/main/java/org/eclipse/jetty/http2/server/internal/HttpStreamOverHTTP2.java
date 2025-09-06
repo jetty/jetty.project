@@ -259,16 +259,20 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
 
         Runnable task = _httpChannel.onContentAvailable();
-        if (DEMANDING.get() == Boolean.TRUE) // May be null.
-        {
-            if (task != null)
-                _connection.offerTask(task, true);
+        if (task == null)
             return null;
-        }
-        else
+        return switch (Invocable.getInvocationType(task))
         {
-            return task;
-        }
+            case BLOCKING ->
+            {
+                if (DEMANDING.get() != Boolean.TRUE)
+                    yield task;
+                _connection.offerTask(task, true);
+                yield null;
+            }
+            case NON_BLOCKING -> task;
+            case EITHER -> () -> Invocable.invokeNonBlocking(task);
+        };
     }
 
     @Override
