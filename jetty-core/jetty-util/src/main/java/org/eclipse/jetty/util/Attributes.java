@@ -506,7 +506,7 @@ public interface Attributes
         /**
          * Clear the layer attributes, leaving the persistent attributes intact / restored
          */
-        public void clearLayer()
+        public void clearLayerAttributes()
         {
             _layer.clearAttributes();
         }
