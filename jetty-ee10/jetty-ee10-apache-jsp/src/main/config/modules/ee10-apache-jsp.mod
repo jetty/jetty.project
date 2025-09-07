@@ -14,7 +14,7 @@ ee10-annotations
 lib/ee10-apache-jsp/@jakarta.el:jakarta.el-api@
 lib/ee10-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
 lib/ee10-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee10-apache-jsp/@org.mortbay.jasper:apache-el@
-lib/ee10-apache-jsp/@org.mortbay.jasper:apache-jsp@
+lib/ee10-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
+lib/ee10-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
 lib/jetty-ee10-apache-jsp-${jetty.version}.jar
 

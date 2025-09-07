@@ -19,6 +19,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
@@ -284,6 +285,7 @@ public class ContentDocs
         public void manyWrites(Content.Sink sink, ByteBuffer content1, ByteBuffer content2)
         {
             // Initiate a first write.
+            // Callback.Completable is-a CompletableFuture.
             Callback.Completable resultOfWrites = Callback.Completable.with(callback1 -> sink.write(false, content1, callback1))
                 // Chain a second write only when the first is complete.
                 .compose(callback2 -> sink.write(true, content2, callback2));
@@ -301,8 +303,74 @@ public class ContentDocs
         // end::sinkMany[]
     }
 
-    // tag::copy[]
     @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::sinkChunks[]
+    class LargeDownload extends IteratingCallback
+    {
+        public void download(Content.Sink sink, Callback callback)
+        {
+            // Create the IteratingCallback and start the iteration.
+            IteratingCallback writer = new LargeDownload(sink, callback, 1024 * 1024);
+            writer.iterate();
+        }
+
+        private static final int CHUNK_SIZE = 1024;
+        private final Content.Sink sink;
+        private final Callback callback;
+        private int length;
+
+        public LargeDownload(Content.Sink sink, Callback callback, int downloadLength)
+        {
+            this.sink = sink;
+            // The callback to notify when the download is completed.
+            this.callback = callback;
+            this.length = downloadLength;
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            // Return when the whole download is completed.
+            if (length == 0)
+                return Action.SUCCEEDED;
+
+            // Prepare the chunk to write.
+            int size = Math.min(CHUNK_SIZE, length);
+            byte[] bytes = new byte[size];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            length -= size;
+            boolean last = length == 0;
+
+            // Start the non-blocking write, passing "this" as the callback.
+            sink.write(last, byteBuffer, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            // Download completed, notify the download callback.
+            callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable failure)
+        {
+            // Download failed, notify the download callback.
+            callback.failed(failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+    }
+    // end::sinkChunks[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::copy[]
     class Copy extends IteratingCallback
     {
         private final Content.Source source;
@@ -349,22 +417,22 @@ public class ContentDocs
         @Override
         protected void onSuccess()
         {
-            // After every successful write, release the chunk
-            // and reset to the next chunk
+            // After every successful write, release
+            // the chunk and reset to the next chunk.
             chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            // The copy is succeeded, succeed the callback.
+            // The copy is complete, succeed the copy callback.
             callback.succeeded();
         }
 
         @Override
         protected void onFailure(Throwable cause)
         {
-            // The copy is failed, fail the callback.
+            // The copy has failed, fail the copy callback.
             // This method is invoked before a write() has completed, so
             // the chunk is not released here, but in onCompleteFailure().
             callback.failed(cause);

@@ -27,7 +27,7 @@
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>mortbay-apache-jsp</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.eclipse.jetty.toolchain</groupId>
