@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
 public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
-    private static final ThreadLocal<Boolean> DEMANDING = new ThreadLocal<>();
 
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
@@ -231,21 +230,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
-            DEMANDING.set(true);
-            try
-            {
-                _stream.demand();
-            }
-            finally
-            {
-                DEMANDING.set(false);
-            }
+            _stream.demand();
         }
-    }
-
-    public boolean isDemanding()
-    {
-        return DEMANDING.get() == Boolean.TRUE;
     }
 
     @Override

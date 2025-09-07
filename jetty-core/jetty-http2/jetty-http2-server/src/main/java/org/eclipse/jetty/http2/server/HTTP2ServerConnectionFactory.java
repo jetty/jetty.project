@@ -77,7 +77,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return acceptable;
     }
 
-    protected class HTTPServerSessionListener implements HTTP2ServerSession.Listener, Stream.Listener
+    protected class HTTPServerSessionListener implements HTTP2ServerSession.Listener, HTTP2Stream.DispatchableListener
     {
         private final EndPoint endPoint;
 
@@ -157,7 +157,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onDataAvailable(Stream stream)
         {
-            getConnection().onDataAvailable(stream);
+            getConnection().onDataAvailable(stream, false);
+        }
+
+        @Override
+        public void onDataAvailable(Stream stream, boolean dispatch)
+        {
+            getConnection().onDataAvailable(stream, dispatch);
         }
 
         @Override

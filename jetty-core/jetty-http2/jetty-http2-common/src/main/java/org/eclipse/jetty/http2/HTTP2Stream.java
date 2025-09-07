@@ -404,7 +404,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 // Offer EOF in case the application calls readData() or demand().
                 if (offer(Data.eof(getId())))
-                    processData();
+                    processData(false);
                 if (closed)
                     getSession().removeStream(this);
             }, callback));
@@ -439,7 +439,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 notifyHeaders(frame, Callback.from(() ->
                 {
                     if (eof)
-                        processData();
+                        processData(false);
                     if (closed)
                         getSession().removeStream(this);
                 }, callback));
@@ -475,7 +475,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
 
         if (offer(data))
-            processData();
+            processData(false);
     }
 
     private boolean offer(Data data)
@@ -537,23 +537,23 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void demand()
     {
-        boolean process = false;
+        boolean dispatch = false;
         try (AutoLock ignored = lock.lock())
         {
             dataDemand = true;
             if (dataStalled && !dataQueue.isEmpty())
             {
                 dataStalled = false;
-                process = true;
+                dispatch = true;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
-        if (process)
-            processData();
+            LOG.debug("Demand, {} data processing for {}", dispatch ? "proceeding" : "stalling", this);
+        if (dispatch)
+            processData(true);
     }
 
-    public void processData()
+    public void processData(boolean dispatch)
     {
         while (true)
         {
@@ -569,7 +569,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataDemand = false;
                 dataStalled = false;
             }
-            notifyDataAvailable();
+            notifyDataAvailable(dispatch);
         }
     }
 
@@ -886,12 +886,15 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyDataAvailable()
+    private void notifyDataAvailable(boolean dispatch)
     {
         Listener listener = Objects.requireNonNullElse(getListener(), Listener.AUTO_DISCARD);
         try
         {
-            listener.onDataAvailable(this);
+            if (dispatch)
+                ((DispatchableListener)listener).onDataAvailable(this, true);
+            else
+                listener.onDataAvailable(this);
         }
         catch (Throwable x)
         {
@@ -1052,5 +1055,10 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             return frames;
         }
+    }
+
+    public interface DispatchableListener extends Stream.Listener
+    {
+        void onDataAvailable(Stream stream, boolean dispatch);
     }
 }

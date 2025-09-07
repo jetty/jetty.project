@@ -149,7 +149,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             offerTask(task, false);
     }
 
-    public void onDataAvailable(Stream stream)
+    public void onDataAvailable(Stream stream, boolean dispatch)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing data available on {}", stream);
@@ -159,10 +159,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             Runnable task = channel.onDataAvailable();
             if (task != null)
-            {
-                offerTask(task, channel instanceof HttpStreamOverHTTP2 httpStreamOverHTTP2 &&
-                   httpStreamOverHTTP2.isDemanding());
-            }
+                offerTask(task, dispatch);
         }
     }
 
