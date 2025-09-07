@@ -243,6 +243,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
+    public boolean isDemanding()
+    {
+        return DEMANDING.get() == Boolean.TRUE;
+    }
+
     @Override
     public Runnable onDataAvailable()
     {
@@ -258,21 +263,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 Integer.toHexString(_stream.getSession().hashCode()));
         }
 
-        Runnable task = _httpChannel.onContentAvailable();
-        if (task == null)
-            return null;
-        return switch (Invocable.getInvocationType(task))
-        {
-            case BLOCKING ->
-            {
-                if (DEMANDING.get() != Boolean.TRUE)
-                    yield task;
-                _connection.offerTask(task, true);
-                yield null;
-            }
-            case NON_BLOCKING -> task;
-            case EITHER -> () -> Invocable.invokeNonBlocking(task);
-        };
+        return _httpChannel.onContentAvailable();
     }
 
     @Override
