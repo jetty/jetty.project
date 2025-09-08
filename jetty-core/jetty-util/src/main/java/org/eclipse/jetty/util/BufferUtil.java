@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -1196,7 +1195,7 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, pos, len);
         }
-        catch (UnsupportedEncodingException e)
+        catch (UnsupportedOperationException e)
         {
             if (LOG.isTraceEnabled())
                 LOG.trace("Ignored exception", e);
