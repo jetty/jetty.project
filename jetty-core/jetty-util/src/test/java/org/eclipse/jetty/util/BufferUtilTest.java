@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -390,6 +391,18 @@ public class BufferUtilTest
         {
             Resource jarResource = resourceFactory.newJarFileResource(testZip.toUri());
             assertThat(BufferUtil.toMappedBuffer(jarResource), nullValue());
+        }
+    }
+
+    @Test
+    public void testToMappedBufferOnUnsupportedFileSystem() throws Exception
+    {
+        Path jarFile = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path jarPath = resourceFactory.newJarFileResource(jarFile.toUri()).resolve("WEB-INF/web.xml").getPath();
+            assertThat(BufferUtil.toMappedBuffer(jarPath), nullValue());
         }
     }
 }
