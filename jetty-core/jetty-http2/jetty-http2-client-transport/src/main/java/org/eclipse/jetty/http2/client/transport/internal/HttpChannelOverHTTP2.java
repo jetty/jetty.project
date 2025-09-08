@@ -181,7 +181,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
     }
 
-    private class Listener implements Stream.Listener
+    private class Listener implements HTTP2Stream.DispatchableListener
     {
         private final SerializedInvoker invoker;
 
@@ -213,9 +213,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         @Override
         public void onDataAvailable(Stream stream)
         {
+            onDataAvailable(stream, false);
+        }
+
+        @Override
+        public void onDataAvailable(Stream stream, boolean dispatch)
+        {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
             Runnable task = channel.onDataAvailable();
-            connection.offerTask(invoker.offer(task), false);
+            connection.offerTask(invoker.offer(task), dispatch);
         }
 
         @Override

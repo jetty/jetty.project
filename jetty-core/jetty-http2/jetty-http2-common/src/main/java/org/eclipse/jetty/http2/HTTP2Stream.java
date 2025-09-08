@@ -892,9 +892,16 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         try
         {
             if (dispatch)
-                ((DispatchableListener)listener).onDataAvailable(this, true);
+            {
+                if (listener instanceof DispatchableListener dispatchableListener)
+                    dispatchableListener.onDataAvailable(this, true);
+                else
+                    throw new IllegalStateException("Listener " + listener + " cannot handle dispatch");
+            }
             else
+            {
                 listener.onDataAvailable(this);
+            }
         }
         catch (Throwable x)
         {
