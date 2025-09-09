@@ -26,7 +26,7 @@ Jetty can either be used as a standalone server to deploy web applications, or a
 [cols="1a,1a,1a,1a", options="header"]
 |===
 | Jetty Version | Required Java Version | Jakarta EE Version | Status
-| Jetty 12.1.x | Java 17 | Jakarta EE11, EE10, EE9, EE8 | Development
+| Jetty 12.1.x | Java 17 | Jakarta EE11, EE10, EE9, EE8 | Stable
 
 | Jetty 12.0.x | Java 17 | Jakarta EE10, EE9, EE8 | Stable
 

@@ -40,10 +40,23 @@ public class AutoLock implements AutoCloseable, Serializable
      * <p>Acquires the lock.</p>
      *
      * @return this AutoLock for unlocking
+     * @see ReentrantLock#lock()
      */
     public AutoLock lock()
     {
         _lock.lock();
+        return this;
+    }
+
+    /**
+     * <p>Acquires the lock interruptibly.</p>
+     *
+     * @return this AutoLock for unlocking
+     * @see ReentrantLock#lockInterruptibly()
+     */
+    public AutoLock lockInterruptibly() throws InterruptedException
+    {
+        _lock.lockInterruptibly();
         return this;
     }
 
@@ -56,6 +69,7 @@ public class AutoLock implements AutoCloseable, Serializable
      * to retrieve a consistent state to produce the string.</p>
      *
      * @return this AutoLock for unlocking
+     * @see ReentrantLock#tryLock()
      */
     public AutoLock tryLock()
     {
@@ -121,6 +135,12 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         @Override
+        public AutoLock.WithCondition lockInterruptibly() throws InterruptedException
+        {
+            return (WithCondition)super.lockInterruptibly();
+        }
+
+        @Override
         public AutoLock.WithCondition tryLock()
         {
             return (WithCondition)super.tryLock();
@@ -161,6 +181,17 @@ public class AutoLock implements AutoCloseable, Serializable
         public boolean await(long time, TimeUnit unit) throws InterruptedException
         {
             return _condition.await(time, unit);
+        }
+
+        /**
+         * @param nanos the time to wait in nanoseconds
+         * @return the time left to wait in nanoseconds
+         * @throws InterruptedException if the current thread is interrupted
+         * @see Condition#awaitNanos(long)
+         */
+        public long awaitNanos(long nanos) throws InterruptedException
+        {
+            return _condition.awaitNanos(nanos);
         }
     }
 }

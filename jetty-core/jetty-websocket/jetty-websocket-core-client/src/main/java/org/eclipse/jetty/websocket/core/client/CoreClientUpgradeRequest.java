@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -82,6 +83,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     private FrameHandler frameHandler;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private final List<UpgradeListener> upgradeListeners = new ArrayList<>();
+    private final AtomicBoolean notifyResponseListeners = new AtomicBoolean(false);
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
     private boolean upgraded;
 
@@ -253,6 +255,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         int status = response.getStatus();
         String responseLine = status + " " + response.getReason();
         boolean receivedResponse = status > 0;
+        Throwable cause = result.getFailure();
 
         if (receivedResponse)
         {
@@ -260,14 +263,23 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 return;
 
             // We have failed to upgrade but have received a response, notify the listeners.
-            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
-            if (listenerError != null)
+            if (notifyResponseListeners.compareAndSet(false, true))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure while notifying handshake response listeners", listenerError);
+                // Notify the listeners that we have received a response.
+                Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+                if (listenerError != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure while notifying handshake response listeners", listenerError);
+                }
             }
-            handleException(new UpgradeException(requestURI, status,
-                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+
+            Throwable failure;
+            if (cause != null)
+                failure = cause instanceof IOException || cause instanceof UpgradeException ? cause : new UpgradeException(requestURI, status, cause.getMessage(), cause);
+            else
+                failure = new UpgradeException(requestURI, status, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine);
+            handleException(failure);
         }
         else
         {
@@ -278,10 +290,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 if (result.getResponseFailure() != null)
                     LOG.debug("Failed to upgrade to websocket: response failure", result.getResponseFailure());
             }
-            Throwable failure = result.getFailure();
-            boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
-            if (wrapFailure)
-                failure = new UpgradeException(requestURI, failure);
+            Throwable failure = cause instanceof IOException || cause instanceof UpgradeException ? cause : new UpgradeException(requestURI, cause);
             handleException(failure);
         }
     }
@@ -489,9 +498,13 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
+
+        if (!notifyResponseListeners.compareAndSet(false, true))
+            throw new IllegalStateException("Already notified handshake response listeners");
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
+
         upgraded = true;
 
         // Now swap out the connection

@@ -18,13 +18,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -81,7 +81,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testRemove()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 3);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
 
         queue.add("0");
         queue.add("x");
@@ -103,7 +103,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testLimit()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1, 0, 1);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
 
         String element = "0";
         assertTrue(queue.add(element));
@@ -116,23 +116,24 @@ public class BlockingArrayQueueTest
     @Test
     public void testGrow()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 2);
-        assertEquals(3, queue.getCapacity());
+        BlockingArrayQueue<String> queue = BlockingArrayQueue.newInstance(4, Integer.MAX_VALUE);
+        assertEquals(4, queue.getCapacity());
 
         queue.add("a");
         queue.add("a");
         assertEquals(2, queue.size());
-        assertEquals(3, queue.getCapacity());
+        assertEquals(4, queue.getCapacity());
         queue.add("a");
         queue.add("a");
-        assertEquals(4, queue.size());
-        assertEquals(5, queue.getCapacity());
+        queue.add("a");
+        assertEquals(5, queue.size());
+        assertEquals(12, queue.getCapacity());
 
-        int s = 5;
-        int c = 5;
+        int s = 6;
+        int c = 12;
         queue.add("a");
 
-        for (int t = 0; t < 100; t++)
+        for (int t = 0; t < 10; t++)
         {
             assertEquals(s, queue.size());
             assertEquals(c, queue.getCapacity());
@@ -149,18 +150,20 @@ public class BlockingArrayQueueTest
                 queue.add("a");
             }
             queue.add("a");
-            assertEquals(s + 1, queue.size());
-            assertEquals(c + 2, queue.getCapacity());
-
-            queue.poll();
-            queue.add("a");
-            queue.add("a");
-            assertEquals(s + 2, queue.size());
-            assertEquals(c + 2, queue.getCapacity());
-
-            s += 2;
-            c += 2;
+            s = c + 1;
+            c = queue.getCapacity();
+            assertEquals(s, queue.size());
         }
+    }
+
+    @Test
+    public void testNewCapacity()
+    {
+        assertEquals(0, BlockingArrayQueue.newCapacity(0, 0));
+        assertEquals(1, BlockingArrayQueue.newCapacity(1, 1));
+        assertEquals(2, BlockingArrayQueue.newCapacity(1, 2));
+        assertEquals(Integer.MAX_VALUE, BlockingArrayQueue.newCapacity(Integer.MAX_VALUE - 1, Integer.MAX_VALUE));
+        assertEquals(Integer.MAX_VALUE, BlockingArrayQueue.newCapacity(Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 
     @Test
@@ -207,6 +210,73 @@ public class BlockingArrayQueueTest
         assertEquals("one", data[1]);
         assertEquals("two", data[2]);
         assertNull(data[3]);
+    }
+
+    @Test
+    public void testBlockingPutOffer() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(2, 2, 4);
+        assertTrue(queue.offer("one", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("two", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("three", Integer.MAX_VALUE, TimeUnit.SECONDS));
+        assertTrue(queue.offer("four", Integer.MAX_VALUE, TimeUnit.SECONDS));
+
+        // Test poll
+        assertFalse(queue.offer("five", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch5 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                assertTrue(queue.offer("five", Integer.MAX_VALUE, TimeUnit.SECONDS));
+                latch5.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch5.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("one", queue.poll());
+        assertTrue(latch5.await(5, TimeUnit.SECONDS));
+
+        // Test remove
+        assertFalse(queue.offer("six", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch6 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                queue.put("six");
+                latch6.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch6.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("three", queue.remove(1));
+        assertTrue(latch6.await(5, TimeUnit.SECONDS));
+
+        // Test take
+        assertFalse(queue.offer("7", 10, TimeUnit.MILLISECONDS));
+        CountDownLatch latch7 = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                assertTrue(queue.offer("7", Integer.MAX_VALUE, TimeUnit.SECONDS));
+                latch7.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        assertFalse(latch7.await(10, TimeUnit.MILLISECONDS));
+        assertEquals("two", queue.take());
+        assertTrue(latch7.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -335,7 +405,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testRemoveObjectFromEmptyQueue()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
         assertFalse(queue.remove("SOMETHING"));
     }
 
@@ -364,7 +434,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testRemoveObject()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4);
 
         String element1 = "A";
         assertTrue(queue.offer(element1));
@@ -398,7 +468,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testRemoveWithMaxCapacityOne()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
 
         String element = "A";
         assertTrue(queue.offer(element));
@@ -411,7 +481,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testIteratorWithModification()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4);
         int count = queue.getMaxCapacity() - 1;
         for (int i = 0; i < count; ++i)
         {
@@ -433,7 +503,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testListIterator()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
         String element1 = "A";
         String element2 = "B";
         queue.offer(element1);
@@ -467,7 +537,7 @@ public class BlockingArrayQueueTest
     @Test
     public void testListIteratorWithWrappedHead()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
         // This sequence of offers and polls wraps the head around the array
         queue.offer("0");
         queue.offer("1");
@@ -507,38 +577,20 @@ public class BlockingArrayQueueTest
     @Test
     public void testDrainTo()
     {
-        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
-        queue.add("one");
-        queue.add("two");
-        queue.add("three");
-        queue.add("four");
-        queue.add("five");
-        queue.add("six");
-
-        List<String> to = new ArrayList<>();
-        queue.drainTo(to, 3);
-        assertThat(to, Matchers.contains("one", "two", "three"));
-        assertThat(queue.size(), Matchers.is(3));
-        assertThat(queue, Matchers.contains("four", "five", "six"));
-
-        queue.drainTo(to);
-        assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
-        assertThat(queue.size(), Matchers.is(0));
-        assertThat(queue, Matchers.empty());
-    }
-
-    @Test
-    public void testDrainToAtDefaultGrowthSize()
-    {
+        int size = 512;
         BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>();
-        for (int i = 0; i < BlockingArrayQueue.DEFAULT_GROWTH * 2; i++)
+        for (int i = 0; i < size; i++)
         {
             queue.add(i);
         }
 
         List<Integer> list = new ArrayList<>();
-        assertThat(queue.drainTo(list), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
-        assertThat(list.size(), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
+        assertThat(queue.drainTo(list), is(size));
+        assertThat(list.size(), is(size));
+        for (int i = 0; i < size; i++)
+        {
+            assertEquals(i, list.get(i));
+        }
         assertThat(queue.size(), is(0));
     }
 

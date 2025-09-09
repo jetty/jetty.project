@@ -369,6 +369,9 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 The example above will impose a total timeout of 3 seconds on the request/response conversation.
 
+[[listeners]]
+==== Request and Response Listeners
+
 The HTTP client APIs use listeners extensively to provide hooks for all possible request and response events:
 
 [,java,indent=0]

@@ -58,7 +58,7 @@ The following dependencies are ASL2 licensed.
 The following dependencies are ASL2 licensed.  Based on selected classes from
 following Apache Tomcat jars, all ASL2 licensed.
 
- * org.mortbay.jasper:apache-jsp
+ * org.mortbay.jasper:mortbay-apache-jsp
  * org.apache.tomcat:tomcat-jasper
  * org.apache.tomcat:tomcat-juli
  * org.apache.tomcat:tomcat-jsp-api
@@ -67,7 +67,7 @@ following Apache Tomcat jars, all ASL2 licensed.
  * org.apache.tomcat:tomcat-api
  * org.apache.tomcat:tomcat-util-scan
  * org.apache.tomcat:tomcat-util
- * org.mortbay.jasper:apache-el
+ * org.mortbay.jasper:mortbay-apache-el
  * org.apache.tomcat:tomcat-jasper-el
  * org.apache.tomcat:tomcat-el-api
 

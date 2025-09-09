@@ -94,6 +94,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -2094,6 +2095,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .headers(h -> h.put("X-Capacity", capacity))
             .timeout(5, TimeUnit.SECONDS)
             .send());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRequestWithWrongScheme(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme("ssh")
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+
+        assertInstanceOf(IllegalArgumentException.class, failure.getCause());
     }
 
     private void assertCopyRequest(Request original)

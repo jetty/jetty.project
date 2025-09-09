@@ -140,7 +140,7 @@ public enum HttpHeader
     C_AUTHORITY(":authority", true),
     C_PATH(":path", true),
     C_STATUS(":status", true),
-    C_PROTOCOL(":protocol");
+    C_PROTOCOL(":protocol", true);
 
     public static final EnumSet<HttpHeader> CONTENT_HEADERS;
     public static final EnumSet<HttpHeader> CONTENT_HEADERS_304;

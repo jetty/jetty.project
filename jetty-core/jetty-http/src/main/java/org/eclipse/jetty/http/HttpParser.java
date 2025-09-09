@@ -486,6 +486,7 @@ public class HttpParser
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
+        addAndCheckHeadersSize(1);
         HttpTokens.Token t = HttpTokens.getToken(ch);
 
         switch (t.getType())
@@ -507,10 +508,8 @@ public class HttpParser
 
                 if (buffer.hasRemaining())
                 {
-                    // Don't count the CRs and LFs of the chunked encoding.
-                    if (_maxHeaderBytes > 0 && (_state == State.HEADER || _state == State.TRAILER))
-                        _headerBytes++;
                     ch = buffer.get();
+                    addAndCheckHeadersSize(1);
                     t = HttpTokens.TOKENS[0xff & ch];
                     return switch (t.getType())
                     {
@@ -541,6 +540,22 @@ public class HttpParser
         return t;
     }
 
+    private void addAndCheckHeadersSize(int delta)
+    {
+        if (_maxHeaderBytes > 0 && (_state.ordinal() <= State.HEADER.ordinal() || _state.ordinal() == State.TRAILER.ordinal()))
+        {
+            _headerBytes += delta;
+            if (_headerBytes > _maxHeaderBytes)
+            {
+                if (_state == State.URI)
+                    throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
+                if (_requestParser)
+                    throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
+                throw new HttpException.RuntimeException(_responseStatus, "Response Header Bytes Too Large");
+            }
+        }
+    }
+
     private boolean quickStartRequestLine(ByteBuffer buffer)
     {
         int position = buffer.position();
@@ -555,7 +570,9 @@ public class HttpParser
                 long v = buffer.getLong(position + Long.BYTES);
                 if (v == TP_SLASH_1_1_CRLF_AS_LONG)
                 {
-                    buffer.position(position + 2 * Long.BYTES);
+                    int delta = 2 * Long.BYTES;
+                    buffer.position(position + delta);
+                    addAndCheckHeadersSize(delta);
                     _methodString = HttpMethod.GET.asString();
                     _version = HttpVersion.HTTP_1_1;
                     _fieldCache.prepare();
@@ -565,7 +582,9 @@ public class HttpParser
                 }
                 if (v == TP_SLASH_1_0_CRLF_AS_LONG)
                 {
-                    buffer.position(position + 2 * Long.BYTES);
+                    int delta = 2 * Long.BYTES;
+                    buffer.position(position + delta);
+                    addAndCheckHeadersSize(delta);
                     _methodString = HttpMethod.GET.asString();
                     _version = HttpVersion.HTTP_1_0;
                     _fieldCache.prepare();
@@ -591,8 +610,9 @@ public class HttpParser
             _methodString = _method.asString();
             // The lookAheadGet method above checks for the trailing space,
             // so it is safe to move the position 1 more than the method length.
-            position = position + _methodString.length() + 1;
-            buffer.position(position);
+            int delta = _methodString.length() + 1;
+            buffer.position(position + delta);
+            addAndCheckHeadersSize(delta);
             setState(State.SPACE1);
             return true;
         }
@@ -623,6 +643,7 @@ public class HttpParser
                     buffer.getLong(position) == SPACE_200_OK_CR_AS_LONG)
                 {
                     buffer.position(position + 9);
+                    addAndCheckHeadersSize(9);
                     _responseStatus = HttpStatus.OK_200;
                     _fieldCache.prepare();
                     setState(State.HEADER);
@@ -633,6 +654,7 @@ public class HttpParser
                 if (buffer.get(position) == ' ')
                 {
                     buffer.position(position + 1);
+                    addAndCheckHeadersSize(1);
                     setState(State.SPACE1);
                     return true;
                 }
@@ -682,16 +704,6 @@ public class HttpParser
                 default ->
                 {
                 }
-            }
-
-            // count this white space as a header byte to avoid DOS
-            if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
-            {
-                LOG.warn("padding is too large >{}", _maxHeaderBytes);
-                if (_requestParser)
-                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
-                else
-                    throw new HttpException.RuntimeException(_responseStatus, "Bad Response");
             }
         }
     }
@@ -746,28 +758,6 @@ public class HttpParser
                 break;
             if (t == EOL_LF)
                 checkViolation(LF_HEADER_TERMINATION);
-
-            if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
-            {
-                if (_state == State.URI)
-                {
-                    LOG.warn("URI is too large >{}", _maxHeaderBytes);
-                    throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
-                }
-                else
-                {
-                    if (_requestParser)
-                    {
-                        LOG.warn("request is too large >{}", _maxHeaderBytes);
-                        throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
-                    }
-                    else
-                    {
-                        LOG.warn("response is too large >{}", _maxHeaderBytes);
-                        throw new HttpException.RuntimeException(_responseStatus, "Response Header Bytes Too Large");
-                    }
-                }
-            }
 
             switch (_state)
             {
@@ -860,28 +850,25 @@ public class HttpParser
                                 // quick scan for space or EoBuffer
                                 if (buffer.hasArray())
                                 {
+                                    // look ahead for the space after the URI
                                     byte[] array = buffer.array();
-                                    int p = buffer.arrayOffset() + buffer.position();
+                                    int position = buffer.position();
+                                    int p = buffer.arrayOffset() + position;
                                     int l = buffer.arrayOffset() + buffer.limit();
                                     int i = p;
                                     while (i < l && array[i] > HttpTokens.SPACE)
-                                    {
                                         i++;
-                                    }
 
                                     int len = i - p;
-                                    _headerBytes += len;
-
-                                    if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
-                                    {
-                                        LOG.warn("URI is too large >{}", _maxHeaderBytes);
-                                        throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
-                                    }
+                                    buffer.position(position + len);
+                                    addAndCheckHeadersSize(len);
                                     _uri.append(array, p - 1, len + 1);
-                                    buffer.position(i - buffer.arrayOffset());
                                 }
                                 else
+                                {
+                                    // Copy URI byte by byte
                                     _uri.append(t.getByte());
+                                }
                             }
                             break;
 
@@ -940,6 +927,7 @@ public class HttpParser
                                 if (version != null)
                                 {
                                     buffer.position(endOfVersion + 2);
+                                    addAndCheckHeadersSize(endOfVersion + 2 - position);
                                     _version = version;
                                     _string.setLength(0);
                                     checkVersion();
@@ -1046,36 +1034,53 @@ public class HttpParser
                         case COLON:
                             if (_string.isEmpty())
                             {
+                                // This is the first char of the version, so try a quick lookup
                                 HttpVersion version = HttpVersion.CACHE.getBest(buffer);
                                 if (version != null)
                                 {
-                                    buffer.position(buffer.position() + version.asString().length());
+                                    String versionString = version.asString();
+                                    buffer.position(buffer.position() + versionString.length());
+                                    addAndCheckHeadersSize(versionString.length());
 
-                                    HttpTokens.Token eol = next(buffer);
-                                    if (eol == null)
+                                    HttpTokens.Token next = next(buffer);
+                                    if (next == null)
                                     {
-                                        _string.append(version.asString());
-                                    }
-                                    else if (eol.getType() == HttpTokens.Type.EOL)
-                                    {
-                                        if (eol == EOL_LF)
-                                            checkViolation(LF_HEADER_TERMINATION);
-                                        _version = version;
-                                        checkVersion();
-                                        _fieldCache.prepare();
-                                        setState(State.HEADER);
-                                        _requestHandler.startRequest(_methodString, _uri.toCompleteString(), _version);
-                                        continue;
+                                        // No EOL yet, so this version could just be a prefix to the full version
+                                        // So we just append the version string and continue
+                                        _string.append(versionString);
                                     }
                                     else
                                     {
-                                        _string.append(version.asString());
-                                        buffer.position(buffer.position() - 1);
+                                        switch (next.getType())
+                                        {
+                                            case EOL:
+                                                // We have an EOL, so this is the full version, thus we can complete the request line
+                                                if (next == EOL_LF)
+                                                    checkViolation(LF_HEADER_TERMINATION);
+                                                _version = version;
+                                                checkVersion();
+                                                _fieldCache.prepare();
+                                                setState(State.HEADER);
+                                                _requestHandler.startRequest(_methodString, _uri.toCompleteString(), _version);
+                                                break;
+
+                                            case SPACE, ALPHA, DIGIT, TCHAR, VCHAR, COLON:
+                                                // This version was just a prefix to the full version, so append it and the next char and continue
+                                                _string.append(versionString);
+                                                _string.append(next.getChar());
+                                                break;
+
+                                            default:
+                                                throw new IllegalCharacterException(_state, next, buffer);
+                                        }
                                     }
-                                    continue;
                                 }
                             }
-                            _string.append(t.getChar());
+                            else
+                            {
+                                // We already have some version chars, so just append this one
+                                _string.append(t.getChar());
+                            }
                             break;
 
                         default:
@@ -1314,17 +1319,6 @@ public class HttpParser
             if (t == EOL_LF)
                 checkViolation(LF_HEADER_TERMINATION);
 
-            if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
-            {
-                boolean header = _state == State.HEADER;
-                if (debugEnabled)
-                    LOG.debug("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
-                if (_requestParser)
-                    throw new BadMessageException(header ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 : HttpStatus.PAYLOAD_TOO_LARGE_413);
-                // There is no equivalent of 431 for response headers.
-                throw new HttpException.RuntimeException(_responseStatus, "Response Header Fields Too Large");
-            }
-
             switch (_fieldState)
             {
                 case FIELD:
@@ -1471,7 +1465,9 @@ public class HttpParser
                                     _header = cachedField.getHeader();
                                     _headerString = n;
 
-                                    int posAfterName = buffer.position() + n.length() + 1;
+                                    int position = buffer.position();
+                                    int delta = n.length() + 1;
+                                    int posAfterName = position + delta;
 
                                     if (Objects.equals(v, UNMATCHED_VALUE) || (posAfterName + v.length()) >= buffer.limit())
                                     {
@@ -1480,6 +1476,7 @@ public class HttpParser
                                         _string.setLength(0);
                                         _length = 0;
                                         buffer.position(posAfterName);
+                                        addAndCheckHeadersSize(delta);
                                         break;
                                     }
 
@@ -1491,6 +1488,7 @@ public class HttpParser
                                         _field = cachedField;
                                         _valueString = v;
                                         buffer.position(posAfterValue + 1);
+                                        addAndCheckHeadersSize(posAfterValue + 1 - position);
                                         if (peek == LINE_FEED)
                                         {
                                             checkViolation(LF_HEADER_TERMINATION);
@@ -1504,6 +1502,7 @@ public class HttpParser
                                     setState(FieldState.IN_VALUE);
                                     setString(v);
                                     buffer.position(posAfterValue);
+                                    addAndCheckHeadersSize(posAfterValue - position);
                                     break;
                                 }
                             }
@@ -1750,6 +1749,7 @@ public class HttpParser
                     if (b != CARRIAGE_RETURN && b != LINE_FEED)
                         break;
                     buffer.get();
+                    addAndCheckHeadersSize(1);
                     ++whiteSpace;
                 }
                 if (debugEnabled && whiteSpace > 0)
