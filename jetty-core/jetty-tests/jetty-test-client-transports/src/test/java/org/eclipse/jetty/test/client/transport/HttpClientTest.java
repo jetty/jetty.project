@@ -17,11 +17,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.URI;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -84,6 +87,53 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientTest extends AbstractTest
 {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testWriteSingleByteBufferInstanceInTwoParts(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                // Use a 64 KB buffer.
+                ByteBuffer byteBuffer = ByteBuffer.allocate(65536);
+                // Let the first 13 bytes untouched.
+                byteBuffer.position(13);
+
+                try (Blocker.Callback cb = Blocker.callback())
+                {
+                    // Write the first part: 40 KB.
+                    byteBuffer.limit(13 + 40 * 1024);
+                    response.write(false, byteBuffer, cb);
+                    cb.block();
+                }
+
+                // Write the second part: 24 KB - 13 bytes.
+                byteBuffer.limit(byteBuffer.capacity());
+                response.write(true, byteBuffer, callback);
+                return true;
+            }
+        });
+
+        final int count = 10;
+        CountDownLatch latch = new CountDownLatch(count);
+        Map<Integer, List<ByteBuffer>> contents = new HashMap<>();
+        for (int i = 0; i < count; i++)
+        {
+            List<ByteBuffer> contentList = contents.computeIfAbsent(i, (k) -> new CopyOnWriteArrayList<>());
+            client.newRequest(newURI(transportType))
+                .onResponseContent((response, content) -> contentList.add(BufferUtil.copy(content)))
+                .send(result -> latch.countDown());
+        }
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
+
+        for (Map.Entry<Integer, List<ByteBuffer>> entry : contents.entrySet())
+        {
+            assertThat("Request #" + entry.getKey() + " failed", entry.getValue().stream().mapToInt(Buffer::remaining).sum(), is(65536 - 13));
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testClientUseContentSourceInSpawnedThreadEmptyResponseContent(TransportType transportType) throws Exception
