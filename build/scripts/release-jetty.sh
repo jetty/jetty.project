@@ -93,8 +93,9 @@ fi
 DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
-# Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx4g"
+rm -rf .release-repository/
+export MAVEN_ARGS="-Dmaven.repo.local=.release-repository"
+export MAVEN_OPTS="-Xmx8g -Xms8g"
 
 echo ""
 echo "-----------------------------------------------"
