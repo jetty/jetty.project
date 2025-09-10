@@ -246,9 +246,12 @@ public class UnixSocketConnector extends AbstractConnector
 
             try
             {
-                Files.deleteIfExists(Paths.get(_unixSocket));
+                if (_unixSocket.charAt(0) != '\0') // skip abstract sockets
+                {
+                    Files.deleteIfExists(Paths.get(_unixSocket));
+                }
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 LOG.warn("Unable to delete UnixSocket at {}", _unixSocket, e);
             }
