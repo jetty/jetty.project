@@ -53,7 +53,9 @@ public class HeadersGenerator extends FrameGenerator
         int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
         // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
         int maxLength = encoder.getMaxHeadersSize();
+        // Acquire buffer and immediately append to the accumulator so that it is released if a failure occurs.
         buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+        accumulator.append(buffer);
         try
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
@@ -75,7 +77,6 @@ public class HeadersGenerator extends FrameGenerator
         }
         catch (QpackException x)
         {
-            buffer.release();
             if (fail != null)
                 fail.accept(x);
             return -1;
