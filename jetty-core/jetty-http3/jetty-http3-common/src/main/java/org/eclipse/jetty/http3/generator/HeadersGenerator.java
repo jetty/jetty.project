@@ -71,7 +71,6 @@ public class HeadersGenerator extends FrameGenerator
             VarLenInt.encode(byteBuffer, FrameType.HEADERS.type());
             VarLenInt.encode(byteBuffer, dataLength);
             byteBuffer.position(position);
-            accumulator.append(buffer);
             return headerLength + dataLength;
         }
         catch (QpackException x)
