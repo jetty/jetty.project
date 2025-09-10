@@ -891,17 +891,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Listener listener = Objects.requireNonNullElse(getListener(), Listener.AUTO_DISCARD);
         try
         {
-            if (dispatch)
-            {
-                if (listener instanceof DispatchableListener dispatchableListener)
-                    dispatchableListener.onDataAvailable(this, true);
-                else
-                    throw new IllegalStateException("Listener " + listener + " cannot handle dispatch");
-            }
+            if (listener instanceof DispatchableListener dispatchableListener)
+                dispatchableListener.onDataAvailable(this, dispatch);
+            else if (dispatch && session.getEndPoint().getConnection() instanceof HTTP2Connection h2c)
+                h2c.getExecutor().execute(() -> listener.onDataAvailable(this));
             else
-            {
                 listener.onDataAvailable(this);
-            }
         }
         catch (Throwable x)
         {
