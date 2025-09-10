@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.VirtualConnectionLimit;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -509,14 +510,71 @@ public class WebSocketOverHTTP2Test
         assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
     }
 
-    private static void awaitConnections(int connections, NetworkConnectionLimit networkConnectionLimit)
+    @Test
+    public void testVirtualConnectionLimit() throws Exception
+    {
+        prepareServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+
+        int maxNetworkConnectionCount = 5;
+        VirtualConnectionLimit limiter = new VirtualConnectionLimit(maxNetworkConnectionCount, connector, tlsConnector);
+        connector.addBean(limiter);
+        tlsConnector.addBean(limiter);
+
+        server.start();
+
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        List<EventSocket> clientHandlers = new ArrayList<>();
+        for (int i = 0; i < maxNetworkConnectionCount - 1; i++)
+        {
+            EventSocket clientEndpoint = new EventSocket();
+            clientHandlers.add(clientEndpoint);
+            wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+            assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+            assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
+
+            // One connection per HTTP/2 Connection, then one per WebSocket connection.
+            awaitConnections(i + 2, limiter);
+        }
+
+        // Opening an additional connection results in a failure.
+        EventSocket clientEndpoint = new EventSocket();
+        wsClient.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.error, instanceOf(ClosedChannelException.class));
+
+        // Close all the sessions.
+        for (EventSocket handler : clientHandlers)
+        {
+            handler.session.close();
+            assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(handler.closeCode, equalTo(CloseStatus.NORMAL));
+        }
+
+        assertThat(limiter.getPendingVirtualConnectionCount(), equalTo(0));
+        assertThat(limiter.getVirtualConnectionCount(), equalTo(1));
+    }
+
+    private static void awaitConnections(int connections, NetworkConnectionLimit limiter)
     {
         await().atMost(1, TimeUnit.SECONDS)
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
-                assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+                assertThat(limiter.getNetworkConnectionCount(), equalTo(connections));
+                assertThat(limiter.getPendingNetworkConnectionCount(), equalTo(0));
+            });
+    }
+
+    private static void awaitConnections(int connections, VirtualConnectionLimit limiter)
+    {
+        await().atMost(1, TimeUnit.SECONDS)
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(() ->
+            {
+                assertThat(limiter.getVirtualConnectionCount(), equalTo(connections));
+                assertThat(limiter.getPendingVirtualConnectionCount(), equalTo(0));
             });
     }
 }

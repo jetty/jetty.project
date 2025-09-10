@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.EOFException;
 import java.net.URI;
+import java.nio.channels.AsynchronousCloseException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.server.NetworkConnectionLimit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.VirtualConnectionLimit;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -40,13 +44,17 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class WebSocketNetworkConnectionLimitTest
 {
-    private static final int CONNECTION_LIMIT = 5;
-
     private Server _server;
     private WebSocketUpgradeHandler _upgradeHandler;
     private WebSocketCoreClient _client;
     private ServerConnector _serverConnector;
-    private NetworkConnectionLimit _networkConnectionLimit;
+
+    public void startServer() throws Exception
+    {
+        _server.start();
+        _client = new WebSocketCoreClient();
+        _client.start();
+    }
 
     @BeforeEach
     public void before() throws Exception
@@ -56,14 +64,6 @@ public class WebSocketNetworkConnectionLimitTest
         _server.addConnector(_serverConnector);
         _upgradeHandler = new WebSocketUpgradeHandler();
         _server.setHandler(_upgradeHandler);
-
-        _networkConnectionLimit = new NetworkConnectionLimit(CONNECTION_LIMIT, _serverConnector);
-        _serverConnector.addBean(_networkConnectionLimit);
-
-        _server.start();
-
-        _client = new WebSocketCoreClient();
-        _client.start();
     }
 
     @AfterEach
@@ -74,28 +74,34 @@ public class WebSocketNetworkConnectionLimitTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testNetworkConnectionLimit() throws Exception
     {
+        int connectionLimit = 5;
+        NetworkConnectionLimit limiter = new NetworkConnectionLimit(connectionLimit, _serverConnector);
+        _serverConnector.addBean(limiter);
+        startServer();
+
         _upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
         URI uri = URI.create("ws://localhost:" + _serverConnector.getLocalPort());
 
         List<TestMessageHandler> clientHandlers = new ArrayList<>();
-        for (int i = 0; i < CONNECTION_LIMIT; i++)
+        for (int i = 0; i < connectionLimit; i++)
         {
             TestMessageHandler clientHandler = new TestMessageHandler();
             clientHandlers.add(clientHandler);
             _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS);
             assertTrue(clientHandler.openLatch.await(5, TimeUnit.SECONDS));
-            awaitConnections(i + 1);
+            awaitConnections(i + 1, limiter);
         }
 
         // Trying to open an additional connection results in a failure.
+        assertFalse(_serverConnector.isAccepting());
         TestMessageHandler clientHandler = new TestMessageHandler();
         _client.getHttpClient().setConnectTimeout(1000);
         _client.getHttpClient().setIdleTimeout(1000);
         ExecutionException error = assertThrows(ExecutionException.class, () -> _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS));
-        assertCausedByTimeout(error);
-        assertThat(_networkConnectionLimit.getNetworkConnectionCount(), equalTo(CONNECTION_LIMIT));
+        assertValidCause(error);
+        assertThat(limiter.getNetworkConnectionCount(), equalTo(connectionLimit));
 
         // Close all the sessions.
         for (TestMessageHandler handler : clientHandlers)
@@ -106,22 +112,79 @@ public class WebSocketNetworkConnectionLimitTest
         }
 
         // All connections should be closed.
-        awaitConnections(0);
+        awaitConnections(0, limiter);
 
         // Now additional connections can be opened without error.
         TestMessageHandler clientHandler2 = new TestMessageHandler();
         _client.connect(clientHandler2, uri).get(5, TimeUnit.SECONDS);
         assertTrue(clientHandler2.openLatch.await(5, TimeUnit.SECONDS));
-        awaitConnections(1);
+        awaitConnections(1, limiter);
         clientHandler2.getCoreSession().close(Callback.NOOP);
         assertTrue(clientHandler2.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientHandler2.closeStatus.getCode(), equalTo(CloseStatus.NO_CODE));
-        awaitConnections(0);
+        awaitConnections(0, limiter);
     }
 
-    public void assertCausedByTimeout(Throwable error)
+    @Test
+    public void testVirtualConnectionLimit() throws Exception
+    {
+        int connectionLimit = 1;
+        VirtualConnectionLimit limiter = new VirtualConnectionLimit(connectionLimit, _serverConnector);
+        _serverConnector.addBean(limiter);
+        startServer();
+
+        _upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
+        URI uri = URI.create("ws://localhost:" + _serverConnector.getLocalPort());
+
+        List<TestMessageHandler> clientHandlers = new ArrayList<>();
+        for (int i = 0; i < connectionLimit; i++)
+        {
+            TestMessageHandler clientHandler = new TestMessageHandler();
+            clientHandlers.add(clientHandler);
+            _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS);
+            assertTrue(clientHandler.openLatch.await(5, TimeUnit.SECONDS));
+            awaitConnections(i + 1, limiter);
+        }
+
+        // Trying to open an additional connection results in a failure.
+        assertFalse(_serverConnector.isAccepting());
+        TestMessageHandler clientHandler = new TestMessageHandler();
+        _client.getHttpClient().setConnectTimeout(1000);
+        _client.getHttpClient().setIdleTimeout(1000);
+        ExecutionException error = assertThrows(ExecutionException.class, () -> _client.connect(clientHandler, uri).get(5, TimeUnit.SECONDS));
+        assertValidCause(error);
+        assertThat(limiter.getVirtualConnectionCount(), equalTo(connectionLimit));
+
+        // Close all the sessions.
+        for (TestMessageHandler handler : clientHandlers)
+        {
+            handler.getCoreSession().close(Callback.NOOP);
+            assertTrue(handler.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(handler.closeStatus.getCode(), equalTo(CloseStatus.NO_CODE));
+        }
+
+        // All connections should be closed.
+        awaitConnections(0, limiter);
+
+        // Now additional connections can be opened without error.
+        TestMessageHandler clientHandler2 = new TestMessageHandler();
+        _client.connect(clientHandler2, uri).get(5, TimeUnit.SECONDS);
+        assertTrue(clientHandler2.openLatch.await(5, TimeUnit.SECONDS));
+        awaitConnections(1, limiter);
+        clientHandler2.getCoreSession().close(Callback.NOOP);
+        assertTrue(clientHandler2.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientHandler2.closeStatus.getCode(), equalTo(CloseStatus.NO_CODE));
+        awaitConnections(0, limiter);
+    }
+
+    public void assertValidCause(Throwable error)
     {
         Throwable cause = error.getCause();
+        if (cause instanceof AsynchronousCloseException)
+            return;
+        if (cause instanceof EOFException)
+            return;
+
         while (cause != null)
         {
             if (cause instanceof TimeoutException)
@@ -132,15 +195,27 @@ public class WebSocketNetworkConnectionLimitTest
         fail("No timeout exception cause", error);
     }
 
-    public void awaitConnections(int connections)
+    public void awaitConnections(int connections, NetworkConnectionLimit limiter)
     {
         await()
             .atMost(1, TimeUnit.SECONDS)
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() ->
             {
-                assertThat(_networkConnectionLimit.getNetworkConnectionCount(), equalTo(connections));
-                assertThat(_networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
+                assertThat(limiter.getNetworkConnectionCount(), equalTo(connections));
+                assertThat(limiter.getPendingNetworkConnectionCount(), equalTo(0));
+            });
+    }
+
+    public void awaitConnections(int connections, VirtualConnectionLimit limiter)
+    {
+        await()
+            .atMost(1, TimeUnit.SECONDS)
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(() ->
+            {
+                assertThat(limiter.getVirtualConnectionCount(), equalTo(connections));
+                assertThat(limiter.getPendingVirtualConnectionCount(), equalTo(0));
             });
     }
 }
