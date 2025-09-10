@@ -1,5 +1,3 @@
-jetty-12.1.2-SNAPSHOT
-
 12.1.1 - 08 September 2025
  + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
  + 12735 Provide better documentation of JettyWebSocketServletContainerInitializer and jetty-${ee-version}-websocket-jetty-server modules
