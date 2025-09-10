@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -91,6 +92,8 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testWriteSingleByteBufferInstanceInTwoParts(TransportType transportType) throws Exception
     {
+        final int count = 10;
+        CyclicBarrier barrier = new CyclicBarrier(count);
         start(transportType, new Handler.Abstract()
         {
             @Override
@@ -105,18 +108,19 @@ public class HttpClientTest extends AbstractTest
                 {
                     // Write the first part: 40 KB.
                     byteBuffer.limit(13 + 40 * 1024);
+                    barrier.await(); // Maximize concurrency on the server.
                     response.write(false, byteBuffer, cb);
                     cb.block();
                 }
 
                 // Write the second part: 24 KB - 13 bytes.
                 byteBuffer.limit(byteBuffer.capacity());
+                barrier.await(); // Maximize concurrency on the server.
                 response.write(true, byteBuffer, callback);
                 return true;
             }
         });
 
-        final int count = 10;
         CountDownLatch latch = new CountDownLatch(count);
         Map<Integer, List<ByteBuffer>> contents = new HashMap<>();
         for (int i = 0; i < count; i++)
