@@ -21,6 +21,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -93,6 +94,7 @@ public class HttpClientTest extends AbstractTest
     public void testWriteSingleByteBufferInstanceInTwoParts(TransportType transportType) throws Exception
     {
         final int count = 10;
+        List<byte[]> byteArrays = new CopyOnWriteArrayList<>();
         CyclicBarrier barrier = new CyclicBarrier(count);
         start(transportType, new Handler.Abstract()
         {
@@ -100,7 +102,11 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Use a 64 KB buffer.
-                ByteBuffer byteBuffer = ByteBuffer.allocate(65536);
+                byte[] array = new byte[65536];
+                byteArrays.add(array);
+                Arrays.fill(array, (byte)'A');
+                ByteBuffer byteBuffer = ByteBuffer.wrap(array);
+
                 // Let the first 13 bytes untouched.
                 byteBuffer.position(13);
 
@@ -132,9 +138,28 @@ public class HttpClientTest extends AbstractTest
         }
         assertTrue(latch.await(15, TimeUnit.SECONDS));
 
+        // Check that the responses were not corrupted.
         for (Map.Entry<Integer, List<ByteBuffer>> entry : contents.entrySet())
         {
-            assertThat("Request #" + entry.getKey() + " failed", entry.getValue().stream().mapToInt(Buffer::remaining).sum(), is(65536 - 13));
+            assertThat("Request #" + entry.getKey() + " failed on size", entry.getValue().stream().mapToInt(Buffer::remaining).sum(), is(65536 - 13));
+            assertThat("Request #" + entry.getKey() + " failed on data", entry.getValue().stream().anyMatch(bb ->
+            {
+                while (bb.hasRemaining())
+                {
+                    byte b = bb.get();
+                    if (b != 'A')
+                        return true;
+                }
+                return false;
+            }), is(false));
+        }
+        // Check that the original buffers were not corrupted.
+        for (byte[] byteArray : byteArrays)
+        {
+            for (byte b : byteArray)
+            {
+                assertThat(b, is((byte)'A'));
+            }
         }
     }
 
