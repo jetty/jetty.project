@@ -15,16 +15,20 @@ package org.eclipse.jetty.http.content;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,6 +96,30 @@ public class FileMappingHttpContentFactoryTest
         assertThat(content.getContentLength().getValue(), is("30"));
         assertThat(content.getContentLengthValue(), is(30L));
         assertThat(writeToString(content, 0, -1), is("0123456789abcdefghijABCDEFGHIJ"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {8, 10})
+    public void testUnsupportedFileSystemStillServesContent(int maxBufferSize) throws IOException
+    {
+        Path jarFile = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource jarResource = resourceFactory.newJarFileResource(jarFile.toUri());
+
+            // First make sure that this kind of FS cannot mmap files.
+            Resource resolved = jarResource.resolve("WEB-INF/web.xml");
+            try (FileChannel channel = FileChannel.open(resolved.getPath(), StandardOpenOption.READ))
+            {
+                assertThrows(UnsupportedOperationException.class, () -> channel.map(FileChannel.MapMode.READ_ONLY, 0, resolved.length()));
+            }
+
+            // Then make sure FileMappingHttpContentFactory manages to fall back to some other way to serve the content.
+            FileMappingHttpContentFactory fileMappingHttpContentFactory = new FileMappingHttpContentFactory(new ResourceHttpContentFactory(jarResource, MimeTypes.DEFAULTS, ByteBufferPool.SIZED_NON_POOLING), 0, maxBufferSize);
+            HttpContent content = fileMappingHttpContentFactory.getContent("WEB-INF/web.xml");
+            assertThat(content.getContentLengthValue(), is(35L));
+        }
     }
 
     private static String writeToString(HttpContent content, long offset, long length) throws IOException
