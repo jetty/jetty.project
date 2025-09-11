@@ -14,6 +14,3 @@ quiche
 
 [libs]
 lib/quic/jetty-quic-quiche-foreign-${jetty.version}.jar
-
-[exec]
---enable-native-access=org.eclipse.jetty.quic.quiche.foreign
