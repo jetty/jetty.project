@@ -42,6 +42,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -71,6 +72,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -1135,6 +1137,29 @@ public class HttpClientTest extends AbstractTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testInvalidExpectation(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.Source.consumeAll(request, callback);
+                return true;
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .headers(h -> h.put(HttpHeader.EXPECT, "Invalid"))
+            .body(new StringRequestContent("hello"))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), equalTo(HttpStatus.EXPECTATION_FAILED_417));
     }
 
     public static java.util.stream.Stream<Arguments> validFieldValues()

@@ -1222,9 +1222,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                        {
                             getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        }
                         else
                             throw new BadMessageException("Authority!=Host");
                     }
@@ -1252,9 +1250,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             // Set path (if not already set)
             if (_uri.getPath() == null)
-            {
                 _uri.path("/");
-            }
 
             _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
             {
@@ -1278,7 +1274,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
 
             boolean persistent;
-
             switch (_request.getHttpVersion())
             {
                 case HTTP_0_9:
@@ -1299,14 +1294,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     break;
                 }
-
                 case HTTP_1_1:
                 {
                     if (_unknownExpectation)
-                    {
-                        _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                        return null;
-                    }
+                        throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
                         !_connectionClose ||
@@ -1325,7 +1316,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     break;
                 }
-
                 case HTTP_2:
                 {
                     // Allow prior knowledge "upgrade" to HTTP/2 only if the connector supports h2c.
@@ -1341,7 +1331,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     _parser.close();
                     throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }
-
                 default:
                 {
                     throw new IllegalStateException("unsupported version " + _version);
