@@ -263,7 +263,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         if (task == null)
             return;
         AbstractSession session = (AbstractSession)getSession();
-        session.offerTask(task, false);
+        session.offerTask(task, dispatch);
     }
 
     @Override

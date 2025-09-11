@@ -75,7 +75,7 @@ public abstract class AbstractConnection implements Connection
         _inputBufferSize = inputBufferSize;
     }
 
-    public Executor getExecutor()
+    protected Executor getExecutor()
     {
         return _executor;
     }

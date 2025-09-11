@@ -81,6 +81,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     }
 
     @Override
+    public Executor getExecutor()
+    {
+        return super.getExecutor();
+    }
+
+    @Override
     public long getMessagesIn()
     {
         HTTP2Session session = getSession();

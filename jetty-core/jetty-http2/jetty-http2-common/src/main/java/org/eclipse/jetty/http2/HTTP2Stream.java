@@ -550,7 +550,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Demand, {} data processing for {}", dispatch ? "proceeding" : "stalling", this);
         if (dispatch)
-            processData(true);
+            processData(true); // dispatch so we cannot recurse if data is available
     }
 
     public void processData(boolean dispatch)
@@ -1059,8 +1059,18 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
+    /**
+     * An extension of {@link Stream.Listener} that allows the {@code dispatch} argument to
+     * be propagated through #notifyDataAvailable.
+     */
     public interface DispatchableListener extends Stream.Listener
     {
+        /** A alternative to {@link Stream.Listener#onDataAvailable(Stream)} that allows
+         * the caller to specify if the call is a dispatch (i.e. not recursive).
+         * @param stream The stream on which data is available
+         * @param dispatch If {@code true} the call is a dispatch, i.e. the calling thread may
+         * not be used to call application code.
+         */
         void onDataAvailable(Stream stream, boolean dispatch);
     }
 }
