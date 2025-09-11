@@ -20,10 +20,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -117,6 +121,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     _requestMetaData.getMethod(), _requestMetaData.getHttpURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
+
+            HttpField expectField = fields.getField(HttpHeader.EXPECT);
+            if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
+                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
             return new ReadyTask(invocationType, handler)
