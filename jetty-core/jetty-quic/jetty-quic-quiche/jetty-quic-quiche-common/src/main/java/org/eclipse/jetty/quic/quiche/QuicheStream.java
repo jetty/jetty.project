@@ -534,7 +534,7 @@ public class QuicheStream extends AbstractStream
         Stream.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            listener.onDataAvailable(this);
+            listener.onDataAvailable(this, false);
         }
         catch (Throwable x)
         {

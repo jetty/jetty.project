@@ -181,7 +181,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
     }
 
-    private class Listener implements HTTP2Stream.DispatchableListener
+    private class Listener implements Stream.Listener
     {
         private final SerializedInvoker invoker;
 
@@ -208,12 +208,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
         {
             return receiver.onPush(stream, frame);
-        }
-
-        @Override
-        public void onDataAvailable(Stream stream)
-        {
-            onDataAvailable(stream, false);
         }
 
         @Override

@@ -67,11 +67,11 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         return httpStream;
     }
 
-    public void onDataAvailable(HTTP3Stream stream)
+    public void onDataAvailable(HTTP3Stream stream, boolean immediate)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
         Runnable task = httpStream.onDataAvailable();
-        offerTask(task, false);
+        offerTask(task, immediate);
     }
 
     public void onTrailer(HTTP3Stream stream, HeadersFrame frame)

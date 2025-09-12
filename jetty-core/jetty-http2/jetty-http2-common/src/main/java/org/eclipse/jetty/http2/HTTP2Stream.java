@@ -404,7 +404,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 // Offer EOF in case the application calls readData() or demand().
                 if (offer(Data.eof(getId())))
-                    processData(false);
+                    processData(true);
                 if (closed)
                     getSession().removeStream(this);
             }, callback));
@@ -439,7 +439,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 notifyHeaders(frame, Callback.from(() ->
                 {
                     if (eof)
-                        processData(false);
+                        processData(true);
                     if (closed)
                         getSession().removeStream(this);
                 }, callback));
@@ -475,7 +475,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
 
         if (offer(data))
+        {
+            // Data was not immediately available, it has just
+            // now been notified to this method from the network.
             processData(false);
+        }
     }
 
     private boolean offer(Data data)
@@ -537,23 +541,26 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void demand()
     {
-        boolean dispatch = false;
+        boolean process = false;
         try (AutoLock ignored = lock.lock())
         {
             dataDemand = true;
             if (dataStalled && !dataQueue.isEmpty())
             {
                 dataStalled = false;
-                dispatch = true;
+                process = true;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Demand, {} data processing for {}", dispatch ? "proceeding" : "stalling", this);
-        if (dispatch)
-            processData(true); // dispatch so we cannot recurse if data is available
+            LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
+        if (process)
+        {
+            // Data is immediately available.
+            processData(true);
+        }
     }
 
-    public void processData(boolean dispatch)
+    public void processData(boolean immediate)
     {
         while (true)
         {
@@ -569,7 +576,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataDemand = false;
                 dataStalled = false;
             }
-            notifyDataAvailable(dispatch);
+            notifyDataAvailable(immediate);
         }
     }
 
@@ -886,17 +893,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyDataAvailable(boolean dispatch)
+    private void notifyDataAvailable(boolean immediate)
     {
         Listener listener = Objects.requireNonNullElse(getListener(), Listener.AUTO_DISCARD);
         try
         {
-            if (listener instanceof DispatchableListener dispatchableListener)
-                dispatchableListener.onDataAvailable(this, dispatch);
-            else if (dispatch && session.getEndPoint().getConnection() instanceof HTTP2Connection h2c)
-                h2c.getExecutor().execute(() -> listener.onDataAvailable(this));
-            else
-                listener.onDataAvailable(this);
+            listener.onDataAvailable(this, immediate);
         }
         catch (Throwable x)
         {
@@ -1057,20 +1059,5 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             return frames;
         }
-    }
-
-    /**
-     * An extension of {@link Stream.Listener} that allows the {@code dispatch} argument to
-     * be propagated through #notifyDataAvailable.
-     */
-    public interface DispatchableListener extends Stream.Listener
-    {
-        /** A alternative to {@link Stream.Listener#onDataAvailable(Stream)} that allows
-         * the caller to specify if the call is a dispatch (i.e. not recursive).
-         * @param stream The stream on which data is available
-         * @param dispatch If {@code true} the call is a dispatch, i.e. the calling thread may
-         * not be used to call application code.
-         */
-        void onDataAvailable(Stream stream, boolean dispatch);
     }
 }
