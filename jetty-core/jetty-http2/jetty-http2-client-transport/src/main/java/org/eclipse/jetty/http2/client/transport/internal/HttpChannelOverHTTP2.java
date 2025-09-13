@@ -203,7 +203,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onDataAvailable(Stream stream)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onDataAvailable(), false);
+            connection.offerTask(channel.onDataAvailable(), HTTP2Stream.DEMANDING.get() == Boolean.TRUE);
         }
 
         @Override

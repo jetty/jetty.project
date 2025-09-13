@@ -517,6 +517,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return data;
     }
 
+    public static final ThreadLocal<Boolean> DEMANDING = new ThreadLocal<>();
+
     @Override
     public void demand()
     {
@@ -533,7 +535,17 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
         if (process)
-            processData();
+        {
+            try
+            {
+                DEMANDING.set(Boolean.TRUE);
+                processData();
+            }
+            finally
+            {
+                DEMANDING.remove();
+            }
+        }
     }
 
     public void processData()

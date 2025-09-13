@@ -159,7 +159,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             Runnable task = channel.onDataAvailable();
             if (task != null)
-                offerTask(task, false);
+                offerTask(task, HTTP2Stream.DEMANDING.get() == Boolean.TRUE);
         }
     }
 
