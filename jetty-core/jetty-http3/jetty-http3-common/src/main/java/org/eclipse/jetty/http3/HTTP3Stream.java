@@ -227,7 +227,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             LOG.debug("demand, wasStalled={} dataAvailable={} on {}", process, hasData, this);
         if (process)
         {
-            processData();
+            processData(true);
         }
         else if (!hasData)
         {
@@ -236,7 +236,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         }
     }
 
-    private void processData()
+    private void processData(boolean immediate)
     {
         while (true)
         {
@@ -263,7 +263,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             if (!notify)
                 break;
 
-            onDataAvailable();
+            onDataAvailable(immediate);
         }
     }
 
@@ -324,11 +324,11 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             notIdle();
     }
 
-    private void onDataAvailable()
+    private void onDataAvailable(boolean immediate)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("notifying data available on {}", this);
-        notifyDataAvailable();
+            LOG.debug("notifying data available (immediate={}) on {}", immediate, this);
+        notifyDataAvailable(immediate);
     }
 
     public void onData(Data data)
@@ -348,10 +348,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         }
 
         if (process)
-            processData();
+            processData(false);
     }
 
-    protected abstract void notifyDataAvailable();
+    protected abstract void notifyDataAvailable(boolean immediate);
 
     public void onTrailer(HeadersFrame frame)
     {

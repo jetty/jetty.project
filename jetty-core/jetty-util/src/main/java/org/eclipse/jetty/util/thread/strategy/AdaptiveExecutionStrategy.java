@@ -14,14 +14,13 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.io.Closeable;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -98,9 +97,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     /**
      * The production state of the strategy.
      */
-    private static final int IDLE = 0;        // No tasks or producers.
-    private static final int PRODUCING = 1;   // There is an active producing thread.
-    private static final int REPRODUCING = 2; // There is an active producing thread and demand for more production.
+    private enum State
+    {
+        IDLE,       // No tasks or producers.
+        PRODUCING,  // There is an active producing thread.
+        REPRODUCING // There is an active producing thread and demand for more production.
+    }
 
     /**
      * The sub-strategies used by the strategy to consume tasks that are produced.
@@ -129,11 +131,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _picMode = new LongAdder();
     private final LongAdder _pecMode = new LongAdder();
     private final LongAdder _epcMode = new LongAdder();
+    private final LongAdder _epcProduce = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final AtomicBiInteger _state = new AtomicBiInteger();
+    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
 
     /**
      * @param producer The producer of tasks to be consumed.
@@ -158,23 +161,15 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         boolean execute = false;
         loop: while (true)
         {
-            long biState = _state.get();
-            int state = AtomicBiInteger.getLo(biState);
-            int pending = AtomicBiInteger.getHi(biState);
-
+            State state = _state.get();
             switch (state)
             {
                 case IDLE:
-                    if (pending <= 0)
-                    {
-                        if (!_state.compareAndSet(biState, pending + 1, state))
-                            continue;
-                        execute = true;
-                    }
+                    execute = true;
                     break loop;
 
                 case PRODUCING:
-                    if (!_state.compareAndSet(biState, pending, REPRODUCING))
+                    if (!_state.compareAndSet(State.PRODUCING, State.REPRODUCING))
                         continue;
                     break loop;
 
@@ -186,47 +181,44 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         if (LOG.isDebugEnabled())
             LOG.debug("{} dispatch {}", this, execute);
         if (execute)
-            _executor.execute(this);
+        {
+            // Try to avoid queuing a producer if we can run it directly.
+            if (!_tryExecutor.tryExecute(this))
+                _executor.execute(this);
+        }
     }
 
     @Override
     public void produce()
     {
-        tryProduce(false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produce() producing {}", this);
+        tryProduce();
     }
 
     @Override
     public void run()
     {
-        tryProduce(true);
+        if (LOG.isDebugEnabled())
+            LOG.debug("dispatch() producing {}", this);
+        tryProduce();
     }
 
     /**
      * Tries to become the producing thread and then produces and consumes tasks.
-     *
-     * @param wasPending True if the calling thread was started as a pending producer.
      */
-    private void tryProduce(boolean wasPending)
+    private void tryProduce()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} tryProduce {}", this, wasPending);
-
         // check if the thread can produce.
         loop: while (true)
         {
-            long biState = _state.get();
-            int state = AtomicBiInteger.getLo(biState);
-            int pending = AtomicBiInteger.getHi(biState);
-
-            // If the calling thread was the pending producer, there is no longer one pending.
-            if (wasPending)
-                pending--;
+            State state = _state.get();
 
             switch (state)
             {
                 case IDLE:
                     // The strategy was IDLE, so this thread can become the producer.
-                    if (!_state.compareAndSet(biState, pending, PRODUCING))
+                    if (!_state.compareAndSet(state, State.PRODUCING))
                         continue;
                     break loop;
 
@@ -234,65 +226,62 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     // The strategy is already producing, so another thread must be the producer.
                     // However, it may be just about to stop being the producer so we set the
                     // REPRODUCING state to force it to produce at least once more.
-                    if (!_state.compareAndSet(biState, pending, REPRODUCING))
+                    if (!_state.compareAndSet(state, State.REPRODUCING))
                         continue;
                     return;
 
                 case REPRODUCING:
                     // Another thread is already producing and will already try again to produce.
-                    if (!_state.compareAndSet(biState, pending, state))
-                        continue;
                     return;
 
                 default:
-                    throw new IllegalStateException(toString(biState));
+                    throw new IllegalStateException(toString(state));
             }
         }
 
-        // Determine the thread's invocation type once, outside of the production loop.
+        if (LOG.isDebugEnabled())
+            LOG.debug("producing {}", this);
+
+        // Determine the thread's invocation type once, outside the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
         running: while (isRunning())
         {
             try
             {
                 Runnable task = produceTask();
-
-                // If we did not produce a task
-                if (task == null)
+                if (task != null)
                 {
-                    // determine if we should keep producing.
-                    while (true)
-                    {
-                        long biState = _state.get();
-                        int state = AtomicBiInteger.getLo(biState);
-                        int pending = AtomicBiInteger.getHi(biState);
-
-                        switch (state)
-                        {
-                            case PRODUCING:
-                                // The calling thread was the only producer, so it is now IDLE and we stop producing.
-                                if (!_state.compareAndSet(biState, pending, IDLE))
-                                    continue;
-                                return;
-
-                            case REPRODUCING:
-                                // Another thread may have queued a task and tried to produce
-                                // so the calling thread should continue to produce.
-                                if (!_state.compareAndSet(biState, pending, PRODUCING))
-                                    continue;
-                                continue running;
-
-                            default:
-                                throw new IllegalStateException(toString(biState));
-                        }
-                    }
+                    // Consume the task according to a selected substrategy.
+                    if (consumeTask(task, selectSubStrategy(task, nonBlocking)))
+                        // continue producing
+                        continue;
+                    // do not continue producing
+                    return;
                 }
 
-                // Consume the task according the selected sub-strategy, then
-                // continue producing only if the sub-strategy returns true.
-                if (consumeTask(task, selectSubStrategy(task, nonBlocking)))
-                    continue;
-                return;
+                // No task produce, so determine if we should keep producing.
+                while (true)
+                {
+                    State state = _state.get();
+                    switch (state)
+                    {
+                        case PRODUCING:
+                            // This thread is still the producer, so it is now IDLE and we stop producing.
+                            if (!_state.compareAndSet(state, State.IDLE))
+                                continue;
+                            return;
+
+                        case REPRODUCING:
+                            // Another thread may have queued a task and tried to produce
+                            // so the calling thread should continue to produce.
+                            if (!_state.compareAndSet(state, State.PRODUCING))
+                                continue;
+                            continue running;
+
+                        default:
+                            throw new IllegalStateException(toString(state));
+                    }
+                }
             }
             catch (Throwable th)
             {
@@ -327,34 +316,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_CONSUME;
 
-                // check if a pending producer is available.
-                boolean tryExecuted = false;
-                while (true)
-                {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
-
-                    // If a pending producer is available or one can be started
-                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
-                    {
-                        tryExecuted = true;
-                        pending++;
-                    }
-
-                    if (pending > 0)
-                    {
-                        // Use EPC: this producer thread directly consumes the task, which may block
-                        // and then races with the pending producer to resume production.
-                        if (!_state.compareAndSet(biState, pending, IDLE))
-                            continue;
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    }
-
-                    if (!_state.compareAndSet(biState, pending, state))
-                        continue;
-                    break;
-                }
+                if (tryExecuteProduceConsume())
+                    return SubStrategy.EXECUTE_PRODUCE_CONSUME;
 
                 // Otherwise use PIC: this producer thread consumes the task
                 // in non-blocking mode and then resumes production.
@@ -371,41 +334,50 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_EXECUTE_CONSUME;
 
-                // check if a pending producer is available.
-                boolean tryExecuted = false;
-                while (true)
-                {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
+                if (tryExecuteProduceConsume())
+                    return SubStrategy.EXECUTE_PRODUCE_CONSUME;
 
-                    // If a pending producer is available or one can be started
-                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
-                    {
-                        tryExecuted = true;
-                        pending++;
-                    }
-
-                    // If a pending producer is available or one can be started
-                    if (pending > 0)
-                    {
-                        // use EPC: This producer thread directly consumes the task, which may block
-                        // and then races with the pending producer to resume production.
-                        if (!_state.compareAndSet(biState, pending, IDLE))
-                            continue;
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                    }
-
-                    if (!_state.compareAndSet(biState, pending, state))
-                        continue;
-
-                    // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
-                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
-                }
+                // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
+                return SubStrategy.PRODUCE_EXECUTE_CONSUME;
             }
 
             default:
                 throw new IllegalStateException(String.format("taskType=%s %s", taskType, this));
+        }
+    }
+
+    private boolean tryExecuteProduceConsume()
+    {
+        // Try to go in EPC mode from PRODUCING/REPRODUCING, but only
+        // if we can guarantee that there is another producer thread.
+
+        State state = _state.get();
+        if (!_state.compareAndSet(state, State.IDLE))
+            return false;
+
+        // If we can execute another producer, then we are EPC.
+        if (_tryExecutor.tryExecute(this))
+            return true;
+
+        // No reserved thread available, so we need to try to return to production.
+        while (true)
+        {
+            state = _state.get();
+            switch (state)
+            {
+                case IDLE:
+                    if (!_state.compareAndSet(state, State.PRODUCING))
+                        continue;
+                    // We are the producer again, so we are not EPC.
+                    return false;
+                case PRODUCING:
+                    if (!_state.compareAndSet(state, State.REPRODUCING))
+                        continue;
+                    // Somebody else is producing so we can be EPC.
+                    return true;
+                case REPRODUCING:
+                    return true;
+            }
         }
     }
 
@@ -421,50 +393,90 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
             LOG.debug("consumeTask ss={}/{}/{} t={} {}", subStrategy, Invocable.isNonBlockingInvocation(), Invocable.getInvocationType(task), task, this);
-        switch (subStrategy)
+        return switch (subStrategy)
         {
-            case PRODUCE_CONSUME:
-                _pcMode.increment();
-                runTask(task);
-                return true;
+            case PRODUCE_CONSUME -> pcRunTask(task);
+            case PRODUCE_INVOKE_CONSUME -> picRunTask(task);
+            case PRODUCE_EXECUTE_CONSUME -> pecRunTask(task);
+            case EXECUTE_PRODUCE_CONSUME -> epcRunTask(task);
+        };
+    }
 
-            case PRODUCE_INVOKE_CONSUME:
-                _picMode.increment();
-                invokeAsNonBlocking(task);
-                return true;
+    /**
+     * Runs a task in produce-consume mode.
+     *
+     * @param task the task to run
+     * @return always true, as this thread remains the producer
+     */
+    private boolean pcRunTask(Runnable task)
+    {
+        _pcMode.increment();
+        runTask(task);
+        return true;
+    }
 
-            case PRODUCE_EXECUTE_CONSUME:
-                _pecMode.increment();
-                execute(task);
-                return true;
+    /**
+     * Runs a task in execute-produce-consume mode.
+     *
+     * @param task the task to run
+     * @return whether this thread remains the producer
+     */
+    private boolean epcRunTask(Runnable task)
+    {
+        _epcMode.increment();
 
-            case EXECUTE_PRODUCE_CONSUME:
-                _epcMode.increment();
-                runTask(task);
+        runTask(task);
 
-                // Race the pending producer to produce again.
-                while (true)
-                {
-                    long biState = _state.get();
-                    int state = AtomicBiInteger.getLo(biState);
-                    int pending = AtomicBiInteger.getHi(biState);
+        // Race the pending producer to produce again.
+        while (true)
+        {
+            State state = _state.get();
+            if (state != State.IDLE)
+                // The pending producer is now producing, so this thread no longer produces.
+                return false;
 
-                    if (state == IDLE)
-                    {
-                        // We beat the pending producer, so we will become the producer instead.
-                        // The pending produce will become a noop if it arrives whilst we are producing,
-                        // or it may take over if we subsequently do another EPC consumption.
-                        if (!_state.compareAndSet(biState, pending, PRODUCING))
-                            continue;
-                        return true;
-                    }
+            if (!_state.compareAndSet(state, State.PRODUCING))
+                continue;
 
-                    // The pending producer is now producing, so this thread no longer produces.
-                    return false;
-                }
+            // We beat the pending producer, so we will become the producer instead.
+            // The pending producer will become a noop if it arrives whilst we are producing,
+            // or it may take over if we subsequently do another EPC consumption.
+            _epcProduce.increment();
+            return true;
+        }
+    }
 
-            default:
-                throw new IllegalStateException(String.format("ss=%s %s", subStrategy, this));
+    /**
+     * Runs a task in produce-execute-consume mode.
+     *
+     * @param task the task to run
+     * @return always true, as this thread remains the producer
+     */
+    private boolean pecRunTask(Runnable task)
+    {
+        _pecMode.increment();
+        execute(task);
+        return true;
+    }
+
+    /**
+     * Runs a task in produce-invoke-consume mode.
+     *
+     * @param task the task to run
+     * @return always true, as this thread remains the producer
+     */
+    private boolean picRunTask(Runnable task)
+    {
+        try
+        {
+            _picMode.increment();
+            Invocable.invokeNonBlocking(task);
+            return true;
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("Task invoke failed", x);
+            return true;
         }
     }
 
@@ -577,10 +589,16 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return _epcMode.longValue();
     }
 
+    @ManagedAttribute(value = "number of times a EPC thread produces again", readonly = true)
+    public long getEPCProduceCount()
+    {
+        return _epcProduce.longValue();
+    }
+
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        return _state.getLo() == IDLE;
+        return _state.get() == State.IDLE;
     }
 
     @ManagedOperation(value = "resets the task counts", impact = "ACTION")
@@ -598,50 +616,39 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         return toString(_state.get());
     }
 
-    public String toString(long biState)
+    private String toString(State state)
     {
         StringBuilder builder = new StringBuilder();
         getString(builder);
-        getState(builder, biState);
+        getState(builder, state);
         return builder.toString();
     }
 
     private void getString(StringBuilder builder)
     {
-        builder.append(getClass().getSimpleName());
-        builder.append('@');
-        builder.append(Integer.toHexString(hashCode()));
-        builder.append('/');
-        builder.append(_producer);
-        builder.append('/');
+        builder.append(TypeUtil.toShortName(getClass()))
+            .append('@')
+            .append(Integer.toHexString(hashCode()))
+            .append('/')
+            .append(_producer)
+            .append('/');
     }
 
-    private void getState(StringBuilder builder, long biState)
+    private void getState(StringBuilder builder, State state)
     {
-        int state = AtomicBiInteger.getLo(biState);
-        int pending = AtomicBiInteger.getHi(biState);
-        builder.append(
-            switch (state)
-            {
-                case IDLE -> "IDLE";
-                case PRODUCING -> "PRODUCING";
-                case REPRODUCING -> "REPRODUCING";
-                default -> "UNKNOWN(%d)".formatted(state);
-            });
-        builder.append("/p=");
-        builder.append(pending);
-        builder.append('/');
-        builder.append(_tryExecutor);
-        builder.append("[pc=");
-        builder.append(getPCTasksConsumed());
-        builder.append(",pic=");
-        builder.append(getPICTasksExecuted());
-        builder.append(",pec=");
-        builder.append(getPECTasksExecuted());
-        builder.append(",epc=");
-        builder.append(getEPCTasksConsumed());
-        builder.append("]");
-        builder.append("@");
-        builder.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
+        builder.append(state)
+            .append('/')
+            .append(_tryExecutor)
+            .append("[pc=")
+            .append(getPCTasksConsumed())
+            .append(",pic=")
+            .append(getPICTasksExecuted())
+            .append(",pec=")
+            .append(getPECTasksExecuted())
+            .append(",epc=")
+            .append(getEPCProduceCount())
+            .append("/")
+            .append(getEPCTasksConsumed())
+            .append("]");
     }
 }

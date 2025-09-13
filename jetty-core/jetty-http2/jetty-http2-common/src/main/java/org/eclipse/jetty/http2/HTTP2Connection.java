@@ -186,6 +186,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         return false;
     }
 
+    /**
+     * @param task  The task to offer to the connection.
+     * @param dispatch {@code true} to dispatch the task, {@code false} to produce in the calling thread.
+     *                 Callers from application threads should use {@code true}, otherwise they may be arbitrarily
+     *                 delayed. Callers from I/O threads should use {@code false} to avoid thread hops.
+     */
     public void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);

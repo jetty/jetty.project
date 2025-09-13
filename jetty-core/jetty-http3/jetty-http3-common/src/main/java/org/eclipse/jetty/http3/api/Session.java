@@ -155,14 +155,14 @@ public interface Session
              *     <li>return {@code null} to indicate that they are not interested in
              *     reading the content</li>
              *     <li><em>must</em> call {@link Stream#demand()} and return a {@link Stream.Server.Listener}
-             *     that overrides {@link Stream.Server.Listener#onDataAvailable(Stream.Server)} that reads
+             *     that overrides {@link Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)} that reads
              *     and consumes the content.</li>
              * </ul>
              *
              * @param stream the stream associated with the request
              * @param frame the HEADERS frame containing the request headers
              * @return a {@link Stream.Server.Listener} that will be notified of stream events
-             * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+             * @see Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)
              */
             public default Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {

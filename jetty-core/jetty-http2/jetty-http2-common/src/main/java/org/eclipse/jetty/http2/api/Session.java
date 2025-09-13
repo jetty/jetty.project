@@ -228,12 +228,13 @@ public interface Session
          * <p>Applications can detect whether request DATA frames will be arriving
          * by testing {@link HeadersFrame#isEndStream()}. If the application is
          * interested in processing the DATA frames, it must demand for DATA
-         * frames using {@link Stream#demand()} and then return either a
-         * {@link Stream.Listener} implementation that overrides
-         * {@link Stream.Listener#onDataAvailable(Stream)} where applications can
-         * read from the {@link Stream} via {@link Stream#readData()}, or
-         * {@link Stream.Listener#AUTO_DISCARD} that automatically reads and
-         * discards DATA frames.
+         * frames using {@link Stream#demand()} and then return a
+         * {@link Stream.Listener} implementation that overrides either
+         * {@link Stream.Listener#onDataAvailable(Stream)} or
+         * {@link Stream.Listener#onDataAvailable(Stream, boolean)},
+         * where applications can read from the {@link Stream} via
+         * {@link Stream#readData()}, or return {@link Stream.Listener#AUTO_DISCARD}
+         * that automatically reads and discards DATA frames.
          * Returning {@code null} is possible but discouraged, and has the
          * same effect of demanding and discarding the DATA frames.</p>
          *

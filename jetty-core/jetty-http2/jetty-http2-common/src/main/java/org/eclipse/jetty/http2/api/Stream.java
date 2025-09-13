@@ -128,7 +128,7 @@ public interface Stream
      * @return a {@link Stream.Data} object containing the DATA frame,
      * or null if no DATA frame is available
      * @see #demand()
-     * @see Listener#onDataAvailable(Stream)
+     * @see Listener#onDataAvailable(Stream, boolean)
      */
     public Data readData();
 
@@ -229,22 +229,22 @@ public interface Stream
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
-     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream)}
+     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream, boolean)}
      * to be invoked, possibly at a later time, when the stream has data
      * to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
-     * outstanding demand to invoke {@link Listener#onDataAvailable(Stream)}
+     * outstanding demand to invoke {@link Listener#onDataAvailable(Stream, boolean)}
      * is a no-operation.</p>
      * <p>The thread invoking this method may invoke directly
-     * {@link Listener#onDataAvailable(Stream)}, unless another thread
-     * that must invoke {@link Listener#onDataAvailable(Stream)}
+     * {@link Listener#onDataAvailable(Stream, boolean)}, unless another thread
+     * that must invoke {@link Listener#onDataAvailable(Stream, boolean)}
      * notices the outstanding demand first.</p>
      * <p>It is always guaranteed that invoking this method from within
-     * {@code onDataAvailable(Stream)} will not cause a
+     * {@code onDataAvailable(Stream, boolean)} will not cause a
      * {@link StackOverflowError}.</p>
      *
      * @see #readData()
-     * @see Listener#onDataAvailable(Stream)
+     * @see Listener#onDataAvailable(Stream, boolean)
      */
     public void demand();
 
@@ -298,12 +298,12 @@ public interface Stream
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
          * <p>Applications that override this method are typically interested in
          * processing the pushed stream DATA frames, and must demand for pushed
-         * DATA frames via {@link Stream#demand()} and then return either a
-         * {@link Listener} implementation that overrides
-         * {@link #onDataAvailable(Stream)} where applications can
-         * read from the {@link Stream} via {@link Stream#readData()}, or
-         * {@link #AUTO_DISCARD} that automatically reads and
-         * discards DATA frames.
+         * DATA frames via {@link Stream#demand()} and then return a
+         * {@link Listener} implementation that overrides either
+         * {@link #onDataAvailable(Stream)} or {@link #onDataAvailable(Stream, boolean)},
+         * where applications can read from the {@link Stream} via
+         * {@link Stream#readData()}, or return {@link #AUTO_DISCARD} that automatically
+         * reads and discards DATA frames.
          * Returning {@code null} is possible but discouraged, and has the
          * same effect of demanding and discarding the pushed DATA frames.</p>
          *
@@ -318,9 +318,32 @@ public interface Stream
         }
 
         /**
+         * <p>A simplified version of {@link #onDataAvailable(Stream, boolean)}.</p>
+         * <p>The default implementation of this method reads and discards data.</p>
+         *
+         * @param stream the stream
+         * @see Stream#demand()
+         */
+        default void onDataAvailable(Stream stream)
+        {
+            while (true)
+            {
+                Data data = stream.readData();
+                if (data == null)
+                {
+                    stream.demand();
+                    return;
+                }
+                data.release();
+                if (data.frame().isEndStream())
+                    return;
+            }
+        }
+
+        /**
          * <p>Callback method invoked if the application has expressed
          * {@link Stream#demand() demand} for DATA frames, and if there
-         * may be content available.</p>
+         * is content available.</p>
          * <p>Applications that wish to handle DATA frames should call
          * {@link Stream#demand()} for this method to be invoked when
          * the data is available.</p>
@@ -342,7 +365,7 @@ public interface Stream
          * class MyStreamListener implements Stream.Listener
          * {
          *     @Override
-         *     public void onDataAvailable(Stream stream)
+         *     public void onDataAvailable(Stream stream, boolean immediate)
          *     {
          *         // Read a chunk of the content.
          *         Stream.Data data = stream.readData();
@@ -366,24 +389,20 @@ public interface Stream
          *     }
          * }
          * }</pre>
+         * <p>The default implementation of this method calls
+         * {@link #onDataAvailable(Stream)}.</p>
          *
          * @param stream the stream
+         * @param immediate {@code true} when data is immediately available at the time
+         * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+         * {@code false} when data was not immediately available at the time {@link #demand()}
+         * was called, but is now available (this method is invoked from the network layer,
+         * not directly from {@link #demand()}
          * @see Stream#demand()
          */
-        public default void onDataAvailable(Stream stream)
+        default void onDataAvailable(Stream stream, boolean immediate)
         {
-            while (true)
-            {
-                Data data = stream.readData();
-                if (data == null)
-                {
-                    stream.demand();
-                    return;
-                }
-                data.release();
-                if (data.frame().isEndStream())
-                    return;
-            }
+            onDataAvailable(stream);
         }
 
         /**
@@ -465,7 +484,7 @@ public interface Stream
 
         private static class EOF extends Data
         {
-            public EOF(int streamId)
+            private EOF(int streamId)
             {
                 super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
             }

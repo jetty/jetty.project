@@ -120,7 +120,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    public void onDataAvailable(Stream.Client stream)
+    public void onDataAvailable(Stream.Client stream, boolean immediate)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Data available notification in {}", this);

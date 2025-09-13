@@ -72,13 +72,13 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
         return write(frame);
     }
 
-    protected void notifyDataAvailable()
+    protected void notifyDataAvailable(boolean immediate)
     {
         Stream.Server.Listener listener = this.listener;
         try
         {
             if (listener != null)
-                listener.onDataAvailable(this);
+                listener.onDataAvailable(this, immediate);
         }
         catch (Throwable x)
         {
