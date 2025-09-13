@@ -254,7 +254,7 @@ public class QuicheStream extends AbstractStream
         // The production might have idled, as all the network
         // data was fed to Quiche, but there was no demand.
         // Restart production now that there is demand.
-        session.produce();
+        session.dispatch();
     }
 
     @Override
@@ -534,7 +534,7 @@ public class QuicheStream extends AbstractStream
         Stream.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            listener.onDataAvailable(this);
+            listener.onDataAvailable(this, false);
         }
         catch (Throwable x)
         {

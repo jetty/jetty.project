@@ -404,7 +404,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 // Offer EOF in case the application calls readData() or demand().
                 if (offer(Data.eof(getId())))
-                    processData();
+                    processData(true);
                 if (closed)
                     getSession().removeStream(this);
             }, callback));
@@ -439,7 +439,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 notifyHeaders(frame, Callback.from(() ->
                 {
                     if (eof)
-                        processData();
+                        processData(true);
                     if (closed)
                         getSession().removeStream(this);
                 }, callback));
@@ -475,7 +475,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
 
         if (offer(data))
-            processData();
+        {
+            // Data was not immediately available, it has just
+            // now been notified to this method from the network.
+            processData(false);
+        }
     }
 
     private boolean offer(Data data)
@@ -550,10 +554,13 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
         if (process)
-            processData();
+        {
+            // Data is immediately available.
+            processData(true);
+        }
     }
 
-    public void processData()
+    public void processData(boolean immediate)
     {
         while (true)
         {
@@ -569,7 +576,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataDemand = false;
                 dataStalled = false;
             }
-            notifyDataAvailable();
+            notifyDataAvailable(immediate);
         }
     }
 
@@ -886,12 +893,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyDataAvailable()
+    private void notifyDataAvailable(boolean immediate)
     {
         Listener listener = Objects.requireNonNullElse(getListener(), Listener.AUTO_DISCARD);
         try
         {
-            listener.onDataAvailable(this);
+            listener.onDataAvailable(this, immediate);
         }
         catch (Throwable x)
         {

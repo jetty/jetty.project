@@ -135,7 +135,7 @@ public interface Session
              * <p>Callback method invoked when a request is received to create a new {@link Stream.Server.Listener}.</p>
              * <p>Applications should implement this method return {@link Stream.Server.Listener}s that process
              * HTTP/3 requests, in particular via the {@link Stream.Server.Listener#onRequest(Stream.Server, HeadersFrame)}
-             * and {@link Stream.Server.Listener#onDataAvailable(Stream.Server)} methods.</p>
+             * and {@link Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)} methods.</p>
              *
              * @param session the session
              * @param frame the HEADERS frame containing the request headers

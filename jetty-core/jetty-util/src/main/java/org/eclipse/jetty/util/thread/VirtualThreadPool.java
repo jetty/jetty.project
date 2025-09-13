@@ -287,6 +287,9 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 }
             };
         }
-        _virtualExecutor.execute(job);
+        Executor executor = _virtualExecutor;
+        if (!isRunning() || executor == null)
+            throw new RejectedExecutionException("not running");
+        executor.execute(job);
     }
 }

@@ -84,15 +84,15 @@ public interface Stream
      *
      * @return a {@link Content.Chunk} object containing the request bytes or
      * the response bytes or a failure, or null if no bytes are available
-     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
-     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)
      */
     Content.Chunk read();
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
-     * <p>Calling this method causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client)}
-     * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server)}
+     * <p>Calling this method causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)}
+     * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)}
      * on the server, to be invoked, possibly at a later time, when the stream
      * has data to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
@@ -107,8 +107,8 @@ public interface Stream
      * {@link StackOverflowError}.</p>
      *
      * @see #read()
-     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
-     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)
      */
     void demand();
 
@@ -158,17 +158,48 @@ public interface Stream
             /**
              * <p>Callback method invoked when a response is received.</p>
              * <p>To read response content, applications should call
-             * {@link Stream#demand()} and override
-             * {@link Stream.Client.Listener#onDataAvailable(Client)}.</p>
+             * {@link Stream#demand()} and override either
+             * {@link Stream.Client.Listener#onDataAvailable(Client)} or
+             * {@link Stream.Client.Listener#onDataAvailable(Client, boolean)}.</p>
              *
              * @param stream the stream
              * @param frame the HEADERS frame containing the response headers
-             * @see Stream.Client.Listener#onDataAvailable(Client)
+             * @see Stream.Client.Listener#onDataAvailable(Client, boolean)
              */
             default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 if (!frame.isLast())
                     stream.demand();
+            }
+
+            /**
+             * <p>A simplified version of {@link #onDataAvailable(Stream.Client, boolean)}.</p>
+             * <p>The default implementation of this method reads and discards data.</p>
+             *
+             * @param stream the stream
+             * @see Stream#demand()
+             */
+            default void onDataAvailable(Stream.Client stream)
+            {
+                try
+                {
+                    while (true)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.release();
+                        if (chunk.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -219,30 +250,20 @@ public interface Stream
              *     }
              * }
              * }</pre>
+             * <p>The default implementation of this method calls
+             * {@link #onDataAvailable(Stream.Client)}.</p>
              *
              * @param stream the stream
+             * @param immediate {@code true} when data is immediately available at the time
+             * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+             * {@code false} when data was not immediately available at the time {@link #demand()}
+             * was called, but is now available (this method is invoked from the network layer,
+             * not directly from {@link #demand()}
+             * @see Stream#demand()
              */
-            default void onDataAvailable(Stream.Client stream)
+            default void onDataAvailable(Stream.Client stream, boolean immediate)
             {
-                try
-                {
-                    while (true)
-                    {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
-                        {
-                            stream.demand();
-                            return;
-                        }
-                        chunk.release();
-                        if (chunk.isLast())
-                            return;
-                    }
-                }
-                catch (Throwable x)
-                {
-                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                }
+                onDataAvailable(stream);
             }
 
             /**
@@ -326,8 +347,9 @@ public interface Stream
              * }</pre>
              * <p>If there is request content (indicated by the fact that the given HEADERS frame
              * is not the last in the stream), then applications should call {@link Stream#demand()}
-             * to signal interest in receiving request content, and override
-             * {@link #onDataAvailable(Server)} to read and consume request content.</p>
+             * to signal interest in receiving request content, and override either
+             * {@link #onDataAvailable(Server)} or {@link #onDataAvailable(Server, boolean)}
+             * to read and consume request content.</p>
              *
              * @param stream the stream
              * @param frame the HEADERS frame containing the request headers
@@ -336,6 +358,36 @@ public interface Stream
             {
                 if (!frame.isLast())
                     stream.demand();
+            }
+
+            /**
+             * <p>A simplified version of {@link #onDataAvailable(Stream.Server, boolean)}.</p>
+             * <p>The default implementation of this method reads and discards data.</p>
+             *
+             * @param stream the stream
+             * @see Stream#demand()
+             */
+            default void onDataAvailable(Stream.Server stream)
+            {
+                try
+                {
+                    while (true)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.release();
+                        if (chunk.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -362,7 +414,7 @@ public interface Stream
              * class MyStreamListener implements Stream.Server.Listener
              * {
              *     @Override
-             *     public void onDataAvailable(Stream.Server stream)
+             *     public void onDataAvailable(Stream.Server stream, boolean immediate)
              *     {
              *         // Read a chunk of the content.
              *         Content.Chunk chunk = stream.read();
@@ -386,30 +438,20 @@ public interface Stream
              *     }
              * }
              * }</pre>
+             * <p>The default implementation of this method calls
+             * {@link #onDataAvailable(Stream.Server)}.</p>
              *
              * @param stream the stream
+             * @param immediate {@code true} when data is immediately available at the time
+             * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+             * {@code false} when data was not immediately available at the time {@link #demand()}
+             * was called, but is now available (this method is invoked from the network layer,
+             * not directly from {@link #demand()}
+             * @see Stream#demand()
              */
-            default void onDataAvailable(Stream.Server stream)
+            default void onDataAvailable(Stream.Server stream, boolean immediate)
             {
-                try
-                {
-                    while (true)
-                    {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
-                        {
-                            stream.demand();
-                            return;
-                        }
-                        chunk.release();
-                        if (chunk.isLast())
-                            return;
-                    }
-                }
-                catch (Throwable x)
-                {
-                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                }
+                onDataAvailable(stream);
             }
 
             /**
