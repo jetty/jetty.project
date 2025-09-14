@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -77,6 +79,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -94,6 +97,8 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     private final Set<Integer> priorityStreams = ConcurrentHashMap.newKeySet();
     private final List<FrameListener> frameListeners = new CopyOnWriteArrayList<>();
     private final List<LifeCycleListener> lifeCycleListeners = new CopyOnWriteArrayList<>();
+    private final AtomicReference<Map<Integer, Integer>> localSettingsSnapshot = new AtomicReference<>(Map.of());
+    private final AtomicReference<Map<Integer, Integer>> remoteSettingsSnapshot = new AtomicReference<>(Map.of());
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();
@@ -299,6 +304,26 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         return bytesWritten.get();
     }
 
+    /**
+     * Returns a snapshot of the last SETTINGS that this endpoint sent
+     * <p>The map keys are SETTINGS ids as defined in {@link SettingsFrame}.
+     * @return local (sent) SETTINGS
+     */
+    public Map<Integer, Integer> getCurrentLocalSettings()
+    {
+        return localSettingsSnapshot.get();
+    }
+
+    /**
+     * Returns a snapshot of the last SETTINGS that the peer sent
+     * <p>The map keys are SETTINGS ids as defined in {@link SettingsFrame}.
+     * @return remote (received) SETTINGS
+     */
+    public Map<Integer, Integer> getCurrentRemoteSettings()
+    {
+        return remoteSettingsSnapshot.get();
+    }
+
     @Override
     public void onData(DataFrame frame)
     {
@@ -445,6 +470,15 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             return;
 
         Map<Integer, Integer> settings = frame.getSettings();
+        remoteSettingsSnapshot.updateAndGet(origin ->
+        {
+            if (settings.isEmpty())
+                return origin;
+            Map<Integer, Integer> updated = new HashMap<>(origin);
+            updated.putAll(settings);
+            return Map.copyOf(updated);
+        });
+
         configure(settings, false);
         notifySettings(this, frame);
 
@@ -811,6 +845,18 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
+        if (!frame.isReply())
+        {
+            Map<Integer, Integer> settings = frame.getSettings();
+            localSettingsSnapshot.updateAndGet(origin ->
+            {
+                if (settings.isEmpty())
+                    return origin;
+                Map<Integer, Integer> updated = new HashMap<>(origin);
+                updated.putAll(settings);
+                return Map.copyOf(updated);
+            });
+        }
         control(null, callback, frame);
     }
 
@@ -1442,7 +1488,9 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, new DumpableCollection("streams", streams.values()));
+        DumpableMap localSettings = new DumpableMap("local settings", getCurrentLocalSettings());
+        DumpableMap remoteSettings = new DumpableMap("remote settings", getCurrentRemoteSettings());
+        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, new DumpableCollection("streams", streams.values()), localSettings, remoteSettings);
     }
 
     @Override
