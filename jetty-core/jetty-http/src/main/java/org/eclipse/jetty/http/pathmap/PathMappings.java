@@ -650,8 +650,8 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
      */
     private boolean nonServletPathSpec()
     {
-        return !_mappings.stream()
-            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+        return _mappings.stream()
+            .anyMatch((mapping) -> !(mapping.getPathSpec() instanceof ServletPathSpec));
     }
 
     @Override
