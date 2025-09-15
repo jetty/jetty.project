@@ -645,9 +645,12 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
             .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
     }
 
+    /**
+     * @return true if there is a non-servlet path spec in the mappings.
+     */
     private boolean nonServletPathSpec()
     {
-        return _mappings.stream()
+        return !_mappings.stream()
             .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
     }
 
