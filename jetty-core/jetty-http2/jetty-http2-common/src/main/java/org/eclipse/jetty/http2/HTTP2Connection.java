@@ -41,7 +41,6 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -49,7 +48,7 @@ import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Connection extends AbstractConnection implements Parser.Listener, Connection.UpgradeTo, Dumpable
+public class HTTP2Connection extends AbstractConnection implements Parser.Listener, Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
@@ -332,12 +331,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     public String toConnectionString()
     {
         return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), strategy);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this, session);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
