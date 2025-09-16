@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.jmx;
 
+import java.util.Locale;
+import java.util.stream.Collectors;
+
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -21,29 +24,34 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("MBean Wrapper for Connectors")
 public class AbstractConnectorMBean extends ObjectMBean
 {
-    final AbstractConnector _connector;
-
     public AbstractConnectorMBean(Object managedObject)
     {
         super(managedObject);
-        _connector = (AbstractConnector)managedObject;
+    }
+
+    @Override
+    public AbstractConnector getManagedObject()
+    {
+        return (AbstractConnector)super.getManagedObject();
+    }
+
+    @Override
+    public String getObjectNameBasis()
+    {
+        AbstractConnector connector = getManagedObject();
+        return connector.getName();
     }
 
     @Override
     public String getObjectContextBasis()
     {
-        StringBuilder buffer = new StringBuilder();
-        for (ConnectionFactory f : _connector.getConnectionFactories())
-        {
-            String protocol = f.getProtocol();
-            if (protocol != null)
-            {
-                if (buffer.length() > 0)
-                    buffer.append("|");
-                buffer.append(protocol);
-            }
-        }
-
-        return String.format("%s@%x", buffer.toString(), _connector.hashCode());
+        AbstractConnector connector = getManagedObject();
+        String name = connector.getName();
+        if (name != null)
+            return name;
+        return connector.getConnectionFactories().stream()
+            .map(ConnectionFactory::getProtocol)
+            .collect(Collectors.joining(";"))
+            .toLowerCase(Locale.ENGLISH);
     }
 }

@@ -34,12 +34,16 @@ public class ServerWithJMX
             ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
+        // The default port for the RMI registry is 1099.
+        // The same port is used also for the RMI server.
+        int jmxPort = 1099;
+
         ConnectorServer jmx = new ConnectorServer(
             new JMXServiceURL(
                 "rmi",
                 null,
-                1999,
-                "/jndi/rmi://localhost:1999/jmxrmi"),
+                jmxPort,
+                "/jndi/rmi://localhost:" + jmxPort + "/jmxrmi"),
             "org.eclipse.jetty.jmx:name=rmiconnectorserver");
         server.addBean(jmx);
 

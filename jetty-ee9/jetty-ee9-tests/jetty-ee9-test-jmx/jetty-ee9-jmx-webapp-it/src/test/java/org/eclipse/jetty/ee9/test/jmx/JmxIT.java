@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.test.jmx;
 
-import java.io.File;
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.TreeSet;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
@@ -27,66 +30,55 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.webapp.JmxConfiguration;
+import org.eclipse.jetty.ee9.webapp.UtilConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
-@Disabled
 public class JmxIT
 {
     private Server _server;
     private JMXConnector _jmxc;
     private MBeanServerConnection _mbsc;
     private int _httpPort;
-    private JMXServiceURL _jmxURL;
 
     @BeforeEach
-    public void connectToMBeanServer() throws Exception
+    public void prepare() throws Exception
     {
-        startJetty();
-
-        new CountDownLatch(1).await();
-
-        _jmxc = JMXConnectorFactory.connect(_jmxURL);
-        _mbsc = _jmxc.getMBeanServerConnection();
-    }
-
-    @AfterEach
-    public void disconnectFromMBeanServer() throws Exception
-    {
-        _jmxc.close();
-        stopJetty();
-    }
-
-    public void startJetty() throws Exception
-    {
-        File target = MavenTestingUtils.getTargetDir();
-        File jettyBase = new File(target, "test-base");
-        File webapps = new File(jettyBase, "webapps");
-        File war = new File(webapps, "jmx-webapp.war");
+        Path target = MavenPaths.targetDir();
+        // JETTY_BASE prepared in the pom.xml file,
+        // although this test runs an embedded server.
+        Path jettyBase = target.resolve("test-base");
+        Path webapps = jettyBase.resolve("webapps");
+        Path war = webapps.resolve("jetty-ee9-jmx-webapp.war");
 
         _server = new Server(0);
+        _server.setName("server");
 
         WebAppContext context = new WebAppContext();
-        context.setWar(war.getCanonicalPath());
-        context.setContextPath("/jmx-webapp");
-
         context.addConfiguration(new AnnotationConfiguration());
-
+        // Allow web applications to see jetty-util
+        // and jetty-jmx classes from the server.
+        context.addConfiguration(new JmxConfiguration());
+        context.addConfiguration(new UtilConfiguration());
+        context.setWar(war.toString());
+        context.setContextPath("/jmx-webapp");
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$");
         _server.setHandler(context);
@@ -98,67 +90,52 @@ public class JmxIT
         int jmxPort = serverSocket.getLocalPort();
         serverSocket.close();
 
-        _jmxURL = new JMXServiceURL("rmi", "0.0.0.0", jmxPort, "/jndi/rmi://0.0.0.0:" + jmxPort + "/jmxrmi");
-        ConnectorServer jmxConnServer = new ConnectorServer(_jmxURL, "org.eclipse.jetty.jmx:name=rmiconnectorserver");
+        JMXServiceURL jmxURL = new JMXServiceURL("rmi", null, jmxPort, "/jndi/rmi://localhost:" + jmxPort + "/jmxrmi");
+        ConnectorServer jmxConnServer = new ConnectorServer(jmxURL, "org.eclipse.jetty.jmx:name=rmiconnectorserver");
         _server.addBean(jmxConnServer);
 
         _server.start();
         _httpPort = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
+        _jmxc = JMXConnectorFactory.connect(jmxURL);
+        _mbsc = _jmxc.getMBeanServerConnection();
     }
 
-    public void stopJetty() throws Exception
+    @AfterEach
+    public void dispose()
     {
-        if (_server != null)
-            _server.stop();
-    }
-
-    private String getStringAttribute(ObjectName objName, String attrName) throws Exception
-    {
-        Object val = _mbsc.getAttribute(objName, attrName);
-        assertThat(attrName, val, notNullValue());
-        assertThat(attrName, val, instanceOf(String.class));
-        return (String)val;
-    }
-
-    private int getIntegerAttribute(ObjectName objName, String attrName) throws Exception
-    {
-        Object val = _mbsc.getAttribute(objName, attrName);
-        assertThat(attrName, val, notNullValue());
-        assertThat(attrName, val, instanceOf(Integer.class));
-        return (Integer)val;
+        IO.close(_jmxc);
+        LifeCycle.stop(_server);
     }
 
     @Test
     public void testBasic() throws Exception
     {
-        URI serverURI = new URI("http://localhost:" + String.valueOf(_httpPort) + "/jmx-webapp/");
-        HttpURLConnection http = (HttpURLConnection)serverURI.resolve("ping").toURL().openConnection();
-        try (InputStream inputStream = http.getInputStream())
-        {
-            assertThat("http response", http.getResponseCode(), is(200));
-            String resp = IO.toString(inputStream);
-            assertThat(resp, startsWith("Servlet Pong at "));
-        }
+        URI serverURI = new URI("http://localhost:" + _httpPort + "/jmx-webapp/");
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder(serverURI.resolve("ping")).GET().build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode(), is(HttpStatus.OK_200));
+        assertThat(response.body(), startsWith("Servlet Pong at "));
     }
 
     @Test
     public void testObtainRunningServerVersion() throws Exception
     {
-        ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,id=0");
-        String version = getStringAttribute(serverName, "version");
-        assertThat("Version", version, startsWith("10.0."));
+        ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,*");
+        String version = getAttribute(serverName, "version");
+        assertThat(version, equalTo(Server.getVersion()));
     }
 
     @Test
     public void testObtainJmxWebAppState() throws Exception
     {
-        ObjectName webappName = new ObjectName("org.eclipse.jetty.webapp:context=jmx-webapp,type=webappcontext,id=0");
+        ObjectName webappName = new ObjectName("org.eclipse.jetty.ee9.webapp:type=webappcontext,*");
 
-        String contextPath = getStringAttribute(webappName, "contextPath");
-        assertThat("Context Path", contextPath, is("/jmx-webapp"));
+        String contextPath = getAttribute(webappName, "contextPath");
+        assertThat(contextPath, is("/jmx-webapp"));
 
-        String displayName = getStringAttribute(webappName, "displayName");
-        assertThat("Display Name", displayName, is("Test JMX WebApp"));
+        String displayName = getAttribute(webappName, "displayName");
+        assertThat(displayName, is("Test JMX WebApp"));
     }
 
     /**
@@ -167,9 +144,9 @@ public class JmxIT
     @Test
     public void testAccessToCommonComponent() throws Exception
     {
-        ObjectName commonName = new ObjectName("org.eclipse.jetty.test.jmx:type=commoncomponent,context=jmx-webapp,id=0");
-        String name = getStringAttribute(commonName, "name");
-        assertThat("Name", name, is("i am common"));
+        ObjectName commonName = new ObjectName("org.eclipse.jetty.ee9.test.jmx:type=commoncomponent,*");
+        String name = getAttribute(commonName, "name");
+        assertThat(name, is("i am common"));
     }
 
     /**
@@ -179,14 +156,14 @@ public class JmxIT
     @Test
     public void testAccessToPingerMBean() throws Exception
     {
-        ObjectName pingerName = new ObjectName("org.eclipse.jetty.test.jmx:type=pinger,context=jmx-webapp,id=0");
+        ObjectName pingerName = new ObjectName("org.eclipse.jetty.ee9.test.jmx:type=pinger,*");
         // Get initial count
-        int count = getIntegerAttribute(pingerName, "count");
+        int count = getAttribute(pingerName, "count");
         // Operations
-        Object val = _mbsc.invoke(pingerName, "ping", null, null);
-        assertThat("ping() return", val.toString(), startsWith("Pong"));
+        Object val = invoke(pingerName, "ping", null, null);
+        assertThat(val.toString(), startsWith("Pong"));
         // Attributes
-        assertThat("count", getIntegerAttribute(pingerName, "count"), is(count + 1));
+        assertThat(getAttribute(pingerName, "count"), is(count + 1));
     }
 
     /**
@@ -196,14 +173,32 @@ public class JmxIT
     @Test
     public void testAccessToEchoerMBean() throws Exception
     {
-        ObjectName echoerName = new ObjectName("org.eclipse.jetty.test.jmx:type=echoer,context=jmx-webapp,id=0");
+        ObjectName echoerName = new ObjectName("org.eclipse.jetty.ee9.test.jmx:type=echoer,*");
         // Get initial count
-        int count = getIntegerAttribute(echoerName, "count");
+        int count = getAttribute(echoerName, "count");
         // Operations
-        Object val = _mbsc.invoke(echoerName, "echo", new Object[]{"Its Me"}, new String[]{String.class.getName()});
-        assertThat("echo() return", val.toString(), is("Its Me"));
+        Object val = invoke(echoerName, "echo", new Object[]{"Its Me"}, new String[]{String.class.getName()});
+        assertThat(val.toString(), is("Its Me"));
         // Attributes
-        assertThat("count", getIntegerAttribute(echoerName, "count"), is(count + 1));
-        assertThat("foo", getStringAttribute(echoerName, "foo"), is("foo-ish"));
+        assertThat(getAttribute(echoerName, "count"), is(count + 1));
+        assertThat(getAttribute(echoerName, "foo"), is("foo-ish"));
+    }
+
+    private <T> T getAttribute(ObjectName objName, String attrName) throws Exception
+    {
+        Optional<ObjectName> objNameOpt = _mbsc.queryNames(objName, null).stream().findFirst();
+        if (objNameOpt.isEmpty())
+            throw new InstanceNotFoundException("%s not found among %s".formatted(objName, new TreeSet<>(_mbsc.queryNames(null, null))));
+        Object val = _mbsc.getAttribute(objNameOpt.get(), attrName);
+        assertThat(attrName, val, notNullValue());
+        return (T)val;
+    }
+
+    private Object invoke(ObjectName objName, String operation, Object[] args, String[] params) throws Exception
+    {
+        Optional<ObjectName> objNameOpt = _mbsc.queryNames(objName, null).stream().findFirst();
+        if (objNameOpt.isEmpty())
+            throw new InstanceNotFoundException("%s not found among %s".formatted(objName, new TreeSet<>(_mbsc.queryNames(null, null))));
+        return _mbsc.invoke(objNameOpt.get(), operation, args, params);
     }
 }

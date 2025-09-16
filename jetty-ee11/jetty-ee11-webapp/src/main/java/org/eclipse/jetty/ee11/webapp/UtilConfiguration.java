@@ -11,27 +11,28 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee11.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>This configuration configures the {@link WebAppContext} system/server classes
- * so that web applications are able to see the {@code org.eclipse.jetty.jmx} and
- * {@code org.eclipse.jetty.util.annotation} packages and sub-packages.</p>
+ * <p>This configuration configures the {@link WebAppContext} protected/hidden classes
+ * so that web applications are able to see the {@code org.eclipse.jetty.util} package
+ * and sub-packages.</p>
  * <p>This class is defined in the webapp module because it implements the
- * {@link Configuration} interface, which is unknown to the jmx module.</p>
+ * {@link Configuration} interface, which is unknown to the util module.</p>
  */
-public class JmxConfiguration extends AbstractConfiguration
+public class UtilConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JmxConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UtilConfiguration.class);
 
-    public JmxConfiguration()
+    public UtilConfiguration()
     {
-        addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.util.annotation.", "org.eclipse.jetty.jmx.");
+        super(new Builder()
+            .addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class)
+            .protectAndExpose("org.eclipse.jetty.util."));
     }
 
     @Override
@@ -39,7 +40,7 @@ public class JmxConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jmx.ObjectMBean") != null;
+            return Loader.loadClass("org.eclipse.jetty.util.Callback") != null;
         }
         catch (Throwable e)
         {

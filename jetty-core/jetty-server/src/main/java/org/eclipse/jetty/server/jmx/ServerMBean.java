@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -40,10 +41,23 @@ public class ServerMBean extends Handler.AbstractMBean
     }
 
     @Override
-    public String getObjectContextBasis()
+    public String getObjectNameBasis()
     {
         Server server = getManagedObject();
-        return "%s@%x".formatted(server.getClass().getSimpleName(), server.hashCode());
+        return server.getName();
+    }
+
+    @Override
+    public String getObjectContextBasis()
+    {
+        // Returning the Server name as the "context" property
+        // because it is inherited by the ObjectNames of the components
+        // of Server such as the threadpool, the connectors, etc.
+        Server server = getManagedObject();
+        String name = server.getName();
+        if (name != null)
+            return name;
+        return "%s@%x".formatted(TypeUtil.toShortName(server.getClass()), server.hashCode());
     }
 
     @ManagedAttribute("The contexts on this server")

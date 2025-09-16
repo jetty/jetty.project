@@ -186,12 +186,14 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     }
 
     @Override
+    @ManagedAttribute("Whether this destination is secure")
     public boolean isSecure()
     {
         return origin.isSecure();
     }
 
     @Override
+    @ManagedAttribute("The HttpClient")
     public HttpClient getHttpClient()
     {
         return client;
@@ -238,13 +240,13 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return null;
     }
 
-    @ManagedAttribute(value = "The destination scheme", readonly = true)
+    @ManagedAttribute("The destination scheme")
     public String getScheme()
     {
         return getOrigin().getScheme();
     }
 
-    @ManagedAttribute(value = "The destination host", readonly = true)
+    @ManagedAttribute("The destination host")
     public String getHost()
     {
         // InetSocketAddress.getHostString() transforms the host string
@@ -252,13 +254,13 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return getOrigin().getAddress().getHost();
     }
 
-    @ManagedAttribute(value = "The destination port", readonly = true)
+    @ManagedAttribute("The destination port")
     public int getPort()
     {
         return getOrigin().getAddress().getPort();
     }
 
-    @ManagedAttribute(value = "The number of queued requests", readonly = true)
+    @ManagedAttribute("The number of queued requests")
     public int getQueuedRequestCount()
     {
         return exchanges.size();
@@ -269,7 +271,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return hostField;
     }
 
-    @ManagedAttribute(value = "The connection pool", readonly = true)
+    @ManagedAttribute("The connection pool")
     public ConnectionPool getConnectionPool()
     {
         return connectionPool;
