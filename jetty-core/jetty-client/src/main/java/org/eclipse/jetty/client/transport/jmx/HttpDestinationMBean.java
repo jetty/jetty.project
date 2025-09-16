@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.jmx;
+package org.eclipse.jetty.client.transport.jmx;
 
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.transport.HttpDestination;
