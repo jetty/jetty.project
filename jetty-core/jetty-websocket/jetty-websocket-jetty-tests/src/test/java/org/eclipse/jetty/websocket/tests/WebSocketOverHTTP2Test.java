@@ -544,12 +544,13 @@ public class WebSocketOverHTTP2Test
         for (int i = 0; i < numConnections; i++)
         {
             TestListenerEndpoint serverEndpoint = serverEndpoints.get(Integer.toString(i));
+            TestListenerEndpoint clientEndpoint = clientHandlers.get(i);
+
             serverEndpoint.session.close(StatusCode.NORMAL, "close initiated from server", Callback.NOOP);
             assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
             assertThat(serverEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
             assertThat(serverEndpoint.closeReason, equalTo("close initiated from server"));
 
-            TestListenerEndpoint clientEndpoint = clientHandlers.get(i);
             assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
             assertThat(clientEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
             assertThat(clientEndpoint.closeReason, equalTo("close initiated from server"));

@@ -59,6 +59,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private final Negotiated negotiated;
     private final Flusher flusher = new Flusher(this);
     private final ExtensionStack extensionStack;
+    private final AtomicInteger closeConnection = new AtomicInteger(2);
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -219,6 +220,8 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("onEof() {}", this);
 
+        if (closeConnection.decrementAndGet() == 0)
+            abort();
         if (sessionState.onEof())
             closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
     }
@@ -228,15 +231,9 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {}", closeStatus, this);
 
+        // In the normal case we don't need to abort, the endpoint will be closed once EOF is read, and close frame sent.
         if (closeStatus.isAbnormal())
-        {
             abort();
-        }
-        else
-        {
-            connection.cancelDemand();
-            connection.getEndPoint().shutdownOutput();
-        }
 
         extensionStack.close();
 
@@ -515,8 +512,20 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-            boolean closeConnection = sessionState.onOutgoingFrame(frame);
-            if (closeConnection)
+            // If we are sending a close frame we should always shutdown output after.
+            // TODO: review this in regards to https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.1
+            if (frame.getOpCode() == OpCode.CLOSE)
+                callback = Callback.from(callback, () ->
+                {
+                    connection.getEndPoint().shutdownOutput();
+                    if (closeConnection.decrementAndGet() == 0)
+                        abort();
+                });
+
+            // Here we need to know if we should abort connection.
+            // We abort if we are OSHUT (send close frame), and we received EOF.
+            boolean notifyClose = sessionState.onOutgoingFrame(frame);
+            if (notifyClose)
             {
                 Callback c = callback;
                 Callback closeConnectionCallback = Callback.from(
@@ -674,7 +683,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                     return;
                 }
 
-                // Handle inbound CLOSE
+                // Cancel demand to read to EOF, as we cannot receive any more frames after the CLOSE Frame.
                 connection.cancelDemand();
                 if (closeConnection)
                 {
