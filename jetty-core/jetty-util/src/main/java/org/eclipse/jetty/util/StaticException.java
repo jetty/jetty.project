@@ -18,7 +18,10 @@ package org.eclipse.jetty.util;
  * meaning calling {@link #addSuppressed(Throwable)} has no effect.
  * This prevents potential memory leaks where a statically-stored exception would accumulate
  * suppressed exceptions added to them.
+ *
+ * @deprecated use {@link ConstantThrowable} instead
  */
+@Deprecated(since = "12.1.2", forRemoval = true)
 public class StaticException extends Exception
 {
     /**
