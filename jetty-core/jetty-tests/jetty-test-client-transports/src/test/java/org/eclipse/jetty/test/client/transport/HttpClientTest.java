@@ -1153,12 +1153,26 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transport))
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        client.newRequest(newURI(transport))
             .headers(h -> h.put(HttpHeader.EXPECT, "Invalid"))
+            // Body is necessary, otherwise the Expect header is removed.
             .body(new StringRequestContent("hello"))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+            .onResponseHeaders(responseRef::set)
+            .send(r -> resultLatch.countDown());
 
+        // In HTTP/2, the request body is not read, as the error response
+        // is sent without calling the Handler, so a reset is triggered
+        // after the response is sent.
+        // The test verifies that the right response is received at the
+        // "headers" event, because the response body is read asynchronously
+        // and may be dropped when the RST_STREAM frame is received.
+        // Waiting for the "complete" event will likely result in a failure
+        // due to the RST_STREAM being received.
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
         assertThat(response.getStatus(), equalTo(HttpStatus.EXPECTATION_FAILED_417));
     }
 
