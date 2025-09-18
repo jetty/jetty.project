@@ -51,7 +51,8 @@ public class AbstractConnectorMBean extends ObjectMBean
             return name;
         return connector.getConnectionFactories().stream()
             .map(ConnectionFactory::getProtocol)
-            .collect(Collectors.joining(";"))
-            .toLowerCase(Locale.ENGLISH);
+            .map(p -> p.toLowerCase(Locale.ROOT))
+            .map(p -> "http/1.1".equals(p) ? "h1" : p)
+            .collect(Collectors.joining(";"));
     }
 }

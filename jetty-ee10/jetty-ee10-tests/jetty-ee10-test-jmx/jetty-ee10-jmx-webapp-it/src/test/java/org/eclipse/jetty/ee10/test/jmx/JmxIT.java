@@ -31,7 +31,6 @@ import javax.management.remote.JMXServiceURL;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.webapp.JmxConfiguration;
-import org.eclipse.jetty.ee10.webapp.UtilConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.ConnectorServer;
@@ -76,7 +75,7 @@ public class JmxIT
         // Allow web applications to see jetty-util
         // and jetty-jmx classes from the server.
         context.addConfiguration(new JmxConfiguration());
-        context.addConfiguration(new UtilConfiguration());
+        context.getHiddenClassMatcher().exclude("org.eclipse.jetty.util.");
         context.setWar(war.toString());
         context.setContextPath("/jmx-webapp");
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
