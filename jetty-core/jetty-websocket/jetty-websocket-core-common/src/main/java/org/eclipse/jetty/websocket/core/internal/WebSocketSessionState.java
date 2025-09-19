@@ -182,13 +182,14 @@ public class WebSocketSessionState
         }
     }
 
+    public record EofResult(boolean notifyWebSocketClose, boolean closeEndpoint, boolean shutdownOutput){}
     /**
      * Handle an EOF from the transport.
      * @return a pair of booleans;
      *  The first indicates whether the websocket listeners should be notified of close.
      *  The second indicates whether the underlying endpoint should be closed.
      */
-    public BooleanPair onEof()
+    public EofResult onEof()
     {
         try (AutoLock l = _lock.lock())
         {
@@ -197,11 +198,12 @@ public class WebSocketSessionState
                 case CLOSED ->
                 {
                     boolean closeEndpoint = lockedForceCloseEndpointState();
-                    yield new BooleanPair(false, closeEndpoint);
+                    yield new EofResult(false, closeEndpoint, false);
                 }
                 case ISHUT ->
                 {
                     boolean closeEndpoint = false;
+                    boolean shutdownOutput = false;
                     switch (_endPointState)
                     {
                         case OPEN -> _endPointState = EndPointState.ISHUT;
@@ -209,12 +211,13 @@ public class WebSocketSessionState
                         { /* NOOP */ }
                         case OSHUT ->
                         {
+                            shutdownOutput = _behavior == Behavior.CLIENT;
                             closeEndpoint = true;
                             _endPointState = EndPointState.CLOSED;
                         }
                         default -> throw new IllegalStateException(_endPointState.toString());
                     }
-                    yield new BooleanPair(false, closeEndpoint);
+                    yield new EofResult(false, closeEndpoint, shutdownOutput);
                 }
                 default ->
                 {
@@ -223,13 +226,14 @@ public class WebSocketSessionState
                     _webSocketState = WebSocketState.CLOSED;
 
                     boolean closeEndpoint = lockedForceCloseEndpointState();
-                    yield new BooleanPair(true, closeEndpoint);
+                    yield new EofResult(true, closeEndpoint, false);
                 }
             };
         }
     }
 
-    public boolean onShutdownOutput()
+    public record CloseResult(boolean shutdownOutput, boolean closeEndpoint){}
+    public CloseResult onCloseFrameSent()
     {
         try (AutoLock l = _lock.lock())
         {
@@ -238,14 +242,17 @@ public class WebSocketSessionState
                 case OPEN ->
                 {
                     _endPointState = EndPointState.OSHUT;
-                    yield false;
+                    // We only shut down output if we are a server because of RFC6455 7.1.1.
+                    // When the client receives an EOF it will shut down its output.
+                    yield new CloseResult(_behavior == Behavior.SERVER, false);
                 }
                 case ISHUT ->
                 {
+                    // We have already read EOF so we can shut down output even if we're a client.
                     _endPointState = EndPointState.CLOSED;
-                    yield true;
+                    yield new CloseResult(true, true);
                 }
-                case OSHUT, CLOSED -> false;
+                case OSHUT, CLOSED -> new CloseResult(false, false);
             };
         }
     }

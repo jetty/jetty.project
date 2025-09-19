@@ -244,9 +244,8 @@ public class ServerConfigTest
 
         connect.get(5, TimeUnit.SECONDS);
         clientEndpoint.session.sendText("hello world", Callback.NOOP);
-        String msg = serverEndpoint.textMessages.poll(500, TimeUnit.MILLISECONDS);
+        String msg = serverEndpoint.textMessages.poll(5, TimeUnit.MILLISECONDS);
         assertThat(msg, is("hello world"));
-        Thread.sleep(IDLE_TIMEOUT + 500);
 
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.error, instanceOf(WebSocketTimeoutException.class));

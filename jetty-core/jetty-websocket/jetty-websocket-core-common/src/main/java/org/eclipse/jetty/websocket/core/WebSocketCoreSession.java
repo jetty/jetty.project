@@ -220,21 +220,19 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("onEof() {}", this);
 
-        WebSocketSessionState.BooleanPair result = sessionState.onEof();
+        WebSocketSessionState.EofResult result = sessionState.onEof();
+        if (result.shutdownOutput())
+            getConnection().getEndPoint().shutdownOutput();
         if (result.closeEndpoint())
             abort();
         if (result.notifyWebSocketClose())
-            closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
+            notifyWebSocketConnectionClose(sessionState.getCloseStatus(), Callback.NOOP);
     }
 
-    private void closeConnection(CloseStatus closeStatus, Callback callback)
+    private void notifyWebSocketConnectionClose(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {}", closeStatus, this);
-
-        // In the normal case we don't need to abort, the endpoint will be closed once EOF is read, and close frame sent.
-        if (closeStatus.isAbnormal())
-            abort();
 
         extensionStack.close();
 
@@ -348,7 +346,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
 
             if (result.notifyWebSocketClose())
             {
-                closeConnection(closeStatus, callback);
+                notifyWebSocketConnectionClose(closeStatus, callback);
             }
             else
             {
@@ -517,29 +515,28 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-            // If we are sending a close frame we should always shutdown output after.
-            if (frame.getOpCode() == OpCode.CLOSE)
-                callback = Callback.from(callback, () ->
-                {
-                    // Server is the one to initiate the TCP close (see RFC6455 7.1.1).
-                    if (behavior == Behavior.SERVER)
-                    {
-                        connection.getEndPoint().shutdownOutput();
-                        if (sessionState.onShutdownOutput())
-                            abort();
-                    }
-                });
-
             WebSocketSessionState.BooleanPair result = sessionState.onOutgoingFrame(frame);
-            if (result.closeEndpoint())
-                abort();
+            callback = Callback.from(callback, () ->
+            {
+                if (frame.getOpCode() == OpCode.CLOSE)
+                {
+                    WebSocketSessionState.CloseResult closeResult = sessionState.onCloseFrameSent();
+                    if (closeResult.shutdownOutput())
+                        connection.getEndPoint().shutdownOutput();
+                    if (closeResult.closeEndpoint())
+                        abort();
+                }
+
+                if (result.closeEndpoint())
+                    abort();
+            });
 
             if (result.notifyWebSocketClose())
             {
                 Callback c = callback;
                 Callback closeConnectionCallback = Callback.from(
-                    () -> closeConnection(sessionState.getCloseStatus(), c),
-                    t -> closeConnection(sessionState.getCloseStatus(), Callback.from(c, t)));
+                    () -> notifyWebSocketConnectionClose(sessionState.getCloseStatus(), c),
+                    t -> notifyWebSocketConnectionClose(sessionState.getCloseStatus(), Callback.from(c, t)));
 
                 flusher.sendFrame(new OutgoingEntry.Builder(entry)
                     .callback(closeConnectionCallback)
@@ -567,7 +564,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                         abort();
 
                     if (result.notifyWebSocketClose())
-                        closeConnection(closeStatus, Callback.from(callback, t));
+                        notifyWebSocketConnectionClose(closeStatus, Callback.from(callback, t));
                     else
                         callback.failed(t);
                 }
@@ -707,10 +704,10 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 connection.cancelDemand();
                 if (result.notifyWebSocketClose())
                 {
-                    closeCallback = Callback.from(() -> closeConnection(sessionState.getCloseStatus(), callback), t ->
+                    closeCallback = Callback.from(() -> notifyWebSocketConnectionClose(sessionState.getCloseStatus(), callback), t ->
                     {
                         sessionState.onError(t);
-                        closeConnection(sessionState.getCloseStatus(), callback);
+                        notifyWebSocketConnectionClose(sessionState.getCloseStatus(), callback);
                     });
                 }
                 else
