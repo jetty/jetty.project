@@ -141,8 +141,9 @@ public class WebSocketSessionState
      * case to notify onError we must set the cause in the closeStatus.
      * </p>
      * @param t the error which occurred.
+     * @return true if the endpoint should be closed.
      */
-    public void onError(Throwable t)
+    public boolean onError(Throwable t)
     {
         try (AutoLock l = _lock.lock())
         {
@@ -156,6 +157,8 @@ public class WebSocketSessionState
             // Otherwise set the error if it wasn't already set to notify onError as well as onClose.
             if (_closeStatus.getCause() == null)
                 _closeStatus = new CloseStatus(_closeStatus.getCode(), _closeStatus.getReason(), t);
+
+            return lockedForceCloseEndpointState();
         }
     }
 
@@ -163,19 +166,13 @@ public class WebSocketSessionState
     {
         try (AutoLock l = _lock.lock())
         {
+            boolean closeEndpoint = lockedForceCloseEndpointState();
             boolean notifyWebSocketClose = false;
             if (_webSocketState != WebSocketState.CLOSED)
             {
                 _closeStatus = closeStatus;
                 _webSocketState = WebSocketState.CLOSED;
                 notifyWebSocketClose = true;
-            }
-
-            boolean closeEndpoint = false;
-            if (_endPointState != EndPointState.CLOSED)
-            {
-                _endPointState = EndPointState.CLOSED;
-                closeEndpoint = true;
             }
 
             return new BooleanPair(notifyWebSocketClose, closeEndpoint);

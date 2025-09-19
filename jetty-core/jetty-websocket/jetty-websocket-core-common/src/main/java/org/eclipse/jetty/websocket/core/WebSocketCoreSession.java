@@ -706,7 +706,8 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 {
                     closeCallback = Callback.from(() -> notifyWebSocketConnectionClose(sessionState.getCloseStatus(), callback), t ->
                     {
-                        sessionState.onError(t);
+                        if (sessionState.onError(t))
+                            abort();
                         notifyWebSocketConnectionClose(sessionState.getCloseStatus(), callback);
                     });
                 }
