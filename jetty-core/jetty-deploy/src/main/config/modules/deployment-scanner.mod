@@ -20,7 +20,8 @@ etc/jetty-deployment-scanner.xml
 
 [ini-template]
 #tag::documentation[]
-## The web application deploy directory name (relative to $JETTY_BASE)
+## The web application deploy directory name, or a comma-separated
+## list of directories (relative to $JETTY_BASE).
 # jetty.deploy.webappsDir=webapps
 
 ## The environments directory name (relative to $JETTY_BASE).
@@ -28,7 +29,7 @@ etc/jetty-deployment-scanner.xml
 # jetty.deploy.environmentsDir=environments
 
 ## Monitored directories scan period (seconds).
-## This applies to both the webappsDir and environmentsDir
+## This applies to both the webappsDir and environmentsDir.
 ## The value of 0 (default) disables hot deploy/redeploy/undeploy.
 ## Positive values enable hot deploy/redeploy/undeploy.
 # jetty.deploy.scanInterval=0

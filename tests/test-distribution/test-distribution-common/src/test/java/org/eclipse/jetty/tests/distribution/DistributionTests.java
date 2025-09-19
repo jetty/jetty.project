@@ -497,9 +497,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         Path jettyBaseModules = jettyBase.resolve("modules");
         Files.createDirectories(jettyBaseModules);
         Path execModule = jettyBaseModules.resolve("exec.mod");
-        String module = "" +
-                        "[exec]\n" +
-                        "--show-version";
+        String module = """
+            [exec]
+            --show-version
+            """;
         Files.write(execModule, List.of(module), StandardOpenOption.CREATE);
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,exec")))
@@ -532,12 +533,13 @@ public class DistributionTests extends AbstractJettyHomeTest
         String pathProperty = "jetty.sslContext.keyStorePath";
         // Create module with an [ini] section with an invalid password,
         // which should be overridden on the command line at startup.
-        String module = "" +
-                        "[depends]\n" +
-                        "ssl\n" +
-                        "\n" +
-                        "[ini]\n" +
-                        "" + pathProperty + "=modbased\n";
+        String module = """
+            [depends]
+            ssl
+            
+            [ini]
+            %s=modbased
+            """.formatted(pathProperty);
         Files.writeString(jettyBaseModules.resolve("ssl-ini.mod"), module, StandardOpenOption.CREATE);
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini"))
@@ -1238,7 +1240,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String xml = """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-                                
+                
                 <Configure class="org.eclipse.jetty.%s.webapp.WebAppContext">
                   <Set name="contextPath">/demo</Set>
                   <Set name="war">%s</Set>
@@ -1272,6 +1274,38 @@ public class DistributionTests extends AbstractJettyHomeTest
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
                 assertTrue(runStart.awaitForJettyStart());
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testMultipleWebappsDirectories() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run configure = distribution.start("--add-modules=http,ee11-deploy"))
+        {
+            assertTrue(configure.awaitForStart());
+            assertEquals(0, configure.getExitValue());
+
+            Path altWebapps = distribution.getJettyBase().resolve("alt-webapps");
+            FS.ensureDirExists(altWebapps);
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet6-demo-simple-webapp:war:" + jettyVersion);
+            Files.copy(war, altWebapps.resolve("demo.war"));
+
+            int httpPort = Tester.freePort();
+            List<String> args = List.of("jetty.http.port=" + httpPort, "jetty.deploy.webappsDir=webapps,alt-webapps");
+            try (JettyHomeTester.Run start = distribution.start(args))
+            {
+                assertTrue(start.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");

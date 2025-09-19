@@ -131,7 +131,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     private final Server server;
     private final FilenameFilter filenameFilter;
-    private final List<Path> webappDirs = new CopyOnWriteArrayList<>();
+    private final List<Path> webappsDirs = new CopyOnWriteArrayList<>();
     private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> scannedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
@@ -257,7 +257,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             LOG.debug("Adding webapps directory: {}", dir);
         if (isStarted())
             throw new IllegalStateException("Unable to add webapps directory while running");
-        webappDirs.add(Objects.requireNonNull(dir));
+        webappsDirs.add(Objects.requireNonNull(dir));
     }
 
     /**
@@ -293,7 +293,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("webappDirs", webappDirs),
+            new DumpableCollection("webappDirs", webappsDirs),
             Dumpable.named("environmentsDir", environmentsDir),
             Dumpable.named("scanInterval", this.scanInterval),
             new DumpableCollection("enabledEnvironments", this.enabledEnvironments),
@@ -376,18 +376,41 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     /**
      * @return The {@link List} of {@link Path}s scanned for files to deploy.
+     * @deprecated use {@link #getWebappsDirectories()} instead
      */
+    @Deprecated(since = "12.1.2", forRemoval = true)
     public List<Path> getWebappDirectories()
     {
-        return webappDirs;
+        return getWebappsDirectories();
     }
 
+    /**
+     * @return the {@link List} of {@link Path}s that are scanned to deploy web applications
+     */
+    public List<Path> getWebappsDirectories()
+    {
+        return webappsDirs;
+    }
+
+    /**
+     * @param directories The {@link List} of {@link Path}s scanned for files to deploy.
+     * @deprecated use {@link #setWebappsDirectories(Collection)} instead
+     */
+    @Deprecated(since = "12.1.2", forRemoval = true)
     public void setWebappDirectories(Collection<Path> directories)
+    {
+        setWebappsDirectories(directories);
+    }
+
+    /**
+     * @param directories the {@link List} of {@link Path}s that are scanned to deploy web applications
+     */
+    public void setWebappsDirectories(Collection<Path> directories)
     {
         if (isStarted())
             throw new IllegalStateException("Unable to add webapp directories while running");
 
-        webappDirs.clear();
+        webappsDirs.clear();
 
         for (Path dir : directories)
         {
@@ -601,7 +624,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     public void scan()
     {
         LOG.info("Performing scan of webapps directories: {}",
-            webappDirs.stream()
+            webappsDirs.stream()
                 .map(Path::toUri)
                 .map(URI::toASCIIString)
                 .collect(Collectors.joining(", ", "[", "]"))
@@ -665,10 +688,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 throw new IllegalStateException("No deployer available");
         }
 
-        if (webappDirs.isEmpty())
+        if (webappsDirs.isEmpty())
             throw new IllegalStateException("No webapps dir specified");
 
-        LOG.info("Deployment monitoring of {} at intervals {}s {}", webappDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
+        LOG.info("Deployment monitoring of {} at intervals {}s {}", webappsDirs, getScanInterval(), getScanInterval() <= 0 ? "(hot-redeploy disabled)" : "");
 
         Predicate<Path> validDir = (path) ->
         {
@@ -688,7 +711,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         };
 
         List<Path> dirs = new ArrayList<>();
-        for (Path dir : webappDirs)
+        for (Path dir : webappsDirs)
         {
             if (validDir.test(dir))
                 dirs.add(dir);
@@ -767,7 +790,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private boolean isWebappsPath(Path path)
     {
         Path parentDir = path.getParent();
-        for (Path dir : webappDirs)
+        for (Path dir : webappsDirs)
         {
             if (isSameDir(dir, parentDir))
                 return true;
@@ -1052,7 +1075,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     @Override
     public String toString()
     {
-        return String.format("%s@%x[webappsDirs=%s]", this.getClass(), hashCode(), webappDirs);
+        return String.format("%s@%x[webappsDirs=%s]", TypeUtil.toShortName(getClass()), hashCode(), webappsDirs);
     }
 
     public record DeployAction(DeployAction.Type type, String name)
