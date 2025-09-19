@@ -514,25 +514,27 @@ public interface Request extends Attributes, Content.Source
         if (fields == null)
             return DEFAULT_LOCALES;
 
-        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+        List<String> acceptable =
+            fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE)
+                .stream()
+                .filter(StringUtil::isNotBlank)
+                .toList();
 
-        // return sorted list of locals, with known locales in quality order before unknown locales in quality order
-        return switch (acceptable.size())
-        {
-            case 0 -> DEFAULT_LOCALES;
-            case 1 -> List.of(Locale.forLanguageTag(acceptable.get(0)));
-            default ->
-            {
-                List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
-                List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
-                if (known.size() == locales.size())
-                    yield locales; // All locales are known
-                List<Locale> unknown = locales.stream().filter(l -> !MimeTypes.isKnownLocale(l)).toList();
-                locales = new ArrayList<>(known);
-                locales.addAll(unknown);
-                yield locales; // List of known locales before unknown locales
-            }
-        };
+        if (acceptable.isEmpty())
+            return DEFAULT_LOCALES;
+
+        // return sorted list of locales, with known locales in quality order before unknown locales in quality order
+        List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
+        // Filter again, only allowing known locales
+        List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+        if (known.isEmpty())
+            return DEFAULT_LOCALES;
+        if (known.size() == locales.size())
+            return locales; // All locales are known
+        List<Locale> unknown = locales.stream().filter(l -> !MimeTypes.isKnownLocale(l)).toList();
+        locales = new ArrayList<>(known);
+        locales.addAll(unknown);
+        return locales; // List of known locales before unknown locales
     }
 
     static InputStream asInputStream(Request request)
