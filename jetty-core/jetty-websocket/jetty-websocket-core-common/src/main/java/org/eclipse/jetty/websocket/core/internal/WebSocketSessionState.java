@@ -134,7 +134,7 @@ public class WebSocketSessionState
      * </p>
      * <p>
      * This should only be called if there is an error directly before the call to
-     * {@code WebSocketCoreSession.closeConnection(CloseStatus, Callback)}.
+     * {@code  WebSocketCoreSession#notifyWebSocketConnectionClose(CloseStatus, Callback)}.
      * </p>
      * <p>
      * This could occur if the FrameHandler throws an exception in onFrame after receiving a close frame reply, in this
