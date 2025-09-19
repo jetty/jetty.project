@@ -340,7 +340,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         }
         else
         {
-            WebSocketSessionState.BooleanPair result = sessionState.onClosed(closeStatus);
+            WebSocketSessionState.Result result = sessionState.onClosed(closeStatus);
             if (result.closeEndpoint())
                 abort();
 
@@ -515,7 +515,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-            WebSocketSessionState.BooleanPair result = sessionState.onOutgoingFrame(frame);
+            WebSocketSessionState.Result result = sessionState.onOutgoingFrame(frame);
             callback = Callback.from(callback, () ->
             {
                 if (frame.getOpCode() == OpCode.CLOSE)
@@ -559,7 +559,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus.isAbnormal())
                 {
-                    WebSocketSessionState.BooleanPair result = sessionState.onClosed(closeStatus);
+                    WebSocketSessionState.Result result = sessionState.onClosed(closeStatus);
                     if (result.closeEndpoint())
                         abort();
 
@@ -689,7 +689,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, sessionState, handler);
 
-                WebSocketSessionState.BooleanPair result = sessionState.onIncomingFrame(frame);
+                WebSocketSessionState.Result result = sessionState.onIncomingFrame(frame);
                 if (result.closeEndpoint())
                     abort();
 

@@ -46,6 +46,10 @@ public class WebSocketSessionState
         CLOSED
     }
 
+    public record Result(boolean notifyWebSocketClose, boolean closeEndpoint) {}
+    public record EofResult(boolean notifyWebSocketClose, boolean closeEndpoint, boolean shutdownOutput){}
+    public record CloseResult(boolean shutdownOutput, boolean closeEndpoint){}
+
     private final AutoLock _lock = new AutoLock();
     private final Behavior _behavior;
     private WebSocketState _webSocketState = WebSocketState.CONNECTING;
@@ -58,8 +62,6 @@ public class WebSocketSessionState
     {
         _behavior = behavior;
     }
-
-    public record BooleanPair(boolean notifyWebSocketClose, boolean closeEndpoint) {}
 
     public void onConnected()
     {
@@ -162,7 +164,7 @@ public class WebSocketSessionState
         }
     }
 
-    public BooleanPair onClosed(CloseStatus closeStatus)
+    public Result onClosed(CloseStatus closeStatus)
     {
         try (AutoLock l = _lock.lock())
         {
@@ -175,11 +177,10 @@ public class WebSocketSessionState
                 notifyWebSocketClose = true;
             }
 
-            return new BooleanPair(notifyWebSocketClose, closeEndpoint);
+            return new Result(notifyWebSocketClose, closeEndpoint);
         }
     }
 
-    public record EofResult(boolean notifyWebSocketClose, boolean closeEndpoint, boolean shutdownOutput){}
     /**
      * Handle an EOF from the transport.
      * @return a pair of booleans;
@@ -229,7 +230,6 @@ public class WebSocketSessionState
         }
     }
 
-    public record CloseResult(boolean shutdownOutput, boolean closeEndpoint){}
     public CloseResult onCloseFrameSent()
     {
         try (AutoLock l = _lock.lock())
@@ -254,7 +254,7 @@ public class WebSocketSessionState
         }
     }
 
-    public BooleanPair onOutgoingFrame(Frame frame) throws Exception
+    public Result onOutgoingFrame(Frame frame) throws Exception
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
@@ -271,7 +271,7 @@ public class WebSocketSessionState
                 {
                     boolean closeEndpoint = lockedForceCloseEndpointState();
                     _webSocketState = WebSocketState.CLOSED;
-                    return new BooleanPair(true, closeEndpoint);
+                    return new Result(true, closeEndpoint);
                 }
 
                 return switch (_webSocketState)
@@ -279,12 +279,12 @@ public class WebSocketSessionState
                     case CONNECTED, OPEN ->
                     {
                         _webSocketState = WebSocketState.OSHUT;
-                        yield new BooleanPair(false, false);
+                        yield new Result(false, false);
                     }
                     case ISHUT ->
                     {
                         _webSocketState = WebSocketState.CLOSED;
-                        yield new BooleanPair(true, false);
+                        yield new Result(true, false);
                     }
                     default -> throw new IllegalStateException(_webSocketState.toString());
                 };
@@ -295,10 +295,10 @@ public class WebSocketSessionState
             }
         }
 
-        return new BooleanPair(false, false);
+        return new Result(false, false);
     }
 
-    public BooleanPair onIncomingFrame(Frame frame) throws ProtocolException, ClosedChannelException
+    public Result onIncomingFrame(Frame frame) throws ProtocolException, ClosedChannelException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
@@ -316,13 +316,13 @@ public class WebSocketSessionState
                 {
                     case OPEN:
                         _webSocketState = WebSocketState.ISHUT;
-                        return new BooleanPair(false, false);
+                        return new Result(false, false);
                     case OSHUT:
                         // If we received abnormal status close, and we cannot send a response because we are OSHUT,
                         // so we should close underlying the connection.
                         boolean closeEndpoint = _closeStatus.isAbnormal() && lockedForceCloseEndpointState();
                         _webSocketState = WebSocketState.CLOSED;
-                        return new BooleanPair(true, closeEndpoint);
+                        return new Result(true, closeEndpoint);
                     default:
                         throw new IllegalStateException(_webSocketState.toString());
                 }
@@ -333,7 +333,7 @@ public class WebSocketSessionState
             }
         }
 
-        return new BooleanPair(false, false);
+        return new Result(false, false);
     }
 
     @Override
