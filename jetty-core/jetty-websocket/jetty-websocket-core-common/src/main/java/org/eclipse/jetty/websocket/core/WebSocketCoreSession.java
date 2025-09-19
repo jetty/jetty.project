@@ -516,8 +516,19 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
             WebSocketSessionState.Result result = sessionState.onOutgoingFrame(frame);
-            callback = Callback.from(callback, () ->
+            callback = Callback.from(callback, failure ->
             {
+                if (failure != null)
+                {
+                    CloseStatus closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, failure);
+                    WebSocketSessionState.Result closeResult = sessionState.onClosed(closeStatus);
+                    if (closeResult.closeEndpoint())
+                        abort();
+                    if (closeResult.notifyWebSocketClose())
+                        notifyWebSocketConnectionClose(closeStatus, NOOP);
+                    return;
+                }
+
                 if (frame.getOpCode() == OpCode.CLOSE)
                 {
                     WebSocketSessionState.CloseResult closeResult = sessionState.onCloseFrameSent();

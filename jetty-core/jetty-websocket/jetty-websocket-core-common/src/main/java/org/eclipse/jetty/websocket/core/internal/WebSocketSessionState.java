@@ -209,6 +209,8 @@ public class WebSocketSessionState
                         { /* NOOP */ }
                         case OSHUT ->
                         {
+                            // If this was a client it didn't shut down output when it sent the close frame because of RFC6455 7.1.1.
+                            // So we should do the shutdown output before closing the endpoint.
                             shutdownOutput = _behavior == Behavior.CLIENT;
                             closeEndpoint = true;
                             _endPointState = EndPointState.CLOSED;
