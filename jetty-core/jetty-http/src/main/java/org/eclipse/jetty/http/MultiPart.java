@@ -42,10 +42,10 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.SearchPattern;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -183,7 +183,7 @@ public class MultiPart
      */
     public abstract static class Part implements Content.Source.Factory, Closeable
     {
-        static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
+        static final Throwable CLOSE_EXCEPTION = new ConstantThrowable("Closed");
 
         private final AutoLock lock = new AutoLock();
         private final ByteBufferPool.Sized bufferPool;

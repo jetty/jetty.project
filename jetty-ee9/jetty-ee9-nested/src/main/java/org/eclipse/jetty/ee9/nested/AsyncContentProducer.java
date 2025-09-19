@@ -20,8 +20,8 @@ import java.util.concurrent.locks.Condition;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new StaticException("ContentProducer has been recycled"));
+    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new ConstantThrowable("Recycled"));
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -186,7 +186,7 @@ class AsyncContentProducer implements ContentProducer
         Throwable x = HttpStream.CONTENT_NOT_CONSUMED;
         if (LOG.isTraceEnabled())
         {
-            x = new StaticException("Unconsumed content", true);
+            x = new IOException("Unconsumed content");
             LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);

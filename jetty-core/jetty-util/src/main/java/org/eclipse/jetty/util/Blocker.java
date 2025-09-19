@@ -75,8 +75,8 @@ import org.slf4j.LoggerFactory;
 public class Blocker
 {
     private static final Logger LOG = LoggerFactory.getLogger(Blocker.class);
-    private static final Throwable ACQUIRED = new StaticException("ACQUIRED");
-    private static final Throwable SUCCEEDED = new StaticException("SUCCEEDED");
+    private static final Throwable ACQUIRED = new ConstantThrowable("ACQUIRED");
+    private static final Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
 
     public interface Runnable extends java.lang.Runnable, AutoCloseable, Invocable
     {
