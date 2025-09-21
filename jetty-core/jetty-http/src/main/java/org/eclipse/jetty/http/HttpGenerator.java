@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -246,7 +247,7 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(info, chunk, content, last);
             }
 
             case COMPLETING:
@@ -268,11 +269,14 @@ public class HttpGenerator
         }
     }
 
-    private Result committed(ByteBuffer chunk, ByteBuffer content, boolean last)
+    private Result committed(MetaData info, ByteBuffer chunk, ByteBuffer content, boolean last)
     {
-        int len = BufferUtil.length(content);
+        long len = BufferUtil.length(content);
+        Content.Source source = info.getContentSource();
 
-        // handle the content.
+        // Handle the content.
+        if (len == 0 && source != null)
+            len = source.getLength();
         if (len > 0)
         {
             if (isChunking())
@@ -401,15 +405,18 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    // handle the content.
-                    int len = BufferUtil.length(content);
+                    // Handle the given content.
+                    long len = BufferUtil.length(content);
+                    Content.Source source = info.getContentSource();
+                    if (len == 0 && source != null)
+                        len = source.getLength();
                     if (len > 0)
                     {
                         _contentPrepared += len;
                         if (isChunking() && !head)
                             prepareChunk(header, len);
                     }
-                    _state = last ? State.COMPLETING : State.COMMITTED;
+                    _state = last && source == null ? State.COMPLETING : State.COMMITTED;
                 }
                 catch (BufferOverflowException e)
                 {
@@ -432,7 +439,7 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(info, chunk, content, last);
             }
 
             case COMPLETING_1XX:
@@ -474,7 +481,7 @@ public class HttpGenerator
         startTunnel();
     }
 
-    private void prepareChunk(ByteBuffer chunk, int remaining)
+    private void prepareChunk(ByteBuffer chunk, long remaining)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -483,7 +490,8 @@ public class HttpGenerator
         // Add the chunk size to the header
         if (remaining > 0)
         {
-            BufferUtil.putHexInt(chunk, remaining);
+            // TODO: we need a long as required by RFC 9110.
+            BufferUtil.putHexInt(chunk, (int)remaining);
             BufferUtil.putCRLF(chunk);
             _needCRLF = true;
         }

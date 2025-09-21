@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.NanoTime;
 
 /**
@@ -44,6 +45,8 @@ public class MetaData implements Iterable<HttpField>
     private final HttpFields _httpFields;
     private final long _contentLength;
     private final Supplier<HttpFields> _trailers;
+    // TODO: final or not?
+    private Content.Source _source;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -103,6 +106,16 @@ public class MetaData implements Iterable<HttpField>
     public Supplier<HttpFields> getTrailersSupplier()
     {
         return _trailers;
+    }
+
+    public Content.Source getContentSource()
+    {
+        return _source;
+    }
+
+    public void setContentSource(Content.Source source)
+    {
+        _source = source;
     }
 
     /**
