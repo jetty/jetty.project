@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -25,10 +27,13 @@ import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -228,6 +233,77 @@ public class ByteChannelContentSource implements Content.Source
     }
 
     @Override
+    public void writeTo(Content.Sink sink, long length, Callback callback)
+    {
+        Throwable failure = null;
+        try (AutoLock ignored = lock.lock())
+        {
+            lockedEnsureOpenOrTerminal();
+            if (Content.Chunk.isFailure(_terminal))
+                failure = _terminal.getFailure();
+        }
+        if (failure != null)
+        {
+            callback.failed(failure);
+            return;
+        }
+
+        if (_byteChannel instanceof FileChannel fileChannel)
+        {
+            // TODO:
+            //  if (sink instanceof SocketChannelEndPoint socketEndPoint)
+            //  this is not the case ever, we have a Response here.
+            //  We do not want to have another virtual write() method in Sink
+            //  for the well-known wrapping reasons, so we cannot have:
+            //  if (response instanceof Transferable t) t.writeTo()
+            //  because that would be another virtual method.
+            //  UNLESS we can lift this restriction!
+            //  We will need to write the response line and headers anyway,
+            //  so this call needs to happen later, not from Response.
+            //  Therefore we need to pass the Content.Source to Response.
+            //  We can do this: make Sink implement Attachable:
+            //  sink.setAttachment(fileChannel)
+            //  sink.write(true, null, callback);
+            //  The attachment is propagated inwards to the innermost
+            //  Sink, likely ChannelResponse; ChannelResponse forwards
+            //  the attachment to MetaData.Response, so now we have it
+            //  available in HttpConnection.SendCallback, but in general
+            //  in other generators as well such as HTTP/2, because now
+            //  we just rely on MetaData.Response.
+            //  Then, in HttpConnection.SendCallback we need to generate
+            //  the headers and flush them; after that, we know whether
+            //  there is an attachment, and process() can skip calling
+            //  the generator and just call fileChannel.transferTo().
+            //  First step would be to support only content-length framing
+            //  not chunked, although probably also chunked can be done
+            //  (I guess with just one chunk per transfer).
+            //  For content-length, we would still need to iterate through
+            //  transferTo(), but that's easy with an IteratingCallback,
+            //  just here inside this method!
+            //
+            // TODO: For HTTP/2 (and HTTP/1 chunked), we would need to
+            //  generate the chunk, flush it, then transferTo(), then
+            //  again generate chunk, flush it, then transferTo(), etc.
+            //  HTTP/2 needs to cap by frameSize and flowControl, the
+            //  position and count needs to be remembered, likely
+            //  externally, but then this method would need to be
+            //  writeTo(Sink, pos, cnt, Callback), that however needs to
+            //  be reconciliated with the constructor offset and length.
+
+            if (sink instanceof EndPoint endPoint)
+            {
+                if (endPoint.getTransport() instanceof SocketChannel socket)
+                {
+                    new Transferrer(fileChannel, _offset, length, socket, callback).iterate();
+                    return;
+                }
+            }
+        }
+
+        Content.Source.super.writeTo(sink, length, callback);
+    }
+
+    @Override
     public void fail(Throwable failure)
     {
         try (AutoLock ignored = lock.lock())
@@ -319,6 +395,33 @@ public class ByteChannelContentSource implements Content.Source
             {
                 return -1L;
             }
+        }
+    }
+
+    private static class Transferrer extends IteratingNestedCallback
+    {
+        private final FileChannel fileChannel;
+        private final long position;
+        private final long length;
+        private final SocketChannel socketChannel;
+        private long transferred;
+
+        private Transferrer(FileChannel fileChannel, long position, long length, SocketChannel socketChannel, Callback callback)
+        {
+            super(callback);
+            this.fileChannel = fileChannel;
+            this.position = position;
+            this.length = length;
+            this.socketChannel = socketChannel;
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            transferred += fileChannel.transferTo(position + transferred, length - transferred, socketChannel);
+            if (transferred == length)
+                return Action.SUCCEEDED;
+            return Action.SCHEDULED;
         }
     }
 }

@@ -662,6 +662,11 @@ public class Content
          */
         void demand(Runnable demandCallback);
 
+        default void writeTo(Sink sink, long length, Callback callback)
+        {
+            copy(this, sink, callback);
+        }
+
         /**
          * <p>Fails this content source with a {@link Chunk#isLast() last} {@link Chunk#getFailure() failure chunk},
          * failing and discarding accumulated content chunks that were not yet read.</p>

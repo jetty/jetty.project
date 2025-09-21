@@ -942,7 +942,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                                 getEndPoint().write(this, _content);
                                 break;
                             default:
-                                succeeded();
+                                Content.Source source = _info.getContentSource();
+                                if (source != null)
+                                    source.writeTo(getEndPoint(), source.getLength(), this);
+                                else
+                                    succeeded();
                         }
 
                         return Action.SCHEDULED;
@@ -1529,6 +1533,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
+            // TODO: do not rely on response==null.
             if (response == null)
             {
                 if (!last && BufferUtil.isEmpty(content))

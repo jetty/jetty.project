@@ -137,6 +137,15 @@ public interface Response extends Content.Sink
      */
     void reset();
 
+    default Content.Source getContentSource()
+    {
+        return null;
+    }
+
+    default void setContentSource(Content.Source source)
+    {
+    }
+
     /**
      * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
      * with the given HTTP status code and HTTP headers.</p>
@@ -825,6 +834,18 @@ public interface Response extends Content.Sink
         public void reset()
         {
             getWrapped().reset();
+        }
+
+        @Override
+        public Content.Source getContentSource()
+        {
+            return getWrapped().getContentSource();
+        }
+
+        @Override
+        public void setContentSource(Content.Source source)
+        {
+            getWrapped().setContentSource(source);
         }
 
         @Override
