@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,7 +54,7 @@ public class ResponseContentSourceTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Response.write(response, true, Content.Source.from(file), callback);
+                Content.Sink.write(response, true, Content.Source.from(file), callback);
                 return true;
             }
         });
@@ -66,29 +67,35 @@ public class ResponseContentSourceTest extends AbstractTest
         assertEquals(contentLength, response.getContent().length);
     }
 
-//    @ParameterizedTest
-//    @MethodSource("transportsNoFCGI")
-//    public void testResponseContentSourceInChunks(TransportType transportType) throws Exception
-//    {
-//        start(transportType, new Handler.Abstract()
-//        {
-//            @Override
-//            public boolean handle(Request request, Response response, Callback callback) throws Exception
-//            {
-//                try (Blocker.Callback blocker = Blocker.callback())
-//                {
-//                    // Set Content.Source instead of writing it.
-//                    response.setContentSource(Content.Source.from(path, 0, length1));
-//                    // Write no buffer, but the Content.Source instead.
-//                    response.write(false, null, blocker);
-//                    blocker.block();
-//                }
-//
-//                response.setContentSource(Content.Source.from(path, length1, length2));
-//                response.write(true, null, callback);
-//
-//                return true;
-//            }
-//        });
-//    }
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testResponseContentSourceInChunks(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                int contentLength = 1024 * 1024;
+                Path dir = Files.createDirectories(MavenPaths.targetTestDir(getClass().getSimpleName()));
+                Path file = Files.createTempFile(dir, "file-", ".bin");
+                try (var channel = Files.newByteChannel(file, StandardOpenOption.WRITE))
+                {
+                    channel.write(ByteBuffer.allocateDirect(contentLength));
+                }
+
+                // Write first chunk.
+                int length1 = contentLength / 2;
+                try (Blocker.Callback blocker = Blocker.callback())
+                {
+                    Content.Sink.write(response, false, Content.Source.from(file, 0, length1), blocker);
+                    blocker.block();
+                }
+
+                // Write last chunk.
+                Content.Sink.write(response, true, Content.Source.from(file, length1, contentLength - length1), callback);
+                return true;
+            }
+        });
+    }
 }
