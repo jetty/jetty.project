@@ -253,7 +253,8 @@ public class EventsHandlerTest
     @Test
     public void testCongestedInvocationType() throws Exception
     {
-        startServer(new EventsHandler(new Handler.Abstract() {
+        startServer(new EventsHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
