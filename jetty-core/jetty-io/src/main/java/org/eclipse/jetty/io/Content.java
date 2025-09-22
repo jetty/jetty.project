@@ -45,10 +45,13 @@ import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
+import org.eclipse.jetty.io.internal.Transferable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -106,6 +109,29 @@ public class Content
     public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
     {
         new ContentCopier(source, sink, chunkProcessor, callback).iterate();
+    }
+
+    public static void copy(Source source, long length, boolean last, Sink sink, Callback callback)
+    {
+        if (source instanceof Transferable.From from)
+        {
+            if (from.transferTo(sink, length, callback))
+            {
+                // TODO: honor "last".
+                return;
+            }
+        }
+
+        IteratingCallback flusher = new IteratingNestedCallback(callback)
+        {
+            @Override
+            protected Action process()
+            {
+                // TODO
+                return null;
+            }
+        };
+        flusher.iterate();
     }
 
     /**
@@ -669,11 +695,6 @@ public class Content
          */
         void demand(Runnable demandCallback);
 
-        default void writeTo(Sink sink, long length, Callback callback)
-        {
-            copy(this, sink, callback);
-        }
-
         /**
          * <p>Fails this content source with a {@link Chunk#isLast() last} {@link Chunk#getFailure() failure chunk},
          * failing and discarding accumulated content chunks that were not yet read.</p>
@@ -934,6 +955,36 @@ public class Content
             sink.write(last, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
         }
 
+        static void write(Sink sink, boolean last, Content.Source source, Callback callback)
+        {
+            Content.Source.Aware aware = findContentSourceAware(sink);
+            if (aware != null)
+            {
+                // Optimization to enable zero-copy.
+                aware.setContentSource(source);
+                sink.write(last, null, callback);
+            }
+            else
+            {
+                // Normal write.
+                Content.copy(source, source.getLength(), last, sink, callback);
+            }
+        }
+
+        private static Content.Source.Aware findContentSourceAware(Sink sink)
+        {
+            while (true)
+            {
+                if (sink instanceof Content.Source.Aware aware)
+                    return aware;
+                if (sink instanceof Wrapper wrapper)
+                    sink = wrapper.getWrapped();
+                else
+                    break;
+            }
+            return null;
+        }
+
         /**
          * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
          * when the write is complete.</p>
@@ -946,6 +997,27 @@ public class Content
          * @param callback the callback to notify when the write operation is complete
          */
         void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+
+        class Wrapper implements Sink
+        {
+            private final Sink wrapped;
+
+            public Wrapper(Sink wrapped)
+            {
+                this.wrapped = wrapped;
+            }
+
+            public Sink getWrapped()
+            {
+                return wrapped;
+            }
+
+            @Override
+            public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+            {
+                getWrapped().write(last, byteBuffer, callback);
+            }
+        }
     }
 
     /**

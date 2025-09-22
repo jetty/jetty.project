@@ -167,35 +167,6 @@ public interface Response extends Content.Sink
     @Override
     void write(boolean last, ByteBuffer byteBuffer, Callback callback);
 
-    static void write(Response response, boolean last, Content.Source source, Callback callback)
-    {
-        Response r = response;
-        while (true)
-        {
-            if (r instanceof Content.Source.Aware aware)
-            {
-                aware.setContentSource(source);
-                response.write(last, null, callback);
-                return;
-            }
-            if (r instanceof Wrapper wrapper)
-                r = wrapper.getWrapped();
-            else
-                break;
-        }
-        // Default case, we issue a first write to generate the headers, then we copy the content.
-        Callback.Completable completable = new Callback.Completable(callback.getInvocationType());
-        response.write(false, null, completable);
-        completable.whenComplete((ignored, x) ->
-        {
-            if (x == null)
-                // TODO: need to honor the "last" argument.
-                Content.copy(source, response, callback);
-            else
-                callback.failed(x);
-        });
-    }
-
     /**
      * <p>Returns a chunk processor suitable to be passed to the
      * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
@@ -780,20 +751,20 @@ public interface Response extends Content.Sink
         return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
-    class Wrapper implements Response
+    class Wrapper extends Content.Sink.Wrapper implements Response
     {
         private final Request _request;
-        private final Response _wrapped;
 
         public Wrapper(Request request, Response wrapped)
         {
+            super(wrapped);
             _request = request;
-            _wrapped = wrapped;
         }
 
+        @Override
         public Response getWrapped()
         {
-            return _wrapped;
+            return (Response)super.getWrapped();
         }
 
         @Override
@@ -860,12 +831,6 @@ public interface Response extends Content.Sink
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             return getWrapped().writeInterim(status, headers);
-        }
-
-        @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            getWrapped().write(last, byteBuffer, callback);
         }
     }
 }
