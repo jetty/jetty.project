@@ -137,15 +137,6 @@ public interface Response extends Content.Sink
      */
     void reset();
 
-    default Content.Source getContentSource()
-    {
-        return null;
-    }
-
-    default void setContentSource(Content.Source source)
-    {
-    }
-
     /**
      * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
      * with the given HTTP status code and HTTP headers.</p>
@@ -175,6 +166,35 @@ public interface Response extends Content.Sink
      */
     @Override
     void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+
+    static void write(Response response, boolean last, Content.Source source, Callback callback)
+    {
+        Response r = response;
+        while (true)
+        {
+            if (r instanceof Content.Source.Aware aware)
+            {
+                aware.setContentSource(source);
+                response.write(last, null, callback);
+                return;
+            }
+            if (r instanceof Wrapper wrapper)
+                r = wrapper.getWrapped();
+            else
+                break;
+        }
+        // Default case, we issue a first write to generate the headers, then we copy the content.
+        Callback.Completable completable = new Callback.Completable(callback.getInvocationType());
+        response.write(false, null, completable);
+        completable.whenComplete((ignored, x) ->
+        {
+            if (x == null)
+                // TODO: need to honor the "last" argument.
+                Content.copy(source, response, callback);
+            else
+                callback.failed(x);
+        });
+    }
 
     /**
      * <p>Returns a chunk processor suitable to be passed to the
@@ -834,18 +854,6 @@ public interface Response extends Content.Sink
         public void reset()
         {
             getWrapped().reset();
-        }
-
-        @Override
-        public Content.Source getContentSource()
-        {
-            return getWrapped().getContentSource();
-        }
-
-        @Override
-        public void setContentSource(Content.Source source)
-        {
-            getWrapped().setContentSource(source);
         }
 
         @Override

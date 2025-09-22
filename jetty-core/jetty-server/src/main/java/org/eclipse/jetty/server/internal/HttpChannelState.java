@@ -1235,7 +1235,7 @@ public class HttpChannelState implements HttpChannel, Components
      * method when calling
      * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      */
-    public static class ChannelResponse implements Response, Callback
+    public static class ChannelResponse implements Response, Content.Source.Aware, Callback
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;

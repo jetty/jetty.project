@@ -53,10 +53,7 @@ public class ResponseContentSourceTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                // Set Content.Source instead of writing it.
-                response.setContentSource(Content.Source.from(file));
-                // Write no buffer, but the Content.Source instead.
-                response.write(true, null, callback);
+                Response.write(response, true, Content.Source.from(file), callback);
                 return true;
             }
         });
