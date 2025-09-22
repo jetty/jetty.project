@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -611,7 +612,7 @@ public class ErrorHandler implements Request.Handler
      */
     private static class WriteErrorCallback implements Callback
     {
-        private final AtomicReference<Callback>  _callback;
+        private final AtomicReference<Callback> _callback;
         private final ByteBufferPool _pool;
         private final RetainableByteBuffer _buffer;
 
@@ -636,6 +637,12 @@ public class ErrorHandler implements Request.Handler
             Callback callback = _callback.getAndSet(null);
             if (callback != null)
                 ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.getInvocationType(_callback.get());
         }
     }
 }

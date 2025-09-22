@@ -219,8 +219,15 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         public void failed(Throwable x)
         {
             if (_bufferedContentSink != null && !_lastWritten)
-                _bufferedContentSink.write(true, null, Callback.NOOP);
-            _callback.failed(x);
+                _bufferedContentSink.write(true, null, Callback.from(_callback, x));
+            else
+                _callback.failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _callback.getInvocationType();
         }
     }
 }
