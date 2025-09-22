@@ -181,6 +181,13 @@ public class Content
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
 
+        interface Aware
+        {
+            Source getContentSource();
+
+            void setContentSource(Source source);
+        }
+
         /**
          * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
          * @param byteBuffers The {@link ByteBuffer}s to use as the source.
