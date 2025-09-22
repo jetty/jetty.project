@@ -301,7 +301,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             return _callback;
         }
 
-        protected void handle() throws Exception
+        protected void handle()
         {
             Permit permit = _remote.acquire();
 
@@ -309,13 +309,13 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             if (permit.isAllocated())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), _handler);
+                    LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), getHandler());
                 handle(permit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), _handler);
+                    LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), getHandler());
                 permit.whenAllocated(this::handle);
             }
         }
@@ -324,12 +324,12 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         {
             try
             {
-                if (!_handler.handle(this, _response, _callback))
-                    Response.writeError(this, _response, _callback, HttpStatus.NOT_FOUND_404);
+                if (!getHandler().handle(this, getResponse(), getCallback()))
+                    Response.writeError(this, getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
             {
-                _callback.failed(x);
+                getCallback().failed(x);
             }
             finally
             {
@@ -444,6 +444,12 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             {
                 permit.release();
             }
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.getInvocationType(_writeCallback.get());
         }
     }
 

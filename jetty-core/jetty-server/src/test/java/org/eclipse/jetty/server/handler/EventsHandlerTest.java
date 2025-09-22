@@ -13,45 +13,54 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EventsHandlerTest
 {
     private Server server;
-    private LocalConnector connector;
+    private ServerConnector connector;
 
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp()
     {
         server = new Server();
-        connector = new LocalConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
     }
 
@@ -102,16 +111,19 @@ public class EventsHandlerTest
 
         startServer(eventsHandler);
 
-        String rawRequest = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """));
 
-        String response = connector.getResponse(rawRequest);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        await().atMost(5, TimeUnit.SECONDS).until(attribute::get, is("testModifyRequestAttributes-123"));
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            await().atMost(5, TimeUnit.SECONDS).until(attribute::get, is("testModifyRequestAttributes-123"));
+        }
     }
 
     @Test
@@ -132,26 +144,23 @@ public class EventsHandlerTest
         };
         startServer(eventsHandler);
 
-        String reqLine = "POST / HTTP/1.1\r\n";
-        String headers = """
-            Host: localhost\r
-            Content-length: 6\r
-            Content-type: application/octet-stream\r
-            Connection: close\r
-            \r
-            """;
-        String body = "ABCDEF";
-
-        try (LocalConnector.LocalEndPoint endPoint = connector.connect())
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            endPoint.addInput(reqLine);
+            client.write(UTF_8.encode("POST / HTTP/1.1\r\n"));
             Thread.sleep(500);
-            endPoint.addInput(headers);
+            client.write(UTF_8.encode("""
+                Host: localhost\r
+                Content-length: 6\r
+                Content-type: application/octet-stream\r
+                Connection: close\r
+                \r
+                """));
             Thread.sleep(500);
-            endPoint.addInput(body);
-            String response = endPoint.getResponse();
+            client.write(UTF_8.encode("ABCDEF"));
 
-            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            HttpTester.Response response = HttpTester.parseResponse(client);
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             assertThat(NanoTime.millisSince(beginNanoTime.get()), greaterThan(900L));
             assertThat(NanoTime.millisSince(readyNanoTime.get()), greaterThan(450L));
@@ -224,17 +233,55 @@ public class EventsHandlerTest
 
         startServer(eventsHandler);
 
-        String rawRequest = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """));
 
-        String response = connector.getResponse(rawRequest);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
-            assertThat(events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete"))
-        ));
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete"))
+            ));
+        }
+    }
+
+    @Test
+    public void testCongestedInvocationType() throws Exception
+    {
+        startServer(new EventsHandler(new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                assertEquals(Invocable.InvocationType.NON_BLOCKING, callback.getInvocationType());
+                // Perform a large write to become TCP congested.
+                response.write(true, ByteBuffer.allocate(128 * 1024 * 1024), callback);
+                return true;
+            }
+        }) {});
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """));
+
+            // Do not read yet to cause TCP congestion.
+            WriteFlusher writeFlusher = await().atMost(5, TimeUnit.SECONDS).until(() ->
+                connector.getConnectedEndPoints().stream().findFirst()
+                    .map(AbstractEndPoint.class::cast)
+                    .map(AbstractEndPoint::getWriteFlusher)
+                    .orElse(null), Objects::nonNull);
+            await().atMost(5, TimeUnit.SECONDS).until(writeFlusher::isPending);
+
+            assertEquals(Invocable.InvocationType.NON_BLOCKING, writeFlusher.getCallbackInvocationType());
+        }
     }
 }

@@ -274,12 +274,16 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creates a nested callback that runs completed after
-     * completing the nested callback.
+     * <p>Creates a callback that runs the {@link Runnable} argument after
+     * completing the callback argument.</p>
+     * <p>The {@link Runnable} is assumed to be {@code NON_BLOCKING}, so the
+     * {@link InvocationType} of the returned callback is the same as the
+     * callback argument.</p>
      *
      * @param callback The nested callback
-     * @param completed The completion to run after the nested callback is completed
-     * @return a new callback.
+     * @param completed The {@link Runnable} to run after the nested callback
+     * is completed
+     * @return a new callback
      */
     static Callback from(Callback callback, Runnable completed)
     {
@@ -293,12 +297,18 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creates a nested callback that runs completed after
-     * completing the nested callback.
+     * <p>Creates a callback that runs the {@link Consumer} argument after
+     * completing the callback argument.</p>
+     * <p>The {@link Consumer} receives {@code null} if the callback succeeded,
+     * or the {@link Throwable} failure if the callback failed.</p>
+     * <p>The {@link Consumer} is assumed to be {@code NON_BLOCKING}, so the
+     * {@link InvocationType} of the returned callback is the same as the
+     * callback parameter.</p>
      *
      * @param callback The nested callback
-     * @param completed The completion to run after the nested callback is completed
-     * @return a new callback.
+     * @param completed The {@link Consumer} to run after the nested callback
+     * is completed
+     * @return a new callback
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
     {
@@ -332,13 +342,17 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creates a nested callback that runs completed before
-     * completing the nested callback.
+     * Creates a callback that runs the {@link Runnable} argument before
+     * completing the callback argument.
+     * <p>The {@link Runnable} is assumed to be {@code NON_BLOCKING}, so the
+     * {@link InvocationType} of the returned callback is the same as the
+     * callback argument.</p>
      *
      * @param callback The nested callback
-     * @param completed The completion to run before the nested callback is completed. Any exceptions thrown
-     * from completed will result in a callback failure.
-     * @return a new callback.
+     * @param completed The {@link Runnable} to run before the nested callback
+     * is completed. Any exceptions thrown from the {@link Runnable} will
+     * result in the callback failure.
+     * @return a new callback
      */
     static Callback from(Runnable completed, Callback callback)
     {
@@ -378,28 +392,28 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creates a nested callback which always fails the nested callback on completion.
+     * <p>Creates a callback which always fails the callback argument on completion.</p>
      *
      * @param callback The nested callback
-     * @param cause The cause to fail the nested callback, if the new callback is failed the reason
-     * will be added to this cause as a suppressed exception.
+     * @param failure The cause to fail the nested callback; if the new callback is failed,
+     * the cause will be added to the failure argument as a suppressed exception.
      * @return a new callback.
      */
-    static Callback from(Callback callback, Throwable cause)
+    static Callback from(Callback callback, Throwable failure)
     {
         return new Callback()
         {
             @Override
             public void succeeded()
             {
-                callback.failed(cause);
+                callback.failed(failure);
             }
 
             @Override
             public void failed(Throwable x)
             {
-                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                Callback.failed(callback, cause);
+                ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
+                Callback.failed(callback, failure);
             }
 
             @Override
@@ -692,7 +706,7 @@ public interface Callback extends Invocable
             @Override
             public InvocationType getInvocationType()
             {
-                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+                return Invocable.combine(cb1.getInvocationType(), cb2.getInvocationType());
             }
         };
     }
@@ -741,16 +755,16 @@ public interface Callback extends Invocable
             };
         }
 
-        private final InvocationType invocation;
+        private final InvocationType invocationType;
 
         public Completable()
         {
             this(Invocable.InvocationType.NON_BLOCKING);
         }
 
-        public Completable(InvocationType invocation)
+        public Completable(InvocationType invocationType)
         {
-            this.invocation = invocation;
+            this.invocationType = invocationType;
         }
 
         @Override
@@ -768,7 +782,7 @@ public interface Callback extends Invocable
         @Override
         public InvocationType getInvocationType()
         {
-            return invocation;
+            return invocationType;
         }
 
         /**
