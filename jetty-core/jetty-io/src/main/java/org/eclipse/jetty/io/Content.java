@@ -1107,7 +1107,32 @@ public class Content
             if (chunk == null)
                 return null;
             if (Content.Chunk.isFailure(chunk))
-                return chunk.isLast() ? Chunk.from(ExceptionUtil.copyOf(chunk.getFailure())) : null;
+            {
+                // handle transient failure
+                if (!chunk.isLast())
+                    return null;
+
+                // handle persistent failure with lazy copy to avoid returning the same exception.
+                return new Empty()
+                {
+                    private transient Throwable failure;
+
+                    @Override
+                    public Throwable getFailure()
+                    {
+                        // lazy copy of the exception.
+                        if (failure == null)
+                            failure = ExceptionUtil.copyOf(chunk.getFailure());
+                        return failure;
+                    }
+
+                    @Override
+                    public boolean isLast()
+                    {
+                        return true;
+                    }
+                };
+            }
             if (chunk.isLast())
                 return EOF;
             return null;

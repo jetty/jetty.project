@@ -86,6 +86,8 @@ public class ExceptionUtil
      */
     public static Throwable copyOf(Throwable failure)
     {
+        if (failure == null)
+            return null;
         for (Constructor<?> constructor : failure.getClass().getDeclaredConstructors())
         {
             Class<?>[] params = constructor.getParameterTypes();
