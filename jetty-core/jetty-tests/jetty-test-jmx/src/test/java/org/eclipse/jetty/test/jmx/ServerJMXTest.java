@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -119,7 +121,8 @@ public class ServerJMXTest
         // The ContextHandler MBean should report the contextPath as an ObjectName property.
         String contextProperty = contextHandlerObjectName.getKeyProperty("context");
         assertNotNull(contextProperty);
-        assertEquals(context.getContextPath(), "/" + contextProperty);
+        String contextPathNoSlash = context.getContextPath().substring(1);
+        assertThat(contextProperty, endsWith(contextPathNoSlash));
 
         objectNames = mbeanServer.queryNames(ObjectName.getInstance(getClass().getPackageName() + ":*"), null);
         assertNotNull(objectNames);

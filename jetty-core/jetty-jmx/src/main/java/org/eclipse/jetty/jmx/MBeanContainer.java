@@ -353,35 +353,28 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
                     type = type.substring(dot + 1);
 
                 StringBuilder buf = new StringBuilder();
-
-                String context = (mbean instanceof ObjectMBean)
-                    ? makeName(((ObjectMBean)mbean).getObjectContextBasis())
-                    : makeName(reflectContextBasis(mbean));
-                if (context == null && parentObjectName != null)
-                    context = parentObjectName.getKeyProperty("context");
-
-                if (context != null && context.length() > 1)
-                    buf.append("context=").append(context).append(",");
-
                 buf.append("type=").append(type);
 
                 String name = (mbean instanceof ObjectMBean)
                     ? makeName(((ObjectMBean)mbean).getObjectNameBasis())
                     : makeName(reflectNameBasis(mbean));
-                if (name != null && name.length() > 1)
-                    buf.append(",").append("name=").append(name);
+                if (StringUtil.isNotBlank(name))
+                    buf.append(",name=").append(name);
+
+                String context = (mbean instanceof ObjectMBean)
+                    ? makeName(((ObjectMBean)mbean).getObjectContextBasis())
+                    : makeName(reflectContextBasis(mbean));
+                String parentContext = null;
+                if (parentObjectName != null)
+                    parentContext = parentObjectName.getKeyProperty("context");
+                String fullContext = StringUtil.isBlank(parentContext)
+                    ? context
+                    : StringUtil.isBlank(context) ? parentContext : parentContext + "/" + context;
+                if (fullContext != null)
+                    buf.append(",context=").append(fullContext);
 
                 String basis = buf.toString();
-
-                AtomicInteger count = __unique.get(basis);
-                if (count == null)
-                {
-                    count = new AtomicInteger();
-                    AtomicInteger existing = __unique.putIfAbsent(basis, count);
-                    if (existing != null)
-                        count = existing;
-                }
-
+                AtomicInteger count = __unique.computeIfAbsent(basis, k -> new AtomicInteger());
                 objectName = ObjectName.getInstance(domain + ":" + basis + ",id=" + count.getAndIncrement());
             }
 
@@ -442,7 +435,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
      */
     public String makeName(String basis)
     {
-        return StringUtil.sanitizeFileSystemName(basis);
+        if (basis == null)
+            return null;
+        // Replace JMX special chars, and '/' that is used
+        // as separator in getObjectContextBasis() handling.
+        return basis.replaceAll("[*,./:=? \r\n]", "_");
     }
 
     @Override
