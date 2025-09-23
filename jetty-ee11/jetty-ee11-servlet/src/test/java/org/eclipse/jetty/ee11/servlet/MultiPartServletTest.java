@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
@@ -680,6 +681,55 @@ public class MultiPartServletTest
         Thread.sleep(1000);
         assertThat(getTempDirFiles(), hasSize(1));
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testByteBufferPool(boolean eager) throws Exception
+    {
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+            {
+                Collection<Part> parts = request.getParts();
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                Part part = parts.iterator().next();
+
+                String partContent = IO.toString(part.getInputStream(), UTF_8);
+                assertThat(partContent, equalTo(contentString));
+
+                // Get the core parts so we can check the type and buffer pool.
+                MultiPartFormData.Parts coreParts = MultiPartFormData.getParts(((ServletApiRequest)request).getRequest());
+                assertNotNull(coreParts);
+                assertEquals(1, coreParts.size());
+                MultiPart.Part corePart = coreParts.get(0);
+                assertThat(corePart, instanceOf(MultiPart.PathPart.class));
+                MultiPart.PathPart pathPart = (MultiPart.PathPart)corePart;
+                assertThat(pathPart.getBufferPool(), is(instanceOf(ByteBufferPool.Sized.class)));
+
+                response1.getWriter().print("success");
+            }
+        }, null, eager);
+
+        StringRequestContent content = new StringRequestContent(contentString);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("myPart", null, HttpFields.EMPTY, content));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContentAsString(), containsString("success"));
+    }
+
 
     @SuppressWarnings("resource")
     private Collection<Path> getTempDirFiles() throws IOException
