@@ -730,7 +730,6 @@ public class MultiPartServletTest
         assertThat(response.getContentAsString(), containsString("success"));
     }
 
-
     @SuppressWarnings("resource")
     private Collection<Path> getTempDirFiles() throws IOException
     {
