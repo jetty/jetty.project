@@ -350,7 +350,15 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             notifyOnResponseBegin(getRequest(), this);
             notifyOnResponseWrite(getRequest(), last, byteBuffer);
-            super.write(last, byteBuffer, Callback.from(callback, (x) -> notifyOnResponseWriteComplete(getRequest(), x)));
+            super.write(last, byteBuffer, Callback.from(callback.getInvocationType(), () ->
+            {
+                notifyOnResponseWriteComplete(getRequest(), null);
+                callback.succeeded();
+            }, x ->
+            {
+                notifyOnResponseWriteComplete(getRequest(), x);
+                callback.failed(x);
+            }));
         }
 
         @Override
