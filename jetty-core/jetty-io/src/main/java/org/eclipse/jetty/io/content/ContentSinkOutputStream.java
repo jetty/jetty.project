@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -33,7 +34,7 @@ public class ContentSinkOutputStream extends OutputStream
 {
     private final Blocker.Shared _blocking = new Blocker.Shared();
     private final Content.Sink sink;
-    private boolean failed;
+    private Throwable failed;
 
     public ContentSinkOutputStream(Content.Sink sink)
     {
@@ -96,9 +97,13 @@ public class ContentSinkOutputStream extends OutputStream
     private void handleException(Throwable x) throws IOException
     {
         IOException failure = IO.rethrow(x);
-        if (failed)
-            throw new IOException(failure.toString());
-        failed = true;
+        if (failed == null)
+            failed = failure;
+        else if (ExceptionUtil.areAssociated(failed, failure))
+            failure = IO.rethrow(ExceptionUtil.copyOf(failure));
+        else
+            failed.addSuppressed(failure);
+
         throw failure;
     }
 }
