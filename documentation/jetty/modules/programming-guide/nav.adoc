@@ -37,6 +37,7 @@
 ** xref:arch/io.adoc[]
 ** xref:arch/listener.adoc[]
 ** xref:arch/jmx.adoc[]
+** xref:arch/json.adoc[]
 * xref:troubleshooting/index.adoc[]
 ** xref:troubleshooting/logging.adoc[]
 ** xref:troubleshooting/thread-dump.adoc[]
