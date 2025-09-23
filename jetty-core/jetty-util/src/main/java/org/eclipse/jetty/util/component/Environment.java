@@ -23,6 +23,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A named runtime environment containing a {@link ClassLoader} and {@link Attributes}.
+ *
+ * The Jetty Project provides a number of environments, such as "static", "core", "ee8"
+ * "ee9", etc. See <a href="https://jetty.org/docs/jetty/12.1/operations-guide/deploy/index.html">The web Applicaiton Deployment page</a> for more information.
  */
 public interface Environment extends Attributes
 {

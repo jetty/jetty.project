@@ -273,7 +273,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * Configure the Environment specific Deploy settings.
      *
-     * @param name the name of the environment.
+     * @param name the name of the environment. This is usually one of "core", "static",
+     *             "ee8", "ee9" if using the associated jetty-provided modules.
+     * @see <a href="https://jetty.org/docs/jetty/12.1/operations-guide/deploy/index.html">The web Applicaiton Deployment page</a>
+     * for all available environments, as well as {@link Environment#getAll()}
+     *
      * @return the deployment configuration for the {@link Environment}.
      */
     public EnvironmentConfig configureEnvironment(String name)
