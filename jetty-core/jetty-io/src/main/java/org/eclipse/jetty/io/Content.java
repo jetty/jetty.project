@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -1106,7 +1107,7 @@ public class Content
             if (chunk == null)
                 return null;
             if (Content.Chunk.isFailure(chunk))
-                return chunk.isLast() ? chunk : null;
+                return chunk.isLast() ? Chunk.from(ExceptionUtil.copyOf(chunk.getFailure())) : null;
             if (chunk.isLast())
                 return EOF;
             return null;

@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +75,43 @@ public class ExceptionUtil
                 t.addSuppressed(throwable);
             throw t;
         }
+    }
+
+    /**
+     * Create a copy of a Throwable, discarding causes and suppressed exceptions.
+     * The copy will be of the same type if it has a constructor that takes a String
+     * message, otherwise it will be of the same supertype (e.g. IOException).
+     * @param failure The Throwable to copy
+     * @return A copy of the Throwable with no cause or suppressed exceptions.
+     */
+    public static Throwable copyOf(Throwable failure)
+    {
+        for (Constructor<?> constructor : failure.getClass().getDeclaredConstructors())
+        {
+            Class<?>[] params = constructor.getParameterTypes();
+            if (params.length == 1 && params[0] == String.class)
+            {
+                try
+                {
+                    if (Modifier.isPublic(constructor.getModifiers()))
+                        return (Throwable)constructor.newInstance(failure.getMessage());
+                }
+                catch (Throwable ignored)
+                {
+                }
+                break;
+            }
+        }
+
+        if (failure instanceof RuntimeException)
+            return new RuntimeException(failure.getMessage());
+        if (failure instanceof IOException)
+            return new IOException(failure.getMessage());
+        if (failure instanceof Error)
+            return new Error(failure.getMessage());
+        if (failure instanceof Exception)
+            return new Exception(failure.getMessage());
+        return new Throwable(failure.getMessage());
     }
 
     /**
