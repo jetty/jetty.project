@@ -165,7 +165,7 @@ public abstract class QuotedCSVParser
                                 throw new IllegalStateException(state.toString());
                         }
 
-                        parsedValueAndParams(buffer);
+                        parsedValueAndParams(buffer, valueLength);
                     }
                     buffer.setLength(0);
                     lastLength = 0;
@@ -268,8 +268,9 @@ public abstract class QuotedCSVParser
      * Called when a value and it's parameters has been parsed
      *
      * @param buffer Containing the trimmed value and parameters
+     * @param valueLength The length of the value
      */
-    protected void parsedValueAndParams(StringBuilder buffer)
+    protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
     {
     }
 

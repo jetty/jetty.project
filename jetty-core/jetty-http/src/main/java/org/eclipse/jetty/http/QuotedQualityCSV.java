@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,12 +123,22 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
-    protected void parsedValueAndParams(StringBuilder buffer)
+    protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
     {
-        super.parsedValueAndParams(buffer);
+        // No value? then this isn't a Quality based CSV. Skip.
+        if (valueLength <= 0)
+            return;
+
+        super.parsedValueAndParams(buffer, valueLength);
+
+        // We have to convert to String anyway for QualityValue below.
+        String value = buffer.toString();
+        // Ensure we don't have whitespace or control only value
+        if (StringUtil.isBlank(value))
+            return;
 
         // Collect full value with parameters
-        _lastQuality = new QualityValue(buffer.toString(), _lastQuality._quality, _lastQuality._index);
+        _lastQuality = new QualityValue(value, _lastQuality._quality, _lastQuality._index);
         _qualities.set(_lastQuality._index, _lastQuality);
     }
 
@@ -136,17 +147,27 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         super.parsedValue(buffer);
 
+        // We have to convert to String anyway for QualityValue below.
+        String value = buffer.toString();
+        // Ensure we don't have whitespace or control only value
+        if (StringUtil.isBlank(value))
+            return;
+
         _sorted = false;
 
-        // This is the just the value, without parameters.
+        // This is just the value, without parameters.
         // Assume a quality of ONE
-        _lastQuality = new QualityValue(buffer.toString(), 1.0D, _qualities.size());
+        _lastQuality = new QualityValue(value, 1.0D, _qualities.size());
         _qualities.add(_lastQuality);
     }
 
     @Override
     protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
+        // No value? then this isn't a Quality based CSV. Skip.
+        if (valueLength <= 0)
+            return;
+
         _sorted = false;
 
         if (paramName < 0)

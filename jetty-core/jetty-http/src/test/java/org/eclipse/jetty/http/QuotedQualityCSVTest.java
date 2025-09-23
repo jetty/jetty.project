@@ -15,12 +15,18 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.not;
 
 public class QuotedQualityCSVTest
 {
@@ -145,7 +151,7 @@ public class QuotedQualityCSVTest
     }
 
     @Test
-    public void testQuotedQuality()
+    public void testQuotedQualityWithWhitespace()
     {
         QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q = \"0.5\"  ,  value 1.0 ");
@@ -164,66 +170,79 @@ public class QuotedQualityCSVTest
             "value0.5;p=v"));
     }
 
-    @Test
-    public void testBad()
+    public static Stream<Arguments> badValues()
+    {
+        List<String> bad = new ArrayList<>();
+
+        bad.add(null);
+        bad.add("");
+
+        bad.add(";");
+        bad.add("=");
+        bad.add(",");
+
+        bad.add(";;");
+        bad.add(";=");
+        bad.add(";,");
+        bad.add("=;");
+        bad.add("==");
+        bad.add("=,");
+        bad.add(",;");
+        bad.add(",=");
+        bad.add(",,");
+
+        bad.add(";;;");
+        bad.add(";;=");
+        bad.add(";;,");
+        bad.add(";=;");
+        bad.add(";==");
+        bad.add(";=,");
+        bad.add(";,;");
+        bad.add(";,=");
+        bad.add(";,,");
+
+        bad.add("=;;");
+        bad.add("=;=");
+        bad.add("=;,");
+        bad.add("==;");
+        bad.add("===");
+        bad.add("==,");
+        bad.add("=,;");
+        bad.add("=,=");
+        bad.add("=,,");
+
+        bad.add(",;;");
+        bad.add(",;=");
+        bad.add(",;,");
+        bad.add(",=;");
+        bad.add(",==");
+        bad.add(",=,");
+        bad.add(",,;");
+        bad.add(",,=");
+        bad.add(",,,");
+
+        // bad.add("x;=1");
+        bad.add("=1");
+        bad.add("q=x");
+        bad.add("q=0");
+        bad.add("q=");
+        bad.add("q=,");
+        bad.add("q=;");
+
+        return bad.stream().map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("badValues")
+    public void testBad(String bad)
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
 
-        // None of these should throw exceptions
-        values.addValue(null);
-        values.addValue("");
+        // This should NOT throw an exception
+        values.addValue(bad);
 
-        values.addValue(";");
-        values.addValue("=");
-        values.addValue(",");
-
-        values.addValue(";;");
-        values.addValue(";=");
-        values.addValue(";,");
-        values.addValue("=;");
-        values.addValue("==");
-        values.addValue("=,");
-        values.addValue(",;");
-        values.addValue(",=");
-        values.addValue(",,");
-
-        values.addValue(";;;");
-        values.addValue(";;=");
-        values.addValue(";;,");
-        values.addValue(";=;");
-        values.addValue(";==");
-        values.addValue(";=,");
-        values.addValue(";,;");
-        values.addValue(";,=");
-        values.addValue(";,,");
-
-        values.addValue("=;;");
-        values.addValue("=;=");
-        values.addValue("=;,");
-        values.addValue("==;");
-        values.addValue("===");
-        values.addValue("==,");
-        values.addValue("=,;");
-        values.addValue("=,=");
-        values.addValue("=,,");
-
-        values.addValue(",;;");
-        values.addValue(",;=");
-        values.addValue(",;,");
-        values.addValue(",=;");
-        values.addValue(",==");
-        values.addValue(",=,");
-        values.addValue(",,;");
-        values.addValue(",,=");
-        values.addValue(",,,");
-
-        values.addValue("x;=1");
-        values.addValue("=1");
-        values.addValue("q=x");
-        values.addValue("q=0");
-        values.addValue("q=");
-        values.addValue("q=,");
-        values.addValue("q=;");
+        // There shouldn't be any values as a result.
+        assertThat(values, emptyIterable());
     }
 
     private static final String[] preferBrotli = {"br", "gzip"};
@@ -318,6 +337,14 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV()
         {
             @Override
+            protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
+            {
+                results.add("parsedValueAndParams: " + buffer.toString());
+
+                super.parsedValueAndParams(buffer, valueLength);
+            }
+
+            @Override
             protected void parsedValue(StringBuilder buffer)
             {
                 results.add("parsedValue: " + buffer.toString());
@@ -337,14 +364,15 @@ public class QuotedQualityCSVTest
 
         // The provided string is not legal according to some RFCs ( not a token because of = and not a parameter because not preceded by ; )
         // The string is legal according to RFC7239 which allows for just parameters (called forwarded-pairs)
+        // To properly parse RFC7239 forwarded-paris, the QuotedCSV itself is used, not the QuotedQualityCSV.
         values.addValue("p=0.5,q=0.5");
 
         // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5 both as parameters
-        assertThat(results, contains("parsedValue: ", "parsedParam: p=0.5",
-            "parsedValue: ", "parsedParam: q=0.5"));
+        assertThat(results, contains("parsedValue: ", "parsedParam: p=0.5", "parsedValueAndParams: p=0.5",
+            "parsedValue: ", "parsedParam: q=0.5", "parsedValueAndParams: q=0.5"));
 
-        // However the QuotedQualityCSV only handles the q parameter and that is consumed from the parameter string.
-        assertThat(values, contains("p=0.5", ""));
+        // However the QuotedQualityCSV does not include value-less quality parameters.
+        assertThat(values, not(contains("")));
     }
 
     private static class AllowWhiteSpaceInParameterQQCSV extends QuotedQualityCSV
