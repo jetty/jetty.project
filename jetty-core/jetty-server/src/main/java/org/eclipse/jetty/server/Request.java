@@ -527,13 +527,22 @@ public interface Request extends Attributes, Content.Source
             default ->
             {
                 List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
-                List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
-                if (known.size() == locales.size())
-                    yield locales; // All locales are known
-                List<Locale> unknown = locales.stream().filter(l -> !MimeTypes.isKnownLocale(l)).toList();
-                locales = new ArrayList<>(known);
-                locales.addAll(unknown);
-                yield locales; // List of known locales before unknown locales
+                long known = locales.stream().filter(MimeTypes::isKnownLocale).count();
+                if (locales.size() == known)
+                    yield locales;
+
+                List<Locale> knownFirst = new ArrayList<>(locales.size());
+                for (Locale locale : locales)
+                {
+                    if (MimeTypes.isKnownLocale(locale))
+                        knownFirst.add(locale);
+                }
+                for (Locale locale : locales)
+                {
+                    if (!MimeTypes.isKnownLocale(locale))
+                        knownFirst.add(locale);
+                }
+                yield knownFirst;
             }
         };
     }
