@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.MathUtils;
-import org.eclipse.jetty.util.StaticException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +130,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
     private static final class ActiveSubscription extends IteratingCallback implements Flow.Subscription, Runnable
     {
         private static final long NO_MORE_DEMAND = -1;
-        private static final Throwable COMPLETED = new StaticException("Source.Content read fully");
+        private static final Throwable COMPLETED = new ConstantThrowable("Completed");
         private final AtomicReference<Throwable> cancelled;
         private final AtomicLong demand;
         private Content.Source content;

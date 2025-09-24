@@ -23,5 +23,4 @@ module org.eclipse.jetty.http3.client
     requires org.slf4j;
 
     exports org.eclipse.jetty.http3.client;
-    exports org.eclipse.jetty.http3.client.internal;
 }

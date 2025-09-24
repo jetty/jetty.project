@@ -13,17 +13,88 @@
 
 = Migrating from Jetty 12.0.x to Jetty 12.1.x
 
+The main theme of Jetty 12.1.x is the implementation of the Jakarta EE 11 specifications, so that now Jetty 12.1.x supports Java EE 8, Jakarta EE 9, Jakarta EE 10 and Jakarta EE 11.
+
+Jetty 12.1.x now implements the following Jakarta EE 11 specifications:
+
+* link:https://jakarta.ee/specifications/servlet/6.1/[Jakarta Servlet 6.1]
+* link:https://jakarta.ee/specifications/pages/4.0/[Jakarta Pages 4.0]
+* link:https://jakarta.ee/specifications/websocket/2.2/[Jakarta WebSocket 2.2]
+
+With the implementation of Jakarta EE 11, all the Jetty modules that before were available for Jakarta EE 10, such as `ee10-servlet`, `ee10-jsp`, etc. are now available for Jakarta EE 11 as `ee11-servlet`, `ee11-jsp`, etc.
+
+[[component-changes]]
+== Component Changes
+
+[[component-changes-deployer]]
+=== Deployer
+
+The xref:operations-guide:deploy/index.adoc[deployer] is the Jetty component that deploys web applications from the `$JETTY_BASE/webapps` directory, and it has been completely rewritten in Jetty 12.1.x.
+
+The rewrite allowed to use only one scanner (Jetty 12.0.x had one for each Jakarta EE environment), and allowed to define the deployment of xref:operations-guide:deploy/index.adoc#web-application-format-core[Jetty core web applications] and xref:operations-guide:deploy/index.adoc#web-application-format-static[static web applications].
+
+[[component-changes-authentication]]
+=== Authentication
+
+The server-side authentication mechanisms now have these additional implementations:
+
+* `EthereumAuthenticator`, that implements link:https://eips.ethereum.org/EIPS/eip-4361[ERC-4361: Sign-In with Ethereum], to allow users to authenticate with their blockchain wallets (see xref:security/siwe-support.adoc[this section] for further details).
+* `MultiAuthenticator` to allow multiple authentications for the same web application.
+
+[[component-changes-compression]]
+=== Compression
+
+Jetty 12.0.x only supported GZIP compression, for both the client (`GZIPContentDecoder`) and the server (`GzipHandler`).
+
+Jetty 12.1.x now supports pluggable compression mechanisms and provides implementations for GZIP, link:https://github.com/google/brotli[Brotli] and link:https://github.com/facebook/zstd[Zstandard], in both the client (see xref:client/http.adoc#content-response[here]) and the server (see xref:server/http.adoc#handler-use-compression[here]).
+Brotli and Zstandard use native libraries for the compression implementation.
+
+On the client, `ContentDecoder` has been changed to accommodate the new compression mechanisms, see <<api-changes-httpclient,this section>> for further details.
+
+On the server, `GzipHandler` has been deprecated, in favor of `CompressionHandler`, see  xref:server/http.adoc#handler-use-compression[this section] for further details.
+
+Also on the server, the Jetty module `gzip.mod` has been deprecated, replaced by the Jetty module xref:operations-guide:modules/standard.adoc#compression-gzip[`compression-gzip`].
+
+New `+compression-*+` Jetty modules have been added for all compression mechanisms, see xref:operations-guide:modules/standard.adoc#compression[this section] for further details.
+
+[[component-changes-invocation-type]]
+=== `InvocationType`
+
+Components that implement `Invocable` return an `InvocationType` that defines the blocking or non-blocking behavior of the component, for example whether a server-side `Handler` or a demand task passed to `Content.Source.demand(Runnable)` is blocking or non-blocking.
+The `InvocationType` is then used by Jetty's xref:arch/threads.adoc#execution-strategy-adaptive[adaptive execution strategy] to efficiently process these components.
+
+Jetty 12.1.x strengthens the processing of `Invocable` components for both the client (refer to xref:client/threads.adoc[this section]) and the server (refer to xref:server/threads.adoc[this section]).
+
+Client-side and server-side applications can now explicitly set the `InvocationType` of specific components, and Jetty will process them accordingly.
+
+[[component-changes-quic]]
+=== QUIC
+
+The support for the QUIC protocol underlying HTTP/3 has been completely rewritten.
+
+The rewrite introduced a QUIC API that abstracts away the QUIC implementation.
+
+In Jetty 12.1.x the QUIC implementation is still based on the xref:server/http3.adoc[Quiche native library], but thanks to the QUIC API abstraction in the future it will be possible to plug in a different QUIC implementation without changing the HTTP/3 layer.
+
+[[component-changes-json]]
+=== JSON
+
+The Jetty JSON library now supports Java 16 records.
+
 [[api-changes]]
 == APIs Changes
 
+[[api-changes-httpclient]]
 === `HttpClient`
 
 In Jetty 12.0.x, applications could configure response content decoding through `HttpClient.getContentDecoderFactories()`, and implement their own by implementing `org.eclipse.jetty.client.ContentDecoder`.
 
-In Jetty 12.1.x, applications can configure response content decoding through `HttpClient.getContentDecoderFactories()`.
-The decoding is based on the `org.eclipse.jetty.compression.Compression` classes.
+In Jetty 12.1.x, applications can still configure response content decoding through `HttpClient.getContentDecoderFactories()`.
+
+However, the decoding is based on the `org.eclipse.jetty.compression.Compression` classes.
 Applications can implement their own response content decoding by implementing a `Compression` subclass and the corresponding `DecoderSource`, based on the xref:arch/io.adoc#content-source[`Content.Source`] and xref:arch/io.adoc#content-source-chunk[`Content.Chunk`] APIs.
 
+[[api-changes-iterating-callback]]
 === `IteratingCallback`
 
 Class `IteratingCallback` underwent refinements that changed the behavior of the `onCompleteFailure(Throwable)` method.
@@ -33,3 +104,31 @@ In Jetty 12.0.x, `IteratingCallback.onCompleteFailure(Throwable)` was called as 
 For example, if a write operation performed with `IteratingCallback` was pending due to TCP congestion, and a timeout happened, `onCompleteFailure(Throwable)` was called as soon as the timeout happened, without waiting for the TCP congestion to resolve.
 
 In Jetty 12.1.x, the same behavior is achieved by `IteratingCallback.onFailure(Throwable)`, so applications should review their usage of `IteratingCallback` and change the overrides of `onCompleteFailure(Throwable)` to override `onFailure(Throwable)` instead.
+
+In Jetty 12.1.x, `onCompleteFailure(Throwable)` will be called when the asynchronous operation is complete; in the example above, it will be called when the TCP congestion is resolved.
+
+[[api-changes-retainable-bytebuffer]]
+=== `RetainableByteBuffer`
+
+In Jetty 12.0.x, `RetainableByteBuffer` was primarily used internally, and exposed to users only through `ByteBufferPool.acquire(\...)`.
+
+In Jetty 12.1.x, `RetainableByteBuffer` has broader usage within the xref:migration/11-to-12.adoc#jetty-core-apis[Jetty Core APIs]:
+
+* `RetainableByteBuffer` is now a base interface of `Content.Chunk`, the key class to read content (see xref:arch/io.adoc#content-source-chunk[this section]).
+* `RetainableByteBuffer.FixedCapacity` provides an implementation for fixed capacity buffers, such as those returned by `ByteBufferPool`.
+* `RetainableByteBuffer.DynamicCapacity` provides an implementation for dynamic capacity buffers.
+This class is useful to retain or copy other buffers such as ``Content.Chunk``s.
+Dynamic capacity buffers are particularly effective to read and accumulate data efficiently (for example for later processing), when processing server-side request content, client-side response content, or WebSocket binary messages.
+
+[[api-changes-httpconfig-maxresponseheadersize]]
+=== `HttpConfiguration.maxResponseHeaderSize`
+
+In Jetty 12.0.x, `HttpConfiguration.maxResponseHeaderSize` defaulted to -1, which means that `HttpConfiguration.responseHeaderSize` (defaulting to `8192`) is used instead to limit the length of the server response headers.
+
+In Jetty 12.1.x, `HttpConfiguration.maxResponseHeaderSize` defaults to `16384`; if it is explicitly configured to `-1` Jetty 12.1.x will behave exactly like Jetty 12.0.x.
+
+In Jetty 12.1.x and HTTP/1.1, this means that server responses are first generated using the smaller `HttpConfiguration.responseHeaderSize`, to use less resources.
+If the generation of the server response overflows `HttpConfiguration.responseHeaderSize`, then `HttpConfiguration.maxResponseHeaderSize` is used.
+If the generation overflows also `HttpConfiguration.maxResponseHeaderSize`, a `500` error response is generated.
+
+In Jetty 12.1.x and HTTP/2 `HttpConfiguration.maxResponseHeaderSize` is used for the link:https://datatracker.ietf.org/doc/html/rfc9113#SETTINGS_MAX_HEADER_LIST_SIZE[`MAX_HEADER_LIST_SIZE`] setting, while in HTTP/3 is used for the link:https://datatracker.ietf.org/doc/html/rfc9114#SETTINGS_MAX_FIELD_SECTION_SIZE[`MAX_FIELD_SECTION_SIZE`] setting.

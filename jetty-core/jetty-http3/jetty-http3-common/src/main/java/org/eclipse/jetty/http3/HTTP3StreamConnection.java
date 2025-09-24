@@ -188,7 +188,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         Content.Chunk eof = read(result);
                         assert eof == Content.Chunk.EOF;
                     }
-                    stream.processData(true);
+                    // Data was not immediately available, it has just
+                    // now been notified to this method from the network.
+                    stream.processData(false);
                 }
             }
             catch (Throwable x)

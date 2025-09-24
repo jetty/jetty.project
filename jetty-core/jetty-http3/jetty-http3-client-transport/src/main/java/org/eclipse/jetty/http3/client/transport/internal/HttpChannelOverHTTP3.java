@@ -142,21 +142,21 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         public void onResponse(Stream.Client stream, HeadersFrame frame)
         {
             Runnable task = receiver.onResponse(stream, frame);
-            getHttpConnection().offerTask(invoker.offer(task));
+            getHttpConnection().offerTask(invoker.offer(task), false);
         }
 
         @Override
-        public void onDataAvailable(Stream.Client stream)
+        public void onDataAvailable(Stream.Client stream, boolean immediate)
         {
             Runnable task = receiver.onDataAvailable();
-            getHttpConnection().offerTask(invoker.offer(task));
+            getHttpConnection().offerTask(invoker.offer(task), immediate);
         }
 
         @Override
         public void onTrailer(Stream.Client stream, HeadersFrame frame)
         {
             Runnable task = receiver.onTrailer(frame);
-            getHttpConnection().offerTask(invoker.offer(task));
+            getHttpConnection().offerTask(invoker.offer(task), false);
         }
 
         @Override

@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
@@ -389,6 +390,7 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
+        private ByteBufferPool.Sized bufferPool;
         private MultiPartCompliance compliance;
         private ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName = true;
@@ -692,6 +694,7 @@ public class MultiPartFormData
             filesDirectory = config.getLocation();
             complianceListener = config.getViolationListener();
             compliance = config.getMultiPartCompliance();
+            bufferPool = config.getBufferPool();
         }
 
         // Only used for testing.
@@ -856,7 +859,7 @@ public class MultiPartFormData
 
                     MultiPart.Part part;
                     if (fileChannel != null)
-                        part = new MultiPart.PathPart(null, name, fileName, headers, filePath); // TODO use a pool
+                        part = new MultiPart.PathPart(bufferPool, name, fileName, headers, filePath);
                     else
                         part = new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks));
                     // Reset part-related state.

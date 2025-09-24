@@ -178,21 +178,17 @@ public class ServletMultiPartFormData
                 {
                     // No existing core parts, so we need to configure the parser.
                     ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
+                    ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
+                    ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
+                    Connection connection = connectionMetaData.getConnection();
+                    int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : ByteBufferPool.SIZED_NON_POOLING.getSize();
+                    ByteBufferPool.Sized sized = new ByteBufferPool.Sized(byteBufferPool, false, bufferSize);
 
                     Content.Source source;
                     if (servletRequest instanceof ServletApiRequest servletApiRequest)
-                    {
                         source = servletApiRequest.getRequest();
-                    }
                     else
-                    {
-                        // TODO use the size specified in ByteBufferPool.SIZED_NON_POOLING instead of specifying a 2K buffer size?
-                        ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
-                        ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
-                        Connection connection = connectionMetaData.getConnection();
-                        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        source = new InputStreamContentSource(servletRequest.getInputStream(), new ByteBufferPool.Sized(byteBufferPool, false, bufferSize));
-                    }
+                        source = new InputStreamContentSource(servletRequest.getInputStream(), sized);
 
                     MultiPartConfig multiPartConfig = Request.getMultiPartConfig(servletContextRequest, filesDirectory)
                         .location(filesDirectory)
@@ -200,6 +196,7 @@ public class ServletMultiPartFormData
                         .maxMemoryPartSize(config.getFileSizeThreshold())
                         .maxPartSize(config.getMaxFileSize())
                         .maxSize(config.getMaxRequestSize())
+                        .bufferPool(sized)
                         .build();
 
                     futureServletParts = new CompletableFuture<>();
@@ -280,7 +277,7 @@ public class ServletMultiPartFormData
         @Override
         public InputStream getInputStream()
         {
-            return Content.Source.asInputStream(_part.newContentSource(null, 0L, -1L)); // TODO use a pool
+            return Content.Source.asInputStream(_part.createContentSource());
         }
 
         @Override

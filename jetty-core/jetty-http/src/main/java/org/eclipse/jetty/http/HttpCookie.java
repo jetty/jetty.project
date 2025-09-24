@@ -410,9 +410,12 @@ public interface HttpCookie
          */
         public static SameSite from(String sameSite)
         {
-            if (sameSite == null)
+            if (StringUtil.isBlank(sameSite))
                 return null;
-            return CACHE.get(sameSite);
+            SameSite ss = CACHE.get(sameSite);
+            if (ss == null)
+                throw new IllegalArgumentException("Unknown same site");
+            return ss;
         }
     }
 
@@ -560,41 +563,26 @@ public interface HttpCookie
             // Sanity checks on the values, expensive but necessary to avoid to store garbage.
             switch (name.toLowerCase(Locale.ENGLISH))
             {
-                case "expires" -> expires(parseExpires(value));
-                case "httponly" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid HttpOnly attribute");
-                    httpOnly(true);
-                }
-                case "max-age" -> maxAge(Long.parseLong(value));
-                case "samesite" ->
-                {
-                    SameSite sameSite = SameSite.from(value);
-                    if (sameSite == null)
-                        throw new IllegalArgumentException("Invalid SameSite attribute");
-                    sameSite(sameSite);
-                }
-                case "secure" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid Secure attribute");
-                    secure(true);
-                }
-                case "partitioned" ->
-                {
-                    if (!isTruthy(value))
-                        throw new IllegalArgumentException("Invalid Partitioned attribute");
-                    partitioned(true);
-                }
+                case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
+                case "httponly" -> httpOnly(asBoolean("httponly", value));
+                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "samesite" -> sameSite(SameSite.from(value));
+                case "secure" -> secure(asBoolean("secure", value));
+                case "partitioned" -> partitioned(asBoolean("partitioned", value));
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
         }
 
-        private boolean isTruthy(String value)
+        private boolean asBoolean(String attribute, String value)
         {
-            return value != null && (value.isEmpty() || "true".equalsIgnoreCase(value));
+            if (value == null)
+                return false;
+            if (value.isEmpty() || "true".equalsIgnoreCase(value))
+                return true;
+            if ("false".equalsIgnoreCase(value))
+                return false;
+            throw new IllegalArgumentException("Invalid value for " + attribute);
         }
 
         public Builder comment(String comment)
@@ -653,7 +641,7 @@ public interface HttpCookie
 
         public Builder sameSite(SameSite sameSite)
         {
-            _attributes = lazyAttributePut(_attributes, SAME_SITE_ATTRIBUTE, sameSite.attributeValue);
+            _attributes = lazyAttributePut(_attributes, SAME_SITE_ATTRIBUTE, sameSite == null ? null : sameSite.attributeValue);
             return this;
         }
 

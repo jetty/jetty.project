@@ -121,10 +121,10 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onDataAvailable(Stream.Server stream)
+        public void onDataAvailable(Stream.Server stream, boolean immediate)
         {
             ServerHTTP3StreamConnection connection = getConnection();
-            connection.onDataAvailable(http3Stream);
+            connection.onDataAvailable(http3Stream, immediate);
         }
 
         @Override

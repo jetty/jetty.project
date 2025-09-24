@@ -136,22 +136,22 @@ public interface Stream
 
     /**
      * <p>Demands more data bytes for this stream.</p>
-     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream)}
+     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream, boolean)}
      * to be invoked, possibly at a later time, when the stream has data
      * to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
-     * outstanding demand to invoke {@link Listener#onDataAvailable(Stream)}
+     * outstanding demand to invoke {@link Listener#onDataAvailable(Stream, boolean)}
      * is a no-operation.</p>
      * <p>The thread invoking this method may invoke directly
-     * {@link Listener#onDataAvailable(Stream)}, unless another thread
-     * that must invoke {@link Listener#onDataAvailable(Stream)}
+     * {@link Listener#onDataAvailable(Stream, boolean)}, unless another thread
+     * that must invoke {@link Listener#onDataAvailable(Stream, boolean)}
      * notices the outstanding demand first.</p>
      * <p>It is always guaranteed that invoking this method from within
      * {@code onDataAvailable(Stream)} will not cause a
      * {@link StackOverflowError}.</p>
      *
      * @see #read()
-     * @see Listener#onDataAvailable(Stream)
+     * @see Listener#onDataAvailable(Stream, boolean)
      */
     void demand();
 
@@ -222,7 +222,7 @@ public interface Stream
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream}
      * and receives events, triggered by the remote peer, happening on stream.</p>
      * <p>Stream data is requested using {@link Stream#demand()} and when data
-     * is available {@link #onDataAvailable(Stream)} is invoked.</p>
+     * is available {@link #onDataAvailable(Stream, boolean)} is invoked.</p>
      *
      * @see Stream
      */
@@ -238,6 +238,29 @@ public interface Stream
         default void onNewStream(Stream stream, Frame.WithStreamId frame)
         {
             stream.demand();
+        }
+
+        /**
+         * <p>A simplified version of {@link #onDataAvailable(Stream, boolean)}.</p>
+         * <p>The default implementation of this method reads and discards data.</p>
+         *
+         * @param stream the stream
+         * @see Stream#demand()
+         */
+        default void onDataAvailable(Stream stream)
+        {
+            while (true)
+            {
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
+                {
+                    stream.demand();
+                    return;
+                }
+                chunk.release();
+                if (chunk.isLast())
+                    return;
+            }
         }
 
         /**
@@ -263,7 +286,7 @@ public interface Stream
          * class MyStreamListener implements Stream.Listener
          * {
          *     @Override
-         *     public void onDataAvailable(Stream stream)
+         *     public void onDataAvailable(Stream stream, boolean immediate)
          *     {
          *         while (true)
          *         {
@@ -291,24 +314,20 @@ public interface Stream
          *     }
          * }
          * }</pre>
+         * <p>The default implementation of this method calls
+         * {@link #onDataAvailable(Stream)}.</p>
          *
          * @param stream the stream
+         * @param immediate {@code true} when data is immediately available at the time
+         * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+         * {@code false} when data was not immediately available at the time {@link #demand()}
+         * was called, but is now available (this method is invoked from the network layer,
+         * not directly from {@link #demand()}
          * @see Stream#demand()
          */
-        default void onDataAvailable(Stream stream)
+        default void onDataAvailable(Stream stream, boolean immediate)
         {
-            while (true)
-            {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
-                {
-                    stream.demand();
-                    return;
-                }
-                chunk.release();
-                if (chunk.isLast())
-                    return;
-            }
+            onDataAvailable(stream);
         }
 
         /**

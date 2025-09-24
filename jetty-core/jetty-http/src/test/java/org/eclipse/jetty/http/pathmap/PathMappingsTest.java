@@ -623,4 +623,24 @@ public class PathMappingsTest
                 "default"
             ));
     }
+
+    @Test
+    public void testAddAndRemove()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put(new UriTemplatePathSpec("/path1"), "resource1");
+        p.put(new UriTemplatePathSpec("/path2"), "resource2");
+        p.put(new UriTemplatePathSpec("/path3"), "resource3");
+        assertThat(p.getMatched("/path1").getResource(), equalTo("resource1"));
+        assertThat(p.getMatched("/path2").getResource(), equalTo("resource2"));
+        assertThat(p.getMatched("/path3").getResource(), equalTo("resource3"));
+
+        // Remove one of the mappings.
+        p.remove(new UriTemplatePathSpec("/path2"));
+
+        // Only path2 should be removed from the mappings.
+        assertThat(p.getMatched("/path1").getResource(), equalTo("resource1"));
+        assertThat(p.getMatched("/path2"), nullValue());
+        assertThat(p.getMatched("/path3").getResource(), equalTo("resource3"));
+    }
 }

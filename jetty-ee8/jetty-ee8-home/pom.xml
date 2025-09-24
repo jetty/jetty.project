@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.1.1-SNAPSHOT</version>
+    <version>12.1.2-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-home</artifactId>
   <packaging>pom</packaging>
@@ -224,7 +224,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8-apache-jsp</outputDirectory>
             </configuration>
@@ -237,7 +237,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee8-apache-jsp</outputDirectory>

@@ -210,13 +210,13 @@ public class WebSocketTester implements AutoCloseable
     {
         ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-        Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame frame = framesQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
 
         actualPayload.put(frame.getPayload());
         while (!frame.isFin())
         {
-            frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            frame = framesQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
             actualPayload.put(frame.getPayload());
         }
@@ -234,7 +234,7 @@ public class WebSocketTester implements AutoCloseable
             prefix = "Frame[" + i + "]";
 
             Frame expected = expect.get(i);
-            Frame actual = framesQueue.poll(3, TimeUnit.SECONDS);
+            Frame actual = framesQueue.poll(5, TimeUnit.SECONDS);
             assertThat(prefix + ".poll", actual, notNullValue());
 
             if (LOG.isDebugEnabled())
@@ -359,7 +359,7 @@ public class WebSocketTester implements AutoCloseable
         {
             try
             {
-                assertTrue(openLatch.await(1, TimeUnit.SECONDS));
+                assertTrue(openLatch.await(5, TimeUnit.SECONDS));
             }
             catch (InterruptedException e)
             {

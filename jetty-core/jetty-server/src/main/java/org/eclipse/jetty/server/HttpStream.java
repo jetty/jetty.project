@@ -21,7 +21,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StaticException;
+import org.eclipse.jetty.util.ConstantThrowable;
 
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.StaticException;
  */
 public interface HttpStream extends Callback
 {
-    Exception CONTENT_NOT_CONSUMED = new StaticException("Unconsumed request content");
+    Throwable CONTENT_NOT_CONSUMED = new ConstantThrowable("Unconsumed");
 
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve

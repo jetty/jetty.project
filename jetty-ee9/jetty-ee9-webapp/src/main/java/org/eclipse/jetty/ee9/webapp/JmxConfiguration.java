@@ -18,12 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>JMX Configuration</p>
- * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.jmx package.   This class is defined
- * in the webapp package, as it implements the {@link Configuration} interface,
- * which is unknown to the jmx package.
- * </p>
+ * <p>This configuration configures the {@link WebAppContext} system/server classes
+ * so that web applications are able to see the {@code org.eclipse.jetty.jmx} and
+ * {@code org.eclipse.jetty.util.annotation} packages and sub-packages.</p>
+ * <p>This class is defined in the webapp module because it implements the
+ * {@link Configuration} interface, which is unknown to the jmx module.</p>
  */
 public class JmxConfiguration extends AbstractConfiguration
 {
@@ -32,7 +31,7 @@ public class JmxConfiguration extends AbstractConfiguration
     public JmxConfiguration()
     {
         addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.util.annotation", "org.eclipse.jetty.jmx.");
+        protectAndExpose("org.eclipse.jetty.util.annotation.", "org.eclipse.jetty.jmx.");
     }
 
     @Override
@@ -49,4 +48,3 @@ public class JmxConfiguration extends AbstractConfiguration
         }
     }
 }
-

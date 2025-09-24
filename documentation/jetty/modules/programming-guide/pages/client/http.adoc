@@ -457,8 +457,9 @@ The most common encodings are:
 
 Jetty's `HttpClient` supports by default the `gzip` encoding, but the support is pluggable and discovered via Java's `ServiceLoader` mechanism.
 
-In order to add support for brotli and zstandard, it is enough to add to your classpath the correspondent Jetty artifacts with the implementation, respectively:
+In order to add support for gzip, brotli and zstandard, it is enough to add to your classpath the correspondent Jetty artifacts with the implementation, respectively:
 
+* `jetty-compression-gzip`
 * `jetty-compression-brotli`
 * `jetty-compression-zstandard`
 
@@ -467,6 +468,11 @@ The Maven artifact coordinates are the following:
 [,xml,subs=attributes+]
 ----
 <dependencies>
+  <dependency>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression-gzip</artifactId>
+    <version>{jetty-version}</version>
+  </dependency>
   <dependency>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression-brotli</artifactId>
@@ -479,6 +485,28 @@ The Maven artifact coordinates are the following:
   </dependency>
 </dependencies>
 ----
+
+[NOTE]
+====
+The Jetty artifacts `jetty-compression-brotli` and `jetty-compression-zstandard` access
+respectively the Brotli and Zstandard implementations, that are written in native code.
+
+Since Java 22, the JVM emits a warning message when Java code tries to access code in native libraries.
+For example with Java 25:
+
+----
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::loadLibrary has been called by com.aayushatharva.brotli4j.Brotli4jLoader in an unnamed module (file:/home/simon/.m2/repository/com/aayushatharva/brotli4j/brotli4j/1.17.0/brotli4j-1.17.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+----
+
+To avoid the warning, you can start the JVM as suggested by the warning message above, by adding `--enable-native-access=ALL-UNNAMED` on the command line.
+This grants any code in the class-path access to any native library.
+
+If you are running in JPMS mode, you can explicitly grant access just to the JPMS module(s) that require it.
+In the case above, you need `--enable-native-access=com.aayushatharva.brotli4j`.
+====
 
 If you want to remove support for automatic response content decoding (for example in proxies), use the following code:
 

@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private final HTTP3Session session;
     private final StreamEndPoint endPoint;
     private final boolean local;
-    private final SerializedInvoker invoker;
     private CloseState closeState = CloseState.NOT_CLOSED;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
@@ -56,7 +54,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         this.session = session;
         this.endPoint = endPoint;
         this.local = local;
-        this.invoker = new SerializedInvoker(TypeUtil.toShortName(getClass()), session.getProtocolSession().getExecutor());
     }
 
     public StreamEndPoint getStreamEndPoint()
@@ -199,7 +196,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             LOG.debug("demand, process={} needsFillInterest={} on {}", process, needsFillInterest, this);
         if (process)
         {
-            processData(false);
+            // Data is immediately available.
+            processData(true);
         }
         else if (needsFillInterest)
         {
@@ -208,26 +206,35 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         }
     }
 
-    void processData(boolean notifyDataAvailable)
+    void processData(boolean immediate)
     {
-        boolean notify = false;
-        try (AutoLock ignored = lock.lock())
+        // Always call onDataAvailable() when this method is called.
+        // Previously, dataAvailable was false after the last read(),
+        // but now new data is available, and therefore we need to
+        // call onDataAvailable().
+        boolean notify = true;
+        while (true)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("processing demand={}, dataAvailable={}, notify={} on {}", dataDemand, dataAvailable, notifyDataAvailable, this);
-            dataStalled = true;
-            if (dataDemand)
+            try (AutoLock ignored = lock.lock())
             {
-                // Notify if there is both demand and data available.
-                if (dataAvailable || notifyDataAvailable)
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing demand={}, dataAvailable={} on {}", dataDemand, dataAvailable, this);
+                if ((dataAvailable || notify) && dataDemand)
                 {
                     dataDemand = false;
-                    notify = true;
+                    dataStalled = false;
+                    notify = false;
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling data processing for {}", this);
+                    dataStalled = true;
+                    return;
                 }
             }
+            onDataAvailable(immediate);
         }
-        if (notify)
-            invoker.run(this::onDataAvailable);
     }
 
     @Override
@@ -282,14 +289,14 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         notIdle();
     }
 
-    private void onDataAvailable()
+    private void onDataAvailable(boolean immediate)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("notifying data available on {}", this);
-        notifyDataAvailable();
+        notifyDataAvailable(immediate);
     }
 
-    protected abstract void notifyDataAvailable();
+    protected abstract void notifyDataAvailable(boolean immediate);
 
     public void onTrailer(HeadersFrame frame)
     {

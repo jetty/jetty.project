@@ -20,15 +20,20 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -118,6 +123,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     _requestMetaData.getMethod(), _requestMetaData.getHttpURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
+
+            HttpField expectField = fields.getField(HttpHeader.EXPECT);
+            if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
+                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
             return new ReadyTask(invocationType, handler)
@@ -221,7 +230,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             Runnable task = _httpChannel.onContentAvailable();
             if (task != null)
-                _connection.offerTask(task, false);
+            {
+                // We must dispatch, so an application thread does not 
+                // become a producer and then consume another request.
+                _connection.offerTask(task, true);
+            }
         }
         else if (demand)
         {
@@ -637,11 +650,27 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                // If the stream is not closed, it is still reading the request content.
-                // Send a reset to the other end so that it stops sending data.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
+                if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+                {
+                    // It was a tunnel attempt, but it failed with a non-200 response.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: tunnel failed with {} response", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), _responseMetaData.getStatus());
+                    // Implicitly close the request side of the stream that was left
+                    // open by the client to tunnel opaque bytes via DATA frames.
+                    // Don't send RST_STREAM if a response was already sent.
+                    if (_stream.updateClose(true, CloseState.Event.RECEIVED))
+                        _stream.getSession().removeStream(_stream);
+                    else
+                        _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                }
+                else
+                {
+                    // If the stream is not closed, it is still reading the request content.
+                    // Send a reset to the other end so that it stops sending data.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                    _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                }
             }
         }
         _httpChannel.recycle();
@@ -651,10 +680,26 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void failed(Throwable x)
     {
-        ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
-        if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
-        _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
+        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+        {
+            // It was a tunnel attempt, but it failed.
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 response #{}/{}: tunnel failed", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), x);
+            // Implicitly close the request side of the stream that was left
+            // open by the client to tunnel opaque bytes via DATA frames.
+            // Don't send RST_STREAM if a response was already sent.
+            if (_stream.updateClose(true, CloseState.Event.RECEIVED))
+                _stream.getSession().removeStream(_stream);
+            else
+                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }
+        else
+        {
+            ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
+            _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
+        }
     }
 
     private class SendTrailers extends Callback.Nested

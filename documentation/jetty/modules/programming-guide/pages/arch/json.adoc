@@ -11,18 +11,6 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.thread.strategy;
+= Jetty JSON Support
 
-import java.util.concurrent.Executor;
-
-/**
- * @deprecated This class has been renamed to {@link AdaptiveExecutionStrategy}
- */
-@Deprecated(forRemoval = true)
-public class EatWhatYouKill extends AdaptiveExecutionStrategy
-{
-    public EatWhatYouKill(Producer producer, Executor executor)
-    {
-        super(producer, executor);
-    }
-}
+TODO

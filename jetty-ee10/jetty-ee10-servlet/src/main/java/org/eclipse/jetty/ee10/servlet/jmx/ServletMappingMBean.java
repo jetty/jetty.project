@@ -18,23 +18,20 @@ import org.eclipse.jetty.jmx.ObjectMBean;
 
 public class ServletMappingMBean extends ObjectMBean
 {
-
     public ServletMappingMBean(Object managedObject)
     {
         super(managedObject);
     }
 
     @Override
+    public ServletMapping getManagedObject()
+    {
+        return (ServletMapping)super.getManagedObject();
+    }
+
+    @Override
     public String getObjectNameBasis()
     {
-        if (_managed != null && _managed instanceof ServletMapping)
-        {
-            ServletMapping mapping = (ServletMapping)_managed;
-            String name = mapping.getServletName();
-            if (name != null)
-                return name;
-        }
-
-        return super.getObjectNameBasis();
+        return getManagedObject().getServletName();
     }
 }
