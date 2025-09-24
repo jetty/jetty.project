@@ -515,25 +515,23 @@ public interface Attributes
         public Object removeAttribute(String name)
         {
             Object persistentValue = super.getAttribute(name);
-            try
+            if (persistentValue == null)
             {
-                if (persistentValue == null)
-                {
-                    Object oldValue = _layer.removeAttribute(name);
-                    return oldValue == REMOVED ? null : oldValue;
-                }
-                Object oldValue = _layer.setAttribute(name, REMOVED);
-                if (oldValue == REMOVED)
-                    return null;
-                if (oldValue != null)
-                    return oldValue;
-                return persistentValue;
+                // There is no persistent value, so just remove from the layer
+                Object oldValue = _layer.removeAttribute(name);
+                // but the old value may have been REMOVED previously, so convert to null in that case
+                return oldValue == REMOVED ? null : oldValue;
             }
-            finally
-            {
-                if (persistentValue == null)
-                    _layer.removeAttribute(name);
-            }
+
+            // There is a persistent value, so we need to hide it by marking it as REMOVED in the layer
+            Object oldValue = _layer.getAttribute(name);
+            // if it was already marked as REMOVED, then nothing to do
+            if (oldValue == REMOVED)
+                return null;
+            // otherwise mark it as REMOVED
+            _layer.setAttribute(name, REMOVED);
+            // and return either the persistent value or any transient value that was there
+            return oldValue == null ? persistentValue : oldValue;
         }
 
         @Override
