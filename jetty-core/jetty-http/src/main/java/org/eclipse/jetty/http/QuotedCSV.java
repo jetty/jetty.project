@@ -119,7 +119,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     }
 
     @Override
-    protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
+    protected void parsedValueAndParams(StringBuilder buffer)
     {
         _values.add(buffer.toString());
     }

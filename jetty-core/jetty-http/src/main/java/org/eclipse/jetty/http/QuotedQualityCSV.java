@@ -56,7 +56,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     };
 
     private final List<QualityValue> _qualities = new ArrayList<>();
-    private QualityValue _lastQuality;
+    private QualityValue _lastQualityValue;
     private boolean _sorted = false;
     private final ToIntFunction<String> _secondaryOrdering;
 
@@ -123,13 +123,13 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
-    protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
+    protected void parsedValueAndParams(StringBuilder buffer)
     {
         // No value? then this isn't a Quality based CSV. Skip.
-        if (valueLength <= 0)
+        if (buffer.isEmpty())
             return;
 
-        super.parsedValueAndParams(buffer, valueLength);
+        super.parsedValueAndParams(buffer);
 
         // We have to convert to String anyway for QualityValue below.
         String value = buffer.toString();
@@ -138,8 +138,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             return;
 
         // Collect full value with parameters
-        _lastQuality = new QualityValue(value, _lastQuality._quality, _lastQuality._index);
-        _qualities.set(_lastQuality._index, _lastQuality);
+        if (_lastQualityValue != null)
+        {
+            _lastQualityValue = new QualityValue(value, _lastQualityValue._quality, _lastQualityValue._index);
+            _qualities.set(_lastQualityValue._index, _lastQualityValue);
+        }
     }
 
     @Override
@@ -157,8 +160,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
         // This is just the value, without parameters.
         // Assume a quality of ONE
-        _lastQuality = new QualityValue(value, 1.0D, _qualities.size());
-        _qualities.add(_lastQuality);
+        _lastQualityValue = new QualityValue(value, 1.0D, _qualities.size());
+        _qualities.add(_lastQualityValue);
     }
 
     @Override
@@ -195,8 +198,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
             if (q != 1.0D)
             {
-                _lastQuality = new QualityValue(buffer.toString(), q, _lastQuality._index);
-                _qualities.set(_lastQuality._index, _lastQuality);
+                _lastQualityValue = new QualityValue(buffer.toString(), q, _lastQualityValue._index);
+                _qualities.set(_lastQualityValue._index, _lastQualityValue);
             }
         }
     }

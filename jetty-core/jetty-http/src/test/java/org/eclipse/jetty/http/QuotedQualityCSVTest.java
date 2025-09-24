@@ -337,11 +337,11 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV()
         {
             @Override
-            protected void parsedValueAndParams(StringBuilder buffer, int valueLength)
+            protected void parsedValueAndParams(StringBuilder buffer)
             {
                 results.add("parsedValueAndParams: " + buffer.toString());
 
-                super.parsedValueAndParams(buffer, valueLength);
+                super.parsedValueAndParams(buffer);
             }
 
             @Override
