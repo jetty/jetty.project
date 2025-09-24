@@ -47,6 +47,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
@@ -537,11 +539,11 @@ public class CoreMultiPartTest
                 PrintWriter writer = new PrintWriter(Content.Sink.asOutputStream(response));
                 for (MultiPart.Part part : getParts(request, config))
                 {
-                    String partContent = IO.toString(Content.Source.asInputStream(part.getContentSource()));
+                    String partContent = IO.toString(Content.Source.asInputStream(part.createContentSource()));
                     writer.println("Part: name=" + part.getName() + ", size=" + part.getLength() + ", content=" + partContent);
 
                     // We can only consume the getContentSource() once so we must use newContentSource().
-                    partContent = IO.toString(Content.Source.asInputStream(part.newContentSource(null, 0, -1)));
+                    partContent = IO.toString(Content.Source.asInputStream(part.createContentSource()));
                     writer.println("Part: name=" + part.getName() + ", size=" + part.getLength() + ", content=" + partContent);
                 }
 
@@ -695,6 +697,62 @@ public class CoreMultiPartTest
         // Even after the request is processed, the temp file should remain in the tmpDir.
         Thread.sleep(1000);
         assertThat(getTempDirFiles(), hasSize(1));
+    }
+
+    @Test
+    public void testByteBufferPool() throws Exception
+    {
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+
+        ByteBufferPool.Sized sized = new ByteBufferPool.Sized(new ArrayByteBufferPool(), false, 1024);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                PrintWriter writer = new PrintWriter(Content.Sink.asOutputStream(response));
+                try
+                {
+                    MultiPartFormData.Parts parts = getParts(request, config);
+                    assertThat(parts.size(), is(1));
+                    MultiPart.Part part = parts.get(0);
+
+                    String partContent = IO.toString(Content.Source.asInputStream(part.createContentSource()));
+                    assertThat(partContent, equalTo(contentString));
+
+                    assertThat(part, instanceOf(MultiPart.PathPart.class));
+                    MultiPart.PathPart pathPart = (MultiPart.PathPart)part;
+                    assertThat(pathPart.getBufferPool(), is(instanceOf(ByteBufferPool.Sized.class)));
+
+                    writer.print("success");
+                    writer.close();
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace(writer);
+                    writer.close();
+                }
+
+                return true;
+            }
+        }, new MultiPartConfig.Builder().location(tmpDir).maxMemoryPartSize(0).bufferPool(sized).build());
+
+        StringRequestContent content = new StringRequestContent(contentString);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("myPart", null, HttpFields.EMPTY, content));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContentAsString(), containsString("success"));
     }
 
     @SuppressWarnings("resource")
