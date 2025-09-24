@@ -182,6 +182,14 @@ public abstract class TransformingFlusher
             }
             onFailure(t);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (current == null)
+                return InvocationType.NON_BLOCKING;
+            return current.callback.getInvocationType();
+        }
     }
 
     private void notifyCallbackSuccess(Callback callback)

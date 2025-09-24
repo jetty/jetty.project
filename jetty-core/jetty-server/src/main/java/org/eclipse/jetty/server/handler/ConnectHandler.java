@@ -781,6 +781,13 @@ public class ConnectHandler extends Handler.Wrapper
                 TunnelConnection.this.close(x);
                 connection.close(x);
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                // Reads and writes in process() are non-blocking.
+                return InvocationType.NON_BLOCKING;
+            }
         }
     }
 }

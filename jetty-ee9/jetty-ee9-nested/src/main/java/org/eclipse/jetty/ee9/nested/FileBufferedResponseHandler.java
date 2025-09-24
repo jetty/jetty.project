@@ -226,6 +226,12 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     dispose();
                     callback.failed(cause);
                 }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
+                }
             };
             icb.iterate();
         }

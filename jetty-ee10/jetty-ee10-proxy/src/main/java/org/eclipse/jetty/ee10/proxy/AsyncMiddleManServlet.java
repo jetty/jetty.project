@@ -414,6 +414,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             onError(x);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // Reads and sending the proxy request are non-blocking.
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     protected class ProxyResponseListener implements Callback, Response.Listener
@@ -704,6 +711,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         public void onError(Throwable failure)
         {
             failed(failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // This class writes to a non-blocking ServletOutputStream.
+            return InvocationType.NON_BLOCKING;
         }
     }
 

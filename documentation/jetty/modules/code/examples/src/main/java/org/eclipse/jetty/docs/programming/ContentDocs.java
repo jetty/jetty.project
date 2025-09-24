@@ -374,7 +374,7 @@ public class ContentDocs
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.NON_BLOCKING;
+            return callback.getInvocationType();
         }
     }
     // end::copy[]
