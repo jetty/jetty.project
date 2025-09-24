@@ -139,14 +139,14 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onDataAvailable(Stream.Server stream)
+        public void onDataAvailable(Stream.Server stream, boolean immediate)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onDataAvailable(http3Stream);
             if (task != null)
             {
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(task, false);
+                protocolSession.offer(task, immediate);
             }
         }
 

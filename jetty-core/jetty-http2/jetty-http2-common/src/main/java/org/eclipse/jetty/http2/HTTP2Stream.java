@@ -389,7 +389,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
-        boolean offered = false;
         MetaData metaData = frame.getMetaData();
         boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
         if (isTrailer)
@@ -398,10 +397,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // avoid race conditions due to concurrent calls to readData().
             boolean closed = updateClose(true, CloseState.Event.RECEIVED);
             notifyHeaders(this, frame);
+            // Offer EOF in case the application calls readData() or demand().
+            if (offer(Data.eof(getId())))
+                processData(true);
             if (closed)
                 getSession().removeStream(this);
-            // Offer EOF in case the application calls readData() or demand().
-            offered = offer(Data.eof(getId()));
         }
         else
         {
@@ -411,25 +411,21 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length;
 
-            if (frame.isEndStream())
-            {
-                // Offer EOF for either the request or the response in
-                // case the application calls readData() or demand().
-                offered = offer(Data.eof(getId()));
-            }
+            // Offer EOF for either the request or the response in
+            // case the application calls readData() or demand().
+            boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
 
             // Requests are notified to a Session.Listener, here only notify responses.
             if (metaData.isResponse())
             {
                 boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(this, frame);
+                if (eof)
+                    processData(true);
                 if (closed)
                     getSession().removeStream(this);
             }
         }
-
-        if (offered)
-            processData();
 
         callback.succeeded();
     }
@@ -462,7 +458,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
 
         if (offer(data))
-            processData();
+        {
+            // Data was not immediately available, it has just
+            // now been notified to this method from the network.
+            processData(false);
+        }
     }
 
     private boolean offer(Data data)
@@ -533,10 +533,13 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Demand, {} data processing for {}", process ? "proceeding" : "stalling", this);
         if (process)
-            processData();
+        {
+            // Data is immediately available.
+            processData(true);
+        }
     }
 
-    public void processData()
+    public void processData(boolean immediate)
     {
         while (true)
         {
@@ -552,7 +555,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataDemand = false;
                 dataStalled = false;
             }
-            notifyDataAvailable(this);
+            notifyDataAvailable(this, immediate);
         }
     }
 
@@ -869,12 +872,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyDataAvailable(Stream stream)
+    private void notifyDataAvailable(Stream stream, boolean immediate)
     {
         Listener listener = Objects.requireNonNullElse(this.listener, Listener.AUTO_DISCARD);
         try
         {
-            listener.onDataAvailable(stream);
+            listener.onDataAvailable(stream, immediate);
         }
         catch (Throwable x)
         {

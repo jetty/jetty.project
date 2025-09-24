@@ -92,9 +92,9 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         return httpStream.onFailure(failure);
     }
 
-    void offer(Runnable task)
+    void offer(Runnable task, boolean dispatch)
     {
-        session.offer(task, false);
+        session.offer(task, dispatch);
     }
 
     private class MetaData implements ConnectionMetaData

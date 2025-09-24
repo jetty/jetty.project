@@ -86,15 +86,15 @@ public interface Stream
      *
      * @return a {@link Stream.Data} object containing the request bytes or
      * the response bytes, or null if no bytes are available
-     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
-     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)
      */
     public Stream.Data readData();
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
-     * <p>Calling this method causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client)}
-     * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server)}
+     * <p>Calling this method causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)}
+     * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)}
      * on the server, to be invoked, possibly at a later time, when the stream
      * has data to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
@@ -109,8 +109,8 @@ public interface Stream
      * {@link StackOverflowError}.</p>
      *
      * @see #readData()
-     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
-     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client, boolean)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server, boolean)
      */
     public void demand();
 
@@ -156,16 +156,28 @@ public interface Stream
             /**
              * <p>Callback method invoked when a response is received.</p>
              * <p>To read response content, applications should call
-             * {@link Stream#demand()} and override
-             * {@link Stream.Client.Listener#onDataAvailable(Client)}.</p>
+             * {@link Stream#demand()} and override either
+             * {@link Stream.Client.Listener#onDataAvailable(Client)} or
+             * {@link Stream.Client.Listener#onDataAvailable(Client, boolean)}.</p>
              *
              * @param stream the stream
              * @param frame the HEADERS frame containing the response headers
-             * @see Stream.Client.Listener#onDataAvailable(Client)
+             * @see Stream.Client.Listener#onDataAvailable(Client, boolean)
              */
             public default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 stream.demand();
+            }
+
+            /**
+             * <p>A simplified version of {@link #onDataAvailable(Stream.Client, boolean)}.</p>
+             * <p>The default implementation of this method reads and discards data.</p>
+             *
+             * @param stream the stream
+             * @see Stream#demand()
+             */
+            default void onDataAvailable(Stream.Client stream)
+            {
             }
 
             /**
@@ -215,12 +227,21 @@ public interface Stream
              *         }
              *     }
              * }
-             * </pre>
+             * }</pre>
+             * <p>The default implementation of this method calls
+             * {@link #onDataAvailable(Stream.Client)}.</p>
              *
              * @param stream the stream
+             * @param immediate {@code true} when data is immediately available at the time
+             * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+             * {@code false} when data was not immediately available at the time {@link #demand()}
+             * was called, but is now available (this method is invoked from the network layer,
+             * not directly from {@link #demand()}
+             * @see Stream#demand()
              */
-            public default void onDataAvailable(Stream.Client stream)
+            default void onDataAvailable(Stream.Client stream, boolean immediate)
             {
+                onDataAvailable(stream);
             }
 
             /**
@@ -285,6 +306,17 @@ public interface Stream
         public interface Listener
         {
             /**
+             * <p>A simplified version of {@link #onDataAvailable(Stream.Server, boolean)}.</p>
+             * <p>The default implementation of this method reads and discards data.</p>
+             *
+             * @param stream the stream
+             * @see Stream#demand()
+             */
+            default void onDataAvailable(Stream.Server stream)
+            {
+            }
+
+            /**
              * <p>Callback method invoked if the application has expressed
              * {@link Stream#demand() demand} for content, and if there may
              * be content available.</p>
@@ -304,11 +336,11 @@ public interface Stream
              * <p>It is always guaranteed that invoking {@link Stream#demand()}
              * from within this method will not cause a {@link StackOverflowError}.</p>
              * <p>Typical usage:</p>
-             * <pre>
+             * <pre>{@code
              * class MyStreamListener implements Stream.Server.Listener
              * {
-             *     &#64;Override
-             *     public void onDataAvailable(Stream.Server stream)
+             *     @Override
+             *     public void onDataAvailable(Stream.Server stream, boolean immediate)
              *     {
              *         // Read a chunk of the content.
              *         Stream.Data data = stream.readData();
@@ -331,12 +363,21 @@ public interface Stream
              *         }
              *     }
              * }
-             * </pre>
+             * }</pre>
+             * <p>The default implementation of this method calls
+             * {@link #onDataAvailable(Stream.Server)}.</p>
              *
              * @param stream the stream
+             * @param immediate {@code true} when data is immediately available at the time
+             * {@link #demand()} is invoked (this method is directly invoked from {@link #demand()};
+             * {@code false} when data was not immediately available at the time {@link #demand()}
+             * was called, but is now available (this method is invoked from the network layer,
+             * not directly from {@link #demand()}
+             * @see Stream#demand()
              */
-            public default void onDataAvailable(Stream.Server stream)
+            default void onDataAvailable(Stream.Server stream, boolean immediate)
             {
+                onDataAvailable(stream);
             }
 
             /**

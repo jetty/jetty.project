@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.VirtualThreads;
@@ -41,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ExecutionStrategyTest
@@ -167,7 +169,7 @@ public class ExecutionStrategyTest
 
         Producer producer = new TestProducer()
         {
-            AtomicInteger tasks = new AtomicInteger(TASKS);
+            final AtomicInteger tasks = new AtomicInteger(TASKS);
 
             @Override
             public Runnable produce()
@@ -205,7 +207,7 @@ public class ExecutionStrategyTest
                 for (int t = TASKS; t-- > 0; )
                 {
                     Thread.sleep(5);
-                    q.offer(latch);
+                    assertTrue(q.offer(latch));
                 }
             }
             catch (Exception e)
@@ -219,5 +221,74 @@ public class ExecutionStrategyTest
                 strategy, TASKS, latch.getCount(), q.size(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : ""));
 
         LifeCycle.stop(threadPool);
+    }
+
+    @ParameterizedTest
+    @MethodSource("pooledStrategies")
+    public void testRecursion(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    {
+        ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
+        LifeCycle.start(threadPool);
+        try
+        {
+            final int TASKS = 100;
+            CountDownLatch latch = new CountDownLatch(TASKS);
+            AtomicReference<ExecutionStrategy> strategyRef = new AtomicReference<>();
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+            Producer producer = new TestProducer()
+            {
+                private static final ThreadLocal<Thread> THREAD = new ThreadLocal<>();
+                int tasks = TASKS;
+
+                @Override
+                public Runnable produce()
+                {
+                    if (tasks-- > 0)
+                    {
+                        // Return a BLOCKING task.
+                        return () ->
+                        {
+                            Thread thread = THREAD.get();
+                            if (thread != null)
+                                failureRef.compareAndSet(null, new AssertionError("recursion detected"));
+                            THREAD.set(Thread.currentThread());
+                            try
+                            {
+                                if (tasks > 0)
+                                {
+                                    // Calling produce() here will cause
+                                    // recursion and the test will fail.
+                                    strategyRef.get().dispatch();
+                                }
+                                latch.countDown();
+                            }
+                            finally
+                            {
+                                THREAD.set(null);
+                            }
+                        };
+                    }
+                    return null;
+                }
+            };
+
+            ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, threadPool);
+            strategyRef.set(strategy);
+            strategy.produce();
+
+            assertTrue(latch.await(10, TimeUnit.SECONDS), () ->
+            {
+                // Dump state on failure.
+                return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
+                    strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
+            });
+
+            Throwable failure = failureRef.get();
+            assertThat(String.valueOf(failure), failure, nullValue());
+        }
+        finally
+        {
+            LifeCycle.stop(threadPool);
+        }
     }
 }
