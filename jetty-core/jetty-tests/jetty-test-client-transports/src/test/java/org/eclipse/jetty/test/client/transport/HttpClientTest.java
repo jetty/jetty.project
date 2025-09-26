@@ -17,15 +17,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.URI;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -42,6 +47,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -71,6 +77,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -84,6 +91,80 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientTest extends AbstractTest
 {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testWriteSingleByteBufferInstanceInTwoParts(TransportType transportType) throws Exception
+    {
+        final int count = 10;
+        List<byte[]> byteArrays = new CopyOnWriteArrayList<>();
+        CyclicBarrier barrier = new CyclicBarrier(count);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                // Use a 64 KB buffer.
+                byte[] array = new byte[65536];
+                byteArrays.add(array);
+                Arrays.fill(array, (byte)'A');
+                ByteBuffer byteBuffer = ByteBuffer.wrap(array);
+
+                // Let the first 13 bytes untouched.
+                byteBuffer.position(13);
+
+                try (Blocker.Callback cb = Blocker.callback())
+                {
+                    // Write the first part: 40 KB.
+                    byteBuffer.limit(13 + 40 * 1024);
+                    barrier.await(); // Maximize concurrency on the server.
+                    response.write(false, byteBuffer, cb);
+                    cb.block();
+                }
+
+                // Write the second part: 24 KB - 13 bytes.
+                byteBuffer.limit(byteBuffer.capacity());
+                barrier.await(); // Maximize concurrency on the server.
+                response.write(true, byteBuffer, callback);
+                return true;
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(count);
+        Map<Integer, List<ByteBuffer>> contents = new HashMap<>();
+        for (int i = 0; i < count; i++)
+        {
+            List<ByteBuffer> contentList = contents.computeIfAbsent(i, (k) -> new CopyOnWriteArrayList<>());
+            client.newRequest(newURI(transportType))
+                .onResponseContent((response, content) -> contentList.add(BufferUtil.copy(content)))
+                .send(result -> latch.countDown());
+        }
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
+
+        // Check that the responses were not corrupted.
+        for (Map.Entry<Integer, List<ByteBuffer>> entry : contents.entrySet())
+        {
+            assertThat("Request #" + entry.getKey() + " failed on size", entry.getValue().stream().mapToInt(Buffer::remaining).sum(), is(65536 - 13));
+            assertThat("Request #" + entry.getKey() + " failed on data", entry.getValue().stream().anyMatch(bb ->
+            {
+                while (bb.hasRemaining())
+                {
+                    byte b = bb.get();
+                    if (b != 'A')
+                        return true;
+                }
+                return false;
+            }), is(false));
+        }
+        // Check that the original buffers were not corrupted.
+        for (byte[] byteArray : byteArrays)
+        {
+            for (byte b : byteArray)
+            {
+                assertThat(b, is((byte)'A'));
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testClientUseContentSourceInSpawnedThreadEmptyResponseContent(TransportType transportType) throws Exception
@@ -1138,6 +1219,43 @@ public class HttpClientTest extends AbstractTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testInvalidExpectation(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.Source.consumeAll(request, callback);
+                return true;
+            }
+        });
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        client.newRequest(newURI(transportType))
+            .headers(h -> h.put(HttpHeader.EXPECT, "Invalid"))
+            // Body is necessary, otherwise the Expect header is removed.
+            .body(new StringRequestContent("hello"))
+            .onResponseHeaders(responseRef::set)
+            .send(r -> resultLatch.countDown());
+
+        // In HTTP/2, the request body is not read, as the error response
+        // is sent without calling the Handler, so a reset is triggered
+        // after the response is sent.
+        // The test verifies that the right response is received at the
+        // "headers" event, because the response body is read asynchronously
+        // and may be dropped when the RST_STREAM frame is received.
+        // Waiting for the "complete" event will likely result in a failure
+        // due to the RST_STREAM being received.
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        assertThat(response.getStatus(), equalTo(HttpStatus.EXPECTATION_FAILED_417));
     }
 
     public static java.util.stream.Stream<Arguments> validFieldValues()

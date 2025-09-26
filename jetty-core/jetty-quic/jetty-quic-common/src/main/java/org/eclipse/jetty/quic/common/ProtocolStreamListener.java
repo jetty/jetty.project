@@ -25,7 +25,7 @@ public abstract class ProtocolStreamListener implements Stream.Listener
     protected abstract StreamEndPoint getStreamEndPoint();
 
     @Override
-    public void onDataAvailable(Stream stream)
+    public void onDataAvailable(Stream stream, boolean immediate)
     {
         getStreamEndPoint().fillable();
     }

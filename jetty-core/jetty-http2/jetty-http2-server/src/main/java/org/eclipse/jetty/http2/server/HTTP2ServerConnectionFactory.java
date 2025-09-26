@@ -155,9 +155,9 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onDataAvailable(Stream stream)
+        public void onDataAvailable(Stream stream, boolean immediate)
         {
-            getConnection().onDataAvailable(stream);
+            getConnection().onDataAvailable(stream, immediate);
         }
 
         @Override

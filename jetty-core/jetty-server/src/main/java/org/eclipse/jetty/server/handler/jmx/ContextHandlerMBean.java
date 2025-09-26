@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.server.handler.jmx;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.jmx.Handler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -35,6 +37,29 @@ public class ContextHandlerMBean extends Handler.AbstractMBean
     public ContextHandler getManagedObject()
     {
         return (ContextHandler)super.getManagedObject();
+    }
+
+    @Override
+    public String getObjectNameBasis()
+    {
+        return getManagedObject().getDisplayName();
+    }
+
+    @Override
+    public String getObjectContextBasis()
+    {
+        ContextHandler contextHandler = getManagedObject();
+        String ctxPath = contextHandler.getContextPath();
+        if (StringUtil.isBlank(ctxPath) || "/".equals(ctxPath))
+            ctxPath = "ROOT";
+        // Replace / as it is used as a parent separator.
+        String context = ctxPath.replaceAll("/", "_");
+
+        List<String> vHosts = contextHandler.getVirtualHosts();
+        if (vHosts != null && !vHosts.isEmpty())
+            context = context + "@" + vHosts.get(0);
+
+        return context;
     }
 
     @ManagedAttribute("Map of context attributes")

@@ -13,6 +13,9 @@ labels: Bug
 **Jetty Environment**
 <!-- Applicable for jetty-12 only, choose: core, ee8, ee9, ee10, ee11 -->
 
+**HTTP version**
+<!-- HTTP 1.0, 1.1, 2 or 3 -->
+
 **Java version/vendor** `(use: java -version)`
 
 **OS type/version**

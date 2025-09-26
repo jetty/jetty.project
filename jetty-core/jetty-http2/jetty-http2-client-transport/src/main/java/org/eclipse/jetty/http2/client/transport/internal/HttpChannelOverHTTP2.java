@@ -211,11 +211,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onDataAvailable(Stream stream)
+        public void onDataAvailable(Stream stream, boolean dispatch)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
             Runnable task = channel.onDataAvailable();
-            connection.offerTask(invoker.offer(task), false);
+            connection.offerTask(invoker.offer(task), dispatch);
         }
 
         @Override

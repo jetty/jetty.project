@@ -550,7 +550,11 @@ public class RequestTest
     {
         return Stream.of(
             Arguments.of(null, List.of(Locale.getDefault().toLanguageTag()).toString()),
-            Arguments.of("zz", "[zz]"),
+            Arguments.of(";", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of(",", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("bogus", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("en-en", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("zz", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("en", "[en]"),
             Arguments.of("en-gb", List.of(Locale.UK.toLanguageTag()).toString()),
             Arguments.of("en-us", List.of(Locale.US.toLanguageTag()).toString()),

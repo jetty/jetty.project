@@ -2086,34 +2086,19 @@ public interface RetainableByteBuffer extends Retainable
             if (space <= 0)
                 return false;
 
-            // We will aggregate, either into the last buffer or a newly allocated one.
-            if (!existing &&
-                !_buffers.isEmpty() &&
-                _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
-                mutable.isMutable() &&
-                mutable.space() >= length &&
-                !mutable.isRetained())
-            {
-                // We can use the last buffer as the aggregate
-                _aggregate = mutable;
-                checkAggregateLimit(space);
-            }
-            else
-            {
-                // acquire a new aggregate buffer
-                int aggregateSize = _pool.getSize();
+            // acquire a new aggregate buffer
+            int aggregateSize = _pool.getSize();
 
-                // If we cannot grow, allow a single allocation only if we have not already retained.
-                if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
-                    aggregateSize = (int)_maxSize;
+            // If we cannot grow, allow a single allocation only if we have not already retained.
+            if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
+                aggregateSize = (int)_maxSize;
 
-                aggregateSize = Math.max(length, aggregateSize);
-                if (aggregateSize > space)
-                    aggregateSize = (int)space;
-                _aggregate = _pool.acquire(aggregateSize, _pool.isDirect());
-                checkAggregateLimit(space);
-                _buffers.add(_aggregate);
-            }
+            aggregateSize = Math.max(length, aggregateSize);
+            if (aggregateSize > space)
+                aggregateSize = (int)space;
+            _aggregate = _pool.acquire(aggregateSize, _pool.isDirect());
+            checkAggregateLimit(space);
+            _buffers.add(_aggregate);
 
             return _aggregate.append(bytes);
         }
@@ -2331,15 +2316,6 @@ public interface RetainableByteBuffer extends Retainable
             {
                 if (_aggregate.space() >= needed)
                     return _aggregate;
-            }
-            else if (!_buffers.isEmpty() &&
-                _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
-                mutable.isMutable() &&
-                mutable.space() >= needed &&
-                !mutable.isRetained())
-            {
-                _aggregate = mutable;
-                return _aggregate;
             }
 
             // We need a new aggregate, acquire a new aggregate buffer

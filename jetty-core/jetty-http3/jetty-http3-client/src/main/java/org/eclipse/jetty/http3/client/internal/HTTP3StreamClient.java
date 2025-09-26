@@ -99,12 +99,12 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
         }
     }
 
-    protected void notifyDataAvailable()
+    protected void notifyDataAvailable(boolean immediate)
     {
         Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            listener.onDataAvailable(this);
+            listener.onDataAvailable(this, immediate);
         }
         catch (Throwable x)
         {

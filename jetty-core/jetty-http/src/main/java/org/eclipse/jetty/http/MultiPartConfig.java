@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.file.Path;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
@@ -47,6 +48,7 @@ public class MultiPartConfig
         private Boolean _useFilesForPartsWithoutFileName;
         private MultiPartCompliance _complianceMode;
         private ComplianceViolation.Listener _violationListener;
+        private ByteBufferPool.Sized _bufferPool;
 
         public Builder()
         {
@@ -146,6 +148,15 @@ public class MultiPartConfig
             return this;
         }
 
+        /**
+         * @param bufferPool the buffer pool to use.
+         */
+        public Builder bufferPool(ByteBufferPool.Sized bufferPool)
+        {
+            _bufferPool = bufferPool;
+            return this;
+        }
+
         public MultiPartConfig build()
         {
             return new MultiPartConfig(_location,
@@ -156,7 +167,8 @@ public class MultiPartConfig
                 _maxHeadersSize == null ? DEFAULT_MAX_HEADERS_SIZE : _maxHeadersSize,
                 _useFilesForPartsWithoutFileName == null ? DEFAULT_USE_FILES_FOR_PARTS_WITHOUT_FILE_NAME : _useFilesForPartsWithoutFileName,
                 _complianceMode == null ? MultiPartCompliance.RFC7578 : _complianceMode,
-                _violationListener == null ? NOOP : _violationListener);
+                _violationListener == null ? NOOP : _violationListener,
+                _bufferPool);
         }
     }
 
@@ -169,10 +181,11 @@ public class MultiPartConfig
     private final boolean _useFilesForPartsWithoutFileName;
     private final MultiPartCompliance _compliance;
     private final ComplianceViolation.Listener _listener;
+    private final ByteBufferPool.Sized _bufferPool;
 
     private MultiPartConfig(Path location, int maxParts, long maxSize, long maxPartSize, long maxMemoryPartSize,
                             int maxHeadersSize, boolean useFilesForPartsWithoutFileName,
-                            MultiPartCompliance compliance, ComplianceViolation.Listener listener)
+                            MultiPartCompliance compliance, ComplianceViolation.Listener listener, ByteBufferPool.Sized bufferPool)
     {
         this._location = location;
         this._maxParts = maxParts;
@@ -183,6 +196,7 @@ public class MultiPartConfig
         this._useFilesForPartsWithoutFileName = useFilesForPartsWithoutFileName;
         this._compliance = compliance;
         this._listener = listener;
+        this._bufferPool = bufferPool;
     }
 
     public Path getLocation()
@@ -228,5 +242,10 @@ public class MultiPartConfig
     public ComplianceViolation.Listener getViolationListener()
     {
         return _listener;
+    }
+
+    public ByteBufferPool.Sized getBufferPool()
+    {
+        return _bufferPool;
     }
 }

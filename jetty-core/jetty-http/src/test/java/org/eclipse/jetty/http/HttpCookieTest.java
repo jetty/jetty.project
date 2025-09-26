@@ -16,12 +16,15 @@ package org.eclipse.jetty.http;
 import java.time.Instant;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -105,4 +108,53 @@ public class HttpCookieTest
             .attribute(name, value));
     }
 
+    @Test
+    public void testRemoveSpecialAttributes()
+    {
+        HttpCookie cookie = HttpCookie.build("name", "value")
+            .expires(Instant.now())
+            .httpOnly(true)
+            .maxAge(1000)
+            .sameSite(HttpCookie.SameSite.STRICT)
+            .secure(true)
+            .partitioned(true)
+            .build();
+
+        assertThat(cookie.getExpires(), notNullValue());
+        assertThat(cookie.isHttpOnly(), is(true));
+        assertThat(cookie.getMaxAge(), is(1000L));
+        assertThat(cookie.getSameSite(), is(HttpCookie.SameSite.STRICT));
+        assertThat(cookie.isSecure(), is(true));
+        assertThat(cookie.isPartitioned(), is(true));
+
+        HttpCookie noAttributes = HttpCookie.build(cookie)
+            .expires(null)
+            .httpOnly(false)
+            .maxAge(-1)
+            .sameSite(null)
+            .secure(false)
+            .partitioned(false)
+            .build();
+        assertThat(noAttributes.getExpires(), nullValue());
+        assertThat(noAttributes.isHttpOnly(), is(false));
+        assertThat(noAttributes.getMaxAge(), is(-1L));
+        assertThat(noAttributes.getSameSite(), nullValue());
+        assertThat(noAttributes.isSecure(), is(false));
+        assertThat(noAttributes.isPartitioned(), is(false));
+
+        noAttributes = HttpCookie.build(cookie)
+            .attribute(HttpCookie.EXPIRES_ATTRIBUTE, null)
+            .attribute(HttpCookie.HTTP_ONLY_ATTRIBUTE, null)
+            .attribute(HttpCookie.MAX_AGE_ATTRIBUTE, null)
+            .attribute(HttpCookie.SAME_SITE_ATTRIBUTE, null)
+            .attribute(HttpCookie.SECURE_ATTRIBUTE, null)
+            .attribute(HttpCookie.PARTITIONED_ATTRIBUTE, null)
+            .build();
+        assertThat(noAttributes.getExpires(), nullValue());
+        assertThat(noAttributes.isHttpOnly(), is(false));
+        assertThat(noAttributes.getMaxAge(), is(-1L));
+        assertThat(noAttributes.getSameSite(), nullValue());
+        assertThat(noAttributes.isSecure(), is(false));
+        assertThat(noAttributes.isPartitioned(), is(false));
+    }
 }

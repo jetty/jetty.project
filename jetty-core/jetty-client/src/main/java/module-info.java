@@ -32,6 +32,8 @@ module org.eclipse.jetty.client
 
     exports org.eclipse.jetty.client.jmx to
         org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.client.transport.jmx to
+        org.eclipse.jetty.jmx;
 
     uses org.eclipse.jetty.compression.Compression;
 }

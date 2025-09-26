@@ -78,12 +78,12 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
         write(frame, promise);
     }
 
-    protected void notifyDataAvailable()
+    protected void notifyDataAvailable(boolean immediate)
     {
         Stream.Server.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            listener.onDataAvailable(this);
+            listener.onDataAvailable(this, immediate);
         }
         catch (Throwable x)
         {

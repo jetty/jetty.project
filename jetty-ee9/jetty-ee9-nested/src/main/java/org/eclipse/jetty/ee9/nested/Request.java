@@ -938,22 +938,22 @@ public class Request implements HttpServletRequest
         if (fields == null)
             return Locale.getDefault();
 
-        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE)
+            .stream()
+            .filter(StringUtil::isNotBlank)
+            .toList();
 
         // handle no locale
         if (acceptable.isEmpty())
             return Locale.getDefault();
 
-        String language = acceptable.get(0);
-        language = HttpField.stripParameters(language);
-        String country = "";
-        int dash = language.indexOf('-');
-        if (dash > -1)
-        {
-            country = language.substring(dash + 1).trim();
-            language = language.substring(0, dash).trim();
-        }
-        return new Locale(language, country);
+        // return sorted list of locales, with known locales in quality order before unknown locales in quality order
+        List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
+        // Filter again, only allowing known locales
+        List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+        if (known.isEmpty())
+            return Locale.getDefault();
+        return known.get(0);
     }
 
     @Override
