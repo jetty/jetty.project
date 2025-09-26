@@ -701,6 +701,36 @@ public class WebAppContextTest
     }
 
     @Test
+    public void testJarFileBaseResource(WorkDir workDir) throws Exception
+    {
+        //create a war that we can use as the resource base
+        Path warPath = createWar(workDir.getEmptyPathDir(), "test.war");
+        warPath = warPath.toAbsolutePath();
+        URI warURI =  URIUtil.toJarFileUri(warPath.toUri());
+
+        Server server = null;
+        WebAppContext context = null;
+
+        server = newServer();
+
+        context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResourceAsString(warURI.toString());
+        assertNotNull(context.getBaseResource());
+        server.setHandler(context);
+        server.start();
+
+        server.stop();
+        assertNotNull(context.getBaseResource());
+
+        //Cause the non-lifecycle ResourceFactory in the context
+        //to be closed, thus closing the jar:file Resource that
+        //was created by the setBaseResourceAsString() method
+        server.destroy();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
     public void testBaseResourceAbsolutePath(WorkDir workDir) throws Exception
     {
         Server server = newServer();
