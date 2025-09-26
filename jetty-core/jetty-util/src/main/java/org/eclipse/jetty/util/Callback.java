@@ -388,12 +388,6 @@ public interface Callback extends Invocable
             {
                 return callback.getInvocationType();
             }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return callback.getInvocationType();
-            }
         };
     }
 
