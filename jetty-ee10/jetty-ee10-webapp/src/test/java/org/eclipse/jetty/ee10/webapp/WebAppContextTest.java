@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -671,6 +672,36 @@ public class WebAppContextTest
                 writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
             }
         }
+    }
+
+    @Test
+    public void testJarFileBaseResource(WorkDir workDir) throws Exception
+    {
+        //create a war that we can use as the resource base
+        Path warPath = createWar(workDir.getEmptyPathDir(), "test.war");
+        warPath = warPath.toAbsolutePath();
+        URI warURI =  URIUtil.toJarFileUri(warPath.toUri());
+
+        Server server = null;
+        WebAppContext context = null;
+
+        server = newServer();
+
+        context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResourceAsString(warURI.toString());
+        assertNotNull(context.getBaseResource());
+        server.setHandler(context);
+        server.start();
+
+        server.stop();
+        assertNotNull(context.getBaseResource());
+
+        //Cause the non-lifecycle ResourceFactory in the context
+        //to be closed, thus closing the jar:file Resource that
+        //was created by the setBaseResourceAsString() method
+        server.destroy();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test

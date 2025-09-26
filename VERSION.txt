@@ -24,6 +24,20 @@
  + 13521 Rework `BlockingArrayQueue` growth strategy
  + 13526 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
 
+12.0.27 - 11 September 2025
+ + 13528 Review HttpParser._headerBytes accounting
+ + 13549 Ensure buffer is always released from HTTP/3 HeadersGenerator in case of failure.
+ + 13562 org.mortbay.jasper.apache-el-<version>.jar missing from jetty-12.0.26
+
+12.0.26 - 04 September 2025
+ + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13409 Jetty fails to discover WebFragments in Library Files on classpath
+ + 13436 AssertionError in MemoryEndPointPipe.MemoryEndPoint.fill()
+ + 13457 ClassCastException due to HashSet being used in a non thread-safe way
+ + 13475 jakarta Websocket served with h2 and timeouts disabled always times out after 30s
+ + 13506 HTTP/2 CONTINUATION frames may cause connection close
+
 12.1.0 - 15 August 2025
  + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1
  + 13346 TCP half-close during WebSocket session close causes ClosedChannelException

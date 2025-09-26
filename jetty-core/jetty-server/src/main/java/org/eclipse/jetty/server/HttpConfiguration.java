@@ -541,6 +541,17 @@ public class HttpConfiguration implements Dumpable
      */
     public void setFormEncodedMethods(String... methods)
     {
+        setFormEncodedMethods(Set.of(methods));
+    }
+
+    /**
+     * Sets the form encoded HTTP methods.
+     *
+     * @param methods the HTTP methods of requests that can be decoded as
+     * {@code x-www-form-urlencoded} content.
+     */
+    public void setFormEncodedMethods(Set<String> methods)
+    {
         _formEncodedMethods.clear();
         for (String method : methods)
         {

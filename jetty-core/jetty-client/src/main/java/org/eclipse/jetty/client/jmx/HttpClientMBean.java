@@ -15,6 +15,7 @@ package org.eclipse.jetty.client.jmx;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.ObjectMBean;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class HttpClientMBean extends ObjectMBean
 {
@@ -24,12 +25,28 @@ public class HttpClientMBean extends ObjectMBean
     }
 
     @Override
+    public HttpClient getManagedObject()
+    {
+        return (HttpClient)super.getManagedObject();
+    }
+
+    @Override
+    public String getObjectNameBasis()
+    {
+        HttpClient httpClient = getManagedObject();
+        return httpClient.getName();
+    }
+
+    @Override
     public String getObjectContextBasis()
     {
         // Returning the HttpClient name as the "context" property
         // because it is inherited by the ObjectNames of the components
         // of HttpClient such as the transport, the threadpool, etc.
-        HttpClient httpClient = (HttpClient)getManagedObject();
-        return httpClient.getName();
+        HttpClient httpClient = getManagedObject();
+        String name = httpClient.getName();
+        if (name != null)
+            return name;
+        return "%s@%x".formatted(TypeUtil.toShortName(httpClient.getClass()), httpClient.hashCode());
     }
 }

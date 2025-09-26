@@ -13,81 +13,19 @@
 
 package org.eclipse.jetty.ee9.nested.jmx;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.server.Server;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AbstractHandlerMBean extends ObjectMBean
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerMBean.class);
-
     public AbstractHandlerMBean(Object managedObject)
     {
         super(managedObject);
     }
 
     @Override
-    public String getObjectContextBasis()
+    public AbstractHandler getManagedObject()
     {
-        if (_managed != null)
-        {
-            String basis = null;
-            if (_managed instanceof ContextHandler)
-            {
-                ContextHandler handler = (ContextHandler)_managed;
-                String context = getContextName(handler);
-                if (context == null)
-                    context = handler.getDisplayName();
-                if (context != null)
-                    return context;
-            }
-            else if (_managed instanceof AbstractHandler)
-            {
-                AbstractHandler handler = (AbstractHandler)_managed;
-                Server server = handler.getServer();
-                if (server != null)
-                {
-                    // TODO
-//                    ContextHandler context =
-//                        AbstractHandlerContainer.findContainerOf(server,
-//                            ContextHandler.class, handler);
-//
-//                    if (context != null)
-//                        basis = getContextName(context);
-                }
-            }
-            if (basis != null)
-                return basis;
-        }
-        return super.getObjectContextBasis();
-    }
-
-    protected String getContextName(ContextHandler context)
-    {
-        String name = null;
-
-        if (context.getContextPath() != null && context.getContextPath().length() > 0)
-        {
-            int idx = context.getContextPath().lastIndexOf('/');
-            name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
-            if (name == null || name.length() == 0)
-                name = "ROOT";
-        }
-
-        if (name == null && context.getBaseResource() != null)
-        {
-            if (context.getBaseResource().getPath() != null)
-                name = context.getBaseResource().getPath().getFileName().toString();
-        }
-
-        if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
-            name = '"' + name + "@" + context.getVirtualHosts()[0] + '"';
-
-        return name;
+        return (AbstractHandler)super.getManagedObject();
     }
 }
