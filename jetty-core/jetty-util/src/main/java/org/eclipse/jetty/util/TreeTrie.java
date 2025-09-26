@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A Trie String lookup data structure using a tree
@@ -97,6 +98,7 @@ class TreeTrie<V> extends AbstractTrie<V>
         }
     }
 
+    private final AtomicInteger _size = new AtomicInteger();
     private final int[] _lookup;
     private final Node<V> _root;
 
@@ -120,6 +122,7 @@ class TreeTrie<V> extends AbstractTrie<V>
         _root._nextOther.clear();
         _root._key = null;
         _root._value = null;
+        _size.set(0);
     }
 
     @Override
@@ -156,8 +159,20 @@ class TreeTrie<V> extends AbstractTrie<V>
                 t = n;
             }
         }
-        t._key = v == null ? null : s;
-        t._value = v;
+        if (v == null)
+        {
+            if (t._key != null)
+                _size.decrementAndGet();
+            t._key = null;
+            t._value = null;
+        }
+        else
+        {
+            if (t._key == null)
+                _size.incrementAndGet();
+            t._key = s;
+            t._value = v;
+        }
         return true;
     }
 
@@ -276,37 +291,13 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isEmpty()
     {
-        return isEmpty(_root);
-    }
-
-    private boolean isEmpty(Node<V> t)
-    {
-        if (t != null)
-        {
-            if (t._key != null)
-                return false;
-
-            for (int i = 0; i < INDEX; i++)
-            {
-                if (t._nextIndex[i] != null)
-                {
-                    if (!isEmpty(t._nextIndex[i]))
-                        return false;
-                }
-            }
-            for (int i = t._nextOther.size(); i-- > 0; )
-            {
-                if (!isEmpty(t._nextOther.get(i)))
-                    return false;
-            }
-        }
-        return true;
+        return _size.get() == 0;
     }
 
     @Override
     public int size()
     {
-        return keySet().size();
+        return _size.get();
     }
 
     @Override

@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -137,6 +138,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
      *
      * The array is of characters rather than integers to save space.
      */
+    private final AtomicInteger _size = new AtomicInteger();
     private final char[] _table;
     private final int[] _lookup;
     private final Node<V>[] _node;
@@ -194,6 +196,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         _rows = 0;
         Arrays.fill(_table, (char)0);
         Arrays.fill(_node, null);
+        _size.set(0);
     }
 
     @Override
@@ -296,6 +299,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
         if (node == null)
             node = _node[row] = new Node<>();
         node._key = key;
+        if (node._value == null && value != null)
+            _size.incrementAndGet();
+        else if (node._value != null && value == null)
+            _size.decrementAndGet();
         node._value = value;
         return true;
     }
@@ -502,13 +509,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public int size()
     {
-        return keySet().size();
+        return _size.get();
     }
 
     @Override
     public boolean isEmpty()
     {
-        return keySet().isEmpty();
+        return size() == 0;
     }
 
     public void dumpStdErr()
