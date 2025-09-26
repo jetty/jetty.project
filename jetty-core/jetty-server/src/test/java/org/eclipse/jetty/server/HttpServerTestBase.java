@@ -192,6 +192,32 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testDotSlosh() throws Exception
+    {
+        startServer(new EchoHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                get /..\\..\\..\\..\\test HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String rawResponse = readResponse(client);
+
+            assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        }
+    }
+
+    @Test
     public void testSimpleFailure() throws Exception
     {
         startServer(new Handler.Abstract()

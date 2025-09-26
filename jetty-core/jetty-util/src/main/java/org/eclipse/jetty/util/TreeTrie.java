@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A Trie String lookup data structure using a tree
@@ -98,9 +97,9 @@ class TreeTrie<V> extends AbstractTrie<V>
         }
     }
 
-    private final AtomicInteger _size = new AtomicInteger();
     private final int[] _lookup;
     private final Node<V> _root;
+    private int _size = 0;
 
     @SuppressWarnings("unchecked")
     TreeTrie()
@@ -122,7 +121,7 @@ class TreeTrie<V> extends AbstractTrie<V>
         _root._nextOther.clear();
         _root._key = null;
         _root._value = null;
-        _size.set(0);
+        _size = 0;
     }
 
     @Override
@@ -162,14 +161,14 @@ class TreeTrie<V> extends AbstractTrie<V>
         if (v == null)
         {
             if (t._key != null)
-                _size.decrementAndGet();
+                _size--;
             t._key = null;
             t._value = null;
         }
         else
         {
             if (t._key == null)
-                _size.incrementAndGet();
+                _size++;
             t._key = s;
             t._value = v;
         }
@@ -291,13 +290,13 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isEmpty()
     {
-        return _size.get() == 0;
+        return _size == 0;
     }
 
     @Override
     public int size()
     {
-        return _size.get();
+        return _size;
     }
 
     @Override

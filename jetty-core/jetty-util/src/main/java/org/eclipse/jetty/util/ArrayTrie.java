@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -138,12 +137,12 @@ class ArrayTrie<V> extends AbstractTrie<V>
      *
      * The array is of characters rather than integers to save space.
      */
-    private final AtomicInteger _size = new AtomicInteger();
     private final char[] _table;
     private final int[] _lookup;
     private final Node<V>[] _node;
     private final int _bigRowSize;
     private char _rows;
+    private int _size;
 
     /** Create a trie from capacity and content
      * @param capacity The maximum capacity of the Trie or -1 for unlimited capacity
@@ -196,7 +195,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         _rows = 0;
         Arrays.fill(_table, (char)0);
         Arrays.fill(_node, null);
-        _size.set(0);
+        _size = 0;
     }
 
     @Override
@@ -300,9 +299,9 @@ class ArrayTrie<V> extends AbstractTrie<V>
             node = _node[row] = new Node<>();
         node._key = key;
         if (node._value == null && value != null)
-            _size.incrementAndGet();
+            _size++;
         else if (node._value != null && value == null)
-            _size.decrementAndGet();
+            _size--;
         node._value = value;
         return true;
     }
@@ -509,7 +508,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public int size()
     {
-        return _size.get();
+        return _size;
     }
 
     @Override
