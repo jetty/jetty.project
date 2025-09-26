@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -32,6 +33,7 @@ public abstract class AbstractResponseListener implements Response.Listener
     private String encoding;
     private String mediaType;
     private byte[] content;
+    private boolean append;
 
     protected AbstractResponseListener(RetainableByteBuffer.Mutable accumulator)
     {
@@ -100,10 +102,27 @@ public abstract class AbstractResponseListener implements Response.Listener
     @Override
     public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
     {
-        if (accumulator.append(chunk))
-            demander.run();
+        onContent(response, chunk.getByteBuffer());
+        if (append)
+        {
+            append = false;
+            if (accumulator.append(chunk))
+                demander.run();
+            else
+                response.abort(new IllegalArgumentException("Buffering capacity " + getMaxLength() + " exceeded"));
+        }
         else
-            response.abort(new IllegalArgumentException("Buffering capacity " + getMaxLength() + " exceeded"));
+        {
+            demander.run();
+        }
+    }
+
+    @Override
+    public void onContent(Response response, ByteBuffer content)
+    {
+        // For backward compatibility, mark whether applications called
+        // this method, which means they wanted to perform accumulation.
+        append = true;
     }
 
     @Override
