@@ -34,7 +34,7 @@ public class ContentSinkOutputStream extends OutputStream
 {
     private final Blocker.Shared _blocking = new Blocker.Shared();
     private final Content.Sink sink;
-    private Throwable failed;
+    private boolean failed;
 
     public ContentSinkOutputStream(Content.Sink sink)
     {
@@ -97,13 +97,9 @@ public class ContentSinkOutputStream extends OutputStream
     private void handleException(Throwable x) throws IOException
     {
         IOException failure = IO.rethrow(x);
-        if (failed == null)
-            failed = failure;
-        else if (ExceptionUtil.areAssociated(failed, failure))
-            failure = IO.rethrow(ExceptionUtil.copyOf(failure));
-        else
-            failed.addSuppressed(failure);
-
+        if (failed)
+            throw IO.rethrow(ExceptionUtil.copyOf(failure));
+        failed = true;
         throw failure;
     }
 }
