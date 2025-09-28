@@ -91,17 +91,33 @@ public class ExceptionUtil
 
         Throwable cause = failure.getCause();;
 
-        for (Constructor<?> constructor : failure.getClass().getDeclaredConstructors())
+        Class<? extends Throwable> failureType = failure.getClass();
+        while (failureType != Exception.class && failureType != RuntimeException.class && failureType != Error.class && failureType != Throwable.class)
         {
-            Class<?>[] params = constructor.getParameterTypes();
-            if (cause == null)
+            for (Constructor<?> constructor : failureType.getDeclaredConstructors())
             {
-                if (params.length == 1 && params[0] == String.class)
+                Class<?>[] params = constructor.getParameterTypes();
+                if (cause == null)
+                {
+                    if (params.length == 1 && params[0] == String.class)
+                    {
+                        try
+                        {
+                            if (Modifier.isPublic(constructor.getModifiers()))
+                                return (Throwable)constructor.newInstance(failure.getMessage());
+                        }
+                        catch (Throwable ignored)
+                        {
+                        }
+                        break;
+                    }
+                }
+                else if (params.length == 2 && params[0] == String.class && params[1] == Throwable.class)
                 {
                     try
                     {
                         if (Modifier.isPublic(constructor.getModifiers()))
-                            return (Throwable)constructor.newInstance(failure.getMessage());
+                            return (Throwable)constructor.newInstance(failure.getMessage(), cause);
                     }
                     catch (Throwable ignored)
                     {
@@ -109,18 +125,7 @@ public class ExceptionUtil
                     break;
                 }
             }
-            else if (params.length == 2 && params[0] == String.class && params[1] == Throwable.class)
-            {
-                try
-                {
-                    if (Modifier.isPublic(constructor.getModifiers()))
-                        return (Throwable)constructor.newInstance(failure.getMessage(), cause);
-                }
-                catch (Throwable ignored)
-                {
-                }
-                break;
-            }
+            failureType = (Class<? extends Throwable>)failureType.getSuperclass();
         }
 
         if (failure instanceof RuntimeException)
