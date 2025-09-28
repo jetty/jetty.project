@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -81,6 +83,89 @@ public class QoSHandlerTest
         start(qosHandler);
 
         assertThat(qosHandler.getMaxRequestCount(), greaterThan(0));
+    }
+
+    @Test
+    public void testInContext() throws Exception
+    {
+        int maxRequests = 2;
+        ContextHandler context = new ContextHandler();
+        URLClassLoader contextClassLoader = new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader());
+        context.setClassLoader(contextClassLoader);
+        context.setContextPath("/");
+        ContextHandlerCollection contexts = new ContextHandlerCollection(context);
+        Server server = new Server();
+        server.setHandler(contexts);
+        QoSHandler qosHandler = new QoSHandler();
+        qosHandler.setMaxRequestCount(maxRequests);
+        context.setHandler(qosHandler);
+        List<Callback> callbacks = new ArrayList<>();
+        qosHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callbacks.add(callback);
+                assertEquals(contextClassLoader, Thread.currentThread().getContextClassLoader());
+                return true;
+            }
+        });
+
+        connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        try
+        {
+            server.start();
+            List<LocalConnector.LocalEndPoint> endPoints = new ArrayList<>();
+            for (int i = 0; i < maxRequests; ++i)
+            {
+                LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+                GET /%d HTTP/1.1
+                Host: localhost
+
+                """.formatted(i));
+                endPoints.add(endPoint);
+                // Wait that the request arrives at the server.
+                await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(i + 1));
+            }
+
+            // Send one more request, it should be suspended by QoSHandler.
+            LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+            GET /%d HTTP/1.1
+            Host: localhost
+
+            """.formatted(maxRequests));
+            endPoints.add(endPoint);
+
+            assertEquals(maxRequests, callbacks.size());
+            await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
+            List<Callback> copy = List.copyOf(callbacks);
+            callbacks.clear();
+            for (int i = 0; i < copy.size(); ++i)
+            {
+                Callback callback = copy.get(i);
+                callback.succeeded();
+                String text = endPoints.get(i).getResponse(false, 5, TimeUnit.SECONDS);
+                HttpTester.Response response = HttpTester.parseResponse(text);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+
+            // The suspended request should have been resumed.
+            await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(0));
+            await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
+
+            // Finish the resumed request that is now waiting.
+            callbacks.get(0).succeeded();
+
+            String text = endPoints.get(endPoints.size() - 1).getResponse(false, 5, TimeUnit.SECONDS);
+            HttpTester.Response response = HttpTester.parseResponse(text);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+       finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
@@ -365,7 +450,6 @@ public class QoSHandlerTest
         });
         start(qosHandler);
 
-
         // Wait until a normal request arrives at the handler.
         LocalConnector.LocalEndPoint normalEndPoint = connector.executeRequest("""
             GET /normal/request HTTP/1.1
@@ -452,7 +536,7 @@ public class QoSHandlerTest
             LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
                 GET /pass/%d HTTP/1.1
                 Host: localhost
-                
+                                
                 """.formatted(i));
             endPoints.add(endPoint);
         }
@@ -463,7 +547,7 @@ public class QoSHandlerTest
             LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
                 GET /suspend/%d HTTP/1.1
                 Host: localhost
-                
+                                
                 """.formatted(i));
             endPoints.add(endPoint);
         }
@@ -474,7 +558,7 @@ public class QoSHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
                 GET /rejected/%d HTTP/1.1
                 Host: localhost
-                
+                                
                 """.formatted(i)));
             assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
         }
@@ -525,7 +609,7 @@ public class QoSHandlerTest
             client1.write(StandardCharsets.UTF_8.encode("""
                 GET /first HTTP/1.1
                 Host: localhost
-                
+                                
                 """));
             // Wait that the request arrives at the server.
             await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
@@ -536,7 +620,7 @@ public class QoSHandlerTest
                 client2.write(StandardCharsets.UTF_8.encode("""
                     GET /second HTTP/1.1
                     Host: localhost
-                    
+                                        
                     """));
                 // Wait for the second request to be suspended.
                 await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
