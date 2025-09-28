@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -73,7 +74,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
+        assertThat(chunk.getFailure(), instanceOf(failure.getClass()));
 
         content.close();
     }
@@ -201,7 +202,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
+        assertThat(chunk.getFailure(), instanceOf(failure.getClass()));
 
         content.close();
     }

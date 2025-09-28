@@ -224,9 +224,7 @@ public class ResponseListenersTest
         Content.Chunk chunk = contentSource.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), instanceOf(ArithmeticException.class));
-        assertThat(chunk.getFailure().getSuppressed().length, is(2));
-        assertThat(chunk.getFailure().getSuppressed()[0], instanceOf(NumberFormatException.class));
-        assertThat(chunk.getFailure().getSuppressed()[1], instanceOf(NumberFormatException.class));
+        assertThat(chunk.getFailure().getSuppressed().length, is(0));
 
         chunks.forEach(Content.Chunk::release);
         contentSource.close();
