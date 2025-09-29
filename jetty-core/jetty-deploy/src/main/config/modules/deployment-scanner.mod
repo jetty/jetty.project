@@ -21,10 +21,10 @@ etc/jetty-deployment-scanner.xml
 [ini-template]
 #tag::documentation[]
 ## The web application deploy directory name, or a comma-separated
-## list of directories (relative to $JETTY_BASE).
+## list of directories (absolute paths, or relative to $JETTY_BASE).
 # jetty.deploy.webappsDir=webapps
 
-## The environments directory name (relative to $JETTY_BASE).
+## The environments directory name (absolute path, or relative to $JETTY_BASE).
 ## This is where environment specific configuration files are stored.
 # jetty.deploy.environmentsDir=environments
 
