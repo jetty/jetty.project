@@ -267,4 +267,15 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         if (callback != null)
             callback.failed(cause);
     }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_callback == null)
+                return InvocationType.NON_BLOCKING;
+            return _callback.getInvocationType();
+        }
+    }
 }

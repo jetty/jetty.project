@@ -24,11 +24,15 @@ This section lists the listeners available in the Jetty components, but the even
 
 Listeners common to both client and server:
 
-* xref:arch/bean.adoc#listener[]
-* xref:arch/io.adoc#connection-listener[]
-* xref:client/http.adoc#configuration-tls-listener[]
-* xref:server/http.adoc#connector-protocol[]
+* xref:arch/bean.adoc#listener[Component Listeners]
+* xref:arch/io.adoc#connection-listener[Connection Listeners]
+* xref:client/http.adoc#configuration-tls-listener[TLS/SSL Listeners]
 
 Listeners that are server specific:
 
-* xref:server/http.adoc#request-processing-events[]
+* xref:server/http.adoc#request-processing-events[Request Processing Listeners]
+
+Listeners that are client specific:
+
+* xref:client/http.adoc#listeners[Request and Response Listeners]
+* xref:client/http.adoc#connection-events[Connect Listeners]

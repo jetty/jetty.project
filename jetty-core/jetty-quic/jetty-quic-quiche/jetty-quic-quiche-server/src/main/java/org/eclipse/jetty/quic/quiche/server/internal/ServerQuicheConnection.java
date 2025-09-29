@@ -446,6 +446,8 @@ public class ServerQuicheConnection extends QuicheConnection
         @Override
         public InvocationType getInvocationType()
         {
+            if (entry == null)
+                return InvocationType.NON_BLOCKING;
             return entry.callback.getInvocationType();
         }
 
