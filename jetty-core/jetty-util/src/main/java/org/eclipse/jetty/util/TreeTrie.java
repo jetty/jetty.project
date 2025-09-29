@@ -290,7 +290,7 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isEmpty()
     {
-        return _size == 0;
+        return size() == 0;
     }
 
     @Override
