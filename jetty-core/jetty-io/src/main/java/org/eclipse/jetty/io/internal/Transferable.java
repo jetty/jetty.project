@@ -62,7 +62,9 @@ public class Transferable
         @Override
         protected Action process() throws Throwable
         {
+            // TODO: should I set writeInterest() in NIO if TCP congestion?
             transferred += fileChannel.transferTo(position + transferred, length - transferred, writableChannel);
+            // TODO: call this.succeeded()
             if (transferred == length)
                 return Action.SUCCEEDED;
             return Action.SCHEDULED;
