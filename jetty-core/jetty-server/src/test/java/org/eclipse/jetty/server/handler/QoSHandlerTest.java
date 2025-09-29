@@ -162,7 +162,7 @@ public class QoSHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(text);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
-       finally
+        finally
         {
             LifeCycle.stop(server);
         }
@@ -536,7 +536,7 @@ public class QoSHandlerTest
             LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
                 GET /pass/%d HTTP/1.1
                 Host: localhost
-                                
+                
                 """.formatted(i));
             endPoints.add(endPoint);
         }
@@ -547,7 +547,7 @@ public class QoSHandlerTest
             LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
                 GET /suspend/%d HTTP/1.1
                 Host: localhost
-                                
+                
                 """.formatted(i));
             endPoints.add(endPoint);
         }
@@ -558,7 +558,7 @@ public class QoSHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
                 GET /rejected/%d HTTP/1.1
                 Host: localhost
-                                
+                
                 """.formatted(i)));
             assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
         }
@@ -609,7 +609,7 @@ public class QoSHandlerTest
             client1.write(StandardCharsets.UTF_8.encode("""
                 GET /first HTTP/1.1
                 Host: localhost
-                                
+                
                 """));
             // Wait that the request arrives at the server.
             await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
@@ -620,7 +620,7 @@ public class QoSHandlerTest
                 client2.write(StandardCharsets.UTF_8.encode("""
                     GET /second HTTP/1.1
                     Host: localhost
-                                        
+                    
                     """));
                 // Wait for the second request to be suspended.
                 await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
