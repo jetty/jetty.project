@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -50,12 +51,17 @@ public class JSONDocs
         // tag::async[]
         AsyncJSON parser = new AsyncJSON.Factory().newAsyncJSON();
 
+        // Simulate a read from the network of a
+        // first, partial, sequence of JSON bytes.
         String jsonChunk1 = """
             {
               "field": "value",
               "cou""";
-        parser.parse(StandardCharsets.UTF_8.encode(jsonChunk1));
+        ByteBuffer byteBuffer1 = StandardCharsets.UTF_8.encode(jsonChunk1);
+        parser.parse(byteBuffer1);
 
+        // Simulate a read from the network of a second
+        // sequence of JSON bytes that completes the first read.
         String jsonChunk2 = """
             nt": 42,
               "array": ["one", "two"],
@@ -64,7 +70,8 @@ public class JSONDocs
               }
             }
             """;
-        parser.parse(StandardCharsets.UTF_8.encode(jsonChunk2));
+        ByteBuffer byteBuffer2 = StandardCharsets.UTF_8.encode(jsonChunk2);
+        parser.parse(byteBuffer2);
 
         // When all the JSON chunks are parsed, complete the parser.
         Object object = parser.complete();
@@ -113,6 +120,7 @@ public class JSONDocs
                 out.add("number", parts.asString());
             }
 
+            // Split into Country Code, National Destination Code, and Subscriber Number.
             public record Parts(int cc, int ndc, int sn)
             {
                 public String asString()
@@ -165,7 +173,7 @@ public class JSONDocs
             }
         }
 
-        // This class is independent of the Jetty JSON library
+        // This record is independent of the Jetty JSON library
         // but records do not need external configuration for
         // conversion to/from the JSON format.
         record Person(String firstName, String lastName, int age, PhoneNumber phone)
