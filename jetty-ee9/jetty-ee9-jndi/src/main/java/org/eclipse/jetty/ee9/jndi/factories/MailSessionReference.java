@@ -137,9 +137,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
     {
         StringRefAddr addr = (StringRefAddr)get("user");
         if (addr != null)
-        {
             throw new RuntimeException("user already set on SessionReference, can't be changed");
-        }
         add(new StringRefAddr("user", user));
     }
 
