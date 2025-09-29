@@ -86,7 +86,7 @@ public class QoSHandlerTest
     }
 
     @Test
-    public void testInContext() throws Exception
+    public void testRequestIsResumedInSameContextClassLoader() throws Exception
     {
         int maxRequests = 2;
         ContextHandler context = new ContextHandler();
