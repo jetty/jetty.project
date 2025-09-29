@@ -231,6 +231,14 @@ public class Flusher
             }
             entries.forEach(Entry::release);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (active == null)
+                return InvocationType.NON_BLOCKING;
+            return active.callback().getInvocationType();
+        }
     }
 
     private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback)

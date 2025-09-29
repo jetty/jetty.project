@@ -782,16 +782,17 @@ public class ConnectHandler extends Handler.Wrapper
                 buffer = Retainable.release(buffer);
             }
 
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.NON_BLOCKING;
-            }
-
             private void disconnect(Throwable x)
             {
                 TunnelConnection.this.close(x);
                 connection.close(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                // Reads and writes in process() are non-blocking.
+                return InvocationType.NON_BLOCKING;
             }
         }
     }
