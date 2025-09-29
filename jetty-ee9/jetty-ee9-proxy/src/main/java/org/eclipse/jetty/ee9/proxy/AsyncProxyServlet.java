@@ -196,6 +196,13 @@ public class AsyncProxyServlet extends ProxyServlet
         {
             onError(cause);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // Reads and writes to AsyncRequestContent are non-blocking.
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     protected class StreamWriter implements WriteListener

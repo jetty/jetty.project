@@ -317,6 +317,12 @@ public class BufferedResponseHandler extends HandlerWrapper
                         // Signal last callback.
                         callback.failed(cause);
                     }
+
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return callback.getInvocationType();
+                    }
                 };
                 icb.iterate();
             }

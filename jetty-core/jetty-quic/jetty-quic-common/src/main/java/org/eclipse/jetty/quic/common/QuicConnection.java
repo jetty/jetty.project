@@ -371,16 +371,18 @@ public abstract class QuicConnection extends AbstractConnection
         }
 
         @Override
-        public InvocationType getInvocationType()
-        {
-            return entry.callback.getInvocationType();
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
             entry.callback.failed(cause);
             QuicConnection.this.close();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (entry == null)
+                return InvocationType.NON_BLOCKING;
+            return entry.callback.getInvocationType();
         }
 
         private static class Entry

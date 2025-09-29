@@ -123,6 +123,14 @@ public class Flusher
                 entry.failed(x);
             }
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (active == null)
+                return InvocationType.NON_BLOCKING;
+            return active.getInvocationType();
+        }
     }
 
     private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
@@ -141,6 +149,12 @@ public class Flusher
             if (accumulator != null)
                 accumulator.release();
             callback.failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return callback.getInvocationType();
         }
     }
 }
