@@ -608,7 +608,7 @@ link:https://www.bouncycastle.org/[Bouncy Castle] is a pure Java alternative pro
 
 To use Bouncy Castle as TLS provider, you must have the Bouncy Castle jars and the Jetty dependency `jetty-alpn-bouncycastle-server-{jetty-version}.jar` in the class-path or module-path.
 
-Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
+Then, you must configure the JDK with the Bouncy Castle provider, and configure Jetty to use the Bouncy Castle provider, in this way:
 
 [,java,indent=0,options=nowrap]
 ----
