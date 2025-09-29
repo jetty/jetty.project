@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -98,7 +97,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         IOException failure = IO.rethrow(x);
         if (failed)
-            throw IO.rethrow(ExceptionUtil.copyOf(failure));
+            throw new IOException(failure.getMessage(), failure);
         failed = true;
         throw failure;
     }

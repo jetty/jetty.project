@@ -18,7 +18,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -75,68 +74,6 @@ public class ExceptionUtil
                 t.addSuppressed(throwable);
             throw t;
         }
-    }
-
-    /**
-     * Create a copy of a Throwable, keeping the cause but discarding suppressed exceptions.
-     * The copy will be of the same type if it has a constructor that takes a String
-     * message, otherwise it will be of the same supertype (e.g. IOException).
-     * @param failure The Throwable to copy
-     * @return A copy of the Throwable with same cause, but no suppressed exceptions.
-     */
-    public static Throwable copyOf(Throwable failure)
-    {
-        if (failure == null)
-            return null;
-
-        Throwable cause = failure.getCause();;
-
-        Class<? extends Throwable> failureType = failure.getClass();
-        while (failureType != Exception.class && failureType != RuntimeException.class && failureType != Error.class && failureType != Throwable.class)
-        {
-            for (Constructor<?> constructor : failureType.getDeclaredConstructors())
-            {
-                Class<?>[] params = constructor.getParameterTypes();
-                if (cause == null)
-                {
-                    if (params.length == 1 && params[0] == String.class)
-                    {
-                        try
-                        {
-                            if (Modifier.isPublic(constructor.getModifiers()))
-                                return (Throwable)constructor.newInstance(failure.getMessage());
-                        }
-                        catch (Throwable ignored)
-                        {
-                        }
-                        break;
-                    }
-                }
-                else if (params.length == 2 && params[0] == String.class && params[1] == Throwable.class)
-                {
-                    try
-                    {
-                        if (Modifier.isPublic(constructor.getModifiers()))
-                            return (Throwable)constructor.newInstance(failure.getMessage(), cause);
-                    }
-                    catch (Throwable ignored)
-                    {
-                    }
-                    break;
-                }
-            }
-            failureType = (Class<? extends Throwable>)failureType.getSuperclass();
-        }
-
-        if (failure instanceof RuntimeException)
-            return new RuntimeException(failure.getMessage(), cause);
-        if (failure instanceof IOException)
-            return new IOException(failure.getMessage(), cause);
-        if (failure instanceof Error)
-            return new Error(failure.getMessage(), cause);
-        if (failure instanceof Exception)
-            return new Exception(failure.getMessage(), cause);
-        return new Throwable(failure.getMessage(), cause);
     }
 
     /**

@@ -47,7 +47,6 @@ import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -1122,7 +1121,7 @@ public class Content
                     {
                         // lazy copy of the exception.
                         if (failure == null)
-                            failure = ExceptionUtil.copyOf(chunk.getFailure());
+                            failure = new IOException(chunk.getFailure().getMessage(), chunk.getFailure());
                         return failure;
                     }
 
