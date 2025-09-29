@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -28,6 +30,8 @@ public interface OutgoingFrames
      * <p>
      * If you are implementing a mutation, you are obliged to handle
      * the incoming Callback appropriately.
+     * <p>
+     * The {@link Frame}'s payload {@link ByteBuffer} is consumed by this call.
      *
      * @param frame the frame to eventually write to the network layer.
      * @param callback the callback to notify when the frame is written.
@@ -40,6 +44,8 @@ public interface OutgoingFrames
 
     /**
      * Send an {@link OutgoingEntry} containing a {@link Frame} and {@link Callback}.
+     * <p>
+     * The {@link Frame}'s payload {@link ByteBuffer} is consumed by this call.
      *
      * @param entry the frame to eventually write to the network layer.
      */

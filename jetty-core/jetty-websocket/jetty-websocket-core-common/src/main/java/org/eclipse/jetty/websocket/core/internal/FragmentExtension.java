@@ -94,8 +94,6 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
 
     public class FragmentingDemander extends WebSocketDemander
     {
-        private ByteBuffer _payload;
-
         public FragmentingDemander()
         {
             super(FragmentExtension.this::nextIncomingFrame);
@@ -112,11 +110,10 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
                     emitFrame(frame, callback);
                     return true;
                 }
-
-                _payload = frame.getPayload();
             }
 
-            int remaining = _payload.remaining();
+            ByteBuffer payload = frame.getPayload();
+            int remaining = payload.remaining();
             int fragmentSize = (int)Math.min(remaining, maxFrameSize);
             byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
             Frame fragment = new Frame(opCode);
@@ -126,19 +123,18 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
             if (finished)
             {
                 // If finished we don't need to fragment, forward original payload.
-                fragment.setPayload(_payload);
-                _payload = null;
+                fragment.setPayload(payload);
             }
             else
             {
                 // Slice the fragmented payload from the buffer.
-                int limit = _payload.limit();
-                int newLimit = _payload.position() + fragmentSize;
-                _payload.limit(newLimit);
-                ByteBuffer payloadFragment = _payload.slice();
-                _payload.limit(limit);
+                int limit = payload.limit();
+                int newLimit = payload.position() + fragmentSize;
+                payload.limit(newLimit);
+                ByteBuffer payloadFragment = payload.slice();
+                payload.limit(limit);
                 fragment.setPayload(payloadFragment);
-                _payload.position(newLimit);
+                payload.position(newLimit);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fragmented {}->{}", frame, fragment);
             }
@@ -156,13 +152,6 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
 
             emitFrame(fragment, payloadCallback);
             return finished;
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            super.onCompleteFailure(cause);
-            _payload = null;
         }
     }
 }
