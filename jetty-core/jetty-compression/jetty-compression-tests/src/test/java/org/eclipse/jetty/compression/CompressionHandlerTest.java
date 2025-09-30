@@ -428,8 +428,6 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 }
             })
             .send();
-        System.err.println(response);
-        System.err.println(response.getHeaders());
         assertThat(response.getStatus(), is(200));
         assertThat(contentEncoding.get(), is(compression.getEncodingName()));
         assertThat(new String(response.getContent(), UTF_8), is("Hello World"));
