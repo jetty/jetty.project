@@ -2316,9 +2316,10 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (LOG.isDebugEnabled())
                 LOG.debug("Session failure {}", HTTP2Session.this, cause);
 
-            notifyFailure(HTTP2Session.this, cause, Callback.from(callback.getInvocationType(), () ->
-                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(callback.getInvocationType(), () ->
-                    sendGoAway(goAwayFrame, Callback.from(callback.getInvocationType(), () ->
+            Invocable.InvocationType invocationType = callback.getInvocationType();
+            notifyFailure(HTTP2Session.this, cause, Callback.from(invocationType, () ->
+                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(invocationType, () ->
+                    sendGoAway(goAwayFrame, Callback.from(invocationType, () ->
                         terminate(goAwayFrame, callback)))))));
         }
 
