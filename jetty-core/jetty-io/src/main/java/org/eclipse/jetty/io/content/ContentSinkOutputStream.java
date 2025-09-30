@@ -97,7 +97,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         IOException failure = IO.rethrow(x);
         if (failed)
-            throw new IOException(failure.getMessage(), failure);
+            throw new IOException(failure);
         failed = true;
         throw failure;
     }
