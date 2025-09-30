@@ -650,9 +650,9 @@ public abstract class WriteFlusher
             case FLUSHING -> "F";
             case PENDING -> "P";
             case COMPLETING -> "C";
-            case CANCEL -> "l";
-            case CANCELLING -> "L";
-            case FAILED -> "F";
+            case CANCEL -> "L";
+            case CANCELLING -> "N";
+            case FAILED -> "X";
         };
     }
 

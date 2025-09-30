@@ -611,6 +611,7 @@ public abstract class ProxyHandler extends Handler.Abstract
 
         public ProxyResponseListener(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
         {
+            super(InvocationType.NON_BLOCKING);
             this.clientToProxyRequest = clientToProxyRequest;
             this.proxyToServerRequest = proxyToServerRequest;
             this.proxyToClientResponse = proxyToClientResponse;

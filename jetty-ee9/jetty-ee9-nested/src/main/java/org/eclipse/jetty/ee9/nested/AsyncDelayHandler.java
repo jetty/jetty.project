@@ -30,7 +30,7 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class AsyncDelayHandler extends HandlerWrapper
 {
-    public static final String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
+    public static final String AHW_ATTR = "org.eclipse.jetty.server.handler.AsyncHandlerWrapper";
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

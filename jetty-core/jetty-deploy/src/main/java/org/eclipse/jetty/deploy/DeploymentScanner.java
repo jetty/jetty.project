@@ -813,12 +813,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         // Track removal
                         removedApps.add(app);
-                        deployer.undeploy(app.getContextHandler());
+                        ContextHandler contextHandler = app.getContextHandler();
+                        deployer.undeploy(contextHandler);
+                        contextHandler.destroy();
                     }
                     case DEPLOY ->
                     {
                         // Undo tracking for prior removal in this list of actions.
-                        removedApps.remove(app);
+                        removedApps.remove(app); // TODO review this logic. Doesn't this untrack this app that we start tracking below?
 
                         // Load <basename>.properties into app.
                         app.loadProperties();
@@ -903,6 +905,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                             LOG.debug("Redeploying {} to environment {}", app.getName(), envName);
 
                         deployer.redeploy(oldContextHandler, app.getContextHandler());
+                        oldContextHandler.destroy();
                     }
                 }
             }
