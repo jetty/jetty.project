@@ -652,7 +652,7 @@ public abstract class WriteFlusher
             case COMPLETING -> "C";
             case CANCEL -> "l";
             case CANCELLING -> "L";
-            case FAILED -> "F";
+            case FAILED -> "f";
         };
     }
 
