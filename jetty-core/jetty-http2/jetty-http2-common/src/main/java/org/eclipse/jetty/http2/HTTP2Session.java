@@ -845,7 +845,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
         else
         {
-            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
+            onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate", callback);
         }
     }
 
