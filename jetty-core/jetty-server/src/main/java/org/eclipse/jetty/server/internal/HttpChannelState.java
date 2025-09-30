@@ -243,9 +243,7 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Executor getExecutor()
     {
-        Executor executor = getServer().getThreadPool();
-        Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
-        return virtualExecutor != null ? virtualExecutor : executor;
+        return VirtualThreads.asPossiblyVirtual(getServer().getThreadPool());
     }
 
     @Override
