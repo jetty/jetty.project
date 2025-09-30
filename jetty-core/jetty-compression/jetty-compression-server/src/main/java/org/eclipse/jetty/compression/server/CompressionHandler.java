@@ -250,7 +250,8 @@ public class CompressionHandler extends Handler.Wrapper
         // The `Accept-Encoding` request header indicating the supported list of compression encoding techniques.
         List<QuotedQualityCSV.QualityValue> requestAcceptEncoding = List.of();
         // Tracks the `If-Match` or `If-None-Match` request headers contains an etag separator.
-        boolean etagMatches = false;
+        String ifNoneMatch = null;
+        String ifMatch = null;
 
         QuotedQualityCSV qualityCSV = null;
         HttpFields fields = request.getHeaders();
@@ -290,7 +291,8 @@ public class CompressionHandler extends Handler.Wrapper
                     }
                     qualityCSV.addValue(field.getValue());
                 }
-                case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
+                case IF_MATCH -> ifMatch = HttpField.asList(ifMatch, field.getValue());
+                case IF_NONE_MATCH -> ifNoneMatch = HttpField.asList(ifNoneMatch, field.getValue());
             }
         }
 
@@ -335,12 +337,31 @@ public class CompressionHandler extends Handler.Wrapper
             return next.handle(request, response, callback);
         }
 
-        Request decompressionRequest = request;
+        Request compressionRequest = request;
         Response compressionResponse = response;
 
+        // wrap if etags need to be adjusted
+        if (ifMatch != null || ifNoneMatch != null)
+        {
+            HttpFields.Mutable etagFields = HttpFields.build(compressionRequest.getHeaders());
+            if (ifMatch != null)
+                etagFields.put(HttpHeader.IF_MATCH, EtagUtils.stripSuffixes(ifMatch));
+            if (ifNoneMatch != null)
+                etagFields.put(HttpHeader.IF_NONE_MATCH, EtagUtils.stripSuffixes(ifNoneMatch));
+            HttpFields strippedFields = etagFields.asImmutable();
+            compressionRequest = new Request.Wrapper(compressionRequest)
+            {
+                @Override
+                public HttpFields getHeaders()
+                {
+                    return strippedFields;
+                }
+            };
+        }
+
         // We need to wrap the request IFF we can inflate or have seen etags with compression separators.
-        if (decompressEncoding != null || etagMatches)
-            decompressionRequest = newDecompressionRequest(request, decompressEncoding);
+        if (decompressEncoding != null)
+            compressionRequest = newDecompressionRequest(request, decompressEncoding);
 
         // Wrap the response IFF we can deflate.
         if (compressEncoding != null)
@@ -351,9 +372,9 @@ public class CompressionHandler extends Handler.Wrapper
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} {}", decompressionRequest, compressionResponse, this);
+            LOG.debug("handle {} {} {}", compressionRequest, compressionResponse, this);
 
-        if (next.handle(decompressionRequest, compressionResponse, callback))
+        if (next.handle(compressionRequest, compressionResponse, callback))
             return true;
 
         if (request instanceof DecompressionRequest decompressRequest)
@@ -364,7 +385,7 @@ public class CompressionHandler extends Handler.Wrapper
 
     private Compression getCompression(String encoding)
     {
-        Compression compression = supportedEncodings.get(encoding);
+        Compression compression = encoding == null ? null : supportedEncodings.get(encoding);
         if (compression == null)
         {
             if (LOG.isDebugEnabled())

@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public abstract class Compression extends ContainerLifeCycle
 {
+
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
@@ -279,7 +280,7 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config);
 
     /**
-     * Strip compression suffixes off etags
+     * Strip this compression suffix off etags
      *
      * @param etagsList the list of etags to strip
      * @return the tags stripped of compression suffixes.

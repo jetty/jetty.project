@@ -394,6 +394,8 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                assertThat(request.getHeaders().get(HttpHeader.IF_NONE_MATCH),
+                    is("W/\"abc\", \"def\", \"ghi\" , *"));
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 response.getHeaders().put(HttpHeader.ETAG, "W/\"686897696a7c876b7e\"");
@@ -410,7 +412,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
             .method(HttpMethod.GET)
             .path("/compress/hello")
-            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName()))
+            .headers(h ->
+                {
+                    h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+                    h.put(HttpHeader.IF_NONE_MATCH, "W/\"abc--gzip\", \"def--br\", \"ghi--dict1\" , *");
+                })
             .onResponseListener(new org.eclipse.jetty.client.Response.Listener()
             {
                 @Override
@@ -427,7 +433,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertThat(response.getStatus(), is(200));
         assertThat(contentEncoding.get(), is(compression.getEncodingName()));
         assertThat(new String(response.getContent(), UTF_8), is("Hello World"));
-        assertThat(response.getHeaders().get(HttpHeader.ETAG), is("W/\"686897696a7c876b7e--gzip\""));
+        assertThat(response.getHeaders().get(HttpHeader.ETAG), is("W/\"686897696a7c876b7e--" + compression.getEncodingName() + "\""));
     }
 
     /**
