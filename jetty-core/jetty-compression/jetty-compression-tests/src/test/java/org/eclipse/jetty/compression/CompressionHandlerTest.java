@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -363,6 +365,69 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .send();
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is("Hello World"));
+    }
+
+    /**
+     * Test Default configuration, where all Compression implementations are discovered
+     * via the ServiceLoader.
+     */
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        # type,
+        br,
+        zstandard,
+        gzip,
+        """)
+    public void testETag(String compressionType) throws Exception
+    {
+        CompressionHandler compressionHandler = new CompressionHandler();
+        newCompression(compressionType);
+        compressionHandler.putCompression(compression);
+        CompressionConfig config = CompressionConfig.builder()
+            .compressIncludeMethod("GET")
+            .compressIncludePath("/compress/*")
+            .build();
+        compressionHandler.putConfiguration("/", config);
+
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.ETAG, "W/\"686897696a7c876b7e\"");
+                Content.Sink.write(response, false, "Hello ", Callback.from(() ->
+                Content.Sink.write(response, true, "World", callback), callback::failed));
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+        URI serverURI = server.getURI();
+
+        AtomicReference<String> contentEncoding = new AtomicReference<>();
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .path("/compress/hello")
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName()))
+            .onResponseListener(new org.eclipse.jetty.client.Response.Listener()
+            {
+                @Override
+                public boolean onHeader(org.eclipse.jetty.client.Response response, HttpField field)
+                {
+                    if (field.getHeader() == HttpHeader.CONTENT_ENCODING)
+                        contentEncoding.compareAndSet(null, field.getValue());
+                    return true;
+                }
+            })
+            .send();
+        System.err.println(response);
+        System.err.println(response.getHeaders());
+        assertThat(response.getStatus(), is(200));
+        assertThat(contentEncoding.get(), is(compression.getEncodingName()));
+        assertThat(new String(response.getContent(), UTF_8), is("Hello World"));
+        assertThat(response.getHeaders().get(HttpHeader.ETAG), is("W/\"686897696a7c876b7e--gzip\""));
     }
 
     /**

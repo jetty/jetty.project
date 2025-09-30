@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -205,6 +206,15 @@ public class CompressionHandler extends Handler.Wrapper
         }
 
         super.doStart();
+
+        pathConfigs.values().forEach(c -> LifeCycle.start(c));
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        pathConfigs.values().forEach(c -> LifeCycle.stop(c));
+        super.doStop();
     }
 
     @Override
