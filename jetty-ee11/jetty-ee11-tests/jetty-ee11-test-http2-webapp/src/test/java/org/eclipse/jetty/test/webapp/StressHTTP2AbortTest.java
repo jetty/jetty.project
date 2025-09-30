@@ -16,16 +16,11 @@ package org.eclipse.jetty.test.webapp;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -69,13 +64,41 @@ public class StressHTTP2AbortTest
         [end]
         """.repeat(50).getBytes(StandardCharsets.UTF_8);
 
-    private ExecutorService executorService;
     private Server server;
+
+    @AfterEach
+    public void tearDown()
+    {
+        if (server != null)
+            LifeCycle.stop(server);
+    }
+
+    private void start(Handler handler) throws Exception
+    {
+        server = new Server();
+
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(httpConfiguration);
+        connectionFactory.setRateControlFactory(new RateControl.Factory()
+        {
+            @Override
+            public RateControl newRateControl(EndPoint endPoint)
+            {
+                return new WindowRateControl(8, Duration.ofSeconds(1));
+            }
+        });
+        ServerConnector serverConnector = new ServerConnector(server, connectionFactory);
+        serverConnector.setPort(0);
+        server.addConnector(serverConnector);
+
+        server.setHandler(handler);
+
+        server.start();
+    }
 
     @Test
     public void testOutputWithAborts() throws Exception
     {
-        int threads = 1;
         int iterations = 30;
         start(new Handler.Abstract()
         {
@@ -99,55 +122,40 @@ public class StressHTTP2AbortTest
         });
 
         List<Throwable> errors = new CopyOnWriteArrayList<>();
-        AtomicInteger requestIdGenerator = new AtomicInteger();
         try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())))
         {
             httpClient.start();
 
-            List<Future<?>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++)
+            for (int i = 0; i < iterations; i++)
             {
-                Future<?> future = executorService.submit(() ->
-                {
-                    for (int j = 0; j < iterations; j++)
+                CompletableFuture<Object> cf = new CompletableFuture<>();
+                Request request = httpClient.newRequest(server.getURI());
+                request.path("/" + i)
+                    .method(HttpMethod.GET)
+                    .send(result ->
                     {
-                        CompletableFuture<Object> cf = new CompletableFuture<>();
-                        int id = requestIdGenerator.getAndIncrement();
-                        Request request = httpClient.newRequest(server.getURI());
-                        request.path("/" + id)
-                            .method(HttpMethod.GET)
-                            .send(result ->
-                            {
-                                if (result.isSucceeded())
-                                    cf.complete(null);
-                                else
-                                    cf.completeExceptionally(result.getFailure());
-                            });
+                        if (result.isSucceeded())
+                            cf.complete(null);
+                        else
+                            cf.completeExceptionally(result.getFailure());
+                    });
 
-                        if (j % 2 == 0)
-                            request.abort(new Exception("client abort #" + id));
+                if (i % 2 == 0)
+                    request.abort(new Exception("client abort #" + i));
 
-                        try
-                        {
-                            cf.get(10, TimeUnit.SECONDS);
-                        }
-                        catch (Exception e)
-                        {
-                            Throwable cause = e.getCause();
-                            if (cause instanceof TimeoutException)
-                            {
-                                LOG.error("error in req #" + id, e);
-                                errors.add(e);
-                            }
-                        }
+                try
+                {
+                    cf.get(10, TimeUnit.SECONDS);
+                }
+                catch (Exception e)
+                {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof TimeoutException)
+                    {
+                        LOG.error("error in req #" + i, e);
+                        errors.add(e);
                     }
-                });
-                futures.add(future);
-            }
-
-            for (Future<?> future : futures)
-            {
-                future.get();
+                }
             }
 
 //            LOG.info("*** server dump ***");
@@ -156,37 +164,5 @@ public class StressHTTP2AbortTest
 //            LOG.info(httpClient.dump());
         }
         assertThat(errors, empty());
-    }
-
-    @AfterEach
-    public void tearDown()
-    {
-        if (executorService != null)
-            executorService.shutdownNow();
-        LifeCycle.stop(server);
-    }
-
-    private void start(Handler handler) throws Exception
-    {
-        executorService = Executors.newCachedThreadPool();
-        server = new Server();
-
-        HttpConfiguration httpConfiguration = new HttpConfiguration();
-        HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(httpConfiguration);
-        connectionFactory.setRateControlFactory(new RateControl.Factory()
-        {
-            @Override
-            public RateControl newRateControl(EndPoint endPoint)
-            {
-                return new WindowRateControl(8, Duration.ofSeconds(1));
-            }
-        });
-        ServerConnector serverConnector = new ServerConnector(server, connectionFactory);
-        serverConnector.setPort(0);
-        server.addConnector(serverConnector);
-
-        server.setHandler(handler);
-
-        server.start();
     }
 }
