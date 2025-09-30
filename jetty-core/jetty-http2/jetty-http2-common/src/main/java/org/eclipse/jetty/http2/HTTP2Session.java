@@ -2287,7 +2287,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             notifyFailure(HTTP2Session.this, cause, Callback.from(() ->
                 failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(() ->
                     sendGoAway(goAwayFrame, Callback.from(() ->
-                        terminate(goAwayFrame)))))));
+                        terminate(goAwayFrame, callback)))))));
         }
 
         private void onWriteFailure(Throwable x)
@@ -2398,6 +2398,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
 
         private void terminate(GoAwayFrame frame)
         {
+            terminate(frame, Callback.NOOP);
+        }
+
+        private void terminate(GoAwayFrame frame, Callback callback)
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
@@ -2410,7 +2415,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 completable.complete(null);
 
             HTTP2Session.this.terminate(failure);
-            notifyClose(HTTP2Session.this, frame, Callback.NOOP);
+            notifyClose(HTTP2Session.this, frame, callback);
             notifyLifeCycleClose();
         }
 
