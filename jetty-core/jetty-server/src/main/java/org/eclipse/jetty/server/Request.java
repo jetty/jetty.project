@@ -518,33 +518,21 @@ public interface Request extends Attributes, Content.Source
             return DEFAULT_LOCALES;
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+        if (acceptable.isEmpty())
+            return DEFAULT_LOCALES;
 
-        // return sorted list of locals, with known locales in quality order before unknown locales in quality order
-        return switch (acceptable.size())
+        List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
+        List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+        if (known.size() == locales.size() && !known.isEmpty())
+            return known;
+
+        List<Locale> knownFirst = new ArrayList<>(known.isEmpty() ? DEFAULT_LOCALES : known);
+        for (Locale locale : locales)
         {
-            case 0 -> DEFAULT_LOCALES;
-            case 1 -> List.of(Locale.forLanguageTag(acceptable.get(0)));
-            default ->
-            {
-                List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
-                long known = locales.stream().filter(MimeTypes::isKnownLocale).count();
-                if (locales.size() == known)
-                    yield locales;
-
-                List<Locale> knownFirst = new ArrayList<>(locales.size());
-                for (Locale locale : locales)
-                {
-                    if (MimeTypes.isKnownLocale(locale))
-                        knownFirst.add(locale);
-                }
-                for (Locale locale : locales)
-                {
-                    if (!MimeTypes.isKnownLocale(locale))
-                        knownFirst.add(locale);
-                }
-                yield knownFirst;
-            }
-        };
+            if (!MimeTypes.isKnownLocale(locale))
+                knownFirst.add(locale);
+        }
+        return knownFirst;
     }
 
     static InputStream asInputStream(Request request)
