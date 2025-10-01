@@ -45,7 +45,7 @@ public class VirtualThreads
      * @return An executor that will use virtual threads if configured, otherwise the passed executor
      * @see #getVirtualThreadsExecutor(Executor)
      */
-    public static Executor asPossiblyVirtual(Executor executor)
+    public static Executor getExecutor(Executor executor)
     {
         Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
         return virtualExecutor == null ? executor : virtualExecutor;
@@ -60,7 +60,7 @@ public class VirtualThreads
      */
     public static void execute(Executor executor, Runnable task)
     {
-        asPossiblyVirtual(executor).execute(task);
+        getExecutor(executor).execute(task);
     }
 
     private static Method probeIsVirtualThread()

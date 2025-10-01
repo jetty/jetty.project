@@ -1674,7 +1674,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void execute(Runnable runnable, Request request)
         {
-            VirtualThreads.asPossiblyVirtual(getServer().getThreadPool()).execute(() -> run(runnable, request));
+            VirtualThreads.execute(getServer().getThreadPool(), () -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()
