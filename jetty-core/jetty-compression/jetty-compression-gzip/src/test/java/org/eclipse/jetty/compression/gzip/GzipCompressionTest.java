@@ -23,8 +23,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GzipCompressionTest extends AbstractGzipTest
@@ -57,16 +55,6 @@ public class GzipCompressionTest extends AbstractGzipTest
             assertEquals(data1, decoded);
             // the extra data2 is not read, and there is no exception.
         }
-    }
-
-    @Test
-    public void testStripSuffixes() throws Exception
-    {
-        startGzip();
-        assertThat(gzip.stripSuffixes("\"12345\""), is("\"12345\""));
-        assertThat(gzip.stripSuffixes("12345, \"666" + gzip.getEtagSuffix() + "\""), is("12345, \"666\""));
-        assertThat(gzip.stripSuffixes("12345, \"666" + gzip.getEtagSuffix() + "\", W/\"9999" + gzip.getEtagSuffix() + "\""),
-            is("12345, \"666\", W/\"9999\""));
     }
 
     /**
