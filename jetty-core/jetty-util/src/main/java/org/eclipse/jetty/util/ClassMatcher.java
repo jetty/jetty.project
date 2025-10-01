@@ -243,6 +243,12 @@ public class ClassMatcher extends AbstractSet<String>
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return _entries.isEmpty();
+        }
+
+        @Override
         public boolean add(Entry entry)
         {
             if (!(entry instanceof ClassEntry))
@@ -282,6 +288,12 @@ public class ClassMatcher extends AbstractSet<String>
         public int size()
         {
             return _byPackage.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return _byPackage.isEmpty();
         }
 
         @Override
@@ -405,6 +417,12 @@ public class ClassMatcher extends AbstractSet<String>
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return _entries.isEmpty();
+        }
+
+        @Override
         public boolean add(Entry entry)
         {
             if (!(entry instanceof ModuleEntry))
@@ -453,6 +471,12 @@ public class ClassMatcher extends AbstractSet<String>
         public int size()
         {
             return _byLocation.size() + _byModule.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return _byLocation.isEmpty() && _byModule.isEmpty();
         }
 
         @Override

@@ -136,6 +136,10 @@ public class AttributesTest
         assertThat(layer.getAttribute("C"), nullValue());
 
         testAttributes(layer);
+
+        layer.clearLayerAttributes();
+
+        assertThat(layer, equalTo(persistent));
     }
 
     @Test
