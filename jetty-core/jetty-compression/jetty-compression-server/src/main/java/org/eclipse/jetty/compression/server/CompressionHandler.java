@@ -57,8 +57,6 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARA
  */
 public class CompressionHandler extends Handler.Wrapper
 {
-    public static final String HANDLER_ETAGS = CompressionHandler.class.getPackageName() + ".ETag";
-
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
     private final HttpField varyAcceptEncoding = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
     private final Map<String, Compression> supportedEncodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);

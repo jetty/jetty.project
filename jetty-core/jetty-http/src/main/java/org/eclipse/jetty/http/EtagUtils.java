@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public final class EtagUtils
 {
-
     private EtagUtils()
     {
         // prevent instantiation
