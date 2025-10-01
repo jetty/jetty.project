@@ -1313,7 +1313,7 @@ public class HttpClientTest extends AbstractTest
                 .send();
         });
 
-        assertThat(exception.getMessage(), containsString("Invalid header value"));
+        assertThat(exception.getMessage(), containsString("Invalid 'name' header value"));
     }
 
     private static void sleep(long time) throws IOException
