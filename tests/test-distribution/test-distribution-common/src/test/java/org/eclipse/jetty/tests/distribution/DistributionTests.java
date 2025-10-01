@@ -99,13 +99,13 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitForJettyStart());
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
@@ -643,7 +643,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,deprecated")))
         {
-            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             assertTrue(run1.getLogs().stream().anyMatch(log -> log.contains("WARN") && log.contains(reason)));
@@ -1011,7 +1011,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         List<String> modules = List.of("http", toEnvironment("proxy", env), toEnvironment("deploy", env));
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
 
             // Create a custom module for the ServerConnector that represents the backend server.
@@ -1072,7 +1072,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 "jetty.proxy.contextPath=/proxy",
                 "jetty.proxy.proxyTo=http://localhost:%d/backend".formatted(backendPort)))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 5, TimeUnit.SECONDS), String.join(System.lineSeparator(), run2.getLogs()));
+                assertTrue(run2.awaitForJettyStart(), String.join(System.lineSeparator(), run2.getLogs()));
 
                 startHttpClient();
                 ContentResponse response = client.newRequest("localhost", proxyPort)
