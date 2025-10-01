@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 import jakarta.servlet.ServletException;
@@ -27,6 +28,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -91,5 +94,94 @@ public class BufferedResponseHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertEquals(400, response.getStatus());
+    }
+
+    @Test
+    public void testEmptyFlushWriteSomeThenClose() throws Exception
+    {
+        final String content = "X".repeat(128) + "\n";
+
+        startServer((server) ->
+        {
+            ContextHandlerCollection contexts = new ContextHandlerCollection();
+            server.setHandler(contexts);
+
+            ContextHandler rootContextHandler = new org.eclipse.jetty.ee9.nested.ContextHandler();
+            rootContextHandler.setContextPath("/");
+            BufferedResponseHandler bufferedResponseHandler = new BufferedResponseHandler();
+            rootContextHandler.setHandler(bufferedResponseHandler);
+
+            AbstractHandler endpointHandler = new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                {
+                    response.setStatus(200);
+                    response.flushBuffer();
+                    response.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
+                    response.getOutputStream().close();
+                }
+            };
+            bufferedResponseHandler.setHandler(endpointHandler);
+            server.setHandler(rootContextHandler);
+        });
+
+        String rawRequest = """
+            GET /test HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContent(), is(content));
+    }
+
+    @Test
+    public void testFlushWriteManyThenClose() throws Exception
+    {
+        final String content = "X".repeat(128) + "\n";
+
+        startServer((server) ->
+        {
+            ContextHandlerCollection contexts = new ContextHandlerCollection();
+            server.setHandler(contexts);
+
+            ContextHandler rootContextHandler = new org.eclipse.jetty.ee9.nested.ContextHandler();
+            rootContextHandler.setContextPath("/");
+            BufferedResponseHandler bufferedResponseHandler = new BufferedResponseHandler();
+            rootContextHandler.setHandler(bufferedResponseHandler);
+
+            AbstractHandler endpointHandler = new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                {
+                    response.setStatus(200);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        response.getOutputStream().flush();
+                        response.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
+                    }
+                    response.getOutputStream().close();
+                }
+            };
+            bufferedResponseHandler.setHandler(endpointHandler);
+            server.setHandler(rootContextHandler);
+        });
+
+        String rawRequest = """
+            GET /test HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContent(), is(content.repeat(10)));
     }
 }
