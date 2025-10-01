@@ -194,7 +194,7 @@ public class HpackEncoder
 
                     String value = field.getValue();
                     if (!HttpTokens.isLegalFieldValue(value))
-                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header value: '%s'", value);
+                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid '%s' header value: '%s'", name, value);
                 }
             }
 
