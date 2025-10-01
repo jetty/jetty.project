@@ -147,7 +147,6 @@ public class QuotedCSVTest
             protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
             {
                 params.add(buffer.substring(paramName));
-                super.parsedParam(buffer, valueLength, paramName, paramValue);
             }
         };
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
