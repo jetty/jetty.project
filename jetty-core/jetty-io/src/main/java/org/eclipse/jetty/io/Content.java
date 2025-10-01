@@ -50,8 +50,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -111,28 +109,36 @@ public class Content
         new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
-    public static void copy(Source source, long length, boolean last, Sink sink, Callback callback)
+    public static void copy(Source source, boolean last, Sink sink, Callback callback)
+    {
+        new ContentCopier(source, last, sink, null, callback).iterate();
+    }
+
+    private static void copyRange(Source source, long length, Sink sink, Callback callback)
+    {
+        // TODO: it would be really difficult to make a source remember the bytes...
+        //  a subsequent call with the same source cannot have stored a chunk that
+        //  it returned previously, so do we really need a range?
+        //  Isn't the length always implicit to be the full length?
+        //  In HTTP/2 a large write is chunked and the write callback is not completed
+        //  until all the chunks are written (we store the BB in a DATA frame, and we
+        //  consume the BB chunk by chunk).
+        //  How can we do the same with a Source?
+        //  We can read a BB, wrap it in a DATA frame, even if larger than maxFrameSize
+        //  or flow control, as the Flusher will remember it.
+        //  But for transferTo(), we need a similar way for a Source to have position
+        //  and limit that a BB has, so perhaps we need a Source.Seekable.
+    }
+
+    public static boolean transfer(Source source, long length, Sink sink, Callback callback)
     {
         if (source instanceof Transferable.From from)
         {
             if (from.transferTo(sink, length, callback))
-            {
-                // TODO: honor "last".
-                return;
-            }
+                return true;
         }
-
-        IteratingCallback flusher = new IteratingNestedCallback(callback)
-        {
-            @Override
-            protected Action process()
-            {
-                // TODO
-                // TODO Honor "last".
-                return null;
-            }
-        };
-        flusher.iterate();
+        copyRange(source, length, sink, callback);
+        return false;
     }
 
     /**
@@ -747,6 +753,8 @@ public class Content
      */
     public interface Sink
     {
+        ByteBuffer TRANSFER = ByteBuffer.allocate(0);
+
         /**
          * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
          * @param out The stream to wrap
@@ -963,12 +971,12 @@ public class Content
             {
                 // Optimization to enable zero-copy.
                 aware.setContentSource(source);
-                sink.write(last, null, callback);
+                sink.write(last, TRANSFER, callback);
             }
             else
             {
-                // Normal write.
-                Content.copy(source, source.getLength(), last, sink, callback);
+                // Normal source.read() + sink.write() full copy.
+                Content.copy(source, last, sink, callback);
             }
         }
 

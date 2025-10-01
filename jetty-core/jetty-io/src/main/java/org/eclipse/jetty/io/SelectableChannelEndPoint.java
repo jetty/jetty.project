@@ -253,18 +253,20 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
 
-        // return task to complete the job
-        Runnable task = fillable
-            ? (flushable
-            ? _runCompleteWriteFillable
-            : _runFillable)
-            : (flushable
-            ? _runCompleteWrite
-            : null);
+        Runnable task = taskForSelected(fillable, flushable);
 
         if (LOG.isDebugEnabled())
             LOG.debug("task {}", task);
         return task;
+    }
+
+    protected Runnable taskForSelected(boolean fillable, boolean flushable)
+    {
+        if (fillable)
+            return flushable ? _runCompleteWriteFillable : _runFillable;
+        if (flushable)
+            return _runCompleteWrite;
+        return null;
     }
 
     private void updateKeyAction(Selector selector)
