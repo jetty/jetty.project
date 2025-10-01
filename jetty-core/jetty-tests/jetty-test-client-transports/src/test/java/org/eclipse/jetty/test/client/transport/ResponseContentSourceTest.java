@@ -54,7 +54,10 @@ public class ResponseContentSourceTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, Content.Source.from(file), callback);
+                Content.Source source = Content.Source.from(file);
+                // TODO: possible alternative?
+//                source.writeTo(response, true, callback);
+                Content.Sink.write(response, true, source, callback);
                 return true;
             }
         });
