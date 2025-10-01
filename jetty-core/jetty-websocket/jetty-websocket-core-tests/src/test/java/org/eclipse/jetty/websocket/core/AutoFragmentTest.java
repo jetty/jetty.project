@@ -310,10 +310,8 @@ public class AutoFragmentTest
             frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
-        // sentPayload should be fully consumed.
+        // Content of the sentPayload  was fully consumed.
         assertThat(sendPayload.remaining(), equalTo(0));
-        // payload should be unconsumed
-        // message should be equal to payload
 
         // We received correct payload in 2 frames.
         assertThat(message, is(payload));
