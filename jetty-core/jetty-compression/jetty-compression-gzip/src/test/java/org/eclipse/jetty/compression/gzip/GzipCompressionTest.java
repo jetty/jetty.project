@@ -63,10 +63,10 @@ public class GzipCompressionTest extends AbstractGzipTest
     public void testStripSuffixes() throws Exception
     {
         startGzip();
-        assertThat(gzip.stripSuffixes("12345"), is("12345"));
-        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix()), is("12345, 666"));
-        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix() + ",W/\"9999" + gzip.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
+        assertThat(gzip.stripSuffixes("\"12345\""), is("\"12345\""));
+        assertThat(gzip.stripSuffixes("12345, \"666" + gzip.getEtagSuffix() + "\""), is("12345, \"666\""));
+        assertThat(gzip.stripSuffixes("12345, \"666" + gzip.getEtagSuffix() + "\", W/\"9999" + gzip.getEtagSuffix() + "\""),
+            is("12345, \"666\", W/\"9999\""));
     }
 
     /**
