@@ -76,9 +76,6 @@ public class DynamicMappingTest
     @Test
     public void testRemoveMapping() throws Exception
     {
-        serverConnector.setIdleTimeout(5);
-        client.setDefaultMaxSessionIdleTimeout(5);
-
         // Test each mapping works.
         testEcho("/mapping1");
         testEcho("/mapping2");
