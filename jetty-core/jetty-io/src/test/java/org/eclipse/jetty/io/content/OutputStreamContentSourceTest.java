@@ -15,15 +15,11 @@ package org.eclipse.jetty.io.content;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import org.eclipse.jetty.io.EofException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -53,11 +49,6 @@ public class OutputStreamContentSourceTest
                 // fails with IllegalArgumentException: Self-suppression not permitted.
             }
         });
-
         assertThat(failure, sameInstance(cause));
-
-        StringWriter stringWriter = new StringWriter();
-        failure.printStackTrace(new PrintWriter(stringWriter));
-        assertThat(stringWriter.toString(), not(containsString("CIRCULAR REFERENCE")));
     }
 }

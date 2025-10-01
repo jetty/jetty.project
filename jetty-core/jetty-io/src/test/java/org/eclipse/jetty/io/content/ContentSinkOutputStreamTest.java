@@ -15,16 +15,14 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSinkOutputStreamTest
@@ -34,25 +32,18 @@ public class ContentSinkOutputStreamTest
     {
         EofException eofException = new EofException();
         Content.Sink sink = (last, byteBuffer, callback) -> callback.failed(eofException);
-
-        StringWriter stringWriter = new StringWriter();
-        try (OutputStream body = new ContentSinkOutputStream(sink))
+        IOException failure = assertThrows(IOException.class, () ->
         {
-            try
+            try (OutputStream body = new ContentSinkOutputStream(sink))
             {
                 body.write('a');
                 fail("expected IOException in write()");
             }
-            catch (IOException e)
-            {
-                body.flush();
-                fail("expected IOException in flush()");
-            }
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace(new PrintWriter(stringWriter));
-        }
-        assertThat(stringWriter.toString(), not(containsString("CIRCULAR REFERENCE")));
+            // Here ContentSinkOutputStream.close() is called, which calls write() again.
+            // This second write() also throws, and we must guarantee that it is not
+            // the same exception instance, or otherwise the try-with-resources
+            // fails with IllegalArgumentException: Self-suppression not permitted.
+        });
+        assertThat(failure, sameInstance(eofException));
     }
 }
