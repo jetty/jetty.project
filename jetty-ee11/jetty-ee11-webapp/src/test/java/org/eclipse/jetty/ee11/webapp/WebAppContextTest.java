@@ -1051,11 +1051,16 @@ public class WebAppContextTest
 
         // Create WebAppContext
         WebAppContext context = new WebAppContext();
+        Path servletTempDir = tempDir.resolve("tmp");
+        Files.createDirectory(servletTempDir);
+        File servletTempDirFile = servletTempDir.toFile();
         ResourceFactory resourceFactory = context.getResourceFactory();
         Resource warResource = resourceFactory.newResource(warFile);
         context.setContextPath("/");
         context.setWarResource(warResource);
         context.setExtractWAR(true);
+        context.setTempDirectory(servletTempDir.toFile());
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
 
         server.setHandler(context);
         server.start();
@@ -1078,11 +1083,20 @@ public class WebAppContextTest
         LOG.info("Stopping Initial Context");
         context.stop();
         LOG.info("Stopped Initial Context - waiting 2 seconds");
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        //the TEMPDIR should be a persistent attribute
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
+        //as the TEMPDIR is a persistent attribute, it should exist even afer a stop
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+
         Thread.sleep(2000);
         LOG.info("Touch War File: {}", warFile);
         touch(warFile);
         LOG.info("ReStarting Context");
         context.start();
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
 
         actualRefs = getWebAppClassLoaderUrlRefs(context);
         expectedRefs = new String[]{
