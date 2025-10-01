@@ -120,7 +120,6 @@ public class MessageOutputStream extends OutputStream
         }
     }
 
-    // TODO: review; can we really just flush if the send now owns the buffer
     private void flush(boolean fin) throws IOException
     {
         try (AutoLock ignored = lock.lock())
