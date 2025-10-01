@@ -72,17 +72,56 @@ public class BufferedResponseHandlerTest
         LifeCycle.stop(server);
     }
 
+    @Test
+    public void testEmptyFlushThenClose() throws Exception
+    {
+        startServer((server) ->
+        {
+            ContextHandlerCollection contexts = new ContextHandlerCollection();
+            server.setHandler(contexts);
+
+            ServletContextHandler contextHandler = new ServletContextHandler();
+            contextHandler.setContextPath("/a");
+            contextHandler.insertHandler(new BufferedResponseHandler());
+            contexts.addHandler(contextHandler);
+            ServletHolder forwardHolder = new ServletHolder(
+                new HttpServlet()
+                {
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                    {
+                        resp.setStatus(400);
+                        resp.flushBuffer();
+                        resp.getOutputStream().close();
+                    }
+                }
+            );
+            contextHandler.addServlet(forwardHolder, "/test");
+        });
+
+        String rawRequest = """
+            GET /a/test HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = localConnector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertEquals(400, response.getStatus());
+    }
+
     /**
      * Setup:
-     *  - Two contexts
-     *  - Both contexts on ee9
-     *  - Both contexts with cross-context enabled
-     *  - Both contexts with BufferedResponseHandler inserted.
-     *  - Servlet at /a/forward
-     *  - Servlet at /b/content
+     * - Two contexts
+     * - Both contexts on ee9
+     * - Both contexts with cross-context enabled
+     * - Both contexts with BufferedResponseHandler inserted.
+     * - Servlet at /a/forward
+     * - Servlet at /b/content
      * Action:
-     *  - Request to /a/forward initiates a cross-context-dispatch forward to /b/content
-     *  - Response from /b/content is status 200 with text content
+     * - Request to /a/forward initiates a cross-context-dispatch forward to /b/content
+     * - Response from /b/content is status 200 with text content
      */
     @Test
     public void testCrossContextDispatchForContentWithBuffers() throws Exception
@@ -152,15 +191,15 @@ public class BufferedResponseHandlerTest
 
     /**
      * Setup:
-     *  - Two contexts
-     *  - Both contexts on ee9
-     *  - Both contexts with cross-context enabled
-     *  - Both contexts with BufferedResponseHandler inserted.
-     *  - Servlet at /a/forward
-     *  - Servlet at /b/bad
+     * - Two contexts
+     * - Both contexts on ee9
+     * - Both contexts with cross-context enabled
+     * - Both contexts with BufferedResponseHandler inserted.
+     * - Servlet at /a/forward
+     * - Servlet at /b/bad
      * Action:
-     *  - Request to /a/forward initiates a cross-context-dispatch forward to /b/bad
-     *  - Response from /b/bad is status 400 with no body content
+     * - Request to /a/forward initiates a cross-context-dispatch forward to /b/bad
+     * - Response from /b/bad is status 400 with no body content
      */
     @Test
     public void testCrossContextDispatchForBadRequestWithBuffers() throws Exception
@@ -223,17 +262,17 @@ public class BufferedResponseHandlerTest
 
     /**
      * Setup:
-     *  - Two contexts
-     *  - Both contexts on ee9
-     *  - Both contexts with cross-context enabled
-     *  - Both contexts with BufferedResponseHandler inserted.
-     *  - Servlet at /a/forward
-     *  - Filter at /a/* - REQUEST dispatcher-type
-     *  - Servlet at /b/bad
+     * - Two contexts
+     * - Both contexts on ee9
+     * - Both contexts with cross-context enabled
+     * - Both contexts with BufferedResponseHandler inserted.
+     * - Servlet at /a/forward
+     * - Filter at /a/* - REQUEST dispatcher-type
+     * - Servlet at /b/bad
      * Action:
-     *  - Request to /a/forward is captured by
-     *    Filter at /a/* which initiates a cross-context-dispatch forward to /b/bad
-     *  - Response from /b/bad is status 400 with no body content
+     * - Request to /a/forward is captured by
+     * Filter at /a/* which initiates a cross-context-dispatch forward to /b/bad
+     * - Response from /b/bad is status 400 with no body content
      */
     @Test
     public void testCrossContextDispatchFromFilterForBadRequestWithBuffers() throws Exception
@@ -287,6 +326,16 @@ public class BufferedResponseHandlerTest
                     }
                 }
             );
+            FilterHolder flushFilter = new FilterHolder(new Filter()
+            {
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+                {
+                    chain.doFilter(request, response);
+                    response.flushBuffer();
+                }
+            });
+            context2.addFilter(flushFilter, "/*", EnumSet.of(DispatcherType.FORWARD));
             context2.addServlet(badRequestHolder, "/bad");
         });
 
