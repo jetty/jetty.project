@@ -928,9 +928,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected void cleanupAfterStop() throws Exception
     {
-        File tempDirectory = getTempDirectory();
+        // Clear transient attributes
+        _context.clearLayerAttributes();
 
         // if we're not persisting the temp dir contents delete it
+        File tempDirectory = getTempDirectory();
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
         {
             IO.delete(tempDirectory);

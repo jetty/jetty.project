@@ -38,27 +38,27 @@ import org.eclipse.jetty.util.TypeUtil;
  * <p>This class provides methods to convert POJOs to and from JSON notation.</p>
  * <p>The mapping from JSON to Java is:</p>
  *
- * <pre>
- *   object --&gt; Map&lt;String, Object&gt;
- *   array  --&gt; Object[]
- *   number --&gt; Double or Long
- *   string --&gt; String
- *   null   --&gt; null
- *   bool   --&gt; Boolean
- * </pre>
+ * <pre>{@code
+ *   object --> Map<String, Object>
+ *   array  --> Object[]
+ *   number --> Double or Long
+ *   string --> String
+ *   null   --> null
+ *   bool   --> Boolean
+ * }</pre>
  *
  * <p>The Java to JSON mapping is:</p>
  *
- * <pre>
- *   String --&gt; string
- *   Number --&gt; number
- *   Map    --&gt; object
- *   List   --&gt; array
- *   Array  --&gt; array
- *   null   --&gt; null
- *   Boolean--&gt; boolean
- *   Object --&gt; string (dubious!)
- * </pre>
+ * <pre>{@code
+ *   String --> string
+ *   Number --> number
+ *   Map    --> object
+ *   List   --> array
+ *   Array  --> array
+ *   null   --> null
+ *   Boolean--> boolean
+ *   Object --> string (dubious!)
+ * }</pre>
  *
  * <p>The interface {@link JSON.Convertible} may be implemented by classes that
  * wish to externalize and initialize specific fields to and from JSON objects.
@@ -1680,7 +1680,7 @@ public class JSON
         }
         catch (ClassCastException e)
         {
-            throw new ClassCastException("The given object is instance of " + o.getClass().toString());
+            throw new ClassCastException("The given object is instance of " + o.getClass());
         }
         sb.append('{');
         boolean isCommaNeede = false;
@@ -1728,10 +1728,9 @@ public class JSON
                 isCommaNeede = true;
                 continue;
             }
-            if (value instanceof HashMap<?, ?>)
+            if (value instanceof HashMap<?, ?> valueMap)
             {
-                HashMap<?, ?> valueMap = (HashMap<?, ?>)value;
-                if (valueMap.size() == 0)
+                if (valueMap.isEmpty())
                 {
                     sb.append("{}");
                     isCommaNeede = true;
@@ -1755,12 +1754,8 @@ public class JSON
                 continue;
             }
 
-            if (value instanceof Object)
-            {
-                sb.append(value);
-                isCommaNeede = true;
-                continue;
-            }
+            sb.append(value);
+            isCommaNeede = true;
         }
 
         sb.append('\n');
@@ -1779,15 +1774,15 @@ public class JSON
         {
             if (val instanceof Long)
             {
-                array.add((Long)val);
+                array.add(val);
             }
             else if (val instanceof String)
             {
-                array.add("\"" + (String)val + "\"");
+                array.add("\"" + val + "\"");
             }
             else if (val instanceof Boolean)
             {
-                array.add((Boolean)val);
+                array.add(val);
             }
         }
         return array.toString();

@@ -503,24 +503,22 @@ public interface Attributes
             return getWrapped();
         }
 
+        /**
+         * Clear the layer attributes, leaving the persistent attributes intact / restored
+         */
+        public void clearLayerAttributes()
+        {
+            _layer.clearAttributes();
+        }
+
         @Override
         public Object removeAttribute(String name)
         {
-            Object p = super.getAttribute(name);
-            try
-            {
-                Object v = _layer.setAttribute(name, REMOVED);
-                if (v == REMOVED)
-                    return null;
-                if (v != null)
-                    return v;
-                return p;
-            }
-            finally
-            {
-                if (p == null)
-                    _layer.removeAttribute(name);
-            }
+            Object persistentValue = super.getAttribute(name);
+            // If there is no persistent value, we can just remove from the layer, otherwise we need to mark it as removed in the layer
+            Object oldValue = persistentValue == null ? _layer.removeAttribute(name) : _layer.setAttribute(name, REMOVED);
+            // return the old value, which if not REMOVED and not in the layer, is the persistent value itself
+            return oldValue == REMOVED ? null : oldValue == null ? persistentValue : oldValue;
         }
 
         @Override

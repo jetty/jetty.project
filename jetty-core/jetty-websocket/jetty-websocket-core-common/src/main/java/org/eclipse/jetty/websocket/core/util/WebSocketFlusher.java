@@ -179,6 +179,14 @@ public abstract class WebSocketFlusher implements OutgoingFrames
             // Allow any subclass to clean up internal state on failure.
             WebSocketFlusher.this.onCompleteFailure(t);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (_current == null)
+                return InvocationType.NON_BLOCKING;
+            return _current.getCallback().getInvocationType();
+        }
     }
 
     private void notifyCallbackSuccess(OutgoingEntry entry)

@@ -142,6 +142,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     private final Node<V>[] _node;
     private final int _bigRowSize;
     private char _rows;
+    private int _size;
 
     /** Create a trie from capacity and content
      * @param capacity The maximum capacity of the Trie or -1 for unlimited capacity
@@ -194,6 +195,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         _rows = 0;
         Arrays.fill(_table, (char)0);
         Arrays.fill(_node, null);
+        _size = 0;
     }
 
     @Override
@@ -296,6 +298,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
         if (node == null)
             node = _node[row] = new Node<>();
         node._key = key;
+        if (node._value == null && value != null)
+            _size++;
+        else if (node._value != null && value == null)
+            _size--;
         node._value = value;
         return true;
     }
@@ -502,13 +508,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public int size()
     {
-        return keySet().size();
+        return _size;
     }
 
     @Override
     public boolean isEmpty()
     {
-        return keySet().isEmpty();
+        return size() == 0;
     }
 
     public void dumpStdErr()

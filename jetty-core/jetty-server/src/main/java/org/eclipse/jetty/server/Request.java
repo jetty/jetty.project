@@ -142,7 +142,7 @@ public interface Request extends Attributes, Content.Source
 {
     Logger LOG = LoggerFactory.getLogger(Request.class);
 
-    String COOKIE_ATTRIBUTE = "__oejs.Request.Cookies";
+    String COOKIE_ATTRIBUTE = "org.eclipse.jetty.server.Request.Cookies";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
     /**
