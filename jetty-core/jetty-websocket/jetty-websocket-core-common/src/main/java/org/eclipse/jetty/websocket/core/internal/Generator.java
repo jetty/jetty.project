@@ -198,6 +198,7 @@ public class Generator
                     ++maskOffset;
                 }
             }
+            payload.position(end);
         }
     }
 }

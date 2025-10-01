@@ -120,6 +120,7 @@ public class MessageOutputStream extends OutputStream
         }
     }
 
+    // TODO: review; can we really just flush if the send now owns the buffer
     private void flush(boolean fin) throws IOException
     {
         try (AutoLock ignored = lock.lock())
@@ -140,17 +141,6 @@ public class MessageOutputStream extends OutputStream
             // Any flush after the first will be a CONTINUATION frame.
             bytesSent += initialBufferSize;
             ++frameCount;
-
-            // Buffer has been sent, but buffer should not have been consumed.
-            try
-            {
-                assert buffer.remaining() == initialBufferSize;
-                buffer.clear();
-            }
-            catch (Throwable t)
-            {
-                t.printStackTrace();
-            }
         }
     }
 
