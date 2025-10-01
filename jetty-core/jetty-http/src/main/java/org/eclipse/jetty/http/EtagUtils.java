@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -46,11 +45,6 @@ public final class EtagUtils
      * that will not be found in a normal etag or at least is very unlikely to be a substring of a normal etag.</p>
      */
     public static final String ETAG_SEPARATOR = System.getProperty(EtagUtils.class.getName() + ".ETAG_SEPARATOR", "--");
-
-    /*
-     * Matches W/"value--algo" or "value--algo" and strips the trailing --algo parts.
-     */
-    private static final Pattern SUFFIX_REGEX = Pattern.compile("(W/)?\\\"([^\\\"]*?)(?:--[a-z0-9]+)+\\\"");
 
     /**
      * Create a new {@link HttpField} {@link HttpHeader#ETAG} field suitable to represent the provided Resource.
@@ -328,19 +322,5 @@ public final class EtagUtils
             value >>= 8;
         }
         return result;
-    }
-
-    /**
-     * Strip all suffixes off etags
-     *
-     * @param etags the list of etags to strip
-     * @return the tags stripped of suffixes.
-     */
-    public static String stripSuffixes(String etags)
-    {
-        if (etags == null)
-            return null;
-        // Put back weak-prefix (if any) + " + core + "
-        return SUFFIX_REGEX.matcher(etags).replaceAll("$1\"$2\"");
     }
 }

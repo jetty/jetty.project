@@ -23,7 +23,6 @@ import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -335,19 +334,27 @@ public class CompressionHandler extends Handler.Wrapper
             return next.handle(request, response, callback);
         }
 
-        Request compressionRequest = request;
-        Response compressionResponse = response;
+        Request nextRequest = request;
+        Response nextResponse = response;
 
         // wrap if etags need to be adjusted
         if (ifMatch != null || ifNoneMatch != null)
         {
-            HttpFields.Mutable etagFields = HttpFields.build(compressionRequest.getHeaders());
+            HttpFields.Mutable etagFields = HttpFields.build(nextRequest.getHeaders());
             if (ifMatch != null)
-                etagFields.put(HttpHeader.IF_MATCH, EtagUtils.stripSuffixes(ifMatch));
+            {
+                for (Compression known : supportedEncodings.values())
+                    ifMatch = known.stripSuffixes(ifMatch);
+                etagFields.put(HttpHeader.IF_MATCH, ifMatch);
+            }
             if (ifNoneMatch != null)
-                etagFields.put(HttpHeader.IF_NONE_MATCH, EtagUtils.stripSuffixes(ifNoneMatch));
+            {
+                for (Compression known : supportedEncodings.values())
+                    ifNoneMatch = known.stripSuffixes(ifNoneMatch);
+                etagFields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
+            }
             HttpFields strippedFields = etagFields.asImmutable();
-            compressionRequest = new Request.Wrapper(compressionRequest)
+            nextRequest = new Request.Wrapper(nextRequest)
             {
                 @Override
                 public HttpFields getHeaders()
@@ -359,20 +366,20 @@ public class CompressionHandler extends Handler.Wrapper
 
         // We need to wrap the request IFF we can inflate or have seen etags with compression separators.
         if (decompressEncoding != null)
-            compressionRequest = newDecompressionRequest(request, decompressEncoding);
+            nextRequest = newDecompressionRequest(request, decompressEncoding);
 
         // Wrap the response IFF we can deflate.
         if (compressEncoding != null)
         {
             // The response may vary based on the presence or lack of Accept-Encoding.
             response.getHeaders().ensureField(varyAcceptEncoding);
-            compressionResponse = newCompressionResponse(request, response, compressEncoding, config);
+            nextResponse = newCompressionResponse(request, response, compressEncoding, config);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} {}", compressionRequest, compressionResponse, this);
+            LOG.debug("handle {} {} {}", nextRequest, nextResponse, this);
 
-        if (next.handle(compressionRequest, compressionResponse, callback))
+        if (next.handle(nextRequest, nextResponse, callback))
             return true;
 
         if (request instanceof DecompressionRequest decompressRequest)

@@ -383,6 +383,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionHandler compressionHandler = new CompressionHandler();
         newCompression(compressionType);
         compressionHandler.putCompression(compression);
+        if (!compressionType.equals("gzip"))
+            compressionHandler.putCompression(new GzipCompression());
+        if (!compressionType.equals("br"))
+            compressionHandler.putCompression(new BrotliCompression());
+
         CompressionConfig config = CompressionConfig.builder()
             .compressIncludeMethod("GET")
             .compressIncludePath("/compress/*")
@@ -395,7 +400,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 assertThat(request.getHeaders().get(HttpHeader.IF_NONE_MATCH),
-                    is("W/\"abc\", \"def\", \"ghi\" , *"));
+                    is("W/\"abc\", \"def--unknown\", \"ghi--unknown\" , *"));
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 response.getHeaders().put(HttpHeader.ETAG, "W/\"686897696a7c876b7e\"");
@@ -415,7 +420,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .headers(h ->
                 {
                     h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
-                    h.put(HttpHeader.IF_NONE_MATCH, "W/\"abc--gzip\", \"def--br\", \"ghi--dict1\" , *");
+                    h.put(HttpHeader.IF_NONE_MATCH, "W/\"abc--gzip\", \"def--br--unknown\", \"ghi--unknown\" , *");
                 })
             .onResponseListener(new org.eclipse.jetty.client.Response.Listener()
             {
