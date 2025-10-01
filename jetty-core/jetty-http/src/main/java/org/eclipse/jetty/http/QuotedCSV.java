@@ -124,6 +124,14 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         _values.add(buffer.toString());
     }
 
+    @Override
+    protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
+    {
+        // Handle no value on the first parameter
+        if (valueLength == 0 && paramName == 0)
+            _values.add(buffer.toString());
+    }
+
     public int size()
     {
         return _values.size();
