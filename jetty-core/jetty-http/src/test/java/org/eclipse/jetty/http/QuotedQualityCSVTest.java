@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 public class QuotedQualityCSVTest
@@ -330,7 +331,7 @@ public class QuotedQualityCSVTest
     }
 
     @Test
-    public void testQuality()
+    public void testParamsOnly()
     {
         List<String> results = new ArrayList<>();
 
@@ -368,8 +369,8 @@ public class QuotedQualityCSVTest
         values.addValue("p=0.5,q=0.5");
 
         // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5 both as parameters
-        assertThat(results, contains("parsedValue: ", "parsedParam: p=0.5", "parsedValueAndParams: p=0.5",
-            "parsedValue: ", "parsedParam: q=0.5", "parsedValueAndParams: q=0.5"));
+        assertThat(values.size(), is(0));
+        assertThat(results, contains("parsedParam: p=0.5", "parsedParam: q=0.5"));
 
         // However the QuotedQualityCSV does not include value-less quality parameters.
         assertThat(values, not(contains("")));

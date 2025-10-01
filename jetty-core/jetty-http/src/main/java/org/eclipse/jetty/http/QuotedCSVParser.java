@@ -137,7 +137,7 @@ public abstract class QuotedCSVParser
                     if (state == State.VALUE)
                     {
                         valueLength = buffer.length();
-                        if (valueLength > 0 || paramsOnly)
+                        if (valueLength > 0)
                             parsedValue(buffer);
                     }
                     else if (valueLength > 0 || paramsOnly)
@@ -161,7 +161,7 @@ public abstract class QuotedCSVParser
                         {
                             case VALUE:
                                 valueLength = buffer.length();
-                                if (valueLength > 0 || paramsOnly)
+                                if (valueLength > 0)
                                     parsedValue(buffer);
                                 break;
                             case PARAM_NAME:
@@ -173,7 +173,7 @@ public abstract class QuotedCSVParser
                                 throw new IllegalStateException(state.toString());
                         }
 
-                        if (valueLength > 0 || paramsOnly)
+                        if (valueLength > 0)
                             parsedValueAndParams(buffer);
                     }
                     buffer.setLength(0);
@@ -198,7 +198,6 @@ public abstract class QuotedCSVParser
                             paramsOnly = !param.isEmpty();
                             buffer.setLength(0);
                             valueLength = 0;
-                            parsedValue(buffer);
                             buffer.append(param);
                             buffer.append(c);
                             lastLength = ++nwsLength;
