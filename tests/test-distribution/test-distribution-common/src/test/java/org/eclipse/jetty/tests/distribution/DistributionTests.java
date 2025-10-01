@@ -643,7 +643,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,deprecated")))
         {
-            assertTrue(run1.awaitForStart());
+            assertTrue(run1.awaitForStart(true));
             assertEquals(0, run1.getExitValue());
 
             assertTrue(run1.getLogs().stream().anyMatch(log -> log.contains("WARN") && log.contains(reason)));
