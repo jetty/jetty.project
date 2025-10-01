@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,14 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.ShutdownService;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -302,10 +298,9 @@ public class TestJettyStopMojo
             int retries = 100;
             do
             {
-                String tmp = extractPort(file);
+                Optional<String> tmp = extractPort(file);
                 retries--;
-                if (!StringUtil.isBlank(tmp))
-                    port.set(Integer.parseInt(tmp));
+                tmp.ifPresent(s -> port.set(Integer.parseInt(s)));
             } while (port.get() == -1 && retries > 0);
 
             return port.get() > -1;
@@ -327,7 +322,7 @@ public class TestJettyStopMojo
         log.assertContains("Server process stopped");
     }
 
-    private String extractPort(Path file) throws IOException
+    private Optional<String> extractPort(Path file) throws IOException
     {
         assertNotNull(file);
 
@@ -340,11 +335,11 @@ public class TestJettyStopMojo
         if (lines.size() < 2)
         {
             //haven't got all the output yet, try again
-            return "";
+            return Optional.empty();
         }
 
         //all output available, we can extract the port, which is the first line
         String port = lines.get(0);
-        return port.substring(10);
+        return Optional.of(port.substring(10));
     }
 }
