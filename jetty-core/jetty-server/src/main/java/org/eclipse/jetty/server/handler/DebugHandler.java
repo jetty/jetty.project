@@ -148,7 +148,8 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Thread thread = Thread.currentThread();
-        String name = thread.getName() + ":" + request.getHttpURI().getPathQuery();
+        String origName = thread.getName();
+        String threadName = origName + ":" + request.getHttpURI().getPathQuery();
         boolean willHandle = false;
         Throwable ex = null;
         String rname = findRequestName(request);
@@ -156,7 +157,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 
         try
         {
-            thread.setName(name);
+            thread.setName(threadName);
             String headers = _showHeaders ? ("\n" + request.getHeaders().toString()) : "";
 
             log(">> r=%s %s %s %s %s %s",
@@ -177,6 +178,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         }
         finally
         {
+            thread.setName(origName);
             if (!willHandle)
             {
                 //Log that the request was not going to be handled
