@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,17 +24,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.ShutdownService;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyStopMojo
@@ -49,7 +56,10 @@ public class TestJettyStopMojo
             {
                 ShutdownService shutdownService = new ShutdownService("127.0.0.1", 0, args[0], true);
                 shutdownService.start();
-                Awaitility.await().until(shutdownService::isListening);
+
+                //wait forever until our shutdown service stops this process
+                while (true)
+                    ;
             }
             catch (Exception e)
             {
@@ -169,6 +179,19 @@ public class TestJettyStopMojo
     }
 
     public WorkDir workDir;
+    public Process fork;
+
+    @AfterEach
+    public void tearDown() throws Exception
+    {
+        if (fork == null)
+            return;
+        if (fork.isAlive())
+        {
+            System.err.println("Forcibly shutting down " + fork);
+            fork.destroyForcibly();
+        }
+    }
 
     @Test
     public void testStopNoWait() throws Exception
@@ -270,22 +293,22 @@ public class TestJettyStopMojo
         command.redirectOutput(file.toFile());
         command.redirectErrorStream(true);
         command.directory(root.toFile());
-        Process fork = command.start();
+        fork = command.start();
 
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> Files.exists(file));
         AtomicInteger port = new AtomicInteger(-1);
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            Optional<String> tmp = Files.readAllLines(file).stream()
-                    .filter(s -> s.startsWith("STOP.PORT=")).findFirst();
-            if (tmp.isPresent())
+            int retries = 100;
+            do
             {
-                String line = tmp.get();
-                String portStr = line.substring(10);
-                port.set(Integer.parseInt(portStr));
-                return true;
-            }
-            return false;
+                String tmp = extractPort(file);
+                retries--;
+                if (!StringUtil.isBlank(tmp))
+                    port.set(Integer.parseInt(tmp));
+            } while (port.get() == -1 && retries > 0);
+
+            return port.get() > -1;
         });
 
         assertThat(port.get(), greaterThan(0));
@@ -302,5 +325,26 @@ public class TestJettyStopMojo
         log.dumpStdErr();
         log.assertContains("Waiting " + mojo.stopWait + " seconds for jetty " + fork.pid() + " to stop");
         log.assertContains("Server process stopped");
+    }
+
+    private String extractPort(Path file) throws IOException
+    {
+        assertNotNull(file);
+
+        //find both the line we are interested, and a subsequent line to ensure we have the full line
+        //the order is:
+        //STOP.PORT=
+        //STOP.KEY=
+        //STOP.EXIT=
+        List<String> lines = Files.readAllLines(file).stream().filter(s -> s.startsWith("STOP.PORT=") || s.startsWith("STOP.EXIT=")).toList();
+        if (lines.size() < 2)
+        {
+            //haven't got all the output yet, try again
+            return "";
+        }
+
+        //all output available, we can extract the port, which is the first line
+        String port = lines.get(0);
+        return port.substring(10);
     }
 }
