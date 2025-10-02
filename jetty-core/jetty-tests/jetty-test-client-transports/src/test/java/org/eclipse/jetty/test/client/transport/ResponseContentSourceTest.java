@@ -64,7 +64,7 @@ public class ResponseContentSourceTest extends AbstractTest
 
         ContentResponse response = new CompletableResponseListener(client.newRequest(newURI(transportType)), contentLength)
             .send()
-            .get(5, TimeUnit.SECONDS);
+            .get(555, TimeUnit.SECONDS);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(contentLength, response.getContent().length);

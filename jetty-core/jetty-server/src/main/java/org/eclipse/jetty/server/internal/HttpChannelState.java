@@ -1337,9 +1337,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
 
-            long length = BufferUtil.length(content);
-            if (length == 0 && _source != null)
-                length = _source.getLength();
+            long length = content == Content.Sink.TRANSFER ? _source.getLength() : BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
             HttpStream stream;

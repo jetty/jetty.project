@@ -307,7 +307,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer byteBuffer, boolean last, Callback callback)
     {
         _responseMetaData = response;
 
@@ -316,7 +316,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        Object content = byteBuffer == Content.Sink.TRANSFER ? response.getContentSource() : byteBuffer;
+        long contentLength = byteBuffer == Content.Sink.TRANSFER ? response.getContentSource().getLength() : BufferUtil.length(byteBuffer);
+        boolean hasContent = contentLength > 0 && !isHeadRequest;
         int streamId = _stream.getId();
         if (HttpStatus.isInterim(response.getStatus()))
         {
@@ -335,20 +337,19 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             _committed = true;
             if (last)
             {
-                long realContentLength = BufferUtil.length(content);
-                long contentLength = response.getContentLength();
-                if (contentLength < 0)
+                long responseContentLength = response.getContentLength();
+                if (responseContentLength < 0)
                 {
                     _responseMetaData = new MetaData.Response(
                         response.getStatus(), response.getReason(), response.getHttpVersion(),
                         response.getHttpFields(),
-                        realContentLength,
+                        contentLength,
                         response.getTrailersSupplier()
                     );
                 }
-                else if (hasContent && contentLength != realContentLength)
+                else if (hasContent && responseContentLength != contentLength)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", responseContentLength, contentLength)));
                     return;
                 }
             }
@@ -361,17 +362,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     HttpFields trailers = retrieveTrailers();
                     if (trailers == null)
                     {
-                        dataFrame = new DataFrame(streamId, content, true);
+                        dataFrame = new DataFrame(streamId, byteBuffer, true);
                     }
                     else
                     {
-                        dataFrame = new DataFrame(streamId, content, false);
+                        dataFrame = new DataFrame(streamId, byteBuffer, false);
                         trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                     }
                 }
                 else
                 {
-                    dataFrame = new DataFrame(streamId, content, false);
+                    dataFrame = new DataFrame(streamId, byteBuffer, false);
                 }
             }
             else

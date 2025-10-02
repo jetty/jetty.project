@@ -944,7 +944,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             default:
                                 Content.Source source = _info.getContentSource();
                                 if (source != null)
-                                    Content.copy(source, source.getLength(), _lastContent, getEndPoint(), this);
+                                    Content.transfer(source, source.getLength(), getEndPoint(), this);
                                 else
                                     succeeded();
                         }

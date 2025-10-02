@@ -97,6 +97,8 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint implements 
         super.onIdleExpired(timeout);
     }
 
+    // TODO: override onFail()
+
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
