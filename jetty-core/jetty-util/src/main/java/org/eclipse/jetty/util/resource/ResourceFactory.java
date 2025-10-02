@@ -558,7 +558,7 @@ public interface ResourceFactory
                     }
                     else
                     {
-                        list.add(newResource(reference));
+                        list.add(newResource(uri));
                     }
                 }
             }

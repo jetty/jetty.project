@@ -342,20 +342,26 @@ public class ResourceFactoryTest
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            String rootDir = ""; // the default
-            if (OS.WINDOWS.isCurrentOs())
-                rootDir = "C:/";
-
             List<String> rawInputs = new ArrayList<>();
             rawInputs.add("dir/a");
             rawInputs.add("foo/b");
             rawInputs.add("bar/c");
-            rawInputs.add("jar:file://" + rootDir + "foo/bar.jar!/");
-            rawInputs.add("jar:file://" + rootDir + "foo/bar.jar");
-            rawInputs.add(rootDir + "foo/bar.jar");
+            if (OS.WINDOWS.isCurrentOs())
+            {
+                rawInputs.add("jar:file:///C:/foo/bar.jar!/");
+                rawInputs.add("jar:file:///C:/foo/bar.jar");
+                rawInputs.add("C:/foo/bar.jar");
+            }
+            else
+            {
+                rawInputs.add("jar:file:///foo/bar.jar!/");
+                rawInputs.add("jar:file:///foo/bar.jar");
+                rawInputs.add("/foo/bar.jar");
+            }
 
             String rawConfig = String.join(",", rawInputs);
             List<Resource> resources = resourceFactory.split(rawConfig, ",", true);
+            assertThat(resources.size(), is(rawInputs.size()));
 
             for (Resource r : resources)
             {
@@ -392,7 +398,7 @@ public class ResourceFactoryTest
      * with unwrap turned off, then this will not result in a Resource.
      */
     @Test
-    public void testResourceSplitNonExistentJarReferenceNotUnwrapNotMounted()
+    public void testSplitNonExistentJarReferenceNotUnwrapNotMounted()
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -405,11 +411,30 @@ public class ResourceFactoryTest
     }
 
     /**
+     * If a jar filesystem {@code jar:file://} URI string reference is used against a non-existent file,
+     * with unwrap turned on, then this will result in a Resource without being mounted.
+     */
+    @Test
+    public void testSplitNonExistentJarReferenceUnwrapNotMounted()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path file = Path.of("/foo/bar.jar").toAbsolutePath();
+            assertFalse(Files.exists(file), "File should not exist: " + file);
+            String uriReference = "jar:" + file.toUri() + "!/";
+            List<Resource> resources = resourceFactory.split(uriReference, ",", true);
+            assertThat(resources.size(), is(1));
+            assertThat(resources.get(0), not(instanceOf(MountedPathResource.class)));
+            assertThat(resources.get(0).getPath().isAbsolute(), is(true));
+        }
+    }
+
+    /**
      * If a normal filesystem {@code file://} URI string reference is used against a non-existent
      * file with unwrap turned off, then this will result in a Resource reference.
      */
     @Test
-    public void testResourceSplitNonExistentFileReferenceNotUnwrapNotMounted()
+    public void testSplitNonExistentFileReferenceNotUnwrapNotMounted()
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -428,7 +453,7 @@ public class ResourceFactoryTest
      * with unwrap turned off, then this will result in a Resource that is mounted.
      */
     @Test
-    public void testResourceSplitExistingJarFileSystemNotUnwrappedIsMounted()
+    public void testSplitExistingJarFileSystemNotUnwrappedIsMounted()
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -442,79 +467,30 @@ public class ResourceFactoryTest
         }
     }
 
-    @Test
-    public void testSplitOnComma() throws URISyntaxException
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @ValueSource(strings = {",", "|", ";"}) // one of the standard separators
+    public void testSplitRelativePaths(String separators)
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Path base = workDir.getEmptyPathDir();
+            System.out.println(base);
+            Assumptions.assumeFalse(base.toString().contains(separators), "Path contains separator being tested in unexpected location: " + base);
+            List<String> dirs = new ArrayList<>();
             Path dir = base.resolve("dir");
             FS.ensureDirExists(dir);
+            dirs.add(dir.toString());
             Path foo = dir.resolve("foo");
             FS.ensureDirExists(foo);
+            dirs.add(foo.toString());
             Path bar = dir.resolve("bar");
             FS.ensureDirExists(bar);
+            dirs.add(bar.toString());
 
             // This represents the user-space raw configuration
-            String config = String.format("%s,%s,%s", dir, foo, bar);
+            String config = String.join(separators, dirs);
 
-            // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
-
-            URI[] expected = new URI[]{
-                dir.toUri(),
-                foo.toUri(),
-                bar.toUri()
-            };
-            assertThat(uris, contains(expected));
-        }
-    }
-
-    @Test
-    public void testSplitOnPipe() throws URISyntaxException
-    {
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Path base = workDir.getEmptyPathDir();
-            Path dir = base.resolve("dir");
-            FS.ensureDirExists(dir);
-            Path foo = dir.resolve("foo");
-            FS.ensureDirExists(foo);
-            Path bar = dir.resolve("bar");
-            FS.ensureDirExists(bar);
-
-            // This represents the user-space raw configuration
-            String config = String.format("%s|%s|%s", dir, foo, bar);
-
-            // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
-
-            URI[] expected = new URI[]{
-                dir.toUri(),
-                foo.toUri(),
-                bar.toUri()
-            };
-            assertThat(uris, contains(expected));
-        }
-    }
-
-    @Test
-    public void testSplitOnSemicolon() throws URISyntaxException
-    {
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Path base = workDir.getEmptyPathDir();
-            Path dir = base.resolve("dir");
-            FS.ensureDirExists(dir);
-            Path foo = dir.resolve("foo");
-            FS.ensureDirExists(foo);
-            Path bar = dir.resolve("bar");
-            FS.ensureDirExists(bar);
-
-            // This represents the user-space raw configuration
-            String config = String.format("%s;%s;%s", dir, foo, bar);
-
-            // Split using commas
+            // Split using one of the default separators
             List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
             URI[] expected = new URI[]{

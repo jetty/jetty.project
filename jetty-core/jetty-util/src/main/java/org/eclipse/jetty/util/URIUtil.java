@@ -1947,9 +1947,6 @@ public final class URIUtil
                     return correctURI(uri);
                 }
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Input string is detected as a non-absolute URI \"{}\"", reference);
-            throw new IllegalArgumentException("Non-absolute URI reference strings not supported");
         }
         catch (IllegalArgumentException e)
         {
