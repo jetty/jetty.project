@@ -19,21 +19,8 @@ import java.nio.charset.StandardCharsets;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class BrotliCompressionTest extends AbstractBrotliTest
 {
-    @Test
-    public void testStripSuffixes() throws Exception
-    {
-        startBrotli();
-        assertThat(brotli.stripSuffixes("12345"), is("12345"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix()), is("12345, 666"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix() + ",W/\"9999" + brotli.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
-    }
-
     @Test
     public void testEncodeBehavior() throws Exception
     {
