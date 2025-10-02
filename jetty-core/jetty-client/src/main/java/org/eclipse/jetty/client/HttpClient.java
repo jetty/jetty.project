@@ -1242,6 +1242,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         void setHttpClient(HttpClient httpClient);
     }
 
+    // A duplicate of oej.compression.client.CompressionContentDecoderFactory
+    // to avoid circular dependencies between the jetty-client and the
+    // jetty-compression client Maven modules.
     private static class CompressionContentDecoderFactory extends ContentDecoder.Factory
     {
         private final Compression compression;

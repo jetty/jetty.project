@@ -71,13 +71,13 @@ public class ZstandardDecoderConfig implements DecoderConfig
      *
      * <p>
      * Note: only applies when using
-     * {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)} or
+     * {@link ZstandardCompression#newDecoderSource(Content.Source)} or
      * {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)}.
      * </p>
      * <p>>
      * Note: not applied when using
-     * {@link ZstandardCompression#newDecoderInputStream(InputStream, DecoderConfig)} or
-     * {@link ZstandardCompression#newDecoderInputStream(InputStream)}
+     * {@link ZstandardCompression#newDecoderInputStream(InputStream)} or
+     * {@link ZstandardCompression#newDecoderInputStream(InputStream, DecoderConfig)}.
      * </p>
      *
      * @param flag true to enable, false is default.
