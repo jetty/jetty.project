@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -115,6 +116,10 @@ public class QoSHandlerTest
             await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(i + 1));
         }
 
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalRequestCount, equalTo((long)maxRequests));
+        assertEquals(0, qosHandler.getTotalSuspendedRequestCount());
+        assertEquals(0, qosHandler.getTotalResumedRequestCount());
+
         // Send one more request, it should be suspended by QoSHandler.
         LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             GET /%d HTTP/1.1
@@ -123,8 +128,10 @@ public class QoSHandlerTest
             """.formatted(maxRequests));
         endPoints.add(endPoint);
 
-        assertEquals(maxRequests, callbacks.size());
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalRequestCount, equalTo(maxRequests + 1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalSuspendedRequestCount, equalTo(1L));
         await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
+        await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(maxRequests));
 
         // Finish and verify the waiting requests.
         List<Callback> copy = List.copyOf(callbacks);
@@ -140,6 +147,8 @@ public class QoSHandlerTest
 
         // The suspended request should have been resumed.
         await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalSuspendedRequestCount, equalTo(1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalResumedRequestCount, equalTo(1L));
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Finish the resumed request that is now waiting.
@@ -189,6 +198,7 @@ public class QoSHandlerTest
         // Do not succeed the callback of the first request.
         // Wait for the second request to time out.
         await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(qosHandler::getSuspendedRequestCount, is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalExpiredRequestCount, is(1L));
 
         String text = endPoint1.getResponse(false, 5, TimeUnit.SECONDS);
         HttpTester.Response response = HttpTester.parseResponse(text);
@@ -478,6 +488,8 @@ public class QoSHandlerTest
                 """.formatted(i)));
             assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
         }
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalExceededRequestCount, is(2L));
+
         // Wait for the other requests to finish normally.
         endPoints.forEach(endPoint ->
         {
