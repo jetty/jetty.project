@@ -21,6 +21,7 @@
     <module>jetty-compression-brotli</module>
     <module>jetty-compression-zstandard</module>
     <module>jetty-compression-tests</module>
+    <module>jetty-compression-client</module>
   </modules>
 
   <properties>

@@ -61,6 +61,9 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.compression.client.CompressionContentDecoderFactory;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
+import org.eclipse.jetty.compression.gzip.GzipDecoderConfig;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
@@ -441,6 +444,24 @@ public class HTTPClientDocs
         // Remove all response content decoders.
         httpClient.getContentDecoderFactories().clear();
         // end::removeDecoders[]
+    }
+
+    public void customDecoders() throws Exception
+    {
+        // tag::customDecoders[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        // Remove all the default response content decoders.
+        httpClient.getContentDecoderFactories().clear();
+
+        // Only support GZIP, customized.
+        GzipCompression gzip = new GzipCompression();
+        GzipDecoderConfig gzipDecoderConfig = new GzipDecoderConfig();
+        // Customize the decoder buffer size.
+        gzipDecoderConfig.setBufferSize(4096);
+        gzip.setDefaultDecoderConfig(gzipDecoderConfig);
+        httpClient.getContentDecoderFactories().put(new CompressionContentDecoderFactory(gzip));
+        // end::customDecoders[]
     }
 
     public void futureResponseListener() throws Exception
