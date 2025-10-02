@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -138,9 +140,18 @@ public class QuotedCSVTest
     @Test
     public void testParamsOnly()
     {
-        QuotedCSV values = new QuotedCSV(false);
+        List<String> params = new ArrayList<>();
+        QuotedCSV values = new QuotedCSV(false)
+        {
+            @Override
+            protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
+            {
+                params.add(buffer.substring(paramName));
+            }
+        };
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
-        assertThat(values, Matchers.contains(
+        assertThat(values.size(), is(0));
+        assertThat(params, Matchers.contains(
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",
             "for=unknown"));
