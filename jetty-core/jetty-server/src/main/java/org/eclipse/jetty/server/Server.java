@@ -19,6 +19,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,7 +48,6 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -77,6 +78,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
 
+    private final Instant startupInstant = Instant.now();
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final Scheduler _scheduler;
@@ -252,10 +254,10 @@ public class Server extends Handler.Wrapper implements Attributes
      * {@link ContextHandler}. A {@code Server}'s {@link Context}:
      * <ul>
      *     <li>has a {@code null} {@link Context#getContextPath() context path}</li>
-     *     <li>returns the {@link ClassLoader} that loaded the {@link Server} from {@link Context#getClassLoader()}.</li>
+     *     <li>returns the {@link ClassLoader} that loaded the Server from {@link Context#getClassLoader()}.</li>
      *     <li>is an {@link java.util.concurrent.Executor} that delegates to the {@link Server#getThreadPool() Server ThreadPool}</li>
      *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory} found
-     *     as a {@link #getBean(Class) bean} of the {@link Server}</li>
+     *     as a {@link #getBean(Class) bean} of the Server</li>
      *     <li>has the same {@link #getTempDirectory() temporary director} of the {@link Server#getTempDirectory() server}</li>
      * </ul>
      */
@@ -529,12 +531,12 @@ public class Server extends Handler.Wrapper implements Attributes
         long seconds = now / 1000;
         DateField df = _dateField;
 
-        if (df == null || df._seconds != seconds)
+        if (df == null || df.seconds != seconds)
         {
             try (AutoLock ignore = _dateLock.lock())
             {
                 df = _dateField;
-                if (df == null || df._seconds != seconds)
+                if (df == null || df.seconds != seconds)
                 {
                     HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
                     _dateField = new DateField(seconds, field);
@@ -542,7 +544,23 @@ public class Server extends Handler.Wrapper implements Attributes
                 }
             }
         }
-        return df._dateField;
+        return df.dateField;
+    }
+
+    /**
+     * @return the UTC startup instant
+     */
+    public Instant getStartupInstant()
+    {
+        return startupInstant;
+    }
+
+    /**
+     * @return the time, in milliseconds, since this Server was created.
+     */
+    public long getUptimeMillis()
+    {
+        return Duration.between(startupInstant, Instant.now()).toMillis();
     }
 
     @Override
@@ -614,7 +632,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             if (_dryRun)
             {
-                LOG.info(String.format("Started(dry run) %s @%dms", this, Uptime.getUptime()));
+                LOG.info("Started(dry run) {} @{}ms", this, getUptimeMillis());
                 throw new StopException();
             }
 
@@ -634,7 +652,7 @@ public class Server extends Handler.Wrapper implements Attributes
             }
 
             multiException.ifExceptionThrow();
-            LOG.info(String.format("Started %s @%dms", this, Uptime.getUptime()));
+            LOG.info("Started {} @{}ms", this, getUptimeMillis());
         }
         catch (Throwable th)
         {
@@ -674,7 +692,7 @@ public class Server extends Handler.Wrapper implements Attributes
         if (isDumpBeforeStop())
             dumpStdErr();
 
-        LOG.info(String.format("Stopped %s", this));
+        LOG.info("Stopped {}", this);
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
 
@@ -886,18 +904,7 @@ public class Server extends Handler.Wrapper implements Attributes
         System.err.println(getVersion());
     }
 
-    private static class DateField
-    {
-        final long _seconds;
-        final HttpField _dateField;
-
-        public DateField(long seconds, HttpField dateField)
-        {
-            super();
-            _seconds = seconds;
-            _dateField = dateField;
-        }
-    }
+    private record DateField(long seconds, HttpField dateField) {}
 
     private static class DynamicErrorHandler extends ErrorHandler {}
 
