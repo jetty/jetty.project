@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -1901,72 +1900,78 @@ public final class URIUtil
     }
 
     /**
-     * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     * <p>Convert a String reference into an absolute URI.</p>
      *
-     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
-     * @return The {@link URI} form of the resource.
-     * @deprecated This method is currently resolving relative paths against the current directory, which is a mechanism
-     * that should be implemented by a {@link ResourceFactory}.   All calls to this method need to be reviewed.
+     * <p>If given a relative reference string to a path, it will convert it to an absolute path
+     * using the same techniques present in the JVM itself (eg: {@code Path.of(reference).toAbsolutePath()})</p>
+     *
+     * <p>Relative URI reference strings (eg: {@code "file:path/dir/"}
+     * and {@code "file:path/foo.jar!/"}) are not supported.</p>
+     *
+     * @param reference the raw String input.
+     * @return The absolute {@link URI} form of the reference.
+     * @throws IllegalArgumentException if unable to convert the input string.
      */
-    @Deprecated(since = "12.0.8")
-    public static URI toURI(String resource)
+    public static URI toURI(String reference)
     {
-        Objects.requireNonNull(resource);
+        Objects.requireNonNull(reference);
 
-        if (URIUtil.hasScheme(resource))
-        {
-            try
-            {
-                URI uri = new URI(resource);
-
-                if (ResourceFactory.isSupported(uri))
-                    return correctURI(uri);
-
-                // We don't have a supported URI scheme
-                if (uri.getScheme().length() == 1)
-                {
-                    // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
-                    try
-                    {
-                        return toURI(Paths.get(resource).toUri().toASCIIString());
-                    }
-                    catch (InvalidPathException x)
-                    {
-                        LOG.trace("ignored", x);
-                    }
-                }
-
-                // If we reached this point, that means the input String has a scheme,
-                // and is not recognized as supported by the registered schemes in ResourceFactory.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("URI scheme is not registered: {}", uri.toASCIIString());
-                throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
-            }
-            catch (URISyntaxException x)
-            {
-                // We have an input string that has what looks like a scheme, but isn't a URI.
-                // Eg: "C:\path\to\resource.txt"
-                LOG.trace("ignored", x);
-            }
-        }
-
-        // If we reached this point, we have a String with no valid scheme.
-        // Treat it as a Path, as that's all we have left to investigate.
         try
         {
-            return toURI(Paths.get(resource).toUri().toASCIIString());
+            /* Perform URI test first.
+             * We don't want to perform Path.of(String) first.
+             *
+             * Example: reference parameter is the String "file:///path/to/dir"
+             *
+             * On Unix, the Path.of(reference) will result in a relative directory reference
+             * that includes the "file:" portion in the path after the current working directory.
+             * You'll wind up with something like "file:///home/user/code/jetty/12.1.x/jetty-core/jetty-util/file:///path/to/dir" in this case
+             *
+             * On Windows, the Path.of(reference) will not allow a Path.of("file:///path/to/dir") to work.
+             * This is because there cannot be multi-character drive letters (yes, Windows is limited to only 26 drive letters max)
+             */
+            URI uri = URI.create(reference);
+            if (uri.isAbsolute())
+            {
+                // At this point we have a string detected as a URI.
+                // But that could also include Windows paths like "C:\path\to\foo.jar" or "C:/path/to/foo.jar"
+                String scheme = uri.getScheme();
+                if (scheme.length() == 1 && Character.isLetter(scheme.charAt(0)))
+                {
+                    // Single character schemes are assumed to be windows.
+                    // Make it a file: URI and process it separately.
+                    return toURI("file:///" + uri.toASCIIString());
+                }
+                {
+                    // Anything else, scheme wise, is acceptable.
+                    return correctURI(uri);
+                }
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Input string is detected as a non-absolute URI \"{}\"", reference);
+            throw new IllegalArgumentException("Non-absolute URI reference strings not supported");
         }
-        catch (InvalidPathException x)
+        catch (IllegalArgumentException e)
         {
-            LOG.trace("ignored", x);
+            LOG.trace("IGNORED: Invalid as URI Reference: {}", reference, e);
+        }
+
+        try
+        {
+            Path path = Path.of(reference).toAbsolutePath();
+            return path.toUri();
+        }
+        catch (InvalidPathException e)
+        {
+            // Not a path reference.
+            LOG.trace("IGNORED: Invalid as Path Reference: {}", reference, e);
         }
 
         // If we reached this here, that means the input string cannot be used as
         // a URI or a File Path.  The cause is usually due to bad input (eg:
         // characters that are not supported by file system)
         if (LOG.isDebugEnabled())
-            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+            LOG.debug("Input string cannot be converted to URI \"{}\"", reference);
         throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
