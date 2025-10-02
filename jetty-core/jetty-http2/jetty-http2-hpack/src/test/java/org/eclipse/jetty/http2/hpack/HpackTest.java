@@ -154,7 +154,7 @@ public class HpackTest
             BufferUtil.flipToFlush(buffer, 0);
         });
 
-        assertThat(throwable.getMessage(), containsString("Invalid header value"));
+        assertThat(throwable.getMessage(), containsString("Invalid 'cookie' header value"));
     }
 
     @Test
