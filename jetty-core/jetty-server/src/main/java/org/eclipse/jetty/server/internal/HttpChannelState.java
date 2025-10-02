@@ -1266,9 +1266,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            long length = BufferUtil.length(content);
-            if (length == 0 && _source != null)
-                length = _source.getLength();
+            long length = content == Content.Sink.TRANSFER ? _source.getLength() : BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
             HttpStream stream;
