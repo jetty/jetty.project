@@ -16,7 +16,6 @@ module org.eclipse.jetty.compression.server
     requires transitive org.eclipse.jetty.compression;
     requires transitive org.eclipse.jetty.server;
     requires org.slf4j;
-    requires java.net.http;
 
     exports org.eclipse.jetty.compression.server;
     exports org.eclipse.jetty.compression.server.internal;
