@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -1673,7 +1674,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void execute(Runnable runnable, Request request)
         {
-            getServer().getContext().execute(() -> run(runnable, request));
+            VirtualThreads.execute(getServer().getThreadPool(), () -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()
