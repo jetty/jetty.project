@@ -204,6 +204,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     @Override
     protected void doStart() throws Exception
     {
+        String name = Objects.requireNonNullElse(getName(), "%s@%x".formatted(getClass().getSimpleName(), hashCode()));
+
         Executor executor = getExecutor();
         if (executor == null)
         {
