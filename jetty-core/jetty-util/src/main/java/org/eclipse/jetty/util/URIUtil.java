@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -1930,7 +1931,7 @@ public final class URIUtil
              * On Windows, the Path.of(reference) will not allow a Path.of("file:///path/to/dir") to work.
              * This is because there cannot be multi-character drive letters (yes, Windows is limited to only 26 drive letters max)
              */
-            URI uri = URI.create(reference);
+            URI uri = new URI(reference);
             if (uri.isAbsolute())
             {
                 // At this point we have a string detected as a URI.
@@ -1948,7 +1949,7 @@ public final class URIUtil
                 }
             }
         }
-        catch (IllegalArgumentException e)
+        catch (URISyntaxException e)
         {
             LOG.trace("IGNORED: Invalid as URI Reference: {}", reference, e);
         }
