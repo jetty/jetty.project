@@ -312,7 +312,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitSingleJar() throws URISyntaxException
+    public void testSplitSingleJar()
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -325,7 +325,7 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testSplitSinglePath() throws URISyntaxException
+    public void testSplitSinglePath()
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
@@ -349,14 +349,16 @@ public class ResourceFactoryTest
             if (OS.WINDOWS.isCurrentOs())
             {
                 rawInputs.add("jar:file:///C:/foo/bar.jar!/");
-                rawInputs.add("jar:file:///C:/foo/bar.jar");
-                rawInputs.add("C:/foo/bar.jar");
+                rawInputs.add("jar:file:///C:/foo/baz.jar");
+                rawInputs.add("file:///C:/foo/zed.jar");
+                rawInputs.add("C:/foo/qux.jar");
             }
             else
             {
                 rawInputs.add("jar:file:///foo/bar.jar!/");
-                rawInputs.add("jar:file:///foo/bar.jar");
-                rawInputs.add("/foo/bar.jar");
+                rawInputs.add("jar:file:///foo/baz.jar");
+                rawInputs.add("file:///foo/zed.jar");
+                rawInputs.add("/foo/qux.jar");
             }
 
             String rawConfig = String.join(",", rawInputs);
