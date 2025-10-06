@@ -128,8 +128,19 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
         // Handle no value on the first parameter
-        if (valueLength == 0 && paramName == 0)
-            _values.add(buffer.toString());
+        if (valueLength == 0)
+        {
+            if (paramName == 0)
+            {
+                _values.add(buffer.toString());
+            }
+            else if (paramName > 0)
+            {
+                // replace last value
+                int lastIdx = size() - 1;
+                _values.set(lastIdx, buffer.toString());
+            }
+        }
     }
 
     public int size()

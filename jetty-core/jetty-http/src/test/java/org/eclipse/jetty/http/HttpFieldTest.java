@@ -21,6 +21,8 @@ import java.util.Map;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -141,6 +143,20 @@ public class HttpFieldTest
         field = new HttpField("name", "no;q=0.0000,Yes;Q=0.0001,no; Q = 0.00000");
         assertTrue(field.contains("yes"));
         assertFalse(field.contains("no"));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|',
+        textBlock = """
+        foo; zed=1; b=j     | foo;zed=1;b=j
+        foo=bar; zed=1; b=j | foo=bar;zed=1;b=j
+        """)
+    public void testValueList(String input, String expected)
+    {
+        HttpField field = new HttpField("name", input);
+        List<String> result = field.getValueList();
+        assertThat(result.size(), is(1));
+        assertThat(result.get(0), is(expected));
     }
 
     @Test
