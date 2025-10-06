@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -141,10 +142,12 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
-        assertThat(values, Matchers.contains(
+        String[] expected = {
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",
-            "for=unknown"));
+            "for=unknown"
+        };
+        assertThat(values, contains(expected));
     }
 
     /**
@@ -158,7 +161,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("foo=bar; name=zed");
-        assertEquals(values.size(), 1);
+        assertEquals(1, values.size());
         String result = values.iterator().next();
         assertThat(result, is("foo=bar;name=zed"));
     }
