@@ -118,7 +118,7 @@ public class QuotedCSVTest
     }
 
     @Test
-    public void testQuotedNoQuotes()
+    public void testQuotedNoQuotesWithComma()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("A;p=\"v\",B,\"C, D\"");
@@ -126,6 +126,17 @@ public class QuotedCSVTest
             "A;p=v",
             "B",
             "C, D"));
+    }
+
+    @Test
+    public void testQuotedNoQuotesWithSemicolon()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("A;p=\"v\",B,\"C; D\"");
+        assertThat(values, Matchers.contains(
+            "A;p=v",
+            "B",
+            "C; D"));
     }
 
     @Test
@@ -138,7 +149,31 @@ public class QuotedCSVTest
     }
 
     @Test
-    public void testParamsOnly()
+    public void testListParamedWithNoParamedOnly()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("for=192.0.2.60; proto=http;by=203.0.113.43, for=192.0.2.43");
+        String[] expected = {
+            "for=192.0.2.60;proto=http;by=203.0.113.43",
+            "for=192.0.2.43"
+        };
+        assertThat(values, contains(expected));
+    }
+
+    @Test
+    public void testListNoParamedWithParamedOnly()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("for=192.0.2.43, for=192.0.2.60;proto=http;by=203.0.113.43");
+        String[] expected = {
+            "for=192.0.2.43",
+            "for=192.0.2.60;proto=http;by=203.0.113.43"
+        };
+        assertThat(values, contains(expected));
+    }
+
+    @Test
+    public void testListForwardedRules()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
@@ -160,10 +195,25 @@ public class QuotedCSVTest
     public void testValueWithParams()
     {
         QuotedCSV values = new QuotedCSV();
-        values.addValue("foo=bar; name=zed");
+        values.addValue("foo=bar; name=zed; b=j");
         assertEquals(1, values.size());
         String result = values.iterator().next();
-        assertThat(result, is("foo=bar;name=zed"));
+        assertThat(result, is("foo=bar;name=zed;b=j"));
+    }
+
+    /**
+     * When parsing a value with a parameter, the parameter should be preserved.
+     */
+    @Test
+    public void testListValueWithParams()
+    {
+        QuotedCSV values = new QuotedCSV();
+        values.addValue("foo=bar; name=zed; b=j, color=red; type");
+        String[] expected = {
+            "foo=bar;name=zed;b=j",
+            "color=red;type"
+        };
+        assertThat(values, contains(expected));
     }
 
     @Test

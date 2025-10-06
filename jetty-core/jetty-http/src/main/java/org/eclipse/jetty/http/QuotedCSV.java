@@ -136,11 +136,9 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             }
             else if (paramName > 0)
             {
-                // append param to last value
-                int idx = size() - 1;
-                String last = _values.get(idx);
-                last += ";" + buffer.substring(paramName);
-                _values.set(idx, last);
+                // replace last value
+                int lastIdx = size() - 1;
+                _values.set(lastIdx, buffer.toString());
             }
         }
     }
