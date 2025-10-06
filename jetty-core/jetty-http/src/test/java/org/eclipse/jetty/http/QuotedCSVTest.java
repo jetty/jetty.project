@@ -24,6 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class QuotedCSVTest
@@ -144,6 +145,22 @@ public class QuotedCSVTest
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",
             "for=unknown"));
+    }
+
+    /**
+     * When parsing a value with a parameter, the parameter should be preserved.
+     * This is what we would see if using QuotedCSV with parsing a request 'Cookie' header
+     * (which uses `;` to separate cookies instead of `,`)
+     * Eg: The HttpFields.getValueList("Cookie") should return the entire Cookie header.
+     */
+    @Test
+    public void testValueWithParams()
+    {
+        QuotedCSV values = new QuotedCSV();
+        values.addValue("foo=bar; name=zed");
+        assertEquals(values.size(), 1);
+        String result = values.iterator().next();
+        assertThat(result, is("foo=bar;name=zed"));
     }
 
     @Test
