@@ -88,7 +88,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private final AtomicLong suspendedCount = new AtomicLong();
     private final AtomicLong resumedCount = new AtomicLong();
     private final AtomicLong expiredCount = new AtomicLong();
-    private final AtomicInteger exceededCount = new AtomicInteger();
+    private final AtomicLong exceededCount = new AtomicLong();
     private CyclicTimeouts<Entry> timeouts;
     private int maxRequests;
     private int maxSuspendedRequests = 1024;
