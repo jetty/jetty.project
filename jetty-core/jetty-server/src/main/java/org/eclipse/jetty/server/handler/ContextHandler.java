@@ -760,7 +760,27 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         notifyExitScope(request);
         __context.set(lastContext);
-        Thread.currentThread().setContextClassLoader(lastLoader);
+
+        Thread thread = Thread.currentThread();
+
+        // Avoid SecurityException on JDK 25 when running in InnocuousThread
+        try 
+        {
+            thread.setContextClassLoader(lastLoader);
+        } 
+        catch (SecurityException ex) 
+        {
+            // Jetty async may run on JDK internal InnocuousThread which forbids changing the context classloader
+            if (thread.getClass().getName().contains("InnocuousThread")) 
+            {
+                // Log once or silently ignore – context restore is not allowed here
+                LOG.debug("Skipping setContextClassLoader on InnocuousThread: {}", thread, ex);
+            }
+            else 
+            {
+                throw ex; // rethrow if it's not the restricted thread case
+            }
+        }
     }
 
     /**
