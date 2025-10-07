@@ -52,7 +52,9 @@ public class TestJettyStopMojo
             {
                 ShutdownService shutdownService = new ShutdownService("127.0.0.1", 0, args[0], true);
                 shutdownService.start();
-                Awaitility.await().until(shutdownService::isListening);
+                //wait forever until our shutdown service stops this process
+                while (true)
+                    ;
             }
             catch (Exception e)
             {
@@ -292,14 +294,8 @@ public class TestJettyStopMojo
         AtomicInteger port = new AtomicInteger(-1);
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            int retries = 100;
-            do
-            {
-                Optional<String> tmp = extractPort(file);
-                retries--;
-                tmp.ifPresent(s -> port.set(Integer.parseInt(s)));
-            } while (port.get() == -1 && retries > 0);
-
+            Optional<String> tmp = extractPort(file);
+            tmp.ifPresent(s -> port.set(Integer.parseInt(s)));
             return port.get() > -1;
         });
 

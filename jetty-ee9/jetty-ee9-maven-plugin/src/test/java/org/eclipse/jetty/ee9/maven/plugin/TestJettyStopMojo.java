@@ -295,14 +295,8 @@ public class TestJettyStopMojo
         AtomicInteger port = new AtomicInteger(-1);
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            int retries = 100;
-            do
-            {
-                Optional<String> tmp = extractPort(file);
-                retries--;
-                tmp.ifPresent(s -> port.set(Integer.parseInt(s)));
-            } while (port.get() == -1 && retries > 0);
-
+            Optional<String> tmp = extractPort(file);
+            tmp.ifPresent(s -> port.set(Integer.parseInt(s)));
             return port.get() > -1;
         });
 
