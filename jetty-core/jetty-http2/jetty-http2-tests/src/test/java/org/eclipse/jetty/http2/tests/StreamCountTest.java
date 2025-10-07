@@ -145,7 +145,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        CountDownLatch sessionResetLatch = new CountDownLatch(2);
+        CountDownLatch sessionResetLatch = new CountDownLatch(1);
         Session session = newClientSession(new Session.Listener()
         {
             @Override
@@ -205,7 +205,7 @@ public class StreamCountTest extends AbstractTest
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, data3.remaining());
         ((HTTP2Session)session).getEndPoint().write(Callback.from(accumulator::release), accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
-        // Expect 2 RST_STREAM frames.
+        // Expect 1 RST_STREAM frame.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
