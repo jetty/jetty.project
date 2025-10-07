@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -1201,6 +1202,67 @@ public class StreamResetTest extends AbstractTest
 
         // The client session window should be open.
         await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)stream.getSession()).updateSendWindow(0), greaterThan(0));
+    }
+
+    @Test
+    public void testClientResetThenDoesNotResetInFlightFrames() throws Exception
+    {
+        CountDownLatch clientResetLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                try
+                {
+                    if (clientResetLatch.await(5, TimeUnit.SECONDS))
+                    {
+                        MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
+                        stream.headers(responseFrame)
+                            .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(128), false)))
+                            .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(64), true)));
+                    }
+                    return null;
+                }
+                catch (InterruptedException x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
+
+        List<Frame> inFrames = new CopyOnWriteArrayList<>();
+        List<Frame> outFrames = new CopyOnWriteArrayList<>();
+        http2Client.addBean(new HTTP2Session.FrameListener()
+        {
+            @Override
+            public void onIncomingFrame(Session session, Frame frame)
+            {
+                inFrames.add(frame);
+            }
+
+            @Override
+            public void onOutgoingFrame(Session session, Frame frame)
+            {
+                outFrames.add(frame);
+            }
+        });
+
+        Session client = newClientSession(new Session.Listener() {});
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, true);
+        client.newStream(requestFrame, new Stream.Listener() {})
+            .thenCompose(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.ENHANCE_YOUR_CALM_ERROR.code)))
+            .thenRun(clientResetLatch::countDown);
+
+        // Wait until received all the frames from the server.
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            assertTrue(inFrames.stream().anyMatch(f -> f instanceof DataFrame d && d.isEndStream()), inFrames.toString()));
+
+        // Verify that we only sent 1 RST_STREAM frame.
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            assertEquals(1L, outFrames.stream().filter(f -> f instanceof ResetFrame).count(), outFrames.toString()));
     }
 
     private void waitUntilTCPCongested(Supplier<SelectableChannelEndPoint> selectableChannelEndPointRef)
