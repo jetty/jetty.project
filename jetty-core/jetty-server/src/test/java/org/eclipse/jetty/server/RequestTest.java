@@ -552,6 +552,7 @@ public class RequestTest
             Arguments.of(null, List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(";", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(",", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("bogus", List.of(Locale.getDefault().toLanguageTag(), "bogus").toString()),
             Arguments.of("en-en", List.of(Locale.getDefault().toLanguageTag(), "en-EN").toString()),
             Arguments.of("zz", List.of(Locale.getDefault().toLanguageTag(), "zz").toString()),

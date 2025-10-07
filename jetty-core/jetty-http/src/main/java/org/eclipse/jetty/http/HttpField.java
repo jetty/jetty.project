@@ -386,17 +386,46 @@ public class HttpField
      */
     public boolean containsLast(String search)
     {
-        return containsLast(getValue(), search);
+        String value = getValue();
+        if (search == null)
+            return value == null;
+        if (search.isEmpty())
+            return false;
+        if (value == null)
+            return false;
+        if (search.equalsIgnoreCase(value))
+            return true;
+
+        if (value.endsWith(search))
+        {
+            int i = value.length() - search.length() - 1;
+            while (i >= 0)
+            {
+                char c = value.charAt(i--);
+                if (c == ',')
+                    return true;
+                if (c != ' ')
+                    return false;
+            }
+            return true;
+        }
+
+        QuotedCSV csv = newQuotedCSV(false, value);
+        List<String> values = csv.getValues();
+        return !values.isEmpty() && search.equalsIgnoreCase(values.get(values.size() - 1));
     }
 
     /**
      * Look for the last value in a possible multivalued field
      * Parameters and specifically quality parameters are not considered.
+     *
      * @param value The field value to search in.
      * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
      * as the last element of a quoted comma separated list.
+     * @deprecated use non-static {@link #containsLast(String)} instead.
      */
+    @Deprecated(since = "jetty-12.1.3", forRemoval = true)
     public static boolean containsLast(String value, String search)
     {
         if (search == null)
@@ -422,6 +451,7 @@ public class HttpField
             return true;
         }
 
+        // Non compliant!
         QuotedCSV csv = new QuotedCSV(false, value);
         List<String> values = csv.getValues();
         return !values.isEmpty() && search.equalsIgnoreCase(values.get(values.size() - 1));

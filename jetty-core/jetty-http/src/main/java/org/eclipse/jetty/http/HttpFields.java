@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -147,6 +148,34 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     static Mutable build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
         return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
+    }
+
+    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
+    {
+        return new org.eclipse.jetty.http.MutableHttpFields()
+        {
+            @Override
+            public QuotedCSV newQuotedCSV(boolean keepQuotes)
+            {
+                return new QuotedCSV(keepQuotes)
+                {
+                    @Override
+                    protected void onComplianceViolation(ComplianceViolation violation, String value)
+                    {
+                        if (httpCompliance.allows(violation))
+                            notifyViolation.accept(violation, value);
+                        else
+                            throw new BadMessageException(violation.getDescription());
+                    }
+                };
+            }
+
+            @Override
+            public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+            {
+                return super.newQuotedQualityCSV(secondaryOrdering);
+            }
+        };
     }
 
     /**
@@ -459,7 +488,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (f.getHeader() == header)
             {
                 if (values == null)
-                    values = new QuotedCSV(keepQuotes);
+                    values = newQuotedCSV(keepQuotes);
                 values.addValue(f.getValue());
             }
         }
@@ -486,7 +515,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (f.is(name))
             {
                 if (values == null)
-                    values = new QuotedCSV(keepQuotes);
+                    values = newQuotedCSV(keepQuotes);
                 values.addValue(f.getValue());
             }
         }
@@ -758,7 +787,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (f.getHeader() == header)
             {
                 if (values == null)
-                    values = new QuotedQualityCSV(secondaryOrdering);
+                    values = newQuotedQualityCSV(secondaryOrdering);
                 values.addValue(f.getValue());
             }
         }
@@ -785,7 +814,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (f.is(name))
             {
                 if (values == null)
-                    values = new QuotedQualityCSV();
+                    values = newQuotedQualityCSV(null);
                 values.addValue(f.getValue());
             }
         }
@@ -950,6 +979,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return StreamSupport.stream(spliterator(), false);
     }
 
+    default QuotedCSV newQuotedCSV(boolean b)
+    {
+        return new QuotedCSV(b);
+    }
+
+    default QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+    {
+        return new QuotedQualityCSV(secondaryOrdering);
+    }
+
     /**
      * <p>A mutable version of {@link HttpFields}.</p>
      * <p>Name and value pairs representing HTTP headers or HTTP
@@ -1109,7 +1148,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 if (f.getHeader() == header)
                 {
                     if (existing == null)
-                        existing = new QuotedCSV(false);
+                        existing = newQuotedCSV(false);
                     existing.addValue(f.getValue());
                 }
             }
@@ -1137,7 +1176,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 if (f.is(name))
                 {
                     if (existing == null)
-                        existing = new QuotedCSV(false);
+                        existing = newQuotedCSV(false);
                     existing.addValue(f.getValue());
                 }
             }

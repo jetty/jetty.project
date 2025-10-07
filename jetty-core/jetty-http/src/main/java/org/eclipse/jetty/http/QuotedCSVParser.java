@@ -79,6 +79,7 @@ public abstract class QuotedCSVParser
 
         int l = value.length();
         State state = State.VALUE;
+        boolean inQuotes = false;
         boolean quoted = false;
         boolean sloshed = false;
         int nwsLength = 0;
@@ -93,32 +94,40 @@ public abstract class QuotedCSVParser
             char c = i == l ? 0 : value.charAt(i);
 
             // Handle quoting https://tools.ietf.org/html/rfc7230#section-3.2.6
-            if (quoted && c != 0)
+            if (inQuotes)
             {
-                if (sloshed)
-                    sloshed = false;
+                // ignore values without closed quotes
+                if (c == 0)
+                {
+                    onComplianceViolation(HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN, value);
+                }
                 else
                 {
-                    switch (c)
+                    if (sloshed)
+                        sloshed = false;
+                    else
                     {
-                        case '\\':
-                            sloshed = true;
-                            if (!_keepQuotes)
-                                continue;
-                            break;
-                        case '"':
-                            quoted = false;
-                            if (!_keepQuotes)
-                                continue;
-                            break;
-                        default:
-                            break;
+                        switch (c)
+                        {
+                            case '\\':
+                                sloshed = true;
+                                if (!_keepQuotes)
+                                    continue;
+                                break;
+                            case '"':
+                                inQuotes = false;
+                                if (!_keepQuotes)
+                                    continue;
+                                break;
+                            default:
+                                break;
+                        }
                     }
-                }
 
-                buffer.append(c);
-                nwsLength = buffer.length();
-                continue;
+                    buffer.append(c);
+                    nwsLength = buffer.length();
+                    continue;
+                }
             }
 
             // Handle common cases
@@ -129,7 +138,7 @@ public abstract class QuotedCSVParser
                     if (buffer.length() > lastLength) // not leading OWS
                         buffer.append(c);
                     else if (state == State.PARAM_VALUE)
-                        onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
+                        onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER, value);
                     continue;
 
                 case ';':
@@ -150,6 +159,7 @@ public abstract class QuotedCSVParser
                     buffer.append(c);
                     lastLength = ++nwsLength;
                     state = State.PARAM_NAME;
+                    quoted = false;
                     continue;
 
                 case ',':
@@ -182,6 +192,7 @@ public abstract class QuotedCSVParser
                     valueLength = paramName = paramValue = -1;
                     state = State.VALUE;
                     paramsOnly = false;
+                    quoted = false;
                     continue;
 
                 case '=':
@@ -191,7 +202,7 @@ public abstract class QuotedCSVParser
                             // It wasn't really a value, it was a param name
                             paramName = 0;
                             if (nwsLength != buffer.length())
-                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER, value);
 
                             buffer.setLength(nwsLength); // trim following OWS
                             final String param = buffer.toString();
@@ -202,11 +213,12 @@ public abstract class QuotedCSVParser
                             buffer.append(c);
                             lastLength = ++nwsLength;
                             state = State.PARAM_VALUE;
+                            quoted = false;
                             continue;
 
                         case PARAM_NAME:
                             if (nwsLength != buffer.length())
-                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER);
+                                onComplianceViolation(HttpCompliance.Violation.WHITESPACE_IN_PARAMETER, value);
                             buffer.setLength(nwsLength); // trim following OWS
                             buffer.append(c);
                             lastLength = ++nwsLength;
@@ -225,8 +237,12 @@ public abstract class QuotedCSVParser
                     }
 
                 case '"':
-                    if (state == State.VALUE && buffer.isEmpty() || state == State.PARAM_VALUE && paramValue < 0)
+                    if (state == State.VALUE || state == State.PARAM_VALUE)
                     {
+                        if (state == State.VALUE && !buffer.isEmpty() || state == State.PARAM_VALUE && paramValue >= 0)
+                            openingQuoteInValue(value, i);
+
+                        inQuotes = true;
                         quoted = true;
                         if (state == State.PARAM_VALUE)
                             paramValue = nwsLength;
@@ -235,10 +251,14 @@ public abstract class QuotedCSVParser
                         nwsLength = buffer.length();
                         continue;
                     }
-                    // fall through to handle embedded quote as a normal character
+                    onComplianceViolation(HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN, value);
+                    // otherwise fall through to handle embedded quote as a normal character
 
                 default:
                 {
+                    if (quoted)
+                        onComplianceViolation(HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN, value);
+
                     switch (state)
                     {
                         case VALUE:
@@ -274,6 +294,11 @@ public abstract class QuotedCSVParser
         }
     }
 
+    protected void openingQuoteInValue(String value, int i)
+    {
+        onComplianceViolation(HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN, value);
+    }
+
     /**
      * Called when a value and it's parameters has been parsed
      *
@@ -306,9 +331,21 @@ public abstract class QuotedCSVParser
 
     /**
      * Called when a parameter has been parsed with bad white space
+     *
+     * @param violation The violation
+     * @deprecated use {@link #onComplianceViolation(ComplianceViolation, String)} instead
      */
+    @Deprecated(since = "12.1.3", forRemoval = true)
     protected void onComplianceViolation(ComplianceViolation violation)
     {
         throw new IllegalArgumentException(violation.getDescription());
+    }
+
+    /**
+     * Called when a parameter has been parsed with bad white space
+     */
+    protected void onComplianceViolation(ComplianceViolation violation, String value)
+    {
+        onComplianceViolation(violation);
     }
 }

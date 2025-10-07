@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class QuotedQualityCSVTest
 {
@@ -114,23 +115,69 @@ public class QuotedQualityCSVTest
     }
 
     @Test
-    public void testEmpty()
+    public void testEmptyListItems()
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
-        values.addValue(",aaaa,  , bbbb ,,cccc,");
+        values.addValue(",aaaa,  , bbbb,\"\" ,,x;q=0,cccc,");
         assertThat(values, Matchers.contains(
             "aaaa",
             "bbbb",
+            "\"\"",
             "cccc"));
     }
 
-    @Test
-    public void testQuoted()
+    public static Stream<Arguments> quoted()
+    {
+        return Stream.of(
+            Arguments.of("\"a\"", new String[] {"\"a\""}),
+            Arguments.of("\"a,b\"", new String[] {"\"a,b\""}),
+            Arguments.of("\"a\",\"b\"", new String[] {"\"a\"", "\"b\""}),
+            Arguments.of("\"a\";q=1", new String[] {"\"a\""}),
+            Arguments.of("\"a\";q=\"1\"", new String[] {"\"a\""}),
+            Arguments.of("  \"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ", new String[] {"\"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""})
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoted")
+    public void testQuoted(String value, String... expected)
     {
         QuotedQualityCSV values = new AllowWhiteSpaceInParameterQQCSV();
-        values.addValue("  \"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
-        assertThat(values, Matchers.contains(
-            "\"value 0.5  ;  p = v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
+        values.addValue(value);
+        assertThat(values, Matchers.contains(expected));
+    }
+
+    public static Stream<Arguments> badQuoted()
+    {
+        // TODO need to remove a value from the list if it has allowed badly quoted parameter?
+        return Stream.of(
+            Arguments.of("\"a", new String[] {"\"a"}),
+            Arguments.of("a,\"b", new String[] {"a", "\"b"})
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badQuoted")
+    public void testBadQuoted(String value, String... expected)
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        assertThrows(IllegalArgumentException.class, () -> values.addValue(value));
+
+
+        QuotedQualityCSV allowed = new QuotedQualityCSV()
+        {
+            @Override
+            protected void onComplianceViolation(ComplianceViolation violation, String value)
+            {
+                if (violation != HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN)
+                    super.onComplianceViolation(violation, value);
+            }
+        };
+        allowed.addValue(value);
+        if (expected.length == 0)
+            assertThat(allowed, emptyIterable());
+        else
+            assertThat(allowed, Matchers.contains(expected));
     }
 
     @Test
@@ -146,9 +193,19 @@ public class QuotedQualityCSVTest
     public void testOpenQuote()
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
-        values.addValue("value;p=\"v");
-        assertThat(values, Matchers.contains(
-            "value;p=\"v"));
+        assertThrows(IllegalArgumentException.class, () -> values.addValue("value;p=\"v"));
+
+        QuotedQualityCSV allowed = new QuotedQualityCSV()
+        {
+            @Override
+            protected void onComplianceViolation(ComplianceViolation violation, String value)
+            {
+                if (violation != HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN)
+                    super.onComplianceViolation(violation, value);
+            }
+        };
+        allowed.addValue("value;q=1;p=\"v");
+        assertThat(allowed, Matchers.contains("value;p=\"v"));
     }
 
     @Test
@@ -171,7 +228,7 @@ public class QuotedQualityCSVTest
             "value0.5;p=v"));
     }
 
-    public static Stream<Arguments> badValues()
+    public static Stream<Arguments> emptyValues()
     {
         List<String> bad = new ArrayList<>();
 
@@ -229,18 +286,20 @@ public class QuotedQualityCSVTest
         bad.add("q=");
         bad.add("q=,");
         bad.add("q=;");
+        bad.add("foo;q=0");
+        bad.add("\"foo\";q=0");
 
         return bad.stream().map(Arguments::of);
     }
 
     @ParameterizedTest
-    @MethodSource("badValues")
-    public void testBad(String bad)
+    @MethodSource("emptyValues")
+    public void testEmptyValues(String emptyValue)
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
 
         // This should NOT throw an exception
-        values.addValue(bad);
+        values.addValue(emptyValue);
 
         // There shouldn't be any values as a result.
         assertThat(values, emptyIterable());
@@ -379,11 +438,11 @@ public class QuotedQualityCSVTest
     private static class AllowWhiteSpaceInParameterQQCSV extends QuotedQualityCSV
     {
         @Override
-        protected void onComplianceViolation(ComplianceViolation violation)
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
         {
             if (HttpCompliance.Violation.WHITESPACE_IN_PARAMETER.equals(violation))
                 return;
-            super.onComplianceViolation(violation);
+            super.onComplianceViolation(violation, value);
         }
     }
 }

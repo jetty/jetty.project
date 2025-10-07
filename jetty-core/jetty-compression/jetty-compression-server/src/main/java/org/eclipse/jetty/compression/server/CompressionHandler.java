@@ -44,8 +44,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
-
 /**
  * <p>CompressionHandler to provide compression of response bodies and decompression of request bodies.</p>
  * <p>Supports any arbitrary {@code Content-Encoding} via {@link org.eclipse.jetty.compression.Compression}
@@ -277,10 +275,10 @@ public class CompressionHandler extends Handler.Wrapper
                         qualityCSV = new QuotedQualityCSV()
                         {
                             @Override
-                            protected void onComplianceViolation(ComplianceViolation violation)
+                            protected void onComplianceViolation(ComplianceViolation violation, String value)
                             {
-                                if (WHITESPACE_IN_PARAMETER.equals(violation) && httpConfiguration.getHttpCompliance().allows(WHITESPACE_IN_PARAMETER))
-                                    httpConfiguration.notifyViolation(violation, this.toString());
+                                if (httpConfiguration.getHttpCompliance().allows(violation))
+                                    httpConfiguration.notifyViolation(violation, value);
                                 else
                                     throw new BadMessageException(violation.toString());
                             }

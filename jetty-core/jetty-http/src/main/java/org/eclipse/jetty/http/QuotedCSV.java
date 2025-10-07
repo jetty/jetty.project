@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * Implements a quoted comma-separated list of values
@@ -185,5 +186,34 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             list.add(s);
         }
         return list.toString();
+    }
+
+    public static class Etags extends QuotedCSV
+    {
+        private final ComplianceViolation.Mode _complianceMode;
+        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
+
+        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
+        {
+            super(true, values);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
+        }
+
+        @Override
+        protected void openingQuoteInValue(String value, int i)
+        {
+            if (i < 1 || value.charAt(i - 2) != 'W' || value.charAt(i - 1) != '/')
+                super.openingQuoteInValue(value, i);
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (_complianceMode != null && _complianceMode.allows(violation))
+                _violationNotifier.accept(violation, value);
+            else
+                super.onComplianceViolation(violation, value);
+        }
     }
 }
