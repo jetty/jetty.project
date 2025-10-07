@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerContainer;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
@@ -54,6 +55,9 @@ public class JakartaWebSocketRestartTest
         contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
+        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addEndpoint(EchoSocket.class));
+        server.start();
 
         client = new JakartaWebSocketClientContainer();
         client.start();
@@ -69,10 +73,6 @@ public class JakartaWebSocketRestartTest
     @Test
     public void testWebSocketRestart() throws Exception
     {
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoSocket.class));
-        server.start();
-
         int numEventListeners = contextHandler.getEventListeners().size();
         for (int i = 0; i < 100; i++)
         {
@@ -101,6 +101,16 @@ public class JakartaWebSocketRestartTest
         assertNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
         assertNull(contextHandler.getServletContext().getAttribute(JakartaWebSocketServerContainer.JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE));
         assertThat(contextHandler.getServletHandler().getFilters().length, is(0));
+    }
+
+    @Test
+    public void testStopStartGet() throws Exception
+    {
+        assertNotNull(contextHandler.getContext().getAttribute(ServerContainer.class.getName()));
+        server.stop();
+        assertNull(contextHandler.getContext().getAttribute(ServerContainer.class.getName()));
+        server.start();
+        assertNotNull(contextHandler.getContext().getAttribute(ServerContainer.class.getName()));
     }
 
     private void testEchoMessage() throws Exception
