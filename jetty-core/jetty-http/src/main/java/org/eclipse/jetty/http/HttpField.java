@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class HttpField
     public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
 
     private static final String ZERO_QUALITY = "q=0";
+    static final EnumSet<HttpHeader> ETAG_HEADER = EnumSet.of(HttpHeader.ETAG, HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
 
     private final HttpHeader _header;
     private final String _name;
@@ -689,6 +691,8 @@ public class HttpField
 
     protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
     {
+        if (getHeader() != null && ETAG_HEADER.contains(this.getHeader()))
+            return new QuotedCSV.Etags(null, null, value);
         return new QuotedCSV(keepQuotes, value);
     }
 

@@ -2359,6 +2359,24 @@ public class HttpParser
         @Override
         protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
+            if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
+                return new QuotedCSV.Etags(_complianceMode,
+                    (v, r) ->
+                    {
+                        try
+                        {
+                            _handler.onViolation(new ComplianceViolation.Event(_complianceMode, v, r));
+                        }
+                        catch (BadMessageException bme)
+                        {
+                            throw bme;
+                        }
+                        catch (Throwable t)
+                        {
+                            throw new BadMessageException(t.getMessage(), t);
+                        }
+                    }, value);
+
             return new QuotedCSV(keepQuotes, value)
             {
                 @Override
