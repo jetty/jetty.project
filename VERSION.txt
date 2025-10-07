@@ -1,3 +1,25 @@
+12.1.2 - 07 October 2025
+ + 11826 NativeHelper triggers JDK warning
+ + 13472 Support multiple directories to be scanned by deployment-scanner
+ + 13482 New request attribute `__oejs.Request.Cookies`
+ + 13539 HttpCookie.Builder does not allow removing SameSite
+ + 13548 Improved HTTP2Connection dump information (@znight1020)
+ + 13563 Jetty 12.1.0 fails to serve big (> 1MiB) static web resources located inside a jar file
+ + 13567 Jetty 12.1.1 HTTP2 broken data
+ + 13571 JMX Bean Names are not predictable now that they have hashcodes
+ + 13579 How to remove a websocket mapping
+ + 13583 NPE in WriteFlusher after org.eclipse.jetty.http.BadMessageException: 417
+ + 13592 ClosedFileSystemException when upgrading to 12.1.1
+ + 13598 Server hangs when client closes too many connections.
+ + 13599 Merge ConstantThrowable and StaticException
+ + 13603 Bad Accept-Language request headers can result in NPE during HttpServletRequest.getLocale() call
+ + 13608 DebugHandler changes Thread name without restoring it afterwards
+ + 13613 HttpInput#read rethrows already thrown exception, leading to possible self-suppressing exception issue
+ + 13621 Restore `BufferingResponseListener.onContent(Response, ByteBuffer)` behavior
+ + 13624 ContextClassLoader changed on resumed requests with QoSHandler
+ + 13625 Not possible to control HttpClient `Accept-Encoding` weights with standard API and discovered Compression
+ + 13640 Fix NPE in ee9/ee8 nested.BufferedResponesHandler
+
 12.1.1 - 08 September 2025
  + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
  + 12735 Provide better documentation of JettyWebSocketServletContainerInitializer and jetty-${ee-version}-websocket-jetty-server modules
