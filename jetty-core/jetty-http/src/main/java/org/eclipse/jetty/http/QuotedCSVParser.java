@@ -164,27 +164,31 @@ public abstract class QuotedCSVParser
 
                 case ',':
                 case 0:
-                    if (nwsLength > 0)
+                    if (nwsLength > 0 || quoted)
                     {
                         buffer.setLength(nwsLength); // trim following OWS
                         switch (state)
                         {
                             case VALUE:
                                 valueLength = buffer.length();
-                                if (valueLength > 0)
+                                if (valueLength > 0 || quoted)
+                                {
                                     parsedValue(buffer);
+                                    parsedValueAndParams(buffer);
+                                }
                                 break;
                             case PARAM_NAME:
                             case PARAM_VALUE:
-                                if (valueLength > 0 || paramsOnly)
+                                if (valueLength > 0 || quoted || paramsOnly)
+                                {
                                     parsedParam(buffer, valueLength, paramName, paramValue);
+                                    if (valueLength > 0)
+                                        parsedValueAndParams(buffer);
+                                }
                                 break;
                             default:
                                 throw new IllegalStateException(state.toString());
                         }
-
-                        if (valueLength > 0)
-                            parsedValueAndParams(buffer);
                     }
                     buffer.setLength(0);
                     lastLength = 0;

@@ -382,6 +382,14 @@ public class QuotedQualityCSVTest
     }
 
     @Test
+    public void testExtraParams()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        values.addValue("two;p=2;q=0.5,one;q=1.0;p=1,zero;q=0;p=0,three;p=3;q=0.3;o=3");
+        assertThat(values.getValues(), Matchers.contains("one;p=1", "two;p=2", "three;p=3;o=3"));
+    }
+
+    @Test
     public void testNoQuality()
     {
         QuotedQualityCSV values = new QuotedQualityCSV();

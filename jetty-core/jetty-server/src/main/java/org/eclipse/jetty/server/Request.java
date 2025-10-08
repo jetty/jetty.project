@@ -521,7 +521,10 @@ public interface Request extends Attributes, Content.Source
         if (acceptable.isEmpty())
             return DEFAULT_LOCALES;
 
-        List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
+        List<Locale> locales = acceptable.stream()
+            .map(Locale::forLanguageTag)
+            .filter(l -> !l.toString().isEmpty())
+            .toList();
         List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
         if (known.size() == locales.size() && !known.isEmpty())
             return known;

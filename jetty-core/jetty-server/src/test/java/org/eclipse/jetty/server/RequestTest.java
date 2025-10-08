@@ -570,6 +570,7 @@ public class RequestTest
     @MethodSource("localeTests")
     public void testAcceptableLocales(String acceptLanguage, String expectedLocales) throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.LEGACY);
         acceptLanguage = acceptLanguage == null ? "" : (HttpHeader.ACCEPT_LANGUAGE.asString() + ": " + acceptLanguage + "\n");
         String rawRequest = """
                 GET / HTTP/1.1

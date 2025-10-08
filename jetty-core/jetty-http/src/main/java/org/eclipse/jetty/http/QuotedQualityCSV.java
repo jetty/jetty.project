@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -148,15 +149,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedValue(StringBuilder buffer)
     {
-        super.parsedValue(buffer);
-
         // We have to convert to String anyway for QualityValue below.
         String value = buffer.toString();
-        // Ensure we don't have whitespace or control only value
-        if (StringUtil.isBlank(value))
-            return;
-
-        _sorted = false;
 
         // This is just the value, without parameters.
         // Assume a quality of ONE
@@ -209,7 +203,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         if (!_sorted)
             sort();
-        return _values;
+        return super.getValues();
     }
 
     @Override
@@ -217,17 +211,18 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         if (!_sorted)
             sort();
-        return _values.iterator();
+        return super.iterator();
     }
 
     protected void sort()
     {
-        _values.clear();
+        List<String> values = getMutableValues();
+        values.clear();
         _qualities.stream()
             .filter((qv) -> qv._quality != 0.0D)
             .sorted()
             .map(QualityValue::getValue)
-            .collect(Collectors.toCollection(() -> _values));
+            .collect(Collectors.toCollection(() -> values));
         _sorted = true;
     }
 
@@ -321,6 +316,42 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 getValue(),
                 getWeight(),
                 _index);
+        }
+    }
+
+    public static class Compliant extends QuotedQualityCSV
+    {
+        private final ComplianceViolation.Mode _complianceMode;
+        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
+
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String[] preferredOrder)
+        {
+            super(preferredOrder);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, List<String> preferredOrder)
+        {
+            super(preferredOrder);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, ToIntFunction<String> secondaryOrdering)
+        {
+            super(secondaryOrdering);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (_complianceMode != null && _complianceMode.allows(violation))
+                _violationNotifier.accept(violation, value);
+            else
+                super.onComplianceViolation(violation, value);
         }
     }
 }

@@ -80,18 +80,18 @@ public class QuotedCSVTest
     @Test
     public void testEmpty()
     {
-        QuotedCSV values = new QuotedCSV();
-        values.addValue(",aaaa,  , bbbb ,,cccc,");
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue(",aaaa,  , bbbb ,,\"\",cccc,");
         assertThat(values, Matchers.contains(
             "aaaa",
             "bbbb",
+            "",
             "cccc"));
     }
 
     @Test
     public void testQuoted()
     {
-        // TODO test embedded quotes
         QuotedCSV values = new QuotedCSV();
         values.addValue("A;p=\"v\",B,\"C, D\"");
         assertThat(values, Matchers.contains(
@@ -179,6 +179,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
+        values.forEach(System.out::println);
         String[] expected = {
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",

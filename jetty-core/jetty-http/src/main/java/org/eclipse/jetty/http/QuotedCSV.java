@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -103,7 +104,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         }
     }
 
-    protected final List<String> _values = new ArrayList<>();
+    private final List<String> _values = new ArrayList<>();
 
     public QuotedCSV(String... values)
     {
@@ -156,6 +157,11 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     public List<String> getValues()
     {
+        return Collections.unmodifiableList(_values);
+    }
+
+    public List<String> getMutableValues()
+    {
         return _values;
     }
 
@@ -188,23 +194,21 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         return list.toString();
     }
 
-    public static class Etags extends QuotedCSV
+    public static class Compliant extends QuotedCSV
     {
         private final ComplianceViolation.Mode _complianceMode;
         private final BiConsumer<ComplianceViolation, String> _violationNotifier;
 
-        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier)
         {
-            super(true, values);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            this(complianceMode, violationNotifier, true);
         }
 
-        @Override
-        protected void openingQuoteInValue(String value, int i)
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, boolean keepQuotes, String... values)
         {
-            if (i < 1 || value.charAt(i - 2) != 'W' || value.charAt(i - 1) != '/')
-                super.openingQuoteInValue(value, i);
+            super(keepQuotes, values);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
         }
 
         @Override
@@ -214,6 +218,21 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
                 _violationNotifier.accept(violation, value);
             else
                 super.onComplianceViolation(violation, value);
+        }
+    }
+
+    public static class Etags extends Compliant
+    {
+        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
+        {
+            super(complianceMode, violationNotifier, true, values);
+        }
+
+        @Override
+        protected void openingQuoteInValue(String value, int i)
+        {
+            if (i < 1 || value.charAt(i - 2) != 'W' || value.charAt(i - 1) != '/')
+                super.openingQuoteInValue(value, i);
         }
     }
 }

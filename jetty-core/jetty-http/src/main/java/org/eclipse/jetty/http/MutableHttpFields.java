@@ -180,7 +180,12 @@ class MutableHttpFields implements HttpFields.Mutable
     public HttpFields asImmutable()
     {
         _immutable = true;
-        return new org.eclipse.jetty.http.ImmutableHttpFields(_fields, _size);
+        return newImmutableHttpFields(_fields, _size);
+    }
+
+    protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
+    {
+        return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size);
     }
 
     private void copyImmutable()
