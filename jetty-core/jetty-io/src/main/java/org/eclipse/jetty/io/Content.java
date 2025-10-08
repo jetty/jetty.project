@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -955,7 +956,44 @@ public class Content
             if (chunk == null)
                 return null;
             if (Content.Chunk.isFailure(chunk))
-                return chunk.isLast() ? chunk : null;
+            {
+                // Handle transient failure.
+                if (!chunk.isLast())
+                    return null;
+
+                // Handle persistent failure returning a new exception to
+                // avoid problems with try-with-resources and addSuppressed().
+                return new Chunk()
+                {
+                    private Throwable failure;
+
+                    @Override
+                    public ByteBuffer getByteBuffer()
+                    {
+                        return BufferUtil.EMPTY_BUFFER;
+                    }
+
+                    @Override
+                    public Throwable getFailure()
+                    {
+                        if (failure == null)
+                            failure = new IOException(chunk.getFailure());
+                        return failure;
+                    }
+
+                    @Override
+                    public boolean isLast()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return String.format("%s@%x{failure=%s}", TypeUtil.toShortName(getClass()), hashCode(), chunk.getFailure());
+                    }
+                };
+            }
             if (chunk.isLast())
                 return EOF;
             return null;

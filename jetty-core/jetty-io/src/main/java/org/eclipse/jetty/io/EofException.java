@@ -29,11 +29,17 @@ public class EofException extends EOFException implements QuietException
 
     public EofException(String reason)
     {
-        super(reason);
+        this(reason, null);
     }
 
     public EofException(Throwable th)
     {
+        this(th.getMessage(), th);
+    }
+
+    public EofException(String reason, Throwable th)
+    {
+        super(reason);
         if (th != null)
             initCause(th);
     }
