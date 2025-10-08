@@ -1233,28 +1233,80 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getParameter(String name)
     {
-        return getParameters().getValue(name);
+        try
+        {
+            return getParameters().getValue(name);
+        }
+        catch (IllegalStateException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            // Per Servlet https://github.com/jakartaee/servlet/issues/431 this should only
+            // ever throw an IllegalStateException
+            throw new IllegalStateException(t);
+        }
     }
 
     @Override
     public Enumeration<String> getParameterNames()
     {
-        return Collections.enumeration(getParameters().getNames());
+        try
+        {
+            return Collections.enumeration(getParameters().getNames());
+        }
+        catch (IllegalStateException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            // Per Servlet https://github.com/jakartaee/servlet/issues/431 this should only
+            // ever throw an IllegalStateException
+            throw new IllegalStateException(t);
+        }
     }
 
     @Override
     public String[] getParameterValues(String name)
     {
-        List<String> vals = getParameters().getValues(name);
-        if (vals == null)
-            return null;
-        return vals.toArray(new String[0]);
+        try
+        {
+            List<String> vals = getParameters().getValues(name);
+            if (vals == null)
+                return null;
+            return vals.toArray(new String[0]);
+        }
+        catch (IllegalStateException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            // Per Servlet https://github.com/jakartaee/servlet/issues/431 this should only
+            // ever throw an IllegalStateException
+            throw new IllegalStateException(t);
+        }
     }
 
     @Override
     public Map<String, String[]> getParameterMap()
     {
-        return Collections.unmodifiableMap(getParameters().toStringArrayMap());
+        try
+        {
+            return Collections.unmodifiableMap(getParameters().toStringArrayMap());
+        }
+        catch (IllegalStateException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            // Per Servlet https://github.com/jakartaee/servlet/issues/431 this should only
+            // ever throw an IllegalStateException
+            throw new IllegalStateException(t);
+        }
     }
 
     public Fields getParameters()
