@@ -231,7 +231,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         @Override
         protected void openingQuoteInValue(String value, int i)
         {
-            if (i < 1 || value.charAt(i - 2) != 'W' || value.charAt(i - 1) != '/')
+            if (i < 1 || Character.toLowerCase(value.charAt(i - 2)) != 'w' || value.charAt(i - 1) != '/')
                 super.openingQuoteInValue(value, i);
         }
     }
