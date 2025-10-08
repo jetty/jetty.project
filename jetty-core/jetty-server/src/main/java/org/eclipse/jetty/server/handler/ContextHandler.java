@@ -733,9 +733,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
         __context.set(_context);
         if (_classLoader != null)
-            Thread.currentThread().setContextClassLoader(_classLoader);
+            setContextClassLoader(_classLoader);
         notifyEnterScope(contextRequest);
         return lastLoader;
+    }
+
+    private void setContextClassLoader(ClassLoader classLoader)
+    {
+        try
+        {
+            Thread.currentThread().setContextClassLoader(classLoader);
+        }
+        catch (SecurityException e)
+        {
+            // ignore
+        }
     }
 
     /**
@@ -760,7 +772,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         notifyExitScope(request);
         __context.set(lastContext);
-        Thread.currentThread().setContextClassLoader(lastLoader);
+        setContextClassLoader(lastLoader);
     }
 
     /**
