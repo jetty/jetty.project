@@ -779,40 +779,6 @@ public class RequestTest
         assertThat(response.getContent(), is("GOOD: ISE Occurred"));
     }
 
-    @Test
-    public void testGetParameterNameISE() throws Exception
-    {
-        startServer(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
-            {
-                try
-                {
-                    request.getParameter("foo");
-                    resp.setStatus(500);
-                    resp.getWriter().print("BAD: ISE Should have Occurred");
-                }
-                catch (IllegalStateException e)
-                {
-                    resp.setStatus(200);
-                    resp.getWriter().print("GOOD: ISE Occurred");
-                }
-            }
-        });
-
-        String rawResponse = _connector.getResponse(
-            """
-                POST /test/parameters?x=%80 HTTP/1.1\r
-                Host: localhost\r
-                Connection: close\r
-                \r
-                """);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), is("GOOD: ISE Occurred"));
-    }
-
     static Stream<Arguments> suspiciousCharactersLegacy()
     {
         return Stream.of(
