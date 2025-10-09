@@ -22,10 +22,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
- * character based appends (e.g. {@link #append(char)}) and calls to undecoded byte methods (e.g. {@link #append(char)}).
+ * character based appends (e.g. {@link #append(char)} and calls to undecoded byte methods (e.g. {@link #append(byte)}.
  * This is particularly useful for decoding % encoded strings that are mostly already decoded but may contain
  * escaped byte sequences that are not decoded.  The standard {@link CharsetDecoder} API is not well suited for this
  * use-case.</p>
@@ -271,6 +274,7 @@ public interface CharsetStringBuilder
 
     class DecoderStringBuilder implements CharsetStringBuilder
     {
+        private static final Logger LOG = LoggerFactory.getLogger(DecoderStringBuilder.class);
         private final CharsetDecoder _decoder;
         private final StringBuilder _stringBuilder = new StringBuilder(32);
         private ByteBuffer _buffer = ByteBuffer.allocate(32);
@@ -304,17 +308,6 @@ public interface CharsetStringBuilder
         {
             if (_buffer.position() > 0)
             {
-                // We have a (possible) sequence started, need to continue it.
-                if (c > 0xFF)
-                {
-                    ensureSpace(2);
-                    _buffer.putChar(c);
-                }
-                else
-                {
-                    ensureSpace(1);
-                    _buffer.put((byte)c);
-                }
                 try
                 {
                     // Append any data already in the decoder
@@ -328,19 +321,28 @@ public interface CharsetStringBuilder
                     throw new RuntimeException(e);
                 }
             }
-            else
-            {
-                _stringBuilder.append(c);
-            }
+            _stringBuilder.append(c);
         }
 
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            for (int idx = offset; idx < offset + length; idx++)
+            if (_buffer.position() > 0)
             {
-                append(chars.charAt(idx));
+                try
+                {
+                    // Append any data already in the decoder
+                    _stringBuilder.append(_decoder.decode(_buffer.flip()));
+                    _buffer.clear();
+                }
+                catch (CharacterCodingException e)
+                {
+                    // This will be thrown only if the decoder is configured to REPORT,
+                    // otherwise errors will be ignored or replaced and we will not catch here.
+                    throw new RuntimeException(e);
+                }
             }
+            _stringBuilder.append(chars, offset, offset + length);
         }
 
         @Override
