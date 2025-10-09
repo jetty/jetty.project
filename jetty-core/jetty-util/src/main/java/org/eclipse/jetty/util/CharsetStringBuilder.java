@@ -315,18 +315,6 @@ public interface CharsetStringBuilder
                     ensureSpace(1);
                     _buffer.put((byte)c);
                 }
-                try
-                {
-                    // Append any data already in the decoder
-                    _stringBuilder.append(_decoder.decode(_buffer.flip()));
-                    _buffer.clear();
-                }
-                catch (CharacterCodingException e)
-                {
-                    // This will be thrown only if the decoder is configured to REPORT,
-                    // otherwise errors will be ignored or replaced and we will not catch here.
-                    throw new RuntimeException(e);
-                }
             }
             else
             {
