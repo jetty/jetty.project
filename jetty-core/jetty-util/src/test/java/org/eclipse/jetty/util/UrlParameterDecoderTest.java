@@ -290,6 +290,36 @@ public class UrlParameterDecoderTest
         assertEquals("value 3", field.getValue(), "Fields[nãme3]");
     }
 
+    /**
+     * Test of non-standard encoding of Shift_JIS.
+     * This tests a 2 byte sequence making up 1 Shift_JIS character.
+     * But only the first byte is pct-encoded, other byte is "in the raw" and not encoded.
+     * Both bytes are required for the KATAKANA LETTER HO: ホ to be decoded.
+     * See https://unicodeplus.com/U+30DB
+     */
+    @Test
+    public void testSjisNonStandardForm() throws IOException
+    {
+        // Actual x-www-form-urlencoded sent from Google Chrome 1.141 with Shift-JIS encoding.
+        // The same form data is sent from Firefox 143.0.4
+        // The same form data is also what is sent from Apache HttpClient 4.5.x and 5.x
+        // The properly encoded form of this character would be "a=%83%7A"
+        // Note: "%7A" is the ASCII "z"
+        String input = "a=%83z";
+        Charset shiftJis = Charset.forName("Shift_JIS");
+
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(shiftJis);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        assertFalse(decoder.parse(input), "No coding errors");
+
+        assertThat("Field count", fields.getSize(), is(1));
+        Fields.Field field = fields.get("a");
+        assertNotNull(field, "Fields[a]");
+        assertEquals("ホ", field.getValue(), "Fields[a]");
+    }
+
     public static Stream<Arguments> queryBehaviorsBadUtf8AllowedGood()
     {
         List<Arguments> cases = new ArrayList<>();
