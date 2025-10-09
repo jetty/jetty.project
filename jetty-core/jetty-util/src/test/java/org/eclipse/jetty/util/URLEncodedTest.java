@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -301,5 +303,34 @@ public class URLEncodedTest
             MultiMap<String> map = new MultiMap<>();
             UrlEncoded.decodeTo(inputString, map, charset);
         });
+    }
+
+    /**
+     * Test of non-standard encoding of Shift_JIS.
+     * This tests a 2 byte sequence making up 1 Shift_JIS character.
+     * But only the first byte is pct-encoded, other byte is "in the raw" and not encoded.
+     * Both bytes are required for the KATAKANA LETTER HO: ホ to be decoded.
+     * See https://unicodeplus.com/U+30DB
+     */
+    @Test
+    public void testSjisNonStandardForm() throws IOException
+    {
+        // Actual x-www-form-urlencoded sent from Google Chrome 1.141 with Shift-JIS encoding.
+        // The same form data is sent from Firefox 143.0.4
+        // The same form data is also what is sent from Apache HttpClient 4.5.x and 5.x
+        // The properly encoded form of this character would be "a=%83%7A"
+        // Note: "%7A" is the ASCII "z"
+        String sjis = "a=%83z";
+        Charset shiftJis = Charset.forName("Shift_JIS");
+        byte[] bytes = sjis.getBytes(shiftJis);
+        try (ByteArrayInputStream in = new ByteArrayInputStream(bytes))
+        {
+            MultiMap<String> map = new MultiMap<>();
+            UrlEncoded.decodeTo(in, map, shiftJis, 500, 500);
+            List<String> result = map.get("a");
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertEquals("ホ", result.get(0));
+        }
     }
 }

@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -259,13 +260,16 @@ public class UrlParameterDecoderTest
         assertEquals("Euro-€-Symbol", field.getValue(), "Fields[Name]");
     }
 
-    @Test
-    public void testUtf16EncodedString() throws IOException
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "name\n=value+%00%30&name1=&name2&nãme3=value+3", // without BOM
+        "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3" // with BOM
+    })
+    public void testUtf16EncodedString(String input) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-        String input = "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3";
         assertFalse(decoder.parse(input), "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(4));
