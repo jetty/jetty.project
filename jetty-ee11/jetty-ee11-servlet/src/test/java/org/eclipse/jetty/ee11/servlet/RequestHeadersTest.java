@@ -119,7 +119,7 @@ public class RequestHeadersTest
             en-GB           | en-GB
             en;q=0.5,it     | it
             bogus           | en-US
-            en_en           | <undefined>
+            en_en           | en-US
             """)
     public void testLocale(String requestHeaderValue, String expectedLocale) throws Exception
     {
@@ -135,12 +135,7 @@ public class RequestHeadersTest
                     PrintWriter out = resp.getWriter();
                     out.print("Locale = ");
                     String langTag = locale.toLanguageTag();
-                    // Show undefined language tags differently
-                    // See javadoc for Locale.toLanguageTag() for details
-                    if (langTag.equalsIgnoreCase("und"))
-                        out.println("<undefined>");
-                    else
-                        out.println(langTag);
+                    out.println(langTag);
                 }
             };
 
