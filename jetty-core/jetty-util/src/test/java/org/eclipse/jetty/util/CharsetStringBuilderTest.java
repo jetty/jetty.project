@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
@@ -51,7 +53,9 @@ public class CharsetStringBuilderTest
         assertThat(builder.build(), equalTo(test));
 
         for (byte b : bytes)
+        {
             builder.append(b);
+        }
         assertThat(builder.build(), equalTo(test));
 
         builder.append(bytes[0]);
@@ -71,34 +75,109 @@ public class CharsetStringBuilderTest
 
     @ParameterizedTest
     @MethodSource("charsets")
-    public void testBasicApi(Charset charset) throws Exception
+    public void testAppendByteBuffersOnly(Charset charset) throws Exception
     {
+        String input = "123456789ABC";
+        // Generate a ByteBuffer encoded with the provided charset of the input String.
+        CharsetEncoder encoder = charset.newEncoder();
+        ByteBuffer bb = ByteBuffer.allocate(input.length() * 4);
+        encoder.encode(CharBuffer.wrap(input), bb, true);
+        bb.flip();
+
+        // using only append(ByteBuffer) recreate the input
         CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
-        ByteBuffer encoded = charset.encode("1");
-        while (encoded.hasRemaining())
-            builder.append(encoded.get());
+        int sliceSize = 3;
+        int len = bb.remaining();
+        int offset = 0;
+        while (offset < len)
+        {
+            ByteBuffer slice = bb.slice();
+            slice.position(offset);
+            int limit = Math.min(slice.position() + sliceSize, len);
+            slice.limit(limit);
+            builder.append(slice);
+            offset = slice.position();
+        }
 
-        builder.append('2');
+        assertThat(builder.build(), is(input));
+    }
 
-        builder.append(charset.encode("34"));
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendByteOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
 
-        encoded = charset.encode("abc");
-        int offset = encoded.remaining();
-        encoded = charset.encode("abc56");
-        int length = encoded.remaining() - offset;
-        encoded = charset.encode("abc56xyz");
-        byte[] bytes = new byte[1028];
-        encoded.get(bytes, 0, encoded.remaining());
-        builder.append(bytes, offset, length);
+        // Generate a byte buffer encoded with the provided charset of the input String.
+        byte[] buf = input.getBytes(charset);
 
-        encoded = charset.encode("abc78xyz");
-        encoded.position(offset);
-        encoded.limit(offset + length);
-        builder.append(encoded);
+        // using only append(byte) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (byte b : buf)
+        {
+            builder.append(b);
+        }
 
-        builder.append("9A", 0, 2);
-        builder.append("xyzBCpqy", 3, 2);
+        assertThat(builder.build(), is(input));
+    }
 
-        assertThat(builder.build(), is("123456789ABC"));
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendByteOffsetLengthOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // Generate a byte buffer encoded with the provided charset of the input String.
+        byte[] buf = input.getBytes(charset);
+
+        // using only append(byte, offset, length) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        int sliceSize = 3;
+        int offset = 0;
+        while (offset < buf.length)
+        {
+            int len = Math.min(sliceSize, buf.length - offset);
+            builder.append(buf, offset, len);
+            offset += sliceSize;
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendCharOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // using only append(char) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (char c : input.toCharArray())
+        {
+            builder.append(c);
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendCharSequenceOffsetLengthOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // using only append(CharSequence, offset, length) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        char[] chars = input.toCharArray();
+        int sliceSize = 3;
+        int offset = 0;
+        while (offset < chars.length)
+        {
+            int len = Math.min(sliceSize, chars.length - offset);
+            builder.append(input, offset, len);
+            offset += sliceSize;
+        }
+
+        assertThat(builder.build(), is(input));
     }
 }
