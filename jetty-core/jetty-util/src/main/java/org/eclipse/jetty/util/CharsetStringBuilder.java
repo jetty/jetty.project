@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
- * character based appends (e.g. {@link #append(char)}) and calls to undecoded byte methods (e.g. {@link #append(char)}).
+ * character based appends (e.g. {@link #append(char)}) and calls to undecoded byte methods (e.g. {@link #append(byte)}).
  * This is particularly useful for decoding % encoded strings that are mostly already decoded but may contain
  * escaped byte sequences that are not decoded.  The standard {@link CharsetDecoder} API is not well suited for this
  * use-case.</p>
