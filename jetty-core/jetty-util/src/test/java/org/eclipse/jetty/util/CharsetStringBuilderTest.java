@@ -15,11 +15,15 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class CharsetStringBuilderTest
@@ -179,5 +184,109 @@ public class CharsetStringBuilderTest
         }
 
         assertThat(builder.build(), is(input));
+    }
+
+    @Test
+    public void testSjisEncoding() throws CharacterCodingException
+    {
+        Charset sjisCharset = Charset.forName("Shift_JIS");
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(sjisCharset);
+
+        builder.append((byte)0x83);
+        builder.append((char)'z');
+
+        assertEquals("ホ", builder.build());
+    }
+
+    public static Stream<Arguments> japaneseCharsetTests()
+    {
+        List<Arguments> args = new ArrayList<>();
+        for (Charset charset : List.of(
+            StandardCharsets.UTF_8,
+            StandardCharsets.UTF_16,
+            Charset.forName("Shift_JIS"),
+            Charset.forName("EUC-JP")
+        ))
+        {
+            for (String string : List.of(
+                // Has ASCII 'O' (0x30) in UTF-16
+                "ホ",
+                // Has ASCII 'O' (0x30) in UTF-16
+                // Has ASCII 'J' (0x4A), ASCII '^' (0x5E), and ASCII 'i' (0x69) in Shift_JIS
+                "カタカナ",
+                // Has ASCII 'v' (0x76) in UTF-16
+                "ｶﾞｯﾂﾎﾟｰｽﾞ"
+            ))
+            {
+                args.add(Arguments.of(charset, string));
+            }
+        }
+        return args.stream();
+    }
+
+    /**
+     * Paranoid test, showing badly mixed API usage.
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsMixedAppend(Charset charset, String string) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        byte[] bytes = string.getBytes(charset);
+        for (byte b : bytes)
+        {
+            // if a raw byte is one of the ASCII characters, add it as a character??
+            // if (b > 'a' && b < 'z' || b > 'A' && b < 'Z' || b > '0' && b < '9')
+            if (b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9')
+            {
+                builder.append((char)b);
+            }
+            else
+                builder.append(b);
+        }
+        assertThat(builder.build(), is(string));
+    }
+
+    /**
+     * This mimics the usage behavior as seen in ContentSourceString.
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsAppendByteBufferOnly(Charset charset, String string) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        byte[] bytes = string.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.wrap(bytes);
+
+        // Let's write it in two ByteBuffer's
+        int midway = buf.remaining() / 2;
+
+        ByteBuffer slice1 = buf.slice();
+        slice1.position(0);
+        slice1.limit(midway);
+
+        ByteBuffer slice2 = buf.slice();
+        slice2.position(midway);
+
+        builder.append(slice1);
+        builder.append(slice2);
+
+        assertThat(builder.build(), is(string));
+    }
+
+    /**
+     * This mimics how the UrlParameterDecoder operates.
+     * (char by char, not byte by byte)
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsAppendCharOnly(Charset charset, String string) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (char c: string.toCharArray())
+        {
+            builder.append(c);
+        }
+        assertThat(builder.build(), is(string));
     }
 }
