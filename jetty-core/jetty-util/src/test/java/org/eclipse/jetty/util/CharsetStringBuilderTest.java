@@ -236,7 +236,6 @@ public class CharsetStringBuilderTest
         for (byte b : bytes)
         {
             // if a raw byte is one of the ASCII characters, add it as a character??
-            // if (b > 'a' && b < 'z' || b > 'A' && b < 'Z' || b > '0' && b < '9')
             if (b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9')
                 builder.append((char)b);
             else
