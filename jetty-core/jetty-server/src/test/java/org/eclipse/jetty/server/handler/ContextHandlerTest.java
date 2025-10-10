@@ -177,9 +177,78 @@ public class ContextHandlerTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    public void testThreadRefusingContextClassLoader(boolean withClassLoader) throws Exception
+    {
+        _contextHandler.setClassLoader(withClassLoader ? _loader : null);
+
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                AtomicReference<Throwable> failureRef = new AtomicReference<>();
+                request.addFailureListener(failureRef::set);
+
+                CountDownLatch latch = new CountDownLatch(1);
+                var t = new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try (Blocker.Callback cb = Blocker.callback())
+                        {
+                            // When a classloader is configured, Response.write() tries to set it as the context classloader.
+                            response.write(true, ByteBuffer.allocate(32), cb);
+                            cb.block();
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        finally
+                        {
+                            latch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void setContextClassLoader(ClassLoader cl)
+                    {
+                        throw new ArithmeticException();
+                    }
+                };
+                t.start();
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+                Throwable x = failureRef.get();
+                if (x == null)
+                    callback.succeeded();
+                else
+                    callback.failed(x);
+                return true;
+            }
+        });
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     public void testAIOAndClassLoader(boolean withClassLoader) throws Exception
     {
-        // When a classloader is configured, Response.write() tries to set it as the context classloader.
         _contextHandler.setClassLoader(withClassLoader ? _loader : null);
 
         _contextHandler.setHandler(new Handler.Abstract()
@@ -202,6 +271,7 @@ public class ContextHandlerTest
                         {
                             try (Blocker.Callback cb = Blocker.callback())
                             {
+                                // When a classloader is configured, Response.write() tries to set it as the context classloader.
                                 response.write(true, ByteBuffer.allocate(32), cb);
                                 cb.block();
                             }
