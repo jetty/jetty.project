@@ -111,7 +111,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             coreClientSupplier);
 
         // Manage the lifecycle of the Container.
-        contextHandler.addManaged(container);
+        addBeanAndEnsure(contextHandler, container);
         contextHandler.addEventListener(container);
         contextHandler.addEventListener(new LifeCycle.Listener()
         {

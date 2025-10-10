@@ -1422,7 +1422,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         _aliasChecks.add(check);
         if (check instanceof LifeCycle)
-            addManaged((LifeCycle)check);
+            addBeanAndEnsure(this, (LifeCycle)check);
         else
             addBean(check);
     }

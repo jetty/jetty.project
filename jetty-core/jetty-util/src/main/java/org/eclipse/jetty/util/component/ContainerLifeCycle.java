@@ -473,14 +473,30 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * wrapped as RuntimeExceptions
      *
      * @param lifecycle the managed lifecycle to add
+     * @deprecated use {@link #addBeanAndEnsure(ContainerLifeCycle, LifeCycle)} instead.
      */
+    @Deprecated(forRemoval = true, since = "jetty-12.1.3")
     public void addManaged(LifeCycle lifecycle)
     {
-        addBean(lifecycle, true);
+        addBeanAndEnsure(this, lifecycle);
+    }
+
+    /**
+     * Adds a managed lifecycle.
+     * <p>This is a convenience method that uses addBean(lifecycle,true)
+     * and then ensures that the added bean is started iff this container
+     * is running.  Exception from nested calls to start are caught and
+     * wrapped as RuntimeExceptions
+     *
+     * @param lifecycle the managed lifecycle to add
+     */
+    public static void addBeanAndEnsure(ContainerLifeCycle container, LifeCycle lifecycle)
+    {
+        container.addBean(lifecycle, true);
         try
         {
-            if (isRunning() && !lifecycle.isRunning())
-                start(lifecycle);
+            if (container.isRunning() && !lifecycle.isRunning())
+                container.start(lifecycle);
         }
         catch (RuntimeException | Error e)
         {

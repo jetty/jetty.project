@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -151,7 +152,7 @@ public class XmlBasedJettyServer
 
     public void start() throws Exception
     {
-        _server.addManaged(_resourceFactory);
+        ContainerLifeCycle.addBeanAndEnsure(_server, _resourceFactory);
         _server.start();
     }
 

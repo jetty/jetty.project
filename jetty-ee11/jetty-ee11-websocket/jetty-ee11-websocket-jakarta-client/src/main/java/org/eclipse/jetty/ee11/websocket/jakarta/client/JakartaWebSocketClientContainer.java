@@ -116,7 +116,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (coreClient == null)
         {
             coreClient = coreClientFactory.apply(components);
-            addManaged(coreClient);
+            addBeanAndEnsure(this, coreClient);
         }
 
         return coreClient;
@@ -327,7 +327,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         ContainerLifeCycle container = SHUTDOWN_MAP.get(cl);
         if (container != null)
         {
-            container.addManaged(this);
+            addBeanAndEnsure(container, this);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} registered for WebApp shutdown to {}", this, container);
             return;

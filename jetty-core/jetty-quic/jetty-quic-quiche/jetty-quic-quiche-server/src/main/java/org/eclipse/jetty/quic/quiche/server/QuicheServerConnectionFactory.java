@@ -89,7 +89,7 @@ public class QuicheServerConnectionFactory extends AbstractQuicheServerConnectio
             {
                 ServerQuicheSession qSession = (ServerQuicheSession)session;
                 ProtocolSession pSession = newProtocolSession(qSession);
-                qSession.addManaged(pSession);
+                addBeanAndEnsure(qSession, pSession);
                 protocolSession.set(pSession);
             }
             catch (Throwable x)

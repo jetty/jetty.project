@@ -98,7 +98,7 @@ public class JettyWebSocketRestartTest
         server.stop();
         assertThat(contextHandler.getEventListeners().size(), is(0));
         assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(0));
-        assertThat(contextHandler.getCoreContextHandler().getContainedBeans(WebSocketServerComponents.class).size(), is(0));
+        assertThat(contextHandler.getCoreContextHandler().getContainedBeans(WebSocketServerComponents.class).size(), is(1));
         assertNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
         assertNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
         assertThat(contextHandler.getServletHandler().getFilters().length, is(0));

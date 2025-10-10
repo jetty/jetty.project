@@ -63,20 +63,21 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         WebSocketMappings mappings = getMappings(contextHandler);
         if (mappings == null)
         {
+            mappings = contextHandler.getBean(WebSocketMappings.class);
+            if (mappings != null)
+            {
+                contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mappings);
+
+                // The listener only persists through restarts if it is "durable" (if it is added before starting).
+                if (!contextHandler.getEventListeners().contains(mappings))
+                    contextHandler.addEventListener(mappings);
+            }
+        }
+        if (mappings == null)
+        {
             mappings = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
             contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mappings);
             contextHandler.addBean(mappings);
-            WebSocketMappings m = mappings;
-            contextHandler.addEventListener(new LifeCycle.Listener()
-            {
-                @Override
-                public void lifeCycleStopping(LifeCycle event)
-                {
-                    contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
-                    contextHandler.removeEventListener(this);
-                    contextHandler.removeBean(m);
-                }
-            });
         }
 
         return mappings;

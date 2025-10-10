@@ -79,7 +79,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     public WebSocketClient(HttpClient httpClient)
     {
         coreClient = new WebSocketCoreClient(httpClient, null);
-        addManaged(coreClient);
+        addBeanAndEnsure(this, coreClient);
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, coreClient.getWebSocketComponents());
         sessionListeners.add(sessionTracker);
         installBean(sessionTracker);

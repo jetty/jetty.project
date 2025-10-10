@@ -45,7 +45,7 @@ public class ComponentDocs
             public Root()
             {
                 // The Monitor life cycle is managed by Root.
-                addManaged(monitor);
+                addBeanAndEnsure(this, monitor);
             }
         }
 

@@ -37,6 +37,7 @@ import org.eclipse.jetty.quic.quiche.client.internal.ClientQuicheSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,7 @@ public class QuicheTransport extends Transport.Wrapper
             {
                 ClientQuicheSession qSession = (ClientQuicheSession)session;
                 ProtocolSession pSession = newProtocolSession(qSession);
-                qSession.addManaged(pSession);
+                ContainerLifeCycle.addBeanAndEnsure(qSession, pSession);
                 protocolSession.set(pSession);
                 context.put(ClientConnector.APPLICATION_PROTOCOL_CONTEXT_KEY, qSession.getNegotiatedProtocol());
             }

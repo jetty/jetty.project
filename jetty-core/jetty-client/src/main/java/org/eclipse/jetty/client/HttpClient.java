@@ -516,7 +516,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
             {
                 HttpDestination newDestination = (HttpDestination)getHttpClientTransport().newDestination(k);
                 // Start the destination before it's published to other threads.
-                addManaged(newDestination);
+                addBeanAndEnsure(this, newDestination);
                 if (destinationSweeper != null)
                     destinationSweeper.offer(newDestination);
                 if (LOG.isDebugEnabled())

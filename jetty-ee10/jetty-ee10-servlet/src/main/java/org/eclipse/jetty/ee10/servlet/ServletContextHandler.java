@@ -395,6 +395,8 @@ public class ServletContextHandler extends ContextHandler
     {
         if (super.removeEventListener(listener))
         {
+            _durableListeners.remove(listener);
+
             if (listener instanceof ServletContextScopeListener)
                 _contextListeners.remove(listener);
 
@@ -911,6 +913,9 @@ public class ServletContextHandler extends ContextHandler
     {
         if (super.addEventListener(listener))
         {
+            if (isRunning() && contains(listener))
+                _durableListeners.add(listener);
+
             if ((listener instanceof HttpSessionActivationListener) ||
                 (listener instanceof HttpSessionAttributeListener) ||
                 (listener instanceof HttpSessionBindingListener) ||

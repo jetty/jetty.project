@@ -21,7 +21,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -99,6 +98,13 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (components != null)
             return components;
 
+        components = container.getBean(WebSocketServerComponents.class);
+        if (components != null)
+        {
+            attributes.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, components);
+            return components;
+        }
+
         InflaterPool inflaterPool = (InflaterPool)attributes.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
         if (inflaterPool == null)
             inflaterPool = InflaterPool.ensurePool(server);
@@ -116,44 +122,24 @@ public class WebSocketServerComponents extends WebSocketComponents
             executor = server.getThreadPool();
 
         DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)attributes.getAttribute(DecoratedObjectFactory.ATTR);
-        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
+        components = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
         if (objectFactory != null)
-            serverComponents.unmanage(objectFactory);
+            components.unmanage(objectFactory);
 
         // These components may be managed by the server but not yet started.
         // In this case we don't want them to be managed by the components as well.
         if (server.contains(inflaterPool))
-            serverComponents.unmanage(inflaterPool);
+            components.unmanage(inflaterPool);
         if (server.contains(deflaterPool))
-            serverComponents.unmanage(deflaterPool);
+            components.unmanage(deflaterPool);
         if (server.contains(bufferPool))
-            serverComponents.unmanage(bufferPool);
+            components.unmanage(bufferPool);
         if (executor != null)
-            serverComponents.unmanage(executor);
+            components.unmanage(executor);
 
-        // Set to be managed as persistent attribute and bean on ContextHandler.
-        container.addManaged(serverComponents);
-        attributes.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
-
-        // Stop the WebSocketComponents when the ContextHandler stops and remove the WebSocketComponents attribute.
-        container.addEventListener(new LifeCycle.Listener()
-        {
-            @Override
-            public void lifeCycleStopping(LifeCycle event)
-            {
-                attributes.removeAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
-                container.removeBean(serverComponents);
-                container.removeEventListener(this);
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%sCleanupListener", WebSocketServerComponents.class.getSimpleName());
-            }
-        });
-
-        return serverComponents;
+        addBeanAndEnsure(container, components);
+        attributes.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, components);
+        return components;
     }
 
     public static WebSocketComponents getWebSocketComponents(ContextHandler contextHandler)

@@ -67,6 +67,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -1370,7 +1371,7 @@ public class HttpClientTLSTest
                 latch.countDown();
             }
         };
-        connector.addManaged(serverStats);
+        ContainerLifeCycle.addBeanAndEnsure(connector, serverStats);
 
         SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
@@ -1383,7 +1384,7 @@ public class HttpClientTLSTest
                 latch.countDown();
             }
         };
-        client.addManaged(clientStats);
+        ContainerLifeCycle.addBeanAndEnsure(client, clientStats);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
             .headers(httpFields -> httpFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
