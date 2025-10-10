@@ -273,7 +273,7 @@ public interface CharsetStringBuilder
     {
         private final CharsetDecoder _decoder;
         private final StringBuilder _stringBuilder = new StringBuilder(32);
-        private ByteBuffer _buffer = ByteBuffer.allocate(32);
+        private ByteBuffer _buffer;
         
         public DecoderStringBuilder(CharsetDecoder charsetDecoder, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
         {
@@ -284,11 +284,18 @@ public interface CharsetStringBuilder
 
         private void ensureSpace(int needed)
         {
-            int space = _buffer.remaining();
-            if (space < needed)
+            if (_buffer == null)
             {
-                int position = _buffer.position();
-                _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                _buffer = ByteBuffer.allocate(32 * ((needed + 32) % 32));
+            }
+            else
+            {
+                int space = _buffer.remaining();
+                if (space < needed)
+                {
+                    int position = _buffer.position();
+                    _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                }
             }
         }
 
@@ -302,19 +309,37 @@ public interface CharsetStringBuilder
         @Override
         public void append(char c)
         {
-            if (_buffer.position() > 0)
+            if (_buffer != null && _buffer.position() > 0)
             {
-                // We have a (possible) sequence started, need to continue it.
+                // If we have seen a byte append, then assume all following character appends are mistakes,
+                // but try to decode safely if we can.
                 if (c > 0xFF)
                 {
-                    ensureSpace(2);
-                    _buffer.putChar(c);
+                    // Try to decode and continue
+                    try
+                    {
+                        CharSequence decoded = _decoder.decode(_buffer.flip());
+                        _buffer.clear();
+                        _stringBuilder.append(decoded);
+                        _stringBuilder.append(c);
+                    }
+                    catch (CharacterCodingException e)
+                    {
+                        if (_decoder.malformedInputAction() == CodingErrorAction.IGNORE)
+                            return;
+                        if (_decoder.malformedInputAction() == CodingErrorAction.REPLACE)
+                        {
+                            _buffer.clear();
+                            _stringBuilder.append("�");
+                            return;
+                        }
+                        throw new IllegalArgumentException("Invalid character " + Integer.toHexString(c), e);
+                    }
+                    return;
                 }
-                else
-                {
-                    ensureSpace(1);
-                    _buffer.put((byte)c);
-                }
+                // This only works for charsets that are true supersets of USASCII
+                ensureSpace(1);
+                _buffer.put((byte)c);
             }
             else
             {
@@ -326,9 +351,7 @@ public interface CharsetStringBuilder
         public void append(CharSequence chars, int offset, int length)
         {
             for (int idx = offset; idx < offset + length; idx++)
-            {
                 append(chars.charAt(idx));
-            }
         }
 
         @Override
@@ -354,7 +377,7 @@ public interface CharsetStringBuilder
             // and onUnmappableCharacter(CodingErrorAction)
             try
             {
-                if (_buffer.position() > 0)
+                if (_buffer != null && _buffer.position() > 0)
                 {
                     CharSequence decoded = _decoder.decode(_buffer.flip());
                     _buffer.clear();
@@ -380,6 +403,8 @@ public interface CharsetStringBuilder
         public void reset()
         {
             _stringBuilder.setLength(0);
+            if (_buffer != null)
+                _buffer.clear();
         }
     }
 }
