@@ -156,14 +156,14 @@ public class ByteChannelContentSource implements Content.Source
         {
             lockedEnsureOpenOrTerminal();
 
+            if (_terminal != null)
+                return _terminal;
+
             if (_length == 0)
             {
                 lockedSetTerminal(Content.Chunk.EOF);
                 return Content.Chunk.EOF;
             }
-
-            if (_terminal != null)
-                return _terminal;
 
             if (_buffer == null)
             {
