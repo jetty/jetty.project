@@ -29,9 +29,7 @@ public class ThreadUtils
             return thread.getThreadGroup() == innocuousThreadGroup;
 
         ThreadGroup threadGroup = thread.getThreadGroup();
-        if (threadGroup != null &&
-            "InnocuousThreadGroup".equals(threadGroup.getName()) &&
-            "jdk.internal.misc.InnocuousThread$InnocuousThreadGroup".equals(threadGroup.getClass().getName()))
+        if (threadGroup != null && "InnocuousThreadGroup".equals(threadGroup.getName()))
         {
             innocuousThreadGroup = threadGroup;
             return true;
