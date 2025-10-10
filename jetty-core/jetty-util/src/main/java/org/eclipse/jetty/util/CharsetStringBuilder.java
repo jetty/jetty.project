@@ -286,7 +286,7 @@ public interface CharsetStringBuilder
         {
             if (_buffer == null)
             {
-                _buffer = ByteBuffer.allocate(32 * ((needed + 32) % 32));
+                _buffer = ByteBuffer.allocate(needed + 32);
             }
             else
             {
