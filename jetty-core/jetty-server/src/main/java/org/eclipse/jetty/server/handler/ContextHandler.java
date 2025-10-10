@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -513,6 +514,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return _classLoader;
     }
 
+    /**
+     * The {@link ClassLoader} to set as the {@link Thread#setContextClassLoader(ClassLoader) thread's context classloader}
+     * when the thread executing this handler enters the scope of this context.
+     * @param contextLoader the {@link ClassLoader} or {@code null} to avoid changing the thread's context classloader.
+     */
     public void setClassLoader(ClassLoader contextLoader)
     {
         if (isStarted())
@@ -728,26 +734,39 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
     }
 
+    /**
+     * <p>Enters the scope of the {@link Context}.</p>
+     * <p> Attempts to set the {@link Thread#setContextClassLoader(ClassLoader) thread's context classloader}
+     * to the {@link #getClassLoader() configured one} if a non-null one was set.</p>
+     *
+     * @param contextRequest the context's {@link Request}
+     * @return the configured classloader if it was successfully set as the thread's context classloader,
+     * {@code null} otherwise.
+     */
     protected ClassLoader enterScope(Request contextRequest)
     {
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
         __context.set(_context);
-        if (_classLoader != null)
-            setContextClassLoader(_classLoader);
+        // Cheap check for JDK 25+ innocuous threads to avoid an exception on the fast path, if possible.
+        if (ThreadUtils.isInnocuous(Thread.currentThread()))
+        {
+            lastLoader = null;
+        }
+        else if (_classLoader != null)
+        {
+            try
+            {
+                Thread.currentThread().setContextClassLoader(_classLoader);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("error setting a context classloader on thread {}", Thread.currentThread(), x);
+                lastLoader = null;
+            }
+        }
         notifyEnterScope(contextRequest);
-        return lastLoader;
-    }
-
-    private void setContextClassLoader(ClassLoader classLoader)
-    {
-        try
-        {
-            Thread.currentThread().setContextClassLoader(classLoader);
-        }
-        catch (SecurityException e)
-        {
-            // ignore
-        }
+        return _classLoader != null ? lastLoader : null;
     }
 
     /**
@@ -768,11 +787,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         }
     }
 
-    protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
+    /**
+     * <p>Exits the scope of the {@link Context}.</p>
+     *
+     * @param contextRequest the context's {@link Request}
+     * @param lastContext the previous context to restore as the current one.
+     * @param lastLoader the previous {@link Thread#getContextClassLoader() thread's context classloader} to restore,
+     * or null to leave the thread's context classloader untouched.
+     */
+    protected void exitScope(Request contextRequest, Context lastContext, ClassLoader lastLoader)
     {
-        notifyExitScope(request);
+        notifyExitScope(contextRequest);
         __context.set(lastContext);
-        setContextClassLoader(lastLoader);
+        if (lastLoader != null && lastLoader != Thread.currentThread().getContextClassLoader())
+            Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
     /**
