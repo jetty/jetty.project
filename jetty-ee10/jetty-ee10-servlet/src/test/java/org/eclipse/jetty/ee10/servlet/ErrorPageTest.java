@@ -49,6 +49,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -2065,6 +2067,43 @@ public class ErrorPageTest
         assertThat(response.getStatus(), is(404));
         assertThat(response.getContent(), containsString("ERROR_PAGE: /404"));
         assertThat(response.getContent(), containsString("ERROR_MESSAGE: Not Found"));
+    }
+
+    @Test
+    public void testForbidden() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/ctx");
+        contextHandler.setProtectedTargets(new String[] {"/WEB-INF", "/META-INF"});
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+        contextHandler.addServlet(new OkServlet(), "/*");
+
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        securityHandler.put("/*", Constraint.ANY_USER);
+        contextHandler.setSecurityHandler(securityHandler);
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+        errorPageErrorHandler.addErrorPage(403, "/error/403");
+
+        startServer(contextHandler);
+
+        String rawRequest = """
+            GET /ctx/WEB-INF/anything HTTP/1.1\r
+            Host: test\r
+            Connection: close\r
+            Accept: */*\r
+            Accept-Charset: *\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        assertThat(rawResponse, startsWith("HTTP/1.1 403 Forbidden"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(403));
+        assertThat(response.getContent(), containsString("ERROR_PAGE: /403"));
+        assertThat(response.getContent(), containsString("ERROR_MESSAGE: Forbidden"));
+        assertThat(response.getContent(), containsString("ERROR_CODE: 403"));
     }
 
     public static class ErrorDumpServlet extends HttpServlet
