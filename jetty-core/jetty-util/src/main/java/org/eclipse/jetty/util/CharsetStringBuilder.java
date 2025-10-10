@@ -330,16 +330,18 @@ public interface CharsetStringBuilder
                         if (_decoder.malformedInputAction() == CodingErrorAction.REPLACE)
                         {
                             _buffer.clear();
-                            _stringBuilder.append("�");
+                            _stringBuilder.append(_decoder.replacement());
                             return;
                         }
                         throw new IllegalArgumentException("Invalid character " + Integer.toHexString(c), e);
                     }
-                    return;
                 }
-                // This only works for charsets that are true supersets of USASCII
-                ensureSpace(1);
-                _buffer.put((byte)c);
+                else
+                {
+                    // This only works for charsets that are true supersets of USASCII
+                    ensureSpace(1);
+                    _buffer.put((byte)c);
+                }
             }
             else
             {
