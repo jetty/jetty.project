@@ -860,7 +860,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         int maxHeaderBytes = maxResponseHeadersSize;
                         if (maxHeaderBytes < 0)
-                            maxHeaderBytes = getHttpConfiguration().getResponseHeaderSize();
+                            maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
