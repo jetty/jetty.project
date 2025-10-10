@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +139,7 @@ public class ZstandardEncoderSink extends EncoderSink
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
-                    Callback writeCallback = Callback.from(outputBuf::release);
+                    Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
                     if (inputBuf.hasRemaining())
                     {
                         // rollback unprocessed inputBuf to content buffer position.
@@ -171,7 +172,7 @@ public class ZstandardEncoderSink extends EncoderSink
         outputBuf.getByteBuffer().flip();
         if (outputBuf.getByteBuffer().hasRemaining())
         {
-            Callback writeCallback = Callback.from(outputBuf::release);
+            Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
             return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
         }
         outputBuf.release();
@@ -193,7 +194,7 @@ public class ZstandardEncoderSink extends EncoderSink
         {
             if (actualLast)
                 state.compareAndSet(State.FLUSH, State.FINISHED);
-            Callback writeCallback = Callback.from(outputBuf::release);
+            Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
             return new WriteRecord(actualLast, outputBuf.getByteBuffer(), writeCallback);
         }
 
