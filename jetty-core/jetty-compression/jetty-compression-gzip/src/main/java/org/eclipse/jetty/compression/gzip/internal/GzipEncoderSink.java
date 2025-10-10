@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,7 +145,7 @@ public class GzipEncoderSink extends EncoderSink
                                 output = compression.acquireByteBuffer(bufferSize);
                             if (encode(content, output.getByteBuffer()))
                             {
-                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                                 output = null;
                                 return writeRecord;
                             }
@@ -171,7 +172,7 @@ public class GzipEncoderSink extends EncoderSink
                             state.compareAndSet(State.FLUSHING, State.TRAILERS);
                         if (output.hasRemaining())
                         {
-                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                             output = null;
                             return writeRecord;
                         }
@@ -182,7 +183,7 @@ public class GzipEncoderSink extends EncoderSink
                             output = compression.acquireByteBuffer(16);
                         trailers(output.getByteBuffer());
                         state.compareAndSet(State.TRAILERS, State.FINISHED);
-                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(output::release));
+                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                         output = null;
                         return writeRecord;
                     }
