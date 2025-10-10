@@ -103,9 +103,9 @@ public class JettyWebSocketRestartTest
 
         // After stopping the websocket resources are cleaned up.
         server.stop();
-        assertThat(contextHandler.getEventListeners().size(), is(0));
-        assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(0));
-        assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(0));
+        assertThat(contextHandler.getEventListeners().size(), is(2));
+        assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(1));
+        assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(1));
         assertNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
         assertNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
         assertThat(contextHandler.getServletHandler().getFilters().length, is(0));

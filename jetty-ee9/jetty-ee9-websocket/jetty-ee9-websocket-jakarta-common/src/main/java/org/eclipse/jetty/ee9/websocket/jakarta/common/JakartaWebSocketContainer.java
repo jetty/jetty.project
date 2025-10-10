@@ -48,6 +48,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
         this.components = components;
         addSessionListener(sessionTracker);
         installBean(sessionTracker);
+        installBean(components);
     }
 
     public abstract Executor getExecutor();

@@ -81,7 +81,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
                 ? WebSocketServerComponents.ensureWebSocketComponents(server)
                 : WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
             WebSocketMappings mappings = new WebSocketMappings(components);
-            container = new ServerWebSocketContainer(context, mappings);
+            container = new ServerWebSocketContainer(context, components, mappings);
             ContainerLifeCycle parent = contextHandler == null ? server : contextHandler;
             addBeanAndEnsure(parent, container);
         }
@@ -127,13 +127,14 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final FrameHandlerFactory factory;
     private InvocationType invocationType = InvocationType.BLOCKING;
 
-    ServerWebSocketContainer(Context context, WebSocketMappings mappings)
+    ServerWebSocketContainer(Context context, WebSocketComponents components, WebSocketMappings mappings)
     {
         this.context = context;
         this.mappings = mappings;
-        installBean(mappings);
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
         addSessionListener(sessionTracker);
+        installBean(components);
+        installBean(mappings);
         installBean(sessionTracker);
     }
 
