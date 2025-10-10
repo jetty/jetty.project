@@ -142,10 +142,13 @@ public class IOResourcesTest
     public static Stream<Resource> all() throws Exception
     {
         Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+
         URI resourceUri = testResourcePath.toUri();
         return Stream.of(
             ResourceFactory.root().newResource(resourceUri),
             ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("zero")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("one")),
             new URLResourceFactory().newResource(resourceUri),
             new TestContentSourceFactoryResource(resourceUri, Files.readAllBytes(testResourcePath))
         );
@@ -181,12 +184,13 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
+
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, -1);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(resource.length() - 100L));
+        assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
@@ -201,7 +205,7 @@ public class IOResourcesTest
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(500L));
+        assertThat(sum, is(Math.min(resource.length(), 500L)));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
@@ -211,12 +215,15 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, 500);
+
+        long offset = Math.min(resource.length(), 100);
+        long length = Math.min(resource.length() - offset, 500);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, offset, length);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(500L));
+        assertThat(sum, is(length));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
@@ -240,11 +247,12 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 100, -1, callback);
+        long offset = Math.min(resource.length(), 100);
+        IOResources.copy(resource, sink, bufferPool, offset, -1, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(resource.length() - 100L));
+        assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
@@ -254,11 +262,12 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 0, 500, callback);
+        long length = resource.length() >= 0 ? Math.min(resource.length(), 500) : 500;
+        IOResources.copy(resource, sink, bufferPool, 0, length, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(500L));
+        assertThat(sum, is(length));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
@@ -268,11 +277,13 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 100, 500, callback);
+        long offset = Math.min(resource.length(), 100);
+        long length = Math.min(resource.length() - offset, 500);
+        IOResources.copy(resource, sink, bufferPool, offset, length, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(500L));
+        assertThat(sum, is(length));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 

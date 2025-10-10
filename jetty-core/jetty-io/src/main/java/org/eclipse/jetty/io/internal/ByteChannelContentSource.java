@@ -155,6 +155,13 @@ public class ByteChannelContentSource implements Content.Source
         try (AutoLock ignored = lock.lock())
         {
             lockedEnsureOpenOrTerminal();
+
+            if (_length == 0)
+            {
+                lockedSetTerminal(Content.Chunk.EOF);
+                return Content.Chunk.EOF;
+            }
+
             if (_terminal != null)
                 return _terminal;
 
@@ -172,7 +179,7 @@ public class ByteChannelContentSource implements Content.Source
             {
                 ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 BufferUtil.clearToFill(byteBuffer);
-                if (_length >= 0)
+                if (_length > 0)
                     byteBuffer.limit((int)Math.min(_buffer.capacity(), _length - _totalRead));
                 int read = _byteChannel.read(byteBuffer);
                 BufferUtil.flipToFlush(byteBuffer, 0);
