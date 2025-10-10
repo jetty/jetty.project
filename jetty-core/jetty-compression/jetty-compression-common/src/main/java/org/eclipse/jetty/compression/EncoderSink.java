@@ -104,7 +104,7 @@ public abstract class EncoderSink implements Content.Sink
             if (writeRecord.last)
             {
                 state.set(State.FINISHING);
-                callback = Callback.combine(Callback.from(this::finished), callback);
+                callback = Callback.combine(Callback.from(callback.getInvocationType(), this::finished), callback);
             }
             if (writeRecord.callback != null)
                 callback = Callback.combine(callback, writeRecord.callback);
@@ -114,6 +114,11 @@ public abstract class EncoderSink implements Content.Sink
         protected void finished()
         {
             state.set(State.FINISHED);
+        }
+
+        @Override
+        protected void onSuccess()
+        {
             release();
         }
 
