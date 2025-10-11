@@ -123,6 +123,7 @@ public class ByteChannelContentSource implements Content.Source
 
     protected void lockedSetTerminal(Content.Chunk terminal)
     {
+        assert lock.isHeldByCurrentThread();
         if (_terminal == null)
             _terminal = Objects.requireNonNull(terminal);
         else
@@ -135,6 +136,7 @@ public class ByteChannelContentSource implements Content.Source
 
     private void lockedEnsureOpenOrTerminal()
     {
+        assert lock.isHeldByCurrentThread();
         if (_terminal == null && (_byteChannel == null || !_byteChannel.isOpen()))
         {
             try
