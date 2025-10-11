@@ -1779,6 +1779,18 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             }
 
             @Override
+            public QuotedCSV newQuotedCSV(boolean b)
+            {
+                return getWrapped().newQuotedCSV(b);
+            }
+
+            @Override
+            public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+            {
+                return getWrapped().newQuotedQualityCSV(secondaryOrdering);
+            }
+
+            @Override
             public int size()
             {
                 // This impl needed only as an optimization
