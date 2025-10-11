@@ -180,7 +180,7 @@ public class IOResourcesTest
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testAsContentSourceWithFirst(Resource resource) throws Exception
+    public void testAsContentSourceWithOffset(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
@@ -211,7 +211,7 @@ public class IOResourcesTest
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testAsContentSourceWithFirstAndLength(Resource resource) throws Exception
+    public void testAsContentSourceWithOffsetAndLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
@@ -243,7 +243,7 @@ public class IOResourcesTest
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testCopyWithFirst(Resource resource) throws Exception
+    public void testCopyWithOffset(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
@@ -273,7 +273,7 @@ public class IOResourcesTest
 
     @ParameterizedTest
     @MethodSource("all")
-    public void testCopyWithFirstAndLength(Resource resource) throws Exception
+    public void testCopyWithOffsetAndLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();

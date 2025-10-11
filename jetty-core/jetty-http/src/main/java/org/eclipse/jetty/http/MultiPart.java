@@ -354,6 +354,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            // TODO support offset and length
             return newContentSource();
         }
 
@@ -502,6 +503,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            // TODO: support offset and length
             return new ByteBufferContentSource(content);
         }
 
@@ -538,6 +540,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            // TODO support offset and length
             try (AutoLock ignored = lock.lock())
             {
                 if (closed)

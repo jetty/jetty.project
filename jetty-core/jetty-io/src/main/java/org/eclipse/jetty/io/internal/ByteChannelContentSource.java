@@ -56,11 +56,13 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
     {
+        // TODO define contract for offset/lengths outside of bounds
         this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
         if (offset >= 0 && seekableByteChannel != null)
         {
             try
             {
+                // TODO negative offset is an IAE, but a too large offset is corrected, but length is not checked.
                 seekableByteChannel.position(offset);
             }
             catch (IOException e)
@@ -83,6 +85,7 @@ public class ByteChannelContentSource implements Content.Source
 
     private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
+        // TODO Is this the contract we want for offset/length? We are correcting negative offset, but not checking actual size.
         _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;
         _offset = offset < 0 ? 0 : offset;
@@ -270,7 +273,15 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            super(byteBufferPool, null, offset, length < 0L ? size(path) : length);
+            this (byteBufferPool, path, size(path), offset, length);
+        }
+
+        private PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long size, long offset, long length)
+        {
+            // TODO Is this the contract we want for offset/length? auto correcting it? Validity can be checked in super.
+            super(byteBufferPool, null,
+                Math.min(offset, size),
+                Math.min(length, size - offset));
             _path = path;
         }
 

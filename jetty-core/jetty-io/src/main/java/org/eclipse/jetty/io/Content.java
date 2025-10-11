@@ -229,6 +229,7 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
+            // TODO define contract for offset/lengths outside of bounds
             return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
         }
 
@@ -253,6 +254,7 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
+            // TODO define contract for offset/lengths outside of bounds
             return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
         }
 
@@ -282,6 +284,7 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {
+            // TODO define contract for offset/lengths outside of bounds
             return new InputStreamContentSource(inputStream, byteBufferPool, offset, length);
         }
 
