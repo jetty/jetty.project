@@ -390,44 +390,57 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
         MetaData metaData = frame.getMetaData();
-        boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
-        if (isTrailer)
+
+        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+        if (metaDataFailure != null)
         {
-            // In case of trailers, notify first and then offer EOF to
-            // avoid race conditions due to concurrent calls to readData().
-            boolean closed = updateClose(true, CloseState.Event.RECEIVED);
-            notifyHeaders(this, frame);
-            // Offer EOF in case the application calls readData() or demand().
-            if (offer(Data.eof(getId())))
-                processData(true);
-            if (closed)
-                getSession().removeStream(this);
+            // Request failures are notified by the session,
+            // since the Stream.Listener won't be available yet.
+            assert !metaData.isRequest();
+
+            // It's a bad response (or trailer), response content will be dropped.
+            onFailure(new FailureFrame(ErrorCode.PROTOCOL_ERROR.code, null, metaDataFailure), callback);
         }
         else
         {
-            HttpFields fields = metaData.getHttpFields();
-            long length = -1;
-            if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
-                length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
-            dataLength = length;
-
-            // Offer EOF for either the request or the response in
-            // case the application calls readData() or demand().
-            boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
-
-            // Requests are notified to a Session.Listener, here only notify responses.
-            if (metaData.isResponse())
+            boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
+            if (isTrailer)
             {
-                boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                // In case of trailers, notify first and then offer EOF to
+                // avoid race conditions due to concurrent calls to readData().
+                boolean closed = updateClose(true, CloseState.Event.RECEIVED);
                 notifyHeaders(this, frame);
-                if (eof)
+                // Offer EOF in case the application calls readData() or demand().
+                if (offer(Data.eof(getId())))
                     processData(true);
                 if (closed)
                     getSession().removeStream(this);
             }
-        }
+            else
+            {
+                HttpFields fields = metaData.getHttpFields();
+                long length = -1;
+                if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
+                    length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
+                dataLength = length;
 
-        callback.succeeded();
+                // Offer EOF for either the request or the response in
+                // case the application calls readData() or demand().
+                boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
+
+                // Requests are notified to a Session.Listener, here only notify responses.
+                if (metaData.isResponse())
+                {
+                    boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                    notifyHeaders(this, frame);
+                    if (eof)
+                        processData(true);
+                    if (closed)
+                        getSession().removeStream(this);
+                }
+            }
+            callback.succeeded();
+        }
     }
 
     private void onData(Data data)
