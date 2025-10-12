@@ -32,7 +32,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -310,6 +314,80 @@ public class BufferUtil
         if (length > -1)
             slice.limit(slice.position() + length);
         return slice;
+    }
+
+    /**
+     * Slice a collection of ByteBuffers given an offset and a length, with checks similar to
+     * {@link TypeUtil#checkOffsetLengthSize(long, long, long)}.
+     *
+     * @param byteBuffers The buffers to slice (positions/limits respected; no mutation)
+     * @param offset The offset, relative to the current position of the buffers, must be non-negative
+     * @param length The length; -1 means "to the end" of the buffers
+     * @return the sliced buffers in a new collection, which may be immutable and may contain the original buffers or slices of them
+     * @throws IndexOutOfBoundsException if the offset or length are invalid
+     */
+    public static Collection<ByteBuffer> sliceByteBuffers(Collection<ByteBuffer> byteBuffers, long offset, long length)
+    {
+        Objects.requireNonNull(byteBuffers);
+        if (offset < 0)
+            throw new IndexOutOfBoundsException("offset < 0: " + offset);
+        if (length < -1)
+            throw new IndexOutOfBoundsException("length < -1: " + length);
+
+        if (length == 0)
+            return Collections.emptyList();
+
+        boolean allAvailable = (length == -1);
+        ArrayList<ByteBuffer> sliced = new ArrayList<>(byteBuffers.size());
+
+        for (ByteBuffer buffer : byteBuffers)
+        {
+            int remaining = BufferUtil.length(buffer);
+            if (remaining <= 0)
+                continue;
+
+            if (offset >= remaining)
+            {
+                offset -= remaining;
+                continue;
+            }
+
+            if (allAvailable)
+            {
+                if (offset == 0)
+                {
+                    sliced.add(buffer);
+                }
+                else
+                {
+                    sliced.add(slice(buffer, (int)offset, -1));
+                    offset = 0;
+                }
+                continue;
+            }
+
+            if (length == 0)
+                break;
+
+            long bytes = (long)remaining - offset;
+            if (bytes > length)
+            {
+                sliced.add(slice(buffer, (int)offset, (int)length));
+                length = 0;
+                offset = 0;
+                break;
+            }
+            sliced.add(slice(buffer, (int)offset, (int)bytes));
+            length -= bytes;
+            offset = 0;
+        }
+
+        if (offset > 0)
+            throw new IndexOutOfBoundsException("offset too large; leftover=" + offset);
+        if (!allAvailable && length > 0)
+            throw new IndexOutOfBoundsException("length too large; leftover=" + length);
+
+        return sliced;
     }
 
     /**

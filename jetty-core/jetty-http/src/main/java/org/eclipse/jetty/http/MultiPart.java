@@ -512,10 +512,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            long size = getLength();
-            length = TypeUtil.checkOffsetLengthSize(offset, length, size);
-            // TODO slice the content ByteBuffers according to offset and length
-            return new ByteBufferContentSource(content);
+            return new ByteBufferContentSource(content, offset, length);
         }
 
         @Override
@@ -549,9 +546,29 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (Content.Chunk c : content)
+                length += c.size();
+            for (Content.Source s : contentSources)
+            {
+                long l = s.getLength();
+                if (l < 0)
+                    return -1;
+                length += l;
+            }
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            // TODO support offset and length
+            long size = getLength();
+            length = TypeUtil.checkOffsetLengthSize(offset, length, size);
+
+            // TODO implement offset and length support!
+
             try (AutoLock ignored = lock.lock())
             {
                 if (closed)
@@ -665,8 +682,16 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            return content.getLength();
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            length = TypeUtil.checkOffsetLengthSize(offset, length, content.getLength());
+            // TODO implement offset and length support!
             Content.Source c = content;
             content = null;
             return c;
