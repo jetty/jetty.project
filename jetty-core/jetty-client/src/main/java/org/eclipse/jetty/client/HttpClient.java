@@ -882,7 +882,11 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
      */
     public void setRequestBufferSize(int requestBufferSize)
     {
+        if (requestBufferSize <= 0)
+            throw new IllegalArgumentException("Invalid request buffer size " + requestBufferSize);
         this.requestBufferSize = requestBufferSize;
+        if (requestBufferSize > getMaxRequestHeadersSize())
+            setMaxRequestHeadersSize(requestBufferSize);
     }
 
     /**
@@ -1094,6 +1098,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
     {
         this.maxRequestHeadersSize = maxRequestHeadersSize;
+        if (maxRequestHeadersSize > 0 && maxRequestHeadersSize < getRequestBufferSize())
+            setRequestBufferSize(maxRequestHeadersSize);
     }
 
     /**
