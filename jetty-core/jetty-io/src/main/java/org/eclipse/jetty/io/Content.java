@@ -170,8 +170,12 @@ public class Content
              *
              * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
              * @param offset the offset byte of the resource to start from.
-             * @param length the length of the content to make available, -1 for the full length.
+             * Must be greater than or equal to 0 and less than the resource length (if known).
+             * @param length the length of the content to make available, -1 for the full length,
+             * otherwise must be greater than 0 and less than or equal to the resource length (if known) minus the offset.
              * @return a {@link Content.Source}.
+             * @throws IndexOutOfBoundsException if the offset or length are out of range.
+             * @see Objects#checkFromIndexSize(long, long, long)
              */
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
@@ -198,10 +202,15 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link Path}.
+         *
          * @param path The {@link Path}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the resource to start from.
+         * Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, -1 for the full length available,
+         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(Path path, long offset, long length)
         {
@@ -223,9 +232,13 @@ public class Content
          * Create a {@code Content.Source} from a {@link Path}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source, -1 for the full length.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the resource to start from.
+         * Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, -1 for the full length available,
+         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
@@ -248,9 +261,13 @@ public class Content
          * Create a {@code Content.Source} from a {@link ByteChannel}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the resource to start from.
+         * Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, -1 for the full length available,
+         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
@@ -278,9 +295,13 @@ public class Content
          * Create a {@code Content.Source} from an {@link InputStream}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The number of bytes to read from the source, or -1 to read to the end of the stream
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the resource to start from.
+         * Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, -1 for the full length available,
+         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {

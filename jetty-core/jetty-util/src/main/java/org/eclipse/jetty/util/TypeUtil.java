@@ -906,4 +906,31 @@ public class TypeUtil
         return sb.toString();
     }
 
+    /**
+     * Check that the offset and length of a subrange are within the size of a range.
+     * @param offset an offset of a subrange within a range of 0 to {code size} to start from.
+     * Must be greater than or equal to 0 and less than the range size (if known).
+     * @param length the length of the subrange, -1 for the full length available from the offset,
+     * otherwise must be greater than or equal to 0 and less than or equal to the range size (if known) minus the offset.
+     * @param size the size of the range, or -1 if unknown.
+     * @return the length of the subrange, which if the passed length was -1 and the size is known, will be size-offset.
+     * @throws IndexOutOfBoundsException if the offset or length are out of range.
+     * @see Objects#checkFromIndexSize(long, long, long)
+     */
+    public static long checkOffsetLengthSize(long offset, long length, long size)
+    {
+        if (size < 0)
+        {
+            if (offset < 0)
+                throw new IndexOutOfBoundsException("Negative offset: " + offset);
+            if (length < -1)
+                throw new IndexOutOfBoundsException("Length less than -1: " + length);
+        }
+        else
+        {
+            Objects.checkFromIndexSize(offset, length < 0 ? size - offset : length, size);
+        }
+
+        return (length < 0 && size >= 0) ? size - offset : length;
+    }
 }

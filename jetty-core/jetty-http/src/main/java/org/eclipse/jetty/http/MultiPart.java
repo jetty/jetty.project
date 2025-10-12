@@ -501,9 +501,20 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (ByteBuffer b : content)
+                length += BufferUtil.length(b);
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            // TODO: support offset and length
+            long size = getLength();
+            length = TypeUtil.checkOffsetLengthSize(offset, length, size);
+            // TODO slice the content ByteBuffers according to offset and length
             return new ByteBufferContentSource(content);
         }
 
