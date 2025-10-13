@@ -16,10 +16,10 @@ package org.eclipse.jetty.websocket.core.util;
 import java.nio.channels.ReadPendingException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.IncomingFrames;
  */
 public abstract class WebSocketDemander extends IteratingCallback implements DemandChain
 {
-    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new ConstantThrowable("Closed");
 
     private final AutoLock _lock = new AutoLock();
     private final IncomingFrames _emitFrame;
@@ -266,5 +266,16 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
         // This is wrapped with CountingCallback so protects against double succeed/failed.
         if (callback != null)
             callback.failed(cause);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_callback == null)
+                return InvocationType.NON_BLOCKING;
+            return _callback.getInvocationType();
+        }
     }
 }

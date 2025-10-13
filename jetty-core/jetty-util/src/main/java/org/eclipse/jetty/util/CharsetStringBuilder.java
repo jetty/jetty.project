@@ -22,13 +22,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
- * character based appends (e.g. {@link #append(char)} and calls to undecoded byte methods (e.g. {@link #append(byte)}.
+ * character based appends (e.g. {@link #append(char)}) and calls to undecoded byte methods (e.g. {@link #append(byte)}).
  * This is particularly useful for decoding % encoded strings that are mostly already decoded but may contain
  * escaped byte sequences that are not decoded.  The standard {@link CharsetDecoder} API is not well suited for this
  * use-case.</p>
@@ -274,10 +271,9 @@ public interface CharsetStringBuilder
 
     class DecoderStringBuilder implements CharsetStringBuilder
     {
-        private static final Logger LOG = LoggerFactory.getLogger(DecoderStringBuilder.class);
         private final CharsetDecoder _decoder;
         private final StringBuilder _stringBuilder = new StringBuilder(32);
-        private ByteBuffer _buffer = ByteBuffer.allocate(32);
+        private ByteBuffer _buffer;
         
         public DecoderStringBuilder(CharsetDecoder charsetDecoder, CodingErrorAction onMalformedInput, CodingErrorAction onUnmappableCharacter)
         {
@@ -288,11 +284,18 @@ public interface CharsetStringBuilder
 
         private void ensureSpace(int needed)
         {
-            int space = _buffer.remaining();
-            if (space < needed)
+            if (_buffer == null)
             {
-                int position = _buffer.position();
-                _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                _buffer = ByteBuffer.allocate(needed + 32);
+            }
+            else
+            {
+                int space = _buffer.remaining();
+                if (space < needed)
+                {
+                    int position = _buffer.position();
+                    _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                }
             }
         }
 
@@ -306,43 +309,51 @@ public interface CharsetStringBuilder
         @Override
         public void append(char c)
         {
-            if (_buffer.position() > 0)
+            if (_buffer != null && _buffer.position() > 0)
             {
-                try
+                // If we have seen a byte append, then assume all following character appends are mistakes,
+                // but try to decode safely if we can.
+                if (c > 0xFF)
                 {
-                    // Append any data already in the decoder
-                    _stringBuilder.append(_decoder.decode(_buffer.flip()));
-                    _buffer.clear();
+                    // Try to decode and continue
+                    try
+                    {
+                        CharSequence decoded = _decoder.decode(_buffer.flip());
+                        _buffer.clear();
+                        _stringBuilder.append(decoded);
+                        _stringBuilder.append(c);
+                    }
+                    catch (CharacterCodingException e)
+                    {
+                        if (_decoder.malformedInputAction() == CodingErrorAction.IGNORE)
+                            return;
+                        if (_decoder.malformedInputAction() == CodingErrorAction.REPLACE)
+                        {
+                            _buffer.clear();
+                            _stringBuilder.append(_decoder.replacement());
+                            return;
+                        }
+                        throw new IllegalArgumentException("Invalid character " + Integer.toHexString(c), e);
+                    }
                 }
-                catch (CharacterCodingException e)
+                else
                 {
-                    // This will be thrown only if the decoder is configured to REPORT,
-                    // otherwise errors will be ignored or replaced and we will not catch here.
-                    throw new RuntimeException(e);
+                    // This only works for charsets that are true supersets of USASCII
+                    ensureSpace(1);
+                    _buffer.put((byte)c);
                 }
             }
-            _stringBuilder.append(c);
+            else
+            {
+                _stringBuilder.append(c);
+            }
         }
 
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            if (_buffer.position() > 0)
-            {
-                try
-                {
-                    // Append any data already in the decoder
-                    _stringBuilder.append(_decoder.decode(_buffer.flip()));
-                    _buffer.clear();
-                }
-                catch (CharacterCodingException e)
-                {
-                    // This will be thrown only if the decoder is configured to REPORT,
-                    // otherwise errors will be ignored or replaced and we will not catch here.
-                    throw new RuntimeException(e);
-                }
-            }
-            _stringBuilder.append(chars, offset, offset + length);
+            for (int idx = offset; idx < offset + length; idx++)
+                append(chars.charAt(idx));
         }
 
         @Override
@@ -368,7 +379,7 @@ public interface CharsetStringBuilder
             // and onUnmappableCharacter(CodingErrorAction)
             try
             {
-                if (_buffer.position() > 0)
+                if (_buffer != null && _buffer.position() > 0)
                 {
                     CharSequence decoded = _decoder.decode(_buffer.flip());
                     _buffer.clear();
@@ -394,6 +405,8 @@ public interface CharsetStringBuilder
         public void reset()
         {
             _stringBuilder.setLength(0);
+            if (_buffer != null)
+                _buffer.clear();
         }
     }
 }

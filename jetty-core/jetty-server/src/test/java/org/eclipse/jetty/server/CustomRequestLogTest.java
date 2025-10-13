@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -55,6 +56,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -365,6 +367,52 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesTransferred: " + (2 * content.length())));
+    }
+
+    @Test
+    public void testLogBytesReceivedAndExpectedWhenReadTimesOut() throws Exception
+    {
+        start("RequestBytes: %I/%{Content-Length}i", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                try
+                {
+                    // Block to read the request content, it will throw.
+                    Content.Source.asString(request);
+                    // If it does not throw, fail the test.
+                    callback.succeeded();
+                    return true;
+                }
+                catch (IOException x)
+                {
+                    // Expect the idle timeout exception.
+                    Throwable cause = x.getCause();
+                    if (cause instanceof TimeoutException t)
+                        throw t;
+                    // Otherwise, fail the test.
+                    response.setStatus(HttpStatus.BAD_REQUEST_400);
+                    callback.succeeded();
+                    return true;
+                }
+            }
+        });
+        long idleTimeout = 1000;
+        _serverConnector.setIdleTimeout(idleTimeout);
+
+        // Send partial request content.
+        String content = "hello";
+        int contentLength = 3 * content.length();
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            Content-Length: %d
+
+            %s""".formatted(contentLength, content));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, containsString("%d/%d".formatted(content.length(), contentLength)));
     }
 
     @Test

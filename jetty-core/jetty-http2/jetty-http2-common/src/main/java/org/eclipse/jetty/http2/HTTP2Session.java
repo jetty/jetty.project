@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -91,6 +92,8 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     private static final int MAX_TOTAL_LOCAL_STREAMS = Integer.MAX_VALUE / 2;
 
     private final Map<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> localSettings = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> remoteSettings = new ConcurrentHashMap<>();
     private final Set<Integer> priorityStreams = ConcurrentHashMap.newKeySet();
     private final List<FrameListener> frameListeners = new CopyOnWriteArrayList<>();
     private final List<LifeCycleListener> lifeCycleListeners = new CopyOnWriteArrayList<>();
@@ -445,6 +448,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             return;
 
         Map<Integer, Integer> settings = frame.getSettings();
+        remoteSettings.putAll(settings);
         configure(settings, false);
         notifySettings(this, frame);
 
@@ -811,6 +815,9 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
+        if (!frame.isReply())
+         localSettings.putAll(frame.getSettings());
+
         control(null, callback, frame);
     }
 
@@ -838,7 +845,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
         else
         {
-            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
+            onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate", callback);
         }
     }
 
@@ -1442,7 +1449,10 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, new DumpableCollection("streams", streams.values()));
+        DumpableCollection streamsDump = new DumpableCollection("streams", streams.values());
+        DumpableMap localSettingsDump = new DumpableMap("local settings", localSettings);
+        DumpableMap remoteSettingsDump = new DumpableMap("remote settings", remoteSettings);
+        Dumpable.dumpObjects(out, indent, this, flowControl, flusher, streamsDump, localSettingsDump, remoteSettingsDump);
     }
 
     @Override
@@ -2306,10 +2316,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (LOG.isDebugEnabled())
                 LOG.debug("Session failure {}", HTTP2Session.this, cause);
 
-            notifyFailure(HTTP2Session.this, cause, Callback.from(() ->
-                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(() ->
-                    sendGoAway(goAwayFrame, Callback.from(() ->
-                        terminate(goAwayFrame)))))));
+            Invocable.InvocationType invocationType = callback.getInvocationType();
+            notifyFailure(HTTP2Session.this, cause, Callback.from(invocationType, () ->
+                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(invocationType, () ->
+                    sendGoAway(goAwayFrame, Callback.from(invocationType, () ->
+                        terminate(goAwayFrame, callback)))))));
         }
 
         private void onWriteFailure(Throwable x)
@@ -2420,6 +2431,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
 
         private void terminate(GoAwayFrame frame)
         {
+            terminate(frame, Callback.NOOP);
+        }
+
+        private void terminate(GoAwayFrame frame, Callback callback)
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
@@ -2432,7 +2448,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 completable.complete(null);
 
             HTTP2Session.this.terminate(failure);
-            notifyClose(HTTP2Session.this, frame, Callback.NOOP);
+            notifyClose(HTTP2Session.this, frame, callback);
             notifyLifeCycleClose();
         }
 

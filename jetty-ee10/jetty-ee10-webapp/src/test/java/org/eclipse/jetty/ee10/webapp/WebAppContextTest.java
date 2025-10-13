@@ -674,6 +674,36 @@ public class WebAppContextTest
     }
 
     @Test
+    public void testJarFileBaseResource(WorkDir workDir) throws Exception
+    {
+        //create a war that we can use as the resource base
+        Path warPath = createWar(workDir.getEmptyPathDir(), "test.war");
+        warPath = warPath.toAbsolutePath();
+        URI warURI =  URIUtil.toJarFileUri(warPath.toUri());
+
+        Server server = null;
+        WebAppContext context = null;
+
+        server = newServer();
+
+        context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResourceAsString(warURI.toString());
+        assertNotNull(context.getBaseResource());
+        server.setHandler(context);
+        server.start();
+
+        server.stop();
+        assertNotNull(context.getBaseResource());
+
+        //Cause the non-lifecycle ResourceFactory in the context
+        //to be closed, thus closing the jar:file Resource that
+        //was created by the setBaseResourceAsString() method
+        server.destroy();
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
     public void testBaseResourceAbsolutePath(WorkDir workDir) throws Exception
     {
         Server server = newServer();
@@ -1018,12 +1048,17 @@ public class WebAppContextTest
         }
 
         // Create WebAppContext
+        Path servletTempDir = tempDir.resolve("tmp");
+        Files.createDirectory(servletTempDir);
+        File servletTempDirFile = servletTempDir.toFile();
         WebAppContext context = new WebAppContext();
         ResourceFactory resourceFactory = context.getResourceFactory();
         Resource warResource = resourceFactory.newResource(warFile);
         context.setContextPath("/");
         context.setWarResource(warResource);
         context.setExtractWAR(true);
+        context.setTempDirectory(servletTempDir.toFile());
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
 
         server.setHandler(context);
         server.start();
@@ -1046,11 +1081,20 @@ public class WebAppContextTest
         LOG.info("Stopping Initial Context");
         context.stop();
         LOG.info("Stopped Initial Context - waiting 2 seconds");
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        //the TEMPDIR should be a persistent attribute
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
+        //as the TEMPDIR is a persistent attribute, it should exist even afer a stop
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+
         Thread.sleep(2000);
         LOG.info("Touch War File: {}", warFile);
         touch(warFile);
         LOG.info("ReStarting Context");
         context.start();
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
 
         actualRefs = getWebAppClassLoaderUrlRefs(context);
         expectedRefs = new String[]{

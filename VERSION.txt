@@ -1,3 +1,27 @@
+jetty-12.1.3-SNAPSHOT
+
+12.1.2 - 07 October 2025
+ + 11826 NativeHelper triggers JDK warning
+ + 13472 Support multiple directories to be scanned by deployment-scanner
+ + 13482 New request attribute `__oejs.Request.Cookies`
+ + 13539 HttpCookie.Builder does not allow removing SameSite
+ + 13548 Improved HTTP2Connection dump information (@znight1020)
+ + 13563 Jetty 12.1.0 fails to serve big (> 1MiB) static web resources located inside a jar file
+ + 13567 Jetty 12.1.1 HTTP2 broken data
+ + 13571 JMX Bean Names are not predictable now that they have hashcodes
+ + 13579 How to remove a websocket mapping
+ + 13583 NPE in WriteFlusher after org.eclipse.jetty.http.BadMessageException: 417
+ + 13592 ClosedFileSystemException when upgrading to 12.1.1
+ + 13598 Server hangs when client closes too many connections.
+ + 13599 Merge ConstantThrowable and StaticException
+ + 13603 Bad Accept-Language request headers can result in NPE during HttpServletRequest.getLocale() call
+ + 13608 DebugHandler changes Thread name without restoring it afterwards
+ + 13613 HttpInput#read rethrows already thrown exception, leading to possible self-suppressing exception issue
+ + 13621 Restore `BufferingResponseListener.onContent(Response, ByteBuffer)` behavior
+ + 13624 ContextClassLoader changed on resumed requests with QoSHandler
+ + 13625 Not possible to control HttpClient `Accept-Encoding` weights with standard API and discovered Compression
+ + 13640 Fix NPE in ee9/ee8 nested.BufferedResponesHandler
+
 12.1.1 - 08 September 2025
  + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
  + 12735 Provide better documentation of JettyWebSocketServletContainerInitializer and jetty-${ee-version}-websocket-jetty-server modules
@@ -23,6 +47,20 @@
  + 13506 HTTP/2 CONTINUATION frames may cause connection close
  + 13521 Rework `BlockingArrayQueue` growth strategy
  + 13526 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
+
+12.0.27 - 11 September 2025
+ + 13528 Review HttpParser._headerBytes accounting
+ + 13549 Ensure buffer is always released from HTTP/3 HeadersGenerator in case of failure.
+ + 13562 org.mortbay.jasper.apache-el-<version>.jar missing from jetty-12.0.26
+
+12.0.26 - 04 September 2025
+ + 12029 OutputStreamContentSource.AsyncOutputStream rethrows already thrown exception
+ + 13336 HTTP/2 - Valid horizontal tab "\t" in http header is coverted into "?"
+ + 13409 Jetty fails to discover WebFragments in Library Files on classpath
+ + 13436 AssertionError in MemoryEndPointPipe.MemoryEndPoint.fill()
+ + 13457 ClassCastException due to HashSet being used in a non thread-safe way
+ + 13475 jakarta Websocket served with h2 and timeouts disabled always times out after 30s
+ + 13506 HTTP/2 CONTINUATION frames may cause connection close
 
 12.1.0 - 15 August 2025
  + 13187 Missing API to increase QueuedThreadPool maxThreads by leased threads + QoSHandler bug of exceeding maxRequestCount by 1

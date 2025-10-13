@@ -133,9 +133,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final LongAdder _epcMode = new LongAdder();
     private final LongAdder _epcProduce = new LongAdder();
     private final Producer _producer;
-    private final Executor _executor;
     private final TryExecutor _tryExecutor;
-    private final Executor _virtualExecutor;
+    private final Executor _executor;
+    private final boolean _isUseVirtualThreads;
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
 
     /**
@@ -145,12 +145,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     public AdaptiveExecutionStrategy(Producer producer, Executor executor)
     {
         _producer = producer;
-        _executor = executor;
+        _executor = VirtualThreads.getExecutor(executor);
         _tryExecutor = TryExecutor.asTryExecutor(executor);
-        _virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(_executor);
+        _isUseVirtualThreads = VirtualThreads.isUseVirtualThreads(executor);
         installBean(_producer);
+        installBean(_executor);
         installBean(_tryExecutor);
-        installBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("created {}", this);
     }
@@ -525,10 +525,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            Executor executor = _virtualExecutor;
-            if (executor == null)
-                executor = _executor;
-            executor.execute(task);
+            _executor.execute(task);
         }
         catch (RejectedExecutionException e)
         {
@@ -545,7 +542,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @ManagedAttribute(value = "whether this execution strategy uses virtual threads", readonly = true)
     public boolean isUseVirtualThreads()
     {
-        return _virtualExecutor != null;
+        return _isUseVirtualThreads;
     }
 
     @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)

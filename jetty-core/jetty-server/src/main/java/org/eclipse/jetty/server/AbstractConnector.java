@@ -250,6 +250,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             _shutdownIdleTimeout = Math.min(1000L, _idleTimeout);
     }
 
+    /**
+     * Sets an idle timeout to be used when {@link AbstractConnector#shutdown()} is called.
+     * This will replace the existing idle timeouts on all the connected endpoints.
+     * This mechanism can be disabled by setting the shutdown idle timeout to a negative value.
+     */
     public void setShutdownIdleTimeout(long idle)
     {
         _shutdownIdleTimeout = idle;
@@ -351,8 +356,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         interruptAcceptors();
 
         // Reduce the idle timeout of existing connections
-        for (EndPoint ep : _endpoints)
-            ep.setIdleTimeout(getShutdownIdleTimeout());
+        if (getShutdownIdleTimeout() >= 0)
+        {
+            for (EndPoint ep : _endpoints)
+                ep.setIdleTimeout(getShutdownIdleTimeout());
+        }
 
         // Return Future that waits for no acceptors and no connections.
         return done;

@@ -14,9 +14,12 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -27,21 +30,20 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BufferedResponseHandlerTest
 {
     private Server _server;
     private LocalConnector _local;
-    private TestHandler _test;
 
-    @BeforeEach
-    public void setUp() throws Exception
+    public void startServer(Consumer<BufferedResponseHandler> bufferedResponseHandlerConsumer) throws Exception
     {
         _server = new Server();
         HttpConfiguration config = new HttpConfiguration();
@@ -51,19 +53,13 @@ public class BufferedResponseHandlerTest
         _server.addConnector(_local);
 
         BufferedResponseHandler bufferedHandler = new BufferedResponseHandler();
-        bufferedHandler.includePath("/include/*");
-        bufferedHandler.excludePath("*.exclude");
-        bufferedHandler.excludeMimeType("text/excluded");
-        bufferedHandler.setHandler(_test = new TestHandler());
-
+        bufferedResponseHandlerConsumer.accept(bufferedHandler);
 
         ContextHandler contextHandler = new ContextHandler("/ctx");
         contextHandler.setHandler(bufferedHandler);
 
         _server.setHandler(contextHandler);
         _server.start();
-
-        // BufferedResponseHandler.LOG.setDebugEnabled(true);
     }
 
     @AfterEach
@@ -75,6 +71,14 @@ public class BufferedResponseHandlerTest
     @Test
     public void testNormal() throws Exception
     {
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            bufferedResponseHandler.setHandler(new TestHandler());
+        });
+
         String response = _local.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -87,7 +91,16 @@ public class BufferedResponseHandlerTest
     @Test
     public void testIncluded() throws Exception
     {
-        _test._bufferSize = 2048;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._bufferSize = 2048;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -99,6 +112,15 @@ public class BufferedResponseHandlerTest
     @Test
     public void testExcludedByPath() throws Exception
     {
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -111,7 +133,16 @@ public class BufferedResponseHandlerTest
     @Test
     public void testExcludedByMime() throws Exception
     {
-        _test._mimeType = "text/excluded";
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._mimeType = "text/excluded";
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -125,9 +156,18 @@ public class BufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
-        _test._writes = 4;
-        _test._flush = true;
-        _test._bufferSize = 2048;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._writes = 4;
+            testHandler._flush = true;
+            testHandler._bufferSize = 2048;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -140,8 +180,17 @@ public class BufferedResponseHandlerTest
     @Test
     public void testBufferSizeSmall() throws Exception
     {
-        _test._aggregationSize = 16;
-        _test._bufferSize = 16;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._aggregationSize = 16;
+            testHandler._bufferSize = 16;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -155,7 +204,16 @@ public class BufferedResponseHandlerTest
     @Test
     public void testBufferSizeBig() throws Exception
     {
-        _test._bufferSize = 4096;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._bufferSize = 4096;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Content-Length: "));
@@ -167,7 +225,16 @@ public class BufferedResponseHandlerTest
     @Test
     public void testOne() throws Exception
     {
-        _test._writes = 1;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._writes = 1;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Content-Length: "));
@@ -179,9 +246,18 @@ public class BufferedResponseHandlerTest
     @Test
     public void testFlushEmpty() throws Exception
     {
-        _test._writes = 1;
-        _test._flush = true;
-        _test._content = new byte[0];
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._writes = 1;
+            testHandler._flush = true;
+            testHandler._content = new byte[0];
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Transfer-Encoding: chunked"));
@@ -191,10 +267,59 @@ public class BufferedResponseHandlerTest
     }
 
     @Test
+    public void testFlushEmptyWriteSomeClose() throws Exception
+    {
+        final String content = "X".repeat(128) + "\n";
+
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            Handler.Abstract handler = new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
+                {
+                    try (OutputStream outputStream = Content.Sink.asOutputStream(response))
+                    {
+                        // Flush empty first.
+                        outputStream.flush();
+                        // Then write
+                        outputStream.write(content.getBytes(StandardCharsets.UTF_8));
+                    }
+                    callback.succeeded();
+                    return true;
+                }
+            };
+            bufferedResponseHandler.setHandler(handler);
+        });
+
+        String rawResponse = _local.getResponse("""
+            GET /ctx/include/path HTTP/1.1
+            Host: localhost
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus());
+        assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
+        assertThat(response.getContent(), is(content));
+    }
+
+    @Test
     public void testReset() throws Exception
     {
-        _test._reset = true;
-        _test._bufferSize = 2048;
+        startServer(bufferedResponseHandler ->
+        {
+            bufferedResponseHandler.includePath("/include/*");
+            bufferedResponseHandler.excludePath("*.exclude");
+            bufferedResponseHandler.excludeMimeType("text/excluded");
+            TestHandler testHandler = new TestHandler();
+            testHandler._reset = true;
+            testHandler._bufferSize = 2048;
+            bufferedResponseHandler.setHandler(testHandler);
+        });
+
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));

@@ -16,7 +16,6 @@ module org.eclipse.jetty.client
     requires org.eclipse.jetty.alpn.client;
     requires org.slf4j;
 
-    requires org.eclipse.jetty.compression;
     requires org.eclipse.jetty.compression.gzip;
     requires transitive org.eclipse.jetty.http;
 
@@ -31,6 +30,8 @@ module org.eclipse.jetty.client
     exports org.eclipse.jetty.client.transport;
 
     exports org.eclipse.jetty.client.jmx to
+        org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.client.transport.jmx to
         org.eclipse.jetty.jmx;
 
     uses org.eclipse.jetty.compression.Compression;

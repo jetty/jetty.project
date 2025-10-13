@@ -81,9 +81,9 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
                 ? WebSocketServerComponents.ensureWebSocketComponents(server)
                 : WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
             WebSocketMappings mappings = new WebSocketMappings(components);
-            container = new ServerWebSocketContainer(mappings);
-            container.addBean(mappings);
-            context.setAttribute(WebSocketContainer.class.getName(), container);
+            container = new ServerWebSocketContainer(context, mappings);
+            ContainerLifeCycle parent = contextHandler == null ? server : contextHandler;
+            parent.addManaged(container);
         }
         return container;
     }
@@ -122,16 +122,26 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final List<WebSocketSessionListener> listeners = new ArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration configuration = new Configuration();
+    private final Context context;
     private final WebSocketMappings mappings;
     private final FrameHandlerFactory factory;
     private InvocationType invocationType = InvocationType.BLOCKING;
 
-    ServerWebSocketContainer(WebSocketMappings mappings)
+    ServerWebSocketContainer(Context context, WebSocketMappings mappings)
     {
+        this.context = context;
         this.mappings = mappings;
+        installBean(mappings);
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
         addSessionListener(sessionTracker);
         installBean(sessionTracker);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        context.setAttribute(WebSocketContainer.class.getName(), this);
+        super.doStart();
     }
 
     @Override

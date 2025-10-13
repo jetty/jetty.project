@@ -15,18 +15,16 @@
       <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
         <Arg name="server"><Ref refid="Server"/></Arg>
         <Arg name="deployer"><Ref refid="Deployer"/></Arg>
-        <Call name="addWebappsDirectory">
-          <Arg>
-            <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
-              <Arg>
-                <Property name="jetty.base" />
-              </Arg>
-              <Arg>
-                <Property name="jetty.deploy.webappsDir" default="webapps" />
-              </Arg>
-            </Call>
-          </Arg>
-        </Call>
+        <Set name="webappsDirectories">
+          <Call name="csvSplitAndResolvePaths" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg>
+              <Property name="jetty.base" />
+            </Arg>
+            <Arg>
+              <Property name="jetty.deploy.webappsDir" default="webapps" />
+            </Arg>
+          </Call>
+        </Set>
         <Set name="environmentsDirectory">
           <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
             <Arg>

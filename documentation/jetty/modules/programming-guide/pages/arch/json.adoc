@@ -1,0 +1,113 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Jetty JSON Support
+
+link:https://json.org[JSON] is a wide-spread format for data exchange.
+
+Jetty offers a JSON library to parse JSON into objects, both synchronously and asynchronously, and to generate JSON from objects.
+
+The Maven coordinates for the Jetty JSON support are:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-util-ajax</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+[[parsing]]
+== JSON Parsing
+
+JSON parsing is available in two flavors:
+
+* Synchronous parsing, where the JSON document is fully available
+* Asynchronous parsing, where the JSON document is not fully available, and it is provided in chunks to the parser.
+
+You can use asynchronous parsing also if the JSON document is fully available (there will be just one chunk representing the whole JSON document).
+You cannot use synchronous parsing without the full JSON document (the synchronous parser will produce an error, complaining that the JSON document is incomplete).
+
+For synchronous parsing, you can use the `org.eclipse.jetty.util.ajax.JSON` class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/JSONDocs.java[tags=sync]
+----
+
+For asynchronous parsing, you can use `org.eclipse.jetty.util.ajax.AsyncJSON`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/JSONDocs.java[tags=async]
+----
+
+By default, both parsers produce a `Map<String, Object>` for JSON objects.
+
+By default, the `JSON` parser produces `Object[]` for JSON arrays, while the `AsyncJSON` parser produces `List<Object>` for JSON arrays.
+For both `JSON` and `AsyncJSON.Factory` you can call `setArrayConverter(Function<List<?>, Object>)` to convert JSON arrays, provided as `List<Object>` by the implementation, into the preferred data structure, typically either a Java array or a Java list.
+
+By default, numbers are `Long` when they are integer (without a fractional part), `Double` when they are non-integer (with a fractional part).
+
+[[parsing-custom]]
+=== Custom Objects Parsing
+
+The Jetty JSON library supports converting JSON object into custom objects, using the `class` field (or the `x-class` field, in case `class` cannot be used).
+
+The Java class specified in the `class` or `x-class` field must either implement `JSON.Convertible` or be mapped to a `JSON.Convertor` in the `JSON` instance or the `AsyncJSON.Factory` instance.
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/JSONDocs.java[tags=xclass;!xclass-helper]
+----
+
+NOTE: Unlike other popular JSON libraries, the Jetty JSON library does not use Java annotations to map Java object and fields to JSON objects and fields.
+
+[TIP]
+====
+The Jetty JSON library provides useful convertors out of the box:
+
+* `JSONCollectionConvertor` that converts `Collection` instances as JSON objects, so that the specific `Collection` implementation (if it is a `public` class) can be restored. This is useful when the `Collection` is a `HashSet` or `ArrayDeque`, or when it needs to be a specific `List` implementation such as `LinkedList`.
+* `JSONDateConvertor`, that converts from/to `java.util.Date`.
+* `JSONEnumConvertor`, that converts from/to `enum` constants.
+* `JSONPojoConvertor`, that converts from/to plain old Java objects (POJO) using reflection to invoke getters and setters.
+====
+
+[[generation]]
+== JSON Generation
+
+JSON generation is available via the `org.eclipse.jetty.util.ajax.JSON` class.
+
+Simple `Map<String, Object>` objects can be directly generated:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/JSONDocs.java[tags=simpleGenerate]
+----
+
+NOTE: The `JSON` object used as the parser and as the generator is typically just one instance, used for both parsing and generation.
+This also centralizes the configuration of convertors.
+
+[[generation-custom]]
+=== Custom Objects Generation
+
+Similarly to the <<parsing-custom,custom objects parsing>>, generation of custom objects into the JSON format relies on:
+
+* The object is composed (recursively) only of _simple_ JSON types: `Map<String, Object>`, `String`, `Number` (including primitive number types), `Boolean` (including `boolean`), and `Collection` or arrays of these simple types.
+* The object being an instance of a Java `record`.
+* The class of the object implementing `JSON.Convertible`.
+* A `JSON.Convertor` configured in the `JSON` instance for the class of the object.
+
+CAUTION: Generic objects that do not match the requisites above are converted to strings by calling `toString()`, and therefore the object structure will be lost (and the object cannot be reconstructed during JSON parsing).

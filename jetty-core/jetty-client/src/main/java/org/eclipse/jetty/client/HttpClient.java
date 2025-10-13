@@ -137,7 +137,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+    private String name;
     private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
@@ -204,6 +204,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     @Override
     protected void doStart() throws Exception
     {
+        String name = Objects.requireNonNullElse(getName(), "%s@%x".formatted(getClass().getSimpleName(), hashCode()));
+
         Executor executor = getExecutor();
         if (executor == null)
         {
@@ -1242,6 +1244,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         void setHttpClient(HttpClient httpClient);
     }
 
+    // A duplicate of oej.compression.client.CompressionContentDecoderFactory
+    // to avoid circular dependencies between the jetty-client and the
+    // jetty-compression client Maven modules.
     private static class CompressionContentDecoderFactory extends ContentDecoder.Factory
     {
         private final Compression compression;

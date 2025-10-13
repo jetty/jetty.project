@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class WebSocketFlusher implements OutgoingFrames
 {
-    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new ConstantThrowable("Closed");
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final AutoLock _lock = new AutoLock();
@@ -178,6 +178,14 @@ public abstract class WebSocketFlusher implements OutgoingFrames
 
             // Allow any subclass to clean up internal state on failure.
             WebSocketFlusher.this.onCompleteFailure(t);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            if (_current == null)
+                return InvocationType.NON_BLOCKING;
+            return _current.getCallback().getInvocationType();
         }
     }
 

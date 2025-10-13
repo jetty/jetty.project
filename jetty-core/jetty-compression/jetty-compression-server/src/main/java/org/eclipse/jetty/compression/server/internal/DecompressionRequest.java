@@ -17,7 +17,6 @@ import java.util.ListIterator;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderSource;
-import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -101,20 +100,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
                         }
                     }
                 }
-                case IF_MATCH, IF_NONE_MATCH ->
-                {
-                    String etags = field.getValue();
-                    String etagsNoSuffix = compression.stripSuffixes(etags);
-                    if (!etagsNoSuffix.equals(etags))
-                    {
-                        i.set(new HttpField(field.getHeader(), etagsNoSuffix));
-                        request.setAttribute(CompressionHandler.HANDLER_ETAGS, etags);
-                    }
-                }
-                case CONTENT_LENGTH ->
-                {
-                    i.set(new HttpField("X-Content-Length", field.getValue()));
-                }
+                case CONTENT_LENGTH -> i.set(new HttpField("X-Content-Length", field.getValue()));
             }
         }
         return newFields.asImmutable();

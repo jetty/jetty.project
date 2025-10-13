@@ -42,10 +42,10 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.SearchPattern;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -183,7 +183,7 @@ public class MultiPart
      */
     public abstract static class Part implements Content.Source.Factory, Closeable
     {
-        static final Throwable CLOSE_EXCEPTION = new StaticException("Closed");
+        static final Throwable CLOSE_EXCEPTION = new ConstantThrowable("Closed");
 
         private final AutoLock lock = new AutoLock();
         private final ByteBufferPool.Sized bufferPool;
@@ -263,6 +263,17 @@ public class MultiPart
         }
 
         /**
+         * <p>Returns the {@link ByteBufferPool.Sized} used to create {@link Content.Source}s for this part.</p>
+         * <p>This may be null if the part was created without a buffer pool, which might be because the specific part
+         * implementation does not require one.</p>
+         * @return the buffer pool, or null if none was provided.
+         */
+        public ByteBufferPool.Sized getBufferPool()
+        {
+            return bufferPool;
+        }
+
+        /**
          * <p>Returns the content of this part as a {@link Content.Source}.</p>
          * <p>Calling this method multiple times will return the same instance, which can only be consumed once.</p>
          * <p>The content type and content encoding are specified in this part's
@@ -279,7 +290,7 @@ public class MultiPart
             try (AutoLock ignored = lock.lock())
             {
                 if (contentSource == null)
-                    contentSource = newContentSource(bufferPool, first, length);
+                    contentSource = createContentSource();
                 return contentSource;
             }
         }
@@ -302,6 +313,28 @@ public class MultiPart
         public Content.Source newContentSource()
         {
             return null;
+        }
+
+        /**
+         * <p>Returns the content of this part as a new {@link Content.Source}</p>
+         * <p>If the content is reproducible, invoking this method multiple times will return
+         * a different independent instance for every invocation.</p>
+         * <p>If the content is not reproducible, subsequent calls to this method will return null.</p>
+         * <p>The content type and content encoding are specified in this part's {@link #getHeaders() headers}.</p>
+         * <p>The content encoding may be specified by the part named {@code _charset_},
+         * as specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
+         *
+         * <p>This calls {@link #newContentSource(ByteBufferPool.Sized, long, long)} with the
+         * {@link ByteBufferPool.Sized} and {@code first}, and {@code length} arguments provided in the constructor.</p>
+         *
+         * @return the content of this part as a new {@link Content.Source} or null if the content cannot be consumed multiple times.
+         * @see #getContentSource()
+         * @see #newContentSource(ByteBufferPool.Sized, long, long)
+         */
+        public final Content.Source createContentSource()
+        {
+            return newContentSource(bufferPool, first, length);
         }
 
         /**
@@ -354,7 +387,7 @@ public class MultiPart
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
                     charset = Charset.forName(charsetName);
-                return Content.Source.asString(newContentSource(bufferPool, first, length), charset);
+                return Content.Source.asString(createContentSource(), charset);
             }
             catch (IOException x)
             {
@@ -384,7 +417,7 @@ public class MultiPart
             {
                 try (OutputStream out = Files.newOutputStream(path))
                 {
-                    IO.copy(Content.Source.asInputStream(newContentSource(bufferPool, first, length)), out);
+                    IO.copy(Content.Source.asInputStream(createContentSource()), out);
                 }
                 newPath = path;
             }

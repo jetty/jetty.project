@@ -14,8 +14,15 @@
 package org.eclipse.jetty.util;
 
 /**
- * A {@link Throwable} that may be used in static contexts. It uses Java 7
- * constructor that prevents setting stackTrace inside exception object.
+ * <p>A {@link Throwable} that may be used in static contexts,
+ * for example when stored as a {@code static} field.</p>
+ * <p>Suppressed exceptions are disabled; adding a suppressed
+ * exception has no effect, so that instances of this class
+ * stored as {@code static} fields do not accumulate suppressed
+ * exceptions.</p>
+ * <p>The stack trace is also disabled, since it would only be
+ * captured at the time this exception is created, not when the
+ * failure actually occurs.</p>
  */
 public class ConstantThrowable extends Throwable
 {

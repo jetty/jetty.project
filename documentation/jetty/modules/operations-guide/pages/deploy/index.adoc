@@ -62,7 +62,7 @@ However, you can configure the `deployment-scanner` module to deploy web applica
 [[monitored-directories]]
 == Monitored Directories
 
-The `deployment-scanner` module scans the web applications deploy directory specified by the `jetty.deploy.webappsDir` property, by default `$JETTY_BASE/webapps`, for web applications to deploy.
+The `deployment-scanner` module scans the web applications deploy directory (or directories) specified by the `jetty.deploy.webappsDir` property, by default `$JETTY_BASE/webapps`, for web applications to deploy.
 
 The directory specified by the `jetty.deploy.environmentsDir` property, by default `$JETTY_BASE/environments`, is also scanned for configuration files that apply to each environment, and therefore to all web applications deployed to that environment.
 

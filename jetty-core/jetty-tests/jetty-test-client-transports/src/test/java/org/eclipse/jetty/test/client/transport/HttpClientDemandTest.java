@@ -16,7 +16,9 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.InterruptedIOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.BufferingResponseListener;
@@ -44,10 +47,12 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -60,6 +65,59 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientDemandTest extends AbstractTest
 {
+    public static Stream<Arguments> bufferingParams()
+    {
+        String content = "ABCDEF";
+        return Arrays.stream(TransportType.values()).flatMap(transportType ->
+            Stream.of(
+                Arguments.of(transportType, content, /*consumeBuffer*/false, /*invokeSuper*/false, /*expectedContent*/""),
+                Arguments.of(transportType, content, true, false, ""),
+                Arguments.of(transportType, content, false, true, content),
+                Arguments.of(transportType, content, true, true, "")
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("bufferingParams")
+    public void testBufferingResponseListenerOverridingOnContent(TransportType transportType, String content, boolean consumeBuffer, boolean invokeSuper, String expectedContent) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.Sink.write(response, true, content, callback);
+                return true;
+            }
+        });
+
+        AtomicReference<String> contentRef = new AtomicReference<>();
+        client.newRequest(newURI(transportType))
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onContent(Response response, ByteBuffer content)
+                {
+                    // Consuming the buffer here results in no accumulation.
+                    if (consumeBuffer)
+                        content.position(content.limit());
+                    // Not invoking super results in no accumulation.
+                    if (invokeSuper)
+                        super.onContent(response, content);
+                }
+
+                @Override
+                public void onComplete(Result result)
+                {
+                    contentRef.set(getContentAsString());
+                }
+            });
+
+        String string = await().atMost(5, TimeUnit.SECONDS).until(contentRef::get, Objects::nonNull);
+        assertThat(string, equalTo(expectedContent));
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testDemandInTwoChunks(TransportType transportType) throws Exception

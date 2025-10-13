@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -151,6 +152,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private boolean _tempDirectoryCreated = false;
     private boolean _createdTempDirectoryName = false;
     private boolean _crossContextDispatchSupported = false;
+    /**
+     * A ResourceFactory that will not be closed when the context stops, but
+     * only when the context is explicitly destroyed. Used by {@link #setBaseResourceAsString(String)}
+     * and {@link #setBaseResourceAsPath(Path)}.
+     */
+    private final ResourceFactory.Closeable _nonLifeCycleResourceFactory;
 
     public enum Availability
     {
@@ -204,6 +211,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             classLoader = this.getClass().getClassLoader();
         if (classLoader != Server.class.getClassLoader())
             _classLoader = classLoader;
+
+        _nonLifeCycleResourceFactory = ResourceFactory.closeable();
     }
 
     @Override
@@ -919,9 +928,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected void cleanupAfterStop() throws Exception
     {
-        File tempDirectory = getTempDirectory();
+        // Clear transient attributes
+        _context.clearLayerAttributes();
 
         // if we're not persisting the temp dir contents delete it
+        File tempDirectory = getTempDirectory();
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
         {
             IO.delete(tempDirectory);
@@ -1125,6 +1136,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     @Override
     public void destroy()
     {
+        //get rid of any resources that were created before this context was started
+        _nonLifeCycleResourceFactory.close();
         _context.run(super::destroy);
     }
 
@@ -1281,29 +1294,33 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * <p>Set the base resource to serve content from.</p>
      *
-     * <p>Note: the {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
-     * which is tied to the lifecycle of this context.</p>
+     * <p>Note: the {@link Resource} is created from a {@link ResourceFactory#closeable()}
+     * that does not depend on the start/stop lifecycle of this context. This ensures that
+     * Resources that are created by this method _before_ the context has started can
+     * persist after the context has stopped.</p>
      *
      * @param path The path to create a base resource from.
      * @see #setBaseResource(Resource)
      */
     public void setBaseResourceAsPath(Path path)
     {
-        setBaseResource(path == null ? null : ResourceFactory.of(this).newResource(path));
+        setBaseResource(path == null ? null : _nonLifeCycleResourceFactory.newResource(path));
     }
 
     /**
      * <p>Set the base resource to serve content from.</p>
      *
-     * <p>Note: the {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
-     * which is tied to the lifecycle of this context.</p>
+     * <p>Note: the {@link Resource} is created from a {@link ResourceFactory#closeable()}
+     * that does not depend on the start/stop lifecycle of this context. This ensures that
+     * Resources that are created by this method _before_ the context has started can
+     * persist after the context has stopped.</p>
      *
      * @param base The path to create a base resource from.
      * @see #setBaseResource(Resource)
      */
     public void setBaseResourceAsString(String base)
     {
-        setBaseResource((base == null ? null : ResourceFactory.of(this).newResource(base)));
+        setBaseResource((base == null ? null : _nonLifeCycleResourceFactory.newResource(base)));
     }
 
     /**
@@ -1657,7 +1674,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void execute(Runnable runnable, Request request)
         {
-            getServer().getContext().execute(() -> run(runnable, request));
+            VirtualThreads.execute(getServer().getThreadPool(), () -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()

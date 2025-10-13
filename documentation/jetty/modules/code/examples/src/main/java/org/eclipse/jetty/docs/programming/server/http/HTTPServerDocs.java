@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.docs.programming.server.http;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -101,7 +102,6 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -1276,25 +1276,33 @@ public class HTTPServerDocs
         // Create a WebAppContext.
         WebAppContext context = new WebAppContext();
 
-        // Keep Servlet specification behaviour
+        // Keep Servlet specification behaviour.
         context.setParentLoaderPriority(false);
 
-        // Add hidden classes by package (with exclusion) and by location
-        context.addHiddenClassMatcher(new ClassMatcher(
+        // Add hidden classes.
+        context.getHiddenClassMatcher().add(
+            // All classes from this package are hidden.
             "org.example.package.",
+            // This specific class is not hidden.
             "-org.example.package.SpecificClass",
+            // All classes from this location are hidden.
             "file:/usr/local/server/lib/some.jar"
-        ));
+        );
 
-        // Add protected classes by class name and JPMS module
-        context.addProtectedClassMatcher(new ClassMatcher(
+        // Add protected classes.
+        context.getProtectedClassMatcher().add(
+            // This class is protected.
             "org.example.package.SpecificClass",
+            // All classes from this JPMS module are protected.
             "jrt:/modulename"
-        ));
+        );
 
-        // Add addition class path items to the context loader
-        context.setExtraClasspath("file:/usr/local/server/context/lib/context.jar;file:/usr/local/server/context/classes/");
-
+        // Add additional class-path items.
+        String extra = String.join(File.pathSeparator,
+            "file:/usr/local/server/context/lib/context.jar",
+            "file:/usr/local/server/context/classes/"
+        );
+        context.setExtraClasspath(extra);
         // end::webAppContextClassLoader[]
 
         // Link the context to the server.
@@ -1306,6 +1314,26 @@ public class HTTPServerDocs
         context.setContextPath("/app");
 
         server.start();
+    }
+
+    public void protectAndExpose()
+    {
+        // tag::protectAndExpose[]
+        // Create a WebAppContext.
+        WebAppContext context = new WebAppContext();
+
+        // Protect the Jetty JMX classes in these packages.
+        context.getProtectedClassMatcher().add(
+            "org.eclipse.jetty.util.annotation.",
+            "org.eclipse.jetty.jmx."
+        );
+        // Expose (not hide) the Jetty JMX classes in these packages.
+        // Note the "-" prefix to "not" hide the package.
+        context.getHiddenClassMatcher().add(
+            "-org.eclipse.jetty.util.annotation.",
+            "-org.eclipse.jetty.jmx."
+        );
+        // end::protectAndExpose[]
     }
 
     public void resourceHandler() throws Exception

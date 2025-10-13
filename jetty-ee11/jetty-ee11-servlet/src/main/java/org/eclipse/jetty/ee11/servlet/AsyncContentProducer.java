@@ -20,8 +20,8 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
+    private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new ConstantThrowable("Recycled"), true);
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;

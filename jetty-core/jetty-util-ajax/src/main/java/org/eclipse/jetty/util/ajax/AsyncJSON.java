@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
 /**
  * <p>A non-blocking JSON parser that can parse partial JSON strings.</p>
  * <p>Usage:</p>
- * <pre>
+ * <pre>{@code
  * AsyncJSON parser = new AsyncJSON.Factory().newAsyncJSON();
  *
  * // Feed the parser with partial JSON string content.
@@ -44,13 +44,13 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
  *
  * // Tell the parser that the JSON string content
  * // is terminated and get the JSON object back.
- * Map&lt;String, Object&gt; object = parser.complete();
- * </pre>
+ * Map<String, Object> object = parser.complete();
+ * }</pre>
  * <p>After the call to {@link #complete()} the parser can be reused to parse
  * another JSON string.</p>
  * <p>Custom objects can be created by specifying a {@code "class"} or
  * {@code "x-class"} field:</p>
- * <pre>
+ * <pre>{@code
  * String json = """
  * {
  *   "x-class": "com.acme.Person",
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
  *
  * parser.parse(json);
  * com.acme.Person person = parser.complete();
- * </pre>
+ * }</pre>
  * <p>Class {@code com.acme.Person} must either implement {@link Convertible},
  * or be mapped with a {@link Convertor} via {@link Factory#putConvertor(String, Convertor)}.</p>
  * <p>JSON arrays are by default represented with a {@code List<Object>}, but the

@@ -608,7 +608,7 @@ link:https://www.bouncycastle.org/[Bouncy Castle] is a pure Java alternative pro
 
 To use Bouncy Castle as TLS provider, you must have the Bouncy Castle jars and the Jetty dependency `jetty-alpn-bouncycastle-server-{jetty-version}.jar` in the class-path or module-path.
 
-Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
+Then, you must configure the JDK with the Bouncy Castle provider, and configure Jetty to use the Bouncy Castle provider, in this way:
 
 [,java,indent=0,options=nowrap]
 ----
@@ -1679,9 +1679,9 @@ Furthermore, the Servlet specification requires that Jakarta EE web applications
 Jakarta EE web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet Container implementations.
 
 Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.
-These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
+These are classes such as `jakarta.servlet.http.HttpServletRequest` and JDK classes such as `java.lang.String` or `java.sql.Connection`.
 
-`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_ by delegating to the `ClassVisibilityChecker` of the context.
+`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_.
 
 When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _protected class_, the class is loaded; otherwise the class is not found locally.
 If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.
@@ -1697,8 +1697,63 @@ Below you can find an example of how to set up additional classloading configura
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextClassLoader]
 ----
 
-// TODO: add a section on ClassLoading (see old docs)
-// TODO: add a section about how to setup JSP support
+Specifying _protected_ and _hidden_ classes is also possible when using Jetty as a standalone server, as explained in xref:operations-guide:modules/standard.adoc#eeN-webapp[this section].
+
+[[handler-use-webapp-context-class-loading-jetty-libraries]]
+===== Web Applications using Jetty Libraries
+
+Jakarta EE web applications may want to use Jetty utility classes in their code.
+Typical examples are annotating web application classes with Jetty's xref:arch/jmx.adoc#annotation[JMX annotations] (for the Jetty server to export the instances as MBeans), or use Jetty's xref:client/index.adoc[`HttpClient`], or Jetty's xref:arch/json.adoc[JSON support].
+
+There are two cases:
+
+* The web application is using Jetty classes independently of the server.
+For example, using Jetty's `HttpClient`, or JSON support from within a web application.
+The web application may be deployed on a different Servlet Container.
+* The web application is using Jetty classes with the goal of interacting with the Jetty server.
+For example, annotating web application classes with Jetty's JMX annotations, so that the server exports instances as MBeans; or extending from `org.eclipse.jetty.util.component.LifeCycle` so that web application components can be made part of the xref:arch/bean.adoc[Jetty server component tree].
+The web application can only be deployed in Jetty.
+
+In the first case, it is enough to package all the Jetty libraries, and their transitive dependencies, in the web application `+*.war+` file, typically as `+*.jar+` files under `WEB-INF/lib/`.
+For example, to use Jetty's `HttpClient` with HTTP/1.1 support in a web application you would need the following:
+
+[,subs=attributes+]
+----
+my-webapp.war
+└── WEB-INF
+    └── lib
+        ├── jetty-client-{jetty-version}.jar
+        ├── jetty-http-{jetty-version}.jar
+        ├── jetty-io-{jetty-version}.jar
+        └── jetty-util-{jetty-version}.jar
+----
+
+The second case is more complicated due to class loading.
+If the Jetty classes are present in the web application's `WEB-INF/lib/`, they will be loaded by the web application class loader, and therefore they will be a different type with respect to the same class loaded by the server class loader.
+
+Because the web application wants to interact with the server, the Jetty JMX classes, or the Jetty component classes (such as `LifeCycle`) used by the web application must be the same type that the server is using.
+
+To achieve that, you need the following:
+
+* The web application `+*.war+` file must _not_ contain the Jetty library `+*.jar+` files.
+* _Protect_ and _expose_ the relevant Jetty classes from the server to the web application.
+
+When interacting with the _protected_ and _hidden_ classes, the string patterns are interpreted as follows:
+
+* For full qualified class names, the class name itself, for example `org.eclipse.jetty.jmx.ObjectMBean`.
+* For packages (its sub-packages), the package name ending with a `.`, for example `org.eclipse.jetty.util.annotation.`.
+* For `+*.jar+` files or directories, their `file` URI, for example `file:/opt/jetty/lib/jetty-util-{jetty-version}.jar`.
+* For JPMS modules, their `jrt` URI, for example `jrt:/org.eclipse.jetty.util`.
+
+Any pattern that begins with `-` inverts the matching.
+For example, adding to the _hidden_ classes the package pattern `-org.eclipse.jetty.jmx.` results in _not_ hiding (and therefore exposing) classes of that package (and its sub-packages) to the web application.
+
+For example, to _protect_ (that is, avoid that the web application provides a modified version of the same class) and _expose_ (that is, not _hiding_ the class to the web application) the Jetty JMX classes:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=protectAndExpose]
+----
 
 [[handler-use-default-servlet]]
 ==== DefaultServlet -- Static Content for Servlets

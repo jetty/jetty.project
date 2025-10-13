@@ -45,18 +45,20 @@ public interface ContentDecoder
      */
     abstract class Factory extends ContainerLifeCycle
     {
+        protected static final float NO_WEIGHT = -1F;
+
         private final String encoding;
         private final float weight;
 
         protected Factory(String encoding)
         {
-            this(encoding, -1F);
+            this(encoding, NO_WEIGHT);
         }
 
         protected Factory(String encoding, float weight)
         {
             this.encoding = Objects.requireNonNull(encoding);
-            if (weight != -1F && !(weight >= 0F && weight <= 1F))
+            if (weight != NO_WEIGHT && !(weight >= 0F && weight <= 1F))
                 throw new IllegalArgumentException("Invalid weight: " + weight);
             this.weight = weight;
         }
@@ -142,7 +144,7 @@ public interface ContentDecoder
                     header.append(", ");
                 header.append(encoding);
                 float weight = value.getWeight();
-                if (weight != -1F)
+                if (weight != Factory.NO_WEIGHT)
                     header.append(";q=").append(new DecimalFormat("#.###").format(weight));
             });
             acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, header.toString());

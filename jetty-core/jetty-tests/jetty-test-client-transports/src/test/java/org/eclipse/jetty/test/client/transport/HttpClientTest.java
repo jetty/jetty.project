@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -76,6 +77,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -1217,6 +1219,43 @@ public class HttpClientTest extends AbstractTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testInvalidExpectation(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.Source.consumeAll(request, callback);
+                return true;
+            }
+        });
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        client.newRequest(newURI(transportType))
+            .headers(h -> h.put(HttpHeader.EXPECT, "Invalid"))
+            // Body is necessary, otherwise the Expect header is removed.
+            .body(new StringRequestContent("hello"))
+            .onResponseHeaders(responseRef::set)
+            .send(r -> resultLatch.countDown());
+
+        // In HTTP/2, the request body is not read, as the error response
+        // is sent without calling the Handler, so a reset is triggered
+        // after the response is sent.
+        // The test verifies that the right response is received at the
+        // "headers" event, because the response body is read asynchronously
+        // and may be dropped when the RST_STREAM frame is received.
+        // Waiting for the "complete" event will likely result in a failure
+        // due to the RST_STREAM being received.
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        assertThat(response.getStatus(), equalTo(HttpStatus.EXPECTATION_FAILED_417));
     }
 
     public static java.util.stream.Stream<Arguments> validFieldValues()

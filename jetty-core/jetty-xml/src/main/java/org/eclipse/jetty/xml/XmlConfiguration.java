@@ -458,6 +458,22 @@ public class XmlConfiguration
         return Paths.get(dir).resolve(destPath).normalize();
     }
 
+    /**
+     * <p>Utility method to split a comma-separated list of paths
+     * and resolve them against a directory.</p>
+     *
+     * @param dir the directory (should be a directory reference, does not have to exist)
+     * @param csvList a CSV list of paths (can be relative or absolute, syntax depends
+     * on OS + FileSystem in use, and does not need to exist)
+     * @return a list of resolved and normalized paths
+     */
+    public static List<Path> csvSplitAndResolvePaths(String dir, String csvList)
+    {
+        return Arrays.stream(StringUtil.csvSplit(csvList))
+            .map(s -> resolvedPath(dir, s))
+            .toList();
+    }
+
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
         XmlParser.Node _root;

@@ -405,7 +405,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     private void execute(Request request, Runnable task)
     {
-        request.getComponents().getExecutor().execute(task);
+        request.getContext().execute(task);
     }
 
     private class Entry implements CyclicTimeouts.Expirable, Runnable

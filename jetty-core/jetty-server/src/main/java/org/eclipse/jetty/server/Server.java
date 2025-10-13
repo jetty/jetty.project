@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -98,6 +99,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
     private File _tempDirectory;
+    private String _name;
 
     public Server()
     {
@@ -154,6 +156,17 @@ public class Server extends Handler.Wrapper implements Attributes
         installBean(FileSystemPool.INSTANCE, false);
     }
 
+    @ManagedAttribute("The name of this server")
+    public String getName()
+    {
+        return _name;
+    }
+
+    public void setName(String name)
+    {
+        _name = Objects.requireNonNull(name);
+    }
+
     public Handler getDefaultHandler()
     {
         return _defaultHandler;
@@ -182,9 +195,15 @@ public class Server extends Handler.Wrapper implements Attributes
         return next != null && next.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
+    @ManagedAttribute("The server information")
     public String getServerInfo()
     {
         return _serverInfo;
+    }
+
+    public void setServerInfo(String serverInfo)
+    {
+        _serverInfo = serverInfo;
     }
 
     /**
@@ -227,11 +246,6 @@ public class Server extends Handler.Wrapper implements Attributes
     public File getTempDirectory()
     {
         return _tempDirectory;
-    }
-
-    public void setServerInfo(String serverInfo)
-    {
-        _serverInfo = serverInfo;
     }
 
     /**
@@ -277,6 +291,7 @@ public class Server extends Handler.Wrapper implements Attributes
         return type;
     }
 
+    @ManagedAttribute("Whether server connectors are opened before other components are started")
     public boolean isOpenEarly()
     {
         return _openEarly;
@@ -338,11 +353,13 @@ public class Server extends Handler.Wrapper implements Attributes
         _stopTimeout = stopTimeout;
     }
 
+    @ManagedAttribute("The server stop timeout")
     public long getStopTimeout()
     {
         return _stopTimeout;
     }
 
+    @ManagedAttribute("Whether the server is stopped when the JVM is shut down")
     public boolean getStopAtShutdown()
     {
         return _stopAtShutdown;
@@ -571,7 +588,7 @@ public class Server extends Handler.Wrapper implements Attributes
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
             // Open network connector to ensure ports are available
-            if (!_dryRun && _openEarly)
+            if (!isDryRun() && isOpenEarly())
             {
                 _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
                 {
@@ -941,7 +958,7 @@ public class Server extends Handler.Wrapper implements Attributes
         @Override
         public void execute(Runnable runnable)
         {
-            getThreadPool().execute(runnable);
+            VirtualThreads.execute(getThreadPool(), runnable);
         }
 
         @Override

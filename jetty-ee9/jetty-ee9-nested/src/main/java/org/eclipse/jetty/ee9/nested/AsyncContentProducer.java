@@ -20,8 +20,8 @@ import java.util.concurrent.locks.Condition;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new StaticException("ContentProducer has been recycled"));
+    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new ConstantThrowable("Recycled"));
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -186,7 +186,7 @@ class AsyncContentProducer implements ContentProducer
         Throwable x = HttpStream.CONTENT_NOT_CONSUMED;
         if (LOG.isTraceEnabled())
         {
-            x = new StaticException("Unconsumed content", true);
+            x = new IOException("Unconsumed content");
             LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);
@@ -314,7 +314,8 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (_transformedContent.isSpecial() || !_transformedContent.isEmpty())
                 {
-                    if (_transformedContent.getError() != null && !_error)
+                    Throwable transformedError = _transformedContent.getError();
+                    if (transformedError != null && !_error)
                     {
                         // In case the _rawContent was set by consumeAll(), check the httpChannel
                         // to see if it has a more precise error. Otherwise, the exact same
@@ -322,7 +323,12 @@ class AsyncContentProducer implements ContentProducer
                         // if the _error flag was set, meaning the current error is definitive.
                         HttpInput.Content refreshedRawContent = produceRawContent();
                         if (refreshedRawContent != null)
-                            _rawContent = _transformedContent = refreshedRawContent;
+                        {
+                            Throwable refreshedError = refreshedRawContent.getError();
+                            // Retain the refreshedError only if it has not been just wrapped.
+                            if (refreshedError != null && refreshedError.getCause() != transformedError)
+                                _rawContent = _transformedContent = refreshedRawContent;
+                        }
                         _error = _rawContent.getError() != null;
                         if (LOG.isDebugEnabled())
                             LOG.debug("refreshed raw content: {} {}", _rawContent, this);

@@ -17,7 +17,7 @@ logs/
 
 [ini-template]
 # tag::documentation[]
-## Logging directory (relative to $JETTY_BASE).
+## Logging directory (absolute path, or relative to $JETTY_BASE).
 # jetty.console-capture.dir=./logs
 
 ## Whether to append to existing file.
