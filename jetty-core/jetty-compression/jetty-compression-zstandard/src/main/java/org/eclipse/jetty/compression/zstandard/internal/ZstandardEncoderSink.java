@@ -68,7 +68,7 @@ public class ZstandardEncoderSink extends EncoderSink
     {
         State initialState = state.get();
         if (initialState == State.FINISHED)
-            return null;
+            throw new IllegalStateException("Already released");
 
         boolean done = false;
         WriteRecord writeRecord = null;

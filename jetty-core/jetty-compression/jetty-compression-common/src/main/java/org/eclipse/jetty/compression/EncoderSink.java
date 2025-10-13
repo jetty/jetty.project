@@ -36,13 +36,25 @@ public abstract class EncoderSink implements Content.Sink
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
         if (content != null || last)
-            new EncodeBufferCallback(last, content, callback).iterate();
+            new EncodeBufferCallback(last, content, last ? Callback.from(callback, this::release) : callback).iterate();
         else
             callback.succeeded();
     }
 
+    /**
+     * Creates a {@link WriteRecord} with the given {@code last} flag and {@code content} buffer.
+     * @param last the {@code last} flag to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
+     * @param content the buffer to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
+     * @return the {@link WriteRecord}.
+     * @throws IllegalStateException if {@link #release()} has already been called.
+     */
     protected abstract WriteRecord encode(boolean last, ByteBuffer content);
 
+    /**
+     * <p>Release all resources held by this instance. Any further {@link #write(boolean, ByteBuffer, Callback) write attempt}
+     * fails once this method has been called.</p>
+     * <p>Implementation must be idempotent.</p>
+     */
     protected void release()
     {
     }
@@ -114,18 +126,6 @@ public abstract class EncoderSink implements Content.Sink
         protected void finished()
         {
             state.set(State.FINISHED);
-        }
-
-        @Override
-        protected void onSuccess()
-        {
-            release();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            release();
         }
 
         @Override

@@ -85,6 +85,7 @@ public class GzipEncoderSink extends EncoderSink
     private final int bufferSize;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
+    private boolean released;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink, GzipEncoderConfig config)
     {
@@ -123,6 +124,9 @@ public class GzipEncoderSink extends EncoderSink
     {
         if (LOG.isDebugEnabled())
             LOG.debug("encode() last={}, content={}", last, BufferUtil.toDetailString(content));
+
+        if (released)
+            throw new IllegalStateException("Already released");
 
         RetainableByteBuffer output = null;
         try
@@ -204,6 +208,9 @@ public class GzipEncoderSink extends EncoderSink
     @Override
     protected void release()
     {
+        if (released)
+            return;
+        released = true;
         inputBuffer.release();
         deflaterEntry.release();
     }
