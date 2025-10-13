@@ -84,6 +84,7 @@ public abstract class QuotedCSVParser
         int nwsLength = 0;
         int lastLength = 0;
         int valueLength = -1;
+        boolean paramsOnly = false;
         int paramName = -1;
         int paramValue = -1;
 
@@ -135,11 +136,15 @@ public abstract class QuotedCSVParser
                     buffer.setLength(nwsLength); // trim following OWS
                     if (state == State.VALUE)
                     {
-                        parsedValue(buffer);
                         valueLength = buffer.length();
+                        if (valueLength > 0)
+                            parsedValue(buffer);
                     }
-                    else
+                    else if (valueLength > 0 || paramsOnly)
+                    {
                         parsedParam(buffer, valueLength, paramName, paramValue);
+                    }
+
                     nwsLength = buffer.length();
                     paramName = paramValue = -1;
                     buffer.append(c);
@@ -155,23 +160,28 @@ public abstract class QuotedCSVParser
                         switch (state)
                         {
                             case VALUE:
-                                parsedValue(buffer);
+                                valueLength = buffer.length();
+                                if (valueLength > 0)
+                                    parsedValue(buffer);
                                 break;
                             case PARAM_NAME:
                             case PARAM_VALUE:
-                                parsedParam(buffer, valueLength, paramName, paramValue);
+                                if (valueLength > 0 || paramsOnly)
+                                    parsedParam(buffer, valueLength, paramName, paramValue);
                                 break;
                             default:
                                 throw new IllegalStateException(state.toString());
                         }
 
-                        parsedValueAndParams(buffer);
+                        if (valueLength > 0)
+                            parsedValueAndParams(buffer);
                     }
                     buffer.setLength(0);
                     lastLength = 0;
                     nwsLength = 0;
                     valueLength = paramName = paramValue = -1;
                     state = State.VALUE;
+                    paramsOnly = false;
                     continue;
 
                 case '=':
@@ -185,9 +195,9 @@ public abstract class QuotedCSVParser
 
                             buffer.setLength(nwsLength); // trim following OWS
                             final String param = buffer.toString();
+                            paramsOnly = !param.isEmpty();
                             buffer.setLength(0);
-                            parsedValue(buffer);
-                            valueLength = buffer.length();
+                            valueLength = 0;
                             buffer.append(param);
                             buffer.append(c);
                             lastLength = ++nwsLength;

@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -1049,12 +1048,17 @@ public class WebAppContextTest
         }
 
         // Create WebAppContext
+        Path servletTempDir = tempDir.resolve("tmp");
+        Files.createDirectory(servletTempDir);
+        File servletTempDirFile = servletTempDir.toFile();
         WebAppContext context = new WebAppContext();
         ResourceFactory resourceFactory = context.getResourceFactory();
         Resource warResource = resourceFactory.newResource(warFile);
         context.setContextPath("/");
         context.setWarResource(warResource);
         context.setExtractWAR(true);
+        context.setTempDirectory(servletTempDir.toFile());
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
 
         server.setHandler(context);
         server.start();
@@ -1077,11 +1081,20 @@ public class WebAppContextTest
         LOG.info("Stopping Initial Context");
         context.stop();
         LOG.info("Stopped Initial Context - waiting 2 seconds");
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        //the TEMPDIR should be a persistent attribute
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
+        //as the TEMPDIR is a persistent attribute, it should exist even afer a stop
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+
         Thread.sleep(2000);
         LOG.info("Touch War File: {}", warFile);
         touch(warFile);
         LOG.info("ReStarting Context");
         context.start();
+        assertThat(context.getTempDirectory(), is(servletTempDirFile));
+        assertNotNull(context.getServletContext().getAttribute(ServletContext.TEMPDIR));
+        assertNotNull(context.getAttribute(ServletContext.TEMPDIR));
 
         actualRefs = getWebAppClassLoaderUrlRefs(context);
         expectedRefs = new String[]{

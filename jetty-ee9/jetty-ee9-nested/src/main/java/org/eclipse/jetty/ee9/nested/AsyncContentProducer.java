@@ -314,7 +314,8 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (_transformedContent.isSpecial() || !_transformedContent.isEmpty())
                 {
-                    if (_transformedContent.getError() != null && !_error)
+                    Throwable transformedError = _transformedContent.getError();
+                    if (transformedError != null && !_error)
                     {
                         // In case the _rawContent was set by consumeAll(), check the httpChannel
                         // to see if it has a more precise error. Otherwise, the exact same
@@ -322,7 +323,12 @@ class AsyncContentProducer implements ContentProducer
                         // if the _error flag was set, meaning the current error is definitive.
                         HttpInput.Content refreshedRawContent = produceRawContent();
                         if (refreshedRawContent != null)
-                            _rawContent = _transformedContent = refreshedRawContent;
+                        {
+                            Throwable refreshedError = refreshedRawContent.getError();
+                            // Retain the refreshedError only if it has not been just wrapped.
+                            if (refreshedError != null && refreshedError.getCause() != transformedError)
+                                _rawContent = _transformedContent = refreshedRawContent;
+                        }
                         _error = _rawContent.getError() != null;
                         if (LOG.isDebugEnabled())
                             LOG.debug("refreshed raw content: {} {}", _rawContent, this);

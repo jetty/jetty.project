@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     };
 
     private final List<QualityValue> _qualities = new ArrayList<>();
-    private QualityValue _lastQuality;
+    private QualityValue _lastQualityValue;
     private boolean _sorted = false;
     private final ToIntFunction<String> _secondaryOrdering;
 
@@ -124,11 +125,24 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedValueAndParams(StringBuilder buffer)
     {
+        // No value? then this isn't a Quality based CSV. Skip.
+        if (buffer.isEmpty())
+            return;
+
         super.parsedValueAndParams(buffer);
 
+        // We have to convert to String anyway for QualityValue below.
+        String value = buffer.toString();
+        // Ensure we don't have whitespace or control only value
+        if (StringUtil.isBlank(value))
+            return;
+
         // Collect full value with parameters
-        _lastQuality = new QualityValue(buffer.toString(), _lastQuality._quality, _lastQuality._index);
-        _qualities.set(_lastQuality._index, _lastQuality);
+        if (_lastQualityValue != null)
+        {
+            _lastQualityValue = new QualityValue(value, _lastQualityValue._quality, _lastQualityValue._index);
+            _qualities.set(_lastQualityValue._index, _lastQualityValue);
+        }
     }
 
     @Override
@@ -136,17 +150,27 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         super.parsedValue(buffer);
 
+        // We have to convert to String anyway for QualityValue below.
+        String value = buffer.toString();
+        // Ensure we don't have whitespace or control only value
+        if (StringUtil.isBlank(value))
+            return;
+
         _sorted = false;
 
-        // This is the just the value, without parameters.
+        // This is just the value, without parameters.
         // Assume a quality of ONE
-        _lastQuality = new QualityValue(buffer.toString(), 1.0D, _qualities.size());
-        _qualities.add(_lastQuality);
+        _lastQualityValue = new QualityValue(value, 1.0D, _qualities.size());
+        _qualities.add(_lastQualityValue);
     }
 
     @Override
     protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
+        // No value? then this isn't a Quality based CSV. Skip.
+        if (valueLength <= 0)
+            return;
+
         _sorted = false;
 
         if (paramName < 0)
@@ -174,8 +198,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
             if (q != 1.0D)
             {
-                _lastQuality = new QualityValue(buffer.toString(), q, _lastQuality._index);
-                _qualities.set(_lastQuality._index, _lastQuality);
+                _lastQualityValue = new QualityValue(buffer.toString(), q, _lastQualityValue._index);
+                _qualities.set(_lastQualityValue._index, _lastQualityValue);
             }
         }
     }

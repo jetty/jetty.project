@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.1.2-SNAPSHOT</version>
+    <version>12.1.3-SNAPSHOT</version>
   </parent>
 
   <groupId>org.eclipse.jetty.compression</groupId>
@@ -21,6 +21,7 @@
     <module>jetty-compression-brotli</module>
     <module>jetty-compression-zstandard</module>
     <module>jetty-compression-tests</module>
+    <module>jetty-compression-client</module>
   </modules>
 
   <properties>

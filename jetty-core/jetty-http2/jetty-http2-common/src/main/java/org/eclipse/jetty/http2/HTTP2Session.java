@@ -845,7 +845,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
         else
         {
-            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
+            onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate", callback);
         }
     }
 
@@ -2316,10 +2316,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (LOG.isDebugEnabled())
                 LOG.debug("Session failure {}", HTTP2Session.this, cause);
 
-            notifyFailure(HTTP2Session.this, cause, Callback.from(() ->
-                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(() ->
-                    sendGoAway(goAwayFrame, Callback.from(() ->
-                        terminate(goAwayFrame)))))));
+            Invocable.InvocationType invocationType = callback.getInvocationType();
+            notifyFailure(HTTP2Session.this, cause, Callback.from(invocationType, () ->
+                failStreams(stream -> true, error, reason, toFailure(error, reason), true, Callback.from(invocationType, () ->
+                    sendGoAway(goAwayFrame, Callback.from(invocationType, () ->
+                        terminate(goAwayFrame, callback)))))));
         }
 
         private void onWriteFailure(Throwable x)
@@ -2430,6 +2431,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
 
         private void terminate(GoAwayFrame frame)
         {
+            terminate(frame, Callback.NOOP);
+        }
+
+        private void terminate(GoAwayFrame frame, Callback callback)
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
@@ -2442,7 +2448,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 completable.complete(null);
 
             HTTP2Session.this.terminate(failure);
-            notifyClose(HTTP2Session.this, frame, Callback.NOOP);
+            notifyClose(HTTP2Session.this, frame, callback);
             notifyLifeCycleClose();
         }
 

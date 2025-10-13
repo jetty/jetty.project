@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,14 +30,17 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RestartTest
 {
     private Server _server;
     private ServerConnector _connector;
+    private ContextHandler _contextHandler;
+    private WebSocketUpgradeHandler _upgradeHandler;
     private WebSocketClient _client;
-    private WebSocketUpgradeHandler upgradeHandler;
 
     @BeforeEach
     public void before() throws Exception
@@ -45,11 +49,11 @@ public class RestartTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ContextHandler contextHandler = new ContextHandler("/");
-        upgradeHandler = WebSocketUpgradeHandler.from(_server, contextHandler,
+        _contextHandler = new ContextHandler("/");
+        _upgradeHandler = WebSocketUpgradeHandler.from(_server, _contextHandler,
             container -> container.addMapping("/", (req, resp, cb) -> new EchoSocket()));
-        contextHandler.setHandler(upgradeHandler);
-        _server.setHandler(contextHandler);
+        _contextHandler.setHandler(_upgradeHandler);
+        _server.setHandler(_contextHandler);
 
         _server.start();
 
@@ -65,13 +69,23 @@ public class RestartTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testEchoStopStartEcho() throws Exception
     {
         testEcho();
         _server.stop();
-        assertThat(upgradeHandler.getServerWebSocketContainer().dump(), containsString("PathMappings[size=0]"));
+        assertThat(_upgradeHandler.getServerWebSocketContainer().dump(), containsString("PathMappings[size=0]"));
         _server.start();
         testEcho();
+    }
+
+    @Test
+    public void testStopStartGet() throws Exception
+    {
+        assertNotNull(ServerWebSocketContainer.get(_contextHandler.getContext()));
+        _server.stop();
+        assertNull(ServerWebSocketContainer.get(_contextHandler.getContext()));
+        _server.start();
+        assertNotNull(ServerWebSocketContainer.get(_contextHandler.getContext()));
     }
 
     private void testEcho() throws Exception

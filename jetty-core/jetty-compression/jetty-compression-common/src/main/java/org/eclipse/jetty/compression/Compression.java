@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
@@ -29,9 +30,11 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public abstract class Compression extends ContainerLifeCycle
 {
+
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
+    private final Pattern etagSuffixPattern;
     private ByteBufferPool byteBufferPool;
     private Container container;
     private int bufferSize = 2048;
@@ -42,6 +45,11 @@ public abstract class Compression extends ContainerLifeCycle
         encodingName = encoding;
         etagSuffix = StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR) ? "" : (EtagUtils.ETAG_SEPARATOR + encodingName);
         etagSuffixQuote = etagSuffix + "\"";
+        etagSuffixPattern = Pattern.compile(
+            "((?:W/)?\\\"[^\\\"]*?)" +    // Match a possibly weak etag starting with a quote (captured as $1)
+                "--" + encodingName +           // match the known etag suffix
+                "(?=(?:--[a-z0-9]+)*" +         // match zero or more other suffixes (lookahead, so not part of the match)
+                "\\\")");                       // match the closing quote (lookahead, so not part of the match)
     }
 
     /**
@@ -279,7 +287,7 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config);
 
     /**
-     * Strip compression suffixes off etags
+     * Strip this compression suffix off etags
      *
      * @param etagsList the list of etags to strip
      * @return the tags stripped of compression suffixes.
@@ -288,15 +296,7 @@ public abstract class Compression extends ContainerLifeCycle
     {
         if (StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR))
             return etagsList;
-
-        // This is a poor implementation that ignores list and tag structure
-        while (true)
-        {
-            int i = etagsList.lastIndexOf(etagSuffix);
-            if (i < 0)
-                return etagsList;
-            etagsList = etagsList.substring(0, i) + etagsList.substring(i + etagSuffix.length());
-        }
+        return etagSuffixPattern.matcher(etagsList).replaceAll("$1");
     }
 
     @Override

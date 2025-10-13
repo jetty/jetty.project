@@ -16,7 +16,6 @@ module org.eclipse.jetty.client
     requires org.eclipse.jetty.alpn.client;
     requires org.slf4j;
 
-    requires org.eclipse.jetty.compression;
     requires org.eclipse.jetty.compression.gzip;
     requires transitive org.eclipse.jetty.http;
 

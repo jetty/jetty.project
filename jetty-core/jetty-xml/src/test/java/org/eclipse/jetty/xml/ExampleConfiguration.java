@@ -15,6 +15,7 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,6 +45,7 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public int testField1;
     public int testField2;
     public int propValue;
+    private Collection<?> collection;
     @SuppressWarnings("rawtypes")
     private List list;
     @SuppressWarnings("rawtypes")
@@ -164,6 +166,16 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public void call(int[] ia)
     {
         this.ia = ia;
+    }
+
+    public Collection<?> getCollection()
+    {
+        return collection;
+    }
+
+    public void setCollection(Collection<?> collection)
+    {
+        this.collection = collection;
     }
 
     @SuppressWarnings("rawtypes")

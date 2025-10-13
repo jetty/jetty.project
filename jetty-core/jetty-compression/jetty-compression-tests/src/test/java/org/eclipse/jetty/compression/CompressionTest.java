@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -41,5 +42,22 @@ public class CompressionTest extends AbstractCompressionTest
         assertThat(list2, not(empty()));
         assertThrows(UnsupportedOperationException.class, () -> list2.add("bogus"), "should be an unmodifiable list");
         assertSame(list1, list2, "Should always return the same list instance");
+    }
+
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testEtagSuffixes(Class<Compression> compressionClass) throws Exception
+    {
+        startCompression(compressionClass);
+
+        assertThat(compression.etag("W/\"123456789\""), is("W/\"123456789" + compression.getEtagSuffix() + "\""));
+        assertThat(compression.etag("W/\"123456789--other\""), is("W/\"123456789--other" + compression.getEtagSuffix() + "\""));
+        assertThat(compression.etag("\"123456789--other\""), is("\"123456789--other" + compression.getEtagSuffix() + "\""));
+
+        assertThat(compression.stripSuffixes("W/\"123456789" + compression.getEtagSuffix() + "\""), is("W/\"123456789\""));
+        assertThat(compression.stripSuffixes("W/\"123456789--foo" + compression.getEtagSuffix() + "--bar\""), is("W/\"123456789--foo--bar\""));
+        assertThat(compression.stripSuffixes(
+            "W/\"123456789" + compression.getEtagSuffix() + "\", " + "W/\"123456789--foo" + compression.getEtagSuffix() + "--bar\", \"987654321--other\""),
+            is("W/\"123456789\", W/\"123456789--foo--bar\", \"987654321--other\""));
     }
 }

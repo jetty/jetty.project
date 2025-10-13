@@ -220,7 +220,7 @@ include::{jetty-home}/modules/deployment-scanner.mod[tags=documentation]
 Among the configurable properties, the most relevant are:
 
 `jetty.deploy.webappsDir`::
-The name of the directory to deploy web applications.
+The name of the directory, or a comma-separated list of directories, that is scanned to deploy web applications.
 `jetty.deploy.scanInterval`::
 The scan period in seconds, that is how frequently the `DeploymentScanner` wakes up to scan the monitored directories for changes.
 By default, `jetty.deploy.scanInterval=0` so that _hot_ deployment is disabled and only _cold_ deployment is possible (see also xref:deploy/index.adoc#hot-cold[here] for more information).

@@ -109,6 +109,21 @@ public class HttpField
     }
 
     /**
+     * <p>Creates a {@link HttpField} list value from two elements, handling nulls and blanks.</p>
+     * @param item1 The first item
+     * @param item2 The second item
+     * @return A comma separated list of the two items, ignoring nulls and blanks
+     */
+    public static String asList(String item1, String item2)
+    {
+        if (StringUtil.isBlank(item1))
+            return item2;
+        if (StringUtil.isBlank(item2))
+            return item1;
+        return item1 + ", " + item2;
+    }
+
+    /**
      * <p>Returns the field value and its parameters.</p>
      * <p>A field value may have parameters, typically separated by {@code ;}, for example</p>
      * <pre>{@code

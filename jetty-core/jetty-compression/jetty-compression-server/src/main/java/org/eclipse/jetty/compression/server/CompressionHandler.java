@@ -23,7 +23,6 @@ import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +56,6 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARA
  */
 public class CompressionHandler extends Handler.Wrapper
 {
-    public static final String HANDLER_ETAGS = CompressionHandler.class.getPackageName() + ".ETag";
-
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
     private final HttpField varyAcceptEncoding = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
     private final Map<String, Compression> supportedEncodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -205,6 +203,15 @@ public class CompressionHandler extends Handler.Wrapper
         }
 
         super.doStart();
+
+        pathConfigs.values().forEach(c -> LifeCycle.start(c));
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        pathConfigs.values().forEach(c -> LifeCycle.stop(c));
+        super.doStop();
     }
 
     @Override
@@ -240,7 +247,8 @@ public class CompressionHandler extends Handler.Wrapper
         // The `Accept-Encoding` request header indicating the supported list of compression encoding techniques.
         List<QuotedQualityCSV.QualityValue> requestAcceptEncoding = List.of();
         // Tracks the `If-Match` or `If-None-Match` request headers contains an etag separator.
-        boolean etagMatches = false;
+        String ifNoneMatch = null;
+        String ifMatch = null;
 
         QuotedQualityCSV qualityCSV = null;
         HttpFields fields = request.getHeaders();
@@ -280,7 +288,8 @@ public class CompressionHandler extends Handler.Wrapper
                     }
                     qualityCSV.addValue(field.getValue());
                 }
-                case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
+                case IF_MATCH -> ifMatch = HttpField.asList(ifMatch, field.getValue());
+                case IF_NONE_MATCH -> ifNoneMatch = HttpField.asList(ifNoneMatch, field.getValue());
             }
         }
 
@@ -317,44 +326,37 @@ public class CompressionHandler extends Handler.Wrapper
                 request, requestContentEncoding, requestAcceptEncoding, decompressEncoding, compressEncoding);
         }
 
-        if (decompressEncoding == null && compressEncoding == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("skipping compression and decompression: no request encoding matches");
-            // No need for a Vary header, as we will never deflate
-            return next.handle(request, response, callback);
-        }
+        // wrap request if etags need to be adjusted
+        if (ifMatch != null || ifNoneMatch != null)
+            request = new StripEtagRequest(request, ifMatch, ifNoneMatch);
 
-        Request decompressionRequest = request;
-        Response compressionResponse = response;
+        // wrap the request if we can decompress.
+        if (decompressEncoding != null)
+            request = newDecompressionRequest(request, decompressEncoding);
 
-        // We need to wrap the request IFF we can inflate or have seen etags with compression separators.
-        if (decompressEncoding != null || etagMatches)
-            decompressionRequest = newDecompressionRequest(request, decompressEncoding);
-
-        // Wrap the response IFF we can deflate.
+        // wrap the response if we can deflate.
         if (compressEncoding != null)
         {
             // The response may vary based on the presence or lack of Accept-Encoding.
             response.getHeaders().ensureField(varyAcceptEncoding);
-            compressionResponse = newCompressionResponse(request, response, compressEncoding, config);
+            response = newCompressionResponse(request, response, compressEncoding, config);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} {}", decompressionRequest, compressionResponse, this);
+            LOG.debug("handle {} {} {}", request, response, this);
 
-        if (next.handle(decompressionRequest, compressionResponse, callback))
+        if (next.handle(request, response, callback))
             return true;
 
-        if (request instanceof DecompressionRequest decompressRequest)
-            decompressRequest.destroy();
+        if (decompressEncoding != null)
+            Request.as(request, DecompressionRequest.class).destroy();
 
         return false;
     }
 
     private Compression getCompression(String encoding)
     {
-        Compression compression = supportedEncodings.get(encoding);
+        Compression compression = encoding == null ? null : supportedEncodings.get(encoding);
         if (compression == null)
         {
             if (LOG.isDebugEnabled())
@@ -387,5 +389,37 @@ public class CompressionHandler extends Handler.Wrapper
     public String toString()
     {
         return String.format("%s@%x{%s,supported=%s}", TypeUtil.toShortName(getClass()), hashCode(), getState(), String.join(",", supportedEncodings.keySet()));
+    }
+
+    private class StripEtagRequest extends Request.Wrapper
+    {
+        private final HttpFields _strippedHttpFields;
+
+        StripEtagRequest(Request request, String ifMatch, String ifNoneMatch)
+        {
+            super(request);
+            {
+                HttpFields.Mutable fields = HttpFields.build(request.getHeaders());
+                if (ifMatch != null)
+                {
+                    for (Compression known : supportedEncodings.values())
+                        ifMatch = known.stripSuffixes(ifMatch);
+                    fields.put(HttpHeader.IF_MATCH, ifMatch);
+                }
+                if (ifNoneMatch != null)
+                {
+                    for (Compression known : supportedEncodings.values())
+                        ifNoneMatch = known.stripSuffixes(ifNoneMatch);
+                    fields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
+                }
+                _strippedHttpFields = fields.asImmutable();
+            }
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _strippedHttpFields;
+        }
     }
 }

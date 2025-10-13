@@ -515,6 +515,15 @@ If you want to remove support for automatic response content decoding (for examp
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=removeDecoders]
 ----
 
+You can also provide your own implementation by implementing `ContentDecoder.Factory`.
+
+If you want to customize the implementations mentioned previously, you can do it in this way, using the utility class `CompressionContentDecoderFactory` from the `org.eclipse.jetty.compression:jetty-compression-client` Maven artifact:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=customDecoders]
+----
+
 Jetty's `HttpClient` allows applications to handle response content in different ways.
 
 You can buffer the response content in memory; this is done when using the <<blocking,blocking APIs>> and the content is buffered within a `ContentResponse` up to 2 MiB.
