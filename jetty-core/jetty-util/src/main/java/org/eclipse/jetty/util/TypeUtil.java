@@ -409,17 +409,7 @@ public class TypeUtil
     {
         StringBuilder buf = new StringBuilder();
         for (byte b : bytes)
-        {
-            int bi = 0xff & b;
-            int c = '0' + (bi / base) % base;
-            if (c > '9')
-                c = 'a' + (c - '0' - 10);
-            buf.append((char)c);
-            c = '0' + bi % base;
-            if (c > '9')
-                c = 'a' + (c - '0' - 10);
-            buf.append((char)c);
-        }
+            StringUtil.append(buf, b, base);
         return buf.toString();
     }
 
@@ -781,7 +771,7 @@ public class TypeUtil
      */
     public static <T> Predicate<T> truePredicate()
     {
-        return new Predicate<T>()
+        return new Predicate<>()
         {
             @Override
             public boolean test(T t)
@@ -817,7 +807,7 @@ public class TypeUtil
      */
     public static <T> Predicate<T> falsePredicate()
     {
-        return new Predicate<T>()
+        return new Predicate<>()
         {
             @Override
             public boolean test(T t)
@@ -909,28 +899,35 @@ public class TypeUtil
     /**
      * Check that the offset and length of a subrange are within the size of a range.
      * @param offset an offset of a subrange within a range of 0 to {code size} to start from.
-     * Must be greater than or equal to 0 and less than the range size (if known).
+     *               Must be greater than or equal to 0 and less than the range size (if known).
      * @param length the length of the subrange, -1 for the full length available from the offset,
-     * otherwise must be greater than or equal to 0 and less than or equal to the range size (if known) minus the offset.
+     *               otherwise must be greater than or equal to 0.
+     *               If the size is known, then the length will be reduced if necessary to fit within the size-offset.
      * @param size the size of the range, or -1 if unknown.
-     * @return the length of the subrange, which if the passed length was -1 and the size is known, will be size-offset.
+     * @return the length of the subrange, which may be calculated if length was less than 0 or if the length is limited by
+     *         a known size.
      * @throws IndexOutOfBoundsException if the offset or length are out of range.
-     * @see Objects#checkFromIndexSize(long, long, long)
+     * @throws ArithmeticException if the length is not -1 and offset+length overflows.
      */
     public static long checkOffsetLengthSize(long offset, long length, long size)
     {
-        if (size < 0)
+        if (length == 0)
+            return 0;
+
+        if (offset < 0)
+            throw new IndexOutOfBoundsException("Negative offset: " + offset);
+        if (length < -1)
+            throw new IndexOutOfBoundsException("Length less than -1: " + length);
+
+        if (size >= 0)
         {
-            if (offset < 0)
-                throw new IndexOutOfBoundsException("Negative offset: " + offset);
-            if (length < -1)
-                throw new IndexOutOfBoundsException("Length less than -1: " + length);
-        }
-        else
-        {
-            Objects.checkFromIndexSize(offset, length < 0 ? size - offset : length, size);
+            if (offset > size)
+                throw new IndexOutOfBoundsException("Offset > Size: " + offset + " > " + size);
+
+            if (length == -1 || Math.addExact(offset, length) > size)
+                length = size - offset;
         }
 
-        return (length < 0 && size >= 0) ? size - offset : length;
+        return length;
     }
 }

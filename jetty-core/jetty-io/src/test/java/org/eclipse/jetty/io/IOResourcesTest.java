@@ -26,6 +26,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -135,6 +136,7 @@ public class IOResourcesTest
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            length = TypeUtil.checkOffsetLengthSize(offset, length, buffer.remaining());
             return Content.Source.from(BufferUtil.slice(buffer, Math.toIntExact(offset), Math.toIntExact(length)));
         }
     }
@@ -185,6 +187,11 @@ public class IOResourcesTest
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
 
+        if (resource.length() < 100)
+        {
+            assertThrows(IndexOutOfBoundsException.class, () -> IOResources.asContentSource(resource, bufferPool, 100, -1));
+            return;
+        }
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, -1);
         Content.copy(contentSource, sink, callback);
         callback.get();
@@ -294,7 +301,7 @@ public class IOResourcesTest
         TestSink sink = new TestSink();
         Blocker.Callback callback = Blocker.callback();
         IOResources.copy(resource, sink, bufferPool, Integer.MAX_VALUE, 1, callback);
-        assertThrows(IllegalArgumentException.class, callback::block);
+        assertThrows(IndexOutOfBoundsException.class, callback::block);
     }
 
     @ParameterizedTest

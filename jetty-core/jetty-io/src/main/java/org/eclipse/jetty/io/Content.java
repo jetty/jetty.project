@@ -169,10 +169,10 @@ public class Content
              * Creates a new {@link Content.Source}.
              *
              * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-             * @param offset the offset byte of the resource to start from.
-             * Must be greater than or equal to 0 and less than the resource length (if known).
-             * @param length the length of the content to make available, -1 for the full length,
-             * otherwise must be greater than 0 and less than or equal to the resource length (if known) minus the offset.
+             * @param offset the offset byte of the content to start from.
+             *               Must be greater than or equal to 0 and less than the content length (if known).
+             * @param length the length of the content to make available, -1 for the full length.
+             *               If the size of the content is known, the length may be truncated to the content size minus the offset.
              * @return a {@link Content.Source}.
              * @throws IndexOutOfBoundsException if the offset or length are out of range.
              * @see TypeUtil#checkOffsetLengthSize(long, long, long)
@@ -204,10 +204,10 @@ public class Content
          * Create a {@code Content.Source} from a {@link Path}.
          *
          * @param path The {@link Path}s to use as the source.
-         * @param offset the offset byte of the resource to start from.
-         * Must be greater than or equal to 0 and less than the resource size (if known).
-         * @param length the length of the content to make available, -1 for the full length available,
-         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
          * @return a {@link Content.Source}.
          * @throws IndexOutOfBoundsException if the offset or length are out of range.
          * @see TypeUtil#checkOffsetLengthSize(long, long, long)
@@ -232,10 +232,10 @@ public class Content
          * Create a {@code Content.Source} from a {@link Path}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
-         * @param offset the offset byte of the resource to start from.
-         * Must be greater than or equal to 0 and less than the resource size (if known).
-         * @param length the length of the content to make available, -1 for the full length available,
-         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
          * @return a {@link Content.Source}.
          * @throws IndexOutOfBoundsException if the offset or length are out of range.
          * @see TypeUtil#checkOffsetLengthSize(long, long, long)
@@ -261,10 +261,10 @@ public class Content
          * Create a {@code Content.Source} from a {@link ByteChannel}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
-         * @param offset the offset byte of the resource to start from.
-         * Must be greater than or equal to 0 and less than the resource size (if known).
-         * @param length the length of the content to make available, -1 for the full length available,
-         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
          * @return a {@link Content.Source}.
          * @throws IndexOutOfBoundsException if the offset or length are out of range.
          * @see TypeUtil#checkOffsetLengthSize(long, long, long)
@@ -296,9 +296,9 @@ public class Content
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset the offset byte of the resource to start from.
-         * Must be greater than or equal to 0 and less than the resource size (if known).
-         * @param length the length of the content to make available, -1 for the full length available,
-         * otherwise must be greater than 0 and less than or equal to the resource size (if known) minus the offset.
+         *               Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, or -1 for the full length available.
+         *               The length may be truncated if the stream ends sooner.
          * @return a {@link Content.Source}.
          * @throws IndexOutOfBoundsException if the offset or length are out of range.
          * @see TypeUtil#checkOffsetLengthSize(long, long, long)
