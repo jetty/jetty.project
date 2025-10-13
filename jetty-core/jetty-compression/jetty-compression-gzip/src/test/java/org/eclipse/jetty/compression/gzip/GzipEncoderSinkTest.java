@@ -15,6 +15,7 @@ package org.eclipse.jetty.compression.gzip;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -95,6 +96,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
             Callback.Completable callback1 = new Callback.Completable();
             encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
             callback1.get();
+            assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
 
             Callback.Completable callback2 = new Callback.Completable();
             encoderSink.write(true, ByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);

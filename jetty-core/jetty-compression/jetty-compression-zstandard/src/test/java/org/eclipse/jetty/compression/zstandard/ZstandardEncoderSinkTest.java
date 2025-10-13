@@ -28,6 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,6 +75,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             Callback.Completable callback1 = new Callback.Completable();
             encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
             callback1.get();
+            assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
 
             Callback.Completable callback2 = new Callback.Completable();
             encoderSink.write(true, ByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
