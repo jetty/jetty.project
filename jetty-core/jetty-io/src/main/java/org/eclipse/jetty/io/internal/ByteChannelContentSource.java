@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -275,15 +276,12 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            this (byteBufferPool, path, size(path), offset, length);
+            this(byteBufferPool, path, size(path), offset, length);
         }
 
         private PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long size, long offset, long length)
         {
-            // TODO Is this the contract we want for offset/length? auto correcting it? Validity can be checked in super.
-            super(byteBufferPool, null,
-                Math.min(offset, size),
-                Math.min(length, size - offset));
+            super(byteBufferPool, null, offset, TypeUtil.checkOffsetLengthSize(offset, length, size));
             _path = path;
         }
 
