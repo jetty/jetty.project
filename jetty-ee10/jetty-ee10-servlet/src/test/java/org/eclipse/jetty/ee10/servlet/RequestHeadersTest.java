@@ -19,12 +19,15 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
@@ -120,11 +123,14 @@ public class RequestHeadersTest
             en;q=0.5,it     | it
             bogus           | en-US
             en_en           | en-US
+            ;-              | en-US
+            ";--            | en-US
             """)
     public void testLocale(String requestHeaderValue, String expectedLocale) throws Exception
     {
         startServer((context) ->
         {
+            Arrays.asList(context.getServer().getConnectors()).forEach(c -> c.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.LEGACY));
             HttpServlet requestHeaderServlet = new HttpServlet()
             {
                 @Override
