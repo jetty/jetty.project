@@ -354,7 +354,9 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            // TODO support offset and length
+            // TODO support offset and length, or document why we are keeping this
+            //      or wrap the returned Content.Source to support offset and length.
+            //      or document that we should wrap if somebody needs it.
             return newContentSource();
         }
 

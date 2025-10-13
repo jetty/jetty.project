@@ -175,7 +175,7 @@ public class Content
              * otherwise must be greater than 0 and less than or equal to the resource length (if known) minus the offset.
              * @return a {@link Content.Source}.
              * @throws IndexOutOfBoundsException if the offset or length are out of range.
-             * @see Objects#checkFromIndexSize(long, long, long)
+             * @see TypeUtil#checkOffsetLengthSize(long, long, long)
              */
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
