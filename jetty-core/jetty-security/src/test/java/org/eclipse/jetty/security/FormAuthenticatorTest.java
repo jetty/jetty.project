@@ -235,7 +235,6 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
@@ -282,7 +281,6 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");

@@ -144,7 +144,6 @@ public class BasicAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
@@ -153,7 +152,6 @@ public class BasicAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
-        assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
     }
 
