@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -63,6 +64,7 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, long offset, long length)
     {
+        length = TypeUtil.checkOffsetLengthSize(offset, length, -1);
         this.inputStream = Objects.requireNonNull(inputStream);
         this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
         if (length != 0)

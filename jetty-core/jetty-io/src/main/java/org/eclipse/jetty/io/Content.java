@@ -305,7 +305,6 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {
-            // TODO define contract for offset/lengths outside of bounds
             return new InputStreamContentSource(inputStream, byteBufferPool, offset, length);
         }
 
