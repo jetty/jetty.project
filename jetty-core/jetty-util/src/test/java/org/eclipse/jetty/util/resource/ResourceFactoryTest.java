@@ -68,7 +68,6 @@ public class ResourceFactoryTest
         "TestData/alphabet.txt", "/TestData/alphabet.txt",
         "TestData/", "/TestData/", "TestData", "/TestData"
     })
-    @Disabled
     public void testNewClassLoaderResourceExists(String reference) throws IOException
     {
         Path alt = workDir.getEmptyPathDir().resolve("alt");
