@@ -462,6 +462,11 @@ public interface ResourceFactory
         return split(str, ",;|", false);
     }
 
+    default List<Resource> split(String str, boolean unwrap)
+    {
+        return split(str, ",;|", unwrap);
+    }
+
     default List<Resource> split(String str, String delim)
     {
         return split(str, delim, false);
