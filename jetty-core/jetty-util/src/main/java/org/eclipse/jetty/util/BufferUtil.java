@@ -35,7 +35,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -326,16 +325,13 @@ public class BufferUtil
      * @return the sliced buffers in a new collection, which may be immutable and may contain the original buffers or slices of them
      * @throws IndexOutOfBoundsException if the offset or length are invalid
      */
-    public static Collection<ByteBuffer> sliceByteBuffers(Collection<ByteBuffer> byteBuffers, long offset, long length)
+    public static Collection<ByteBuffer> slice(Collection<ByteBuffer> byteBuffers, long offset, long length)
     {
         Objects.requireNonNull(byteBuffers);
         if (offset < 0)
             throw new IndexOutOfBoundsException("offset < 0: " + offset);
         if (length < -1)
             throw new IndexOutOfBoundsException("length < -1: " + length);
-
-        if (length == 0)
-            return Collections.emptyList();
 
         boolean allAvailable = (length == -1);
         ArrayList<ByteBuffer> sliced = new ArrayList<>(byteBuffers.size());
@@ -383,9 +379,9 @@ public class BufferUtil
         }
 
         if (offset > 0)
-            throw new IndexOutOfBoundsException("offset too large; leftover=" + offset);
+            throw new IndexOutOfBoundsException("offset too large by " + offset);
         if (!allAvailable && length > 0)
-            throw new IndexOutOfBoundsException("length too large; leftover=" + length);
+            throw new IndexOutOfBoundsException("length too large by" + length);
 
         return sliced;
     }

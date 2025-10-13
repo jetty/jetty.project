@@ -57,7 +57,7 @@ public class ByteBufferContentSource implements Content.Source
         if (offset == 0 && size == length)
             this.byteBuffers = byteBuffers;
         else
-            this.byteBuffers = BufferUtil.sliceByteBuffers(byteBuffers, offset, length);
+            this.byteBuffers = BufferUtil.slice(byteBuffers, offset, length);
         this.length = length;
     }
 
