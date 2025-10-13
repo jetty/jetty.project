@@ -212,7 +212,7 @@ class AsyncContentProducer implements ContentProducer
         if (chunk != null)
         {
             _servletChannel.getServletRequestState().onReadIdle();
-            if (Content.Chunk.isFailure(chunk, false))
+            if (Content.Chunk.isFailure(chunk))
                 _chunk = Content.Chunk.next(chunk);
         }
         return chunk;
