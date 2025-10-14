@@ -67,7 +67,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -747,12 +746,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
         __context.set(_context);
-        // Cheap check for JDK 25+ innocuous threads to avoid an exception on the fast path, if possible.
-        if (ThreadUtils.isInnocuous(Thread.currentThread()))
-        {
-            lastLoader = null;
-        }
-        else if (_classLoader != null)
+        if (_classLoader != null)
         {
             try
             {
@@ -799,8 +793,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         notifyExitScope(contextRequest);
         __context.set(lastContext);
-        if (lastLoader != null && lastLoader != Thread.currentThread().getContextClassLoader())
-            Thread.currentThread().setContextClassLoader(lastLoader);
+        if (_classLoader != null)
+        {
+            try
+            {
+                Thread.currentThread().setContextClassLoader(lastLoader);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("error restoring context classloader on thread {}", Thread.currentThread(), x);
+            }
+        }
     }
 
     /**
