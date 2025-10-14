@@ -58,7 +58,7 @@
                   <overWrite>false</overWrite>
                   <includes>**/build.properties</includes>
                   <fileMappers>
-                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FlattenFileMapper"></fileMapper>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FlattenFileMapper"/>
                   </fileMappers>
                   <outputDirectory>${project.build.outputDirectory}/org/eclipse/jetty/start/</outputDirectory>
                 </artifactItem>

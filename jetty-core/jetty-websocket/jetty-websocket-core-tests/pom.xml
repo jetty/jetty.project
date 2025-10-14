@@ -92,7 +92,7 @@
           <configuration>
             <archive>
               <manifest>
-                <addDefaultEntries></addDefaultEntries>
+                <addDefaultEntries/>
               </manifest>
               <manifestEntries>
                 <Comment>Jetty Websocket Test Support Classes</Comment>
