@@ -736,8 +736,12 @@ public class MultiPart
         {
             try (AutoLock ignored = lock.lock())
             {
-                if (errorChunk != null)
-                    return errorChunk;
+                Content.Chunk error = errorChunk;
+                if (error != null)
+                {
+                    errorChunk = Content.Chunk.next(error);
+                    return error;
+                }
             }
 
             return switch (state)

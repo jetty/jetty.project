@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -29,6 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,12 +40,17 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -56,7 +65,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -74,6 +82,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -151,6 +160,76 @@ public class WebAppContextTest
         }
 
         return warFile;
+    }
+
+    @Test
+    public void testTryWithResourceOnServletInputStreamWrapperDoesNotThrowSelfSuppressionNotPermitted() throws Exception
+    {
+        WebAppContext contextHandler = new WebAppContext();
+        contextHandler.setBaseResource(ResourceFactory.root().newResource("."));
+        var servlet = new HttpServlet()
+        {
+            final AtomicInteger readCounter = new AtomicInteger();
+            final AtomicReference<Throwable> failureRef = new AtomicReference<>();
+
+            @Override
+            protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                InputStream servletInputStream = request.getInputStream();
+                try (InputStream inputStream = new InputStream()
+                {
+                    @Override
+                    public int read() throws IOException
+                    {
+                        return servletInputStream.read();
+                    }
+
+                    @Override
+                    public void close() throws IOException
+                    {
+                        // There is no need to delegate the close().
+                        servletInputStream.read();
+                    }
+                })
+                {
+                    while (true)
+                    {
+                        int read = inputStream.read();
+                        if (read == -1)
+                            break;
+                        readCounter.incrementAndGet();
+                    }
+                }
+                catch (Throwable x)
+                {
+                    failureRef.set(x);
+                }
+            }
+        };
+        contextHandler.addServlet(servlet, "/*");
+        Server server = new Server();
+        server.setHandler(contextHandler);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        server.start();
+
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
+        {
+            String rawRequest = """
+                POST / HTTP/1.1\r
+                Host: test\r
+                Connection: close\r
+                Content-Length: 10\r
+                \r
+                01234""";
+
+            LocalConnector.LocalEndPoint endPoint = connector.connect();
+            endPoint.addInputAndExecute(rawRequest);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> servlet.readCounter.get() == 5);
+            endPoint.close(new ArithmeticException());
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(servlet.failureRef.get(), instanceOf(ArithmeticException.class)));
+        }
     }
 
     @Test
