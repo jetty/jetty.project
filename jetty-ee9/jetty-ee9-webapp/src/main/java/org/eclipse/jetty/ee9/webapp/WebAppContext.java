@@ -1270,7 +1270,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         //convert classpath into Resources. Any jar:file: references will be
         //unwrapped, because we need the location of the file, not the contents
         //of the file
-        setExtraClasspath(getResourceFactory().split(extraClasspath, File.pathSeparator, true));
+        setExtraClasspath(getResourceFactory().split(extraClasspath, true));
     }
 
     public void setExtraClasspath(List<Resource> extraClasspath)

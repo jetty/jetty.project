@@ -1,3 +1,9 @@
+12.0.28 - 03 October 2025
+ + 13509 "No multipart configuration element" exception when getNamedDispatcher().forward() used
+ + 13583 NPE in WriteFlusher after org.eclipse.jetty.http.BadMessageException: 417
+ + 13598 Server hangs when client closes too many connections.
+ + 13603 Bad Accept-Language request headers can result in NPE during HttpServletRequest.getLocale() call
+
 12.0.27 - 11 September 2025
  + 13528 Review HttpParser._headerBytes accounting
  + 13549 Ensure buffer is always released from HTTP/3 HeadersGenerator in case of failure.
