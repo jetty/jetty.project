@@ -179,16 +179,14 @@ public class ContextHandlerTest
     @ValueSource(booleans = {true, false})
     public void testThreadRefusingContextClassLoader(boolean withClassLoader) throws Exception
     {
+        LocalConnector connector = new LocalConnector(_server);
+        _server.addConnector(connector);
         _contextHandler.setClassLoader(withClassLoader ? _loader : null);
-
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                AtomicReference<Throwable> failureRef = new AtomicReference<>();
-                request.addFailureListener(failureRef::set);
-
                 CountDownLatch latch = new CountDownLatch(1);
                 var t = new Thread()
                 {
@@ -220,45 +218,36 @@ public class ContextHandlerTest
                 t.start();
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-                Throwable x = failureRef.get();
-                if (x == null)
-                    callback.succeeded();
-                else
-                    callback.failed(x);
+                callback.succeeded();
                 return true;
             }
         });
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannelState(connectionMetaData);
-        MockHttpStream stream = new MockHttpStream(channel);
+        String rawRequest = """
+            GET /ctx/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
-
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testAIOAndClassLoader(boolean withClassLoader) throws Exception
     {
+        LocalConnector connector = new LocalConnector(_server);
+        _server.addConnector(connector);
         _contextHandler.setClassLoader(withClassLoader ? _loader : null);
-
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                AtomicReference<Throwable> failureRef = new AtomicReference<>();
-                request.addFailureListener(failureRef::set);
-
                 Path tempFile = request.getContext().getTempDirectory().toPath().resolve("file.bin");
                 try (AsynchronousFileChannel afc = AsynchronousFileChannel.open(tempFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
                 {
@@ -294,29 +283,22 @@ public class ContextHandlerTest
                     assertTrue(latch.await(5, TimeUnit.SECONDS));
                 }
 
-                Throwable x = failureRef.get();
-                if (x == null)
-                    callback.succeeded();
-                else
-                    callback.failed(x);
+                callback.succeeded();
                 return true;
             }
         });
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannelState(connectionMetaData);
-        MockHttpStream stream = new MockHttpStream(channel);
+        String rawRequest = """
+            GET /ctx/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
-
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
     }
 
     @Test
