@@ -957,6 +957,6 @@ public class ResponseTest
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.get("X-Test"), is("val?ue"));
+        assertThat(response.get("X-Test"), is("val ue"));
     }
 }
