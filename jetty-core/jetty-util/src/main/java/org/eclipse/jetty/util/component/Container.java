@@ -73,7 +73,7 @@ public interface Container
      * @return the first bean (in order added) of a specific class (or subclass), or null if no such bean exist
      */
     <T> T getBean(Class<T> clazz);
-    
+
     /**
      * Removes the given bean.
      * If the bean is-a {@link EventListener}, then also do an implicit {@link #removeEventListener(EventListener)}.
