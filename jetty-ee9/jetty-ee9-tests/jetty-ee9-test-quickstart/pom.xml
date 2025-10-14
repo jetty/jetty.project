@@ -14,6 +14,11 @@
   </properties>
   <dependencies>
     <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
       <scope>test</scope>
@@ -75,6 +80,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-glassfish-jstl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-jndi</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
