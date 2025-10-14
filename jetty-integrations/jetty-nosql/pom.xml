@@ -45,6 +45,6 @@
   </dependencies>
   <build>
     <defaultGoal>install</defaultGoal>
-    <plugins></plugins>
+    <plugins/>
   </build>
 </project>
