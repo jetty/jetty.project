@@ -56,8 +56,8 @@
             <phase>process-resources</phase>
             <configuration>
               <target>
-                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar"></replaceregexp>
-                <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]"></replaceregexp>
+                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar"/>
+                <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]"/>
               </target>
             </configuration>
           </execution>
@@ -70,8 +70,8 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/infinispan-embedded-query-libs.mod">
-                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod"></fileset>
-                  <fileset file="${project.build.directory}/deps.txt"></fileset>
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod"/>
+                  <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </target>
             </configuration>
