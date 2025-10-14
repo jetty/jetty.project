@@ -149,7 +149,6 @@ public class QuotedQualityCSVTest
 
     public static Stream<Arguments> badQuoted()
     {
-        // TODO need to remove a value from the list if it has allowed badly quoted parameter?
         return Stream.of(
             Arguments.of("\"a", new String[] {"\"a"}),
             Arguments.of("a,\"b", new String[] {"a", "\"b"})

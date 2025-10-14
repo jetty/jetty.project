@@ -152,39 +152,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 
     static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
     {
-        return new org.eclipse.jetty.http.MutableHttpFields()
-        {
-            @Override
-            public QuotedCSV newQuotedCSV(boolean keepQuotes)
-            {
-                return new QuotedCSV.Compliant(httpCompliance, notifyViolation, keepQuotes);
-            }
-
-            @Override
-            public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-            {
-                return new QuotedQualityCSV.Compliant(httpCompliance, notifyViolation, secondaryOrdering);
-            }
-
-            @Override
-            protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
-            {
-                return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size)
-                {
-                    @Override
-                    public QuotedCSV newQuotedCSV(boolean keepQuotes)
-                    {
-                        return new QuotedCSV.Compliant(httpCompliance, notifyViolation, keepQuotes);
-                    }
-
-                    @Override
-                    public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-                    {
-                        return new QuotedQualityCSV.Compliant(httpCompliance, notifyViolation, secondaryOrdering);
-                    }
-                };
-            }
-        };
+        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, notifyViolation);
     }
 
     /**

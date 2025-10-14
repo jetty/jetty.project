@@ -149,8 +149,16 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedValue(StringBuilder buffer)
     {
+        // ignore empty values
+        if (buffer.isEmpty())
+            return;
+
         // We have to convert to String anyway for QualityValue below.
         String value = buffer.toString();
+
+        // Ignore blank values
+        if (StringUtil.isBlank(value))
+            return;
 
         // This is just the value, without parameters.
         // Assume a quality of ONE

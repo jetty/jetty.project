@@ -179,7 +179,6 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
-        values.forEach(System.out::println);
         String[] expected = {
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",
