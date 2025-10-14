@@ -144,15 +144,15 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         HTTP3SessionServer serverSession = serverSessionRef.get();
-        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxTableCapacity());
-        assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
-        assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
+        assertEquals(maxTableCapacity.getValue(), serverSession.getQpackEncoder().getMaxTableCapacity());
+        assertEquals(maxBlockedStreams.getValue(), serverSession.getQpackEncoder().getMaxBlockedStreams());
+        assertEquals(maxBlockedStreams.getValue(), serverSession.getQpackDecoder().getMaxBlockedStreams());
+        assertEquals(maxHeaderSize.getValue(), serverSession.getQpackDecoder().getMaxHeadersSize());
 
-        assertEquals(maxTableCapacity.getValue(), ((ClientHTTP3Session)clientSession.getProtocolSession()).getQpackEncoder().getMaxTableCapacity());
-        assertEquals(maxBlockedStreams.getValue(), ((ClientHTTP3Session)clientSession.getProtocolSession()).getQpackEncoder().getMaxBlockedStreams());
-        assertEquals(maxBlockedStreams.getValue(), ((ClientHTTP3Session)clientSession.getProtocolSession()).getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), ((ClientHTTP3Session)clientSession.getProtocolSession()).getQpackDecoder().getMaxHeadersSize());
+        assertEquals(maxTableCapacity.getValue(), clientSession.getQpackEncoder().getMaxTableCapacity());
+        assertEquals(maxBlockedStreams.getValue(), clientSession.getQpackEncoder().getMaxBlockedStreams());
+        assertEquals(maxBlockedStreams.getValue(), clientSession.getQpackDecoder().getMaxBlockedStreams());
+        assertEquals(maxHeaderSize.getValue(), clientSession.getQpackDecoder().getMaxHeadersSize());
     }
 
     @ParameterizedTest

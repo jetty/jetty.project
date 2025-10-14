@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Stream;
@@ -57,8 +58,16 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
 
     public void onResponse(HeadersFrame frame)
     {
-        MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        int status = response.getStatus();
+        MetaData.Response metaData = (MetaData.Response)frame.getMetaData();
+        Throwable failure = MetaData.Failed.getFailure(metaData);
+        if (failure != null)
+        {
+            updateClose(true, false);
+            onFailure(HTTP3ErrorCode.PROTOCOL_ERROR.code(), failure);
+            return;
+        }
+
+        int status = metaData.getStatus();
         switch (status)
         {
             case HttpStatus.CONTINUE_100 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
