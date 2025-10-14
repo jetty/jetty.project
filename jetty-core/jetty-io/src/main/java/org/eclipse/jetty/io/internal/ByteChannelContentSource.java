@@ -276,12 +276,7 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            this(byteBufferPool, path, size(path), offset, length);
-        }
-
-        private PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long size, long offset, long length)
-        {
-            super(byteBufferPool, null, offset, TypeUtil.checkOffsetLengthSize(offset, length, size));
+            super(byteBufferPool, null, offset, TypeUtil.checkOffsetLengthSize(offset, length, size(path)));
             _path = path;
         }
 

@@ -333,7 +333,6 @@ public class BufferUtil
         if (length < -1)
             throw new IndexOutOfBoundsException("length < -1: " + length);
 
-        boolean allAvailable = (length == -1);
         ArrayList<ByteBuffer> sliced = new ArrayList<>(byteBuffers.size());
 
         for (ByteBuffer buffer : byteBuffers)
@@ -348,7 +347,7 @@ public class BufferUtil
                 continue;
             }
 
-            if (allAvailable)
+            if (length == -1)
             {
                 if (offset == 0)
                 {
@@ -380,7 +379,7 @@ public class BufferUtil
 
         if (offset > 0)
             throw new IndexOutOfBoundsException("offset too large by " + offset);
-        if (!allAvailable && length > 0)
+        if (length > 0)
             throw new IndexOutOfBoundsException("length too large by" + length);
 
         return sliced;
