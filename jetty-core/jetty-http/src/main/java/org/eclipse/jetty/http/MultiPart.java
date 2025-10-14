@@ -828,9 +828,9 @@ public class MultiPart
             try (AutoLock ignored = lock.lock())
             {
                 Content.Chunk error = errorChunk;
-                if (errorChunk != null)
+                if (error != null)
                 {
-                    errorChunk = Content.Chunk.next(errorChunk);
+                    errorChunk = Content.Chunk.next(error);
                     return error;
                 }
             }
