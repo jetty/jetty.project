@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck, Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
-    private static final ThreadLocal<Context> __context = new ThreadLocal<>();
+    private static final ThreadLocal<Context> CURRENT_CONTEXT = new ThreadLocal<>();
 
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
@@ -95,7 +95,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     public static Context getCurrentContext()
     {
-        return __context.get();
+        return CURRENT_CONTEXT.get();
     }
 
     /**
@@ -106,7 +106,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     public static Context getCurrentContext(Server server)
     {
-        Context context = __context.get();
+        Context context = CURRENT_CONTEXT.get();
         return context == null ? (server == null ? null : server.getContext()) : context;
     }
 
@@ -660,8 +660,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             if (listener instanceof ContextScopeListener contextScopeListener)
             {
                 _contextListeners.add(contextScopeListener);
-                if (__context.get() != null)
-                    contextScopeListener.enterScope(__context.get(), null);
+                if (CURRENT_CONTEXT.get() != null)
+                    contextScopeListener.enterScope(CURRENT_CONTEXT.get(), null);
             }
             return true;
         }
@@ -676,8 +676,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             if (listener instanceof ContextScopeListener contextScopeListener)
             {
                 _contextListeners.remove(contextScopeListener);
-                if (__context.get() != null)
-                    contextScopeListener.exitScope(__context.get(), null);
+                if (CURRENT_CONTEXT.get() != null)
+                    contextScopeListener.exitScope(CURRENT_CONTEXT.get(), null);
             }
             return true;
         }
@@ -744,8 +744,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected ClassLoader enterScope(Request contextRequest)
     {
+        CURRENT_CONTEXT.set(_context);
+
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-        __context.set(_context);
         if (_classLoader != null)
         {
             try
@@ -791,8 +792,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected void exitScope(Request contextRequest, Context lastContext, ClassLoader lastLoader)
     {
+        CURRENT_CONTEXT.set(lastContext);
+
         notifyExitScope(contextRequest);
-        __context.set(lastContext);
         if (_classLoader != null)
         {
             try
@@ -1632,7 +1634,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void call(Invocable.Callable callable, Request request) throws Exception
         {
-            Context lastContext = __context.get();
+            Context lastContext = CURRENT_CONTEXT.get();
             if (lastContext == this)
                 callable.call();
             else
@@ -1651,7 +1653,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public <T> boolean test(Predicate<T> predicate, T t, Request request)
         {
-            Context lastContext = __context.get();
+            Context lastContext = CURRENT_CONTEXT.get();
             if (lastContext == this)
                 return predicate.test(t);
 
@@ -1668,7 +1670,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
-            Context lastContext = __context.get();
+            Context lastContext = CURRENT_CONTEXT.get();
             if (lastContext == this)
                 consumer.accept(t);
             else
@@ -1693,7 +1695,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         public void run(Runnable runnable, Request request)
         {
-            Context lastContext = __context.get();
+            Context lastContext = CURRENT_CONTEXT.get();
             if (lastContext == this)
                 runnable.run();
             else
