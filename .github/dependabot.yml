@@ -309,7 +309,7 @@ updates:
         update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: maven
-    directory: "/jetty-e10"
+    directory: "/jetty-ee10"
     target-branch: "jetty-12.1.x"
     open-pull-requests-limit: 30
     schedule:
@@ -360,7 +360,7 @@ updates:
         update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: maven
-    directory: "/jetty-e11"
+    directory: "/jetty-ee11"
     target-branch: "jetty-12.1.x"
     open-pull-requests-limit: 30
     schedule:
@@ -718,7 +718,7 @@ updates:
         update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: maven
-    directory: "/jetty-e10"
+    directory: "/jetty-ee10"
     target-branch: "jetty-12.0.x"
     open-pull-requests-limit: 30
     schedule:
