@@ -8,6 +8,7 @@ pipeline {
     durabilityHint('MAX_SURVIVABILITY')
     //buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
+    disableConcurrentBuilds(abortPrevious: true)
   }
   stages {
     stage("Parallel Stage") {
