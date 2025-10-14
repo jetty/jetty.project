@@ -79,6 +79,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> CURRENT_CONTEXT = new ThreadLocal<>();
 
+    /** A ClassLoader that does nothing.
+     * Used to avoid setting the thread context classloader when Innocuous thread may be used.
+     */
+    public static final ClassLoader NO_CLASS_LOADER = new NoClassLoader();
+
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
     /**
@@ -516,6 +521,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * The {@link ClassLoader} to set as the {@link Thread#setContextClassLoader(ClassLoader) thread's context classloader}
      * when the thread executing this handler enters the scope of this context.
+     * If the #NO_CLASS_LOADER is passed, then the thread's context classloader will not be changed, which is different to
+     * the behavior when {@code null} is passed (the thread's context classloader is set to null).  This should be used if
+     * the context can be invoked by Innocuous threads.
      * @param contextLoader the {@link ClassLoader} or {@code null} to avoid changing the thread's context classloader.
      */
     public void setClassLoader(ClassLoader contextLoader)
@@ -534,7 +542,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     public String getClassPath()
     {
         // TODO may need to handle one level of parent classloader for API ?
-        if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
+        if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader) || _classLoader == NO_CLASS_LOADER)
             return null;
 
         String classpath = URIUtil.streamOf(loader)
@@ -746,22 +754,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         CURRENT_CONTEXT.set(_context);
 
+        if (_classLoader == NO_CLASS_LOADER)
+            return null;
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-        if (_classLoader != null)
-        {
-            try
-            {
-                Thread.currentThread().setContextClassLoader(_classLoader);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error setting a context classloader on thread {}", Thread.currentThread(), x);
-                lastLoader = null;
-            }
-        }
+        Thread.currentThread().setContextClassLoader(_classLoader);
         notifyEnterScope(contextRequest);
-        return _classLoader != null ? lastLoader : null;
+        return lastLoader;
     }
 
     /**
@@ -795,18 +793,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         CURRENT_CONTEXT.set(lastContext);
 
         notifyExitScope(contextRequest);
-        if (lastLoader != null && Thread.currentThread().getContextClassLoader() != lastLoader)
+
+        if (_classLoader == NO_CLASS_LOADER)
         {
-            try
-            {
-                Thread.currentThread().setContextClassLoader(lastLoader);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error restoring context classloader on thread {}", Thread.currentThread(), x);
-            }
+            assert lastLoader == null;
+            return;
         }
+        Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
     /**
@@ -1563,6 +1556,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (host.endsWith("."))
             host = host.substring(0, host.length() - 1);
         return host;
+    }
+
+    private static class NoClassLoader extends ClassLoader
+    {
+        @Override
+        public String getName()
+        {
+            return "ContextHandler.NO_CLASS_LOADER";
+        }
     }
 
     public class ScopedContext extends Attributes.Layer implements Context

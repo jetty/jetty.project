@@ -175,20 +175,23 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(404));
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testThreadRefusingContextClassLoader(boolean withClassLoader) throws Exception
+    @Test
+    public void testThreadRefusingContextClassLoader() throws Exception
     {
         LocalConnector connector = new LocalConnector(_server);
+        CountDownLatch completed = new CountDownLatch(1);
         _server.addConnector(connector);
-        _contextHandler.setClassLoader(withClassLoader ? _loader : null);
+        _contextHandler.setClassLoader(ContextHandler.NO_CLASS_LOADER);
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                var t = new Thread()
+
+                Context context = request.getContext();
+
+                var r = new Runnable()
                 {
                     @Override
                     public void run()
@@ -196,7 +199,7 @@ public class ContextHandlerTest
                         try (Blocker.Callback cb = Blocker.callback())
                         {
                             // When a classloader is configured, Response.write() tries to set it as the context classloader.
-                            response.write(true, ByteBuffer.allocate(32), cb);
+                            response.write(true, BufferUtil.toBuffer("OK"), cb);
                             cb.block();
                         }
                         catch (IOException e)
@@ -208,17 +211,27 @@ public class ContextHandlerTest
                             latch.countDown();
                         }
                     }
+                };
+
+                var t = new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        context.run(r);
+                    }
 
                     @Override
                     public void setContextClassLoader(ClassLoader cl)
                     {
-                        throw new ArithmeticException();
+                        throw new SecurityException("Not allowed");
                     }
                 };
                 t.start();
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
 
                 callback.succeeded();
+                completed.countDown();
                 return true;
             }
         });
@@ -226,7 +239,7 @@ public class ContextHandlerTest
 
         String rawRequest = """
             GET /ctx/ HTTP/1.1
-            Host: local
+            Host: localhost
             Connection: close
             
             """;
@@ -234,6 +247,8 @@ public class ContextHandlerTest
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), is("OK"));
+        assertTrue(completed.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
