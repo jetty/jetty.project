@@ -358,7 +358,7 @@ public interface ResourceFactory
         // Treat it as a Path, as that's all we have left to investigate.
         try
         {
-            Path path = Paths.get(resource);
+            Path path = Paths.get(resource).toAbsolutePath();
             URI uri = new URI(path.toUri().toASCIIString());
             return new PathResource(path, uri, true);
         }
@@ -475,11 +475,13 @@ public interface ResourceFactory
     /**
      * Split a string of references by provided delims into a List of {@link Resource}.
      * <p>
-     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     *     Each part of the input string could be path references (unix or windows style),
+     *     string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      *     Note: that if you use the {@code :} character in your delims, then URI references will be impossible.
      * </p>
      * <p>
-     *     If the result of processing the input segment is a java archive it will not be automatically mounted, the caller must mount if necessary
+     *     If the result of processing the input segment is a java archive it will not be automatically mounted,
+     *     the caller must mount if necessary
      * </p>
      *
      * @param str the input string of references
@@ -498,11 +500,24 @@ public interface ResourceFactory
             try
             {
                 // Is this a glob reference?
+                // Note: a glob reference can be a java.net.URI
                 if (reference.endsWith("/*") || reference.endsWith("\\*"))
                 {
-                    Resource dir = newResource(reference.substring(0, reference.length() - 2));
+                    // Get the raw directory reference (without the trailing glob).
+                    // This can be "/path/to/dir/*" (on unix an absolute path, on windows a relative path)
+                    // or "C:/path/to/dir/*" (windows java Path syntax)
+                    // or "C:\path\to\dir\*" (windows native syntax)
+                    // or even a URI like "file:///path/to/dir/*" (always an absolute URI)
+                    // and "file:///C:/path/to/dir/*"
+                    // and "jar:file:///C:/path/to/foo.jar!/deep/*"
+                    String rawDir = reference.substring(0, reference.length() - 2);
+                    // Convert to a URI without loading it as a Resource (yet).
+                    URI uri = URIUtil.toURI(rawDir);
+                    // Load rawDir as a Resource
+                    Resource dir = newResource(uri);
                     if (dir.isDirectory())
                     {
+                        // Loop through resource entries for content that will match glob.
                         List<Resource> expanded = dir.list();
                         expanded.sort(ResourceCollators.byName(true));
                         expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
@@ -510,28 +525,15 @@ public interface ResourceFactory
                 }
                 else
                 {
-                    // Simple reference. Could have a scheme like jar:file:, or just file:.
-                    // Or it could be a relative reference, in which case we need to
-                    // ensure it is absolute. Otherwise, comparisons between Resources
-                    // that point to the same resource but one is relative and one is absolute
-                    // will fail.
-                    if (URIUtil.hasScheme(reference))
+                    // Simple reference, could be relative, could be windows syntax, could be a URI.
+                    URI uri = URIUtil.toURI(reference);
+                    if ("jar".equals(uri.getScheme()) && unwrap)
                     {
-                        // Could be a jar:file url, ensure it is unwrapped back to the file
-                        // otherwise it will be a MountedPathResource and consume a mount point
-                        // that might be unnecessary - the caller should always decide whether to mount
-                        URI uri = new URI(reference);
-                        if (unwrap)
-                            list.add(newResource(URIUtil.unwrapContainer(uri)));
-                        else
-                            list.add(newResource(uri.toASCIIString()));
+                        list.add(newResource(URIUtil.unwrapContainer(uri)));
                     }
                     else
                     {
-                        Path p = Paths.get(reference);
-                        if (!p.isAbsolute() && LOG.isDebugEnabled())
-                            LOG.warn("Non-absolute path: {}", reference);
-                        list.add(newResource(p.toAbsolutePath()));
+                        list.add(newResource(uri));
                     }
                 }
             }
