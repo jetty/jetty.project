@@ -307,6 +307,8 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      - dependency-name: "org.glassfish.jersey:*"
+        versions: [ ">=3.1.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
@@ -716,6 +718,8 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      - dependency-name: "org.glassfish.jersey:*"
+        versions: [ ">=3.1.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
