@@ -755,7 +755,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         CURRENT_CONTEXT.set(_context);
 
         if (_classLoader == NO_CLASS_LOADER)
-            return null;
+            return NO_CLASS_LOADER;
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(_classLoader);
         notifyEnterScope(contextRequest);
@@ -794,7 +794,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         notifyExitScope(contextRequest);
 
-        if (_classLoader == NO_CLASS_LOADER)
+        if (lastLoader != NO_CLASS_LOADER)
         {
             assert lastLoader == null;
             return;
