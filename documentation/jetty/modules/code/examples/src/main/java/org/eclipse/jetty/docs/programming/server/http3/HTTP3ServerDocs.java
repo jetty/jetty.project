@@ -31,6 +31,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
@@ -58,7 +59,7 @@ public class HTTP3ServerDocs
         // The listener for session events.
         Session.Server.Listener sessionListener = new Session.Server.Listener() {};
 
-        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
+        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir")));
         // Configure the max number of requests per QUIC connection.
         serverQuicConfig.setBidirectionalMaxStreams(1024 * 1024);
 

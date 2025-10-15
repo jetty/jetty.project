@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.io.Content;
@@ -36,6 +37,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class GzipEncoderSinkTest extends AbstractGzipTest
 {
@@ -75,6 +78,30 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
         String decompressed = new String(decompress(compressed), UTF_8);
         String expected = Files.readString(uncompressed, UTF_8);
         assertEquals(expected, decompressed);
+    }
+
+    @Test
+    public void testWriteLastTwice() throws Exception
+    {
+        startGzip();
+        gzip.getDefaultEncoderConfig().setCompressionLevel(Deflater.BEST_COMPRESSION);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            Content.Sink writeLogger = new WriteLoggerSink(fileSink);
+            Content.Sink encoderSink = gzip.newEncoderSink(writeLogger);
+
+            Callback.Completable callback1 = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
+            callback1.get();
+            assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
+
+            Callback.Completable callback2 = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
+            ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
+            assertInstanceOf(IllegalStateException.class, thrown.getCause());
+        }
     }
 
     @Test

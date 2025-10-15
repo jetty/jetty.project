@@ -349,13 +349,22 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream #{} not found on {}", streamId, this);
+
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             dataConsumed(null, flowControlLength);
+
             if (isStreamClosed(streamId))
-                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
+            {
+                // SPEC: this case must not be treated as an error.
+                // However, we want to rate control it.
+                if (!rateControlOnEvent(frame))
+                    onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate", Callback.NOOP);
+            }
             else
+            {
                 onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", Callback.NOOP);
+            }
         }
     }
 
