@@ -179,7 +179,7 @@ public class ByteChannelContentSource implements Content.Source
                 if (_offsetRemaining > 0)
                 {
                     // Discard all bytes read until we reach the staring offset.
-                    while (true)
+                    while (_offsetRemaining > 0)
                     {
                         BufferUtil.clearToFill(byteBuffer);
                         byteBuffer.limit((int)Math.min(_buffer.capacity(), _offsetRemaining));
@@ -245,7 +245,7 @@ public class ByteChannelContentSource implements Content.Source
         try (AutoLock ignored = lock.lock())
         {
             // We can only rewind if we have a SeekableByteChannel.
-            if (!(_byteChannel instanceof SeekableByteChannel seekableByteChannel))
+            if (!(_byteChannel instanceof SeekableByteChannel))
                 return false;
 
             // We can remove terminal condition for a rewind that is likely to occur
@@ -258,7 +258,7 @@ public class ByteChannelContentSource implements Content.Source
 
             try
             {
-                seekableByteChannel.position(_offset);
+                ((SeekableByteChannel)_byteChannel).position(_offset);
                 _offsetRemaining = 0;
                 _totalRead = 0;
                 return true;
