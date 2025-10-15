@@ -29,6 +29,10 @@
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-junit4-mock</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>commons-logging-jboss-logging</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
