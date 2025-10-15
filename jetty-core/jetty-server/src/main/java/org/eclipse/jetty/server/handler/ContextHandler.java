@@ -739,8 +739,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      * to the {@link #getClassLoader() configured one} if a non-null one was set.</p>
      *
      * @param contextRequest the context's {@link Request}
-     * @return the configured classloader if it was successfully set as the thread's context classloader,
-     * {@code null} otherwise.
+     * @return the previous {@link Thread#getContextClassLoader() thread's context classloader}
      */
     protected ClassLoader enterScope(Request contextRequest)
     {
@@ -786,8 +785,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      *
      * @param contextRequest the context's {@link Request}
      * @param lastContext the previous context to restore as the current one.
-     * @param lastLoader the previous {@link Thread#getContextClassLoader() thread's context classloader} to restore,
-     * or null to leave the thread's context classloader untouched.
+     * @param lastLoader the previous {@link Thread#getContextClassLoader() thread's context classloader} to restore
      */
     protected void exitScope(Request contextRequest, Context lastContext, ClassLoader lastLoader)
     {
