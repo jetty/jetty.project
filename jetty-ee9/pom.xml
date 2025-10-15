@@ -49,7 +49,7 @@
     <jakarta.enterprise.cdi.api.version>3.0.1</jakarta.enterprise.cdi.api.version>
     <jakarta.inject.api.version>2.0.1.MR</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
+    <jakarta.mail.api.version>2.0.2</jakarta.mail.api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
@@ -66,7 +66,7 @@
     <!-- TODO: Remove these javax.* entries? -->
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
-    <jersey.version>3.0.18</jersey.version>
+    <jersey.version>3.1.11</jersey.version>
     <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
