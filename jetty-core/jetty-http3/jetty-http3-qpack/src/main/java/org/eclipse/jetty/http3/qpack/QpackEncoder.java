@@ -101,6 +101,7 @@ public class QpackEncoder implements Dumpable
     private int _blockedStreams;
     private int _maxHeadersSize = -1;
     private int _maxTableCapacity;
+    private boolean _validateEncoding = true;
 
     public QpackEncoder(Instruction.Handler handler)
     {
@@ -152,6 +153,16 @@ public class QpackEncoder implements Dumpable
             setTableCapacity(maxTableCapacity);
     }
 
+    public boolean isValidateEncoding()
+    {
+        return _validateEncoding;
+    }
+
+    public void setValidateEncoding(boolean validateEncoding)
+    {
+        _validateEncoding = validateEncoding;
+    }
+
     public int getTableCapacity()
     {
         return _context.getDynamicTable().getCapacity();
@@ -192,29 +203,32 @@ public class QpackEncoder implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
 
-        // Verify that we can encode without errors.
-        long totalSize = 0;
-        for (HttpField field : metadata.getHttpFields())
-         {
-            String name = field.getLowerCaseName();
-            if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
-                throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
-                    H3_MESSAGE_ERROR, String.format("Invalid header name: '%s'", name));
+        if (isValidateEncoding())
+        {
+            // Verify that we can encode without errors.
+            long totalSize = 0;
+            for (HttpField field : metadata.getHttpFields())
+             {
+                String name = field.getLowerCaseName();
+                if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
+                    throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                        H3_MESSAGE_ERROR, String.format("Invalid header name: '%s'", name));
 
-            String value = field.getValue();
-            if (!HttpTokens.isLegalFieldValue(value))
-                throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
-                    H3_MESSAGE_ERROR, String.format("Invalid header value: '%s'", value));
+                String value = field.getValue();
+                if (!HttpTokens.isLegalFieldValue(value))
+                    throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                        H3_MESSAGE_ERROR, String.format("Invalid header value: '%s'", value));
 
-            if (_maxHeadersSize > 0)
-            {
-                HttpHeader header = field.getHeader();
-                if (header == null || !header.isPseudo())
+                if (_maxHeadersSize > 0)
                 {
-                    totalSize += 32 + name.length() + value.length();
-                    if (totalSize > _maxHeadersSize)
-                        throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
-                            H3_GENERAL_PROTOCOL_ERROR, String.format("Max size exceeded: %d > %d", totalSize, _maxHeadersSize));
+                    HttpHeader header = field.getHeader();
+                    if (header == null || !header.isPseudo())
+                    {
+                        totalSize += 32 + name.length() + value.length();
+                        if (totalSize > _maxHeadersSize)
+                            throw new QpackException.StreamException(metadata.isRequest(), metadata.isResponse(),
+                                H3_GENERAL_PROTOCOL_ERROR, String.format("Max size exceeded: %d > %d", totalSize, _maxHeadersSize));
+                    }
                 }
             }
         }
