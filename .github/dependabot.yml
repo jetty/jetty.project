@@ -211,6 +211,18 @@ updates:
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
         versions: [ ">=3.1.0" ]
+      - dependency-name: "jakarta.activation:jakarta.activation-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.annotation:jakarta.annotation-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
+        version:  [ ">= 3.1.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        version:  [ ">= 3.1.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        version:  [ ">= 10.1.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
@@ -518,6 +530,18 @@ updates:
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
         versions: [ ">=3.1.0" ]
+      - dependency-name: "jakarta.activation:jakarta.activation-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.annotation:jakarta.annotation-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
+        version:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
+        version:  [ ">= 3.1.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        version:  [ ">= 3.1.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        version:  [ ">= 10.1.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
