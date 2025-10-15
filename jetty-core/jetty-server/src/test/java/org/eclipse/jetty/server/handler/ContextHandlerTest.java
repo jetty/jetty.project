@@ -19,6 +19,10 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -66,6 +70,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -107,7 +112,7 @@ public class ContextHandlerTest
     AtomicBoolean _inContext;
 
     @BeforeEach
-    public void beforeEach() throws Exception
+    public void beforeEach()
     {
         _server = new Server();
         _loader = new URLClassLoader(new URL[0], this.getClass().getClassLoader());
@@ -168,6 +173,132 @@ public class ContextHandlerTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(404));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testThreadRefusingContextClassLoader(boolean withClassLoader) throws Exception
+    {
+        LocalConnector connector = new LocalConnector(_server);
+        _server.addConnector(connector);
+        _contextHandler.setClassLoader(withClassLoader ? _loader : null);
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                CountDownLatch latch = new CountDownLatch(1);
+                var t = new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try (Blocker.Callback cb = Blocker.callback())
+                        {
+                            // When a classloader is configured, Response.write() tries to set it as the context classloader.
+                            response.write(true, ByteBuffer.allocate(32), cb);
+                            cb.block();
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        finally
+                        {
+                            latch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void setContextClassLoader(ClassLoader cl)
+                    {
+                        throw new ArithmeticException();
+                    }
+                };
+                t.start();
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String rawRequest = """
+            GET /ctx/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testAIOAndClassLoader(boolean withClassLoader) throws Exception
+    {
+        LocalConnector connector = new LocalConnector(_server);
+        _server.addConnector(connector);
+        _contextHandler.setClassLoader(withClassLoader ? _loader : null);
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Path tempFile = request.getContext().getTempDirectory().toPath().resolve("file.bin");
+                try (AsynchronousFileChannel afc = AsynchronousFileChannel.open(tempFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
+                {
+                    CountDownLatch latch = new CountDownLatch(1);
+                    // In JDK 25, The CompletionHandler gets called by an InnocuousThread that throws when trying to set the context classloader.
+                    afc.write(ByteBuffer.allocate(32), 0L, null, new CompletionHandler<>()
+                    {
+                        @Override
+                        public void completed(Integer result, Object attachment)
+                        {
+                            try (Blocker.Callback cb = Blocker.callback())
+                            {
+                                // When a classloader is configured, Response.write() tries to set it as the context classloader.
+                                response.write(true, ByteBuffer.allocate(32), cb);
+                                cb.block();
+                            }
+                            catch (IOException e)
+                            {
+                                throw new RuntimeException(e);
+                            }
+                            finally
+                            {
+                                latch.countDown();
+                            }
+                        }
+
+                        @Override
+                        public void failed(Throwable exc, Object attachment)
+                        {
+                            latch.countDown();
+                        }
+                    });
+                    assertTrue(latch.await(5, TimeUnit.SECONDS));
+                }
+
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String rawRequest = """
+            GET /ctx/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
     }
 
     @Test
