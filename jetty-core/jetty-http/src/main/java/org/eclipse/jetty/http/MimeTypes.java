@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.asList(Locale.getAvailableLocales()));
+    private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.stream(Locale.getAvailableLocales()).filter(l -> !StringUtil.isBlank(l.getLanguage())).toList());
     public static final String ISO_8859_1 = StandardCharsets.ISO_8859_1.name().toLowerCase();
     public static final String UTF8 = StandardCharsets.UTF_8.name().toLowerCase();
     public static final String UTF16 = StandardCharsets.UTF_16.name().toLowerCase();

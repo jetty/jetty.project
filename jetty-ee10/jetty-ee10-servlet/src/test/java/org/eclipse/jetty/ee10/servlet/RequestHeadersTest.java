@@ -121,8 +121,14 @@ public class RequestHeadersTest
             de              | de
             en-GB           | en-GB
             en;q=0.5,it     | it
-            bogus           | en-US
+            bogus           | bogus
+            bogus,en-US     | en-US
             en_en           | en-US
+            en-FO           | en-FO
+            en-cockney      | en-cockney
+            de-DE-1996      | de-DE-1996
+            th-TH-u-nu-thai-x-lvariant-TH | th-TH-u-nu-thai-x-lvariant-TH
+            x-pig-latin     | en-US
             ;-              | en-US
             ";--            | en-US
             """)

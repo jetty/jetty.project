@@ -1579,7 +1579,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Locale getLocale()
     {
-        return Request.getLocales(getRequest()).get(0);
+        List<Locale> locales = Request.getLocales(getRequest());
+        return locales == null || locales.isEmpty() ? Locale.getDefault() : locales.get(0);
     }
 
     @Override
