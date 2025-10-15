@@ -12,9 +12,7 @@ updates:
     directory: "/"
     exclude-paths:
       - "build/**"
-      - "jetty-core/**"
       - "jetty-ee*/**"
-      - "jetty-integrations/**"
     target-branch: "jetty-12.1.x"
     open-pull-requests-limit: 30
     schedule:
@@ -64,102 +62,6 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
 
-  - package-ecosystem: maven
-    directory: "/jetty-core"
-    target-branch: "jetty-12.1.x"
-    open-pull-requests-limit: 30
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
-    commit-message:
-      prefix: "[12.1.x Core] "
-    groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
-        patterns:
-          - "*"
-  - package-ecosystem: maven
-    directory: "/jetty-integrations"
-    target-branch: "jetty-12.1.x"
-    open-pull-requests-limit: 30
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
-    commit-message:
-      prefix: "[12.1.x Integrations] "
-    groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
-        patterns:
-          - "*"
-    ignore:
-      # Do not upgrade major versions of dependencies
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -418,9 +320,7 @@ updates:
     directory: "/"
     exclude-paths:
       - "build/**"
-      - "jetty-core/**"
       - "jetty-ee*/**"
-      - "jetty-integrations/**"
     target-branch: "jetty-12.0.x"
     open-pull-requests-limit: 30
     schedule:
@@ -430,108 +330,6 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.0.x Root pom] "
-    groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
-        patterns:
-          - "*"
-    ignore:
-      # Do not upgrade major versions of dependencies
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major" ]
-
-  - package-ecosystem: maven
-    directory: "/jetty-core"
-    target-branch: "jetty-12.0.x"
-    open-pull-requests-limit: 30
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
-    commit-message:
-      prefix: "[12.0.x Core] "
-    groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
-        patterns:
-          - "*"
-    ignore:
-      # Do not upgrade major versions of dependencies
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major" ]
-
-  - package-ecosystem: maven
-    directory: "/jetty-integrations"
-    target-branch: "jetty-12.0.x"
-    open-pull-requests-limit: 30
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
-    commit-message:
-      prefix: "[12.0.x Integrations] "
     groups:
       build-deps:
         patterns:
