@@ -354,10 +354,9 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            // TODO support offset and length, or document why we are keeping this
-            //      or wrap the returned Content.Source to support offset and length.
-            //      or document that we should wrap if somebody needs it.
-            return newContentSource();
+            // We call the deprecated newContentSource() to support existing subclasses.
+            // All current implementations of Part do override newContentSource(ByteBufferPool.Sized, long, long).
+            return Content.Source.from(newContentSource(), offset, length);
         }
 
         public long getLength()
@@ -569,8 +568,6 @@ public class MultiPart
             long size = getLength();
             length = TypeUtil.checkOffsetLengthSize(offset, length, size);
 
-            // TODO implement offset and length support!
-
             try (AutoLock ignored = lock.lock())
             {
                 if (closed)
@@ -589,7 +586,7 @@ public class MultiPart
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
                 chunks.forEach(Content.Chunk::release);
                 contentSources.add(newContentSource);
-                return newContentSource;
+                return Content.Source.from(newContentSource, offset, length);
             }
         }
 
@@ -693,10 +690,9 @@ public class MultiPart
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
             length = TypeUtil.checkOffsetLengthSize(offset, length, content.getLength());
-            // TODO implement offset and length support!
             Content.Source c = content;
             content = null;
-            return c;
+            return Content.Source.from(c, offset, length);
         }
 
         @Override

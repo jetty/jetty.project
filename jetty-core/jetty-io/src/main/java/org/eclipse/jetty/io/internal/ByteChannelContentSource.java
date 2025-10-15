@@ -46,6 +46,7 @@ public class ByteChannelContentSource implements Content.Source
     private final long _offset;
     private final long _length;
     private RetainableByteBuffer _buffer;
+    private long _offsetRemaining;
     private long _totalRead;
     private Runnable demandCallback;
     private Content.Chunk _terminal;
@@ -57,21 +58,7 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
     {
-        // TODO define contract for offset/lengths outside of bounds
         this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
-        if (offset >= 0 && seekableByteChannel != null)
-        {
-            try
-            {
-                // TODO negative offset is an IAE, but a too large offset is corrected, but length is not checked.
-                seekableByteChannel.position(offset);
-            }
-            catch (IOException e)
-            {
-                // lock not needed in constructor
-                lockedSetTerminal(Content.Chunk.from(e, true));
-            }
-        }
     }
 
     public ByteChannelContentSource(ByteChannel byteChannel)
@@ -86,11 +73,11 @@ public class ByteChannelContentSource implements Content.Source
 
     private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
-        // TODO Is this the contract we want for offset/length? We are correcting negative offset, but not checking actual size.
         _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;
-        _offset = offset < 0 ? 0 : offset;
-        _length = length;
+        _offset = offset;
+        _length = TypeUtil.checkOffsetLengthSize(offset, length, -1L);
+        _offsetRemaining = offset;
     }
 
     protected ByteChannel open() throws IOException
@@ -144,9 +131,14 @@ public class ByteChannelContentSource implements Content.Source
             {
                 _byteChannel = open();
                 if (_byteChannel == null || !_byteChannel.isOpen())
+                {
                     lockedSetTerminal(Content.Chunk.from(new ClosedChannelException(), true));
-                else if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                }
+                else if (_byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                {
                     seekableByteChannel.position(_offset);
+                    _offsetRemaining = 0;
+                }
             }
             catch (IOException e)
             {
@@ -184,6 +176,26 @@ public class ByteChannelContentSource implements Content.Source
             try
             {
                 ByteBuffer byteBuffer = _buffer.getByteBuffer();
+                if (_offsetRemaining > 0)
+                {
+                    // Discard all bytes read until we reach the staring offset.
+                    while (true)
+                    {
+                        BufferUtil.clearToFill(byteBuffer);
+                        byteBuffer.limit((int)Math.min(_buffer.capacity(), _offsetRemaining));
+                        int read = _byteChannel.read(byteBuffer);
+                        if (read < 0)
+                        {
+                            lockedSetTerminal(Content.Chunk.EOF);
+                            return _terminal;
+                        }
+                        if (read == 0)
+                            return null;
+
+                        _offsetRemaining -= read;
+                    }
+                }
+
                 BufferUtil.clearToFill(byteBuffer);
                 if (_length > 0)
                     byteBuffer.limit((int)Math.min(_buffer.capacity(), _length - _totalRead));
@@ -232,6 +244,10 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
+            // We can only rewind if we have a SeekableByteChannel.
+            if (!(_byteChannel instanceof SeekableByteChannel seekableByteChannel))
+                return false;
+
             // We can remove terminal condition for a rewind that is likely to occur
             if (_terminal != null && !Content.Chunk.isFailure(_terminal) && (_byteChannel == null || _byteChannel instanceof SeekableByteChannel))
                 _terminal = null;
@@ -240,20 +256,19 @@ public class ByteChannelContentSource implements Content.Source
             if (_terminal != null || _byteChannel == null || !_byteChannel.isOpen())
                 return false;
 
-            if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+            try
             {
-                try
-                {
-                    seekableByteChannel.position(_offset);
-                    _totalRead = 0;
-                    return true;
-                }
-                catch (Throwable t)
-                {
-                    lockedSetTerminal(Content.Chunk.from(t, true));
-                }
+                seekableByteChannel.position(_offset);
+                _offsetRemaining = 0;
+                _totalRead = 0;
+                return true;
             }
-            return false;
+            catch (Throwable t)
+            {
+                lockedSetTerminal(Content.Chunk.from(t, true));
+            }
+
+            return true;
         }
     }
 

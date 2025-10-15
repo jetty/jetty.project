@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
+import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
@@ -218,6 +219,27 @@ public class Content
         }
 
         /**
+         * Wrap a {@link Content.Source} to make it appear as a sub-range of the original.
+         *
+         * @param source The {@link Content.Source} to wrap.
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
+         */
+        static Content.Source from(Content.Source source, long offset, long length)
+        {
+            // If the offset and length include the full content, then do not wrap.
+            if (offset == 0 && (length == -1 || length == source.getLength()))
+                return source;
+
+            return new ContentSourceRange(source, offset, length);
+        }
+
+        /**
          * Create a {@code Content.Source} from a {@link Path}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
@@ -271,7 +293,6 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
-            // TODO define contract for offset/lengths outside of bounds
             return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
         }
 
