@@ -47,6 +47,7 @@ import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
@@ -203,7 +204,7 @@ public class AbstractTest
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
             case H3_QUICHE:
                 Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
-                QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(serverPemDirectory);
+                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(serverPemDirectory));
                 yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }

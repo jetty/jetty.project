@@ -1071,20 +1071,28 @@ public class URIUtilTest
 
         if (OS.WINDOWS.isCurrentOs())
         {
+            Path cwd = Path.of(".").toAbsolutePath().normalize();
+            String root = cwd.getRoot().toString();
+            if (root.endsWith("\\"))
+                root = root.substring(0, root.length() - 1);
+
             // Windows format (absolute and relative)
             args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
             args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
-            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
-            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
-            // unix format (relative)
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///%s/path/to/foo.jar".formatted(root)));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///%s/path/to/bogus.txt".formatted(root)));
+            // java path format (absolute)
             args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
             args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
-            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
-            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // java path format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///%s/path/to/foo.jar".formatted(root)));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///%s/path/to/bogus.txt".formatted(root)));
             // URI format (absolute)
             args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
             args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
             args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
+            // URI format (bad scheme case, but we preserve it)
+            args.add(Arguments.of("JAR:FILE:///E:/path/to/bar.jar", "JAR:FILE:///E:/path/to/bar.jar"));
         }
         else
         {
@@ -1094,8 +1102,13 @@ public class URIUtilTest
         }
         // URI format (absolute)
         args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        args.add(Arguments.of("FILE:///path/to/zed.jar", "file:///path/to/zed.jar"));
         args.add(Arguments.of("jar:file:///path/to/bar.jar", "jar:file:///path/to/bar.jar"));
-
+        // URI format (bad scheme case, but we preserve it)
+        args.add(Arguments.of("JAR:FILE:///path/to/bar.jar", "JAR:FILE:///path/to/bar.jar"));
+        // URI format (bad URL syntax)
+        args.add(Arguments.of("file:/path/to/bad.jar", "file:///path/to/bad.jar"));
+        args.add(Arguments.of("jar:file:/path/to/bad.jar!/", "jar:file:///path/to/bad.jar!/"));
         return args.stream();
     }
 
