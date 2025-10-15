@@ -747,7 +747,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         CURRENT_CONTEXT.set(_context);
 
         ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-        if (_classLoader != null)
+        if (_classLoader != null && _classLoader != lastLoader)
         {
             try
             {
@@ -757,11 +757,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("error setting a context classloader on thread {}", Thread.currentThread(), x);
-                lastLoader = null;
             }
         }
         notifyEnterScope(contextRequest);
-        return _classLoader != null ? lastLoader : null;
+        return lastLoader;
     }
 
     /**
@@ -795,18 +794,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         CURRENT_CONTEXT.set(lastContext);
 
         notifyExitScope(contextRequest);
-        if (lastLoader != null && Thread.currentThread().getContextClassLoader() != lastLoader)
-        {
-            try
-            {
-                Thread.currentThread().setContextClassLoader(lastLoader);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error restoring context classloader on thread {}", Thread.currentThread(), x);
-            }
-        }
+        if (Thread.currentThread().getContextClassLoader() != lastLoader)
+            Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
     /**
