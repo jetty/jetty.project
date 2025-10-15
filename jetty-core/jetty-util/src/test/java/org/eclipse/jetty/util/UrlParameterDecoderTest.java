@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -259,13 +260,16 @@ public class UrlParameterDecoderTest
         assertEquals("Euro-€-Symbol", field.getValue(), "Fields[Name]");
     }
 
-    @Test
-    public void testUtf16EncodedString() throws IOException
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "name\n=value+%00%30&name1=&name2&nãme3=value+3", // without BOM
+        "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3" // with BOM
+    })
+    public void testUtf16EncodedString(String input) throws IOException
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_16);
         UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
-        String input = "name\n=value+%FE%FF%00%30&name1=&name2&nãme3=value+3";
         assertFalse(decoder.parse(input), "No coding errors");
 
         assertThat("Field count", fields.getSize(), is(4));
@@ -284,6 +288,36 @@ public class UrlParameterDecoderTest
         field = fields.get("nãme3");
         assertNotNull(field, "Fields[nãme3]");
         assertEquals("value 3", field.getValue(), "Fields[nãme3]");
+    }
+
+    /**
+     * Test of non-standard encoding of Shift_JIS.
+     * This tests a 2 byte sequence making up 1 Shift_JIS character.
+     * But only the first byte is pct-encoded, other byte is "in the raw" and not encoded.
+     * Both bytes are required for the KATAKANA LETTER HO: ホ to be decoded.
+     * See https://unicodeplus.com/U+30DB
+     */
+    @Test
+    public void testSjisNonStandardForm() throws IOException
+    {
+        // Actual x-www-form-urlencoded sent from Google Chrome 1.141 with Shift-JIS encoding.
+        // The same form data is sent from Firefox 143.0.4
+        // The same form data is also what is sent from Apache HttpClient 4.5.x and 5.x
+        // The properly encoded form of this character would be "a=%83%7A"
+        // Note: "%7A" is the ASCII "z"
+        String input = "a=%83z";
+        Charset shiftJis = Charset.forName("Shift_JIS");
+
+        Fields fields = new Fields();
+        CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(shiftJis);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add);
+
+        assertFalse(decoder.parse(input), "No coding errors");
+
+        assertThat("Field count", fields.getSize(), is(1));
+        Fields.Field field = fields.get("a");
+        assertNotNull(field, "Fields[a]");
+        assertEquals("ホ", field.getValue(), "Fields[a]");
     }
 
     public static Stream<Arguments> queryBehaviorsBadUtf8AllowedGood()
