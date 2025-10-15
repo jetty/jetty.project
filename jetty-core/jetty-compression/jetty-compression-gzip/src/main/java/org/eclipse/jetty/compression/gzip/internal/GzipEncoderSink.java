@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +85,7 @@ public class GzipEncoderSink extends EncoderSink
     private final int bufferSize;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
+    private boolean released;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink, GzipEncoderConfig config)
     {
@@ -123,6 +125,9 @@ public class GzipEncoderSink extends EncoderSink
         if (LOG.isDebugEnabled())
             LOG.debug("encode() last={}, content={}", last, BufferUtil.toDetailString(content));
 
+        if (released)
+            throw new IllegalStateException("Already released");
+
         RetainableByteBuffer output = null;
         try
         {
@@ -144,7 +149,7 @@ public class GzipEncoderSink extends EncoderSink
                                 output = compression.acquireByteBuffer(bufferSize);
                             if (encode(content, output.getByteBuffer()))
                             {
-                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                                 output = null;
                                 return writeRecord;
                             }
@@ -171,7 +176,7 @@ public class GzipEncoderSink extends EncoderSink
                             state.compareAndSet(State.FLUSHING, State.TRAILERS);
                         if (output.hasRemaining())
                         {
-                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                             output = null;
                             return writeRecord;
                         }
@@ -182,7 +187,7 @@ public class GzipEncoderSink extends EncoderSink
                             output = compression.acquireByteBuffer(16);
                         trailers(output.getByteBuffer());
                         state.compareAndSet(State.TRAILERS, State.FINISHED);
-                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(output::release));
+                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
                         output = null;
                         return writeRecord;
                     }
@@ -203,6 +208,9 @@ public class GzipEncoderSink extends EncoderSink
     @Override
     protected void release()
     {
+        if (released)
+            return;
+        released = true;
         inputBuffer.release();
         deflaterEntry.release();
     }

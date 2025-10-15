@@ -22,10 +22,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
-import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 
 /**
  * <p>A {@link Handler} that may perform the upgrade from HTTP to WebSocket.</p>
@@ -107,14 +103,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Consumer<ServerWebSocketContainer> configurator)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
-        WebSocketMappings mappings = new WebSocketMappings(components);
-        ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
-        container.addBean(mappings);
-
-        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container, configurator);
-        context.getContext().setAttribute(WebSocketContainer.class.getName(), container);
-        return wsHandler;
+        ServerWebSocketContainer container = ServerWebSocketContainer.ensure(server, context);
+        return new WebSocketUpgradeHandler(container, configurator);
     }
 
     /**
@@ -150,13 +140,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, Consumer<ServerWebSocketContainer> configurator)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server);
-        WebSocketMappings mappings = new WebSocketMappings(components);
-        ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
-
-        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container, configurator);
-        server.getContext().setAttribute(WebSocketContainer.class.getName(), container);
-        return wsHandler;
+        return from(server, null, configurator);
     }
 
     private final ServerWebSocketContainer _container;
@@ -186,7 +170,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     {
         _container = container;
         _configurator = configurator;
-        addManaged(container);
+        installBean(container);
     }
 
     /**
