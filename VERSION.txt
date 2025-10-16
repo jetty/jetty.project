@@ -1,3 +1,5 @@
+jetty-12.1.4-SNAPSHOT
+
 12.1.3 - 16 October 2025
  + 13246 Missing hook or statistic for QoSHandler rejections by exceeding setMaxSuspendedRequestCount
  + 13588 CONTAINER_JAR_PATTERN ignored on Windows
