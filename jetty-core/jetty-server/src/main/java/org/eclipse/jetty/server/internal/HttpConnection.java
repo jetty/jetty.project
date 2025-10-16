@@ -104,7 +104,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
-    private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private final HttpFields.Mutable _headerBuilder;
     private final int _minBufferSpace;
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
@@ -144,6 +144,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
