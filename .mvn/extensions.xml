@@ -4,6 +4,6 @@
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.4</version>
+        <version>0.10.0</version>
     </extension>
 </extensions>
