@@ -277,13 +277,13 @@ updates:
       - dependency-name: "jakarta.servlet:jakarta.servlet-api"
         versions: [ ">=6.1.0" ]
       - dependency-name: "jakarta.websocket:*"
-        version:  [ ">=2.2.0" ]
+        versions:  [ ">=2.2.0" ]
       - dependency-name: "jakarta.authentication:*"
-        version:  [ ">=3.1.0" ]
+        versions:  [ ">=3.1.0" ]
       - dependency-name: "jakarta.enterprise:*"
-        version:  [ ">=4.1.0" ]
+        versions:  [ ">=4.1.0" ]
       - dependency-name: "jakarta.interceptor:*"
-        version:  [ ">=2.2.0" ]
+        versions:  [ ">=2.2.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee11"
@@ -541,17 +541,17 @@ updates:
       - dependency-name: "org.glassfish.jersey:*"
         versions: [ ">=3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
-        version:  [ ">= 2.1.0"]
+        versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
-        version:  [ ">= 2.1.0"]
+        versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
-        version:  [ ">= 2.1.0"]
+        versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
-        version:  [ ">= 3.1.0"]
+        versions:  [ ">= 3.1.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
-        version:  [ ">= 3.1.0"]
+        versions:  [ ">= 3.1.0"]
       - dependency-name: "org.mortbay.jasper:*"
-        version:  [ ">= 10.1.0"]
+        versions:  [ ">= 10.1.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
@@ -606,10 +606,10 @@ updates:
       - dependency-name: "jakarta.servlet:jakarta.servlet-api"
         versions: [ ">=6.1.0" ]
       - dependency-name: "jakarta.websocket:*"
-        version:  [ ">=2.2.0" ]
+        versions:  [ ">=2.2.0" ]
       - dependency-name: "jakarta.authentication:*"
-        version:  [ ">=3.1.0" ]
+        versions:  [ ">=3.1.0" ]
       - dependency-name: "jakarta.enterprise:*"
-        version:  [ ">=4.1.0" ]
+        versions:  [ ">=4.1.0" ]
       - dependency-name: "jakarta.interceptor:*"
-        version:  [ ">=2.2.0" ]
+        versions:  [ ">=2.2.0" ]
