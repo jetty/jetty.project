@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serial;
 import java.nio.charset.StandardCharsets;
+import java.security.Security;
 import java.util.Locale;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -298,10 +299,14 @@ public class Password extends Credential
         }
 
         Password pw = new Password(argPassword);
-        System.err.println(obfuscate(pw.toString()));
-        System.err.println(Credential.MD5.digest(argPassword));
         if (StringUtil.isNotBlank(argUser))
             System.err.println(Credential.Crypt.crypt(argUser, pw.toString()));
+        System.err.println(obfuscate(pw.toString()));
+        System.err.println(Credential.MD5.digest(argPassword));
+        Security.getAlgorithms("MessageDigest").stream()
+            .sorted()
+            .map(algorithm -> MD.format(algorithm, pw.toString()))
+            .forEach(System.err::println);
         System.exit(0);
     }
 }
