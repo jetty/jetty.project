@@ -482,7 +482,11 @@ public class HttpConfiguration implements Dumpable
      */
     public void setResponseHeaderSize(int responseHeaderSize)
     {
+        if (responseHeaderSize <= 0)
+            throw new IllegalArgumentException("Invalid response headers size " + responseHeaderSize);
         _responseHeaderSize = responseHeaderSize;
+        if (responseHeaderSize > getMaxResponseHeaderSize())
+            setMaxResponseHeaderSize(responseHeaderSize);
     }
 
     /**
@@ -497,6 +501,8 @@ public class HttpConfiguration implements Dumpable
     public void setMaxResponseHeaderSize(int maxResponseHeaderSize)
     {
         _maxResponseHeaderSize = maxResponseHeaderSize;
+        if (maxResponseHeaderSize > 0 && maxResponseHeaderSize < getResponseHeaderSize())
+            setResponseHeaderSize(maxResponseHeaderSize);
     }
 
     /**

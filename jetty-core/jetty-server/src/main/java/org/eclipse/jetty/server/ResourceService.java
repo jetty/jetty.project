@@ -184,7 +184,7 @@ public class ResourceService
                 // TODO need helper code to edit URIs
                 String q = request.getHttpURI().getQuery();
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
-                if (q != null && q.length() != 0)
+                if (q != null && !q.isEmpty())
                     pathInContext += "?" + q;
                 sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
                 return;
@@ -355,7 +355,8 @@ public class ResourceService
                     etag = EtagUtils.rewriteWithSuffix(content.getETagValue(), "");
                     if (ifm != null)
                     {
-                        String matched = matchesEtag(etag, ifm);
+
+                        String matched = matchesEtag(request.getConnectionMetaData().getHttpConfiguration(), etag, ifm);
                         if (matched == null)
                         {
                             writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
@@ -365,7 +366,7 @@ public class ResourceService
 
                     if (ifnm != null)
                     {
-                        String matched = matchesEtag(etag, ifnm);
+                        String matched = matchesEtag(request.getConnectionMetaData().getHttpConfiguration(), etag, ifnm);
                         if (matched != null)
                         {
                             response.getHeaders().put(HttpHeader.ETAG, matched);
@@ -436,7 +437,7 @@ public class ResourceService
      * @param requestEtag the request etag (can be null, a single entry, or even a CSV list)
      * @return the matched etag, or null if no matches.
      */
-    private String matchesEtag(String contentETag, String requestEtag)
+    private String matchesEtag(HttpConfiguration httpConfiguration, String contentETag, String requestEtag)
     {
         if (contentETag == null || requestEtag == null)
         {
@@ -448,7 +449,7 @@ public class ResourceService
         //   If-Match: W/"abc,xyz", "123456"
         // This means we have to parse with QuotedCSV all the time, as we cannot just
         // test for the existence of a "," (comma) in the value to know if it's delimited or not
-        QuotedCSV quoted = new QuotedCSV(true, requestEtag);
+        QuotedCSV quoted = new QuotedCSV.Etags(httpConfiguration.getHttpCompliance(), httpConfiguration::notifyViolation, requestEtag);
         for (String tag : quoted)
         {
             if (EtagUtils.matches(contentETag, tag))

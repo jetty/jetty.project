@@ -51,6 +51,23 @@ public class MetaDataBuilder
         _maxSize = maxHeadersSize;
     }
 
+    private void reset()
+    {
+        _fields.clear();
+        _size = 0;
+        _status = null;
+        _method = null;
+        _scheme = null;
+        _authority = null;
+        _path = null;
+        _protocol = null;
+        _contentLength = -1;
+        _streamException = null;
+        _request = false;
+        _response = false;
+        _beginNanoTime = Long.MIN_VALUE;
+    }
+
     /**
      * Get the maxSize.
      * @return the maxSize
@@ -235,18 +252,14 @@ public class MetaDataBuilder
 
     public MetaData build() throws HpackException.StreamException
     {
-        if (_streamException != null)
-        {
-            _streamException.addSuppressed(new Throwable());
-            throw _streamException;
-        }
-
-        if (_request && _response)
-            throw new HpackException.StreamException(true, true, "Request and Response headers");
-
-        HttpFields.Mutable fields = _fields;
         try
         {
+            if (_streamException != null)
+                throw _streamException;
+
+            if (_request && _response)
+                throw new HpackException.StreamException(true, true, "Request and Response headers");
+
             if (_request)
             {
                 if (_method == null)
@@ -264,7 +277,7 @@ public class MetaDataBuilder
 
                 if (isConnect)
                 {
-                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
+                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, _fields, _protocol);
                 }
                 else
                 {
@@ -273,7 +286,7 @@ public class MetaDataBuilder
                         _method,
                         newHttpURI(),
                         HttpVersion.HTTP_2,
-                        fields,
+                        _fields,
                         _contentLength,
                         null);
                 }
@@ -283,24 +296,14 @@ public class MetaDataBuilder
             {
                 if (_status == null)
                     throw new HpackException.StreamException(false, true, "No Status");
-                return new MetaData.Response(_status, null, HttpVersion.HTTP_2, fields, _contentLength);
+                return new MetaData.Response(_status, null, HttpVersion.HTTP_2, _fields, _contentLength);
             }
 
-            return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
+            return new MetaData(HttpVersion.HTTP_2, _fields, _contentLength);
         }
         finally
         {
-            _fields.clear();
-            _request = false;
-            _response = false;
-            _status = null;
-            _method = null;
-            _scheme = null;
-            _authority = null;
-            _path = null;
-            _protocol = null;
-            _size = 0;
-            _contentLength = -1;
+            reset();
         }
     }
 
