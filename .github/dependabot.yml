@@ -274,6 +274,16 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      - dependency-name: "jakarta.servlet:jakarta.servlet-api"
+        versions: [ ">=6.1.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        version:  [ ">=2.2.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        version:  [ ">=3.1.0" ]
+      - dependency-name: "jakarta.enterprise:*"
+        version:  [ ">=4.1.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        version:  [ ">=2.2.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee11"
@@ -593,3 +603,13 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      - dependency-name: "jakarta.servlet:jakarta.servlet-api"
+        versions: [ ">=6.1.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        version:  [ ">=2.2.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        version:  [ ">=3.1.0" ]
+      - dependency-name: "jakarta.enterprise:*"
+        version:  [ ">=4.1.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        version:  [ ">=2.2.0" ]
