@@ -29,7 +29,7 @@ public class UpgradedServletOutputStream extends ServletOutputStreamWrapper
         super(servletChannel);
     }
 
-    public CompletableFuture <Void> getCompletableFuture()
+    public CompletableFuture<Void> getCompletableFuture()
     {
         return _outputStreamComplete;
     }
