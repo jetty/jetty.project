@@ -144,11 +144,7 @@ public class ServletUpgradeTest
 
         // Wait until we get the echoed content.
         await().atMost(Duration.ofSeconds(5)).pollDelay(Duration.ofMillis(200))
-            .until(() ->
-            {
-                System.err.println("testing: " + sb);
-                return sb.toString().contains("HelloWorld");
-            });
+            .until(() -> sb.toString().contains("HelloWorld"));
 
         // The destroy latch is only counted down after the connection is closed.
         TestHttpUpgradeHandler handler = futureUpgradeHandler.get(5, TimeUnit.SECONDS);
