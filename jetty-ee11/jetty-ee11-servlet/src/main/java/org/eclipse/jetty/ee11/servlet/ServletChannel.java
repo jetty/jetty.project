@@ -21,18 +21,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ReadListener;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpUpgradeHandler;
-import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.ee11.servlet.ServletChannelState.Action;
-import org.eclipse.jetty.ee11.servlet.util.ServletInputStreamWrapper;
-import org.eclipse.jetty.ee11.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.ee11.servlet.internal.JettyWebConnection;
+import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletInputStream;
+import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletOutputStream;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -53,7 +49,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -642,258 +637,38 @@ public class ServletChannel
 
     private void doUpgrade(HttpUpgradeHandler upgradeHandler) throws IOException
     {
+        Response response = _servletContextRequest.getServletContextResponse();
+        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+            throw new IllegalStateException("Response status should be 101");
+        if (response.getHeaders().get("Upgrade") == null)
+            throw new IllegalStateException("Missing Upgrade header");
+        if (!"Upgrade".equalsIgnoreCase(response.getHeaders().get("Connection")))
+            throw new IllegalStateException("Invalid Connection header");
+        if (response.isCommitted())
+            throw new IllegalStateException("Cannot upgrade committed response");
+        if (getConnectionMetaData().getHttpVersion() != HttpVersion.HTTP_1_1)
+            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
+
+        UpgradedServletOutputStream out = new UpgradedServletOutputStream(_httpOutput);
+        UpgradedServletInputStream in = new UpgradedServletInputStream(_httpInput);
+
+        AsyncContext asyncContext = _servletContextRequest.getServletApiRequest().forceStartAsync();
+        CompletableFuture.allOf(in.getCompletableFuture(), out.getCompletableFuture())
+            .whenComplete((result, failure) -> asyncContext.complete());
+
+        Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
+        if (connection instanceof Connection.Tunnel upgradeableConnection)
         {
-            Response response = _servletContextRequest.getServletContextResponse();
-            if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
-                throw new IllegalStateException("Response status should be 101");
-            if (response.getHeaders().get("Upgrade") == null)
-                throw new IllegalStateException("Missing Upgrade header");
-            if (!"Upgrade".equalsIgnoreCase(response.getHeaders().get("Connection")))
-                throw new IllegalStateException("Invalid Connection header");
-            if (response.isCommitted())
-                throw new IllegalStateException("Cannot upgrade committed response");
-            if (getConnectionMetaData().getHttpVersion() != HttpVersion.HTTP_1_1)
-                throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
-
-            CompletableFuture<Void> outputStreamComplete = new CompletableFuture<>();
-            CompletableFuture<Void> inputStreamComplete = new CompletableFuture<>();
-            ServletOutputStream outputStream = new ServletOutputStreamWrapper(_servletContextRequest.getHttpOutput())
-            {
-                @Override
-                public void write(int b) throws IOException
-                {
-                    try
-                    {
-                        super.write(b);
-                    }
-                    catch (Throwable t)
-                    {
-                        outputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void write(byte[] b) throws IOException
-                {
-                    try
-                    {
-                        super.write(b);
-                    }
-                    catch (Throwable t)
-                    {
-                        outputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void write(byte[] b, int off, int len) throws IOException
-                {
-                    try
-                    {
-                        super.write(b, off, len);
-                    }
-                    catch (Throwable t)
-                    {
-                        outputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void flush() throws IOException
-                {
-                    try
-                    {
-                        super.flush();
-                    }
-                    catch (Throwable t)
-                    {
-                        outputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void close() throws IOException
-                {
-                    try
-                    {
-                        super.close();
-                        outputStreamComplete.complete(null);
-                    }
-                    catch (Throwable t)
-                    {
-                        outputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void setWriteListener(WriteListener writeListener)
-                {
-                    super.setWriteListener(new WriteListener()
-                    {
-                        @Override
-                        public void onWritePossible() throws IOException
-                        {
-                            writeListener.onWritePossible();
-                        }
-
-                        @Override
-                        public void onError(Throwable t)
-                        {
-                            writeListener.onError(t);
-                            outputStreamComplete.completeExceptionally(t);
-                        }
-                    });
-                }
-            };
-            ServletInputStream inputStream = new ServletInputStreamWrapper(_servletContextRequest.getHttpInput())
-            {
-                @Override
-                public int read() throws IOException
-                {
-                    try
-                    {
-                        int read = super.read();
-                        if (read == -1)
-                            inputStreamComplete.complete(null);
-                        return read;
-                    }
-                    catch (Throwable t)
-                    {
-                        inputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public int read(byte[] b) throws IOException
-                {
-                    try
-                    {
-                        int read = super.read(b);
-                        if (read == -1)
-                            inputStreamComplete.complete(null);
-                        return read;
-                    }
-                    catch (Throwable t)
-                    {
-                        inputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public int read(byte[] b, int off, int len) throws IOException
-                {
-                    try
-                    {
-                        int read = super.read(b, off, len);
-                        if (read == -1)
-                            inputStreamComplete.complete(null);
-                        return read;
-                    }
-                    catch (Throwable t)
-                    {
-                        inputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void close() throws IOException
-                {
-                    try
-                    {
-                        super.close();
-                        inputStreamComplete.complete(null);
-                    }
-                    catch (Throwable t)
-                    {
-                        inputStreamComplete.completeExceptionally(t);
-                        throw t;
-                    }
-                }
-
-                @Override
-                public void setReadListener(ReadListener readListener)
-                {
-                    super.setReadListener(new ReadListener()
-                    {
-                        @Override
-                        public void onDataAvailable() throws IOException
-                        {
-                            readListener.onDataAvailable();
-                        }
-
-                        @Override
-                        public void onAllDataRead() throws IOException
-                        {
-                            try
-                            {
-                                readListener.onAllDataRead();
-                                inputStreamComplete.complete(null);
-                            }
-                            catch (Throwable t)
-                            {
-                                inputStreamComplete.completeExceptionally(t);
-                                throw t;
-                            }
-                        }
-
-                        @Override
-                        public void onError(Throwable t)
-                        {
-                            readListener.onError(t);
-                            inputStreamComplete.completeExceptionally(t);
-                        }
-                    });
-                }
-            };
-
-            AsyncContext asyncContext = _servletContextRequest.getServletApiRequest().forceStartAsync();
-            CompletableFuture.allOf(inputStreamComplete, outputStreamComplete).whenComplete((result, failure) ->
-                asyncContext.complete());
-
-            Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
-            if (connection instanceof Connection.Tunnel upgradeableConnection)
-            {
-                outputStream.flush(); // commit the 101 response
-                upgradeableConnection.startTunnel();
-            }
-            else
-            {
-                LOG.warn("Unexpected connection type {}", connection);
-                throw new IllegalStateException();
-            }
-
-            WebConnection webConnection = new WebConnection()
-            {
-                @Override
-                public void close()
-                {
-                    IO.close(inputStream);
-                    IO.close(outputStream);
-                }
-
-                @Override
-                public ServletInputStream getInputStream()
-                {
-                    return inputStream;
-                }
-
-                @Override
-                public ServletOutputStream getOutputStream()
-                {
-                    return outputStream;
-                }
-            };
-
-            upgradeHandler.init(webConnection);
+            out.flush(); // commit the 101 response
+            upgradeableConnection.startTunnel();
         }
+        else
+        {
+            LOG.warn("Unexpected connection type {}", connection);
+            throw new IllegalStateException();
+        }
+
+        upgradeHandler.init(new JettyWebConnection(in, out));
     }
 
     private void reopen()
