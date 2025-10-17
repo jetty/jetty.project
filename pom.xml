@@ -242,7 +242,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.2</log4j2.version>
     <logback.version>1.5.19</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.6</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -278,7 +278,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.1</mongodb.version>
     <netty.version>4.2.7.Final</netty.version>
-    <njord.version>0.8.4</njord.version>
+    <njord.version>0.8.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
