@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -964,7 +965,7 @@ public class Server extends Handler.Wrapper implements Attributes
         @Override
         public void execute(Runnable runnable)
         {
-            getThreadPool().execute(runnable);
+            VirtualThreads.execute(getThreadPool(), runnable);
         }
 
         @Override

@@ -997,8 +997,9 @@ public class HttpGenerator
         {
             char c = s.charAt(i);
 
-            if (c > 0xff || c == '\r' || c == '\n' || c == ':')
-                buffer.put((byte)'?');
+            // Do not allow 8-bit, colon (:), or CTRL (except HTAB)
+            if (c == ':' || c > 0xff || (c <= 0x1F && c != '\t'))
+                buffer.put((byte)'.'); // replacement char has to satisfy RFC9110 Field Name ABNF (aka Token).
             else
                 buffer.put((byte)(0xff & c));
         }
@@ -1011,8 +1012,9 @@ public class HttpGenerator
         {
             char c = s.charAt(i);
 
-            if (c > 0xff || c == '\r' || c == '\n')
-                buffer.put((byte)' ');
+            // Do not allow 8-bit, or CTRL (except HTAB)
+            if (c > 0xff || (c <= 0x1F && c != '\t'))
+                buffer.put((byte)' '); // replacement char has to satisfy RFC9110 Field Value ABNF.
             else
                 buffer.put((byte)(0xff & c));
         }

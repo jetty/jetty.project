@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -21,9 +22,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class QuotedCSVTest
@@ -45,11 +48,11 @@ public class QuotedCSVTest
         QuotedCSV values = new QuotedCSV(true)
         {
             @Override
-            protected void onComplianceViolation(ComplianceViolation violation)
+            protected void onComplianceViolation(ComplianceViolation violation, String value)
             {
                 if (WHITESPACE_IN_PARAMETER.equals(violation))
                     return;
-                super.onComplianceViolation(violation);
+                super.onComplianceViolation(violation, value);
             }
         };
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
@@ -77,11 +80,12 @@ public class QuotedCSVTest
     @Test
     public void testEmpty()
     {
-        QuotedCSV values = new QuotedCSV();
-        values.addValue(",aaaa,  , bbbb ,,cccc,");
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue(",aaaa,  , bbbb ,,\"\",cccc,");
         assertThat(values, Matchers.contains(
             "aaaa",
             "bbbb",
+            "",
             "cccc"));
     }
 
@@ -99,7 +103,7 @@ public class QuotedCSVTest
     @Test
     public void testETag()
     {
-        QuotedCSV values = new QuotedCSV(false, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
+        QuotedCSV values = new QuotedCSV.Etags(null, null, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
         assertThat(values, Matchers.contains(
             "W/\"000000000\"",
             "W/\"123456789\"",
@@ -109,14 +113,14 @@ public class QuotedCSVTest
     @Test
     public void testOpenQuote()
     {
-        QuotedCSV values = new QuotedCSV();
-        values.addValue("value;p=\"v");
-        assertThat(values, Matchers.contains(
-            "value;p=\"v"));
+        BadlyQuotedQuotedCSV values = new BadlyQuotedQuotedCSV();
+        values.addValue("\"value\";a=1;p=\"v");
+        assertThat(values.isBadlyQuoted(), is(true));
+        assertThat(values, Matchers.contains("\"value\";a=1;p=\"v"));
     }
 
     @Test
-    public void testQuotedNoQuotes()
+    public void testQuotedNoQuotesWithComma()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("A;p=\"v\",B,\"C, D\"");
@@ -127,23 +131,91 @@ public class QuotedCSVTest
     }
 
     @Test
-    public void testOpenQuoteNoQuotes()
+    public void testQuotedNoQuotesWithSemicolon()
     {
         QuotedCSV values = new QuotedCSV(false);
-        values.addValue("value;p=\"v");
+        values.addValue("A;p=\"v\",B,\"C; D\"");
         assertThat(values, Matchers.contains(
-            "value;p=v"));
+            "A;p=v",
+            "B",
+            "C; D"));
     }
 
     @Test
-    public void testParamsOnly()
+    public void testOpenQuoteNoQuotes()
+    {
+        BadlyQuotedQuotedCSV values = new BadlyQuotedQuotedCSV(false);
+        values.addValue("value;p=\"v");
+        assertThat(values, Matchers.contains("value;p=v"));
+        assertThat(values.isBadlyQuoted(), is(true));
+    }
+
+    @Test
+    public void testListParamedWithNoParamedOnly()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("for=192.0.2.60; proto=http;by=203.0.113.43, for=192.0.2.43");
+        String[] expected = {
+            "for=192.0.2.60;proto=http;by=203.0.113.43",
+            "for=192.0.2.43"
+        };
+        assertThat(values, contains(expected));
+    }
+
+    @Test
+    public void testListNoParamedWithParamedOnly()
+    {
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue("for=192.0.2.43, for=192.0.2.60;proto=http;by=203.0.113.43");
+        String[] expected = {
+            "for=192.0.2.43",
+            "for=192.0.2.60;proto=http;by=203.0.113.43"
+        };
+        assertThat(values, contains(expected));
+    }
+
+    @Test
+    public void testListForwardedRules()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
-        assertThat(values, Matchers.contains(
+        String[] expected = {
             "for=192.0.2.43",
             "for=[2001:db8:cafe::17]",
-            "for=unknown"));
+            "for=unknown"
+        };
+        assertThat(values, contains(expected));
+    }
+
+    /**
+     * When parsing a value with a parameter, the parameter should be preserved.
+     * This is what we would see if using QuotedCSV with parsing a request 'Cookie' header
+     * (which uses `;` to separate cookies instead of `,`)
+     * Eg: The HttpFields.getValueList("Cookie") should return the entire Cookie header.
+     */
+    @Test
+    public void testValueWithParams()
+    {
+        QuotedCSV values = new QuotedCSV();
+        values.addValue("foo=bar; name=zed; b=j");
+        assertEquals(1, values.size());
+        String result = values.iterator().next();
+        assertThat(result, is("foo=bar;name=zed;b=j"));
+    }
+
+    /**
+     * When parsing a value with a parameter, the parameter should be preserved.
+     */
+    @Test
+    public void testListValueWithParams()
+    {
+        QuotedCSV values = new QuotedCSV();
+        values.addValue("foo=bar; name=zed; b=j, color=red; type");
+        String[] expected = {
+            "foo=bar;name=zed;b=j",
+            "color=red;type"
+        };
+        assertThat(values, contains(expected));
     }
 
     @Test
@@ -205,5 +277,34 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.join("hi", "ho"), is("hi, ho"));
         assertThat(QuotedCSV.join("h i", "h,o"), is("\"h i\", \"h,o\""));
         assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\to\""));
+    }
+
+    private static class BadlyQuotedQuotedCSV extends QuotedCSV
+    {
+        private final AtomicBoolean _badQuotes = new AtomicBoolean();
+
+        public BadlyQuotedQuotedCSV()
+        {
+            this(true);
+        }
+
+        public BadlyQuotedQuotedCSV(boolean keepQuotes)
+        {
+            super(keepQuotes);
+        }
+
+        public boolean isBadlyQuoted()
+        {
+            return _badQuotes.get();
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (violation == HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN)
+                _badQuotes.set(true);
+            else
+                super.onComplianceViolation(violation, value);
+        }
     }
 }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class HttpField
     public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
 
     private static final String ZERO_QUALITY = "q=0";
+    static final EnumSet<HttpHeader> ETAG_HEADER = EnumSet.of(HttpHeader.ETAG, HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
 
     private final HttpHeader _header;
     private final String _name;
@@ -106,6 +108,21 @@ public class HttpField
     public HttpField(String name, String value)
     {
         this(HttpHeader.CACHE.get(name), name, value);
+    }
+
+    /**
+     * <p>Creates a {@link HttpField} list value from two elements, handling nulls and blanks.</p>
+     * @param item1 The first item
+     * @param item2 The second item
+     * @return A comma separated list of the two items, ignoring nulls and blanks
+     */
+    public static String asList(String item1, String item2)
+    {
+        if (StringUtil.isBlank(item1))
+            return item2;
+        if (StringUtil.isBlank(item2))
+            return item1;
+        return item1 + ", " + item2;
     }
 
     /**
@@ -371,17 +388,46 @@ public class HttpField
      */
     public boolean containsLast(String search)
     {
-        return containsLast(getValue(), search);
+        String value = getValue();
+        if (search == null)
+            return value == null;
+        if (search.isEmpty())
+            return false;
+        if (value == null)
+            return false;
+        if (search.equalsIgnoreCase(value))
+            return true;
+
+        if (value.endsWith(search))
+        {
+            int i = value.length() - search.length() - 1;
+            while (i >= 0)
+            {
+                char c = value.charAt(i--);
+                if (c == ',')
+                    return true;
+                if (c != ' ')
+                    return false;
+            }
+            return true;
+        }
+
+        QuotedCSV csv = newQuotedCSV(false, value);
+        List<String> values = csv.getValues();
+        return !values.isEmpty() && search.equalsIgnoreCase(values.get(values.size() - 1));
     }
 
     /**
      * Look for the last value in a possible multivalued field
      * Parameters and specifically quality parameters are not considered.
+     *
      * @param value The field value to search in.
      * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
      * as the last element of a quoted comma separated list.
+     * @deprecated use non-static {@link #containsLast(String)} instead.
      */
+    @Deprecated(since = "jetty-12.1.3", forRemoval = true)
     public static boolean containsLast(String value, String search)
     {
         if (search == null)
@@ -407,6 +453,7 @@ public class HttpField
             return true;
         }
 
+        // Non compliant!
         QuotedCSV csv = new QuotedCSV(false, value);
         List<String> values = csv.getValues();
         return !values.isEmpty() && search.equalsIgnoreCase(values.get(values.size() - 1));
@@ -644,6 +691,8 @@ public class HttpField
 
     protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
     {
+        if (getHeader() != null && ETAG_HEADER.contains(this.getHeader()))
+            return new QuotedCSV.Etags(null, null, value);
         return new QuotedCSV(keepQuotes, value);
     }
 

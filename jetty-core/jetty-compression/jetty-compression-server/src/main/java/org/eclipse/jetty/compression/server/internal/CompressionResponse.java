@@ -20,6 +20,7 @@ import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -50,6 +51,8 @@ public class CompressionResponse extends Response.Wrapper
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
+        HttpFields.Mutable headers = getHeaders();
+
         switch (state.get())
         {
             case MIGHT_COMPRESS ->
@@ -68,9 +71,16 @@ public class CompressionResponse extends Response.Wrapper
                     return;
                 }
 
-                // TODO: handle 304's etag.
+                if (status == HttpStatus.NOT_MODIFIED_304)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("no compression for status {} {}", status, this);
+                    state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
+                    headers.computeField(HttpHeader.ETAG, (name, value) -> (value == null || value.isEmpty()) ? null : new HttpField(HttpHeader.ETAG, compression.etag(value.get(0).getValue())));
+                    super.write(last, content, callback);
+                }
 
-                HttpField contentTypeField = getHeaders().getField(HttpHeader.CONTENT_TYPE);
+                HttpField contentTypeField = headers.getField(HttpHeader.CONTENT_TYPE);
                 if (contentTypeField != null)
                 {
                     String mimeType = MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue());
@@ -85,7 +95,7 @@ public class CompressionResponse extends Response.Wrapper
                 }
 
                 // Did the application explicitly set the Content-Encoding?
-                String contentEncoding = getHeaders().get(HttpHeader.CONTENT_ENCODING);
+                String contentEncoding = headers.get(HttpHeader.CONTENT_ENCODING);
                 if (contentEncoding != null)
                 {
                     if (LOG.isDebugEnabled())
@@ -105,7 +115,7 @@ public class CompressionResponse extends Response.Wrapper
                     return;
                 }
 
-                long contentLength = getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+                long contentLength = headers.getLongField(HttpHeader.CONTENT_LENGTH);
                 if (contentLength < 0 && last)
                     contentLength = BufferUtil.length(content);
                 if (contentLength >= 0 && contentLength < compression.getMinCompressSize())
@@ -124,9 +134,9 @@ public class CompressionResponse extends Response.Wrapper
                 this.encoderSink = compression.newEncoderSink(getWrapped());
 
                 // Adjust the headers.
-                getHeaders().put(compression.getContentEncodingField());
-                getHeaders().remove(HttpHeader.CONTENT_LENGTH);
-                // TODO: etag.
+                headers.put(compression.getContentEncodingField());
+                headers.remove(HttpHeader.CONTENT_LENGTH);
+                headers.computeField(HttpHeader.ETAG, (name, value) -> (value == null || value.isEmpty()) ? null : new HttpField(HttpHeader.ETAG, compression.etag(value.get(0).getValue())));
 
                 this.write(last, content, callback);
             }

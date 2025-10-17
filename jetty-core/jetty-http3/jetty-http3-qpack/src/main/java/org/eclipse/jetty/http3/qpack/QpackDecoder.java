@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
@@ -423,10 +422,6 @@ public class QpackDecoder implements Dumpable
             DynamicTable dynamicTable = _context.getDynamicTable();
             Entry referencedEntry = isDynamicTableIndex ? dynamicTable.getRelative(nameIndex) : staticTable.get(nameIndex);
 
-            // Verify the field value before inserting into the table.
-            if (!HttpTokens.isLegalFieldValue(value))
-                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "Invalid header value");
-
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
             dynamicTable.add(entry);
@@ -441,14 +436,6 @@ public class QpackDecoder implements Dumpable
                 LOG.debug("InsertLiteralEntry: name={}, value={}", name, value);
 
             Entry entry = new Entry(new HttpField(name, value));
-
-            // Verify the field name and value before inserting into the table.
-            if (!HttpTokens.isLegalH2H3FieldName(name))
-                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "Invalid header name: " + name);
-            if (!HttpTokens.isLegalFieldValue(value))
-                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "Invalid header value: " + value);
-
-            // Add the new Entry to the DynamicTable.
             DynamicTable dynamicTable = _context.getDynamicTable();
             dynamicTable.add(entry);
             _instructions.add(new InsertCountIncrementInstruction(1));

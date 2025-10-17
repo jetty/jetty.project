@@ -119,7 +119,7 @@ public class RequestHeadersTest
             en-GB           | en-GB
             en;q=0.5,it     | it
             bogus           | en-US
-            en_en           | <undefined>
+            en_en           | en-US
             """)
     public void testLocale(String requestHeaderValue, String expectedLocale) throws Exception
     {

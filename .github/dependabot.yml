@@ -5,3 +5,611 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+## jetty-12.1.x branch
+
+  - package-ecosystem: maven
+    directory: "/"
+    exclude-paths:
+      - "build/**"
+      - "jetty-ee*/**"
+    target-branch: "jetty-12.1.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.1.x Root pom] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee8"
+    target-branch: "jetty-12.1.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.1.x EE8] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      # Restrict updates in this branch to jetty in the 11.x.x space
+      - dependency-name: "jakarta.activation:*"
+        versions: [ ">=2.1.0" ]
+      - dependency-name: "jakarta.annotation:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.el:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.inject:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.mail:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.servlet:*"
+        versions: [ ">=6.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.transaction:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.ws.rs:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.xml.bind:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.glassfish.jaxb:*"
+        versions: [ ">=4.0.0"]
+      - dependency-name: "jakarta.xml.ws:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4.0"]
+      - dependency-name: "org.jboss.threads:jboss-threads"
+        versions: [ ">=3.7.0"]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee9"
+    target-branch: "jetty-12.1.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.1.x EE9] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "org.glassfish.jersey:*"
+        versions: [ ">=3.1.0" ]
+      - dependency-name: "jakarta.activation:jakarta.activation-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.annotation:jakarta.annotation-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
+        versions:  [ ">= 3.1.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">= 3.1.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ ">= 10.1.0"]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee10"
+    target-branch: "jetty-12.1.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.1.x EE10] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "jakarta.servlet:jakarta.servlet-api"
+        versions: [ ">=6.1.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions:  [ ">=2.2.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        versions:  [ ">=3.1.0" ]
+      - dependency-name: "jakarta.enterprise:*"
+        versions:  [ ">=4.1.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions:  [ ">=2.2.0" ]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee11"
+    target-branch: "jetty-12.1.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.1.x EE11] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+
+#### jetty-12.0.x branch
+
+  - package-ecosystem: maven
+    directory: "/"
+    exclude-paths:
+      - "build/**"
+      - "jetty-ee*/**"
+    target-branch: "jetty-12.0.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.0.x Root pom] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee8"
+    target-branch: "jetty-12.0.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.0.x EE8] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      # Restrict updates in this branch to jetty in the 11.x.x space
+      - dependency-name: "jakarta.activation:*"
+        versions: [ ">=2.1.0" ]
+      - dependency-name: "jakarta.annotation:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.el:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.inject:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.mail:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.servlet:*"
+        versions: [ ">=6.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.transaction:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.ws.rs:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.xml.bind:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.glassfish.jaxb:*"
+        versions: [ ">=4.0.0"]
+      - dependency-name: "jakarta.xml.ws:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4.0"]
+      - dependency-name: "org.jboss.threads:jboss-threads"
+        versions: [ ">=3.7.0"]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee9"
+    target-branch: "jetty-12.0.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.0.x EE9] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "org.glassfish.jersey:*"
+        versions: [ ">=3.1.0" ]
+      - dependency-name: "jakarta.activation:jakarta.activation-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.annotation:jakarta.annotation-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
+        versions:  [ ">= 2.1.0"]
+      - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
+        versions:  [ ">= 3.1.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">= 3.1.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ ">= 10.1.0"]
+
+  - package-ecosystem: maven
+    directory: "/jetty-ee10"
+    target-branch: "jetty-12.0.x"
+    open-pull-requests-limit: 30
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    commit-message:
+      prefix: "[12.0.x EE10] "
+    groups:
+      build-deps:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
+          - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
+      integration-deps:
+        patterns:
+          - "org.infinispan*"
+          - "org.mongodb*"
+          - "org.wildfly*"
+          - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
+      spec-deps:
+        patterns:
+          - "jakarta.*"
+          - "org.jboss.weld.*"
+          - "com.sun.xml*"
+          - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "jakarta.servlet:jakarta.servlet-api"
+        versions: [ ">=6.1.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions:  [ ">=2.2.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        versions:  [ ">=3.1.0" ]
+      - dependency-name: "jakarta.enterprise:*"
+        versions:  [ ">=4.1.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions:  [ ">=2.2.0" ]

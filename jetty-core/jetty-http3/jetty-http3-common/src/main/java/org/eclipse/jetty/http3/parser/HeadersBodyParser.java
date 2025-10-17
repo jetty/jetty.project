@@ -153,9 +153,17 @@ public class HeadersBodyParser extends BodyParser
 
     private void onHeaders(MetaData metaData, boolean last, boolean wasBlocked)
     {
-        HeadersFrame frame = new HeadersFrame(metaData, last);
-        reset();
-        notifyHeaders(frame, wasBlocked);
+        Throwable failure = MetaData.Failed.getFailure(metaData);
+        if (failure == null || failure instanceof QpackException.StreamException)
+        {
+            HeadersFrame frame = new HeadersFrame(metaData, last);
+            reset();
+            notifyHeaders(frame, wasBlocked);
+        }
+        else
+        {
+            notifySessionFailure(HTTP3ErrorCode.HTTP_MESSAGE_ERROR.code(), "decode_failure", failure);
+        }
     }
 
     protected void notifyHeaders(HeadersFrame frame, boolean wasBlocked)

@@ -204,6 +204,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     @Override
     protected void doStart() throws Exception
     {
+        String name = Objects.requireNonNullElse(getName(), "%s@%x".formatted(getClass().getSimpleName(), hashCode()));
+
         Executor executor = getExecutor();
         if (executor == null)
         {
@@ -955,7 +957,11 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
      */
     public void setRequestBufferSize(int requestBufferSize)
     {
+        if (requestBufferSize <= 0)
+            throw new IllegalArgumentException("Invalid request buffer size " + requestBufferSize);
         this.requestBufferSize = requestBufferSize;
+        if (requestBufferSize > getMaxRequestHeadersSize())
+            setMaxRequestHeadersSize(requestBufferSize);
     }
 
     /**
@@ -1167,6 +1173,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
     {
         this.maxRequestHeadersSize = maxRequestHeadersSize;
+        if (maxRequestHeadersSize > 0 && maxRequestHeadersSize < getRequestBufferSize())
+            setRequestBufferSize(maxRequestHeadersSize);
     }
 
     /**
@@ -1242,6 +1250,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         void setHttpClient(HttpClient httpClient);
     }
 
+    // A duplicate of oej.compression.client.CompressionContentDecoderFactory
+    // to avoid circular dependencies between the jetty-client and the
+    // jetty-compression client Maven modules.
     private static class CompressionContentDecoderFactory extends ContentDecoder.Factory
     {
         private final Compression compression;

@@ -52,6 +52,23 @@ public class MetaDataBuilder
         _maxSize = maxHeadersSize;
     }
 
+    private void reset()
+    {
+        _fields.clear();
+        _size = 0;
+        _status = null;
+        _method = null;
+        _scheme = null;
+        _authority = null;
+        _path = null;
+        _protocol = null;
+        _contentLength = -1;
+        _streamException = null;
+        _request = false;
+        _response = false;
+        _beginNanoTime = Long.MIN_VALUE;
+    }
+
     /**
      * Get the maxSize.
      *
@@ -242,18 +259,14 @@ public class MetaDataBuilder
 
     public MetaData build() throws QpackException.StreamException
     {
-        if (_streamException != null)
-        {
-            _streamException.addSuppressed(new Throwable());
-            throw _streamException;
-        }
-
-        if (_request && _response)
-            throw new QpackException.StreamException(true, true, H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
-
-        HttpFields.Mutable fields = _fields;
         try
         {
+            if (_streamException != null)
+                throw _streamException;
+
+            if (_request && _response)
+                throw new QpackException.StreamException(true, true, H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
+
             if (_request)
             {
                 if (_method == null)
@@ -269,38 +282,28 @@ public class MetaDataBuilder
                 long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
                 _beginNanoTime = Long.MIN_VALUE;
                 if (isConnect)
-                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
+                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, _fields, _protocol);
                 else
                     return new MetaData.Request(
                         nanoTime,
                         _method,
                         newHttpURI(),
                         HttpVersion.HTTP_3,
-                        fields,
+                        _fields,
                         _contentLength);
             }
             if (_response)
             {
                 if (_status == null)
                     throw new QpackException.StreamException(false, true, H3_GENERAL_PROTOCOL_ERROR, "No Status");
-                return new MetaData.Response(_status, null, HttpVersion.HTTP_3, fields, _contentLength);
+                return new MetaData.Response(_status, null, HttpVersion.HTTP_3, _fields, _contentLength);
             }
 
-            return new MetaData(HttpVersion.HTTP_3, fields, _contentLength);
+            return new MetaData(HttpVersion.HTTP_3, _fields, _contentLength);
         }
         finally
         {
-            _fields.clear();
-            _request = false;
-            _response = false;
-            _status = null;
-            _method = null;
-            _scheme = null;
-            _authority = null;
-            _path = null;
-            _protocol = null;
-            _size = 0;
-            _contentLength = -1;
+            reset();
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -83,6 +84,11 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private final AtomicInteger state = new AtomicInteger();
     private final Map<Integer, Queue<Entry>> queues = new ConcurrentHashMap<>();
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
+    private final AtomicLong totalCount = new AtomicLong();
+    private final AtomicLong suspendedCount = new AtomicLong();
+    private final AtomicLong resumedCount = new AtomicLong();
+    private final AtomicLong expiredCount = new AtomicLong();
+    private final AtomicLong exceededCount = new AtomicLong();
     private CyclicTimeouts<Entry> timeouts;
     private int maxRequests;
     private int maxSuspendedRequests = 1024;
@@ -135,7 +141,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     /**
      * <p>Sets the max number of suspended requests.</p>
      * <p>Once the max suspended request limit is reached,
-     * the request is failed with a HTTP status of
+     * the request is failed with an HTTP status of
      * {@code 503 Service unavailable}.</p>
      * <p>A negative value indicate an unlimited number
      * of suspended requests.</p>
@@ -173,11 +179,41 @@ public class QoSHandler extends ConditionalHandler.Abstract
         this.maxSuspend = maxSuspend;
     }
 
-    @ManagedAttribute("The number of suspended requests")
+    @ManagedAttribute("The current number of suspended requests")
     public int getSuspendedRequestCount()
     {
         int permits = state.get();
         return Math.max(0, -permits);
+    }
+
+    @ManagedAttribute("The total number of processed requests")
+    public long getTotalRequestCount()
+    {
+        return totalCount.get();
+    }
+
+    @ManagedAttribute("The total number of resumed requests")
+    public long getTotalSuspendedRequestCount()
+    {
+        return suspendedCount.get();
+    }
+
+    @ManagedAttribute("The total number of resumed requests")
+    public long getTotalResumedRequestCount()
+    {
+        return resumedCount.get();
+    }
+
+    @ManagedAttribute("The total number of requests that expired while suspended")
+    public long getTotalExpiredRequestCount()
+    {
+        return expiredCount.get();
+    }
+
+    @ManagedAttribute("The total number of requests that exceeded the maximum number of suspended requests")
+    public long getTotalExceededRequestCount()
+    {
+        return exceededCount.get();
     }
 
     @Override
@@ -223,8 +259,10 @@ public class QoSHandler extends ConditionalHandler.Abstract
         if (LOG.isDebugEnabled())
             LOG.debug("{} processing {}", this, request);
 
-        boolean expired = false;
+        totalCount.incrementAndGet();
+
         boolean tooManyRequests = false;
+        boolean expiredReHandled = false;
 
         // The read lock allows concurrency with resume(),
         // which is the common case, but not with expire().
@@ -258,7 +296,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
                     // This is a request that was suspended, it expired, and was re-handled.
                     // Do not suspend it again, just complete it with 503 unavailable.
                     state.incrementAndGet();
-                    expired = true;
+                    expiredReHandled = true;
                 }
             }
         }
@@ -267,11 +305,10 @@ public class QoSHandler extends ConditionalHandler.Abstract
             lock.readLock().unlock();
         }
 
-        if (expired || tooManyRequests)
-        {
-            notAvailable(response, callback);
-            return true;
-        }
+        if (tooManyRequests)
+            return tooManyRequests(response, callback);
+        if (expiredReHandled)
+            return expiredReHandled(response, callback);
 
         return handleWithPermit(request, response, callback);
     }
@@ -282,7 +319,18 @@ public class QoSHandler extends ConditionalHandler.Abstract
         return nextHandler(request, response, callback);
     }
 
-    private void notAvailable(Response response, Callback callback)
+    private boolean tooManyRequests(Response response, Callback callback)
+    {
+        exceededCount.incrementAndGet();
+        return notAvailable(response, callback);
+    }
+
+    private boolean expiredReHandled(Response response, Callback callback)
+    {
+        return notAvailable(response, callback);
+    }
+
+    private boolean notAvailable(Response response, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} rejecting {}", this, response.getRequest());
@@ -291,6 +339,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             callback.failed(new IllegalStateException("Response already committed"));
         else
             response.write(true, null, callback);
+        return true;
     }
 
     /**
@@ -309,19 +358,35 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     /**
-     * <p>Fails the given suspended request/response with the given error code and failure.</p>
+     * <p>Fails the given suspended request/response with the given status code and failure.</p>
      * <p>This method is called only for suspended requests, in case of timeout while suspended,
-     * or in case of failure when trying to handle a resumed request.</p>
+     * or in case a resumed request is not handled, or in case of failure when trying to handle
+     * a resumed request.</p>
      *
      * @param request the request to fail
      * @param response the response to fail
      * @param callback the callback to complete
      * @param status the failure status code
-     * @param failure the failure
+     * @param failure the failure, which may be {@code null} if the resumed request was not handled
      */
     protected void failSuspended(Request request, Response response, Callback callback, int status, Throwable failure)
     {
         Response.writeError(request, response, callback, status, null, failure);
+    }
+
+    /**
+     * <p>Fails the given suspended request/response with status code {@value HttpStatus#SERVICE_UNAVAILABLE_503}
+     * and a {@link TimeoutException} failure.</p>
+     * <p>By default, calls {@link #failSuspended(Request, Response, Callback, int, Throwable)}.</p>
+     *
+     * @param request the request to fail
+     * @param response the response to fail
+     * @param callback the callback to complete
+     */
+    protected void expireSuspended(Request request, Response response, Callback callback)
+    {
+        expiredCount.incrementAndGet();
+        failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
     }
 
     private boolean handleWithPermit(Request request, Response response, Callback callback) throws Exception
@@ -334,6 +399,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     private void suspend(Request request, Response response, Callback callback)
     {
+        suspendedCount.incrementAndGet();
         int priority = Math.max(0, getPriority(request));
         if (LOG.isDebugEnabled())
             LOG.debug("{} suspending priority={} {}", this, priority, request);
@@ -405,7 +471,23 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     private void execute(Request request, Runnable task)
     {
-        request.getComponents().getExecutor().execute(task);
+        request.getContext().execute(task);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[maxReq=%d,maxSus=%d,sus/res/tot/exp/exc=(%d,%d)/%d/%d/%d/%d]".formatted(
+            super.toString(),
+            getMaxRequestCount(),
+            getMaxSuspendedRequestCount(),
+            getSuspendedRequestCount(),
+            getTotalSuspendedRequestCount(),
+            getTotalResumedRequestCount(),
+            getTotalRequestCount(),
+            getTotalExpiredRequestCount(),
+            getTotalExceededRequestCount()
+        );
     }
 
     private class Entry implements CyclicTimeouts.Expirable, Runnable
@@ -458,7 +540,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             }
 
             if (removed)
-                execute(request, () -> failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException()));
+                execute(request, () -> expireSuspended(request, response, callback));
         }
 
         @Override
@@ -466,6 +548,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
         {
             try
             {
+                resumedCount.incrementAndGet();
                 boolean handled = handleWithPermit(request, response, callback);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} handled={} {}", QoSHandler.this, handled, request);

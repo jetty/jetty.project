@@ -35,6 +35,34 @@ public class VirtualThreads
     private static final Executor executor = getNamedVirtualThreadsExecutor(null);
     private static final Method isVirtualThread = probeIsVirtualThread();
 
+    /**
+     * Get an executor that will use virtual threads if the given executor
+     * has been configured to use them.
+     * If the given executor does not implement {@link Configurable},
+     * or it has not been configured to use virtual threads, then the
+     * given executor is returned.
+     * @param executor The executor to use
+     * @return An executor that will use virtual threads if configured, otherwise the passed executor
+     * @see #getVirtualThreadsExecutor(Executor)
+     */
+    public static Executor getExecutor(Executor executor)
+    {
+        Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
+        return virtualExecutor == null ? executor : virtualExecutor;
+    }
+
+    /**
+     * Execute a task on the given executor, using virtual threads if the executor
+     * has been configured to use them.
+     * @param executor The executor to use
+     * @param task The task to execute
+     * @see #getVirtualThreadsExecutor(Executor)
+     */
+    public static void execute(Executor executor, Runnable task)
+    {
+        getExecutor(executor).execute(task);
+    }
+
     private static Method probeIsVirtualThread()
     {
         try

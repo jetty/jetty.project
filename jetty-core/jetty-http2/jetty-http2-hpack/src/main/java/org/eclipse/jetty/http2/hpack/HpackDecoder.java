@@ -17,10 +17,10 @@ import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 public class HpackDecoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(HpackDecoder.class);
+    private static final HttpField LOWER_CASE_CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "content-length", "0");
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
@@ -123,13 +124,14 @@ public class HpackDecoder
                 if (entry == null)
                     throw new HpackException.SessionException("Unknown index %d", index);
 
+                HttpField field = entry.getHttpField();
                 if (entry.isStatic())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}", entry);
                     // emit field
                     emitted = true;
-                    _builder.emit(entry.getHttpField());
+                    _builder.emit(field);
 
                     // TODO copy and add to reference set if there is room
                     // _context.add(entry.getHttpField());
@@ -138,9 +140,18 @@ public class HpackDecoder
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode Idx {}", entry);
+
+                    String name = field.getName();
+                    if (!HttpTokens.isLegalH2H3FieldName(name))
+                        _builder.streamException("Illegal header name %s", name);
+
+                    String value = field.getValue();
+                    if (!HttpTokens.isLegalFieldValue(value))
+                        _builder.streamException("Illegal header value %s", value);
+
                     // emit
                     emitted = true;
-                    _builder.emit(entry.getHttpField());
+                    _builder.emit(field);
                 }
             }
             else
@@ -248,7 +259,7 @@ public class HpackDecoder
 
                         case CONTENT_LENGTH:
                             if ("0".equals(value))
-                                field = HttpFields.CONTENT_LENGTH_0;
+                                field = LOWER_CASE_CONTENT_LENGTH_0;
                             else
                                 field = new HttpField.LongValueHttpField(header, name, value);
                             break;

@@ -15,8 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * Implements a quoted comma-separated list of values
@@ -102,7 +104,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         }
     }
 
-    protected final List<String> _values = new ArrayList<>();
+    private final List<String> _values = new ArrayList<>();
 
     public QuotedCSV(String... values)
     {
@@ -124,6 +126,25 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         _values.add(buffer.toString());
     }
 
+    @Override
+    protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
+    {
+        // Handle no value on the first parameter
+        if (valueLength == 0)
+        {
+            if (paramName == 0)
+            {
+                _values.add(buffer.toString());
+            }
+            else if (paramName > 0)
+            {
+                // replace last value
+                int lastIdx = size() - 1;
+                _values.set(lastIdx, buffer.toString());
+            }
+        }
+    }
+
     public int size()
     {
         return _values.size();
@@ -135,6 +156,11 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     }
 
     public List<String> getValues()
+    {
+        return Collections.unmodifiableList(_values);
+    }
+
+    public List<String> getMutableValues()
     {
         return _values;
     }
@@ -166,5 +192,47 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             list.add(s);
         }
         return list.toString();
+    }
+
+    public static class Compliant extends QuotedCSV
+    {
+        private final ComplianceViolation.Mode _complianceMode;
+        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
+
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier)
+        {
+            this(complianceMode, violationNotifier, true);
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, boolean keepQuotes, String... values)
+        {
+            super(keepQuotes, values);
+            _complianceMode = complianceMode;
+            _violationNotifier = violationNotifier;
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (_complianceMode != null && _complianceMode.allows(violation))
+                _violationNotifier.accept(violation, value);
+            else
+                super.onComplianceViolation(violation, value);
+        }
+    }
+
+    public static class Etags extends Compliant
+    {
+        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
+        {
+            super(complianceMode, violationNotifier, true, values);
+        }
+
+        @Override
+        protected void openingQuoteInValue(String value, int i)
+        {
+            if (i < 1 || Character.toLowerCase(value.charAt(i - 2)) != 'w' || value.charAt(i - 1) != '/')
+                super.openingQuoteInValue(value, i);
+        }
     }
 }

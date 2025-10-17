@@ -21,8 +21,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 /**
@@ -180,7 +182,12 @@ class MutableHttpFields implements HttpFields.Mutable
     public HttpFields asImmutable()
     {
         _immutable = true;
-        return new org.eclipse.jetty.http.ImmutableHttpFields(_fields, _size);
+        return newImmutableHttpFields(_fields, _size);
+    }
+
+    protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
+    {
+        return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size);
     }
 
     private void copyImmutable()
@@ -583,6 +590,49 @@ class MutableHttpFields implements HttpFields.Mutable
                 remove();
             else
                 _fields[_last] = field;
+        }
+    }
+
+    public static class Compliant extends org.eclipse.jetty.http.MutableHttpFields
+    {
+        private final HttpCompliance _httpCompliance;
+        private final BiConsumer<ComplianceViolation, String> _notifyViolation;
+
+        public Compliant(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
+        {
+            _httpCompliance = httpCompliance;
+            _notifyViolation = notifyViolation;
+        }
+
+        @Override
+        public QuotedCSV newQuotedCSV(boolean keepQuotes)
+        {
+            return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
+        }
+
+        @Override
+        public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+        {
+            return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
+        }
+
+        @Override
+        protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
+        {
+            return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size)
+            {
+                @Override
+                public QuotedCSV newQuotedCSV(boolean keepQuotes)
+                {
+                    return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
+                }
+
+                @Override
+                public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+                {
+                    return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
+                }
+            };
         }
     }
 }
