@@ -394,55 +394,68 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
         MetaData metaData = frame.getMetaData();
-        boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
-        if (isTrailer)
+        Throwable metaDataFailure = MetaData.Failed.getFailure(metaData);
+        if (metaDataFailure != null)
         {
-            // In case of trailers, notify first and then offer EOF to
-            // avoid race conditions due to concurrent calls to readData().
-            boolean closed = updateClose(true, CloseState.Event.RECEIVED);
-            notifyHeaders(frame, Callback.from(() ->
-            {
-                // Offer EOF in case the application calls readData() or demand().
-                if (offer(Data.eof(getId())))
-                    processData(true);
-                if (closed)
-                    getSession().removeStream(this);
-            }, callback));
+            // Request failures are notified by the session,
+            // since the Stream.Listener won't be available yet.
+            assert !metaData.isRequest();
+
+            // It's a bad response (or trailer), response content will be dropped.
+            onFailure(new FailureFrame(ErrorCode.PROTOCOL_ERROR.code, null, metaDataFailure), callback);
         }
         else
         {
-            long length = -1;
-            HttpFields fields = metaData.getHttpFields();
-            boolean connect = HttpMethod.CONNECT.is(request.getMethod());
-            if (fields != null && !connect)
-                length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
-            dataLength = length;
-
-            // Offer EOF for either the request or the response in
-            // case the application calls readData() or demand().
-            boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
-
-            // Requests are notified to a Session.Listener, here only notify responses.
-            if (metaData.isRequest())
+            boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
+            if (isTrailer)
             {
-                callback.succeeded();
-            }
-            else
-            {
-                MetaData.Response response = (MetaData.Response)metaData;
-                if (connect && response.getStatus() != HttpStatus.OK_200)
-                {
-                    // A failed tunnel attempt, must close the request side.
-                    updateClose(true, CloseState.Event.AFTER_SEND);
-                }
-                boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                // In case of trailers, notify first and then offer EOF to
+                // avoid race conditions due to concurrent calls to readData().
+                boolean closed = updateClose(true, CloseState.Event.RECEIVED);
                 notifyHeaders(frame, Callback.from(() ->
                 {
-                    if (eof)
+                    // Offer EOF in case the application calls readData() or demand().
+                    if (offer(Data.eof(getId())))
                         processData(true);
                     if (closed)
                         getSession().removeStream(this);
                 }, callback));
+            }
+            else
+            {
+                long length = -1;
+                HttpFields fields = metaData.getHttpFields();
+                boolean connect = HttpMethod.CONNECT.is(request.getMethod());
+                if (fields != null && !connect)
+                    length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
+                dataLength = length;
+
+                // Offer EOF for either the request or the response in
+                // case the application calls readData() or demand().
+                boolean eof = frame.isEndStream() && offer(Data.eof(getId()));
+
+                // Requests are notified to a Session.Listener, here only notify responses.
+                if (metaData.isRequest())
+                {
+                    callback.succeeded();
+                }
+                else
+                {
+                    MetaData.Response response = (MetaData.Response)metaData;
+                    if (connect && response.getStatus() != HttpStatus.OK_200)
+                    {
+                        // A failed tunnel attempt, must close the request side.
+                        updateClose(true, CloseState.Event.AFTER_SEND);
+                    }
+                    boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                    notifyHeaders(frame, Callback.from(() ->
+                    {
+                        if (eof)
+                            processData(true);
+                        if (closed)
+                            getSession().removeStream(this);
+                    }, callback));
+                }
             }
         }
     }

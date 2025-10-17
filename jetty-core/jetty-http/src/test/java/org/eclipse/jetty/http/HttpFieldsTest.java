@@ -429,8 +429,8 @@ public class HttpFieldsTest
         BufferUtil.flipToFlush(buffer, 0);
         String out = BufferUtil.toString(buffer);
         assertThat(out, containsString("name0: value  0"));
-        assertThat(out, containsString("name??1: value1"));
-        assertThat(out, containsString("name?2: value:  2"));
+        assertThat(out, containsString("name..1: value1"));
+        assertThat(out, containsString("name.2: value:  2"));
     }
 
     @ParameterizedTest

@@ -70,7 +70,7 @@ public class BrotliEncoderSink extends EncoderSink
     protected WriteRecord encode(boolean last, ByteBuffer content)
     {
         if (encoder.isFinished())
-            return null;
+            throw new IllegalStateException("Already released");
 
         while (true)
         {

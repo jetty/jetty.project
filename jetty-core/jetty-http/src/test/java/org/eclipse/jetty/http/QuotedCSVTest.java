@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -47,11 +48,11 @@ public class QuotedCSVTest
         QuotedCSV values = new QuotedCSV(true)
         {
             @Override
-            protected void onComplianceViolation(ComplianceViolation violation)
+            protected void onComplianceViolation(ComplianceViolation violation, String value)
             {
                 if (WHITESPACE_IN_PARAMETER.equals(violation))
                     return;
-                super.onComplianceViolation(violation);
+                super.onComplianceViolation(violation, value);
             }
         };
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
@@ -79,11 +80,12 @@ public class QuotedCSVTest
     @Test
     public void testEmpty()
     {
-        QuotedCSV values = new QuotedCSV();
-        values.addValue(",aaaa,  , bbbb ,,cccc,");
+        QuotedCSV values = new QuotedCSV(false);
+        values.addValue(",aaaa,  , bbbb ,,\"\",cccc,");
         assertThat(values, Matchers.contains(
             "aaaa",
             "bbbb",
+            "",
             "cccc"));
     }
 
@@ -101,7 +103,7 @@ public class QuotedCSVTest
     @Test
     public void testETag()
     {
-        QuotedCSV values = new QuotedCSV(false, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
+        QuotedCSV values = new QuotedCSV.Etags(null, null, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
         assertThat(values, Matchers.contains(
             "W/\"000000000\"",
             "W/\"123456789\"",
@@ -111,10 +113,10 @@ public class QuotedCSVTest
     @Test
     public void testOpenQuote()
     {
-        QuotedCSV values = new QuotedCSV();
-        values.addValue("value;p=\"v");
-        assertThat(values, Matchers.contains(
-            "value;p=\"v"));
+        BadlyQuotedQuotedCSV values = new BadlyQuotedQuotedCSV();
+        values.addValue("\"value\";a=1;p=\"v");
+        assertThat(values.isBadlyQuoted(), is(true));
+        assertThat(values, Matchers.contains("\"value\";a=1;p=\"v"));
     }
 
     @Test
@@ -142,10 +144,10 @@ public class QuotedCSVTest
     @Test
     public void testOpenQuoteNoQuotes()
     {
-        QuotedCSV values = new QuotedCSV(false);
+        BadlyQuotedQuotedCSV values = new BadlyQuotedQuotedCSV(false);
         values.addValue("value;p=\"v");
-        assertThat(values, Matchers.contains(
-            "value;p=v"));
+        assertThat(values, Matchers.contains("value;p=v"));
+        assertThat(values.isBadlyQuoted(), is(true));
     }
 
     @Test
@@ -275,5 +277,34 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.join("hi", "ho"), is("hi, ho"));
         assertThat(QuotedCSV.join("h i", "h,o"), is("\"h i\", \"h,o\""));
         assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\to\""));
+    }
+
+    private static class BadlyQuotedQuotedCSV extends QuotedCSV
+    {
+        private final AtomicBoolean _badQuotes = new AtomicBoolean();
+
+        public BadlyQuotedQuotedCSV()
+        {
+            this(true);
+        }
+
+        public BadlyQuotedQuotedCSV(boolean keepQuotes)
+        {
+            super(keepQuotes);
+        }
+
+        public boolean isBadlyQuoted()
+        {
+            return _badQuotes.get();
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (violation == HttpCompliance.Violation.BAD_QUOTES_IN_TOKEN)
+                _badQuotes.set(true);
+            else
+                super.onComplianceViolation(violation, value);
+        }
     }
 }

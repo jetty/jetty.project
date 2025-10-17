@@ -87,7 +87,7 @@ public class IdleTimeoutTest
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath("src/test/resources/keystore.p12");
         sslServer.setKeyStorePassword("storepwd");
-        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
         AtomicBoolean established = new AtomicBoolean();
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
@@ -106,7 +106,7 @@ public class IdleTimeoutTest
         });
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, HTTP3ServerQuicConfiguration.configure(serverQuicConfig), h3)
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, h3)
         {
             @Override
             protected Connection newConnection(EndPoint endpoint)

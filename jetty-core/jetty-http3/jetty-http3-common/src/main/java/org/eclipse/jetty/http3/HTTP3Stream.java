@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3;
 import java.util.EnumSet;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -300,6 +301,14 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void onTrailer(HeadersFrame frame)
     {
+        Throwable failure = MetaData.Failed.getFailure(frame.getMetaData());
+        if (failure != null)
+        {
+            updateClose(true, false);
+            onFailure(HTTP3ErrorCode.PROTOCOL_ERROR.code(), failure);
+            return;
+        }
+
         validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER);
         notIdle();
         updateClose(frame.isLast(), false);
