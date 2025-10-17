@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
  *
  * @deprecated no replacement, will be removed
  */
-@Deprecated(forRemoval = true, since = "12.1.3")
+@Deprecated(forRemoval = true, since = "12.1.4")
 public class Uptime
 {
     public static final int NOIMPL = -1;
