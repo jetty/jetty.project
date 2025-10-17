@@ -27,6 +27,8 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
@@ -53,6 +55,16 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     private ClientHTTP3Session getClientHTTP3Session()
     {
         return (ClientHTTP3Session)getProtocolSession();
+    }
+
+    public QpackEncoder getQpackEncoder()
+    {
+        return getClientHTTP3Session().getQpackEncoder();
+    }
+
+    public QpackDecoder getQpackDecoder()
+    {
+        return getClientHTTP3Session().getQpackDecoder();
     }
 
     @Override

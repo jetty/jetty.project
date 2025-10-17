@@ -47,6 +47,7 @@ public class JNDITest extends HttpServlet
     private String envEntryWebAppScopeResult;
     private String userTransactionResult;
     private String svrResult;
+    private String mailSessionResult;
 
     public void setMyDatasource(DataSource ds)
     {
@@ -81,6 +82,9 @@ public class JNDITest extends HttpServlet
             envEntryWebAppScopeResult = "EnvEntry defined in jetty-env.xml lookup result (java:comp/env/gargle): " + (gargle == 100.0 ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL(expected 100, got " + gargle + ")") + "</span>";
             UserTransaction utx = (UserTransaction)ic.lookup("java:comp/UserTransaction");
             userTransactionResult = "UserTransaction lookup result (java:comp/UserTransaction): " + (utx != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span>";
+            Object mailSessionObject = ic.lookup("java:comp/env/mail/Session");
+
+            mailSessionResult = "MailSession lookup result (java:comp/env/mailSession):" + (mailSessionObject != null && mailSessionObject.getClass().getName().endsWith(".Session") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span>";
         }
         catch (Exception e)
         {
@@ -115,7 +119,7 @@ public class JNDITest extends HttpServlet
             out.println("<p>" + envEntryWebAppScopeResult + "</p>");
             out.println("<p>" + svrResult + "</p>");
             out.println("<p>" + userTransactionResult + "</p>");
-
+            out.println("<p>" + mailSessionResult + "</p>");
             out.println("</body>");
             out.println("</html>");
             out.flush();

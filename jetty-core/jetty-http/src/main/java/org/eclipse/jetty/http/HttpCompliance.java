@@ -142,7 +142,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         /**
          * Allow LF termination of chunk headers and chunks
          */
-        LF_CHUNK_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1", "LF line terminator in chunk");
+        LF_CHUNK_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1", "LF line terminator in chunk"),
+
+        /**
+         * Allow bad quotes in tokens.
+         */
+        BAD_QUOTES_IN_TOKEN("https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.4", "Bad Quotes in Token");
 
         private final String url;
         private final String description;
@@ -199,7 +204,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", of(
         Violation.LF_CHUNK_TERMINATION,
         Violation.LF_HEADER_TERMINATION,
-        Violation.WHITESPACE_IN_PARAMETER));
+        Violation.WHITESPACE_IN_PARAMETER,
+        Violation.BAD_QUOTES_IN_TOKEN));
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
@@ -211,7 +217,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         Violation.MISMATCHED_AUTHORITY,
         Violation.LF_CHUNK_TERMINATION,
         Violation.LF_HEADER_TERMINATION,
-        Violation.WHITESPACE_IN_PARAMETER
+        Violation.WHITESPACE_IN_PARAMETER,
+        Violation.BAD_QUOTES_IN_TOKEN
     ));
 
     /**
@@ -228,7 +235,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
         Violation.MULTIPLE_CONTENT_LENGTHS,
-        Violation.WHITESPACE_IN_PARAMETER);
+        Violation.WHITESPACE_IN_PARAMETER,
+        Violation.BAD_QUOTES_IN_TOKEN);
 
     /**
      * A legacy HttpCompliance mode that supports {@link #RFC7230}, but with case-insensitive methods allowed.

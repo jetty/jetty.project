@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * <p>Typical usage:</p>
  * <pre> {@code
  * // Client-side QUIC configuration to configure QUIC properties.
- * QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+ * QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
  *
  * // Create the HTTP3Client instance.
  * HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);

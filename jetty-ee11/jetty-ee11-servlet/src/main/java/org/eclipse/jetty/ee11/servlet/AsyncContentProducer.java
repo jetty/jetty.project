@@ -212,7 +212,7 @@ class AsyncContentProducer implements ContentProducer
         if (chunk != null)
         {
             _servletChannel.getServletRequestState().onReadIdle();
-            if (Content.Chunk.isFailure(chunk, false))
+            if (Content.Chunk.isFailure(chunk))
                 _chunk = Content.Chunk.next(chunk);
         }
         return chunk;
@@ -281,10 +281,9 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (Content.Chunk.isFailure(_chunk, false))
                 {
-                    // We return the transient failure here without _chunk = Content.Chunk.next(_chunk)
-                    // because this method may be called by available() or isReady(), which do not consume the
-                    // chunk.  Only a call from nextChunk() consumes the chunk produced here, so the call to next
-                    // is done there.
+                    // Do not consume the transient failure here with _chunk = Content.Chunk.next(_chunk)
+                    // because produceChunk() may be called by available() or isReady(), which need to see
+                    // the transient failure chunk until it is consumed by nextChunk().
                     return _chunk;
                 }
                 if (_chunk.isLast() || _chunk.hasRemaining())

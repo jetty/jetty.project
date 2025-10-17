@@ -24,6 +24,8 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -39,10 +41,19 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         super(scheduler, session, listener);
     }
 
-    @Override
-    public ServerHTTP3Session getProtocolSession()
+    public QpackEncoder getQpackEncoder()
     {
-        return (ServerHTTP3Session)super.getProtocolSession();
+        return getServerHTTP3Session().getQpackEncoder();
+    }
+
+    public QpackDecoder getQpackDecoder()
+    {
+        return getServerHTTP3Session().getQpackDecoder();
+    }
+
+    private ServerHTTP3Session getServerHTTP3Session()
+    {
+        return (ServerHTTP3Session)getProtocolSession();
     }
 
     @Override
@@ -97,20 +108,20 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {} on {}", frame, this);
-        getProtocolSession().onSettings(frame);
+        getServerHTTP3Session().onSettings(frame);
         super.onSettings(frame);
     }
 
     @Override
     public void writeControlFrame(Frame frame, Callback callback)
     {
-        getProtocolSession().writeControlFrame(frame, callback);
+        getServerHTTP3Session().writeControlFrame(frame, callback);
     }
 
     @Override
     public void writeMessageFrame(StreamEndPoint streamEndPoint, Frame frame, Callback callback)
     {
-        getProtocolSession().writeMessageFrame(streamEndPoint, frame, callback);
+        getServerHTTP3Session().writeMessageFrame(streamEndPoint, frame, callback);
     }
 
     @Override

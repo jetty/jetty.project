@@ -126,7 +126,7 @@ public class GoAwayTest extends AbstractClientServerTest
         HTTP3SessionServer serverSession = serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(serverSession.getStreams().isEmpty());
-        ServerHTTP3Session serverProtocolSession = serverSession.getProtocolSession();
+        ServerHTTP3Session serverProtocolSession = (ServerHTTP3Session)serverSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
         await().atMost(3, TimeUnit.SECONDS).until(() -> serverProtocolSession.getStreamEndPoints().isEmpty());
         await().atMost(3, TimeUnit.SECONDS).until(() -> serverProtocolSession.getSession().getStreams().isEmpty());
@@ -1028,7 +1028,7 @@ public class GoAwayTest extends AbstractClientServerTest
         HTTP3SessionServer serverSession = (HTTP3SessionServer)serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(serverSession.getStreams().isEmpty());
-        ServerHTTP3Session serverProtocolSession = serverSession.getProtocolSession();
+        ServerHTTP3Session serverProtocolSession = (ServerHTTP3Session)serverSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
         await().atMost(1, TimeUnit.SECONDS).until(() -> serverProtocolSession.getStreamEndPoints().isEmpty());
         await().atMost(1, TimeUnit.SECONDS).until(() -> serverProtocolSession.getSession().getStreams().isEmpty());

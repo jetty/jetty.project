@@ -11,3 +11,6 @@ jndi
 
 [lib]
 lib/jetty-ee9-jndi-${jetty.version}.jar
+
+[ini]
+jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee9.jndi.factories.
