@@ -128,13 +128,8 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
             else
             {
                 // Slice the fragmented payload from the buffer.
-                int limit = payload.limit();
-                int newLimit = payload.position() + fragmentSize;
-                payload.limit(newLimit);
-                ByteBuffer payloadFragment = payload.slice();
-                payload.limit(limit);
-                fragment.setPayload(payloadFragment);
-                payload.position(newLimit);
+                fragment.setPayload(payload.slice(payload.position(), fragmentSize));
+                payload.position(payload.position() + fragmentSize);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fragmented {}->{}", frame, fragment);
             }
