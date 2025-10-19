@@ -48,6 +48,9 @@ public class ContentSourceRange implements Content.Source
             if (chunk == null)
                 return null;
 
+            if (Content.Chunk.isFailure(chunk))
+                return chunk;
+
             if (_offsetRemaining > 0)
             {
                 if (_offsetRemaining >= chunk.remaining())
