@@ -51,27 +51,30 @@ public class ByteChannelContentSource implements Content.Source
     private Runnable demandCallback;
     private Content.Chunk _terminal;
 
-    public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length)
-    {
-        this(null, seekableByteChannel, offset, length);
-    }
-
-    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
-    {
-        this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
-    }
-
-    public ByteChannelContentSource(ByteChannel byteChannel)
-    {
-        this(null, byteChannel, 0L, -1L);
-    }
-
+    /**
+     * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
+     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteChannel The {@link ByteChannel}s to use as the source.
+     */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
     {
         this(byteBufferPool, byteChannel, 0L, -1L);
     }
 
-    private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
+    /**
+     * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
+     * If the {@link ByteChannel} is an instance of {@link SeekableByteChannel} the implementation will use
+     * {@link SeekableByteChannel#position(long)} to navigate to the starting offset.
+     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteChannel The {@link ByteChannel}s to use as the source.
+     * @param offset the offset byte of the content to start from.
+     *               Must be greater than or equal to 0 and less than the content length (if known).
+     * @param length the length of the content to make available, -1 for the full length.
+     *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+     * @throws IndexOutOfBoundsException if the offset or length are out of range.
+     * @see TypeUtil#checkOffsetLengthSize(long, long, long)
+     */
+    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
         _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;

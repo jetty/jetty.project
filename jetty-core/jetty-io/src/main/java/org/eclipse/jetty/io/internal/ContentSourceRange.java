@@ -13,17 +13,35 @@
 
 package org.eclipse.jetty.io.internal;
 
+import java.nio.channels.ClosedChannelException;
+
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.TypeUtil;
 
+/**
+ * A {@link Content.Source} that provides a range of content from another {@link Content.Source}.
+ */
 public class ContentSourceRange implements Content.Source
 {
     private final long _offset;
     private final long _length;
     private final Content.Source _source;
+    boolean _readToEof = false;
     long _offsetRemaining;
     long _lengthRemaining;
 
+    /**
+     * Create a {@link ContentSourceRange} which wraps another {@link Content.Source} to appear
+     * as a sub-range of the original.
+     *
+     * @param source The {@link Content.Source} to wrap.
+     * @param offset the offset byte of the content to start from.
+     *               Must be greater than or equal to 0 and less than the content length (if known).
+     * @param length the length of the content to make available, -1 for the full length.
+     *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+     * @throws IndexOutOfBoundsException if the offset or length are out of range.
+     * @see TypeUtil#checkOffsetLengthSize(long, long, long)
+     */
     public ContentSourceRange(Content.Source source, long offset, long length)
     {
         _source = source;
@@ -31,6 +49,14 @@ public class ContentSourceRange implements Content.Source
         _length = TypeUtil.checkOffsetLengthSize(offset, length, source.getLength());
         _offsetRemaining = _offset;
         _lengthRemaining = _length;
+    }
+
+    /**
+     * @param readToEof - if true, read until EOF of the source after the range is read.
+     */
+    public void setReadToEof(boolean readToEof)
+    {
+        _readToEof = readToEof;
     }
 
     @Override
@@ -79,6 +105,13 @@ public class ContentSourceRange implements Content.Source
             {
                 if (_lengthRemaining == 0)
                 {
+                    if (!_readToEof)
+                    {
+                        // We do not have to read until EOF of the source, so we can return EOF now and fail the source.
+                        _source.fail(new ClosedChannelException());
+                        return Content.Chunk.EOF;
+                    }
+
                     // Release the chunk and continue until we find a last chunk.
                     if (!chunk.isLast())
                     {
