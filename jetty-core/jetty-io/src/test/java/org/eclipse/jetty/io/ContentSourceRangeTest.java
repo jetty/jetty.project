@@ -190,4 +190,23 @@ public class ContentSourceRangeTest
         assertThat(c2.getFailure(), instanceOf(RuntimeException.class));
         c2.release();
     }
+
+    @Test
+    public void testFailureBeforeStartingOffset()
+    {
+        AsyncContent asyncContent = new AsyncContent();
+        Content.Source source = new ContentSourceRange(asyncContent, 20, 5);
+
+        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
+        asyncContent.fail(new RuntimeException("test exception"));
+
+        Content.Chunk c1 = source.read();
+        assertTrue(c1.isLast());
+        assertTrue(c1.isEmpty());
+        assertThat(c1.getFailure(), instanceOf(RuntimeException.class));
+        assertThat(c1.getFailure().getMessage(), equalTo("test exception"));
+
+        c1.release();
+    }
 }
