@@ -1576,7 +1576,7 @@ public class HttpChannelState implements HttpChannel, Components
                     if (!stream.isCommitted())
                         errorResponse = new ErrorResponse(request);
                     else
-                        completeStream = true;
+                        completeStream = httpChannelState._handling == null;
                 }
             }
 
