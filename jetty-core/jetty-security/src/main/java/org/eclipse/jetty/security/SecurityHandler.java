@@ -83,8 +83,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private int _sessionMaxInactiveIntervalOnAuthentication = 0;
     private AuthenticationState.Deferred _deferred;
 
-    private record RequestResponse(Request request, Response response) {}
-
     static
     {
         TypeUtil.serviceStream(ServiceLoader.load(Authenticator.Factory.class))
@@ -522,13 +520,14 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
             if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
             {
-                RequestResponse result = serveAsWrap(request, response, serveAs);
-                request = result.request;
-                response = result.response;
+                response = serveAsWrap(request, response, serveAs);
+                request = response.getRequest();
                 authenticationState = _deferred;
             }
             else if (mustValidate && !isAuthorized(constraint, authenticationState))
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("!authorized {}", authenticationState);
                 return doWriteError(request, response, callback, HttpStatus.FORBIDDEN_403);
             }
             else if (authenticationState == null)
@@ -566,9 +565,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         AuthenticationState authenticationState = AuthenticationState.writeError(request, response, callback, status);
         if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
         {
-            RequestResponse result = serveAsWrap(request, response, serveAs);
-            request = result.request;
-            response = result.response;
+            response = serveAsWrap(request, response, serveAs);
+            request = response.getRequest();
             authenticationState = _deferred;
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
@@ -597,11 +595,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         return true;
     }
 
-    private RequestResponse serveAsWrap(Request request, Response response, AuthenticationState.ServeAs serveAs)
+    private Response serveAsWrap(Request request, Response response, AuthenticationState.ServeAs serveAs)
     {
         HttpURI uri = request.getHttpURI();
-        request = serveAs.wrap(request);
-        if (!uri.equals(request.getHttpURI()))
+        Request wrappedRequest = serveAs.wrap(request);
+        if (!uri.equals(wrappedRequest.getHttpURI()))
         {
             // URI is replaced, so filter out all metadata for the old URI
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
@@ -621,17 +619,23 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 }
             };
 
-            response = new Response.Wrapper(request, response)
+            return new Response.Wrapper(wrappedRequest, response)
             {
                 @Override
                 public HttpFields.Mutable getHeaders()
                 {
                     return headers;
                 }
+
+                @Override
+                public Request getRequest()
+                {
+                    return wrappedRequest;
+                }
             };
         }
 
-        return new RequestResponse(request, response);
+        return response;
     }
 
     public static SecurityHandler getCurrentSecurityHandler()
