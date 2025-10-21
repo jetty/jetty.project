@@ -31,6 +31,7 @@ import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -732,6 +734,71 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             assertNotNull(response.getHeaders().get(HttpHeader.CONTENT_ENCODING));
         else
             assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(expectedEncoding));
+    }
+
+    /**
+     * Some status codes should never be compressed, even if they might have content.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {
+        // Status codes that cannot have content
+        HttpStatus.SWITCHING_PROTOCOLS_101,
+        HttpStatus.NO_CONTENT_204,
+        HttpStatus.RESET_CONTENT_205,
+        HttpStatus.NOT_MODIFIED_304,
+        // Redirection status
+        HttpStatus.MOVED_TEMPORARILY_302,
+        HttpStatus.PERMANENT_REDIRECT_308,
+        // Client failures
+        HttpStatus.BAD_REQUEST_400,
+        HttpStatus.FORBIDDEN_403,
+        // Server failures
+        HttpStatus.INTERNAL_SERVER_ERROR_500,
+        HttpStatus.BAD_GATEWAY_502
+    })
+    public void testNoCompressBasedOnResponseStatus(int status) throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+
+        String resourceName = "texts/quotes.txt";
+        String resourceContentType = "text/plain;charset=utf-8";
+        String requestedPath = "/path/to/quotes.txt";
+
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+
+        CompressionConfig config = CompressionConfig.builder()
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(status);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        client.getContentDecoderFactories().clear();
+        client.getProtocolHandlers().remove("redirect");
+
+        ContentResponse response = client.newRequest(server.getURI())
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip"))
+            .path(requestedPath)
+            .send();
+        assertThat(response.getStatus(), is(status));
+        assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING), "Status code " + status + " should not be compressed");
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)
