@@ -1574,9 +1574,14 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     httpChannelState._callbackFailure = failure;
                     if (!stream.isCommitted())
+                        // We are not committed, so we can send an error response.
                         errorResponse = new ErrorResponse(request);
+                    else if (httpChannelState._handling == null)
+                        // We are committed, but no longer handling, so will complete here, ignoring any pending reads/writes
+                        completeStream = true;
                     else
-                        completeStream = httpChannelState._handling == null;
+                        // We are committed and still handling, so let the HandlerInvoker complete, ignoring any pending reads/writes.
+                        httpChannelState._streamSendState = StreamSendState.LAST_COMPLETE;
                 }
             }
 
