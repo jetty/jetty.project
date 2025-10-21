@@ -248,7 +248,7 @@
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.1</maven-plugin.plugin.version>
-    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
+    <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
@@ -259,7 +259,7 @@
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.deps.version>3.9.11</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.6.1</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.6.2</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.9.1</maven.invoker.plugin.version>
