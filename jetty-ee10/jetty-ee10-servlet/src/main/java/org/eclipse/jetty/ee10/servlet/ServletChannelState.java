@@ -70,20 +70,20 @@ public class ServletChannelState
     /*
      * The state of the request processing lifecycle.
      * <pre>
-     *       ERRORING
-     *       BLOCKING <----> COMPLETING ---> COMPLETED
-     *       ^  |  ^            ^
-     *      /   |   \           |
-     *     |    |    DISPATCH   |
-     *     |    |    ^  ^       |
-     *     |    v   /   |       |
-     *     |  ASYNC -------> COMPLETE
-     *     |    |       |       ^
-     *     |    v       |       |
-     *     |  EXPIRE    |       |
-     *      \   |      /        |
-     *       \  v     /         |
-     *       EXPIRING ----------+
+     *                   ERRORING
+     *      +----------- BLOCKING <----> COMPLETING ---> COMPLETED
+     *      |           ^   |  ^            ^
+     *      |          /    |   \           |
+     *      |         |     |    DISPATCH   |
+     *      |         |     |    ^  ^       |
+     *      v         |     v   /   |       |
+     *  UPGRADING <------> ASYNC -------> COMPLETE
+     *      ^         |     |       |       ^
+     *      |         |     v       |       |
+     *      |         |   EXPIRE    |       |
+     *      |          \    |      /        |
+     *      |           \   v     /         |
+     *      +----------- EXPIRING ----------+
      * </pre>
      */
     private enum RequestState
