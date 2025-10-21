@@ -126,7 +126,7 @@ public class ZstandardEncoderSink extends EncoderSink
         RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
 
         // process content (input) buffer using zstd-jni CONTINUE directive
-        while (content.hasRemaining())
+        while (content != null && content.hasRemaining())
         {
             // content must be a direct bytebuffer, and we have to assume that the size
             // of the content buffer can be huge (multi megabyte or bigger), so lets
