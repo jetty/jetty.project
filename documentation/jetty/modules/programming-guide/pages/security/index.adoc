@@ -1,0 +1,156 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Security
+
+Web application security restricts access to resources within the web application, or imposes security requirements on the transport with which these resources are delivered to clients.
+
+The processing of the request may be:
+
+* _forbidden_; the request is immediately responded with a `403` status code.
+* _allowed_; the request processing is allowed to continue to the application, which produces a response.
+* _challenged_; the request may be allowed, but the credentials are missing, so the request is responded with a `401` status code.
+
+Jetty implements web application security with 3 components:
+
+* A subclass of `org.eclipse.jetty.security.SecurityHandler`, see <<security-handler,this section>> for the implementations available out-of-the-box.
+* An implementation of `org.eclipse.jetty.security.Authenticator`, see <<security-authenticator,this section>> for the implementations available out-of-the-box.
+* An implementation of `org.eclipse.jetty.security.LoginService`, see <<security-login-service,this section>> for the implementations available out-of-the-box.
+
+These components interact in this way:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant SecurityHandler
+participant Authenticator
+participant LoginService
+
+SecurityHandler -> SecurityHandler : getConstraint()
+SecurityHandler -> Authenticator : validateRequest()
+Authenticator -> LoginService : login()
+LoginService -> Authenticator : roles
+Authenticator -> SecurityHandler : AuthenticationState
+----
+
+1. The `SecurityHandler` subclass returns a `Constraint` based on the subclass-specific logic, for example based on the request path, the request method, etc.
+2. The `Constraint` is used to check if the request is trivially allowed, or trivially forbidden, or whether it requires a secure transport, and if so immediately handled with no further actions.
+Otherwise, the `Constraint` declares what requirements about authorization, transport and roles are necessary for the request to be allowed.
+3. The `SecurityHandler` calls `Authenticator.validateRequest(\...)` that performs implementation-specific logic to retrieve the authentication credentials, for example from HTTP request headers such as `Authorization`.
+4. The `Authenticator` calls `LoginService.login(\...)` to verify the credentials and, if the verification is successful, obtain information about the roles associated with these credentials.
+5. The `Authenticator` builds an `AuthenticationState` with the results of the call to `LoginService.login(\...)`, and returns it to the `SecurityHandler`.
+6. The `SecurityHandler`, based on the received `AuthenticationState`, either allows the request to be processed by its child `Handler`, or sends an appropriate response to the client, for example a `401` challenge response or a `403` forbidden response.
+
+[[security-configuration]]
+== Configuring Security
+
+`SecurityHandler` is typically configured as a child of the `ContextHandler` that represents the web application.
+
+A simple example uses `SecurityHandler.PathMapped` along with `BasicAuthenticator` and `HashLoginService`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/SecurityDocs.java[tags=pathMapped]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── ContextHandler /app
+    └── SecurityHandler
+        └── AppHandler
+----
+
+The `realm.properties` file used by `HashLoginService` is the following:
+
+.realm.properties
+----
+# Format: <user>:<password>,<roles>
+carol:password
+david:password,admin
+----
+
+The behavior of the example above is the following:
+
+* A non-secure request using the `http` scheme is replied with a `403` response, since secure transport is required.
+* A request for `/app/foo` is replied with a `200` response, and the application `Handler` would see a `null` request principal.
+* A request for `/app/admin/bar` without `Authorization` header is replied with a `401` response, since authentication is required.
+* A request for `/app/admin/bar` with an `Authorization` header containing invalid or unknown credentials is replied with a `401` response, since authentication is required.
+* A request for `/app/admin/bar` with an `Authorization` header containing valid credentials with a role that is not `admin` is replied with a `401` response, since authentication is required.
+* A request for `/app/admin/bar` with an `Authorization` header containing valid credentials for user `david`, that has `admin` role, is replied with a `200` response, and the application `Handler` would see a request principal for user `david`.
+
+A more complex example uses `SecurityHandler.PathMethodMapped` to allow users with the `read` role to read resources, and users with the `write` role to write resources:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/SecurityDocs.java[tags=pathMethodMapped]
+----
+
+.realm.properties
+----
+# Format: <user>:<password>,<roles>
+bob:password,read
+alice:password,read,write
+----
+
+In the example above, access to any resource is by default forbidden, and requires secure transport.
+
+However, access to `/data/*` resources using the HTTP method `GET` is granted but only to users with `read` role.
+Both `bob` and `alice` are granted access to these resources, but only if they use the `GET` method.
+
+Similarly, access to `/data/*` resources using the HTTP method `PUT` is granted but only to users with `write` role.
+Only `alice` is granted access to these resources, but only if she uses the `PUT` method.
+
+[[security-handler]]
+== `SecurityHandler` Implementations
+
+Jetty provides the following `SecurityHandler` implementations:
+
+* `SecurityHandler.PathMapped`, that allows you to configure constraints based on the request path.
+* `SecurityHandler.PathMethodMapped`, that allows you to configure constraints based on the request path and the request HTTP method.
+
+[[security-authenticator]]
+== `Authenticator` Implementations
+
+Jetty provides the following `Authenticator` implementations:
+
+* `BasicAuthenticator`, that implements link:https://datatracker.ietf.org/doc/html/rfc7617[Basic authentication].
+* `DigestAuthentication`, that implements link:https://datatracker.ietf.org/doc/html/rfc7616[Digest authentication].
+* `FormAuthenticator`, that implements HTML form authentication using the link:https://jakarta.ee/specifications/servlet/6.1/jakarta-servlet-spec-6.1#form-based-authentication[`j_security_check` mechanism].
+* `SslClientCertAuthenticator`, that implements authentication based on client certificates.
+* `SPNEGOAuthenticator`, that implements link:https://datatracker.ietf.org/doc/html/rfc4178[SPNEGO authentication].
+* `EthereumAuthenticator`, that implements link:https://eips.ethereum.org/EIPS/eip-4361[Sign-In with Ethereum authentication] (see also xref:security/siwe-support.adoc[this dedicated section]).
+* `OpenIdAuthenticator`, that implements link:https://openid.net/specs/openid-connect-core-1_0-final.html[OpenID Connect Core 1.0 authentication] (see also xref:security/openid-support.adoc[this dedicated section]).
+// * `JaspiAuthenticator` TODO: Jakarta EE only, should we have a separate section?
+* `MultiAuthenticator`, that supports multiple authentication mechanisms for the same web application.
+
+[[security-login-service]]
+== `LoginService` Implementations
+
+Jetty provides the following `LoginService` implementations:
+
+* `HashLoginService`, that verifies credentials retrieved from a `+*.properties+` file.
+* `JDBCLoginService`, that verifies credentials retrieved from a RDBMS using the JDBC APIs.
+* `DataSourceLoginService`, that verifies credentials retrieved from a RDBMS using the `DataSource` APIs.
+* `JAASLoginService`, that verifies credentials retrieved using the JAAS APIs.
+* `AnyUserLoginService`, that does not verify credentials, but can delegate to another `LoginService` to provide roles for authenticated users.
+
+Some `Authenticator` implementation require a specific `LoginService`, so the following implementation are also available:
+
+* `SPNEGOLoginService`, used in conjunction with `SPNEGOAuthenticator`.
+* `OpenIdLoginService`, used in conjunction with `OpenIdAuthenticator`.

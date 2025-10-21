@@ -1583,6 +1583,11 @@ The ``Handler``s children of `PathMappingsHandler` may extend <<handler-use-cond
 For example, a `LoginHandler` that extends `ConditionalHandler` may be configured to only accept `POST` requests.
 ====
 
+[[handler-use-security]]
+==== SecurityHandler
+
+TODO
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
