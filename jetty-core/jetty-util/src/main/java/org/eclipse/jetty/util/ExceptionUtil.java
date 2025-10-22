@@ -305,6 +305,8 @@ public class ExceptionUtil
     {
         if (t1 == null)
             return t2;
+        if (t2 == null)
+            return t1;
         addSuppressedIfNotAssociated(t1, t2);
         return t1;
     }
