@@ -64,7 +64,6 @@ public class CompressionResponse extends Response.Wrapper
                     // because we need to handle 304 Not Modified differently for etags
                     status == HttpStatus.NO_CONTENT_204 ||
                     status == HttpStatus.RESET_CONTENT_205 ||
-                    status == HttpStatus.PARTIAL_CONTENT_206 ||
                     // Redirection, Client, and Server errors are not compressed
                     status >= 300) &&
                     !HttpMethod.HEAD.is(getRequest().getMethod()))
