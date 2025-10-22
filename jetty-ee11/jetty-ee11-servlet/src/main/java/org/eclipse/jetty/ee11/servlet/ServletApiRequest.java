@@ -1237,7 +1237,7 @@ public class ServletApiRequest implements HttpServletRequest
         {
             return getParameters().getValue(name);
         }
-        catch (IllegalStateException | VirtualMachineError e)
+        catch (IllegalStateException | VirtualMachineError | LinkageError e)
         {
             throw e;
         }
