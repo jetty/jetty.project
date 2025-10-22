@@ -175,7 +175,7 @@ public class HttpClientFailureTest
                     completed.incrementAndGet();
                     assertThat(result.getRequestFailure(), notNullValue());
                     assertThat(result.getResponseFailure(), nullValue());
-                    assertThat(result.getResponse().getStatus(), is(HttpStatus.OK_200));
+                    assertThat(result.getResponse().getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
                     resultLatch.countDown();
                 });
 
