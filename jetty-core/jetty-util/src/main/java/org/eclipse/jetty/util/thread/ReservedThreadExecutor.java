@@ -92,9 +92,20 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         _minSize = minSize < 0 ? Math.min(1, _threads.capacity()) : minSize;
         if (_minSize > _threads.capacity())
             throw new IllegalArgumentException("minSize larger than capacity");
-        _maxPending = maxPending;
-        if (_maxPending == 0)
-            throw new IllegalArgumentException("maxPending cannot be 0");
+        
+        if (maxPending < 0)
+        {
+            _maxPending = -1;
+        }
+        else if (maxPending == 0)
+        {
+            _maxPending = reservedThreads(executor, capacity);
+        }
+        else
+        {
+            _maxPending = maxPending;
+        }
+        
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
         installBean(_executor);
