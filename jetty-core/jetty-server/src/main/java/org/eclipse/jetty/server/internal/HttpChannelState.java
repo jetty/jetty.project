@@ -93,7 +93,10 @@ public class HttpChannelState implements HttpChannel, Components
         LAST_SENDING,
 
         /** Last content sent and completed */
-        LAST_COMPLETE
+        LAST_COMPLETE,
+
+        /** Failing, so last send will never happen */
+        FAILED
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
@@ -575,6 +578,8 @@ public class HttpChannelState implements HttpChannel, Components
             case LAST_SENDING, LAST_COMPLETE -> (length > 0)
                 ? new IllegalStateException("last already written")
                 : NOTHING_TO_SEND;
+
+            case FAILED -> null;
         };
     }
 
@@ -588,7 +593,7 @@ public class HttpChannelState implements HttpChannel, Components
     private boolean lockedIsLastStreamSendCompleted()
     {
         assert _lock.isHeldByCurrentThread();
-        return _streamSendState == StreamSendState.LAST_COMPLETE;
+        return _streamSendState == StreamSendState.LAST_COMPLETE || _streamSendState == StreamSendState.FAILED;
     }
 
     private boolean lockedLastStreamSend()
@@ -698,7 +703,7 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = _callbackFailure;
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
-                completeStream = callbackCompleted && (lastStreamSendComplete || failure != null);
+                completeStream = callbackCompleted && lastStreamSendComplete;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
@@ -1559,6 +1564,8 @@ public class HttpChannelState implements HttpChannel, Components
                 else
                 {
                     Throwable unconsumed = stream.consumeAvailable();
+                    if (failure != null)
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
                         LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
                 }
@@ -1619,6 +1626,11 @@ public class HttpChannelState implements HttpChannel, Components
                             // There has been no last write, but we will just fail the stream instead.
                             completeStream = true;
                         }
+                    }
+                    else if (!httpChannelState.lockedIsLastStreamSendCompleted() && !response.lockedIsWriting())
+                    {
+                        // last write is not going to happen after failure, so we can just fail anyway
+                        httpChannelState._streamSendState = StreamSendState.LAST_COMPLETE;
                     }
                 }
             }

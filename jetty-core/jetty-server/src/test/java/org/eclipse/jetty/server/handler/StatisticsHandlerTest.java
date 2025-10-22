@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -360,9 +359,13 @@ public class StatisticsHandlerTest
             \r
             """;
 
-        String response = _connector.getResponse(request);
-        assertThat(response, is(nullValue()));
-        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString("HTTP/1.1 500 "));
+            assertThat(response, containsString("content-length 1 != 0 written"));
+            await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
+        }
     }
 
     @Test
