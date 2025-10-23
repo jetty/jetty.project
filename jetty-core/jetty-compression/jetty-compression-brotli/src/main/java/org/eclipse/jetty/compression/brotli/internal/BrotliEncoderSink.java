@@ -80,7 +80,7 @@ public class BrotliEncoderSink extends EncoderSink
                 {
                     try
                     {
-                        while (content != null && content.hasRemaining())
+                        while (BufferUtil.hasContent(content))
                         {
                             // only encode if inputBuffer is full.
                             if (!inputBuffer.hasRemaining())
