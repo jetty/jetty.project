@@ -1601,7 +1601,9 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     // We are failing...
                     httpChannelState._callbackFailure = failure;
-                    if (!stream.isCommitted())
+
+                    // Can we and should we generate an error response?
+                    if (!stream.isCommitted() && !ExceptionUtil.isAssociated(failure, Request.Handler.AbortException.class))
                     {
                         // We are not committed, so we can send an error response.
                         errorResponse = new ErrorResponse(request);
