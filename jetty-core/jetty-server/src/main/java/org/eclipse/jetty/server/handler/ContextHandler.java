@@ -28,6 +28,7 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -133,6 +134,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
+    private final AtomicBoolean _enterScopeSetClassloaderFailed = new AtomicBoolean();
 
     private String _displayName;
     private String _contextPath = "/";
@@ -634,8 +636,16 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             }
             catch (Throwable x)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error setting a context classloader on thread {}", Thread.currentThread(), x);
+                // Log as warning the first time it happens.
+                if (_enterScopeSetClassloaderFailed.compareAndSet(false, true))
+                {
+                    LOG.warn("Error setting a context classloader on thread {}", Thread.currentThread(), x);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Error setting a context classloader on thread {}", Thread.currentThread(), x);
+                }
             }
         }
         notifyEnterScope(contextRequest);

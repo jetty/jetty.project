@@ -193,7 +193,8 @@ public class ContextHandlerTest
                     @Override
                     public void run()
                     {
-                        try (Blocker.Callback cb = Blocker.callback())
+                        try (StacklessLogging ignore = new StacklessLogging(ContextHandler.class);
+                             Blocker.Callback cb = Blocker.callback())
                         {
                             // When a classloader is configured, Response.write() tries to set it as the context classloader.
                             response.write(true, ByteBuffer.allocate(32), cb);
@@ -207,6 +208,12 @@ public class ContextHandlerTest
                         {
                             latch.countDown();
                         }
+                    }
+
+                    @Override
+                    public ClassLoader getContextClassLoader()
+                    {
+                        return null;
                     }
 
                     @Override
@@ -258,7 +265,8 @@ public class ContextHandlerTest
                         @Override
                         public void completed(Integer result, Object attachment)
                         {
-                            try (Blocker.Callback cb = Blocker.callback())
+                            try (StacklessLogging ignore = new StacklessLogging(ContextHandler.class);
+                                 Blocker.Callback cb = Blocker.callback())
                             {
                                 // When a classloader is configured, Response.write() tries to set it as the context classloader.
                                 response.write(true, ByteBuffer.allocate(32), cb);
