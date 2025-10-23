@@ -298,7 +298,7 @@
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.1</mongodb.version>
-    <netty.version>4.2.0.Final</netty.version>
+    <netty.version>4.2.5.Final</netty.version>
     <njord.version>0.8.2</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
