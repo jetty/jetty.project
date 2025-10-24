@@ -187,7 +187,7 @@ public class IOResourcesTest
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
 
-        if (resource.length() < 100)
+        if (resource.length() >= 0 && resource.length() < 100)
         {
             assertThrows(IndexOutOfBoundsException.class, () -> IOResources.asContentSource(resource, bufferPool, 100, -1));
             return;

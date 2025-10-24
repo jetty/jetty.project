@@ -898,33 +898,34 @@ public class TypeUtil
 
     /**
      * Check that the offset and length of a subrange are within the size of a range.
+     *
      * @param offset an offset of a subrange within a range of 0 to {code size} to start from.
-     *               Must be greater than or equal to 0 and less than the range size (if known).
+     * Must be greater than or equal to 0 and less than the range size (if known).
      * @param length the length of the subrange, -1 for the full length available from the offset,
-     *               otherwise must be greater than or equal to 0.
-     *               If the size is known, then the length will be reduced if necessary to fit within the size-offset.
+     * otherwise must be greater than or equal to 0.
+     * If the size is known, then the length will be reduced if necessary to fit within the size-offset.
      * @param size the size of the range, or -1 if unknown.
      * @return the length of the subrange, which may be calculated if length was less than 0 or if the length is limited by
-     *         a known size.
+     * a known size.
      * @throws IndexOutOfBoundsException if the offset or length are out of range.
      * @throws ArithmeticException if the length is not -1 and offset+length overflows.
      */
-    public static long checkOffsetLengthSize(long offset, long length, long size)
+    public static long checkOffsetLengthSize(long offset, long length, long size) throws IndexOutOfBoundsException, ArithmeticException
     {
-        if (length == 0)
-            return 0;
+        if (length == 0L)
+            return 0L;
 
-        if (offset < 0)
+        if (offset < 0L)
             throw new IndexOutOfBoundsException("Negative offset: " + offset);
-        if (length < -1)
+        if (length < -1L)
             throw new IndexOutOfBoundsException("Length less than -1: " + length);
 
-        if (size >= 0)
+        if (size >= 0L)
         {
             if (offset > size)
                 throw new IndexOutOfBoundsException("Offset > Size: " + offset + " > " + size);
 
-            if (length == -1 || Math.addExact(offset, length) > size)
+            if (length == -1L || Math.addExact(offset, length) > size)
                 length = size - offset;
         }
 

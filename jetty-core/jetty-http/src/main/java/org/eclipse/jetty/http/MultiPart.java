@@ -552,13 +552,6 @@ public class MultiPart
             long length = 0;
             for (Content.Chunk c : content)
                 length += c.size();
-            for (Content.Source s : contentSources)
-            {
-                long l = s.getLength();
-                if (l < 0)
-                    return -1;
-                length += l;
-            }
             return length;
         }
 
