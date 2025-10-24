@@ -18,7 +18,7 @@
 
 There are many cases where you might need to provide credentials such as usernames and passwords to authenticate your access to certain services, for example KeyStore and TrustStore passwords, JDBC credentials, Basic or Digest authentication credentials, etc.
 
-Passwords are typically stored in clear-text in configuration files, because a program such as Jetty reading the configuration file must be able to retrieve the original password to pass it to the service (for example a KeyStore or JDBC).
+Passwords are typically stored in clear-text in configuration files; a program such as Jetty reading the configuration file must be able to retrieve the original password to pass it to the service (for example a KeyStore or a JDBC driver).
 
 You can protect clear-text stored passwords from _casual view_ by obfuscating them using class link:{javadoc-url}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`]:
 
@@ -86,4 +86,15 @@ Here is an example, setting an obfuscated password for a JDBC `DataSource`:
 
 On the other hand, `MessageDigest` checksums of passwords are useful when Jetty receives a password and needs to verify it without storing the original password (for example, with Basic authentication).
 
-You can store the Basic authentication credentials in checksum form, and verify the received password by comparing the stored checksum with the checksum of the received password.
+Differently from obfuscated passwords, password checksums are not reversible, and cannot be used when Jetty needs to pass the original password to other services.
+
+You can store the Basic authentication credentials in checksum form on the server, and verify the password received from the client by comparing the stored checksum with the checksum of the received password computed on-the-fly.
+If the checksum is identical, then the password was correct.
+
+[NOTE]
+====
+`MessageDigest` algorithms vary in strength, that is the probability that two different inputs produce the same checksum.
+
+The `MD5` and `SHA-1` algorithms are not recommended, as they are weak and insecure.
+Use at least `SHA-256`, typically available in all modern JVMs.
+====
