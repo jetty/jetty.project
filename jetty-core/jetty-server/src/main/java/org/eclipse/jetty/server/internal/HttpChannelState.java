@@ -746,7 +746,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 assert _callbackCompleted;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
-                completeStream = _handling == null;
+                completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
                 failure = _callbackFailure = ExceptionUtil.combine(_callbackFailure, failure);
             }
@@ -1308,7 +1308,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannelState._writeInvoker.run(callback::succeeded);
+                    httpChannelState._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
                     return;
                 }
                 // Have we failed in some way?
@@ -1603,7 +1603,7 @@ public class HttpChannelState implements HttpChannel, Components
                     httpChannelState._callbackFailure = failure;
 
                     // Can we and should we generate an error response?
-                    if (!stream.isCommitted() && !ExceptionUtil.isAssociated(failure, Request.Handler.AbortException.class))
+                    if (!stream.isCommitted() && !ExceptionUtil.hasAssociated(failure, Request.Handler.AbortException.class))
                     {
                         // We are not committed, so we can send an error response.
                         errorResponse = new ErrorResponse(request);
@@ -1618,21 +1618,41 @@ public class HttpChannelState implements HttpChannel, Components
                         }
                         else if (response.lockedIsWriting())
                         {
-                            // We are currently writing, so let the completion of that write handle the failure
-                            httpChannelState._callbackFailure = failure;
+                            // We are currently writing so fail the app callback now and let the write completion handle the failure
+                            // TODO If we don't want to wait for write completion then do
+                            //      Runnable task = response.lockedFailWrite(failure);
+                            //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
                             failedCallback = response._writeCallback;
                             response._writeCallback = httpChannelState._handlerInvoker;
                         }
                         else
                         {
                             // There has been no last write, but we will just fail the stream instead.
+
+                            httpChannelState._streamSendState = StreamSendState.FAILED;
                             completeStream = true;
                         }
                     }
-                    else if (!httpChannelState.lockedIsLastStreamSendCompleted() && !response.lockedIsWriting())
+                    else
                     {
-                        // last write is not going to happen after failure, so we can just fail anyway
-                        httpChannelState._streamSendState = StreamSendState.LAST_COMPLETE;
+                        // We are still handling, sof for the most part
+                        // let the HandlerInvoker deal with completion
+
+                        // But if we are writing
+                        if (response.lockedIsWriting())
+                        {
+                            // We are currently writing so fail the app callback now and let the write completion handle the failure
+                            // TODO If we don't want to wait for write completion then do
+                            //      Runnable task = response.lockedFailWrite(failure);
+                            //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
+                            failedCallback = response._writeCallback;
+                            response._writeCallback = httpChannelState._handlerInvoker;
+                        }
+                        else if (!httpChannelState.lockedIsLastStreamSendCompleted())
+                        {
+                            // last write it is not going to happen after failure, so we can just fail anyway
+                            httpChannelState._streamSendState = StreamSendState.FAILED;
+                        }
                     }
                 }
             }
