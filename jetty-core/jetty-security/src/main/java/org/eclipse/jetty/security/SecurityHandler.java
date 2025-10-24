@@ -749,11 +749,27 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             super(handler);
         }
 
+        /**
+         * <p>Associates the specified request path pattern with the specified {@link Constraint}.</p>
+         *
+         * @param pathSpec the request path pattern to match
+         * @param constraint the associated {@link Constraint}
+         * @return the previous {@link Constraint} associated with the request path pattern,
+         * or {@code null} if there was no previous association
+         */
         public Constraint put(String pathSpec, Constraint constraint)
         {
             return put(PathSpec.from(pathSpec), constraint);
         }
 
+        /**
+         * <p>Associates the specified request path pattern with the specified {@link Constraint}.</p>
+         *
+         * @param pathSpec the request path pattern to match
+         * @param constraint the associated {@link Constraint}
+         * @return the previous {@link Constraint} associated with the request path pattern,
+         * or {@code null} if there was no previous association
+         */
         public Constraint put(PathSpec pathSpec, Constraint constraint)
         {
             Set<String> roles = constraint.getRoles();
@@ -902,10 +918,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
 
         /**
-         * <p>Associates the given {@link Constraint} to the given path and HTTP method.</p>
+         * <p>Associates the given {@link Constraint} to the given request path patten and HTTP method.</p>
          *
          * @param pathSpec the {@link PathSpec} associated to the given constraint
-         * @param method the HTTP method associated to the given constraint, or {@code null}
+         * @param method the HTTP method associated to the given constraint, or {@code null} or {@code *}
          * to indicate all HTTP methods
          * @param constraint the constraint to associate
          * @return the previous constraint associated with the given path and HTTP method,
@@ -917,10 +933,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
 
         /**
-         * <p>Associates the given {@link Constraint} to the given path and HTTP method.</p>
+         * <p>Associates the given {@link Constraint} to the given request path pattern and HTTP method.</p>
 
          * @param pathSpec the {@link PathSpec} associated to the given constraint
-         * @param method the HTTP method associated to the given constraint, or {@code null}
+         * @param method the HTTP method associated to the given constraint, or {@code null} or {@code *}
          * to indicate all HTTP methods
          * @param constraint the constraint to associate
          * @return the previous constraint associated with the given path and HTTP method,
@@ -942,7 +958,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
 
         /**
-         * <p>Associates the given {@link Constraint} to the given path and HTTP methods.</p>
+         * <p>Associates the given {@link Constraint} to the given request path pattern and HTTP methods.</p>
          *
          * @param pathSpec the {@link PathSpec} associated to the given constraint
          * @param methods the list of HTTP methods associated to the given constraint
@@ -950,7 +966,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
          */
         public void put(PathSpec pathSpec, List<String> methods, Constraint constraint)
         {
-            if (methods.isEmpty() || methods.contains(ALL_METHODS))
+            if (methods.isEmpty() || methods.contains(ALL_METHODS) || methods.contains(null))
                 throw new IllegalArgumentException("Invalid method list");
             methods.forEach(method -> put(pathSpec, method, constraint));
         }
