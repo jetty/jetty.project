@@ -19,7 +19,7 @@ The processing of the request may be:
 
 * _forbidden_; the request is immediately responded with a `403` status code.
 * _allowed_; the request processing is allowed to continue to the application, which produces a response.
-* _challenged_; the request may be allowed, but the credentials are missing, so the request is responded with a `401` status code.
+* _challenged_; the request may be allowed, but the credentials are missing (or wrong), so the request is responded with a `401` status code.
 
 Jetty implements web application security with 3 components:
 
@@ -47,15 +47,18 @@ Authenticator -> SecurityHandler : AuthenticationState
 ----
 
 1. The `SecurityHandler` subclass returns a `Constraint` based on the subclass-specific logic, for example based on the request path, the request method, etc.
-2. The `Constraint` is used to check if the request is trivially allowed, or trivially forbidden, or whether it requires a secure transport, and if so immediately handled with no further actions.
+2. The `Constraint` is used to check if the request is trivially allowed, or trivially forbidden, or whether it requires a secure transport, and if so immediately handled by `SecurityHandler` with no further actions.
 Otherwise, the `Constraint` declares what requirements about authorization, transport and roles are necessary for the request to be allowed.
 3. The `SecurityHandler` calls `Authenticator.validateRequest(\...)` that performs implementation-specific logic to retrieve the authentication credentials, for example from HTTP request headers such as `Authorization`.
 4. The `Authenticator` calls `LoginService.login(\...)` to verify the credentials and, if the verification is successful, obtain information about the roles associated with these credentials.
 5. The `Authenticator` builds an `AuthenticationState` with the results of the call to `LoginService.login(\...)`, and returns it to the `SecurityHandler`.
 6. The `SecurityHandler`, based on the received `AuthenticationState`, either allows the request to be processed by its child `Handler`, or sends an appropriate response to the client, for example a `401` challenge response or a `403` forbidden response.
 
-[[security-configuration]]
-== Configuring Security
+[[security-core-configuration]]
+== Configuring Jetty Core Security
+
+This section is about configuring security for Jetty Core web applications.
+To configure security for Jakarta EE web applications, see <<security-jakarta-configuration,this section>>.
 
 `SecurityHandler` is typically configured as a child of the `ContextHandler` that represents the web application.
 
@@ -87,14 +90,21 @@ david:password,admin
 
 The behavior of the example above is the following:
 
+* For any request, _all_ the request path matches are collected and processed in order from the least significant to the most significant, combining their constraint.
 * A non-secure request using the `http` scheme is replied with a `403` response, since secure transport is required.
-* A request for `/app/foo` is replied with a `200` response, and the application `Handler` would see a `null` request principal.
-* A request for `/app/admin/bar` without `Authorization` header is replied with a `401` response, since authentication is required.
+* A request for `/app/foo` matches the constraint mapped to `+/*+`, and is replied with a `200` response; `AppHandler` would see a `null` request principal.
+* A request for `/app/admin/bar` without `Authorization` header matches both the constraints mapped to `+/*+` and `+/admin/*+`, and is replied with a `401` response, since authentication is required.
 * A request for `/app/admin/bar` with an `Authorization` header containing invalid or unknown credentials is replied with a `401` response, since authentication is required.
 * A request for `/app/admin/bar` with an `Authorization` header containing valid credentials with a role that is not `admin` is replied with a `401` response, since authentication is required.
-* A request for `/app/admin/bar` with an `Authorization` header containing valid credentials for user `david`, that has `admin` role, is replied with a `200` response, and the application `Handler` would see a request principal for user `david`.
+* A request for `/app/admin/bar` with an `Authorization` header containing valid credentials for user `david`, that has `admin` role, is replied with a `200` response, and `AppHandler` would see a request principal for user `david`.
 
-A more complex example uses `SecurityHandler.PathMethodMapped` to allow users with the `read` role to read resources, and users with the `write` role to write resources:
+[TIP]
+====
+It is good practice to have a default constraint for all paths (that is, for path `+/*+`), even if it is `Constraint.ALLOWED`.
+In this way it is clear what is the intended behavior for paths that do not match more specific constraint configurations.
+====
+
+The more complex example below uses `SecurityHandler.PathMethodMapped` to allow users with the `read` role to read resources, and users with the `write` role to write resources:
 
 [,java,indent=0]
 ----
@@ -116,6 +126,85 @@ Both `bob` and `alice` are granted access to these resources, but only if they u
 Similarly, access to `/data/*` resources using the HTTP method `PUT` is granted but only to users with `write` role.
 Only `alice` is granted access to these resources, but only if she uses the `PUT` method.
 
+[TIP]
+====
+It is good practice to have a default constraint for all paths (that is, for path `+/*+`), and for all HTTP methods (that is, for method `+*+`), even if it is `Constraint.ALLOWED`.
+In this way it is clear what is the intended behavior for paths and HTTP methods that do not match more specific constraint configurations.
+====
+
+[IMPORTANT]
+====
+The behavior of `SecurityHandler` implementations for the Jetty Core API is to combine all the constraints that match.
+This is different from the behavior of the `SecurityHandler` implementations for the Jakarta EE APIs, that only use the constraint of the most specific match.
+====
+
+[[security-jakarta-configuration]]
+== Configuring Jakarta EE Security
+
+This section is about configuring security for Jakarta EE web applications.
+To configure security for Jetty Core web applications, see <<security-core-configuration,this section>>.
+
+To configure Jakarta EE web application security you must use the `SecurityHandler` subclass `org.eclipse.jetty.{ee-current}.servlet.security.ConstraintSecurityHandler`.
+
+Below you can find a simple example that sets up a `ConstraintSecurityHandler` to secure your Jakarta EE web application:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/SecurityDocs.java[tags=jakartaPathMapped]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── WebAppContext /app
+    └── ConstraintSecurityHandler
+        └── ServletHandler
+            └── AppServlet (defined in app.war)
+----
+
+The `realm.properties` file used by `HashLoginService` is the following:
+
+.realm.properties
+----
+# Format: <user>:<password>,<roles>
+carol:password
+david:password,admin
+----
+
+Note how the constraints are configured using `org.eclipse.jetty.ee11.servlet.security.ConstraintMapping`, that allows to configure the path, the HTTP method and the `Constraint`.
+
+The more complex example below uses `ConstraintSecurityHandler` to allow users with the `read` role to read resources, and users with the `write` role to write resources:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/SecurityDocs.java[tags=jakartaPathMethodMapped]
+----
+
+.realm.properties
+----
+# Format: <user>:<password>,<roles>
+bob:password,read
+alice:password,read,write
+----
+
+In the example above, access to any resource is by default forbidden, and requires secure transport.
+
+However, access to `/data/*` resources using the HTTP method `GET` is granted but only to users with `read` role.
+Both `bob` and `alice` are granted access to these resources, but only if they use the `GET` method.
+
+Similarly, access to `/data/*` resources using the HTTP method `PUT` is granted but only to users with `write` role.
+Only `alice` is granted access to these resources, but only if she uses the `PUT` method.
+
+Note also that `ConstraintSecurityHandler.denyUncoveredHttpMethods=true` to make sure that requests that match `+/data/*+` but are neither `GET` nor `PUT` are denied.
+
+[IMPORTANT]
+====
+The behavior of `SecurityHandler` implementations for the Jakarta EE API is to only use the constraint of the most specific match.
+This is different from the behavior of the `SecurityHandler` implementations for the Jetty Core APIs, that combine all the constraints that match.
+====
+
 [[security-handler]]
 == `SecurityHandler` Implementations
 
@@ -123,6 +212,7 @@ Jetty provides the following `SecurityHandler` implementations:
 
 * `SecurityHandler.PathMapped`, that allows you to configure constraints based on the request path.
 * `SecurityHandler.PathMethodMapped`, that allows you to configure constraints based on the request path and the request HTTP method.
+* `ConstraintSecurityHandler`, that implements the Jakarta EE web application security constraints.
 
 [[security-authenticator]]
 == `Authenticator` Implementations
@@ -136,8 +226,8 @@ Jetty provides the following `Authenticator` implementations:
 * `SPNEGOAuthenticator`, that implements link:https://datatracker.ietf.org/doc/html/rfc4178[SPNEGO authentication].
 * `EthereumAuthenticator`, that implements link:https://eips.ethereum.org/EIPS/eip-4361[Sign-In with Ethereum authentication] (see also xref:security/siwe-support.adoc[this dedicated section]).
 * `OpenIdAuthenticator`, that implements link:https://openid.net/specs/openid-connect-core-1_0-final.html[OpenID Connect Core 1.0 authentication] (see also xref:security/openid-support.adoc[this dedicated section]).
-// * `JaspiAuthenticator` TODO: Jakarta EE only, should we have a separate section?
 * `MultiAuthenticator`, that supports multiple authentication mechanisms for the same web application.
+* `JaspiAuthenticator`, for the link:https://jakarta.ee/specifications/authentication/[Jakarta Authentication API].
 
 [[security-login-service]]
 == `LoginService` Implementations

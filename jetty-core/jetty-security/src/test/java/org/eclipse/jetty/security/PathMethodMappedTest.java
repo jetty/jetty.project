@@ -13,39 +13,60 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathMethodMappedTest
 {
     private Server server;
-    private LocalConnector connector;
+    private ServerConnector connector;
+    private ServerConnector tlsConnector;
 
     private void start(Consumer<SecurityHandler.PathMethodMapped> configurator) throws Exception
     {
         server = new Server();
-        connector = new LocalConnector(server);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
+        sslContextFactory.setKeyStorePassword("storepwd");
+        tlsConnector = new ServerConnector(server, 1, 1, sslContextFactory);
+        server.addConnector(tlsConnector);
 
         SecurityHandler.PathMethodMapped securityHandler = new SecurityHandler.PathMethodMapped();
         configurator.accept(securityHandler);
@@ -60,6 +81,8 @@ public class PathMethodMappedTest
         ContextHandler contextHandler = new ContextHandler(securityHandler);
         server.setHandler(contextHandler);
         server.start();
+
+        httpConfig.setSecurePort(tlsConnector.getLocalPort());
     }
 
     @AfterEach
@@ -84,12 +107,53 @@ public class PathMethodMappedTest
             });
         });
 
-        HttpTester.Request request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("test", "password"));
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.generate()));
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
 
-        // No matches, request is allowed.
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // No path matches, request is allowed.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testAllPathsOneMethodMappingRequestWithOtherMethodAllowed() throws Exception
+    {
+        start(s ->
+        {
+            s.put("/*", "TRACE", Constraint.FORBIDDEN);
+            s.setHandler(new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    callback.succeeded();
+                    return true;
+                }
+            });
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
+
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // No method matches, request is allowed.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 
     @Test
@@ -109,12 +173,20 @@ public class PathMethodMappedTest
             });
         });
 
-        HttpTester.Request request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("test", "password"));
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.generate()));
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
 
-        // All requests are forbidden.
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // All requests are forbidden.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        }
     }
 
     @Test
@@ -138,24 +210,120 @@ public class PathMethodMappedTest
             });
         });
 
-        // User "test" does not have roles, so forbidden.
-        HttpTester.Request request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("test", "password"));
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
 
-        // User "reader" has role "read", so it can only perform GET requests.
-        request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("reader", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // User "test" does not have roles, so forbidden.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
-        request = HttpTester.newRequest();
-        request.setMethod("PUT");
-        request.put(HttpHeader.CONTENT_LENGTH, 0);
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("reader", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("reader", "password")))
+            );
+
+            response = HttpTester.parseResponse(client);
+            // User "reader" has role "read", so it can only perform GET requests.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            client.write(UTF_8.encode("""
+                PUT /file.txt HTTP/1.1
+                Host: localhost
+                Content-Length: 0
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("reader", "password")))
+            );
+
+            response = HttpTester.parseResponse(client);
+            // Method PUT is forbidden.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testAllPathsOnlyGETAllowedSecureTransport() throws Exception
+    {
+        start(s ->
+        {
+            s.put("/*", "*", Constraint.combine(Constraint.FORBIDDEN, Constraint.SECURE_TRANSPORT));
+            s.put("/*", "GET", Constraint.from("read"));
+            s.setHandler(new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    assertTrue(request.isSecure());
+                    Request.AuthenticationState state = Request.getAuthenticationState(request);
+                    assertNotNull(state);
+                    assertEquals("reader", state.getUserPrincipal().getName());
+                    callback.succeeded();
+                    return true;
+                }
+            });
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
+
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // Clear text, redirect to secure.
+            assertTrue(HttpStatus.isRedirection(response.getStatus()));
+            String location = response.get(HttpHeader.LOCATION);
+            assertNotNull(location);
+            assertThat(location, startsWith("https://"));
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, null);
+            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            try (Socket secureClient = sslSocketFactory.createSocket("localhost", tlsConnector.getLocalPort()))
+            {
+                String request = """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Authorization: %s
+                    
+                    """.formatted(BasicAuthenticator.authorization("test", "password"));
+                OutputStream output = secureClient.getOutputStream();
+                output.write(request.getBytes(UTF_8));
+                output.flush();
+
+                InputStream input = secureClient.getInputStream();
+                response = HttpTester.parseResponse(input);
+                // Unauthorized user.
+                assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+
+                request = """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Authorization: %s
+                    
+                    """.formatted(BasicAuthenticator.authorization("reader", "password"));
+                output.write(request.getBytes(UTF_8));
+                output.flush();
+
+                response = HttpTester.parseResponse(input);
+                // Authorized user.
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
     }
 
     @Test
@@ -179,41 +347,62 @@ public class PathMethodMappedTest
             });
         });
 
-        // User "test" does not have roles, so forbidden.
-        HttpTester.Request request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("test", "password"));
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("test", "password")))
+            );
 
-        // User "reader" has role "read", so it can only perform GET requests.
-        request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("reader", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // GET not allowed.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
-        request = HttpTester.newRequest();
-        request.setMethod("PUT");
-        request.put(HttpHeader.CONTENT_LENGTH, 0);
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("reader", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            client.write(UTF_8.encode("""
+                PUT / HTTP/1.1
+                Host: localhost
+                Content-Length: 0
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("reader", "password")))
+            );
 
-        // User "writer" has role "write", so it can only perform PUT requests.
-        request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("writer", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            response = HttpTester.parseResponse(client);
+            // PUT from user with wrong role, forbidden.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
-        request = HttpTester.newRequest();
-        request.setMethod("PUT");
-        request.put(HttpHeader.CONTENT_LENGTH, 0);
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("writer", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            client.write(UTF_8.encode("""
+                PUT / HTTP/1.1
+                Host: localhost
+                Content-Length: 0
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("writer", "password")))
+            );
+
+            response = HttpTester.parseResponse(client);
+            // PUT from user with right role, allowed.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("writer", "password")))
+            );
+
+            response = HttpTester.parseResponse(client);
+            // GET from writer user, not allowed.
+            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        }
     }
 
     @Test
-    public void allPathsGETAndPUTAllowed() throws Exception
+    public void testAllPathsGETAndPUTAllowed() throws Exception
     {
         start(s ->
         {
@@ -234,23 +423,32 @@ public class PathMethodMappedTest
             });
         });
 
-        // User "test" does not have roles, so forbidden.
-        HttpTester.Request request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("test", "password"));
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            client.write(UTF_8.encode("""
+                GET / HTTP/1.1
+                Host: localhost
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("admin", "password")))
+            );
 
-        // User "admin" has both read and write roles.
-        request = HttpTester.newRequest();
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("admin", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            // User "admin" has both read and write roles, allowed.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        request = HttpTester.newRequest();
-        request.setMethod("PUT");
-        request.put(HttpHeader.CONTENT_LENGTH, 0);
-        request.put(HttpHeader.AUTHORIZATION, BasicAuthenticator.authorization("admin", "password"));
-        response = HttpTester.parseResponse(connector.getResponse(request.generate()));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+            client.write(UTF_8.encode("""
+                PUT / HTTP/1.1
+                Host: localhost
+                Content-Length: 0
+                Authorization: %s
+                
+                """.formatted(BasicAuthenticator.authorization("admin", "password")))
+            );
+
+            response = HttpTester.parseResponse(client);
+            // User "admin" has both read and write roles, allowed.
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 }

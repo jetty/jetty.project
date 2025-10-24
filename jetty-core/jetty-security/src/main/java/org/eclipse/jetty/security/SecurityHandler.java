@@ -730,6 +730,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      *   <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"}, resulting in a
      *       constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
      * </ul>
+     * <p>If a request path is uncovered, that is there is no match for the request path, then the constraint is
+     * assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*}.</p>
      */
     public static class PathMapped extends SecurityHandler implements Comparator<PathSpec>
     {
@@ -853,6 +856,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     /**
      * <p>A concrete implementation of {@link SecurityHandler} that uses a {@link PathMappings}
      * to match request paths to a map of an HTTP method to a {@link Constraint}.</p>
+     * <p>The token {@code *} is used to indicate all HTTP methods.</p>
      * <p>Request path matches are sorted from the least significant to the most significant,
      * and the associated constraints are combined in order.</p>
      * <p>For example:</p>
@@ -873,6 +877,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      *   and {@link Transport#SECURE};
      *   any other HTTP method results in a constraint with {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}</li>
      * </ul>
+     * <p>If a request path is uncovered, that is there is no match for the request path, then the constraint is
+     * assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>If an HTTP method is uncovered, that is there is no match for the request URI, or no match for the HTTP method,
+     * then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} and HTTP method
+     * {@code *}.</p>
      */
     public static class PathMethodMapped extends SecurityHandler
     {
@@ -954,7 +964,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 return Constraint.ALLOWED;
 
             // Sort from least specific to most specific to combine constraints properly.
-            matches.sort(SecurityHandler::compareMappedResources);
+            if (matches.size() > 1)
+                matches.sort(SecurityHandler::compareMappedResources);
 
             String method = request.getMethod();
 
@@ -963,14 +974,18 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             {
                 Map<String, Constraint> methodConstraints = match.getResource();
 
-                Constraint constraint = methodConstraints.get(method);
-                if (constraint == null)
-                    constraint = methodConstraints.get(ALL_METHODS);
+                // A constraint for all HTTP methods may be used to establish
+                // defaults such as Constraint.SECURE_TRANSPORT, so always
+                // combine it with the Constraint for the specific HTTP method.
+                Constraint allMethodsConstraint = methodConstraints.get(ALL_METHODS);
+                Constraint specificMethodConstraint = methodConstraints.get(method);
+                Constraint constraint = Constraint.combine(allMethodsConstraint, specificMethodConstraint);
 
+                // Combine the constraints from all URI matches.
                 result = Constraint.combine(result, constraint);
             }
 
-            return result != null ? result : Constraint.FORBIDDEN;
+            return result;
         }
 
         private void recomputeKnownRoles()

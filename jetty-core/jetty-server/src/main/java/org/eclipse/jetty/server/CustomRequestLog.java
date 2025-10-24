@@ -1236,8 +1236,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestAuthentication(StringBuilder b, Request request, Response response, boolean quoted)
     {
-        Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
-        Principal userPrincipal = authenticationState == null ? null : authenticationState.getUserPrincipal();
+        Principal userPrincipal = Request.getAuthenticationState(request).getUserPrincipal();
         append(b, userPrincipal == null ? null : userPrincipal.getName(), quoted);
     }
 
