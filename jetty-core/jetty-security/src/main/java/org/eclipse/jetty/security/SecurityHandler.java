@@ -870,7 +870,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      * <ul>
      *   <li>{@code /foo} matches {@code /*};
      *   any HTTP method results in a constraint with {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}</li>
-     *   <li>{@code /releases/jetty-12.1.0.tar.gz} matches {@code /releases/*};
+     *   <li>{@code /releases/jetty-12.1.0.tar.gz} matches both {@code /*} and {@code /releases/*};
      *   method {@code GET} results in a constraint with {@link Authorization#SPECIFIC_ROLE} with role {@code read}
      *   and {@link Transport#SECURE};
      *   method {@code PUT} results in a constraint with {@link Authorization#SPECIFIC_ROLE} with role {@code write}
