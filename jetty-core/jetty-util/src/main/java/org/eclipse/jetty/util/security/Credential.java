@@ -265,7 +265,7 @@ public abstract class Credential implements Serializable
             }
             catch (Throwable x)
             {
-                return "<MD5 algorithm failure>";
+                return "<MD5 algorithm failure: %s>".formatted(x);
             }
         }
 
@@ -358,7 +358,7 @@ public abstract class Credential implements Serializable
             }
             catch (Throwable x)
             {
-                return "<%s algorithm failure>".formatted(algorithm);
+                return "<%s algorithm failure: %s>".formatted(algorithm, x);
             }
         }
 
