@@ -28,7 +28,7 @@
   <properties>
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
-    <ee9.module></ee9.module>
+    <ee9.module/>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-demos/jetty-servlet5-demos/${ee9.module}</ee9.module.path>
     <sonar.skip>true</sonar.skip>
     <warSourceDirectory>${project.build.directory}/webapp</warSourceDirectory>

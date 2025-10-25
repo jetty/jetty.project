@@ -51,7 +51,7 @@
     <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
     <ee8.jsp.impl.version>9.0.108.1</ee8.jsp.impl.version>
     <ee8.weld.version>3.1.9.Final</ee8.weld.version>
-    <ee9.module></ee9.module>
+    <ee9.module/>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <javax.servlet.jsp.api.version>2.3</javax.servlet.jsp.api.version>
     <sonar.skip>true</sonar.skip>

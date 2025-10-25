@@ -73,7 +73,7 @@
               <target>
                 <!-- ee9 use javax.security but ee8 need java.security -->
                 <replace dir="${project.build.sourceDirectory}" token="javax.security" value="java.security">
-                  <include name="**/module-info.java"></include>
+                  <include name="**/module-info.java"/>
                 </replace>
               </target>
             </configuration>

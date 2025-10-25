@@ -328,7 +328,7 @@
     <project.build.outputTimestamp>2025-10-16T14:25:11Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
-    <settings.path></settings.path>
+    <settings.path/>
     <settingsPath>src/it/settings.xml</settingsPath>
     <sisu.plexus.version>0.9.0.M3</sisu.plexus.version>
     <slf4j.version>2.0.17</slf4j.version>
@@ -1616,7 +1616,7 @@
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
               <JAVA_HOME>${java.home}</JAVA_HOME>
-              <MAVEN_DEBUG_OPTS></MAVEN_DEBUG_OPTS>
+              <MAVEN_DEBUG_OPTS/>
             </environmentVariables>
             <projectsDirectory>src/it</projectsDirectory>
             <timeoutInSeconds>300</timeoutInSeconds>
@@ -2060,7 +2060,7 @@
                   <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
                   <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
                 -->
-                <requireUpperBoundDeps></requireUpperBoundDeps>
+                <requireUpperBoundDeps/>
               </rules>
             </configuration>
           </execution>
