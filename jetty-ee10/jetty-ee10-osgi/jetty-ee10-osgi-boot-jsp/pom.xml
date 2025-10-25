@@ -53,7 +53,7 @@
         <configuration>
           <instructions>
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
-            <Bundle-Classpath></Bundle-Classpath>
+            <Bundle-Classpath/>
             <Fragment-Host>org.eclipse.jetty.ee10.osgi.boot</Fragment-Host>
             <Import-Package>${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,

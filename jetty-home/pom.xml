@@ -487,7 +487,7 @@
             <phase>process-resources</phase>
             <configuration>
               <target>
-                <chmod dir="${assembly-directory}/bin" includes="**/*.sh" perm="755"></chmod>
+                <chmod dir="${assembly-directory}/bin" includes="**/*.sh" perm="755"/>
               </target>
             </configuration>
           </execution>
@@ -778,7 +778,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.demos</includeGroupIds>
-              <excludeArtifactIds></excludeArtifactIds>
+              <excludeArtifactIds/>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>

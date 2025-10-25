@@ -74,7 +74,7 @@
           <configuration>
             <archive>
               <manifest>
-                <addDefaultEntries></addDefaultEntries>
+                <addDefaultEntries/>
               </manifest>
               <manifestEntries>
                 <Comment>Jetty Jmh Support Classes</Comment>
