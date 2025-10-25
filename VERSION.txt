@@ -1,3 +1,14 @@
+12.0.29 - 16 October 2025
+ + 13588 CONTAINER_JAR_PATTERN ignored on Windows
+ + 13613 HttpInput#read rethrows already thrown exception, leading to possible self-suppressing exception issue
+ + 13615 Concurrency issue, headers from different requests are mixed in Jetty 12.0.27
+ + 13626 WebAppContext.setExtraClasspath(String) entry separator
+ + 13634 Avoid sending RST_STREAM for closed streams
+ + 13682 HttpClient.[maxRequest|request]HeadersSize should be consistent
+ + 13683 Badly pct-encoded Shift-JIS is not supported by Jetty 12
+ + 13685 Infinite loop on Content.copy() with Content.Source.from(... , Path, ) when Path has size 0.
+ + 13768 Sanitizing of HTTP headers names and values should remove NUL bytes (U+0000)
+
 12.0.28 - 03 October 2025
  + 13509 "No multipart configuration element" exception when getNamedDispatcher().forward() used
  + 13583 NPE in WriteFlusher after org.eclipse.jetty.http.BadMessageException: 417
