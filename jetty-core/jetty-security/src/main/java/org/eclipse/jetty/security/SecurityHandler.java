@@ -727,12 +727,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      *       constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#ANY}.</li>
      *   <li>{@code "/admin/config.xml"} matches {@code "/*"}, {@code "/admin/*"} and {@code "*.xml"}, resulting in a
      *       constraint of {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}.</li>
-     *   <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"}, resulting in a
-     *       constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
+     *   <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"},
+     *       resulting in a constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
      * </ul>
-     * <p>If a request path is uncovered, that is there is no match for the request path, then the constraint is
-     * assumed to be {@link Constraint#ALLOWED}.</p>
-     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*}.</p>
+     * <p>If there is no match for the request path, then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} or {@code /}.</p>
      */
     public static class PathMapped extends SecurityHandler implements Comparator<PathSpec>
     {
@@ -893,12 +892,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      *   and {@link Transport#SECURE};
      *   any other HTTP method results in a constraint with {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}</li>
      * </ul>
-     * <p>If a request path is uncovered, that is there is no match for the request path, then the constraint is
-     * assumed to be {@link Constraint#ALLOWED}.</p>
-     * <p>If an HTTP method is uncovered, that is there is no match for the request URI, or no match for the HTTP method,
-     * then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
-     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} and HTTP method
-     * {@code *}.</p>
+     * <p>If there is no match for the request path, then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>If there is no match for the request URI, or no match for the HTTP method, then the constraint is assumed
+     * to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} or {@code /} 
+     * and HTTP method {@code *}.</p>
      */
     public static class PathMethodMapped extends SecurityHandler
     {
