@@ -575,6 +575,8 @@ updates:
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.apache.lucene:*"
         versions: [ ">9.12.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ ">= 10.0.27.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
