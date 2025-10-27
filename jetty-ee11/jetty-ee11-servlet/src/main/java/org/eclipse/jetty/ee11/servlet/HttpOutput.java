@@ -296,14 +296,10 @@ public class HttpOutput extends ServletOutputStream
             }
 
             if (LOG.isDebugEnabled())
-            {
-                if (failure == null)
-                    LOG.debug("onWriteComplete({},null) {}->{} c={} cb={} w={}",
+                LOG.atDebug()
+                    .setCause(failure)
+                    .log("onWriteComplete({}) {}->{} c={} cb={} w={}",
                         last, state, lockedStateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
-                else
-                    LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                        last, failure, state, lockedStateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
-            }
         }
 
         try
