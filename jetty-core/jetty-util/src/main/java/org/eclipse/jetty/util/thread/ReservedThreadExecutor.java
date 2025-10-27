@@ -74,7 +74,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      */
     public ReservedThreadExecutor(Executor executor, int capacity, int minSize)
     {
-        this(executor, capacity, minSize, -1);
+        this(executor, capacity, minSize, 0);
     }
 
     /**
@@ -83,7 +83,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      *                 is calculated based on a heuristic from the number of available processors and
      *                 thread pool type.
      * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
-     * @param maxPending The maximum number of reserved Threads to start, or -1 for no limit.
+     * @param maxPending The maximum number of reserved Threads to start, 0 (default) for thread pool capacity or -1 for no limit.
      */
     public ReservedThreadExecutor(Executor executor, int capacity, int minSize, int maxPending)
     {
@@ -92,20 +92,14 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         _minSize = minSize < 0 ? Math.min(1, _threads.capacity()) : minSize;
         if (_minSize > _threads.capacity())
             throw new IllegalArgumentException("minSize larger than capacity");
-        
+
         if (maxPending < 0)
-        {
             _maxPending = -1;
-        }
         else if (maxPending == 0)
-        {
-            _maxPending = reservedThreads(executor, capacity);
-        }
+            _maxPending = _threads.capacity();
         else
-        {
             _maxPending = maxPending;
-        }
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
         installBean(_executor);
