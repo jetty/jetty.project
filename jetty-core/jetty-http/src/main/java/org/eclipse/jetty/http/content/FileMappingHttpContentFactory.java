@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
@@ -130,18 +129,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             return _buffer.remaining();
         }
-
-        @Override
-        public Instant getLastModifiedInstant()
-        {
-            return getWrapped().getLastModifiedInstant();
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return getWrapped().getLastModified();
-        }
     }
 
     private static class MultiBufferFileMappedHttpContent extends HttpContent.Wrapper
@@ -251,18 +238,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         public long getContentLengthValue()
         {
             return _contentLengthValue;
-        }
-
-        @Override
-        public Instant getLastModifiedInstant()
-        {
-            return getWrapped().getLastModifiedInstant();
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return getWrapped().getLastModified();
         }
     }
 }
