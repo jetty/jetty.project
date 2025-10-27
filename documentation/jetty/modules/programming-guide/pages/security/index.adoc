@@ -19,7 +19,7 @@ The processing of the request may be:
 
 * _forbidden_; the request is immediately responded with a `403` status code.
 * _allowed_; the request processing is allowed to continue to the application, which produces a response.
-* _challenged_; the request may be allowed, but the credentials are missing (or wrong), so the request is responded with a `401` status code.
+* _challenged_; the request may be allowed, but the credentials are missing (or wrong), so the request is responded either with a `401` status code, or with a response indicating that credentials are required (for example, a login page or a redirect to a login page.
 
 Jetty implements web application security with 3 components:
 
