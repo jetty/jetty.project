@@ -57,8 +57,8 @@ public class FileMappingHttpContentFactoryTest
         HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
         Instant originalLastModifiedInstant = content.getLastModifiedInstant();
 
-        // Set the file's last modified time to 100ms into the future.
-        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusMillis(100)));
+        // Set the file's last modified time to 10s into the future.
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusSeconds(10)));
 
         assertThat(originalLastModifiedInstant, lessThan(content.getLastModifiedInstant()));
     }
@@ -74,8 +74,8 @@ public class FileMappingHttpContentFactoryTest
         HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
         Instant originalLastModifiedInstant = content.getLastModifiedInstant();
 
-        // Set the file's last modified time to 100ms into the future.
-        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusMillis(100)));
+        // Set the file's last modified time to 10s into the future.
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusSeconds(10)));
 
         assertThat(originalLastModifiedInstant, lessThan(content.getLastModifiedInstant()));
     }
