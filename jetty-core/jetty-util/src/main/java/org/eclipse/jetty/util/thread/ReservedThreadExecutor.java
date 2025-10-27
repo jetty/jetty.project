@@ -232,7 +232,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     private void startReservedThread()
     {
-        if (_maxPending > 0 && _pending.incrementAndGet() >= _maxPending)
+        if (_maxPending > 0 && _pending.incrementAndGet() > _maxPending)
         {
             _pending.decrementAndGet();
             return;
