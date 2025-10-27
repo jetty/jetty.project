@@ -223,7 +223,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
         if (last)
-            callback = Callback.from(callback, getHttpOutput()::completed);
+            callback = Callback.from(getHttpOutput()::completed, callback);
         super.write(last, content, callback);
     }
 

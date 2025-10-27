@@ -392,6 +392,51 @@ public interface Callback extends Invocable
     }
 
     /**
+     * Creates a callback that runs the {@link Consumer} argument before
+     * completing the callback argument.
+     * <p>The {@link Consumer} is assumed to be {@code NON_BLOCKING}, so the
+     * {@link InvocationType} of the returned callback is the same as the
+     * callback argument.</p>
+     *
+     * @param callback The nested callback
+     * @param failure The {@link Consumer} to run before the nested callback
+     * is completed. Any exceptions thrown from the {@link Consumer} will
+     * result in the callback failure.
+     * @return a new callback
+     */
+    static Callback from(Consumer<Throwable> failure, Callback callback)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    failure.accept(null);
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    Callback.failed(callback, t);
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                Callback.failed(failure, callback::failed, x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return callback.getInvocationType();
+            }
+        };
+    }
+
+    /**
      * <p>Creates a callback which always fails the callback argument on completion.</p>
      *
      * @param callback The nested callback
