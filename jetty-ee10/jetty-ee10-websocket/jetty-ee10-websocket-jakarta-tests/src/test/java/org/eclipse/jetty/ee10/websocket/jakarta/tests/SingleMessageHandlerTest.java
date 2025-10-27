@@ -100,14 +100,14 @@ public class SingleMessageHandlerTest
 
         // Can send/receive binary message successfully.
         ByteBuffer binaryMessage = BufferUtil.toBuffer("hello world");
-        session.getBasicRemote().sendBinary(binaryMessage);
+        session.getBasicRemote().sendBinary(binaryMessage.slice());
         assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(binaryMessage));
 
         // Text message is discarded by implementation.
         session.getBasicRemote().sendText("hello world");
 
         // Next binary message is still received.
-        session.getBasicRemote().sendBinary(binaryMessage);
+        session.getBasicRemote().sendBinary(binaryMessage.slice());
         assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(binaryMessage));
 
         session.close();

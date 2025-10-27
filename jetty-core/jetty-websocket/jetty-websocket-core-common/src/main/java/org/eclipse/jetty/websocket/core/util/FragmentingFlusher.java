@@ -31,7 +31,6 @@ public abstract class FragmentingFlusher extends WebSocketFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
     private final Configuration _configuration;
-    private ByteBuffer _payload;
 
     public FragmentingFlusher(Configuration configuration)
     {
@@ -52,11 +51,10 @@ public abstract class FragmentingFlusher extends WebSocketFlusher
                 forwardFrame(entry);
                 return true;
             }
-
-            _payload = frame.getPayload().slice();
         }
 
-        int remaining = _payload.remaining();
+        ByteBuffer payload = frame.getPayload();
+        int remaining = payload.remaining();
         int fragmentSize = (int)Math.min(remaining, maxFrameSize);
         byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
         Frame fragment = new Frame(opCode);
@@ -66,31 +64,18 @@ public abstract class FragmentingFlusher extends WebSocketFlusher
         // If we don't need to fragment just forward with original payload.
         if (finished)
         {
-            fragment.setPayload(_payload);
-            _payload = null;
+            fragment.setPayload(payload);
         }
         else
         {
             // Slice the fragmented payload from the buffer.
-            int limit = _payload.limit();
-            int newLimit = _payload.position() + fragmentSize;
-            _payload.limit(newLimit);
-            ByteBuffer payloadFragment = _payload.slice();
-            _payload.limit(limit);
-            fragment.setPayload(payloadFragment);
-            _payload.position(newLimit);
+            fragment.setPayload(payload.slice(payload.position(), fragmentSize));
+            payload.position(payload.position() + fragmentSize);
             if (LOG.isDebugEnabled())
                 LOG.debug("Fragmented {}->{}", frame, fragment);
         }
 
         forwardFrame(new OutgoingEntry.Builder(entry).frame(fragment).build());
         return finished;
-    }
-
-    @Override
-    protected void onCompleteFailure(Throwable cause)
-    {
-        super.onCompleteFailure(cause);
-        _payload = null;
     }
 }
