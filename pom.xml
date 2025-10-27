@@ -236,7 +236,7 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.3</jetty.test.version>
+    <jetty.test.version>6.4</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <jetty.url>https://jetty.org/</jetty.url>
@@ -263,7 +263,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.2</log4j2.version>
     <logback.version>1.5.20</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <lucene.version>9.12.0</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.6</mariadb.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
@@ -469,7 +469,7 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.12.0</version>
+        <version>2.13.9</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
