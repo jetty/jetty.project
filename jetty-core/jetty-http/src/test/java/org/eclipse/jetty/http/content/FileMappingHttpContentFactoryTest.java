@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -37,12 +39,48 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class FileMappingHttpContentFactoryTest
 {
     public WorkDir workDir;
+
+    @Test
+    public void testSingleBufferFileMappedLastModified() throws Exception
+    {
+        Path file = Files.writeString(workDir.getEmptyPathDir().resolve("file.txt"), "0123456789abcdefghijABCDEFGHIJ");
+        FileMappingHttpContentFactory fileMappingHttpContentFactory = new FileMappingHttpContentFactory(
+            new ResourceHttpContentFactory(ResourceFactory.root().newResource(file.getParent()), MimeTypes.DEFAULTS, ByteBufferPool.SIZED_NON_POOLING));
+
+        HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
+        Instant lastModifiedInstant1 = content.getLastModifiedInstant();
+
+        Thread.sleep(100);
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now()));
+
+        Instant lastModifiedInstant2 = content.getLastModifiedInstant();
+        assertThat(lastModifiedInstant1, lessThan(lastModifiedInstant2));
+    }
+
+    @Test
+    public void testMultiBufferFileMappedLastModified() throws Exception
+    {
+        Path file = Files.writeString(workDir.getEmptyPathDir().resolve("file.txt"), "0123456789abcdefghijABCDEFGHIJ");
+        FileMappingHttpContentFactory fileMappingHttpContentFactory = new FileMappingHttpContentFactory(
+            new ResourceHttpContentFactory(ResourceFactory.root().newResource(file.getParent()), MimeTypes.DEFAULTS, ByteBufferPool.SIZED_NON_POOLING),
+            0, 10);
+
+        HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
+        Instant lastModifiedInstant1 = content.getLastModifiedInstant();
+
+        Thread.sleep(100);
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now()));
+
+        Instant lastModifiedInstant2 = content.getLastModifiedInstant();
+        assertThat(lastModifiedInstant1, lessThan(lastModifiedInstant2));
+    }
 
     @Test
     public void testMultiBufferFileMappedOffsetAndLength() throws Exception
