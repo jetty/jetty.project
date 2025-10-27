@@ -55,13 +55,12 @@ public class FileMappingHttpContentFactoryTest
             new ResourceHttpContentFactory(ResourceFactory.root().newResource(file.getParent()), MimeTypes.DEFAULTS, ByteBufferPool.SIZED_NON_POOLING));
 
         HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
-        Instant lastModifiedInstant1 = content.getLastModifiedInstant();
+        Instant originalLastModifiedInstant = content.getLastModifiedInstant();
 
-        Thread.sleep(100);
-        Files.setLastModifiedTime(file, FileTime.from(Instant.now()));
+        // Set the file's last modified time to 100ms into the future.
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusMillis(100)));
 
-        Instant lastModifiedInstant2 = content.getLastModifiedInstant();
-        assertThat(lastModifiedInstant1, lessThan(lastModifiedInstant2));
+        assertThat(originalLastModifiedInstant, lessThan(content.getLastModifiedInstant()));
     }
 
     @Test
@@ -73,13 +72,12 @@ public class FileMappingHttpContentFactoryTest
             0, 10);
 
         HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
-        Instant lastModifiedInstant1 = content.getLastModifiedInstant();
+        Instant originalLastModifiedInstant = content.getLastModifiedInstant();
 
-        Thread.sleep(100);
-        Files.setLastModifiedTime(file, FileTime.from(Instant.now()));
+        // Set the file's last modified time to 100ms into the future.
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusMillis(100)));
 
-        Instant lastModifiedInstant2 = content.getLastModifiedInstant();
-        assertThat(lastModifiedInstant1, lessThan(lastModifiedInstant2));
+        assertThat(originalLastModifiedInstant, lessThan(content.getLastModifiedInstant()));
     }
 
     @Test
