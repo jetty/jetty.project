@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -64,10 +65,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -76,6 +80,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -3806,6 +3811,48 @@ public class ResourceServletTest
         assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("18"));
         assertThat(response.getContent(), is("Test 2 to too two\n"));
         assertThat(filterCalled.get(), is(true));
+    }
+
+    @Test
+    public void testSingleLastWrite() throws Exception
+    {
+        server.stop();
+        var rootHandler = new Handler.Wrapper(context)
+        {
+            final AtomicInteger lastWriteCounter = new AtomicInteger();
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response = new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    {
+                        if (last)
+                            lastWriteCounter.incrementAndGet();
+                        super.write(last, byteBuffer, callback);
+                    }
+                };
+                return super.handle(request, response, callback);
+            }
+        };
+        server.setHandler(rootHandler);
+        server.start();
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+        assertThat(rootHandler.lastWriteCounter.get(), is(1));
     }
 
     public static class WriterFilter implements Filter

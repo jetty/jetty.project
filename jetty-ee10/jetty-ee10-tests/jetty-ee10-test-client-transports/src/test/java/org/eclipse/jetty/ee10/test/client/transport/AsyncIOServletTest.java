@@ -19,6 +19,8 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
+import org.eclipse.jetty.ee10.servlet.ResourceServlet;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -64,9 +67,11 @@ import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -77,6 +82,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -1530,6 +1536,49 @@ public class AsyncIOServletTest extends AbstractTest
 
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testResourceServletLastWrite(TransportType transportType) throws Exception
+    {
+        prepareServer(transportType, new ResourceServlet());
+        Path docRoot = workDir.getPathFile("docroot");
+        FS.ensureDirExists(docRoot);
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+        servletContextHandler.setBaseResourceAsPath(docRoot);
+
+        AtomicInteger lastWriteCounter = new AtomicInteger();
+        server.setHandler(new Handler.Wrapper(servletContextHandler)
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    {
+                        if (last)
+                            lastWriteCounter.incrementAndGet();
+                        super.write(last, byteBuffer, callback);
+                    }
+                };
+                return super.handle(request, response, callback);
+            }
+        });
+        server.start();
+        startClient(transportType);
+
+        var request = client.newRequest(newURI(transportType))
+            .path("/file.txt")
+            .method(HttpMethod.GET)
+            .timeout(15, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals("How now brown cow", response.getContentAsString());
+        assertEquals(1, lastWriteCounter.get());
     }
 
     private static class Listener implements ReadListener, WriteListener
