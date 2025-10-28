@@ -163,7 +163,7 @@ public class Generator
         if (frame.isMasked())
             maskPayload(buffer, frame);
         else
-            buffer.put(payload.slice());
+            buffer.put(payload);
         BufferUtil.flipToFlush(buffer, pos);
     }
 
@@ -198,6 +198,7 @@ public class Generator
                     ++maskOffset;
                 }
             }
+            payload.position(end);
         }
     }
 }

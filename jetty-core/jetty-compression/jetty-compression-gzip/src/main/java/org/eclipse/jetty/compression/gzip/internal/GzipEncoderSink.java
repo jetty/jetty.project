@@ -143,7 +143,7 @@ public class GzipEncoderSink extends EncoderSink
                     case BODY ->
                     {
                         // Processing input
-                        if (content.hasRemaining())
+                        if (BufferUtil.hasContent(content))
                         {
                             if (output == null)
                                 output = compression.acquireByteBuffer(bufferSize);

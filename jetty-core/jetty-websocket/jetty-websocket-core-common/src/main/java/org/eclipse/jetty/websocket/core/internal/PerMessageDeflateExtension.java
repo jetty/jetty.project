@@ -277,7 +277,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 }
 
                 // Provide the frames payload as input to the Deflater.
-                getDeflater().setInput(entry.getFrame().getPayload().slice());
+                getDeflater().setInput(entry.getFrame().getPayload());
             }
 
             boolean finished = deflate(entry, first);
@@ -404,7 +404,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
                 // Provide the frames payload as input to the Inflater.
                 _tailBytes = false;
-                getInflater().setInput(frame.getPayload().slice());
+                getInflater().setInput(frame.getPayload());
             }
 
             try

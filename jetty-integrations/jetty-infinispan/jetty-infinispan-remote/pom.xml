@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-infinispan</artifactId>
-    <version>12.1.3-SNAPSHOT</version>
+    <version>12.1.4-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-infinispan-remote</artifactId>
   <packaging>pom</packaging>
@@ -48,9 +48,9 @@
             <phase>process-resources</phase>
             <configuration>
               <target>
-                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar"></replaceregexp>
-                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar"></replaceregexp>
-                <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]"></replaceregexp>
+                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar"/>
+                <replaceregexp byline="true" file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar"/>
+                <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]"/>
               </target>
             </configuration>
           </execution>
@@ -63,8 +63,8 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/infinispan-remote-libs.mod">
-                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/remote/infinispan-remote-libs.mod"></fileset>
-                  <fileset file="${project.build.directory}/deps.txt"></fileset>
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/remote/infinispan-remote-libs.mod"/>
+                  <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </target>
             </configuration>

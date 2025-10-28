@@ -170,7 +170,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
 def useBuildCache() {
   def labelNoBuildCache = false
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
-    labelNoBuildCache = pullRequest.labels.contains("build-no-cache") || pullRequest.labels.contains("dependencies")
+    labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
   }
   def noBuildCache = (env.BRANCH_NAME == 'jetty-12.1.x') || labelNoBuildCache;
   return !noBuildCache;

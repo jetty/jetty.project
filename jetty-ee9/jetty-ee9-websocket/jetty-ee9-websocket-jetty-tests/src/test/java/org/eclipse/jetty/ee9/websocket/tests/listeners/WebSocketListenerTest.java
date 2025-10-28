@@ -118,9 +118,11 @@ public class WebSocketListenerTest
 
         // Send and receive echo on client.
         ByteBuffer payload = BufferUtil.toBuffer("hello world");
+        ByteBuffer payloadSlice = payload.slice();
         clientEndpoint.session.getRemote().sendBytes(payload);
         ByteBuffer echoMessage = clientEndpoint.binaryMessages.poll(5, TimeUnit.SECONDS);
-        assertThat(echoMessage, is(payload));
+        assertThat(echoMessage, is(payloadSlice));
+        assertThat(payload.remaining(), is(0));
 
         // Close normally.
         clientEndpoint.session.close(StatusCode.NORMAL, "standard close");

@@ -99,6 +99,7 @@ public class PermessageDeflateDemandTest
         assertNotNull(coreSession);
         // Set max frame size to autoFragment the message into multiple frames.
         ByteBuffer message = randomBytes(1024);
+        ByteBuffer messageSlice = message.slice();
         coreSession.setMaxFrameSize(64);
         coreSession.sendFrame(new Frame(OpCode.BINARY, message).setFin(true), Callback.NOOP, false);
 
@@ -108,7 +109,8 @@ public class PermessageDeflateDemandTest
 
         assertThat(serverHandler.binaryMessages.size(), equalTo(1));
         ByteBuffer recvMessage = serverHandler.binaryMessages.poll();
-        assertThat(recvMessage, equalTo(message));
+        assertThat(message.remaining(), equalTo(0));
+        assertThat(recvMessage, equalTo(messageSlice));
     }
 
     private static ByteBuffer randomBytes(int size)

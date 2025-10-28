@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -106,7 +107,7 @@ public class AutoFragmentTest
         assertThat(frame.isFin(), is(true));
 
         // Original frame payload should not have been changed.
-        assertThat(sentFrame.getPayload(), is(message));
+        assertThat(sentFrame.getPayload().remaining(), is(0));
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -309,9 +310,12 @@ public class AutoFragmentTest
             frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
+        // Content of the sentPayload  was fully consumed.
+        assertThat(sendPayload.remaining(), equalTo(0));
+
         // We received correct payload in 2 frames.
         assertThat(message, is(payload));
-        assertThat(message, is(sendPayload));
+        assertThat(sendPayload.remaining(), is(0));
         assertThat(numFrames, is(2));
 
         clientHandler.sendClose();
