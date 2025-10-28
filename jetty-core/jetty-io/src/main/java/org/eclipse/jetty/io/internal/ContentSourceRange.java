@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.internal;
 import java.nio.channels.ClosedChannelException;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
@@ -29,6 +30,7 @@ public class ContentSourceRange implements Content.Source
     private final boolean _readToEof;
     private long _offsetRemaining;
     private long _lengthRemaining;
+    private Content.Chunk _terminal;
 
     /**
      * Create a {@link ContentSourceRange} which wraps another {@link Content.Source} to appear
@@ -79,6 +81,13 @@ public class ContentSourceRange implements Content.Source
     @Override
     public Content.Chunk read()
     {
+        if (_terminal != null)
+        {
+            Content.Chunk chunk = _terminal;
+            _terminal = Content.Chunk.next(_terminal);
+            return chunk;
+        }
+
         while (true)
         {
             Content.Chunk chunk = _source.read();
@@ -86,7 +95,10 @@ public class ContentSourceRange implements Content.Source
                 return null;
 
             if (Content.Chunk.isFailure(chunk))
+            {
+                _terminal = Content.Chunk.next(chunk);
                 return chunk;
+            }
 
             if (_offsetRemaining > 0)
             {
@@ -94,13 +106,10 @@ public class ContentSourceRange implements Content.Source
                 {
                     // We can skip this whole chunk.
                     _offsetRemaining -= chunk.remaining();
-                    if (chunk.isLast())
-                    {
-                        chunk.clear();
-                        return chunk;
-                    }
-
+                    chunk.clear();
                     chunk.release();
+                    if (chunk.isLast())
+                        return _terminal = Content.Chunk.EOF;
                     continue;
                 }
                 else
@@ -112,39 +121,37 @@ public class ContentSourceRange implements Content.Source
             }
 
             // We can start processing the limited length if we have reached the starting offset.
-            if (_offsetRemaining == 0 && _lengthRemaining >= 0)
+
+            if (_lengthRemaining == 0)
             {
-                if (_lengthRemaining == 0)
+                // We have read all we need to
+                if (_readToEof)
                 {
-                    if (!_readToEof)
-                    {
-                        // We do not have to read until EOF of the source, so we can return EOF now and fail the source.
-                        _source.fail(new ClosedChannelException());
-                        return Content.Chunk.EOF;
-                    }
-
-                    // Release the chunk and continue until we find a last chunk.
-                    if (!chunk.isLast())
-                    {
-                        chunk.release();
-                        continue;
-                    }
-
+                    // Release the chunk and continue until we find the last chunk.
                     chunk.clear();
+                    chunk.release();
+                    if (chunk.isLast())
+                        return _terminal = Content.Chunk.EOF;
+                    continue;
                 }
-                else if (_lengthRemaining >= chunk.remaining())
-                {
-                    // We can take the whole chunk.
-                    _lengthRemaining -= chunk.remaining();
-                }
-                else if (_lengthRemaining < chunk.remaining())
-                {
-                    // We must limit the size of the chunk to the remaining length.
-                    chunk.limit(_lengthRemaining);
-                    _lengthRemaining = 0;
-                }
+
+                // We do not have to read until EOF of the source, so we can return EOF now and fail the source.
+                fail(new ClosedChannelException());
+                return _terminal = Content.Chunk.EOF;
             }
 
+            if (_lengthRemaining > 0 && _lengthRemaining < chunk.remaining())
+            {
+                // We must limit the size of the chunk to the remaining length.
+                RetainableByteBuffer slice = chunk.slice(_lengthRemaining);
+                _lengthRemaining = 0;
+                chunk.clear();
+                chunk.release();
+                return Content.Chunk.from(slice.getByteBuffer(), chunk.isLast(), slice::release);
+            }
+
+            // We can return the whole chunk.
+            _lengthRemaining -= chunk.remaining();
             return chunk;
         }
     }

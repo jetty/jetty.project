@@ -35,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -325,7 +326,7 @@ public class BufferUtil
      * @return the sliced buffers in a new collection, which may be immutable and may contain the original buffers or slices of them
      * @throws IndexOutOfBoundsException if the offset or length are invalid
      */
-    public static Collection<ByteBuffer> slice(Collection<ByteBuffer> byteBuffers, long offset, long length)
+    public static List<ByteBuffer> slice(Collection<ByteBuffer> byteBuffers, long offset, long length)
     {
         Objects.requireNonNull(byteBuffers);
         if (offset < 0)
