@@ -188,7 +188,7 @@ public class SharedBlockingCallback
                     if (LOG.isDebugEnabled())
                     {
                         LOG.debug(msg, _state);
-                        LOG.debug(msg, cause);
+                        LOG.atDebug().setCause(cause).log(msg);
                     }
                 }
             }

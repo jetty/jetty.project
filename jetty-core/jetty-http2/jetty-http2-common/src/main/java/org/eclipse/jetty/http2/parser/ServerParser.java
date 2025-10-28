@@ -130,7 +130,7 @@ public class ServerParser extends Parser
         }
         catch (Throwable x)
         {
-            LOG.debug("Parse error", x);
+            LOG.atDebug().setCause(x).log("Parse error");
             BufferUtil.clear(buffer);
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }

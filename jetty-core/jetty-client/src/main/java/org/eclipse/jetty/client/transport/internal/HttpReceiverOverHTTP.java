@@ -297,7 +297,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error processing {} in {}", endPoint, this, x);
+                LOG.atDebug().setCause(x).log("Error processing {} in {}", endPoint, this);
             releaseNetworkBuffer();
             failAndClose(x);
             return false;

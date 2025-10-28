@@ -578,7 +578,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onError(Throwable cause, Callback callback)
         {
-            LOG.debug("onError", cause);
+            LOG.atDebug().setCause(cause).log("onError");
             error = cause;
             state = coreSession.toString();
             callback.succeeded();

@@ -635,7 +635,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Connection creation failed {}", reserved, x);
+                LOG.atDebug().setCause(x).log("Connection creation failed {}", reserved);
             pending.decrementAndGet();
             reserved.remove();
             super.failed(x);

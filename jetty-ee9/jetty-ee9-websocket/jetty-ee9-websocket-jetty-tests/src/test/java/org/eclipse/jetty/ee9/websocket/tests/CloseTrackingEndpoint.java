@@ -99,7 +99,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        LOG.debug("onWebSocketError", cause);
+        LOG.atDebug().setCause(cause).log("onWebSocketError");
         assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
         errorLatch.countDown();
     }

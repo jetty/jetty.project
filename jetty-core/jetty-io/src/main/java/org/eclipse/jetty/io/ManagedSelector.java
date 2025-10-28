@@ -216,7 +216,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         LOG.info("Caught select() failure, trying to recover: {}", failure.toString());
         if (LOG.isDebugEnabled())
-            LOG.debug("", failure);
+            LOG.atDebug().setCause(failure).log("");
 
         Selector newSelector = _selectorManager.newSelector();
         for (SelectionKey oldKey : selector.keys())
@@ -238,7 +238,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not transfer {}", channel, t);
+                        LOG.atDebug().setCause(t).log("Could not transfer {}", channel);
                     IO.close(channel);
                 }
             }
@@ -878,7 +878,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not register channel after accept {}", channel, x);
+                    LOG.atDebug().setCause(x).log("Could not register channel after accept {}", channel);
                 failed(x);
             }
         }
@@ -894,7 +894,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not process accepted channel {}", channel, x);
+                    LOG.atDebug().setCause(x).log("Could not process accepted channel {}", channel);
                 failed(x);
             }
         }
@@ -1062,7 +1062,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 IO.close(_connect.channel);
                 LOG.warn("Could not create EndPoint {}: {}", _connect.channel, String.valueOf(failure));
                 if (LOG.isDebugEnabled())
-                    LOG.debug("", failure);
+                    LOG.atDebug().setCause(failure).log("");
                 _connect.failed(failure);
             }
         }

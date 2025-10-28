@@ -203,7 +203,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not set attribute {}={}", name, value, x);
+                LOG.atDebug().setCause(x).log("could not set attribute {}={}", name, value);
             return false;
         }
     }

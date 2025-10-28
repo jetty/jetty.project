@@ -70,7 +70,7 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failure on {}", this, failure);
+            LOG.atDebug().setCause(failure).log("failure on {}", this);
         processFailure(failure);
         close(failure);
         return callback::succeeded;

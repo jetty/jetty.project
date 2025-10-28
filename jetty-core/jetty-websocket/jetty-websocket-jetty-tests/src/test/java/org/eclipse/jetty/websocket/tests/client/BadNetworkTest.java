@@ -157,7 +157,7 @@ public class BadNetworkTest
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ServerEndpoint error", cause);
+                LOG.atDebug().setCause(cause).log("ServerEndpoint error");
         }
     }
 }

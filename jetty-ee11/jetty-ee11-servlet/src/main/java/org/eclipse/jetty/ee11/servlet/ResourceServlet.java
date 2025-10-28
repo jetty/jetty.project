@@ -816,7 +816,7 @@ public class ResourceServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause, cause);
+                LOG.atDebug().setCause(cause).log("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause);
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
@@ -832,7 +832,7 @@ public class ResourceServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause, cause);
+                LOG.atDebug().setCause(cause).log("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try
@@ -1005,7 +1005,7 @@ public class ResourceServlet extends HttpServlet
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
+                    LOG.atDebug().setCause(x).log("AsyncContextCallback failed {}", _asyncContext);
                 // It is known that this callback is only failed if the response is already committed,
                 // thus we can only abort the response here.
                 _response.sendError(-1);
@@ -1019,7 +1019,7 @@ public class ResourceServlet extends HttpServlet
                 _asyncContext.complete();
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Async get failed", x);
+                LOG.atDebug().setCause(x).log("Async get failed");
         }
     }
 }

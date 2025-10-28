@@ -121,7 +121,7 @@ public class QuicheTransport extends Transport.Wrapper
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not create ProtocolSession", x);
+                    LOG.atDebug().setCause(x).log("could not create ProtocolSession");
                 session.disconnect(new ConnectionCloseFrame(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol"), x, Promise.Invocable.noop());
             }
         }

@@ -498,7 +498,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error reading SIWE message and signature", t);
+                LOG.atDebug().setCause(t).log("error reading SIWE message and signature");
             sendError(request, response, callback, t.getMessage());
             return null;
         }

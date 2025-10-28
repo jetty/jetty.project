@@ -351,7 +351,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onIdleTimeout {}", this, t);
+                LOG.atDebug().setCause(t).log("onIdleTimeout {}", this);
 
             // Either too early or too late.
             if (_stream == null || _request == null)
@@ -429,7 +429,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFailure {}", this, x);
+                LOG.atDebug().setCause(x).log("onFailure {}", this);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
@@ -483,7 +483,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
+                            LOG.atDebug().setCause(x).log("invoking failure listeners {} {}", HttpChannelState.this, onFailure);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)
@@ -1371,7 +1371,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("write failed {}", this, x);
+                LOG.atDebug().setCause(x).log("write failed {}", this);
             Callback callback;
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
@@ -1793,7 +1793,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ErrorWrite failed: {}", this, x);
+                LOG.atDebug().setCause(x).log("ErrorWrite failed: {}", this);
             Throwable failure;
             HttpChannelState httpChannelState;
             try (AutoLock ignored = _request._lock.lock())

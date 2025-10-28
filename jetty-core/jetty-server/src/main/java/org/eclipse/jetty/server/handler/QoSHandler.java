@@ -428,7 +428,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             if (permits > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} no suspended requests to resume", this, x);
+                    LOG.atDebug().setCause(x).log("{} no suspended requests to resume", this);
                 return;
             }
 
@@ -558,7 +558,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} failed {}", QoSHandler.this, request, x);
+                    LOG.atDebug().setCause(x).log("{} failed {}", QoSHandler.this, request);
                 failSuspended(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, x);
             }
         }

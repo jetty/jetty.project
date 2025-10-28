@@ -125,7 +125,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not immediately delete file (delaying to jvm exit) {}", _filePath, t);
+                        LOG.atDebug().setCause(t).log("Could not immediately delete file (delaying to jvm exit) {}", _filePath);
                     _filePath.toFile().deleteOnExit();
                 }
                 _filePath = null;
