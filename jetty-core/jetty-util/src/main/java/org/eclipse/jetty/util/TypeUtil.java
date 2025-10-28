@@ -905,7 +905,7 @@ public class TypeUtil
      * otherwise must be greater than or equal to 0.
      * If the size is known, then the length will be reduced if necessary to fit within the size-offset.
      * @param size the size of the range, or -1 if unknown.
-     * @return the length of the subrange, which may be calculated if length was less than 0 or if the length is limited by
+     * @return the length of the subrange, which may be calculated if the length was less than 0 or if the length is limited by
      * a known size.
      * @throws IndexOutOfBoundsException if the offset or length are out of range.
      * @throws ArithmeticException if the length is not -1 and offset+length overflows.

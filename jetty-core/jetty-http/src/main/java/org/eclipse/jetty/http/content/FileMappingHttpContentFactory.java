@@ -116,7 +116,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
+                length = TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
                 sink.write(true, BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length)), callback);
             }
             catch (Throwable x)
@@ -198,7 +198,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                TypeUtil.checkOffsetLengthSize(offset, length, _contentLengthValue);
+                length = TypeUtil.checkOffsetLengthSize(offset, length, _contentLengthValue);
                 if (offset > getContentLengthValue())
                     throw new IllegalArgumentException("Offset outside of mapped file range");
                 if (length > -1 && length + offset > getContentLengthValue())

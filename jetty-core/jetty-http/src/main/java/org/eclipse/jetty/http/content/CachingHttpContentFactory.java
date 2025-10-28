@@ -368,7 +368,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             boolean retained = false;
             try
             {
-                TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
+                length = TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
                 retained = tryRetain();
                 if (retained)
                     sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
