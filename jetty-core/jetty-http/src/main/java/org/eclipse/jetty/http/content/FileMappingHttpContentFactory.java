@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +116,8 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                sink.write(true, BufferUtil.slice(_buffer, (int)offset, (int)length), callback);
+                TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
+                sink.write(true, BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length)), callback);
             }
             catch (Throwable x)
             {
@@ -196,6 +198,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
+                TypeUtil.checkOffsetLengthSize(offset, length, _contentLengthValue);
                 if (offset > getContentLengthValue())
                     throw new IllegalArgumentException("Offset outside of mapped file range");
                 if (length > -1 && length + offset > getContentLengthValue())

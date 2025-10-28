@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -367,6 +368,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             boolean retained = false;
             try
             {
+                TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
                 retained = tryRetain();
                 if (retained)
                     sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
