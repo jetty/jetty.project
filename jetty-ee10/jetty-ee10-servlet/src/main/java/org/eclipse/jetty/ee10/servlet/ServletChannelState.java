@@ -70,20 +70,20 @@ public class ServletChannelState
     /*
      * The state of the request processing lifecycle.
      * <pre>
-     *       ERRORING
-     *       BLOCKING <----> COMPLETING ---> COMPLETED
-     *       ^  |  ^            ^
-     *      /   |   \           |
-     *     |    |    DISPATCH   |
-     *     |    |    ^  ^       |
-     *     |    v   /   |       |
-     *     |  ASYNC -------> COMPLETE
-     *     |    |       |       ^
-     *     |    v       |       |
-     *     |  EXPIRE    |       |
-     *      \   |      /        |
-     *       \  v     /         |
-     *       EXPIRING ----------+
+     *                   ERRORING
+     *      +----------- BLOCKING <----> COMPLETING ---> COMPLETED
+     *      |           ^   |  ^            ^
+     *      |          /    |   \           |
+     *      |         |     |    DISPATCH   |
+     *      |         |     |    ^  ^       |
+     *      v         |     v   /   |       |
+     *  UPGRADING <------> ASYNC -------> COMPLETE
+     *      ^         |     |       |       ^
+     *      |         |     v       |       |
+     *      |         |   EXPIRE    |       |
+     *      |          \    |      /        |
+     *      |           \   v     /         |
+     *      +----------- EXPIRING ----------+
      * </pre>
      */
     private enum RequestState
@@ -94,6 +94,7 @@ public class ServletChannelState
         DISPATCH,    // AsyncContext.dispatch() has been called
         EXPIRE,      // AsyncContext timeout has happened
         EXPIRING,    // AsyncListeners are being called
+        UPGRADING,   // Request is being upgraded
         COMPLETE,    // AsyncContext.complete() has been called
         COMPLETING,  // Request is being closed (maybe asynchronously)
         COMPLETED    // Response is completed
@@ -171,6 +172,7 @@ public class ServletChannelState
         ASYNC_TIMEOUT,    // call asyncContext onTimeout
         WRITE_CALLBACK,   // handle an IO write callback
         READ_CALLBACK,    // handle an IO read callback
+        UPGRADE,         // Complete the response by closing output
         COMPLETE,         // Complete the response by closing output
         TERMINATED,       // No further actions
         WAIT,             // Wait for further events
@@ -558,6 +560,11 @@ public class ServletChannelState
                 _sendError = false;
                 return Action.SEND_ERROR;
 
+            case UPGRADING:
+                if (handling)
+                    throw new IllegalStateException(getStatusStringLocked());
+                return Action.UPGRADE;
+
             case COMPLETE:
                 _requestState = RequestState.COMPLETING;
                 return Action.COMPLETE;
@@ -584,7 +591,7 @@ public class ServletChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
-            if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
+            if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING && _requestState != RequestState.UPGRADING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
             if (!_failureListener)
@@ -1211,23 +1218,11 @@ public class ServletChannelState
 
     public void upgrade()
     {
-        cancelTimeout();
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
-
-            if (_state != State.IDLE)
-                throw new IllegalStateException(getStatusStringLocked());
-            if (_inputState != InputState.IDLE)
-                throw new IllegalStateException(getStatusStringLocked());
-            _asyncListeners = null;
-            _state = State.UPGRADED;
-            _requestState = RequestState.BLOCKING;
-            _initial = true;
-            _asyncWritePossible = false;
-            _timeoutMs = DEFAULT_TIMEOUT;
-            _event = null;
+            _requestState = RequestState.UPGRADING;
         }
     }
 
