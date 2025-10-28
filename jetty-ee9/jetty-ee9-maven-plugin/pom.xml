@@ -12,7 +12,7 @@
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
-    <jetty.jvmArgs></jetty.jvmArgs>
+    <jetty.jvmArgs/>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
   </properties>

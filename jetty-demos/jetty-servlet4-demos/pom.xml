@@ -28,7 +28,7 @@
   <properties>
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
-    <ee9.module></ee9.module>
+    <ee9.module/>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-demos/jetty-servlet5-demos/${ee9.module}</ee9.module.path>
     <sonar.skip>true</sonar.skip>
     <warSourceDirectory>${project.build.directory}/webapp</warSourceDirectory>
@@ -119,7 +119,7 @@
           <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-filtering</artifactId>
-            <version>3.3.0</version>
+            <version>3.4.0</version>
           </dependency>
           <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>

@@ -53,7 +53,7 @@
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
-          <additionalClasspathElements></additionalClasspathElements>
+          <additionalClasspathElements/>
         </configuration>
       </plugin>
     </plugins>

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.compression;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -407,7 +409,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 response.getHeaders().put(HttpHeader.ETAG, "W/\"686897696a7c876b7e\"");
                 Content.Sink.write(response, false, "Hello ", Callback.from(() ->
-                Content.Sink.write(response, true, "World", callback), callback::failed));
+                    Content.Sink.write(response, true, "World", callback), callback::failed));
                 return true;
             }
         });
@@ -420,10 +422,10 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .method(HttpMethod.GET)
             .path("/compress/hello")
             .headers(h ->
-                {
-                    h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
-                    h.put(HttpHeader.IF_NONE_MATCH, "W/\"abc--gzip\", \"def--br--unknown\", \"ghi--unknown\" , *");
-                })
+            {
+                h.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+                h.put(HttpHeader.IF_NONE_MATCH, "W/\"abc--gzip\", \"def--br--unknown\", \"ghi--unknown\" , *");
+            })
             .onResponseListener(new org.eclipse.jetty.client.Response.Listener()
             {
                 @Override
@@ -734,6 +736,51 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             assertNotNull(response.getHeaders().get(HttpHeader.CONTENT_ENCODING));
         else
             assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(expectedEncoding));
+    }
+
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testContentSinkOutputStream(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(10);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                try (OutputStream out = Content.Sink.asOutputStream(response))
+                {
+                    out.write(message.getBytes(UTF_8));
+                }
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path("/hello")
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        String content = new String(decompress(response.getContent()), UTF_8);
+        assertThat(content, is(message));
     }
 
     /**

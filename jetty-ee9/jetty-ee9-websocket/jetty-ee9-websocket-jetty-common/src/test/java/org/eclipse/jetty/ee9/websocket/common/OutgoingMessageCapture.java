@@ -128,6 +128,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 messageSink = null;
         }
 
+        frame.getPayload().position(frame.getPayload().limit());
         callback.succeeded();
     }
 

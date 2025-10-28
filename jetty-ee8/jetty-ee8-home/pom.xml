@@ -410,7 +410,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.ee8, org.eclipse.jetty.ee8.demos</includeGroupIds>
-              <excludeArtifactIds></excludeArtifactIds>
+              <excludeArtifactIds/>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>

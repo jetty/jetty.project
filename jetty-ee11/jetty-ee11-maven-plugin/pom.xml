@@ -13,7 +13,7 @@
   <description>Jetty EE11 maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
-    <jetty.jvmArgs></jetty.jvmArgs>
+    <jetty.jvmArgs/>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
   </properties>
   <dependencies>

@@ -70,35 +70,36 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public void sendFrame(OutgoingEntry entry)
     {
         Frame frame = entry.getFrame();
+        ByteBuffer payload = frame.getPayload();
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
             {
-                CloseStatus closeStatus = new CloseStatus(frame.getPayload());
+                CloseStatus closeStatus = new CloseStatus(payload);
                 String event = String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 break;
             }
             case OpCode.PING:
             {
-                String event = String.format("PING:%s", dataHint(frame.getPayload()));
+                String event = String.format("PING:%s", dataHint(payload));
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 break;
             }
             case OpCode.PONG:
             {
-                String event = String.format("PONG:%s", dataHint(frame.getPayload()));
+                String event = String.format("PONG:%s", dataHint(payload));
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 break;
             }
             case OpCode.TEXT:
             {
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 messageSink = new StringMessageSink(this, MethodHolder.from(wholeTextHandle), true);
                 break;
             }
@@ -106,7 +107,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
             {
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 messageSink = new ByteBufferMessageSink(this, MethodHolder.from(wholeBinaryHandle), true);
                 break;
             }
@@ -114,7 +115,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
             {
                 String event = String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
-                events.offer(event);
+                events.add(event);
                 break;
             }
         }
@@ -127,6 +128,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 messageSink = null;
         }
 
+        payload.position(payload.limit());
         entry.getCallback().succeeded();
     }
 
@@ -146,6 +148,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public void onWholeBinary(ByteBuffer buf, Callback callback)
     {
         this.binaryMessages.offer(BufferUtil.copy(buf));
+        buf.position(buf.limit());
         callback.succeed();
     }
 

@@ -170,9 +170,11 @@ public class PermessageDeflateBufferTest
         Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 
         ByteBuffer message = randomBytes(1024);
+        ByteBuffer messageSlice = message.slice();
         session.setMaxFrameSize(64);
         session.sendBinary(message, Callback.NOOP);
-        assertThat(socket.binaryMessages.poll(5, TimeUnit.SECONDS), equalTo(message));
+        assertThat(socket.binaryMessages.poll(5, TimeUnit.SECONDS), equalTo(messageSlice));
+        assertThat(message.remaining(), equalTo(0));
 
         session.close();
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
