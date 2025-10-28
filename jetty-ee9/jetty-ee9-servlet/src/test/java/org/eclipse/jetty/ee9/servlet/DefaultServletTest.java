@@ -109,7 +109,7 @@ public class DefaultServletTest
     public WorkDir workDir;
 
     // The name of the odd-jar used for testing "jar:file://" based resource access.
-    private static final String ODD_JAR = "/jar-resource-odd.jar";
+    private static final String ODD_JAR = "jar-resource-odd.jar";
 
     private Server server;
     private LocalConnector connector;
