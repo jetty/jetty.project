@@ -803,7 +803,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public InvocationType getInvocationType()
         {
-            return getConnectionMetaData().getConnector().getServer().getInvocationType();
+            return InvocationType.NON_BLOCKING;
         }
     }
 
@@ -1638,15 +1638,13 @@ public class HttpChannelState implements HttpChannel, Components
                         else
                         {
                             // There has been no last write, but we will just fail the stream instead.
-
                             httpChannelState._streamSendState = StreamSendState.FAILED;
                             completeStream = true;
                         }
                     }
                     else
                     {
-                        // We are still handling, sof for the most part
-                        // let the HandlerInvoker deal with completion
+                        // We are still handling, so for the most part let the HandlerInvoker deal with completion
 
                         // But if we are writing
                         if (response.lockedIsWriting())
@@ -1672,8 +1670,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (failedCallback != null)
                 failedCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
-
-            if (errorResponse != null)
+            else if (errorResponse != null)
                 Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
             else if (doLastStreamSend)
                 stream.send(_request._metaData, responseMetaData, true, null, response);
