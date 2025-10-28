@@ -213,7 +213,9 @@ public class MessageWriterTest
         @Override
         public void sendFrame(OutgoingEntry entry)
         {
-            frames.offer(Frame.copy(entry.getFrame()));
+            Frame frame = entry.getFrame();
+            frames.add(Frame.copy(frame));
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }
@@ -235,9 +237,10 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.takeCompleteString(IllegalArgumentException::new));
+                messages.add(activeMessage.takeCompleteString(IllegalArgumentException::new));
                 activeMessage = null;
             }
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }

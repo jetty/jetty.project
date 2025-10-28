@@ -311,7 +311,7 @@ public class FrameFlusher extends IteratingCallback
                         _releasableBuffers.add(masked);
                         _generator.generatePayload(entry.getFrame(), payload);
                     }
-                    buffers.add(payload.slice());
+                    buffers.add(payload);
                 }
 
                 // Once we have added another buffer we cannot add to the batch buffer again.

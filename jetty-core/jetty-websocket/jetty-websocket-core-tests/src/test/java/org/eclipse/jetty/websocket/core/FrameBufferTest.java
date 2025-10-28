@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -72,36 +71,7 @@ public class FrameBufferTest extends WebSocketTester
 
         assertThat(frame.getOpCode(), is(OpCode.BINARY));
         assertThat(frame.getPayload(), is(message));
-        assertThat(sendPayload, is(message));
-
-        clientHandler.sendClose();
-        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
-        assertNull(clientHandler.getError());
-    }
-
-    @Test
-    public void testSendSameFrameMultipleTimes() throws Exception
-    {
-        TestFrameHandler clientHandler = new TestFrameHandler();
-        client.connect(clientHandler, server.getUri()).get(5, TimeUnit.SECONDS);
-        serverHandler.open.await(5, TimeUnit.SECONDS);
-        clientHandler.getCoreSession().setAutoFragment(false);
-        serverHandler.getCoreSession().setAutoFragment(false);
-
-        int payloadLen = 32 * 1024;
-        byte[] array = new byte[payloadLen];
-        new Random().nextBytes(array);
-        ByteBuffer message = ByteBuffer.wrap(array);
-
-        Frame frame = new Frame(OpCode.BINARY, BufferUtil.copy(message));
-        for (int i = 0; i < 200; i++)
-        {
-            clientHandler.sendFrame(frame, Callback.NOOP, false);
-            Frame recvFrame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-            assertThat(recvFrame.getOpCode(), is(OpCode.BINARY));
-            assertThat(recvFrame.getPayload(), is(message));
-            assertThat(frame.getPayload(), is(message));
-        }
+        assertThat(sendPayload.remaining(), is(0));
 
         clientHandler.sendClose();
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));

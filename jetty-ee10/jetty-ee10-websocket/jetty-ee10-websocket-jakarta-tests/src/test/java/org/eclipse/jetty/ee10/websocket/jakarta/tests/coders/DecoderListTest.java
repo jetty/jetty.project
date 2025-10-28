@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderListTest
 {
@@ -152,6 +153,8 @@ public class DecoderListTest
         session.getBasicRemote().sendBinary(BufferUtil.toBuffer(request));
         ByteBuffer response = clientEndpoint.binaryMessages.poll(3, TimeUnit.SECONDS);
         assertThat(BufferUtil.toString(response), is(expected));
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
