@@ -276,7 +276,7 @@
     <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
-    <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
+    <maven.war.plugin.version>3.5.0</maven.war.plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.1</mongodb.version>
     <netty.version>4.2.7.Final</netty.version>
