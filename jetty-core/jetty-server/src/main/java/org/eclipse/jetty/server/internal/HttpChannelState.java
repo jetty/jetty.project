@@ -106,6 +106,7 @@ public class HttpChannelState implements HttpChannel, Components
 
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
+    private final LastWriteCallback _lastWriteCallback = new LastWriteCallback();
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _readInvoker;
     private final SerializedInvoker _writeInvoker;
@@ -624,9 +625,45 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    private void completeStream(HttpStream stream, Throwable failure)
+    {
+        try
+        {
+            RequestLog requestLog = getServer().getRequestLog();
+            if (requestLog != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("logging {}", HttpChannelState.this);
+
+                requestLog.log(_request.getLoggedRequest(), _response);
+            }
+
+            // Clean up any multipart tmp files and release any associated resources.
+            Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
+            if (parts != null)
+                parts.close();
+
+            long idleTO = getHttpConfiguration().getIdleTimeout();
+            if (idleTO > 0 && _oldIdleTimeout != idleTO)
+                stream.setIdleTimeout(_oldIdleTimeout);
+        }
+        finally
+        {
+            ComplianceViolation.Listener listener = getComplianceViolationListener();
+            if (listener != null)
+                listener.onRequestEnd(_request);
+
+            // This is THE ONLY PLACE the stream is succeeded or failed.
+            if (failure == null)
+                stream.succeeded();
+            else
+                stream.failed(failure);
+        }
+    }
+
     // HandlerInvoker is used as the Response's _writeCallback when ChannelCallback is succeeded and the last send still
     // needs to be done, i.e.: _streamSendState set to LAST_SENDING by lockedLastStreamSend().
-    private class HandlerInvoker implements Task, Callback
+    private class HandlerInvoker implements Task
     {
         @Override
         public void run()
@@ -720,6 +757,15 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getConnectionMetaData().getConnector().getServer().getInvocationType();
+        }
+    }
+
+    private class LastWriteCallback implements Callback
+    {
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
@@ -752,42 +798,6 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (completeStream)
                 completeStream(stream, failure);
-        }
-
-        private void completeStream(HttpStream stream, Throwable failure)
-        {
-            try
-            {
-                RequestLog requestLog = getServer().getRequestLog();
-                if (requestLog != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("logging {}", HttpChannelState.this);
-
-                    requestLog.log(_request.getLoggedRequest(), _response);
-                }
-
-                // Clean up any multipart tmp files and release any associated resources.
-                Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
-                if (parts != null)
-                    parts.close();
-
-                long idleTO = getHttpConfiguration().getIdleTimeout();
-                if (idleTO > 0 && _oldIdleTimeout != idleTO)
-                    stream.setIdleTimeout(_oldIdleTimeout);
-            }
-            finally
-            {
-                ComplianceViolation.Listener listener = getComplianceViolationListener();
-                if (listener != null)
-                    listener.onRequestEnd(_request);
-
-                // This is THE ONLY PLACE the stream is succeeded or failed.
-                if (failure == null)
-                    stream.succeeded();
-                else
-                    stream.failed(failure);
-            }
         }
 
         @Override
@@ -1592,7 +1602,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     doLastStreamSend = httpChannelState.lockedLastStreamSend();
                     if (doLastStreamSend)
-                        response._writeCallback = httpChannelState._handlerInvoker;
+                        response._writeCallback = httpChannelState._lastWriteCallback;
                     // or complete the stream if everything is done.
                     else if (httpChannelState.lockedIsLastStreamSendCompleted())
                         completeStream = httpChannelState._handled;
@@ -1623,7 +1633,7 @@ public class HttpChannelState implements HttpChannel, Components
                             //      Runnable task = response.lockedFailWrite(failure);
                             //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
                             failedCallback = response._writeCallback;
-                            response._writeCallback = httpChannelState._handlerInvoker;
+                            response._writeCallback = httpChannelState._lastWriteCallback;
                         }
                         else
                         {
@@ -1646,7 +1656,7 @@ public class HttpChannelState implements HttpChannel, Components
                             //      Runnable task = response.lockedFailWrite(failure);
                             //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
                             failedCallback = response._writeCallback;
-                            response._writeCallback = httpChannelState._handlerInvoker;
+                            response._writeCallback = httpChannelState._lastWriteCallback;
                         }
                         else if (!httpChannelState.lockedIsLastStreamSendCompleted())
                         {
@@ -1668,7 +1678,7 @@ public class HttpChannelState implements HttpChannel, Components
             else if (doLastStreamSend)
                 stream.send(_request._metaData, responseMetaData, true, null, response);
             else if (completeStream)
-                httpChannelState._handlerInvoker.completeStream(stream, failure);
+                httpChannelState.completeStream(stream, failure);
             else if (LOG.isDebugEnabled())
                 LOG.debug("No action on succeeded {}", this);
         }
@@ -1796,16 +1806,16 @@ public class HttpChannelState implements HttpChannel, Components
             if (needLastWrite)
             {
                 _stream.send(_request._metaData, responseMetaData, true, null,
-                    Callback.from(() -> httpChannelState._handlerInvoker.failed(failure),
+                    Callback.from(() -> httpChannelState._lastWriteCallback.failed(failure),
                         x ->
                         {
                             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
-                            httpChannelState._handlerInvoker.failed(failure);
+                            httpChannelState._lastWriteCallback.failed(failure);
                         }));
             }
             else
             {
-                HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
+                HttpChannelState.failed(httpChannelState._lastWriteCallback, failure);
             }
         }
 
@@ -1828,7 +1838,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState._response._status = _errorResponse._status;
             }
             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
-            HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
+            HttpChannelState.failed(httpChannelState._lastWriteCallback, failure);
         }
 
         @Override
