@@ -1629,11 +1629,8 @@ public class HttpChannelState implements HttpChannel, Components
                         else if (response.lockedIsWriting())
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
-                            // TODO If we don't want to wait for write completion then do
-                            //      Runnable task = response.lockedFailWrite(failure);
-                            //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
-                            failedCallback = response._writeCallback;
-                            response._writeCallback = httpChannelState._lastWriteCallback;
+                            Runnable task = response.lockedFailWrite(failure);
+                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else
                         {
@@ -1650,11 +1647,8 @@ public class HttpChannelState implements HttpChannel, Components
                         if (response.lockedIsWriting())
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
-                            // TODO If we don't want to wait for write completion then do
-                            //      Runnable task = response.lockedFailWrite(failure);
-                            //      failedCallback = Callback.from(task, httpChannelState._handlerInvoker);
-                            failedCallback = response._writeCallback;
-                            response._writeCallback = httpChannelState._lastWriteCallback;
+                            Runnable task = response.lockedFailWrite(failure);
+                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else if (!httpChannelState.lockedIsLastStreamSendCompleted())
                         {
