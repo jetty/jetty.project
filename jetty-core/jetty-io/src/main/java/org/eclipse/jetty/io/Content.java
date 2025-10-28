@@ -1004,6 +1004,11 @@ public class Content
             return last ? EOF : EMPTY;
         }
 
+        static Chunk from(RetainableByteBuffer buffer, boolean last)
+        {
+            return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
+        }
+
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
          * <p>The returned Chunk must be {@link #release() released}.</p>

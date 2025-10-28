@@ -84,7 +84,7 @@ public class ContentSourceRange implements Content.Source
         if (_terminal != null)
         {
             Content.Chunk chunk = _terminal;
-            _terminal = Content.Chunk.next(_terminal);
+            _terminal = Content.Chunk.next(chunk);
             return chunk;
         }
 
@@ -106,7 +106,6 @@ public class ContentSourceRange implements Content.Source
                 {
                     // We can skip this whole chunk.
                     _offsetRemaining -= chunk.remaining();
-                    chunk.clear();
                     chunk.release();
                     if (chunk.isLast())
                         return _terminal = Content.Chunk.EOF;
@@ -115,8 +114,12 @@ public class ContentSourceRange implements Content.Source
                 else
                 {
                     // Advance position to the correct offset.
-                    chunk.skip(_offsetRemaining);
-                    _offsetRemaining = 0;
+                    RetainableByteBuffer slice = chunk.slice();
+                    _offsetRemaining -= slice.skip(_offsetRemaining);
+                    chunk.release();
+                    if (_offsetRemaining > 0)
+                        continue;
+                    chunk = Content.Chunk.from(slice, chunk.isLast());
                 }
             }
 
@@ -128,7 +131,6 @@ public class ContentSourceRange implements Content.Source
                 if (_readToEof)
                 {
                     // Release the chunk and continue until we find the last chunk.
-                    chunk.clear();
                     chunk.release();
                     if (chunk.isLast())
                         return _terminal = Content.Chunk.EOF;
@@ -145,9 +147,8 @@ public class ContentSourceRange implements Content.Source
                 // We must limit the size of the chunk to the remaining length.
                 RetainableByteBuffer slice = chunk.slice(_lengthRemaining);
                 _lengthRemaining = 0;
-                chunk.clear();
                 chunk.release();
-                return Content.Chunk.from(slice.getByteBuffer(), chunk.isLast(), slice::release);
+                return Content.Chunk.from(slice, chunk.isLast());
             }
 
             // We can return the whole chunk.
