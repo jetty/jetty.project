@@ -413,9 +413,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void release()
         {
-            RetainableByteBuffer buffer = _buffer.get();
-            if (buffer != null && buffer.release())
-                _buffer.set(null);
+            _buffer.getAndUpdate(buffer -> (buffer != null && buffer.release()) ? null : buffer);
         }
 
         @Override
