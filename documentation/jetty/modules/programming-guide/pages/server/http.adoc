@@ -874,7 +874,7 @@ Alternatively, you can use the following `ConditionalHandler` subclasses that im
 ** When conditions are met, you have to write the implementation.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
 * `ConditionalHandler.Reject`:
-** When conditions are met, a response is written with a configurable, non-2xx, HTTP status code.
+** When conditions are met, a response is written with a configurable HTTP status code.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
 * `ConditionalHandler.SkipNext`:
 ** When conditions are met, the handling of the request is forwarded to the next-next `Handler`, skipping the next `Handler`.
@@ -882,6 +882,9 @@ Alternatively, you can use the following `ConditionalHandler` subclasses that im
 * `ConditionalHandler.DontHandle`:
 ** When conditions are met, the request is not handled.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
+* `ConditionalHandler.NextElseReject`:
+** When conditions are met, the handling of the request is forwarded to the next `Handler`.
+** When conditions are not met, a response is written with a configurable HTTP status code.
 
 Conditions can be specified using an include/exclude mechanism, where a condition match if it is not excluded, and either it is included or the include set is empty.
 
@@ -894,7 +897,7 @@ For example, you can specify to match only the specific HTTP request method `DEL
 * The request remote address.
 * Custom predicates that receive the request to match a custom condition.
 
-Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
+Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>>, <<handler-use-thread-limit,`ThreadLimitHandler`>> and <<handler-use-dos,`DoSHandler`>>.
 
 [[handler-use-compression]]
 ==== CompressionHandler
