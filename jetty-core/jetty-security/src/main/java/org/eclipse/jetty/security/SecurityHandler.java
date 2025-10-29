@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -597,14 +596,14 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
     private Response serveAsWrap(Request request, Response response, AuthenticationState.ServeAs serveAs)
     {
-        HttpURI uri = request.getHttpURI();
         Request wrappedRequest = serveAs.wrap(request);
-        if (!uri.equals(wrappedRequest.getHttpURI()))
+        HttpFields.Mutable headers = response.getHeaders();
+        if (!request.getHttpURI().equals(wrappedRequest.getHttpURI()))
         {
             // URI is replaced, so filter out all metadata for the old URI
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
             response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
-            HttpFields.Mutable headers = new HttpFields.Mutable.Wrapper(response.getHeaders())
+            headers = new HttpFields.Mutable.Wrapper(headers)
             {
                 @Override
                 public HttpField onAddField(HttpField field)
@@ -618,24 +617,23 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                     };
                 }
             };
-
-            return new Response.Wrapper(wrappedRequest, response)
-            {
-                @Override
-                public HttpFields.Mutable getHeaders()
-                {
-                    return headers;
-                }
-
-                @Override
-                public Request getRequest()
-                {
-                    return wrappedRequest;
-                }
-            };
         }
 
-        return response;
+        HttpFields.Mutable finalHeaders = headers;
+        return new Response.Wrapper(wrappedRequest, response)
+        {
+            @Override
+            public HttpFields.Mutable getHeaders()
+            {
+                return finalHeaders;
+            }
+
+            @Override
+            public Request getRequest()
+            {
+                return wrappedRequest;
+            }
+        };
     }
 
     public static SecurityHandler getCurrentSecurityHandler()
