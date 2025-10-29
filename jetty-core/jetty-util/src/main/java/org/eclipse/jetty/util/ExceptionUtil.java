@@ -192,6 +192,34 @@ public class ExceptionUtil
     }
 
     /**
+     * Checks if a given {@link Throwable} has an association with a specific type of {@link Throwable}.
+     * The association is determined by whether the provided type matches the throwable or any of its causes
+     * or suppressed exceptions.
+     *
+     * @param failure The {@link Throwable} to check for association. Can be null.
+     * @param throwable The type of {@link Throwable} class to check association against. Can be null.
+     * @return true if the {@link Throwable} is associated with the provided type; otherwise, false.
+     */
+    public static boolean hasAssociated(Throwable failure, Class<? extends Throwable> throwable)
+    {
+        if (failure == null || throwable == null)
+            return false;
+
+        Throwable cause = failure;
+        while (cause != null)
+        {
+            if (throwable.isInstance(cause))
+                return true;
+            cause = cause.getCause();
+        }
+
+        for (Throwable s : failure.getSuppressed())
+            if (hasAssociated(s, throwable))
+                return true;
+        return false;
+    }
+
+    /**
      * Add a suppressed exception if it is not associated.
      * @see #areNotAssociated(Throwable, Throwable)
      * @param throwable The main Throwable
@@ -305,6 +333,8 @@ public class ExceptionUtil
     {
         if (t1 == null)
             return t2;
+        if (t2 == null)
+            return t1;
         addSuppressedIfNotAssociated(t1, t2);
         return t1;
     }
