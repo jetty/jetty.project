@@ -23,11 +23,11 @@ import org.eclipse.jetty.websocket.api.Frame;
 
 /**
  * <p>Annotation for methods to receive WebSocket frame events.</p>
- * <p>Acceptable method patterns:</p>
+ * <p>Acceptable method signatures:</p>
  * <ol>
- * <li>{@code public void <methodName>(Frame frame)}</li>
- * <li>{@code public void <methodName>(Session session, Frame frame)}</li>
+ * <li>{@code public void <methodName>(Session session, *Frame frame, *Callback callback)}</li>
  * </ol>
+ * <p>The {@code *} before the parameter type means that the parameter is mandatory.</p>
  *
  * @see Frame
  */
