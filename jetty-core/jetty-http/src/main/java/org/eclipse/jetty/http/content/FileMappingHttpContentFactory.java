@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
@@ -93,8 +92,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
     {
         private final ByteBuffer _buffer;
         private final HttpField _contentLength;
-        private final HttpField _lastModified;
-        private final Instant _lastModifiedInstant;
 
         private SingleBufferFileMappedHttpContent(HttpContent content) throws IOException
         {
@@ -106,8 +103,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             if (_buffer == null)
                 throw new IOException("Cannot memory map Content (not supported by underlying FileSystem): " + content.getResource());
             _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Integer.toString(_buffer.remaining()));
-            _lastModified = content.getLastModified();
-            _lastModifiedInstant = content.getLastModifiedInstant();
         }
 
         @Override
@@ -115,7 +110,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                sink.write(true, BufferUtil.slice(_buffer, (int)offset, (int)length), callback);
+                sink.write(true, BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length)), callback);
             }
             catch (Throwable x)
             {
@@ -134,18 +129,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             return _buffer.remaining();
         }
-
-        @Override
-        public Instant getLastModifiedInstant()
-        {
-            return _lastModifiedInstant;
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return _lastModified;
-        }
     }
 
     private static class MultiBufferFileMappedHttpContent extends HttpContent.Wrapper
@@ -154,8 +137,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         private final int maxBufferSize;
         private final HttpField _contentLength;
         private final long _contentLengthValue;
-        private final HttpField _lastModified;
-        private final Instant _lastModifiedInstant;
 
         private MultiBufferFileMappedHttpContent(HttpContent content, int maxBufferSize) throws IOException
         {
@@ -187,8 +168,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             }
             _contentLengthValue = total;
             _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Long.toString(total));
-            _lastModified = content.getLastModified();
-            _lastModifiedInstant = content.getLastModifiedInstant();
         }
 
         @Override
@@ -259,18 +238,6 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         public long getContentLengthValue()
         {
             return _contentLengthValue;
-        }
-
-        @Override
-        public Instant getLastModifiedInstant()
-        {
-            return _lastModifiedInstant;
-        }
-
-        @Override
-        public HttpField getLastModified()
-        {
-            return _lastModified;
         }
     }
 }
