@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * <ol>
  * <li>{@code public void <methodName>(Session session, int statusCode, String reason, Callback callback)}</li>
  * </ol>
- * <p>None of the parameters is mandatory, and you can specify any combination of parameters.</p>
+ * <p>None of the parameters are mandatory, and you can specify any combination of parameters.</p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
