@@ -1134,7 +1134,7 @@ public interface Request extends Attributes, Content.Source
     {
         if (request.getAttribute(AuthenticationState.class.getName()) instanceof AuthenticationState authenticationState)
             return authenticationState;
-        return null;
+        return AuthenticationState.NONE;
     }
 
     /**
@@ -1152,6 +1152,8 @@ public interface Request extends Attributes, Content.Source
      */
     interface AuthenticationState
     {
+        AuthenticationState NONE = new AuthenticationState() {};
+
         /**
          * @return The authenticated user {@link Principal}, or null if the Authentication is in a non-authenticated state.
          */

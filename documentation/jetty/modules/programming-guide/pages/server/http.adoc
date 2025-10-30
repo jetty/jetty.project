@@ -1583,6 +1583,11 @@ The ``Handler``s children of `PathMappingsHandler` may extend <<handler-use-cond
 For example, a `LoginHandler` that extends `ConditionalHandler` may be configured to only accept `POST` requests.
 ====
 
+[[handler-use-security]]
+==== SecurityHandler
+
+`SecurityHandler` allows to configure authentication and authorization for your web applications, and it is discussed in details in xref:security/index.adoc[this section].
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
@@ -2136,8 +2141,20 @@ The advanced configuration of Jetty's HTTP session support is discussed in more 
 [[security]]
 === Securing HTTP Server Applications
 
-// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
-TODO
+Web applications may need to restrict access to resources to authenticated requests.
+
+The Jetty support for web application security is provided by the artifact at the following Maven coordinates:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-security</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+Web application security is primarily provided by <<handler-use-security,`org.eclipse.jetty.security.SecurityHandler`>>, and it is covered in details in xref:security/index.adoc[this section].
 
 [[application]]
 === Writing HTTP Server Applications
