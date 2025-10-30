@@ -90,6 +90,7 @@ public interface HttpContent
 
     /**
      * Get the last modified instant of this resource.
+     * Always return the most up-to-date value.
      *
      * @return the last modified instant, or null if that instant of this content is not known.
      * @see #getLastModified()

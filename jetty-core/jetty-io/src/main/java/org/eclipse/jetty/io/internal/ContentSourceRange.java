@@ -115,16 +115,15 @@ public class ContentSourceRange implements Content.Source
                 {
                     // Advance position to the correct offset.
                     RetainableByteBuffer slice = chunk.slice();
-                    _offsetRemaining -= slice.skip(_offsetRemaining);
                     chunk.release();
-                    if (_offsetRemaining > 0)
-                        continue;
+                    while (_offsetRemaining > 0)
+                        _offsetRemaining -= slice.skip(_offsetRemaining);
                     chunk = Content.Chunk.from(slice, chunk.isLast());
                 }
             }
 
-            // We can start processing the limited length if we have reached the starting offset.
-
+            // We can start processing the limited length if we have reached the starting offset and there
+            // is length remaining
             if (_lengthRemaining == 0)
             {
                 // We have read all we need to
