@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 /**
  * Provide for a Uptime class that is compatible with Android, GAE, and the new Java 8 compact profiles
  *
- * @deprecated no replacement, will be removed
+ * @deprecated no replacement, will be removed, functionality moved to the {@code Server} class.
  */
 @Deprecated(forRemoval = true, since = "12.1.4")
 public class Uptime

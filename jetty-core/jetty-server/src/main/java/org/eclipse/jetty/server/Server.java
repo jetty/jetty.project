@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,7 +79,6 @@ public class Server extends Handler.Wrapper implements Attributes
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
 
-    private final Instant startupInstant = Instant.now();
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final Scheduler _scheduler;
@@ -89,6 +88,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
+    private ZonedDateTime startupTime;
     private boolean _openEarly = true;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
@@ -549,19 +549,19 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
-     * @return the UTC startup instant
+     * @return the startup date and time in the system timezone, or {@code null} if not started
      */
-    public Instant getStartupInstant()
+    public ZonedDateTime getStartupTime()
     {
-        return startupInstant;
+        return startupTime;
     }
 
     /**
-     * @return the time, in milliseconds, since this Server was created.
+     * @return the time, in milliseconds, since this Server was started
      */
     public long getUptimeMillis()
     {
-        return Duration.between(startupInstant, Instant.now()).toMillis();
+        return startupTime == null ? 0 : Duration.between(startupTime, ZonedDateTime.now()).toMillis();
     }
 
     @Override
@@ -569,8 +569,10 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         try
         {
-            //If the Server should be stopped when the jvm exits, register
-            //with the shutdown handler thread.
+            startupTime = ZonedDateTime.now();
+
+            // If the Server should be stopped when the jvm exits,
+            // register with the shutdown handler thread.
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
@@ -696,6 +698,8 @@ public class Server extends Handler.Wrapper implements Attributes
         LOG.info("Stopped {}", this);
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
+
+        startupTime = null;
 
         Throwable multiException = null;
 

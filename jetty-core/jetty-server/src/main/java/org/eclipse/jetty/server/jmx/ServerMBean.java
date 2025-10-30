@@ -62,10 +62,10 @@ public class ServerMBean extends Handler.AbstractMBean
         return getManagedObject().getDescendants(ContextHandler.class);
     }
 
-    @ManagedAttribute("The UTC startup instant")
+    @ManagedAttribute("The startup date time in the system timezone")
     public String getStartupTime()
     {
-        return getManagedObject().getStartupInstant().toString();
+        return String.valueOf(getManagedObject().getStartupTime());
     }
 
     @ManagedAttribute("The uptime duration in d:HH:mm:ss.SSS")
