@@ -1568,13 +1568,16 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Turn pending demand or unconsumed input on persistent connections into failure
                 if (httpChannelState._onContentAvailable != null)
+                {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
-                else if (httpChannelState.getConnectionMetaData().isPersistent())
-                    failure = ExceptionUtil.combine(failure, stream.consumeAvailable());
+                }
                 else
                 {
+                    // Consume available content before checking if the connection is persistent.
                     Throwable unconsumed = stream.consumeAvailable();
-                    if (failure != null)
+                    if (httpChannelState.getConnectionMetaData().isPersistent())
+                        failure = ExceptionUtil.combine(failure, unconsumed);
+                    else if (failure != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
                         LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);

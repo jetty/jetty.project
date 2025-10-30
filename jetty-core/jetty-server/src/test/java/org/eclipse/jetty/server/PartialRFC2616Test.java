@@ -550,7 +550,6 @@ public class PartialRFC2616Test
     }
 
     @Test
-    @Disabled // TODO
     public void test824() throws Exception
     {
         // Expect 100 not sent
